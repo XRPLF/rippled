@@ -1854,6 +1854,58 @@ public:
         }
     }
 
+    void
+    testSponsorReserveSimple(bool cosigning)
+    {
+        testcase("SponsorReserveSimple");
+        using namespace test::jtx;
+        Env env{*this, testable_amendments()};
+        Account const alice("alice");
+        Account const sponsor("sponsor");
+
+        env.fund(XRP(10000), alice, sponsor);
+        env.close();
+
+        // test Sufficient sponsor balance
+        if (cosigning)
+        {
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 99));
+
+            env(ticket::create(alice, 100),
+                sponsor::as(sponsor, spfSponsorReserve),
+                sig(sfSponsorSignature, sponsor),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 100));
+
+            env(ticket::create(alice, 100),
+                sponsor::as(sponsor, spfSponsorReserve),
+                sig(sfSponsorSignature, sponsor),
+                ter(tesSUCCESS));
+            env.close();
+        }
+        else
+        {
+            env(sponsor::set_reserve(sponsor, 0, 250), sponsor::sponseeAcc(alice));
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 99 + 1 /* sponsor object*/));
+
+            env(ticket::create(alice, 100),
+                sponsor::as(sponsor, spfSponsorReserve),
+                ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor, reserve(env, 100 + 1 /* sponsor object*/));
+
+            env(ticket::create(alice, 100),
+                sponsor::as(sponsor, spfSponsorReserve),
+                ter(tesSUCCESS));
+            env.close();
+        }
+    }
+
     // test helper for both cosigning and pre-funded sponsorship
     template <typename SubmitCallback>
     void
@@ -5577,6 +5629,7 @@ public:
     testSponsorReserve(bool cosigning)
     {
         testRequireFlag();
+        testSponsorReserveSimple(cosigning);
         testAMM(cosigning);
         testCheck(cosigning);
         testOffer(cosigning);

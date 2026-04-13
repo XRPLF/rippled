@@ -326,37 +326,27 @@ checkInsufficientReserve(
         auto const sle = view.read(
             keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
-        if (isCoSigning)
+        if (!isCoSigning && !sle)
+            // prefunded sponsor should have a sponsorship entry
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        if (sle)
         {
-            if (sle)
-            {
-                auto const reserveCountAllowed = sle->getFieldU32(sfReserveCount);
-                if (reserveCountAllowed < ownerCountDelta)
-                    return tecINSUFFICIENT_RESERVE;
-
-                return tesSUCCESS;
-            }
-            auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
-            STAmount const sponsorReserve{view.fees().accountReserve(
-                sponsorSle->getFieldU32(sfOwnerCount),
-                sponsorSle->getFieldU32(sfSponsoredOwnerCount),
-                sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ownerCountDelta,
-                sponsorSle->isFieldPresent(sfSponsor),
-                sponsorSle->getFieldU32(sfSponsoringAccountCount) + accountCountDelta)};
-
-            if (sponsorBalance < sponsorReserve)
-                return tecINSUFFICIENT_RESERVE;
-        }
-        else
-        {
-            // pre funded
-            if (!sle)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
-
             auto const reserveCountAllowed = sle->getFieldU32(sfReserveCount);
             if (reserveCountAllowed < ownerCountDelta)
                 return tecINSUFFICIENT_RESERVE;
         }
+
+        auto const sponsorBalance = sponsorSle->getFieldAmount(sfBalance);
+        STAmount const sponsorReserve{view.fees().accountReserve(
+            sponsorSle->getFieldU32(sfOwnerCount),
+            sponsorSle->getFieldU32(sfSponsoredOwnerCount),
+            sponsorSle->getFieldU32(sfSponsoringOwnerCount) + ownerCountDelta,
+            sponsorSle->isFieldPresent(sfSponsor),
+            sponsorSle->getFieldU32(sfSponsoringAccountCount) + accountCountDelta)};
+
+        if (sponsorBalance < sponsorReserve)
+            return tecINSUFFICIENT_RESERVE;
     }
     else
     {
