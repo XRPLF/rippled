@@ -309,10 +309,25 @@ fillJsonQueue(Object& json, LedgerFill const& fill)
             txJson["last_result"] = transToken(*tx.lastResult);
 
         auto&& temp = fillJsonTx(fill, bBinary, bExpanded, tx.txn, nullptr);
-        if (fill.context->apiVersion > 1)
-            copyFrom(txJson, temp);
+        if (temp.isObject())
+        {
+            if (fill.context->apiVersion > 1)
+            {
+                copyFrom(txJson, temp);
+            }
+            else
+            {
+                copyFrom(txJson[jss::tx], temp);
+            }
+        }
+        else if (fill.context->apiVersion > 1)
+        {
+            txJson[jss::hash] = temp;
+        }
         else
-            copyFrom(txJson[jss::tx], temp);
+        {
+            txJson[jss::tx] = temp;
+        }
     }
 }
 
