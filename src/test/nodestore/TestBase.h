@@ -76,6 +76,7 @@ public:
                     case 3:
                         return hotUNKNOWN;
                     default:
+                        // will never happen, but make static analysis tool happy.
                         return hotUNKNOWN;
                 }
             }();
