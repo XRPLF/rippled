@@ -17,6 +17,8 @@
 namespace beast {
 namespace unit_test {
 
+class Thread;
+
 namespace detail {
 
 template <class String>
@@ -293,7 +295,7 @@ public:
     }
 
 private:
-    friend class thread;
+    friend class Thread;
 
     static suite**
     p_this_suite()
