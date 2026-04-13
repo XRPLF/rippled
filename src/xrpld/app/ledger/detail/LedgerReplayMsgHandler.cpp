@@ -105,9 +105,8 @@ LedgerReplayMsgHandler::processProofPathResponse(
     }
     catch (std::exception const& e)
     {
-        JLOG(journal_.debug())
-            << "Bad message: Cannot deserialize header of size "
-            << reply.ledgerheader().size() << ": " << e.what();
+        JLOG(journal_.debug()) << "Bad message: Cannot deserialize header of size "
+                               << reply.ledgerheader().size() << ": " << e.what();
         return false;
     }
     uint256 const replyHash(reply.ledgerhash());
