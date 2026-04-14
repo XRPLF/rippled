@@ -1446,7 +1446,7 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
             else
             {
                 // LCOV_EXCL_START
-                UNREACHABLE("xrpl::test::bookStepEqual : invalid book step");
+                UNREACHABLE("xrpl::bookStepEqual : invalid book step");
                 // LCOV_EXCL_STOP
                 return false;
             }
