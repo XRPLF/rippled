@@ -173,7 +173,20 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
     auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
     std::unique_ptr<NodeStore::Database> db;
 
-    if (deleteInterval_ != 0u)
+    if (isNullBackend_)
+    {
+        // Null mode: create a plain (non-rotating) Database with a
+        // single NullBackend.  No DatabaseRotatingImp, no rotation
+        // thread artifacts.  dbRotating_ stays nullptr.
+        db = NodeStore::Manager::instance().make_Database(
+            megabytes(app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
+            scheduler_,
+            readThreads,
+            nscfg,
+            app_.getJournal(nodeStoreName_));
+        fdRequired_ += db->fdRequired();
+    }
+    else if (deleteInterval_ != 0u)
     {
         SavedState state = state_db_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
