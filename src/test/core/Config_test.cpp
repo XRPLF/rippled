@@ -81,7 +81,7 @@ time.apple.com
 time.nist.gov
 pool.ntp.org
 
-# Where to find some other servers speaking the Ripple protocol.
+# Where to find some other servers speaking the XRPL protocol.
 #
 [ips]
 r.ripple.com 51235
@@ -107,7 +107,7 @@ backend=sqlite
 }
 
 /**
-   Write a xrpld config file and remove when done.
+   Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
