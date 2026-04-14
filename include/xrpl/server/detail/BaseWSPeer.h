@@ -392,7 +392,7 @@ BaseWSPeer<Handler, Impl>::cancel_timer()
     {
         timer_.cancel();
     }
-    catch (boost::system::system_error const&)
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
     {
         // ignored
     }

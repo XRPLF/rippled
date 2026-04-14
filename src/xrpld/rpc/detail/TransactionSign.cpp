@@ -1,3 +1,5 @@
+#include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
@@ -8,7 +10,6 @@
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/detail/TransactionSign.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Blob.h>
@@ -656,7 +657,7 @@ transactionPreProcessImpl(
 
         stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
-    catch (STObject::FieldErr& err)
+    catch (STObject::FieldErr const& err)
     {
         return RPC::make_error(rpcINVALID_PARAMS, err.what());
     }
@@ -1328,7 +1329,7 @@ transactionSubmitMultiSigned(
         {
             stTx = std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
         }
-        catch (STObject::FieldErr& err)
+        catch (STObject::FieldErr const& err)
         {
             return RPC::make_error(rpcINVALID_PARAMS, err.what());
         }

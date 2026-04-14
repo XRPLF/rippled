@@ -1,6 +1,7 @@
+#include <xrpl/ledger/OpenView.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Fees.h>
@@ -17,6 +18,7 @@
 #include <cstddef>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <tuple>
 #include <utility>
 
@@ -266,7 +268,7 @@ OpenView::rawTxInsert(
     auto const result = txs_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)
-        LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
+        Throw<std::logic_error>("rawTxInsert: duplicate TX id: " + to_string(key));
 }
 
 }  // namespace xrpl

@@ -913,7 +913,7 @@ doLedgerEntry(RPC::JsonContext& context)
             return RPC::make_param_error("No ledger_entry params provided.");
         }
     }
-    catch (Json::error& e)
+    catch (Json::error const& e)
     {
         if (context.apiVersion > 1u)
         {
