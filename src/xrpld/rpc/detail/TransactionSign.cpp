@@ -619,7 +619,7 @@ transactionPreProcessImpl(
 
         stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
-    catch (STObject::FieldErr& err)
+    catch (STObject::FieldErr const& err)
     {
         return RPC::make_error(rpcINVALID_PARAMS, err.what());
     }
@@ -1291,7 +1291,7 @@ transactionSubmitMultiSigned(
         {
             stTx = std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
         }
-        catch (STObject::FieldErr& err)
+        catch (STObject::FieldErr const& err)
         {
             return RPC::make_error(rpcINVALID_PARAMS, err.what());
         }
