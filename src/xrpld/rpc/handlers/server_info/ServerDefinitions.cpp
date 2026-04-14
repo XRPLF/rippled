@@ -385,7 +385,7 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    auto const defs = getStaticServerDefinitions();
+    auto defs = getStaticServerDefinitions();
     if (to_string(hash) == defs[jss::hash].asString())
     {
         Json::Value jv = Json::objectValue;
