@@ -131,7 +131,7 @@ struct MantissaRange
      * representation will always have a consistent number of digits.
      */
     rep internalMin;
-    int log{computeLog(min)};
+    rep log{computeLog(min)};
     mantissa_scale scale;
 
 private:
