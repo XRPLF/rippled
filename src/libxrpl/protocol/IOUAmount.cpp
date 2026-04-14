@@ -7,8 +7,6 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/STAmount.h>
 
-#include <boost/multiprecision/fwd.hpp>
-
 #include <algorithm>
 #include <cstdint>
 #include <iterator>

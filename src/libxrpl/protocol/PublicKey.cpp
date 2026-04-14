@@ -9,7 +9,6 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
 
-#include <boost/multiprecision/fwd.hpp>
 #include <boost/multiprecision/number.hpp>
 
 #include <ed25519.h>

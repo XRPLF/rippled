@@ -14,7 +14,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_replace.hpp>
 #include <boost/regex/v5/regex_search.hpp>
 #include <boost/regex/v5/regex_token_iterator.hpp>

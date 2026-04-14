@@ -9,7 +9,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/format/format_fwd.hpp>
 #include <boost/format/free_funcs.hpp>
 
 #include <memory>

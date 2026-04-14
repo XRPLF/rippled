@@ -10,7 +10,6 @@
 #include <xrpl/protocol/tokens.h>
 
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 
 #include <cstddef>

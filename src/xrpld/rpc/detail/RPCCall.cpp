@@ -32,7 +32,6 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 #include <boost/system/detail/error_code.hpp>
 

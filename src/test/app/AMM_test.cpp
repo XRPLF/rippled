@@ -48,7 +48,6 @@
 #include <xrpl/tx/transactors/dex/AMMBid.h>
 
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_search.hpp>
 
 #include <array>

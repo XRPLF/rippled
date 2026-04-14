@@ -49,11 +49,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/fields.hpp>
-#include <boost/beast/http/fields_fwd.hpp>
-#include <boost/beast/http/message_fwd.hpp>
 #include <boost/beast/http/status.hpp>
 #include <boost/beast/http/string_body.hpp>
-#include <boost/beast/http/string_body_fwd.hpp>
 #include <boost/beast/http/verb.hpp>
 #include <boost/beast/websocket/impl/rfc6455.hpp>
 #include <boost/beast/websocket/rfc6455.hpp>

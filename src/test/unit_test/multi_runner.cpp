@@ -6,7 +6,6 @@
 #include <boost/container/static_vector.hpp>
 #include <boost/interprocess/creation_tags.hpp>
 #include <boost/interprocess/detail/os_file_functions.hpp>
-#include <boost/interprocess/interprocess_fwd.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/lexical_cast.hpp>
 

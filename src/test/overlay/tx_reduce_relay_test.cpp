@@ -28,8 +28,6 @@
 #include <boost/asio/ssl/context.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/http/dynamic_body_fwd.hpp>
-#include <boost/beast/http/message_fwd.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <xrpl.pb.h>

@@ -2,8 +2,6 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
-#include <boost/beast/http/fields_fwd.hpp>
-
 namespace xrpl {
 
 namespace test {

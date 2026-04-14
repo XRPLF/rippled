@@ -22,11 +22,9 @@
 #include <xrpl/protocol/tokens.h>
 
 #include <boost/asio/ip/address.hpp>
-#include <boost/beast/http/fields_fwd.hpp>
 #include <boost/beast/http/status.hpp>
 #include <boost/beast/http/verb.hpp>
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_search.hpp>
 #include <boost/system/detail/error_code.hpp>
 
