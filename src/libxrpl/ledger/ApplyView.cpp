@@ -32,11 +32,11 @@ createRoot(
 auto
 findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
 {
-    std::uint64_t page = start->getFieldU64(sfIndexPrevious);
+    std::uint64_t const page = start->getFieldU64(sfIndexPrevious);
 
     auto node = start;
 
-    if (page)
+    if (page != 0u)
     {
         node = view.peek(keylet::page(directory, page));
         if (!node)
@@ -363,7 +363,8 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
 
     // Check whether the next page is the last page and, if
     // so, whether it's empty. If it is, delete it.
-    if (nextPage != rootPage && next->getFieldU64(sfIndexNext) == rootPage && next->getFieldV256(sfIndexes).empty())
+    if (nextPage != rootPage && next->getFieldU64(sfIndexNext) == rootPage &&
+        next->getFieldV256(sfIndexes).empty())
     {
         // Since next doesn't point to the root, it
         // can't be pointing to prev.

@@ -26,7 +26,10 @@ class CaptureLogs : public Logs
         std::stringstream& strm_;
 
     public:
-        CaptureSink(beast::severities::Severity threshold, std::mutex& mutex, std::stringstream& strm)
+        CaptureSink(
+            beast::severities::Severity threshold,
+            std::mutex& mutex,
+            std::stringstream& strm)
             : beast::Journal::Sink(threshold, false), strmMutex_(mutex), strm_(strm)
         {
         }
@@ -34,14 +37,14 @@ class CaptureLogs : public Logs
         void
         write(beast::severities::Severity level, std::string const& text) override
         {
-            std::lock_guard lock(strmMutex_);
+            std::lock_guard const lock(strmMutex_);
             strm_ << text;
         }
 
         void
         writeAlways(beast::severities::Severity level, std::string const& text) override
         {
-            std::lock_guard lock(strmMutex_);
+            std::lock_guard const lock(strmMutex_);
             strm_ << text;
         }
     };

@@ -10,13 +10,15 @@ namespace xrpl {
 
 class AccountTxPaging_test : public beast::unit_test::suite
 {
-    bool
+    static bool
     checkTransaction(Json::Value const& tx, int sequence, int ledger)
     {
-        return (tx[jss::tx][jss::Sequence].asInt() == sequence && tx[jss::tx][jss::ledger_index].asInt() == ledger);
+        return (
+            tx[jss::tx][jss::Sequence].asInt() == sequence &&
+            tx[jss::tx][jss::ledger_index].asInt() == ledger);
     }
 
-    auto
+    static auto
     next(
         test::jtx::Env& env,
         test::jtx::Account const& account,
@@ -45,9 +47,9 @@ class AccountTxPaging_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env(*this);
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
 
         env.fund(XRP(10000), A1, A2, A3);
         env.close();

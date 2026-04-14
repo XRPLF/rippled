@@ -18,7 +18,7 @@ Cluster::Cluster(beast::Journal j) : j_(j)
 std::optional<std::string>
 Cluster::member(PublicKey const& identity) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto iter = nodes_.find(identity);
     if (iter == nodes_.end())
@@ -29,15 +29,19 @@ Cluster::member(PublicKey const& identity) const
 std::size_t
 Cluster::size() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return nodes_.size();
 }
 
 bool
-Cluster::update(PublicKey const& identity, std::string name, std::uint32_t loadFee, NetClock::time_point reportTime)
+Cluster::update(
+    PublicKey const& identity,
+    std::string name,
+    std::uint32_t loadFee,
+    NetClock::time_point reportTime)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto iter = nodes_.find(identity);
 
@@ -59,7 +63,7 @@ Cluster::update(PublicKey const& identity, std::string name, std::uint32_t loadF
 void
 Cluster::for_each(std::function<void(ClusterNode const&)> func) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     for (auto const& ni : nodes_)
         func(ni);
 }

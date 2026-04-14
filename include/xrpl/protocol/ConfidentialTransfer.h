@@ -25,8 +25,16 @@ namespace xrpl {
  */
 struct ConfidentialRecipient
 {
-    Slice const publicKey;        ///< The recipient's ElGamal public key (64 bytes).
-    Slice const encryptedAmount;  ///< The encrypted amount ciphertext (128 bytes).
+    Slice publicKey;        ///< The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
+    Slice encryptedAmount;  ///< The encrypted amount ciphertext
+                            ///< (size=xrpl::ecGamalEncryptedTotalLength).
+};
+
+/// Holds two secp256k1 public key components representing an ElGamal ciphertext (C1, C2).
+struct EcPair
+{
+    secp256k1_pubkey c1;
+    secp256k1_pubkey c2;
 };
 
 /**
@@ -44,29 +52,9 @@ incrementConfidentialVersion(STObject& mptoken)
     // Retrieve current version and increment.
     // Unsigned integer overflow is defined behavior in C++ (wraps to 0),
     // which is acceptable here.
-    mptoken[sfConfidentialBalanceVersion] = mptoken[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
+    mptoken[sfConfidentialBalanceVersion] =
+        mptoken[~sfConfidentialBalanceVersion].value_or(0u) + 1u;
 }
-
-/**
- * @brief Adds common fields to a serializer for ZKP context hash generation.
- *
- * Serializes the transaction type, account, issuance ID and sequence/ticket number
- * into the provided serializer. These fields form the base of all context
- * hashes used in zero-knowledge proofs.
- *
- * @param s          The serializer to append fields to.
- * @param txType     The transaction type identifier.
- * @param account    The account ID of the transaction sender.
- * @param issuanceID The MPToken Issuance ID.
- * @param sequence   The transaction sequence number or ticket number.
- */
-void
-addCommonZKPFields(
-    Serializer& s,
-    std::uint16_t txType,
-    AccountID const& account,
-    std::uint32_t sequence,
-    uint192 const& issuanceID);
 
 /**
  * @brief Generates the context hash for ConfidentialMPTSend transactions.
@@ -145,29 +133,25 @@ getConvertBackContextHash(
  * @brief Parses an ElGamal ciphertext into two secp256k1 public key components.
  *
  * Breaks a 66-byte encrypted amount (two 33-byte compressed EC points) into
- * two secp256k1_pubkey structures (C1, C2) for use in cryptographic operations.
+ * a pair containing (C1, C2) for use in cryptographic operations.
  *
  * @param buffer The 66-byte buffer containing the compressed ciphertext.
- * @param out1   Output: The C1 component of the ElGamal ciphertext.
- * @param out2   Output: The C2 component of the ElGamal ciphertext.
- * @return true if parsing succeeds, false if the buffer is invalid.
+ * @return The parsed pair (c1, c2) if successful, std::nullopt if the buffer is invalid.
  */
-bool
-makeEcPair(Slice const& buffer, secp256k1_pubkey& out1, secp256k1_pubkey& out2);
+std::optional<EcPair>
+makeEcPair(Slice const& buffer);
 
 /**
- * @brief Serializes two secp256k1 public key components into compressed form.
+ * @brief Serializes an EcPair into compressed form.
  *
- * Converts two secp256k1_pubkey structures (C1, C2) back into a 66-byte
- * buffer containing two 33-byte compressed EC points.
+ * Converts an EcPair (C1, C2) back into a 66-byte buffer containing
+ * two 33-byte compressed EC points.
  *
- * @param in1    The C1 component to serialize.
- * @param in2    The C2 component to serialize.
- * @param buffer Output: The 66-byte buffer to write the compressed ciphertext.
- * @return true if serialization succeeds, false otherwise.
+ * @param pair The EcPair to serialize.
+ * @return The 66-byte buffer, or std::nullopt if serialization fails.
  */
-bool
-serializeEcPair(secp256k1_pubkey const& in1, secp256k1_pubkey const& in2, Buffer& buffer);
+std::optional<Buffer>
+serializeEcPair(EcPair const& pair);
 
 /**
  * @brief Verifies that a buffer contains two valid, parsable EC public keys.
@@ -196,13 +180,12 @@ isValidCompressedECPoint(Slice const& buffer);
  * Uses the additive homomorphic property of ElGamal encryption to compute
  * Enc(a + b) from Enc(a) and Enc(b) without decryption.
  *
- * @param a   The first ciphertext (66 bytes).
- * @param b   The second ciphertext (66 bytes).
- * @param out Output: The resulting ciphertext Enc(a + b).
- * @return tesSUCCESS on success, or an error code if parsing fails.
+ * @param a The first ciphertext (66 bytes).
+ * @param b The second ciphertext (66 bytes).
+ * @return The resulting ciphertext Enc(a + b), or std::nullopt on failure.
  */
-TER
-homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
+std::optional<Buffer>
+homomorphicAdd(Slice const& a, Slice const& b);
 
 /**
  * @brief Homomorphically subtracts two ElGamal ciphertexts.
@@ -210,13 +193,12 @@ homomorphicAdd(Slice const& a, Slice const& b, Buffer& out);
  * Uses the additive homomorphic property of ElGamal encryption to compute
  * Enc(a - b) from Enc(a) and Enc(b) without decryption.
  *
- * @param a   The minuend ciphertext (66 bytes).
- * @param b   The subtrahend ciphertext (66 bytes).
- * @param out Output: The resulting ciphertext Enc(a - b).
- * @return tesSUCCESS on success, or an error code if parsing fails.
+ * @param a The minuend ciphertext (66 bytes).
+ * @param b The subtrahend ciphertext (66 bytes).
+ * @return The resulting ciphertext Enc(a - b), or std::nullopt on failure.
  */
-TER
-homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
+std::optional<Buffer>
+homomorphicSubtract(Slice const& a, Slice const& b);
 
 /**
  * @brief Encrypts an amount using ElGamal encryption.
@@ -225,9 +207,10 @@ homomorphicSubtract(Slice const& a, Slice const& b, Buffer& out);
  * using the provided blinding factor r.
  *
  * @param amt            The plaintext amount to encrypt.
- * @param pubKeySlice    The recipient's ElGamal public key (64 bytes).
- * @param blindingFactor The 32-byte randomness used as blinding factor r.
- * @return The 66-byte ciphertext, or std::nullopt on failure.
+ * @param pubKeySlice    The recipient's ElGamal public key (size=xrpl::ecPubKeyLength).
+ * @param blindingFactor The randomness used as blinding factor r
+ * (size=xrpl::ecBlindingFactorLength).
+ * @return The ciphertext (size=xrpl::ecGamalEncryptedTotalLength), or std::nullopt on failure.
  */
 std::optional<Buffer>
 encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindingFactor);
@@ -238,10 +221,11 @@ encryptAmount(uint64_t const amt, Slice const& pubKeySlice, Slice const& blindin
  * Creates a deterministic encryption of zero that is unique to the account
  * and MPT issuance. Used to initialize confidential balance fields.
  *
- * @param pubKeySlice The holder's ElGamal public key (64 bytes).
+ * @param pubKeySlice The holder's ElGamal public key (size=xrpl::ecPubKeyLength).
  * @param account     The account ID of the token holder.
  * @param mptId       The MPToken Issuance ID.
- * @return The 66-byte canonical zero ciphertext, or std::nullopt on failure.
+ * @return The canonical zero ciphertext (size=xrpl::ecGamalEncryptedTotalLength), or std::nullopt
+ * on failure.
  */
 std::optional<Buffer>
 encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, MPTID const& mptId);
@@ -252,32 +236,13 @@ encryptCanonicalZeroAmount(Slice const& pubKeySlice, AccountID const& account, M
  * Proves that the submitter knows the secret key corresponding to the
  * provided public key, without revealing the secret key itself.
  *
- * @param pubKeySlice The ElGamal public key (64 bytes).
- * @param proofSlice  The Schnorr proof (65 bytes).
+ * @param pubKeySlice The ElGamal public key (size=xrpl::ecPubKeyLength).
+ * @param proofSlice  The Schnorr proof (size=xrpl::ecSchnorrProofLength).
  * @param contextHash The 256-bit context hash binding the proof.
  * @return tesSUCCESS if valid, or an error code otherwise.
  */
 TER
 verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 const& contextHash);
-
-/**
- * @brief Verifies that a ciphertext correctly encrypts a revealed amount.
- *
- * Given the plaintext amount and blinding factor, verifies that the
- * ciphertext was correctly constructed using ElGamal encryption.
- *
- * @param amount         The revealed plaintext amount.
- * @param blindingFactor The 32-byte blinding factor used in encryption.
- * @param pubKeySlice    The recipient's ElGamal public key (64 bytes).
- * @param ciphertext     The ciphertext to verify (66 bytes).
- * @return tesSUCCESS if the encryption is valid, or an error code otherwise.
- */
-TER
-verifyElGamalEncryption(
-    std::uint64_t const amount,
-    Slice const& blindingFactor,
-    Slice const& pubKeySlice,
-    Slice const& ciphertext);
 
 /**
  * @brief Validates the format of encrypted amount fields in a transaction.
@@ -300,7 +265,8 @@ checkEncryptedAmountFormat(STObject const& object);
  * issuer, and optionally the auditor using their respective public keys.
  *
  * @param amount         The revealed plaintext amount.
- * @param blindingFactor The 32-byte blinding factor used in all encryptions.
+ * @param blindingFactor The blinding factor used in all encryptions
+ * (size=xrpl::ecBlindingFactorLength).
  * @param holder         The holder's public key and encrypted amount.
  * @param issuer         The issuer's public key and encrypted amount.
  * @param auditor        Optional auditor's public key and encrypted amount.
@@ -308,7 +274,7 @@ checkEncryptedAmountFormat(STObject const& object);
  */
 TER
 verifyRevealedAmount(
-    std::uint64_t const amount,
+    uint64_t const amount,
     Slice const& blindingFactor,
     ConfidentialRecipient const& holder,
     ConfidentialRecipient const& issuer,
@@ -330,23 +296,20 @@ getConfidentialRecipientCount(bool hasAuditor)
 }
 
 /**
- * @brief Verifies a multi-ciphertext equality proof.
+ * @brief Returns the size of a multi-ciphertext equality proof.
  *
- * Proves that all ciphertexts in the recipients vector encrypt the same
- * plaintext amount, without revealing the amount itself.
+ * Computes the byte size required for a zero-knowledge proof that demonstrates
+ * multiple ciphertexts encrypt the same plaintext value. The size depends on
+ * the number of recipients.
  *
- * @param proof       The zero-knowledge proof bytes.
- * @param recipients  Vector of recipients with their public keys and ciphertexts.
- * @param nRecipients The number of recipients (must match recipients.size()).
- * @param contextHash The 256-bit context hash binding the proof.
- * @return tesSUCCESS if the proof is valid, or an error code otherwise.
+ * @param nRecipients The number of recipients (typically 3 or 4).
+ * @return The proof size in bytes.
  */
-TER
-verifyMultiCiphertextEqualityProof(
-    Slice const& proof,
-    std::vector<ConfidentialRecipient> const& recipients,
-    std::size_t const nRecipients,
-    uint256 const& contextHash);
+inline std::size_t
+getEqualityProofSize(std::size_t nRecipients)
+{
+    return secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
+}
 
 /**
  * @brief Verifies a clawback equality proof.
@@ -382,101 +345,116 @@ Buffer
 generateBlindingFactor();
 
 /**
- * @brief Verifies the cryptographic link between an ElGamal Ciphertext and a
- * Pedersen Commitment for a transaction Amount.
+ * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTSend transaction.
  *
- * It proves that the ElGamal ciphertext `encAmt` encrypts the same value `m`
- * as the Pedersen Commitment `pcmSlice`, using the randomness `r`.
- * Proves Enc(m) <-> Pcm(m)
+ * This function calls mpt_verify_send_proof API in the mpt-crypto utility lib, which verifies the
+ * equality proof, amount linkage, balance linkage, and range proof.
+ * Equality proof: Proves the same value is encrypted for the sender, receiver, issuer, and auditor.
+ * Amount linkage: Proves the send amount matches the amount Pedersen commitment.
+ * Balance linkage: Proves the sender's balance matches the balance Pedersen
+ * commitment.
+ * Range proof: Proves the amount and the remaining balance are within range [0, 2^64-1].
  *
- * @param proof       The Zero Knowledge Proof bytes.
- * @param encAmt      The ElGamal ciphertext of the amount (C1, C2).
- * @param pubKeySlice The sender's public key.
- * @param pcmSlice    The Pedersen Commitment to the amount.
- * @param contextHash The unique context hash for this transaction.
- * @return tesSUCCESS if the proof is valid, or an error code otherwise.
+ * @param proof             The full proof blob.
+ * @param sender            The sender's public key and encrypted amount.
+ * @param destination       The destination's public key and encrypted amount.
+ * @param issuer            The issuer's public key and encrypted amount.
+ * @param auditor           The auditor's public key and encrypted amount if present.
+ * @param spendingBalance   The sender's current spending balance ciphertext.
+ * @param amountCommitment  The Pedersen commitment to the send amount.
+ * @param balanceCommitment The Pedersen commitment to the sender's balance.
+ * @param contextHash       The context hash binding the proof.
+ * @return tesSUCCESS if all proofs are valid, or an error code otherwise.
  */
 TER
-verifyAmountPcmLinkage(
+verifySendProof(
     Slice const& proof,
-    Slice const& encAmt,
+    ConfidentialRecipient const& sender,
+    ConfidentialRecipient const& destination,
+    ConfidentialRecipient const& issuer,
+    std::optional<ConfidentialRecipient> const& auditor,
+    Slice const& spendingBalance,
+    Slice const& amountCommitment,
+    Slice const& balanceCommitment,
+    uint256 const& contextHash);
+
+/**
+ * @brief Verifies all zero-knowledge proofs for a ConfidentialMPTConvertBack transaction.
+ *
+ * This function calls mpt_verify_convert_back_proof API in the mpt-crypto utility lib, which
+ * verifies the balance linkage proof and range proof. Balance linkage proof: proves the balance
+ * commitment matches the spending ciphertext. Range proof: proves the remaining balance after
+ * convert back is within range [0, 2^64-1].
+ *
+ * @param proof             The full proof blob.
+ * @param pubKeySlice       The holder's public key.
+ * @param spendingBalance   The holder's spending balance ciphertext.
+ * @param balanceCommitment The Pedersen commitment to the balance.
+ * @param amount            The amount being converted back to public.
+ * @param contextHash       The context hash binding the proof.
+ * @return tesSUCCESS if all proofs are valid, or an error code otherwise.
+ */
+TER
+verifyConvertBackProof(
+    Slice const& proof,
     Slice const& pubKeySlice,
-    Slice const& pcmSlice,
+    Slice const& spendingBalance,
+    Slice const& balanceCommitment,
+    uint64_t amount,
     uint256 const& contextHash);
 
 /**
- * @brief Verifies the cryptographic link between an ElGamal Ciphertext and a
- * Pedersen Commitment for an account Balance.
+ * @brief Sequential reader for extracting proof components from a ZKProof blob.
  *
- * It proves that the ElGamal ciphertext `encAmt` encrypts the same value `b`
- * as the Pedersen Commitment `pcmSlice`, using the secret key `s`.
- * Proves Enc(b) <-> Pcm(b)
+ * Encapsulates the offset-based arithmetic for slicing a concatenated proof
+ * blob into its individual components (equality proofs, Pedersen linkage
+ * proofs, bulletproofs, etc.).  Performs bounds checking on every read and
+ * tracks whether the entire blob has been consumed.
  *
- * Note: Swaps arguments (Pk <-> C1) to accommodate the different algebraic
- * structure.
- *
- * @param proof       The Zero Knowledge Proof bytes.
- * @param encAmt      The ElGamal ciphertext of the balance (C1, C2).
- * @param pubKeySlice The sender's public key.
- * @param pcmSlice    The Pedersen Commitment to the balance.
- * @param contextHash The unique context hash for this transaction.
- * @return tesSUCCESS if the proof is valid, or an error code otherwise.
+ * Usage:
+ * @code
+ *   ProofReader reader(tx[sfZKProof]);
+ *   auto equalityProof = reader.read(sizeEquality);
+ *   auto pedersenProof = reader.read(ecPedersenProofLength);
+ *   if (!equalityProof || !pedersenProof || !reader.done())
+ *       return tecINTERNAL;
+ * @endcode
  */
-TER
-verifyBalancePcmLinkage(
-    Slice const& proof,
-    Slice const& encAmt,
-    Slice const& pubKeySlice,
-    Slice const& pcmSlice,
-    uint256 const& contextHash);
+class ProofReader
+{
+    Slice data_;
+    std::size_t offset_ = 0;
 
-/**
- * @brief Verifies an aggregated Bulletproof range proof.
- *
- * This function verifies that all commitments in commitment_C_vec commit
- * to values within the valid 64-bit range [0, 2^64 - 1].
- *
- * @param proof       The serialized Bulletproof proof.
- * @param compressedCommitments Vector of compressed Pedersen commitments (each 33 bytes).
- * @param contextHash The unique context hash for this transaction.
- * @return tesSUCCESS if the proof is valid, tecBAD_PROOF if verification
- *         fails, or tecINTERNAL for internal errors.
- */
-TER
-verifyAggregatedBulletproof(
-    Slice const& proof,
-    std::vector<Slice> const& compressedCommitments,
-    uint256 const& contextHash);
+public:
+    explicit ProofReader(Slice data) : data_(data)
+    {
+    }
 
-/**
- * @brief Computes the remainder commitment for ConfidentialMPTSend.
- *
- * Given a balance commitment PC_bal = m_bal*G + rho_bal*H and an amount
- * commitment PC_amt = m_amt*G + rho_amt*H, this function computes:
- * PC_rem = PC_bal - PC_amt = (m_bal - m_amt)*G + (rho_bal - rho_amt)*H
- *
- * This derived commitment is used in an aggregated range proof to ensure
- * the sender maintains a non-negative balance (m_bal - m_amt >= 0).
- *
- * @param balanceCommitment The compressed Pedersen commitment to the balance (33 bytes).
- * @param amountCommitment  The compressed Pedersen commitment to the amount (33 bytes).
- * @param out               Output buffer for the resulting remainder commitment (33 bytes).
- * @return tesSUCCESS on success, tecINTERNAL on failure.
- */
-TER
-computeSendRemainder(Slice const& balanceCommitment, Slice const& amountCommitment, Buffer& out);
+    /**
+     * @brief Read the next @p length bytes from the proof blob.
+     *
+     * @param length Number of bytes to read.
+     * @return A Slice of the requested bytes, or std::nullopt if there are
+     *         not enough remaining bytes.
+     */
+    [[nodiscard]] std::optional<Slice>
+    read(std::size_t length)
+    {
+        if (offset_ + length > data_.size())
+            return std::nullopt;
+        auto result = data_.substr(offset_, length);
+        offset_ += length;
+        return result;
+    }
 
-/**
- * @brief Computes the remainder commitment for ConvertBack.
- *
- * Given a Pedersen commitment PC = m*G + rho*H, this function computes
- * PC_rem = PC - amount*G = (m - amount)*G + rho*H
- *
- * @param commitment The compressed Pedersen commitment (33 bytes).
- * @param amount     The amount to subtract (must be non-zero).
- * @param out        Output buffer for the resulting commitment (33 bytes).
- * @return tesSUCCESS on success, tecINTERNAL on failure or if amount is 0.
- */
-TER
-computeConvertBackRemainder(Slice const& commitment, std::uint64_t amount, Buffer& out);
+    /**
+     * @brief Returns true when every byte has been consumed.
+     */
+    [[nodiscard]] bool
+    done() const
+    {
+        return offset_ == data_.size();
+    }
+};
+
 }  // namespace xrpl

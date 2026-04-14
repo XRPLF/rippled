@@ -17,7 +17,7 @@ struct Gossip
     {
         explicit Item() = default;
 
-        int balance;
+        int balance{};
         beast::IP::Endpoint address;
     };
 

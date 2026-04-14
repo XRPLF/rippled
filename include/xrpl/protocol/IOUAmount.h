@@ -26,8 +26,8 @@ class IOUAmount : private boost::totally_ordered<IOUAmount>, private boost::addi
 private:
     using mantissa_type = std::int64_t;
     using exponent_type = int;
-    mantissa_type mantissa_;
-    exponent_type exponent_;
+    mantissa_type mantissa_{};
+    exponent_type exponent_{};
 
     /** Adjusts the mantissa and exponent to the proper range.
 
@@ -95,7 +95,8 @@ inline IOUAmount::IOUAmount(beast::Zero)
     *this = beast::zero;
 }
 
-inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent) : mantissa_(mantissa), exponent_(exponent)
+inline IOUAmount::IOUAmount(mantissa_type mantissa, exponent_type exponent)
+    : mantissa_(mantissa), exponent_(exponent)
 {
     normalize();
 }
@@ -110,7 +111,8 @@ IOUAmount::operator=(beast::Zero)
     return *this;
 }
 
-inline IOUAmount::operator Number() const
+inline IOUAmount::
+operator Number() const
 {
     return Number{mantissa_, exponent_};
 }
@@ -140,7 +142,8 @@ IOUAmount::operator<(IOUAmount const& other) const
     return Number{*this} < Number{other};
 }
 
-inline IOUAmount::operator bool() const noexcept
+inline IOUAmount::
+operator bool() const noexcept
 {
     return mantissa_ != 0;
 }

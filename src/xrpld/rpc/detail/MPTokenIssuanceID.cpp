@@ -5,7 +5,9 @@ namespace xrpl {
 namespace RPC {
 
 bool
-canHaveMPTokenIssuanceID(std::shared_ptr<STTx const> const& serializedTx, TxMeta const& transactionMeta)
+canHaveMPTokenIssuanceID(
+    std::shared_ptr<STTx const> const& serializedTx,
+    TxMeta const& transactionMeta)
 {
     if (!serializedTx)
         return false;
@@ -15,18 +17,19 @@ canHaveMPTokenIssuanceID(std::shared_ptr<STTx const> const& serializedTx, TxMeta
         return false;
 
     // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
+    if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 
     return true;
 }
 
-std::optional<uint192>
+std::optional<MPTID>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
-        if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE || node.getFName() != sfCreatedNode)
+        if (node.getFieldU16(sfLedgerEntryType) != ltMPTOKEN_ISSUANCE ||
+            node.getFName() != sfCreatedNode)
             continue;
 
         auto const& mptNode = node.peekAtField(sfNewFields).downcast<STObject>();
@@ -45,7 +48,7 @@ insertMPTokenIssuanceID(
     if (!canHaveMPTokenIssuanceID(transaction, transactionMeta))
         return;
 
-    std::optional<uint192> result = getIDFromCreatedIssuance(transactionMeta);
+    std::optional<MPTID> result = getIDFromCreatedIssuance(transactionMeta);
     if (result)
         response[jss::mpt_issuance_id] = to_string(result.value());
 }

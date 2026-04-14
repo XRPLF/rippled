@@ -34,7 +34,7 @@ public:
             BEAST_EXPECT(ret[jss::error_message].asString() == "Missing field 'quote_asset'.");
 
             // invalid base_asset, quote_asset
-            std::vector<AnyValue> invalidAsset = {
+            std::vector<AnyValue> const invalidAsset = {
                 NoneTag,
                 1,
                 -1,
@@ -76,7 +76,7 @@ public:
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
-            std::vector<AnyValue> invalidDocument = {NoneTag, 1.2, -1, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidDocument = {NoneTag, 1.2, -1, "", "none", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
@@ -97,24 +97,29 @@ public:
 
             // oracles have wrong asset pair
             env.fund(XRP(1'000), owner);
-            Oracle oracle(
-                env, {.owner = owner, .series = {{"XRP", "EUR", 740, 1}}, .fee = static_cast<int>(baseFee.drops())});
+            Oracle const oracle(
+                env,
+                {.owner = owner,
+                 .series = {{"XRP", "EUR", 740, 1}},
+                 .fee = static_cast<int>(baseFee.drops())});
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid trim value
-            std::vector<AnyValue> invalidTrim = {NoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidTrim = {NoneTag, 0, 26, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTrim)
             {
-                ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}}, v);
+                ret =
+                    Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}}, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
 
             // invalid time threshold value
-            std::vector<AnyValue> invalidTime = {NoneTag, -1, 1.2, "", "none", "1.2"};
+            std::vector<AnyValue> const invalidTime = {NoneTag, -1, 1.2, "", "none", "1.2"};
             for (auto const& v : invalidTime)
             {
-                ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, oracle.documentID()}}}, std::nullopt, v);
+                ret = Oracle::aggregatePrice(
+                    env, "XRP", "USD", {{{owner, oracle.documentID()}}}, std::nullopt, v);
                 BEAST_EXPECT(ret[jss::error].asString() == "invalidParams");
             }
         }
@@ -129,7 +134,7 @@ public:
             {
                 Account const owner(std::to_string(i));
                 env.fund(XRP(1'000), owner);
-                Oracle oracle(env, {.owner = owner, .documentID = i, .fee = baseFee});
+                Oracle const oracle(env, {.owner = owner, .documentID = i, .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
             auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
@@ -151,7 +156,7 @@ public:
 
                 Account const owner{std::to_string(i)};
                 env.fund(XRP(1'000), owner);
-                Oracle oracle(
+                Oracle const oracle(
                     env,
                     {.owner = owner,
                      .documentID = rand(),
@@ -173,7 +178,7 @@ public:
                     // the global mantissa size. And since it's a thread-local,
                     // overriding it locally won't make a difference either.
                     // This will mean all RPC will use the default of "large".
-                    NumberMantissaScaleGuard mg(mantissaSize);
+                    NumberMantissaScaleGuard const mg(mantissaSize);
 
                     Env env(*this, feats);
                     OraclesData oracles;
@@ -226,7 +231,12 @@ public:
             for (int i = 0; i < 3; ++i)
             {
                 Oracle oracle(
-                    env, {.owner = oracles[i].first, .documentID = asUInt(*oracles[i].second), .fee = baseFee}, false);
+                    env,
+                    {.owner = oracles[i].first,
+                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
+                    false);
                 // push XRP/USD by more than three ledgers, so this price
                 // oracle is not included in the dataset
                 oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
@@ -236,7 +246,12 @@ public:
             for (int i = 3; i < 6; ++i)
             {
                 Oracle oracle(
-                    env, {.owner = oracles[i].first, .documentID = asUInt(*oracles[i].second), .fee = baseFee}, false);
+                    env,
+                    {.owner = oracles[i].first,
+                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
+                    false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
                 oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
@@ -271,7 +286,12 @@ public:
             for (int i = 0; i < oracles.size(); ++i)
             {
                 Oracle oracle(
-                    env, {.owner = oracles[i].first, .documentID = asUInt(*oracles[i].second), .fee = baseFee}, false);
+                    env,
+                    {.owner = oracles[i].first,
+                     // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
+                    false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
                 oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});

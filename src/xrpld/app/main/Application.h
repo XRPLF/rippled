@@ -18,16 +18,16 @@ namespace xrpl {
 
 namespace unl {
 class Manager;
-}
+}  // namespace unl
 namespace Resource {
 class Manager;
-}
+}  // namespace Resource
 namespace NodeStore {
 class Database;
 }  // namespace NodeStore
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
@@ -66,7 +66,7 @@ class NetworkOPs;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
-class PathRequests;
+class PathRequestManager;
 class PendingSaves;
 class PublicKey;
 class ServerHandler;
@@ -153,20 +153,20 @@ public:
     virtual int
     fdRequired() const = 0;
 
-    /** Retrieve the "wallet database" */
-    virtual DatabaseCon&
-    getWalletDB() = 0;
-
     /** Ensure that a newly-started validator does not sign proposals older
      * than the last ledger it persisted. */
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
 
-    virtual std::optional<uint256> const&
-    trapTxID() const = 0;
+    /** Returns the number of io_context (I/O worker) threads used by the application. */
+    virtual size_t
+    getNumberOfThreads() const = 0;
 };
 
 std::unique_ptr<Application>
-make_Application(std::unique_ptr<Config> config, std::unique_ptr<Logs> logs, std::unique_ptr<TimeKeeper> timeKeeper);
+make_Application(
+    std::unique_ptr<Config> config,
+    std::unique_ptr<Logs> logs,
+    std::unique_ptr<TimeKeeper> timeKeeper);
 
 }  // namespace xrpl

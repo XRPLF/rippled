@@ -191,7 +191,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -220,7 +220,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -249,7 +249,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -278,7 +278,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -306,7 +306,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -334,7 +334,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -362,7 +362,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -390,7 +390,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -445,7 +445,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -468,7 +468,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -491,7 +491,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -508,11 +508,14 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    testImport(std::string const& destBackendType, std::string const& srcBackendType, std::int64_t seedValue)
+    testImport(
+        std::string const& destBackendType,
+        std::string const& srcBackendType,
+        std::int64_t seedValue)
     {
         DummyScheduler scheduler;
 
-        beast::temp_dir node_db;
+        beast::temp_dir const node_db;
         Section srcParams;
         srcParams.set("type", srcBackendType);
         srcParams.set("path", node_db.path());
@@ -535,7 +538,7 @@ public:
                 Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
 
             // Set up the destination database
-            beast::temp_dir dest_db;
+            beast::temp_dir const dest_db;
             Section destParams;
             destParams.set("type", destBackendType);
             destParams.set("path", dest_db.path());
@@ -569,11 +572,11 @@ public:
     {
         DummyScheduler scheduler;
 
-        std::string s = "NodeStore backend '" + type + "'";
+        std::string const s = "NodeStore backend '" + type + "'";
 
         testcase(s);
 
-        beast::temp_dir node_db;
+        beast::temp_dir const node_db;
         Section nodeParams;
         nodeParams.set("type", type);
         nodeParams.set("path", node_db.path());
@@ -627,8 +630,8 @@ public:
         {
             // Verify default earliest ledger sequence
             {
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
                 BEAST_EXPECT(db->earliestLedgerSeq() == XRP_LEDGER_EARLIEST_SEQ);
             }
 
@@ -636,8 +639,8 @@ public:
             try
             {
                 nodeParams.set("earliest_seq", "0");
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> const db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {
@@ -647,8 +650,8 @@ public:
             {
                 // Set a valid earliest ledger sequence
                 nodeParams.set("earliest_seq", "1");
-                std::unique_ptr<Database> db =
-                    Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
 
                 // Verify database uses the earliest ledger sequence setting
                 BEAST_EXPECT(db->earliestLedgerSeq() == 1);
@@ -659,8 +662,8 @@ public:
             {
                 // Set to default earliest ledger sequence
                 nodeParams.set("earliest_seq", std::to_string(XRP_LEDGER_EARLIEST_SEQ));
-                std::unique_ptr<Database> db2 =
-                    Manager::instance().make_Database(megabytes(4), scheduler, 2, nodeParams, journal_);
+                std::unique_ptr<Database> const db2 = Manager::instance().make_Database(
+                    megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
             {

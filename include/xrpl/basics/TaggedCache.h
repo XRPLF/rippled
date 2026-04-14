@@ -175,12 +175,14 @@ private:
     struct Stats
     {
         template <class Handler>
-        Stats(std::string const& prefix, Handler const& handler, beast::insight::Collector::ptr const& collector)
+        Stats(
+            std::string const& prefix,
+            Handler const& handler,
+            beast::insight::Collector::ptr const& collector)
             : hook(collector->make_hook(handler))
             , size(collector->make_gauge(prefix, "size"))
             , hit_rate(collector->make_gauge(prefix, "hit_rate"))
-            , hits(0)
-            , misses(0)
+
         {
         }
 
@@ -188,8 +190,8 @@ private:
         beast::insight::Gauge size;
         beast::insight::Gauge hit_rate;
 
-        std::size_t hits;
-        std::size_t misses;
+        std::size_t hits{0};
+        std::size_t misses{0};
     };
 
     class KeyOnlyEntry
@@ -197,7 +199,8 @@ private:
     public:
         clock_type::time_point last_access;
 
-        explicit KeyOnlyEntry(clock_type::time_point const& last_access_) : last_access(last_access_)
+        explicit KeyOnlyEntry(clock_type::time_point const& last_access_)
+            : last_access(last_access_)
         {
         }
 
@@ -290,10 +293,10 @@ private:
     clock_type::duration const m_target_age;
 
     // Number of items cached
-    int m_cache_count;
+    int m_cache_count{0};
     cache_type m_cache;  // Hold strong reference to recent objects
-    std::uint64_t m_hits;
-    std::uint64_t m_misses;
+    std::uint64_t m_hits{0};
+    std::uint64_t m_misses{0};
 };
 
 }  // namespace xrpl

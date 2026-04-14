@@ -1,8 +1,8 @@
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
 namespace xrpl {
 
@@ -13,7 +13,7 @@ public:
     run() override
     {
         Config d;  // get a default configuration object
-        LoadFeeTrack l;
+        LoadFeeTrack const l;
         {
             Fees const fees = [&]() {
                 Fees f;

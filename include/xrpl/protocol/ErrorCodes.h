@@ -153,7 +153,7 @@ enum warning_code_i {
     warnRPC_AMENDMENT_BLOCKED = 1002,
     warnRPC_EXPIRED_VALIDATOR_LIST = 1003,
     // unused = 1004
-    warnRPC_FIELDS_DEPRECATED = 2004,  // rippled needs to maintain
+    warnRPC_FIELDS_DEPRECATED = 2004,  // xrpld needs to maintain
                                        // compatibility with Clio on this code.
 };
 
@@ -167,7 +167,8 @@ namespace RPC {
 struct ErrorInfo
 {
     // Default ctor needed to produce an empty std::array during constexpr eval.
-    constexpr ErrorInfo() : code(rpcUNKNOWN), token("unknown"), message("An unknown error code."), http_status(200)
+    constexpr ErrorInfo()
+        : code(rpcUNKNOWN), token("unknown"), message("An unknown error code."), http_status(200)
     {
     }
 
@@ -176,7 +177,11 @@ struct ErrorInfo
     {
     }
 
-    constexpr ErrorInfo(error_code_i code_, char const* token_, char const* message_, int http_status_)
+    constexpr ErrorInfo(
+        error_code_i code_,
+        char const* token_,
+        char const* message_,
+        int http_status_)
         : code(code_), token(token_), message(message_), http_status(http_status_)
     {
     }

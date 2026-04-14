@@ -49,9 +49,8 @@ public:
 
         explicit Child(OverlayImpl& overlay);
 
-        virtual ~Child();
-
     public:
+        virtual ~Child();
         virtual void
         stop() = 0;
     };
@@ -98,7 +97,7 @@ private:
     hash_map<Peer::id_t, std::weak_ptr<PeerImp>> ids_;
     Resolver& m_resolver;
     std::atomic<Peer::id_t> next_id_;
-    int timer_count_;
+    int timer_count_{0};
     std::atomic<uint64_t> jqTransOverflow_{0};
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
@@ -157,8 +156,10 @@ public:
     }
 
     Handoff
-    onHandoff(std::unique_ptr<stream_type>&& bundle, http_request_type&& request, endpoint_type remote_endpoint)
-        override;
+    onHandoff(
+        std::unique_ptr<stream_type>&& bundle,
+        http_request_type&& request,
+        endpoint_type remote_endpoint) override;
 
     void
     connect(beast::IP::Endpoint const& remote_endpoint) override;
@@ -191,7 +192,8 @@ public:
         std::size_t& disabled,
         std::size_t& enabledInSkip) const;
 
-    void checkTracking(std::uint32_t) override;
+    void
+    checkTracking(std::uint32_t) override;
 
     std::shared_ptr<Peer>
     findPeerByShortID(Peer::id_t const& id) const override;
@@ -252,7 +254,7 @@ public:
     {
         std::vector<std::weak_ptr<PeerImp>> wp;
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
 
             // Iterate over a copy of the peer list because peer
             // destruction can invalidate iterators.
@@ -271,7 +273,9 @@ public:
 
     // Called when TMManifests is received from a peer
     void
-    onManifests(std::shared_ptr<protocol::TMManifests> const& m, std::shared_ptr<PeerImp> const& from);
+    onManifests(
+        std::shared_ptr<protocol::TMManifests> const& m,
+        std::shared_ptr<PeerImp> const& from);
 
     static bool
     isPeerUpgrade(http_request_type const& request);
@@ -379,7 +383,11 @@ public:
     /** Overload to reduce allocation in case of single peer
      */
     void
-    updateSlotAndSquelch(uint256 const& key, PublicKey const& validator, Peer::id_t peer, protocol::MessageType type);
+    updateSlotAndSquelch(
+        uint256 const& key,
+        PublicKey const& validator,
+        Peer::id_t peer,
+        protocol::MessageType type);
 
     /** Called when the peer is deleted. If the peer was selected to be the
      * source of messages from the validator then squelched peers have to be
@@ -408,7 +416,8 @@ public:
 
 private:
     void
-    squelch(PublicKey const& validator, Peer::id_t const id, std::uint32_t squelchDuration) const override;
+    squelch(PublicKey const& validator, Peer::id_t const id, std::uint32_t squelchDuration)
+        const override;
 
     void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override;
@@ -419,7 +428,7 @@ private:
         http_request_type const& request,
         address_type remote_address);
 
-    std::shared_ptr<Writer>
+    static std::shared_ptr<Writer>
     makeErrorResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
@@ -464,7 +473,7 @@ private:
         Controlled through the config section [crawl] overlay=[0|1]
     */
     Json::Value
-    getOverlayInfo();
+    getOverlayInfo() const;
 
     /** Returns information about the local server.
         Reported through the /crawl API
@@ -512,7 +521,7 @@ private:
 
     /** Send once a second transactions' hashes aggregated by peers. */
     void
-    sendTxQueue();
+    sendTxQueue() const;
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator */
@@ -563,9 +572,10 @@ private:
     collect_metrics()
     {
         auto counts = m_traffic.getCounts();
-        std::lock_guard lock(m_statsMutex);
+        std::lock_guard const lock(m_statsMutex);
         XRPL_ASSERT(
-            counts.size() == m_stats.trafficGauges.size(), "xrpl::OverlayImpl::collect_metrics : counts size do match");
+            counts.size() == m_stats.trafficGauges.size(),
+            "xrpl::OverlayImpl::collect_metrics : counts size do match");
 
         for (auto const& [key, value] : counts)
         {

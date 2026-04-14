@@ -25,7 +25,8 @@ public:
     std::string const m_name;
     Collector::ptr m_collector;
 
-    GroupImp(std::string const& name_, Collector::ptr const& collector) : m_name(name_), m_collector(collector)
+    GroupImp(std::string const& name_, Collector::ptr const& collector)
+        : m_name(name_), m_collector(collector)
     {
     }
 
@@ -97,7 +98,7 @@ public:
     Group::ptr const&
     get(std::string const& name) override
     {
-        std::pair<Items::iterator, bool> result(m_items.emplace(name, Group::ptr()));
+        std::pair<Items::iterator, bool> const result(m_items.emplace(name, Group::ptr()));
         Group::ptr& group(result.first->second);
         if (result.second)
             group = std::make_shared<GroupImp>(name, m_collector);

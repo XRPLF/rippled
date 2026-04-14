@@ -3,26 +3,31 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/jss.h>
 
-#include <initializer_list>
+#include <vector>
 
 namespace xrpl {
 
-LedgerFormats::LedgerFormats()
+std::vector<SOElement> const&
+LedgerFormats::getCommonFields()
 {
-    // Fields shared by all ledger formats:
-    static std::initializer_list<SOElement> const commonFields{
+    static auto const commonFields = std::vector<SOElement>{
         {sfLedgerIndex, soeOPTIONAL},
         {sfLedgerEntryType, soeREQUIRED},
         {sfFlags, soeREQUIRED},
     };
+    return commonFields;
+}
 
+LedgerFormats::LedgerFormats()
+{
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
 #define UNWRAP(...) __VA_ARGS__
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) add(jss::name, tag, UNWRAP fields, commonFields);
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
+    add(jss::name, tag, UNWRAP fields, getCommonFields());
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
@@ -35,7 +40,7 @@ LedgerFormats::LedgerFormats()
 LedgerFormats const&
 LedgerFormats::getInstance()
 {
-    static LedgerFormats instance;
+    static LedgerFormats const instance;
     return instance;
 }
 

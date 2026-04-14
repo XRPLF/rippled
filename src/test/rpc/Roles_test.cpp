@@ -12,7 +12,7 @@ namespace test {
 
 class Roles_test : public beast::unit_test::suite
 {
-    bool
+    static bool
     isValidIpAddress(std::string const& addr)
     {
         boost::system::error_code ec;
@@ -29,7 +29,8 @@ class Roles_test : public beast::unit_test::suite
             Env env(*this);
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "admin");
-            BEAST_EXPECT(makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
+            BEAST_EXPECT(
+                makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
         }
         {
             Env env{*this, envconfig(no_admin)};
@@ -42,6 +43,7 @@ class Roles_test : public beast::unit_test::suite
             Env env{*this, envconfig(secure_gateway)};
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
+            BEAST_EXPECT(!env.rpc("ping")["result"].isMember("ip"));
             auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
             BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 
@@ -225,7 +227,8 @@ class Roles_test : public beast::unit_test::suite
         {
             Env env{*this, envconfig(admin_localnet)};
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "admin");
-            BEAST_EXPECT(makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
+            BEAST_EXPECT(
+                makeWSClient(env.app().config())->invoke("ping")["result"]["unlimited"].asBool());
         }
 
         {

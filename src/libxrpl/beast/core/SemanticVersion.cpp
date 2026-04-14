@@ -29,7 +29,7 @@ print_identifiers(SemanticVersion::identifier_list const& list)
 bool
 isNumeric(std::string const& s)
 {
-    int n;
+    int n = 0;
 
     // Must be convertible to an integer
     if (!lexicalCastChecked(n, s))
@@ -58,16 +58,17 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto left_iter = std::find_if_not(
-        input.begin(), input.end(), [](std::string::value_type c) { return std::isdigit(c, std::locale::classic()); });
+    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
+        return std::isdigit(c, std::locale::classic());
+    });
 
-    std::string item(input.begin(), left_iter);
+    std::string const item(input.begin(), left_iter);
 
     // Must not be empty
     if (item.empty())
         return false;
 
-    int n;
+    int n = 0;
 
     // Must be convertible to an integer
     if (!lexicalCastChecked(n, item))
@@ -98,7 +99,8 @@ extract_identifier(std::string& value, bool allowLeadingZeroes, std::string& inp
     if (!allowLeadingZeroes && input[0] == '0')
         return false;
 
-    auto last = input.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
+    auto last =
+        input.find_first_not_of("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-");
 
     // Must not be empty
     if (last == 0)
@@ -110,7 +112,10 @@ extract_identifier(std::string& value, bool allowLeadingZeroes, std::string& inp
 }
 
 bool
-extract_identifiers(SemanticVersion::identifier_list& identifiers, bool allowLeadingZeroes, std::string& input)
+extract_identifiers(
+    SemanticVersion::identifier_list& identifiers,
+    bool allowLeadingZeroes,
+    std::string& input)
 {
     if (input.empty())
         return false;
@@ -133,18 +138,19 @@ SemanticVersion::SemanticVersion() : majorVersion(0), minorVersion(0), patchVers
 {
 }
 
-SemanticVersion::SemanticVersion(std::string const& version) : SemanticVersion()
+SemanticVersion::SemanticVersion(std::string_view version) : SemanticVersion()
 {
     if (!parse(version))
         throw std::invalid_argument("invalid version string");
 }
 
 bool
-SemanticVersion::parse(std::string const& input)
+SemanticVersion::parse(std::string_view input)
 {
     // May not have leading or trailing whitespace
-    auto left_iter = std::find_if_not(
-        input.begin(), input.end(), [](std::string::value_type c) { return std::isspace(c, std::locale::classic()); });
+    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
+        return std::isspace(c, std::locale::classic());
+    });
 
     auto right_iter = std::find_if_not(input.rbegin(), input.rend(), [](std::string::value_type c) {
                           return std::isspace(c, std::locale::classic());
@@ -206,7 +212,8 @@ SemanticVersion::print() const
 {
     std::string s;
 
-    s = std::to_string(majorVersion) + "." + std::to_string(minorVersion) + "." + std::to_string(patchVersion);
+    s = std::to_string(majorVersion) + "." + std::to_string(minorVersion) + "." +
+        std::to_string(patchVersion);
 
     if (!preReleaseIdentifiers.empty())
     {
@@ -227,45 +234,71 @@ int
 compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
 {
     if (lhs.majorVersion > rhs.majorVersion)
+    {
         return 1;
-    else if (lhs.majorVersion < rhs.majorVersion)
+    }
+    if (lhs.majorVersion < rhs.majorVersion)
+    {
         return -1;
+    }
 
     if (lhs.minorVersion > rhs.minorVersion)
+    {
         return 1;
-    else if (lhs.minorVersion < rhs.minorVersion)
+    }
+    if (lhs.minorVersion < rhs.minorVersion)
+    {
         return -1;
+    }
 
     if (lhs.patchVersion > rhs.patchVersion)
+    {
         return 1;
-    else if (lhs.patchVersion < rhs.patchVersion)
+    }
+    if (lhs.patchVersion < rhs.patchVersion)
+    {
         return -1;
+    }
 
     if (lhs.isPreRelease() || rhs.isPreRelease())
     {
         // Pre-releases have a lower precedence
         if (lhs.isRelease() && rhs.isPreRelease())
+        {
             return 1;
-        else if (lhs.isPreRelease() && rhs.isRelease())
+        }
+        if (lhs.isPreRelease() && rhs.isRelease())
+        {
             return -1;
+        }
 
         // Compare pre-release identifiers
-        for (int i = 0; i < std::max(lhs.preReleaseIdentifiers.size(), rhs.preReleaseIdentifiers.size()); ++i)
+        for (int i = 0;
+             i < std::max(lhs.preReleaseIdentifiers.size(), rhs.preReleaseIdentifiers.size());
+             ++i)
         {
             // A larger list of identifiers has a higher precedence
             if (i >= rhs.preReleaseIdentifiers.size())
+            {
                 return 1;
-            else if (i >= lhs.preReleaseIdentifiers.size())
+            }
+            if (i >= lhs.preReleaseIdentifiers.size())
+            {
                 return -1;
+            }
 
             std::string const& left(lhs.preReleaseIdentifiers[i]);
             std::string const& right(rhs.preReleaseIdentifiers[i]);
 
             // Numeric identifiers have lower precedence
             if (!isNumeric(left) && isNumeric(right))
+            {
                 return 1;
-            else if (isNumeric(left) && !isNumeric(right))
+            }
+            if (isNumeric(left) && !isNumeric(right))
+            {
                 return -1;
+            }
 
             if (isNumeric(left))
             {
@@ -275,15 +308,19 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
                 int const iRight(lexicalCastThrow<int>(right));
 
                 if (iLeft > iRight)
+                {
                     return 1;
-                else if (iLeft < iRight)
+                }
+                if (iLeft < iRight)
+                {
                     return -1;
+                }
             }
             else
             {
                 XRPL_ASSERT(!isNumeric(right), "beast::compare : both inputs non-numeric");
 
-                int result = left.compare(right);
+                int const result = left.compare(right);
 
                 if (result != 0)
                     return result;

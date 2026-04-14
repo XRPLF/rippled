@@ -15,10 +15,6 @@ TimeoutCounter::TimeoutCounter(
     : app_(app)
     , journal_(journal)
     , hash_(hash)
-    , timeouts_(0)
-    , complete_(false)
-    , failed_(false)
-    , progress_(false)
     , timerInterval_(interval)
     , queueJobParameter_(std::move(jobParameter))
     , timer_(app_.getIOContext())
@@ -52,17 +48,20 @@ TimeoutCounter::queueJob(ScopedLockType& sl)
     if (isDone())
         return;
     if (queueJobParameter_.jobLimit &&
-        app_.getJobQueue().getJobCountTotal(queueJobParameter_.jobType) >= queueJobParameter_.jobLimit)
+        app_.getJobQueue().getJobCountTotal(queueJobParameter_.jobType) >=
+            queueJobParameter_.jobLimit)
     {
-        JLOG(journal_.debug()) << "Deferring " << queueJobParameter_.jobName << " timer due to load";
+        JLOG(journal_.debug()) << "Deferring " << queueJobParameter_.jobName
+                               << " timer due to load";
         setTimer(sl);
         return;
     }
 
-    app_.getJobQueue().addJob(queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()]() {
-        if (auto sptr = wptr.lock(); sptr)
-            sptr->invokeOnTimer();
-    });
+    app_.getJobQueue().addJob(
+        queueJobParameter_.jobType, queueJobParameter_.jobName, [wptr = pmDowncast()]() {
+            if (auto sptr = wptr.lock(); sptr)
+                sptr->invokeOnTimer();
+        });
 }
 
 void
@@ -93,7 +92,7 @@ TimeoutCounter::invokeOnTimer()
 void
 TimeoutCounter::cancel()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     if (!isDone())
     {
         failed_ = true;

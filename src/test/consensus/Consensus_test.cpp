@@ -61,61 +61,79 @@ public:
         // Disputes still in doubt
         //
         // Not enough time has elapsed
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 2s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 2s, false, p, true, journal_));
 
         // If not enough peers have proposed, ensure
         // more time for proposals
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 4s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 4s, false, p, true, journal_));
 
         // Enough time has elapsed and we all agree
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 2, 2, 0, 3s, 10s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 2, 2, 0, 3s, 10s, false, p, true, journal_));
 
         // Enough time has elapsed and we don't yet agree
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 1, 0, 3s, 10s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 1, 0, 3s, 10s, false, p, true, journal_));
 
         // Our peers have moved on
         // Enough time has elapsed and we all agree
-        BEAST_EXPECT(ConsensusState::MovedOn == checkConsensus(10, 2, 1, 8, 3s, 10s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::MovedOn ==
+            checkConsensus(10, 2, 1, 8, 3s, 10s, false, p, true, journal_));
 
         // If no peers, don't agree until time has passed.
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(0, 0, 0, 0, 3s, 10s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(0, 0, 0, 0, 3s, 10s, false, p, true, journal_));
 
         // Agree if no peers and enough time has passed.
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(0, 0, 0, 0, 3s, 16s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(0, 0, 0, 0, 3s, 16s, false, p, true, journal_));
 
         // Expire if too much time has passed without agreement
-        BEAST_EXPECT(ConsensusState::Expired == checkConsensus(10, 8, 1, 0, 1s, 19s, false, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Expired ==
+            checkConsensus(10, 8, 1, 0, 1s, 19s, false, p, true, journal_));
 
         ///////////////
         // Stalled
         //
         // Not enough time has elapsed
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 2s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 2s, true, p, true, journal_));
 
         // If not enough peers have proposed, ensure
         // more time for proposals
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 4s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(10, 2, 2, 0, 3s, 4s, true, p, true, journal_));
 
         // Enough time has elapsed and we all agree
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 2, 2, 0, 3s, 10s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 2, 2, 0, 3s, 10s, true, p, true, journal_));
 
         // Enough time has elapsed and we don't yet agree, but there's nothing
         // left to dispute
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 2, 1, 0, 3s, 10s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 2, 1, 0, 3s, 10s, true, p, true, journal_));
 
         // Our peers have moved on
         // Enough time has elapsed and we all agree, nothing left to dispute
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 2, 1, 8, 3s, 10s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 2, 1, 8, 3s, 10s, true, p, true, journal_));
 
         // If no peers, don't agree until time has passed.
-        BEAST_EXPECT(ConsensusState::No == checkConsensus(0, 0, 0, 0, 3s, 10s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::No == checkConsensus(0, 0, 0, 0, 3s, 10s, true, p, true, journal_));
 
         // Agree if no peers and enough time has passed.
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(0, 0, 0, 0, 3s, 16s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(0, 0, 0, 0, 3s, 16s, true, p, true, journal_));
 
         // We are done if there's nothing left to dispute, no matter how much
         // time has passed
-        BEAST_EXPECT(ConsensusState::Yes == checkConsensus(10, 8, 1, 0, 1s, 19s, true, p, true, journal_));
+        BEAST_EXPECT(
+            ConsensusState::Yes == checkConsensus(10, 8, 1, 0, 1s, 19s, true, p, true, journal_));
     }
 
     void
@@ -126,7 +144,7 @@ public:
         testcase("standalone");
 
         Sim s;
-        PeerGroup peers = s.createGroup(1);
+        PeerGroup const peers = s.createGroup(1);
         Peer* peer = peers[0];
         peer->targetLedgers = 1;
         peer->start();
@@ -139,7 +157,7 @@ public:
         BEAST_EXPECT(peer->prevLedgerID() == lcl.id());
         BEAST_EXPECT(lcl.seq() == Ledger::Seq{1});
         BEAST_EXPECT(lcl.txs().size() == 1);
-        BEAST_EXPECT(lcl.txs().find(Tx{1}) != lcl.txs().end());
+        BEAST_EXPECT(lcl.txs().contains(Tx{1}));
         BEAST_EXPECT(peer->prevProposers == 0);
     }
 
@@ -175,7 +193,7 @@ public:
                 BEAST_EXPECT(peer->prevProposers == peers.size() - 1);
                 // All transactions were accepted
                 for (std::uint32_t i = 0; i < peers.size(); ++i)
-                    BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
+                    BEAST_EXPECT(lcl.txs().contains(Tx{i}));
             }
         }
     }
@@ -217,7 +235,7 @@ public:
             // All peers are in sync even with a slower peer 0
             if (BEAST_EXPECT(sim.synchronized()))
             {
-                for (Peer* peer : network)
+                for (Peer const* peer : network)
                 {
                     auto const& lcl = peer->lastClosedLedger;
                     BEAST_EXPECT(lcl.id() == peer->prevLedgerID());
@@ -226,12 +244,12 @@ public:
                     BEAST_EXPECT(peer->prevProposers == network.size() - 1);
                     BEAST_EXPECT(peer->prevRoundTime == network[0]->prevRoundTime);
 
-                    BEAST_EXPECT(lcl.txs().find(Tx{0}) == lcl.txs().end());
+                    BEAST_EXPECT(not lcl.txs().contains(Tx{0}));
                     for (std::uint32_t i = 2; i < network.size(); ++i)
-                        BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
+                        BEAST_EXPECT(lcl.txs().contains(Tx{i}));
 
                     // Tx 0 didn't make it
-                    BEAST_EXPECT(peer->openTxs.find(Tx{0}) != peer->openTxs.end());
+                    BEAST_EXPECT(peer->openTxs.contains(Tx{0}));
                 }
             }
         }
@@ -274,28 +292,32 @@ public:
                     // Verify all peers have same LCL but are missing
                     // transaction 0,1 which was not received by all peers
                     // before the ledger closed
-                    for (Peer* peer : network)
+                    for (Peer const* peer : network)
                     {
                         // Closed ledger has all but transaction 0,1
                         auto const& lcl = peer->lastClosedLedger;
                         BEAST_EXPECT(lcl.seq() == Ledger::Seq{1});
-                        BEAST_EXPECT(lcl.txs().find(Tx{0}) == lcl.txs().end());
-                        BEAST_EXPECT(lcl.txs().find(Tx{1}) == lcl.txs().end());
+                        BEAST_EXPECT(not lcl.txs().contains(Tx{0}));
+                        BEAST_EXPECT(not lcl.txs().contains(Tx{1}));
                         for (std::uint32_t i = slow.size(); i < network.size(); ++i)
-                            BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
+                            BEAST_EXPECT(lcl.txs().contains(Tx{i}));
 
                         // Tx 0-1 didn't make it
-                        BEAST_EXPECT(peer->openTxs.find(Tx{0}) != peer->openTxs.end());
-                        BEAST_EXPECT(peer->openTxs.find(Tx{1}) != peer->openTxs.end());
+                        BEAST_EXPECT(peer->openTxs.contains(Tx{0}));
+                        BEAST_EXPECT(peer->openTxs.contains(Tx{1}));
                     }
 
                     Peer const* slowPeer = slow[0];
                     if (isParticipant)
+                    {
                         BEAST_EXPECT(slowPeer->prevProposers == network.size() - 1);
+                    }
                     else
+                    {
                         BEAST_EXPECT(slowPeer->prevProposers == fast.size());
+                    }
 
-                    for (Peer* peer : fast)
+                    for (Peer const* peer : fast)
                     {
                         // Due to the network link delay settings
                         //    Peer 0 initially proposes {0}
@@ -366,8 +388,8 @@ public:
         Sim sim;
 
         PeerGroup groupA = sim.createGroup(2);
-        PeerGroup groupB = sim.createGroup(2);
-        PeerGroup groupC = sim.createGroup(2);
+        PeerGroup const groupB = sim.createGroup(2);
+        PeerGroup const groupC = sim.createGroup(2);
         PeerGroup network = groupA + groupB + groupC;
 
         network.trust(network);
@@ -375,7 +397,7 @@ public:
 
         // Run consensus without skew until we have a short close time
         // resolution
-        Peer* firstPeer = *groupA.begin();
+        Peer const* firstPeer = *groupA.begin();
         while (firstPeer->lastClosedLedger.closeTimeResolution() >= parms.proposeFRESHNESS)
             sim.run(1);
 
@@ -390,7 +412,7 @@ public:
         // All nodes agreed to disagree on the close time
         if (BEAST_EXPECT(sim.synchronized()))
         {
-            for (Peer* peer : network)
+            for (Peer const* peer : network)
                 BEAST_EXPECT(!peer->lastClosedLedger.closeAgree());
         }
     }
@@ -435,13 +457,13 @@ public:
             Sim sim;
 
             PeerGroup minority = sim.createGroup(2);
-            PeerGroup majorityA = sim.createGroup(3);
-            PeerGroup majorityB = sim.createGroup(5);
+            PeerGroup const majorityA = sim.createGroup(3);
+            PeerGroup const majorityB = sim.createGroup(5);
 
             PeerGroup majority = majorityA + majorityB;
-            PeerGroup network = minority + majority;
+            PeerGroup const network = minority + majority;
 
-            SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+            SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
             minority.trustAndConnect(minority + majorityA, delay);
             majority.trustAndConnect(majority, delay);
 
@@ -534,10 +556,10 @@ public:
 
             Sim sim;
             PeerGroup loner = sim.createGroup(1);
-            PeerGroup friends = sim.createGroup(3);
+            PeerGroup const friends = sim.createGroup(3);
             loner.trust(loner + friends);
 
-            PeerGroup others = sim.createGroup(6);
+            PeerGroup const others = sim.createGroup(6);
             PeerGroup clique = friends + others;
             clique.trust(clique);
 
@@ -559,7 +581,7 @@ public:
             sim.run(2);
 
             // Check all peers recovered
-            for (Peer* p : network)
+            for (Peer const* p : network)
                 BEAST_EXPECT(p->prevLedgerID() == network[0]->prevLedgerID());
         }
     }
@@ -574,7 +596,7 @@ public:
         // This is a specialized test engineered to yield ledgers with different
         // close times even though the peers believe they had close time
         // consensus on the ledger.
-        ConsensusParms parms;
+        ConsensusParms const parms;
 
         Sim sim;
 
@@ -612,7 +634,7 @@ public:
         NetClock::duration when = network[0]->now().time_since_epoch();
 
         // Check we are before the 30s to 20s transition
-        NetClock::duration resolution = network[0]->lastClosedLedger.closeTimeResolution();
+        NetClock::duration const resolution = network[0]->lastClosedLedger.closeTimeResolution();
         BEAST_EXPECT(resolution == NetClock::duration{30s});
 
         while (((when % NetClock::duration{30s}) != NetClock::duration{15s}) ||
@@ -628,7 +650,7 @@ public:
         {
             // close time should be ahead of clock time since we engineered
             // the close time to round up
-            for (Peer* peer : network)
+            for (Peer const* peer : network)
             {
                 BEAST_EXPECT(peer->lastClosedLedger.closeTime() > peer->now());
                 BEAST_EXPECT(peer->lastClosedLedger.closeAgree());
@@ -670,26 +692,26 @@ public:
         using namespace std::chrono;
         testcase("fork");
 
-        std::uint32_t numPeers = 10;
+        std::uint32_t const numPeers = 10;
         // Vary overlap between two UNLs
         for (std::uint32_t overlap = 0; overlap <= numPeers; ++overlap)
         {
             ConsensusParms const parms{};
             Sim sim;
 
-            std::uint32_t numA = (numPeers - overlap) / 2;
-            std::uint32_t numB = numPeers - numA - overlap;
+            std::uint32_t const numA = (numPeers - overlap) / 2;
+            std::uint32_t const numB = numPeers - numA - overlap;
 
-            PeerGroup aOnly = sim.createGroup(numA);
-            PeerGroup bOnly = sim.createGroup(numB);
-            PeerGroup commonOnly = sim.createGroup(overlap);
+            PeerGroup const aOnly = sim.createGroup(numA);
+            PeerGroup const bOnly = sim.createGroup(numB);
+            PeerGroup const commonOnly = sim.createGroup(overlap);
 
             PeerGroup a = aOnly + commonOnly;
             PeerGroup b = bOnly + commonOnly;
 
-            PeerGroup network = a + b;
+            PeerGroup const network = a + b;
 
-            SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+            SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
             a.trustAndConnect(a, delay);
             b.trustAndConnect(b, delay);
 
@@ -699,7 +721,7 @@ public:
             {
                 // Nodes have only seen transactions from their neighbors
                 peer->openTxs.insert(Tx{static_cast<std::uint32_t>(peer->id)});
-                for (Peer* to : sim.trustGraph.trustedPeers(peer))
+                for (Peer const* to : sim.trustGraph.trustedPeers(peer))
                     peer->openTxs.insert(Tx{static_cast<std::uint32_t>(to->id)});
             }
             sim.run(1);
@@ -708,7 +730,9 @@ public:
             // Since the overlapped nodes have a UNL that is the union of the
             // two cliques, the maximum sized UNL list is the number of peers
             if (overlap > 0.4 * numPeers)
+            {
                 BEAST_EXPECT(sim.synchronized());
+            }
             else
             {
                 // Even if we do fork, there shouldn't be more than 3 ledgers
@@ -735,7 +759,7 @@ public:
         validators.trust(validators);
         center.trust(validators);
 
-        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
         validators.connect(center, delay);
 
         center[0]->runAsValidator = false;
@@ -842,7 +866,7 @@ public:
         Sim sim;
 
         // Goes A->B->D
-        PeerGroup groupABD = sim.createGroup(2);
+        PeerGroup const groupABD = sim.createGroup(2);
         // Single node that initially fully validates C before the split
         PeerGroup groupCfast = sim.createGroup(1);
         // Generates C, but fails to fully validate before the split
@@ -851,8 +875,8 @@ public:
         PeerGroup groupNotFastC = groupABD + groupCsplit;
         PeerGroup network = groupABD + groupCsplit + groupCfast;
 
-        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
-        SimDuration fDelay = round<milliseconds>(0.1 * parms.ledgerGRANULARITY);
+        SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration const fDelay = round<milliseconds>(0.1 * parms.ledgerGRANULARITY);
 
         network.trust(network);
         // C must have a shorter delay to see all the validations before the
@@ -963,14 +987,14 @@ public:
 
         ConsensusParms const parms{};
         Sim sim;
-        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        SimDuration const delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
 
         PeerGroup behind = sim.createGroup(3);
-        PeerGroup ahead = sim.createGroup(2);
+        PeerGroup const ahead = sim.createGroup(2);
         PeerGroup network = ahead + behind;
 
         hash_set<Peer::NodeKey_t> trustedKeys;
-        for (Peer* p : network)
+        for (Peer const* p : network)
             trustedKeys.insert(p->key);
         for (Peer* p : network)
             p->trustedKeys = trustedKeys;
@@ -1005,8 +1029,8 @@ public:
         // Simulate clients submitting 1 tx every 5 seconds to a random
         // validator
         Rate const rate{1, 5s};
-        auto peerSelector =
-            makeSelector(network.begin(), network.end(), std::vector<double>(network.size(), 1.), sim.rng);
+        auto peerSelector = makeSelector(
+            network.begin(), network.end(), std::vector<double>(network.size(), 1.), sim.rng);
         auto txSubmitter = makeSubmitter(
             ConstantDistribution{rate.inv()},
             sim.scheduler.now(),
@@ -1037,7 +1061,7 @@ public:
         Tx const txFollowingTrue{97};
         Tx const txFollowingFalse{96};
         int const numPeers = 100;
-        ConsensusParms p;
+        ConsensusParms const p;
         std::size_t peersUnchanged = 0;
 
         auto logs = std::make_unique<Logs>(beast::severities::kError);
@@ -1082,7 +1106,7 @@ public:
             BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged, j, clog));
-            BEAST_EXPECT(clog->str() == "");
+            BEAST_EXPECT(clog->str().empty());
 
             // I'm in the majority, my vote should not change
             BEAST_EXPECT(!proposingTrue.updateVote(5, true, p));
@@ -1100,7 +1124,7 @@ public:
             BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged, j, clog));
-            BEAST_EXPECT(clog->str() == "");
+            BEAST_EXPECT(clog->str().empty());
 
             // Right now, the vote is 51%. The requirement is about to jump to
             // 65%
@@ -1194,7 +1218,7 @@ public:
             BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged, j, clog));
             BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged, j, clog));
-            BEAST_EXPECT(clog->str() == "");
+            BEAST_EXPECT(clog->str().empty());
 
             // Threshold jumps to 95%
             BEAST_EXPECT(proposingTrue.updateVote(220, true, p));
@@ -1235,29 +1259,46 @@ public:
                 BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged, j, clog));
                 BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged, j, clog));
                 BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged, j, clog));
-                BEAST_EXPECT(clog->str() == "");
+                BEAST_EXPECT(clog->str().empty());
             }
 
-            auto expectStalled =
-                [this, &clog](int txid, bool ourVote, int ourTime, int peerTime, int support, std::uint32_t line) {
-                    using namespace std::string_literals;
+            auto expectStalled = [this, &clog](
+                                     int txid,
+                                     bool ourVote,
+                                     int ourTime,
+                                     int peerTime,
+                                     int support,
+                                     std::uint32_t line) {
+                using namespace std::string_literals;
 
-                    auto const s = clog->str();
-                    expect(s.find("stalled"), s, __FILE__, line);
-                    expect(s.starts_with("Transaction "s + std::to_string(txid)), s, __FILE__, line);
-                    expect(s.find("voting "s + (ourVote ? "YES" : "NO")) != s.npos, s, __FILE__, line);
-                    expect(s.find("for "s + std::to_string(ourTime) + " rounds."s) != s.npos, s, __FILE__, line);
-                    expect(s.find("votes in "s + std::to_string(peerTime) + " rounds.") != s.npos, s, __FILE__, line);
-                    expect(s.ends_with("has "s + std::to_string(support) + "% support. "s), s, __FILE__, line);
-                    clog = std::make_unique<std::stringstream>();
-                };
+                auto const s = clog->str();
+                expect(s.find("stalled"), s, __FILE__, line);
+                expect(s.starts_with("Transaction "s + std::to_string(txid)), s, __FILE__, line);
+                expect(s.find("voting "s + (ourVote ? "YES" : "NO")) != s.npos, s, __FILE__, line);
+                expect(
+                    s.find("for "s + std::to_string(ourTime) + " rounds."s) != s.npos,
+                    s,
+                    __FILE__,
+                    line);
+                expect(
+                    s.find("votes in "s + std::to_string(peerTime) + " rounds.") != s.npos,
+                    s,
+                    __FILE__,
+                    line);
+                expect(
+                    s.ends_with("has "s + std::to_string(support) + "% support. "s),
+                    s,
+                    __FILE__,
+                    line);
+                clog = std::make_unique<std::stringstream>();
+            };
 
             for (int i = 0; i < 1; ++i)
             {
-                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
-                BEAST_EXPECT(!followingFalse.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + (10 * i), false, p));
+                BEAST_EXPECT(!followingFalse.updateVote(250 + (10 * i), false, p));
 
                 BEAST_EXPECT(proposingTrue.getOurVote() == true);
                 BEAST_EXPECT(proposingFalse.getOurVote() == false);
@@ -1266,7 +1307,7 @@ public:
 
                 // true vote has changed recently, so not stalled
                 BEAST_EXPECT(!proposingTrue.stalled(p, true, 0, j, clog));
-                BEAST_EXPECT(clog->str() == "");
+                BEAST_EXPECT(clog->str().empty());
                 // remaining votes have been unchanged in so long that we only
                 // need to hit the second round at 95% to be stalled, regardless
                 // of peers
@@ -1279,7 +1320,7 @@ public:
 
                 // true vote has changed recently, so not stalled
                 BEAST_EXPECT(!proposingTrue.stalled(p, true, peersUnchanged, j, clog));
-                BEAST_EXPECTS(clog->str() == "", clog->str());
+                BEAST_EXPECTS(clog->str().empty(), clog->str());
                 // remaining votes have been unchanged in so long that we only
                 // need to hit the second round at 95% to be stalled, regardless
                 // of peers
@@ -1292,10 +1333,10 @@ public:
             }
             for (int i = 1; i < 3; ++i)
             {
-                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
-                BEAST_EXPECT(!followingFalse.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + (10 * i), false, p));
+                BEAST_EXPECT(!followingFalse.updateVote(250 + (10 * i), false, p));
 
                 BEAST_EXPECT(proposingTrue.getOurVote() == true);
                 BEAST_EXPECT(proposingFalse.getOurVote() == false);
@@ -1305,7 +1346,7 @@ public:
                 // true vote changed 2 rounds ago, and peers are changing, so
                 // not stalled
                 BEAST_EXPECT(!proposingTrue.stalled(p, true, 0, j, clog));
-                BEAST_EXPECTS(clog->str() == "", clog->str());
+                BEAST_EXPECTS(clog->str().empty(), clog->str());
                 // still stalled
                 BEAST_EXPECT(proposingFalse.stalled(p, true, 0, j, clog));
                 expectStalled(98, false, 11 + i, 0, 2, __LINE__);
@@ -1328,10 +1369,10 @@ public:
             }
             for (int i = 3; i < 5; ++i)
             {
-                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
-                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
-                BEAST_EXPECT(!followingFalse.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + (10 * i), true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + (10 * i), false, p));
+                BEAST_EXPECT(!followingFalse.updateVote(250 + (10 * i), false, p));
 
                 BEAST_EXPECT(proposingTrue.getOurVote() == true);
                 BEAST_EXPECT(proposingFalse.getOurVote() == false);

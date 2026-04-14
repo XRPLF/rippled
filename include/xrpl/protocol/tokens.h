@@ -74,7 +74,10 @@ namespace b58_fast {
 // Use the fast version (10-15x faster) is using gcc extensions (int128 in
 // particular)
 [[nodiscard]] B58Result<std::span<std::uint8_t>>
-encodeBase58Token(TokenType token_type, std::span<std::uint8_t const> input, std::span<std::uint8_t> out);
+encodeBase58Token(
+    TokenType token_type,
+    std::span<std::uint8_t const> input,
+    std::span<std::uint8_t> out);
 
 [[nodiscard]] B58Result<std::span<std::uint8_t>>
 decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf);

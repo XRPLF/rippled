@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/git/Git.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/server/Vacuum.h>
 
@@ -60,7 +61,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 {
 #ifdef RLIMIT_NOFILE
     // Get the current limit, then adjust it to what we need.
-    struct rlimit rl;
+    struct rlimit rl{};
 
     int available = 0;
 
@@ -68,9 +69,13 @@ adjustDescriptorLimit(int needed, beast::Journal j)
     {
         // If the limit is infinite, then we are good.
         if (rl.rlim_cur == RLIM_INFINITY)
+        {
             available = needed;
+        }
         else
+        {
             available = rl.rlim_cur;
+        }
 
         if (available < needed)
         {
@@ -86,11 +91,11 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 
     if (needed > available)
     {
-        j.fatal() << "Insufficient number of file descriptors: " << needed << " are needed, but only " << available
-                  << " are available.";
+        j.fatal() << "Insufficient number of file descriptors: " << needed
+                  << " are needed, but only " << available << " are available.";
 
-        std::cerr << "Insufficient number of file descriptors: " << needed << " are needed, but only " << available
-                  << " are available.\n";
+        std::cerr << "Insufficient number of file descriptors: " << needed
+                  << " are needed, but only " << available << " are available.\n";
 
         return false;
     }
@@ -102,7 +107,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 void
 printHelp(po::options_description const& desc)
 {
-    std::cerr << systemName() << "d [options] <command> <params>\n"
+    std::cerr << systemName() << " [options] <command> <params>\n"
               << desc << std::endl
               << "Commands: \n"
                  "     account_currencies <account> [<ledger>]\n"
@@ -194,8 +199,10 @@ public:
     operator()(beast::unit_test::suite_info const& s)
     {
         for (auto& sel : selectors_)
+        {
             if (sel(s))
                 return true;
+        }
         return false;
     }
 
@@ -208,7 +215,7 @@ public:
 
 namespace test {
 extern std::atomic<bool> envUseIPv4;
-}
+}  // namespace test
 
 template <class Runner>
 static bool
@@ -224,7 +231,8 @@ anyMissing(Runner& runner, multi_selector const& pred)
     {
         auto const missing = pred.size() - runner.suites();
         runner.add_failures(missing);
-        std::cout << "Failed: " << missing << " filters did not match any existing test suites" << std::endl;
+        std::cout << "Failed: " << missing << " filters did not match any existing test suites"
+                  << std::endl;
         return true;
     }
     return false;
@@ -249,11 +257,11 @@ runUnitTests(
 
     if (!child && num_jobs == 1)
     {
-        multi_runner_parent parent_runner;
+        multi_runner_parent const parent_runner;
 
         multi_runner_child child_runner{num_jobs, quiet, log};
         child_runner.arg(argument);
-        multi_selector pred(pattern);
+        multi_selector const pred(pattern);
         auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
 
         if (any_failed)
@@ -274,8 +282,12 @@ runUnitTests(
             args.emplace_back("--unittest-child");
         }
 
+        children.reserve(num_jobs);
         for (std::size_t i = 0; i < num_jobs; ++i)
-            children.emplace_back(boost::process::v1::exe = exe_name, boost::process::v1::args = args);
+        {
+            children.emplace_back(
+                boost::process::v1::exe = exe_name, boost::process::v1::args = args);
+        }
 
         int bad_child_exits = 0;
         int terminated_child_exits = 0;
@@ -284,7 +296,7 @@ runUnitTests(
             try
             {
                 c.wait();
-                if (c.exit_code())
+                if (c.exit_code() != 0)
                     ++bad_child_exits;
             }
             catch (...)
@@ -298,21 +310,19 @@ runUnitTests(
         parent_runner.add_failures(terminated_child_exits);
         anyMissing(parent_runner, multi_selector(pattern));
 
-        if (parent_runner.any_failed() || bad_child_exits)
+        if (parent_runner.any_failed() || (bad_child_exits != 0))
             return EXIT_FAILURE;
         return EXIT_SUCCESS;
     }
-    else
-    {
-        // child
-        multi_runner_child runner{num_jobs, quiet, log};
-        runner.arg(argument);
-        auto const anyFailed = runner.run_multi(multi_selector(pattern));
 
-        if (anyFailed)
-            return EXIT_FAILURE;
-        return EXIT_SUCCESS;
-    }
+    // child
+    multi_runner_child runner{num_jobs, quiet, log};
+    runner.arg(argument);
+    auto const anyFailed = runner.run_multi(multi_selector(pattern));
+
+    if (anyFailed)
+        return EXIT_FAILURE;
+    return EXIT_SUCCESS;
 }
 
 #endif  // ENABLE_TESTS
@@ -355,10 +365,12 @@ run(int argc, char** argv)
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
-        "ledger", po::value<std::string>(), "Load the specified ledger and start from the value given.")(
+        "ledger",
+        po::value<std::string>(),
+        "Load the specified ledger and start from the value given.")(
         "ledgerfile", po::value<std::string>(), "Load the specified ledger file.")(
-        "load", "Load the current ledger from the local DB.")("net", "Get the initial ledger from the network.")(
-        "replay", "Replay a ledger close.")(
+        "load", "Load the current ledger from the local DB.")(
+        "net", "Get the initial ledger from the network.")("replay", "Replay a ledger close.")(
         "trap_tx_hash", po::value<std::string>(), "Trap a specific transaction during replay.")(
         "start", "Start from a fresh Ledger.")("vacuum", "VACUUM the transaction db.")(
         "valid", "Consider the initial ledger a valid network ledger.");
@@ -395,12 +407,15 @@ run(int argc, char** argv)
         "is made available to each suite that runs. Interpretation of the "
         "argument is handled individually by any suite that accesses it -- "
         "as such, it typically only make sense to provide this when running "
-        "a single suite.")("unittest-ipv6", "Use IPv6 localhost when running unittests (default is IPv4).")(
+        "a single suite.")(
+        "unittest-ipv6", "Use IPv6 localhost when running unittests (default is IPv4).")(
         "unittest-log",
         "Force unit test log message output. Only useful in combination with "
         "--quiet, in which case log messages will print but suite/case names "
         "will not.")(
-        "unittest-jobs", po::value<std::size_t>(), "Number of unittest jobs to run in parallel (child processes).");
+        "unittest-jobs",
+        po::value<std::size_t>(),
+        "Number of unittest jobs to run in parallel (child processes).");
 #endif  // ENABLE_TESTS
 
     // These are hidden options, not intended to be shown in the usage/help
@@ -455,87 +470,83 @@ run(int argc, char** argv)
     }
     catch (std::exception const& ex)
     {
-        std::cerr << "rippled: " << ex.what() << std::endl;
-        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
+        std::cerr << "xrpld: " << ex.what() << std::endl;
+        std::cerr << "Try 'xrpld --help' for a list of options." << std::endl;
         return 1;
     }
 
-    if (vm.count("help"))
+    if (vm.contains("help"))
     {
         printHelp(desc);
         return 0;
     }
 
-    if (vm.count("version"))
+    if (vm.contains("version"))
     {
-        std::cout << "rippled version " << BuildInfo::getVersionString() << std::endl;
-#ifdef GIT_COMMIT_HASH
-        std::cout << "Git commit hash: " << GIT_COMMIT_HASH << std::endl;
-#endif
-#ifdef GIT_BRANCH
-        std::cout << "Git build branch: " << GIT_BRANCH << std::endl;
-#endif
+        std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
+        std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
+        std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
     }
 
 #ifndef ENABLE_TESTS
     if (vm.count("unittest") || vm.count("unittest-child"))
     {
-        std::cerr << "rippled: Tests disabled in this build." << std::endl;
-        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
+        std::cerr << "xrpld: Tests disabled in this build." << std::endl;
+        std::cerr << "Try 'xrpld --help' for a list of options." << std::endl;
         return 1;
     }
 #else
     // Run the unit tests if requested.
     // The unit tests will exit the application with an appropriate return code.
     //
-    if (vm.count("unittest"))
+    if (vm.contains("unittest"))
     {
         std::string argument;
 
-        if (vm.count("unittest-arg"))
+        if (vm.contains("unittest-arg"))
             argument = vm["unittest-arg"].as<std::string>();
 
         std::size_t numJobs = 1;
         bool unittestChild = false;
-        if (vm.count("unittest-jobs"))
+        if (vm.contains("unittest-jobs"))
             numJobs = std::max(numJobs, vm["unittest-jobs"].as<std::size_t>());
-        unittestChild = bool(vm.count("unittest-child"));
+        unittestChild = vm.contains("unittest-child");
 
         return runUnitTests(
             vm["unittest"].as<std::string>(),
             argument,
-            bool(vm.count("quiet")),
-            bool(vm.count("unittest-log")),
+            vm.contains("quiet"),
+            vm.contains("unittest-log"),
             unittestChild,
-            bool(vm.count("unittest-ipv6")),
+            vm.contains("unittest-ipv6"),
             numJobs,
             argc,
             argv);
     }
     // LCOV_EXCL_START
-    else
+
+    if (vm.contains("unittest-jobs"))
     {
-        if (vm.count("unittest-jobs"))
-        {
-            // unittest jobs only makes sense with `unittest`
-            std::cerr << "rippled: '--unittest-jobs' specified without "
-                         "'--unittest'.\n";
-            std::cerr << "To run the unit tests the '--unittest' option must "
-                         "be present.\n";
-            return 1;
-        }
+        // unittest jobs only makes sense with `unittest`
+        std::cerr << "xrpld: '--unittest-jobs' specified without "
+                     "'--unittest'.\n";
+        std::cerr << "To run the unit tests the '--unittest' option must "
+                     "be present.\n";
+        return 1;
     }
+
 #endif  // ENABLE_TESTS
 
     auto config = std::make_unique<Config>();
 
-    auto configFile = vm.count("conf") ? vm["conf"].as<std::string>() : std::string();
+    auto configFile = vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
 
     // config file, quiet flag.
-    config->setup(configFile, bool(vm.count("quiet")), bool(vm.count("silent")), bool(vm.count("standalone")));
+    config->setup(
+        configFile, vm.contains("quiet"), vm.contains("silent"), vm.contains("standalone"));
 
-    if (vm.count("vacuum"))
+    if (vm.contains("vacuum"))
     {
         if (config->standalone())
         {
@@ -565,7 +576,9 @@ run(int argc, char** argv)
             auto const r = [&vm]() -> std::vector<std::uint32_t> {
                 std::vector<std::string> strVec;
                 boost::split(
-                    strVec, vm["force_ledger_present_range"].as<std::string>(), boost::algorithm::is_any_of(","));
+                    strVec,
+                    vm["force_ledger_present_range"].as<std::string>(),
+                    boost::algorithm::is_any_of(","));
                 std::vector<std::uint32_t> result;
                 for (auto& s : strVec)
                 {
@@ -599,21 +612,21 @@ run(int argc, char** argv)
         }
     }
 
-    if (vm.count("start"))
+    if (vm.contains("start"))
     {
-        config->START_UP = StartUpType::FRESH;
+        config->START_UP = StartUpType::Fresh;
     }
 
-    if (vm.count("import"))
+    if (vm.contains("import"))
         config->doImport = true;
 
-    if (vm.count("ledger"))
+    if (vm.contains("ledger"))
     {
         config->START_LEDGER = vm["ledger"].as<std::string>();
-        if (vm.count("replay"))
+        if (vm.contains("replay"))
         {
-            config->START_UP = StartUpType::REPLAY;
-            if (vm.count("trap_tx_hash"))
+            config->START_UP = StartUpType::Replay;
+            if (vm.contains("trap_tx_hash"))
             {
                 uint256 tmp = {};
                 auto hash = vm["trap_tx_hash"].as<std::string>();
@@ -631,43 +644,45 @@ run(int argc, char** argv)
             }
         }
         else
-            config->START_UP = StartUpType::LOAD;
+        {
+            config->START_UP = StartUpType::Load;
+        }
     }
-    else if (vm.count("ledgerfile"))
+    else if (vm.contains("ledgerfile"))
     {
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
-        config->START_UP = StartUpType::LOAD_FILE;
+        config->START_UP = StartUpType::LoadFile;
     }
-    else if (vm.count("load") || config->FAST_LOAD)
+    else if (vm.contains("load") || config->FAST_LOAD)
     {
-        config->START_UP = StartUpType::LOAD;
+        config->START_UP = StartUpType::Load;
     }
 
-    if (vm.count("trap_tx_hash") && vm.count("replay") == 0)
+    if (vm.contains("trap_tx_hash") && !vm.contains("replay"))
     {
         std::cerr << "Cannot use trap option without replay option" << std::endl;
         return -1;
     }
 
-    if (vm.count("net") && !config->FAST_LOAD)
+    if (vm.contains("net") && !config->FAST_LOAD)
     {
-        if ((config->START_UP == StartUpType::LOAD) || (config->START_UP == StartUpType::REPLAY))
+        if ((config->START_UP == StartUpType::Load) || (config->START_UP == StartUpType::Replay))
         {
             std::cerr << "Net and load/replay options are incompatible" << std::endl;
             return -1;
         }
 
-        config->START_UP = StartUpType::NETWORK;
+        config->START_UP = StartUpType::Network;
     }
 
-    if (vm.count("valid"))
+    if (vm.contains("valid"))
     {
         config->START_VALID = true;
     }
 
     // Override the RPC destination IP address. This must
     // happen after the config file is loaded.
-    if (vm.count("rpc_ip"))
+    if (vm.contains("rpc_ip"))
     {
         auto endpoint = beast::IP::Endpoint::from_string_checked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
@@ -679,7 +694,7 @@ run(int argc, char** argv)
         if (endpoint->port() == 0)
         {
             std::cerr << "No port specified in rpc_ip.\n";
-            if (vm.count("rpc_port"))
+            if (vm.contains("rpc_port"))
             {
                 std::cerr << "WARNING: using deprecated rpc_port param.\n";
                 try
@@ -695,13 +710,15 @@ run(int argc, char** argv)
                 }
             }
             else
+            {
                 return -1;
+            }
         }
 
         config->rpc_ip = std::move(*endpoint);
     }
 
-    if (vm.count("quorum"))
+    if (vm.contains("quorum"))
     {
         try
         {
@@ -722,26 +739,29 @@ run(int argc, char** argv)
     using namespace beast::severities;
     Severity thresh = kInfo;
 
-    if (vm.count("quiet"))
+    if (vm.contains("quiet"))
+    {
         thresh = kFatal;
-    else if (vm.count("verbose"))
+    }
+    else if (vm.contains("verbose"))
+    {
         thresh = kTrace;
+    }
 
     auto logs = std::make_unique<Logs>(thresh);
 
     // No arguments. Run server.
-    if (!vm.count("parameters"))
+    if (!vm.contains("parameters"))
     {
-        // TODO: this comment can be removed in a future release -
-        // say 1.7 or higher
         if (config->had_trailing_comments())
         {
-            JLOG(logs->journal("Application").warn()) << "Trailing comments were seen in your config file. "
-                                                      << "The treatment of inline/trailing comments has changed "
-                                                         "recently. "
-                                                      << "Any `#` characters NOT intended to delimit comments should "
-                                                         "be "
-                                                      << "preceded by a \\";
+            JLOG(logs->journal("Application").warn())
+                << "Trailing comments were seen in your config file. "
+                << "The treatment of inline/trailing comments has changed "
+                   "recently. "
+                << "Any `#` characters NOT intended to delimit comments should "
+                   "be "
+                << "preceded by a \\";
         }
 
         // We want at least 1024 file descriptors. We'll
@@ -749,17 +769,18 @@ run(int argc, char** argv)
         if (!adjustDescriptorLimit(1024, logs->journal("Application")))
             return -1;
 
-        if (vm.count("debug"))
+        if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
-        auto app = make_Application(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
+        auto app =
+            make_Application(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());
 
         if (!app->setup(vm))
             return -1;
 
         // With our configuration parsed, ensure we have
         // enough file descriptors available:
-        if (!adjustDescriptorLimit(app->fdRequired(), app->logs().journal("Application")))
+        if (!adjustDescriptorLimit(app->fdRequired(), app->getJournal("Application")))
             return -1;
 
         // Start the server
@@ -772,8 +793,9 @@ run(int argc, char** argv)
     }
 
     // We have an RPC command to process:
-    beast::setCurrentThreadName("rippled: rpc");
-    return RPCCall::fromCommandLine(*config, vm["parameters"].as<std::vector<std::string>>(), *logs);
+    beast::setCurrentThreadName("xrpld: rpc");
+    return RPCCall::fromCommandLine(
+        *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP
 }
 

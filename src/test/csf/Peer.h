@@ -231,7 +231,7 @@ struct Peer
     // Number of proposers in the prior round
     std::size_t prevProposers = 0;
     // Duration of prior round
-    std::chrono::milliseconds prevRoundTime;
+    std::chrono::milliseconds prevRoundTime{};
 
     // Quorum of validations needed for a ledger to be fully validated
     // TODO: Use the logic in ValidatorList to set this dynamically
@@ -489,7 +489,9 @@ struct Peer
         issue(CloseLedger{prevLedger, openTxs});
 
         return Result(
-            TxSet{openTxs}, Proposal(prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
+            TxSet{openTxs},
+            Proposal(
+                prevLedger.id(), Proposal::seqJoin, TxSet::calcID(openTxs), closeTime, now(), id));
     }
 
     void
@@ -499,9 +501,10 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        Json::Value const& consensusJson)
     {
-        onAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(consensusJson), validating());
+        onAccept(
+            result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
     }
 
     void
@@ -511,16 +514,16 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson,
+        Json::Value const& consensusJson,
         bool const validating)
     {
-        schedule(delays.ledgerAccept, [=, this]() {
+        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
             bool const proposing = mode == ConsensusMode::proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 
             TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);
-            Ledger const newLedger =
-                oracle.accept(prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
+            Ledger const newLedger = oracle.accept(
+                prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
             ledgers[newLedger.id()] = newLedger;
 
             issue(AcceptLedger{newLedger, lastClosedLedger});
@@ -528,8 +531,9 @@ struct Peer
             prevRoundTime = result.roundTime.read();
             lastClosedLedger = newLedger;
 
-            auto const it = std::remove_if(
-                openTxs.begin(), openTxs.end(), [&](Tx const& tx) { return acceptedTxs.exists(tx.id()); });
+            auto const it = std::remove_if(openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
+                return acceptedTxs.exists(tx.id());
+            });
             openTxs.erase(it, openTxs.end());
 
             // Only send validation if the new ledger is compatible with our
@@ -537,11 +541,12 @@ struct Peer
             bool const isCompatible = newLedger.isAncestor(fullyValidatedLedger);
 
             // Can only send one validated ledger per seq
-            if (runAsValidator && isCompatible && !consensusFail && validations.canValidateSeq(newLedger.seq()))
+            if (runAsValidator && isCompatible && !consensusFail &&
+                validations.canValidateSeq(newLedger.seq()))
             {
-                bool isFull = proposing;
+                bool const isFull = proposing;
 
-                Validation v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
+                Validation const v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
                 // share the new validation; it is trusted by the receiver
                 share(v);
                 // we trust ourselves
@@ -709,7 +714,9 @@ struct Peer
                 if (link.target->router.lastObservedSeq[bm.origin] < bm.seq)
                 {
                     issue(Relay<M>{link.target->id, bm.msg});
-                    net.send(this, link.target, [to = link.target, bm, id = this->id] { to->receive(bm, id); });
+                    net.send(this, link.target, [to = link.target, bm, id = this->id] {
+                        to->receive(bm, id);
+                    });
                 }
             }
         }
@@ -867,7 +874,7 @@ struct Peer
         issue(StartRound{bestLCL, lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
-        hash_set<PeerID> nowUntrusted;
+        hash_set<PeerID> const nowUntrusted;
         consensus.startRound(now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 
@@ -892,7 +899,8 @@ struct Peer
         using namespace std::chrono;
         using namespace std::chrono_literals;
         return NetClock::time_point(
-            duration_cast<NetClock::duration>(scheduler.now().time_since_epoch() + 86400s + clockSkew));
+            duration_cast<NetClock::duration>(
+                scheduler.now().time_since_epoch() + 86400s + clockSkew));
     }
 
     Ledger::ID

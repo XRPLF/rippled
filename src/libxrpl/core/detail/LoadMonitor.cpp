@@ -15,16 +15,14 @@ TODO
 
 //------------------------------------------------------------------------------
 
-LoadMonitor::Stats::Stats() : count(0), latencyAvg(0), latencyPeak(0), isOverloaded(false)
+LoadMonitor::Stats::Stats() : latencyAvg(0), latencyPeak(0)
 {
 }
 
 //------------------------------------------------------------------------------
 
 LoadMonitor::LoadMonitor(beast::Journal j)
-    : mCounts(0)
-    , mLatencyEvents(0)
-    , mLatencyMSAvg(0)
+    : mLatencyMSAvg(0)
     , mLatencyMSPeak(0)
     , mTargetLatencyAvg(0)
     , mTargetLatencyPk(0)
@@ -89,7 +87,8 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
     if (latency > 500ms)
     {
         auto mj = (latency > 1s) ? j_.warn() : j_.info();
-        JLOG(mj) << "Job: " << s.name() << " run: " << round<milliseconds>(s.runTime()).count() << "ms"
+        JLOG(mj) << "Job: " << s.name() << " run: " << round<milliseconds>(s.runTime()).count()
+                 << "ms"
                  << " wait: " << round<milliseconds>(s.waitTime()).count() << "ms";
     }
 
@@ -103,7 +102,7 @@ LoadMonitor::addLoadSample(LoadEvent const& s)
 void
 LoadMonitor::addSamples(int count, std::chrono::milliseconds latency)
 {
-    std::lock_guard sl(mutex_);
+    std::lock_guard const sl(mutex_);
 
     update();
     mCounts += count;
@@ -135,14 +134,15 @@ LoadMonitor::isOverTarget(std::chrono::milliseconds avg, std::chrono::millisecon
 bool
 LoadMonitor::isOver()
 {
-    std::lock_guard sl(mutex_);
+    std::lock_guard const sl(mutex_);
 
     update();
 
     if (mLatencyEvents == 0)
-        return 0;
+        return false;
 
-    return isOverTarget(mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
+    return isOverTarget(
+        mLatencyMSAvg / (mLatencyEvents * 4), mLatencyMSPeak / (mLatencyEvents * 4));
 }
 
 LoadMonitor::Stats
@@ -151,7 +151,7 @@ LoadMonitor::getStats()
     using namespace std::chrono_literals;
     Stats stats;
 
-    std::lock_guard sl(mutex_);
+    std::lock_guard const sl(mutex_);
 
     update();
 

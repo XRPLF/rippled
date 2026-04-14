@@ -106,13 +106,15 @@ public:
         {
             // account_info without the "signer_lists" argument.
             auto const info = env.rpc("json", "account_info", to_string(withoutSigners));
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
         }
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc("json", "account_info", to_string(withSigners));
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember(jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -128,13 +130,15 @@ public:
         {
             // account_info without the "signer_lists" argument.
             auto const info = env.rpc("json", "account_info", to_string(withoutSigners));
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
         }
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc("json", "account_info", to_string(withSigners));
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember(jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -175,7 +179,8 @@ public:
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc("json", "account_info", to_string(withSigners));
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember(jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -215,8 +220,8 @@ public:
         withSigners[jss::account] = alice.human();
         withSigners[jss::signer_lists] = true;
 
-        auto const withSignersAsString = std::string("{ ") + "\"api_version\": 2, \"account\": \"" + alice.human() +
-            "\", " + "\"signer_lists\": asdfggh }";
+        auto const withSignersAsString = std::string("{ ") + "\"api_version\": 2, \"account\": \"" +
+            alice.human() + "\", " + "\"signer_lists\": asdfggh }";
 
         // Alice has no SignerList yet.
         {
@@ -349,7 +354,8 @@ public:
         {
             // account_info without the "signer_lists" argument.
             auto const info = env.rpc("json2", withoutSigners);
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
             BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
@@ -358,7 +364,8 @@ public:
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc("json2", withSigners);
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember(jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -371,13 +378,17 @@ public:
         {
             // Do both of the above as a batch job
             auto const info = env.rpc("json2", '[' + withoutSigners + ", " + withSigners + ']');
-            BEAST_EXPECT(info[0u].isMember(jss::result) && info[0u][jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info[0u].isMember(jss::result) &&
+                info[0u][jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[0u][jss::result][jss::account_data].isMember(jss::signer_lists));
             BEAST_EXPECT(info[0u].isMember(jss::jsonrpc) && info[0u][jss::jsonrpc] == "2.0");
             BEAST_EXPECT(info[0u].isMember(jss::ripplerpc) && info[0u][jss::ripplerpc] == "2.0");
             BEAST_EXPECT(info[0u].isMember(jss::id) && info[0u][jss::id] == 5);
 
-            BEAST_EXPECT(info[1u].isMember(jss::result) && info[1u][jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info[1u].isMember(jss::result) &&
+                info[1u][jss::result].isMember(jss::account_data));
             auto const& data = info[1u][jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember(jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -396,7 +407,8 @@ public:
         {
             // account_info without the "signer_lists" argument.
             auto const info = env.rpc("json2", withoutSigners);
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             BEAST_EXPECT(!info[jss::result][jss::account_data].isMember(jss::signer_lists));
             BEAST_EXPECT(info.isMember(jss::jsonrpc) && info[jss::jsonrpc] == "2.0");
             BEAST_EXPECT(info.isMember(jss::ripplerpc) && info[jss::ripplerpc] == "2.0");
@@ -405,7 +417,8 @@ public:
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc("json2", withSigners);
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember(jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -449,7 +462,8 @@ public:
         {
             // account_info with the "signer_lists" argument.
             auto const info = env.rpc("json2", withSigners);
-            BEAST_EXPECT(info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
+            BEAST_EXPECT(
+                info.isMember(jss::result) && info[jss::result].isMember(jss::account_data));
             auto const& data = info[jss::result][jss::account_data];
             BEAST_EXPECT(data.isMember(jss::signer_lists));
             auto const& signerLists = data[jss::signer_lists];
@@ -488,11 +502,12 @@ public:
             Json::Value params;
             params[jss::account] = account.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
+            auto const name = std::string(fName);
 
             std::optional<bool> res;
             if (info[jss::result][jss::status] == "success" &&
-                info[jss::result][jss::account_flags].isMember(fName.data()))
-                res.emplace(info[jss::result][jss::account_flags][fName.data()].asBool());
+                info[jss::result][jss::account_flags].isMember(name))
+                res.emplace(info[jss::result][jss::account_flags][name].asBool());
 
             return res;
         };
@@ -514,7 +529,7 @@ public:
             env.close();
             auto const f1 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set a flag and check that account_info returns results
             // as expected
@@ -522,14 +537,15 @@ public:
             env.close();
             auto const f2 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
-        static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 4> disallowIncomingFlags{
-            {{"disallowIncomingCheck", asfDisallowIncomingCheck},
-             {"disallowIncomingNFTokenOffer", asfDisallowIncomingNFTokenOffer},
-             {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
-             {"disallowIncomingTrustline", asfDisallowIncomingTrustline}}};
+        static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 4>
+            disallowIncomingFlags{
+                {{"disallowIncomingCheck", asfDisallowIncomingCheck},
+                 {"disallowIncomingNFTokenOffer", asfDisallowIncomingNFTokenOffer},
+                 {"disallowIncomingPayChan", asfDisallowIncomingPayChan},
+                 {"disallowIncomingTrustline", asfDisallowIncomingTrustline}}};
 
         for (auto& asf : disallowIncomingFlags)
         {
@@ -539,7 +555,7 @@ public:
             env.close();
             auto const f1 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set a flag and check that account_info returns results
             // as expected
@@ -547,7 +563,7 @@ public:
             env.close();
             auto const f2 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         static constexpr std::pair<std::string_view, std::uint32_t> allowTrustLineClawbackFlag{
@@ -558,14 +574,14 @@ public:
             // must use bob's account because alice has noFreeze set
             auto const f1 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineClawback
             env(fset(bob, allowTrustLineClawbackFlag.second));
             env.close();
             auto const f2 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {
@@ -579,14 +595,14 @@ public:
         {
             auto const f1 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineLocking
             env(fset(bob, allowTrustLineLockingFlag.second));
             env.close();
             auto const f2 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {

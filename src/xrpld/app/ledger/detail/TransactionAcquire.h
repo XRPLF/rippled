@@ -19,7 +19,9 @@ public:
     ~TransactionAcquire() = default;
 
     SHAMapAddNode
-    takeNodes(std::vector<std::pair<SHAMapNodeID, Slice>> const& data, std::shared_ptr<Peer> const&);
+    takeNodes(
+        std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
+        std::shared_ptr<Peer> const&);
 
     void
     init(int startPeers);
@@ -29,7 +31,7 @@ public:
 
 private:
     std::shared_ptr<SHAMap> mMap;
-    bool mHaveRoot;
+    bool mHaveRoot{false};
     std::unique_ptr<PeerSet> mPeerSet;
 
     void

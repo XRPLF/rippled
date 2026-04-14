@@ -55,7 +55,8 @@ private:
 
         if (m_value != value_type())
         {
-            std::size_t elapsed = std::chrono::duration_cast<std::chrono::seconds>(now - m_when).count();
+            std::size_t elapsed =
+                std::chrono::duration_cast<std::chrono::seconds>(now - m_when).count();
 
             // A span larger than four times the window decays the
             // value to an insignificant amount so just reset it.
@@ -92,7 +93,7 @@ class DecayWindow
 public:
     using time_point = typename Clock::time_point;
 
-    explicit DecayWindow(time_point now) : value_(0), when_(now)
+    explicit DecayWindow(time_point now) : when_(now)
     {
     }
 
@@ -124,7 +125,7 @@ private:
         when_ = now;
     }
 
-    double value_;
+    double value_{0};
     time_point when_;
 };
 

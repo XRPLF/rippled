@@ -121,7 +121,8 @@ coefficients sizes greatly speeds up the multi-precision computations.
 
 namespace xrpl {
 
-static constexpr char const* alphabetForward = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+static constexpr char const* alphabetForward =
+    "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
 
 static constexpr std::array<int, 256> const alphabetReverse = []() {
     std::array<int, 256> map{};
@@ -262,7 +263,7 @@ decodeBase58(std::string const& s)
 
     // Allocate enough space in big-endian base256 representation.
     // log(58) / log(256), rounded up.
-    std::vector<unsigned char> b256(remain * 733 / 1000 + 1);
+    std::vector<unsigned char> b256((remain * 733 / 1000) + 1);
     while (remain > 0)
     {
         auto carry = alphabetReverse[*psz];
@@ -307,7 +308,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     // Lay the data out as
     //      <type><token><checksum>
     buf[0] = safe_cast<std::underlying_type_t<TokenType>>(type);
-    if (size)
+    if (size != 0u)
         std::memcpy(buf.data() + 1, token, size);
     checksum(buf.data() + 1 + size, buf.data(), 1 + size);
 
@@ -328,7 +329,7 @@ decodeBase58Token(std::string const& s, TokenType type)
         return {};
 
     // And the checksum must as well.
-    std::array<char, 4> guard;
+    std::array<char, 4> guard{};
     checksum(guard.data(), ret.data(), ret.size() - guard.size());
     if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
         return {};
@@ -382,7 +383,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
             {
                 break;
             }
-            auto const src_i_end = input.size() - i * 8;
+            auto const src_i_end = input.size() - (i * 8);
             if (src_i_end >= 8)
             {
                 std::memcpy(&base_2_64_coeff_buf[num_coeff], &input[src_i_end - 8], 8);
@@ -412,8 +413,8 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // compute the base 58^10 coeffs
     while (cur_2_64_end > 0)
     {
-        base_58_10_coeff[num_58_10_coeffs] =
-            xrpl::b58_fast::detail::inplace_bigint_div_rem(base_2_64_coeff.subspan(0, cur_2_64_end), B_58_10);
+        base_58_10_coeff[num_58_10_coeffs] = xrpl::b58_fast::detail::inplace_bigint_div_rem(
+            base_2_64_coeff.subspan(0, cur_2_64_end), B_58_10);
         num_58_10_coeffs += 1;
         if (base_2_64_coeff[cur_2_64_end - 1] == 0)
         {
@@ -441,14 +442,15 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         {
             return Unexpected(TokenCodecErrc::inputTooLarge);
         }
-        std::array<std::uint8_t, 10> const b58_be = xrpl::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
+        std::array<std::uint8_t, 10> const b58_be =
+            xrpl::b58_fast::detail::b58_10_to_b58_be(base_58_10_coeff[i]);
         std::size_t to_skip = 0;
-        std::span<std::uint8_t const> b58_be_s{b58_be.data(), b58_be.size()};
+        std::span<std::uint8_t const> const b58_be_s{b58_be.data(), b58_be.size()};
         if (skip_zeros)
         {
             to_skip = count_leading_zeros(b58_be_s);
             skip_zeros = false;
-            if (out.size() < (i + 1) * 10 - to_skip)
+            if (out.size() < ((i + 1) * 10) - to_skip)
             {
                 return Unexpected(TokenCodecErrc::outputTooSmall);
             }
@@ -500,10 +502,12 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
     std::array<std::uint64_t, 6> b_58_10_coeff{};
     auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::div_rem(input.size(), 10);
-    auto const num_partial_coeffs = partial_coeff_len ? 1 : 0;
+    auto const num_partial_coeffs = (partial_coeff_len != 0u) ? 1 : 0;
     auto const num_b_58_10_coeffs = num_full_coeffs + num_partial_coeffs;
-    XRPL_ASSERT(num_b_58_10_coeffs <= b_58_10_coeff.size(), "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
-    for (unsigned char c : input.substr(0, partial_coeff_len))
+    XRPL_ASSERT(
+        num_b_58_10_coeffs <= b_58_10_coeff.size(),
+        "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
+    for (unsigned char const c : input.substr(0, partial_coeff_len))
     {
         auto cur_val = ::xrpl::alphabetReverse[c];
         if (cur_val < 0)
@@ -517,7 +521,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     {
         for (int j = 0; j < num_full_coeffs; ++j)
         {
-            unsigned char c = input[partial_coeff_len + j * 10 + i];
+            unsigned char const c = input[partial_coeff_len + (j * 10) + i];
             auto cur_val = ::xrpl::alphabetReverse[c];
             if (cur_val < 0)
             {
@@ -539,14 +543,16 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         std::uint64_t const c = b_58_10_coeff[i];
 
         {
-            auto code = xrpl::b58_fast::detail::inplace_bigint_mul(std::span(&result[0], cur_result_size + 1), B_58_10);
+            auto code = xrpl::b58_fast::detail::inplace_bigint_mul(
+                std::span(&result[0], cur_result_size + 1), B_58_10);
             if (code != TokenCodecErrc::success)
             {
                 return Unexpected(code);
             }
         }
         {
-            auto code = xrpl::b58_fast::detail::inplace_bigint_add(std::span(&result[0], cur_result_size + 1), c);
+            auto code = xrpl::b58_fast::detail::inplace_bigint_add(
+                std::span(&result[0], cur_result_size + 1), c);
             if (code != TokenCodecErrc::success)
             {
                 return Unexpected(code);
@@ -580,7 +586,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
             cur_out_i += 1;
         }
     }
-    if ((cur_out_i + 8 * (cur_result_size - 1)) > out.size())
+    if ((cur_out_i + (8 * (cur_result_size - 1))) > out.size())
     {
         return Unexpected(TokenCodecErrc::outputTooSmall);
     }
@@ -598,15 +604,18 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
 }  // namespace detail
 
 B58Result<std::span<std::uint8_t>>
-encodeBase58Token(TokenType token_type, std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
+encodeBase58Token(
+    TokenType token_type,
+    std::span<std::uint8_t const> input,
+    std::span<std::uint8_t> out)
 {
     constexpr std::size_t tmpBufSize = 128;
-    std::array<std::uint8_t, tmpBufSize> buf;
+    std::array<std::uint8_t, tmpBufSize> buf{};
     if (input.size() > tmpBufSize - 5)
     {
         return Unexpected(TokenCodecErrc::inputTooLarge);
     }
-    if (input.size() == 0)
+    if (input.empty())
     {
         return Unexpected(TokenCodecErrc::inputTooSmall);
     }
@@ -617,7 +626,7 @@ encodeBase58Token(TokenType token_type, std::span<std::uint8_t const> input, std
     size_t const checksum_i = input.size() + 1;
     // buf[checksum_i..checksum_i + 4] = checksum
     checksum(buf.data() + checksum_i, buf.data(), checksum_i);
-    std::span<std::uint8_t const> b58Span(buf.data(), input.size() + 5);
+    std::span<std::uint8_t const> const b58Span(buf.data(), input.size() + 5);
     return detail::b256_to_b58_be(b58Span, out);
 }
 // Convert from base 58 to base 256, largest coefficients first
@@ -628,7 +637,7 @@ encodeBase58Token(TokenType token_type, std::span<std::uint8_t const> input, std
 B58Result<std::span<std::uint8_t>>
 decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf)
 {
-    std::array<std::uint8_t, 64> tmpBuf;
+    std::array<std::uint8_t, 64> tmpBuf{};
     auto const decodeResult = detail::b58_to_b256_be(s, std::span(tmpBuf.data(), tmpBuf.size()));
 
     if (!decodeResult)
@@ -645,7 +654,7 @@ decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> ou
         return Unexpected(TokenCodecErrc::mismatchedTokenType);
 
     // And the checksum must as well.
-    std::array<std::uint8_t, 4> guard;
+    std::array<std::uint8_t, 4> guard{};
     checksum(guard.data(), ret.data(), ret.size() - guard.size());
     if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
     {
@@ -671,8 +680,8 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     // over-allocation, this function uses 128 (again, over-allocation assuming
     // 2 base 58 char per byte)
     sr.resize(128);
-    std::span<std::uint8_t> outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
-    std::span<std::uint8_t const> inSp(reinterpret_cast<std::uint8_t const*>(token), size);
+    std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
+    std::span<std::uint8_t const> const inSp(reinterpret_cast<std::uint8_t const*>(token), size);
     auto r = b58_fast::encodeBase58Token(type, inSp, outSp);
     if (!r)
         return {};
@@ -687,7 +696,7 @@ decodeBase58Token(std::string const& s, TokenType type)
     // The largest object encoded as base58 is 33 bytes; 64 is plenty (and
     // there's no benefit making it smaller)
     sr.resize(64);
-    std::span<std::uint8_t> outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
+    std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     auto r = b58_fast::decodeBase58Token(type, s, outSp);
     if (!r)
         return {};

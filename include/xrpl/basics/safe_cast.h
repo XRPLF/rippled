@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
+
 #include <type_traits>
 
 namespace xrpl {
@@ -18,9 +20,12 @@ template <class Dest, class Src>
 inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
 safe_cast(Src s) noexcept
 {
-    static_assert(std::is_signed_v<Dest> || std::is_unsigned_v<Src>, "Cannot cast signed to unsigned");
+    static_assert(
+        std::is_signed_v<Dest> || std::is_unsigned_v<Src>, "Cannot cast signed to unsigned");
     constexpr unsigned not_same = std::is_signed_v<Dest> != std::is_signed_v<Src>;
-    static_assert(sizeof(Dest) >= sizeof(Src) + not_same, "Destination is too small to hold all values of source");
+    static_assert(
+        sizeof(Dest) >= sizeof(Src) + not_same,
+        "Destination is too small to hold all values of source");
     return static_cast<Dest>(s);
 }
 
@@ -65,6 +70,33 @@ inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src
 unsafe_cast(Src s) noexcept
 {
     return unsafe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
+}
+
+template <class Dest, class Src>
+    requires std::is_pointer_v<Dest>
+inline Dest
+safe_downcast(Src* s) noexcept
+{
+#ifdef NDEBUG
+    return static_cast<Dest>(s);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+#else
+    auto* result = dynamic_cast<Dest>(s);
+    XRPL_ASSERT(result != nullptr, "xrpl::safe_downcast : pointer downcast is valid");
+    return result;
+#endif
+}
+
+template <class Dest, class Src>
+    requires std::is_lvalue_reference_v<Dest>
+inline Dest
+safe_downcast(Src& s) noexcept
+{
+#ifndef NDEBUG
+    XRPL_ASSERT(
+        dynamic_cast<std::add_pointer_t<std::remove_reference_t<Dest>>>(&s) != nullptr,
+        "xrpl::safe_downcast : reference downcast is valid");
+#endif
+    return static_cast<Dest>(s);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 }
 
 }  // namespace xrpl

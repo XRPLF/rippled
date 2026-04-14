@@ -55,7 +55,8 @@ struct KeyEqual final
 class PeerReservationTable final
 {
 public:
-    explicit PeerReservationTable(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+    explicit PeerReservationTable(
+        beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
         : journal_(journal)
     {
     }
@@ -66,7 +67,7 @@ public:
     bool
     contains(PublicKey const& nodeId)
     {
-        std::lock_guard lock(this->mutex_);
+        std::lock_guard const lock(this->mutex_);
         return table_.find({nodeId}) != table_.end();
     }
 
@@ -91,7 +92,7 @@ public:
 private:
     beast::Journal mutable journal_;
     std::mutex mutable mutex_;
-    DatabaseCon* connection_;
+    DatabaseCon* connection_{};
     std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
 };
 

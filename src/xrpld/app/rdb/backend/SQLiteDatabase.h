@@ -2,7 +2,11 @@
 
 #include <xrpl/rdb/RelationalDatabase.h>
 
+#include <map>
 #include <memory>
+#include <optional>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 
@@ -323,17 +327,19 @@ public:
      * @param id Hash of the transaction.
      * @param range Range of ledgers to check, if present.
      * @param ec Default error code value.
-     * @return Transaction and its metadata if found, otherwise TxSearched::all
+     * @return Transaction and its metadata if found, otherwise TxSearched::All
      *         if a range is provided and all ledgers from the range are present
-     *         in the database, TxSearched::some if a range is provided and not
-     *         all ledgers are present, TxSearched::unknown if the range is not
+     *         in the database, TxSearched::Some if a range is provided and not
+     *         all ledgers are present, TxSearched::Unknown if the range is not
      *         provided or a deserializing error occurred. In the last case the
      *         error code is returned via the ec parameter, in other cases the
      *         default error code is not changed.
      */
     std::variant<AccountTx, TxSearched>
-    getTransaction(uint256 const& id, std::optional<ClosedInterval<std::uint32_t>> const& range, error_code_i& ec)
-        override;
+    getTransaction(
+        uint256 const& id,
+        std::optional<ClosedInterval<std::uint32_t>> const& range,
+        error_code_i& ec) override;
 
     /**
      * @brief getKBUsedAll Returns the amount of space used by all databases.
@@ -378,7 +384,7 @@ public:
     SQLiteDatabase&
     operator=(SQLiteDatabase const&) = delete;
     SQLiteDatabase&
-    operator=(SQLiteDatabase&& rhs) = delete;
+    operator=(SQLiteDatabase&&) = delete;
 
     /**
      * @brief ledgerDbHasSpace Checks if the ledger database has available
@@ -399,8 +405,8 @@ public:
     transactionDbHasSpace(Config const& config);
 
 private:
-    ServiceRegistry& registry_;
-    bool const useTxTables_;
+    std::reference_wrapper<ServiceRegistry> registry_;
+    bool useTxTables_;
     beast::Journal j_;
     std::unique_ptr<DatabaseCon> ledgerDb_, txdb_;
 
@@ -464,7 +470,9 @@ private:
 
 /**
  * @brief setup_RelationalDatabase Creates and returns a SQLiteDatabase
- *        instance based on configuration.
+ *        instance based on configuration. It's recommended to use it as
+ *        a singleton, but it's not enforced (e.g. if you have more than one
+ *        database).
  * @param registry The service registry.
  * @param config Config object.
  * @param jobQueue JobQueue object.

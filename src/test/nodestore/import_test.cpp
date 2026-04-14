@@ -71,7 +71,7 @@ template <class Rep, class Period>
 std::ostream&
 pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
-    save_stream_state _(os);
+    save_stream_state const _(os);
     using namespace std::chrono;
     if (d < microseconds{1})
     {
@@ -209,9 +209,11 @@ public:
             return;
         }
         auto const rate = elapsed.count() / double(work);
-        clock_type::duration const remain(static_cast<clock_type::duration::rep>((work_ - work) * rate));
+        clock_type::duration const remain(
+            static_cast<clock_type::duration::rep>((work_ - work) * rate));
         log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of " << work_ << " in "
-            << detail::fmtdur(elapsed) << ", " << (work - prev_) << " in " << detail::fmtdur(now - report_) << ")";
+            << detail::fmtdur(elapsed) << ", " << (work - prev_) << " in "
+            << detail::fmtdur(now - report_) << ")";
         report_ = now;
         prev_ = work;
     }
@@ -330,14 +332,14 @@ public:
             options.create_if_missing = false;
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
-            rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
-            if (!status.ok() || !pdb)
+            rocksdb::Status const status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
+            if (!status.ok() || (pdb == nullptr))
                 Throw<std::runtime_error>("Can't open '" + from_path + "': " + status.ToString());
             db.reset(pdb);
         }
         // Create data file with values
         std::size_t nitems = 0;
-        dat_file_header dh;
+        dat_file_header dh{};
         dh.version = currentVersion;
         dh.uid = make_uid();
         dh.appnum = 1;
@@ -365,11 +367,14 @@ public:
             for (it->SeekToFirst(); it->Valid(); it->Next())
             {
                 if (it->key().size() != 32)
-                    Throw<std::runtime_error>("Unexpected key size " + std::to_string(it->key().size()));
+                {
+                    Throw<std::runtime_error>(
+                        "Unexpected key size " + std::to_string(it->key().size()));
+                }
                 void const* const key = it->key().data();
                 void const* const data = it->value().data();
                 auto const size = it->value().size();
-                std::unique_ptr<char[]> clean(new char[size]);
+                std::unique_ptr<char[]> const clean(new char[size]);
                 std::memcpy(clean.get(), data, size);
                 filter_inner(clean.get(), size);
                 auto const out = nodeobject_compress(clean.get(), size, buf);
@@ -403,7 +408,7 @@ public:
         if (ec)
             Throw<nudb::system_error>(ec);
         // Create key file
-        key_file_header kh;
+        key_file_header kh{};
         kh.version = currentVersion;
         kh.uid = dh.uid;
         kh.appnum = dh.appnum;
@@ -453,7 +458,7 @@ public:
             // Create empty buckets
             for (std::size_t i = 0; i < bn; ++i)
             {
-                bucket b(kh.block_size, buf.get() + i * kh.block_size, empty);
+                bucket const b(kh.block_size, buf.get() + (i * kh.block_size), empty);
             }
             // Insert all keys into buckets
             // Iterate Data File
@@ -462,7 +467,7 @@ public:
             {
                 auto const offset = r.offset();
                 // Data Record or Spill Record
-                std::size_t size;
+                std::size_t size = 0;
                 auto is = r.prepare(field<uint48_t>::size, ec);  // Size
                 if (ec)
                     Throw<nudb::system_error>(ec);
@@ -479,10 +484,10 @@ public:
                     std::uint8_t const* const key = is.data(dh.key_size);
                     auto const h = hash<hash_type>(key, kh.key_size, kh.salt);
                     auto const n = bucket_index(h, kh.buckets, kh.modulus);
-                    p(log, npass * df_size + r.offset());
+                    p(log, (npass * df_size) + r.offset());
                     if (n < b0 || n >= b1)
                         continue;
-                    bucket b(kh.block_size, buf.get() + (n - b0) * kh.block_size);
+                    bucket b(kh.block_size, buf.get() + ((n - b0) * kh.block_size));
                     maybe_spill(b, dw, ec);
                     if (ec)
                         Throw<nudb::system_error>(ec);

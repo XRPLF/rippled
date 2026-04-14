@@ -59,7 +59,8 @@ Logs::File::open(boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr<std::ofstream> stream(new std::ofstream(path.c_str(), std::fstream::app));
+    std::unique_ptr<std::ofstream> stream =
+        std::make_unique<std::ofstream>(path.c_str(), std::fstream::app);
 
     if (stream->good())
     {
@@ -119,7 +120,7 @@ Logs::open(boost::filesystem::path const& pathToLogFile)
 beast::Journal::Sink&
 Logs::get(std::string const& name)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     auto const result = sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
 }
@@ -145,7 +146,7 @@ Logs::threshold() const
 void
 Logs::threshold(beast::severities::Severity thresh)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     thresh_ = thresh;
     for (auto& sink : sinks_)
         sink.second->threshold(thresh);
@@ -155,7 +156,7 @@ std::vector<std::pair<std::string, std::string>>
 Logs::partition_severities() const
 {
     std::vector<std::pair<std::string, std::string>> list;
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
         list.emplace_back(name, toString(fromSeverity(sink->threshold())));
@@ -163,11 +164,15 @@ Logs::partition_severities() const
 }
 
 void
-Logs::write(beast::severities::Severity level, std::string const& partition, std::string const& text, bool console)
+Logs::write(
+    beast::severities::Severity level,
+    std::string const& partition,
+    std::string const& text,
+    bool console)
 {
     std::string s;
     format(s, text, level, partition);
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     file_.writeln(s);
     if (!silent_)
         std::cerr << s << '\n';
@@ -179,7 +184,7 @@ Logs::write(beast::severities::Severity level, std::string const& partition, std
 std::string
 Logs::rotate()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     bool const wasOpened = file_.closeAndReopen();
     if (wasOpened)
         return "The log file was closed and reopened.";
@@ -407,15 +412,19 @@ public:
     std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
-        std::lock_guard _(m_);
+        std::lock_guard const _(m_);
 
         using std::swap;
         swap(holder_, sink);
 
         if (holder_)
+        {
             sink_ = *holder_;
+        }
         else
+        {
             sink_ = beast::Journal::getNullSink();
+        }
 
         return sink;
     }
@@ -423,7 +432,7 @@ public:
     beast::Journal::Sink&
     get()
     {
-        std::lock_guard _(m_);
+        std::lock_guard const _(m_);
         return sink_.get();
     }
 };

@@ -39,7 +39,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         f.trustAndConnect(f + d + e + g, delay);
         g.trustAndConnect(g + a + f, delay);
 
-        PeerGroup network = a + b + c + d + e + f + g;
+        PeerGroup const network = a + b + c + d + e + f + g;
 
         StreamCollector sc{std::cout};
 
@@ -48,7 +48,8 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         for (TrustGraph<Peer*>::ForkInfo const& fi : sim.trustGraph.forkablePairs(0.8))
         {
             std::cout << "Can fork " << PeerGroup{fi.unlA} << " "
-                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap << " required " << fi.required << "\n";
+                      << " " << PeerGroup{fi.unlB} << " overlap " << fi.overlap << " required "
+                      << fi.required << "\n";
         };
 
         // set prior state

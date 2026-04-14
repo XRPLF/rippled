@@ -1,5 +1,7 @@
 #include <test/jtx/owners.h>
 
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+
 namespace xrpl {
 namespace detail {
 
@@ -15,7 +17,11 @@ owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type)
 }
 
 void
-owned_count_helper(test::jtx::Env& env, AccountID const& id, LedgerEntryType type, std::uint32_t value)
+owned_count_helper(
+    test::jtx::Env& env,
+    AccountID const& id,
+    LedgerEntryType type,
+    std::uint32_t value)
 {
     env.test.expect(owned_count_of(*env.current(), id, type) == value);
 }

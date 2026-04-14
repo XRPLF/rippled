@@ -83,7 +83,7 @@ public:
             // close can throw and we don't want the destructor to throw.
             close();
         }
-        catch (nudb::system_error const&)
+        catch (nudb::system_error const&)  // NOLINT(bugprone-empty-catch)
         {
             // Don't allow exceptions to propagate out of destructors.
             // close() has already logged the error.
@@ -124,7 +124,8 @@ public:
         if (createIfMissing)
         {
             create_directories(folder);
-            nudb::create<nudb::xxhasher>(dp, kp, lp, appType, uid, salt, keyBytes_, blockSize_, 0.50, ec);
+            nudb::create<nudb::xxhasher>(
+                dp, kp, lp, appType, uid, salt, keyBytes_, blockSize_, 0.50, ec);
             if (ec == nudb::errc::file_exists)
                 ec = {};
             if (ec)
@@ -170,24 +171,25 @@ public:
                 boost::filesystem::remove_all(name_, ec);
                 if (ec)
                 {
-                    JLOG(j_.fatal()) << "Filesystem remove_all of " << name_ << " failed with: " << ec.message();
+                    JLOG(j_.fatal())
+                        << "Filesystem remove_all of " << name_ << " failed with: " << ec.message();
                 }
             }
         }
     }
 
     Status
-    fetch(void const* key, std::shared_ptr<NodeObject>* pno) override
+    fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
-        Status status;
+        Status status = ok;
         pno->reset();
         nudb::error_code ec;
         db_.fetch(
-            key,
-            [key, pno, &status](void const* data, std::size_t size) {
+            hash.data(),
+            [&hash, pno, &status](void const* data, std::size_t size) {
                 nudb::detail::buffer bf;
                 auto const result = nodeobject_decompress(data, size, bf);
-                DecodedBlob decoded(key, result.first, result.second);
+                DecodedBlob decoded(hash.data(), result.first, result.second);
                 if (!decoded.wasOk())
                 {
                     status = dataCorrupt;
@@ -205,18 +207,22 @@ public:
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
-    fetchBatch(std::vector<uint256 const*> const& hashes) override
+    fetchBatch(std::vector<uint256> const& hashes) override
     {
         std::vector<std::shared_ptr<NodeObject>> results;
         results.reserve(hashes.size());
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h->begin(), &nObj);
+            Status const status = fetch(h, &nObj);
             if (status != ok)
+            {
                 results.push_back({});
+            }
             else
+            {
                 results.push_back(nObj);
+            }
         }
 
         return {results, ok};
@@ -225,7 +231,7 @@ public:
     void
     do_insert(std::shared_ptr<NodeObject> const& no)
     {
-        EncodedBlob e(no);
+        EncodedBlob const e(no);
         nudb::error_code ec;
         nudb::detail::buffer bf;
         auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);
@@ -237,25 +243,25 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
         do_insert(no);
-        report.elapsed =
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+        report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start);
         scheduler_.onBatchWrite(report);
     }
 
     void
     storeBatch(Batch const& batch) override
     {
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
         for (auto const& e : batch)
             do_insert(e);
-        report.elapsed =
-            std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::steady_clock::now() - start);
+        report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+            std::chrono::steady_clock::now() - start);
         scheduler_.onBatchWrite(report);
     }
 
@@ -277,7 +283,11 @@ public:
             Throw<nudb::system_error>(ec);
         nudb::visit(
             dp,
-            [&](void const* key, std::size_t key_bytes, void const* data, std::size_t size, nudb::error_code&) {
+            [&](void const* key,
+                std::size_t key_bytes,
+                void const* data,
+                std::size_t size,
+                nudb::error_code&) {
                 nudb::detail::buffer bf;
                 auto const result = nodeobject_decompress(data, size, bf);
                 DecodedBlob decoded(key, result.first, result.second);
@@ -343,7 +353,7 @@ private:
         auto const kp = (folder / "nudb.key").string();
 
         std::size_t const defaultSize = nudb::block_size(kp);  // Default 4K from NuDB
-        std::size_t blockSize = defaultSize;
+        std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
         if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
@@ -356,10 +366,12 @@ private:
             std::size_t const parsedBlockSize = beast::lexicalCastThrow<std::size_t>(blockSizeStr);
 
             // Validate: must be power of 2 between 4K and 32K
-            if (parsedBlockSize < 4096 || parsedBlockSize > 32768 || (parsedBlockSize & (parsedBlockSize - 1)) != 0)
+            if (parsedBlockSize < 4096 || parsedBlockSize > 32768 ||
+                (parsedBlockSize & (parsedBlockSize - 1)) != 0)
             {
                 std::stringstream s;
-                s << "Invalid nudb_block_size: " << parsedBlockSize << ". Must be power of 2 between 4096 and 32768.";
+                s << "Invalid nudb_block_size: " << parsedBlockSize
+                  << ". Must be power of 2 between 4096 and 32768.";
                 Throw<std::runtime_error>(s.str());
             }
 
@@ -414,14 +426,15 @@ public:
         nudb::context& context,
         beast::Journal journal) override
     {
-        return std::make_unique<NuDBBackend>(keyBytes, keyValues, burstSize, scheduler, context, journal);
+        return std::make_unique<NuDBBackend>(
+            keyBytes, keyValues, burstSize, scheduler, context, journal);
     }
 };
 
 void
 registerNuDBFactory(Manager& manager)
 {
-    static NuDBFactory instance{manager};
+    static NuDBFactory const instance{manager};
 }
 
 }  // namespace NodeStore

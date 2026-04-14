@@ -23,7 +23,8 @@ registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec, 
         if (h != nullptr)
             CertCloseStore(h, 0);
     };
-    std::unique_ptr<void, decltype(certStoreDelete)> hStore{CertOpenSystemStore(0, "ROOT"), certStoreDelete};
+    std::unique_ptr<void, decltype(certStoreDelete)> hStore{
+        CertOpenSystemStore(0, "ROOT"), certStoreDelete};
 
     if (!hStore)
     {
@@ -33,11 +34,13 @@ registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec, 
 
     ERR_clear_error();
 
-    std::unique_ptr<X509_STORE, decltype(X509_STORE_free)*> store{X509_STORE_new(), X509_STORE_free};
+    std::unique_ptr<X509_STORE, decltype(X509_STORE_free)*> store{
+        X509_STORE_new(), X509_STORE_free};
 
     if (!store)
     {
-        ec = boost::system::error_code(static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category());
+        ec = boost::system::error_code(
+            static_cast<int>(::ERR_get_error()), boost::asio::error::get_ssl_category());
         return;
     }
 
@@ -76,6 +79,7 @@ registerSSLCerts(boost::asio::ssl::context& ctx, boost::system::error_code& ec, 
     SSL_CTX_set_cert_store(ctx.native_handle(), store.release());
 
 #else
+    // NOLINTNEXTLINE(bugprone-unused-return-value)
     ctx.set_default_verify_paths(ec);
 #endif
 }

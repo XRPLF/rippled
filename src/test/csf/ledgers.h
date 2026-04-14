@@ -2,13 +2,12 @@
 
 #include <test/csf/Tx.h>
 
-#include <xrpld/consensus/LedgerTiming.h>
-
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/comparators.h>
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
 #include <boost/bimap/bimap.hpp>
 
@@ -93,7 +92,14 @@ private:
         auto
         asTie() const
         {
-            return std::tie(seq, txs, closeTimeResolution, closeTime, closeTimeAgree, parentID, parentCloseTime);
+            return std::tie(
+                seq,
+                txs,
+                closeTimeResolution,
+                closeTime,
+                closeTimeAgree,
+                parentID,
+                parentCloseTime);
         }
 
         friend bool
@@ -271,8 +277,8 @@ public:
         O
           \--> B
     */
-    std::size_t
-    branches(std::set<Ledger> const& ledgers) const;
+    static std::size_t
+    branches(std::set<Ledger> const& ledgers);
 };
 
 /** Helper for writing unit tests with controlled ledger histories.

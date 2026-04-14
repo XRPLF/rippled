@@ -4,13 +4,13 @@
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
@@ -33,7 +33,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     {
     };
 
-    auto
+    static auto
     makeConfig(std::string const& proto, bool admin = true, bool credentials = false)
     {
         auto const section_name = boost::starts_with(proto, "h") ? "port_rpc" : "port_ws";
@@ -69,7 +69,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return p;
     }
 
-    auto
+    static auto
     makeWSUpgrade(std::string const& host, uint16_t port)
     {
         using namespace boost::asio;
@@ -87,7 +87,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
             std::random_device rd;
             std::mt19937 e{rd()};
             std::uniform_int_distribution<> d(0, 255);
-            std::array<std::uint8_t, 16> key;
+            std::array<std::uint8_t, 16> key{};
             for (auto& v : key)
                 v = d(e);
             req.insert("Sec-WebSocket-Key", base64_encode(key.data(), key.size()));
@@ -97,8 +97,12 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         return req;
     }
 
-    auto
-    makeHTTPRequest(std::string const& host, uint16_t port, std::string const& body, myFields const& fields)
+    static auto
+    makeHTTPRequest(
+        std::string const& host,
+        uint16_t port,
+        std::string const& body,
+        myFields const& fields)
     {
         using namespace boost::asio;
         using namespace boost::beast::http;
@@ -128,7 +132,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     void
     doRequest(
         boost::asio::yield_context& yield,
-        boost::beast::http::request<boost::beast::http::string_body>&& req,
+        boost::beast::http::request<boost::beast::http::string_body> const& req,
         std::string const& host,
         uint16_t port,
         bool secure,
@@ -191,6 +195,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     {
         auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port");
         auto ip = env.app().config()["port_ws"].get<std::string>("ip");
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeWSUpgrade(*ip, *port), *ip, *port, secure, resp, ec);
         return;
     }
@@ -207,11 +212,12 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     {
         auto const port = env.app().config()["port_rpc"].get<std::uint16_t>("port");
         auto const ip = env.app().config()["port_rpc"].get<std::string>("ip");
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         doRequest(yield, makeHTTPRequest(*ip, *port, body, fields), *ip, *port, secure, resp, ec);
         return;
     }
 
-    auto
+    static auto
     makeAdminRequest(
         jtx::Env& env,
         std::string const& proto,
@@ -259,8 +265,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
     void
     testAdminRequest(std::string const& proto, bool admin, bool credentials)
     {
-        testcase << "Admin request over " << proto << ", config " << (admin ? "enabled" : "disabled")
-                 << ", credentials " << (credentials ? "" : "not ") << "set";
+        testcase << "Admin request over " << proto << ", config "
+                 << (admin ? "enabled" : "disabled") << ", credentials "
+                 << (credentials ? "" : "not ") << "set";
         using namespace jtx;
         Env env{*this, makeConfig(proto, admin, credentials)};
 
@@ -272,36 +279,47 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         if (admin && credentials)
         {
-            auto const user = env.app().config()[proto_ws ? "port_ws" : "port_rpc"].get<std::string>("admin_user");
+            auto const user =
+                env.app().config()[proto_ws ? "port_ws" : "port_rpc"].get<std::string>(
+                    "admin_user");
 
             auto const password =
-                env.app().config()[proto_ws ? "port_ws" : "port_rpc"].get<std::string>("admin_password");
+                env.app().config()[proto_ws ? "port_ws" : "port_rpc"].get<std::string>(
+                    "admin_password");
 
             // 1 - FAILS with wrong pass
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             jrr = makeAdminRequest(env, proto, *user, *password + "_")[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
 
             // 2 - FAILS with password in an object
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             jrr = makeAdminRequest(env, proto, *user, *password, true)[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
 
             // 3 - FAILS with wrong user
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             jrr = makeAdminRequest(env, proto, *user + "_", *password)[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
 
             // 4 - FAILS no credentials
             jrr = makeAdminRequest(env, proto, "", "")[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
 
             // 5 - SUCCEEDS with proper credentials
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             jrr = makeAdminRequest(env, proto, *user, *password)[jss::result];
             BEAST_EXPECT(jrr["status"] == "success");
         }
@@ -321,7 +339,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
             jrr = makeAdminRequest(env, proto, "", "")[jss::result];
             BEAST_EXPECT(jrr["error"] == proto_ws ? "forbidden" : "noPermission");
             BEAST_EXPECT(
-                jrr["error_message"] == proto_ws ? "Bad credentials." : "You don't have permission for this command.");
+                jrr["error_message"] == proto_ws ? "Bad credentials."
+                                                 : "You don't have permission for this command.");
         }
     }
 
@@ -405,7 +424,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         boost::system::error_code ec;
         response<string_body> resp;
-        auto req = makeWSUpgrade(*ip, *port);
+        auto req = makeWSUpgrade(*ip, *port);  // NOLINT(bugprone-unchecked-optional-access)
 
         // truncate the request message to near the value of the version header
         auto req_string = boost::lexical_cast<std::string>(req);
@@ -415,7 +434,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         ip::tcp::resolver r{ios};
         boost::beast::multi_buffer sb;
 
-        auto it = r.async_resolve(*ip, std::to_string(*port), yield[ec]);
+        auto it = r.async_resolve(
+            *ip, std::to_string(*port), yield[ec]);  // NOLINT(bugprone-unchecked-optional-access)
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
 
@@ -441,7 +461,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // The essence of this test is to have a client and server configured
         // out-of-phase with respect to ssl (secure client and insecure server
         // or vice-versa)
-        testcase << "Connect fails: " << client_protocol << " client to " << server_protocol << " server";
+        testcase << "Connect fails: " << client_protocol << " client to " << server_protocol
+                 << " server";
         using namespace jtx;
         Env env{*this, makeConfig(server_protocol)};
 
@@ -454,7 +475,8 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         }
         else
         {
-            doWSRequest(env, yield, client_protocol == "wss" || client_protocol == "wss2", resp, ec);
+            doWSRequest(
+                env, yield, client_protocol == "wss" || client_protocol == "wss2", resp, ec);
             BEAST_EXPECT(ec);
         }
     }
@@ -494,8 +516,11 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const user = env.app().config().section("port_rpc").get<std::string>("user").value();
-        auto const pass = env.app().config().section("port_rpc").get<std::string>("password").value();
+        auto const pass =
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            env.app().config().section("port_rpc").get<std::string>("password").value();
 
         // try with the correct user/pass, but not encoded
         auth.set("Authorization", "Basic " + user + ":" + pass);
@@ -522,7 +547,10 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
                     return cfg;
                 })};
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const port = env.app().config()["port_rpc"].get<std::uint16_t>("port").value();
+
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const ip = env.app().config()["port_rpc"].get<std::string>("ip").value();
 
         boost::system::error_code ec;
@@ -544,10 +572,11 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // for zero limit, pick an arbitrary nonzero number of clients - all
         // should connect fine.
 
-        int testTo = (limit == 0) ? 50 : limit + 1;
+        int const testTo = (limit == 0) ? 50 : limit + 1;
         while (connectionCount < testTo)
         {
-            clients.emplace_back(std::make_pair(ip::tcp::socket{ios}, boost::beast::multi_buffer{}));
+            clients.emplace_back(
+                std::make_pair(ip::tcp::socket{ios}, boost::beast::multi_buffer{}));
             async_connect(clients.back().first, it, yield[ec]);
             BEAST_EXPECT(!ec);
             auto req = makeHTTPRequest(ip, port, to_string(jr), {});
@@ -579,14 +608,16 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
                     return cfg;
                 })};
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port").value();
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const ip = env.app().config()["port_ws"].get<std::string>("ip").value();
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
         doRequest(yield, makeWSUpgrade(ip, port), ip, port, true, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::switching_protocols);
-        BEAST_EXPECT(resp.find("Upgrade") != resp.end() && resp["Upgrade"] == "websocket");
-        BEAST_EXPECT(resp.find("Connection") != resp.end() && boost::iequals(resp["Connection"], "upgrade"));
+        BEAST_EXPECT(resp.contains("Upgrade") && resp["Upgrade"] == "websocket");
+        BEAST_EXPECT(resp.contains("Connection") && boost::iequals(resp["Connection"], "upgrade"));
     }
 
     void
@@ -597,7 +628,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         using namespace test::jtx;
         Env env{*this};
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port").value();
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const ip = env.app().config()["port_ws"].get<std::string>("ip").value();
         boost::beast::http::response<boost::beast::http::string_body> resp;
         boost::system::error_code ec;
@@ -618,7 +651,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         using namespace boost::beast::http;
         Env env{*this};
 
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const port = env.app().config()["port_ws"].get<std::uint16_t>("port").value();
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const ip = env.app().config()["port_ws"].get<std::string>("ip").value();
         boost::system::error_code ec;
 
@@ -650,8 +685,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
             Json::Value resp;
             Json::Reader jr;
-            if (!BEAST_EXPECT(
-                    jr.parse(boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())), resp)))
+            if (!BEAST_EXPECT(jr.parse(
+                    boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())),
+                    resp)))
                 return Json::objectValue;
             sb.consume(sb.size());
             return resp;
@@ -728,7 +764,17 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         response<string_body> resp;
 
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *ip_ws,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *port_ws,
+            false,
+            resp,
+            ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -763,7 +809,17 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
             si[jss::state][jss::warnings][0u][jss::id].asInt() == warnRPC_UNSUPPORTED_MAJORITY);
 
         // but status does not indicate a problem
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *ip_ws,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *port_ws,
+            false,
+            resp,
+            ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -773,7 +829,17 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // with ELB_SUPPORT, status still does not indicate a problem
         env.app().config().ELB_SUPPORT = true;
 
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *ip_ws,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *port_ws,
+            false,
+            resp,
+            ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -826,7 +892,17 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         response<string_body> resp;
 
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *ip_ws,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *port_ws,
+            false,
+            resp,
+            ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -844,7 +920,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         // RPC request server_info again, now AB should be returned
         si = env.rpc("server_info")[jss::result];
         BEAST_EXPECT(si.isMember(jss::info));
-        BEAST_EXPECT(si[jss::info].isMember(jss::amendment_blocked) && si[jss::info][jss::amendment_blocked] == true);
+        BEAST_EXPECT(
+            si[jss::info].isMember(jss::amendment_blocked) &&
+            si[jss::info][jss::amendment_blocked] == true);
         BEAST_EXPECT(
             si[jss::info].isMember(jss::warnings) && si[jss::info][jss::warnings].isArray() &&
             si[jss::info][jss::warnings].size() == 1 &&
@@ -852,7 +930,9 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         // RPC request server_state again, now AB should be returned
         si = env.rpc("server_state")[jss::result];
-        BEAST_EXPECT(si[jss::state].isMember(jss::amendment_blocked) && si[jss::state][jss::amendment_blocked] == true);
+        BEAST_EXPECT(
+            si[jss::state].isMember(jss::amendment_blocked) &&
+            si[jss::state][jss::amendment_blocked] == true);
         BEAST_EXPECT(
             si[jss::state].isMember(jss::warnings) && si[jss::state][jss::warnings].isArray() &&
             si[jss::state][jss::warnings].size() == 1 &&
@@ -860,7 +940,17 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         // but status does not indicate because it still relies on ELB
         // being enabled
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *ip_ws,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *port_ws,
+            false,
+            resp,
+            ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -869,7 +959,17 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
 
         env.app().config().ELB_SUPPORT = true;
 
-        doRequest(yield, makeHTTPRequest(*ip_ws, *port_ws, "", {}), *ip_ws, *port_ws, false, resp, ec);
+        doRequest(
+            yield,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            makeHTTPRequest(*ip_ws, *port_ws, "", {}),
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *ip_ws,
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+            *port_ws,
+            false,
+            resp,
+            ec);
 
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
@@ -1006,7 +1106,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::en
         boost::system::error_code ec;
         doHTTPRequest(env, yield, false, resp, ec);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::internal_server_error);
-        std::regex body{"Server cannot accept clients"};
+        std::regex const body{"Server cannot accept clients"};
         BEAST_EXPECT(std::regex_search(resp.body(), body));
     }
 

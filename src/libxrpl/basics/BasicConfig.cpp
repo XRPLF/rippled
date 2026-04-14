@@ -55,7 +55,7 @@ Section::append(std::vector<std::string> const& lines)
                     val = "";
                     break;
                 }
-                else if (val.at(comment - 1) == '\\')
+                if (val.at(comment - 1) == '\\')
                 {
                     // we have an escaped comment char. Erase the escape char
                     // and keep looking
@@ -83,9 +83,13 @@ Section::append(std::vector<std::string> const& lines)
 
         boost::smatch match;
         if (boost::regex_match(line, match, re1))
+        {
             set(match[1], match[2]);
+        }
         else
+        {
             values_.push_back(line);
+        }
 
         lines_.push_back(std::move(line));
     }
@@ -122,7 +126,7 @@ BasicConfig::section(std::string const& name)
 Section const&
 BasicConfig::section(std::string const& name) const
 {
-    static Section none("");
+    static Section const none("");
     auto const iter = map_.find(name);
     if (iter == map_.end())
         return none;
@@ -132,7 +136,8 @@ BasicConfig::section(std::string const& name) const
 void
 BasicConfig::overwrite(std::string const& section, std::string const& key, std::string const& value)
 {
-    auto const result = map_.emplace(std::piecewise_construct, std::make_tuple(section), std::make_tuple(section));
+    auto const result =
+        map_.emplace(std::piecewise_construct, std::make_tuple(section), std::make_tuple(section));
     result.first->second.set(key, value);
 }
 
@@ -161,8 +166,8 @@ BasicConfig::build(IniFileSections const& ifs)
 {
     for (auto const& entry : ifs)
     {
-        auto const result =
-            map_.emplace(std::piecewise_construct, std::make_tuple(entry.first), std::make_tuple(entry.first));
+        auto const result = map_.emplace(
+            std::piecewise_construct, std::make_tuple(entry.first), std::make_tuple(entry.first));
         result.first->second.append(entry.second);
     }
 }

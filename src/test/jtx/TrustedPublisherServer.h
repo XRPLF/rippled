@@ -67,7 +67,8 @@ class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublis
         sslCtx_.use_certificate_chain(boost::asio::buffer(cert().data(), cert().size()));
 
         sslCtx_.use_private_key(
-            boost::asio::buffer(key().data(), key().size()), boost::asio::ssl::context::file_format::pem);
+            boost::asio::buffer(key().data(), key().size()),
+            boost::asio::ssl::context::file_format::pem);
 
         sslCtx_.use_tmp_dh(boost::asio::buffer(dh().data(), dh().size()));
     }
@@ -93,7 +94,12 @@ public:
     };
 
     static std::string
-    makeManifestString(PublicKey const& pk, SecretKey const& sk, PublicKey const& spk, SecretKey const& ssk, int seq)
+    makeManifestString(
+        PublicKey const& pk,
+        SecretKey const& sk,
+        PublicKey const& spk,
+        SecretKey const& ssk,
+        int seq)
     {
         STObject st(sfGeneric);
         st[sfSequence] = seq;
@@ -123,7 +129,7 @@ public:
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
     // This constructor is only public so std::make_shared has access.
-    // The function`make_TrustedPublisherServer` should be used to create
+    // The function `make_TrustedPublisherServer` should be used to create
     // instances.
     // The `futures` member is expected to be structured as
     // effective / expiration time point pairs for use in version 2 UNLs
@@ -146,23 +152,25 @@ public:
         , publisherPublic_{derivePublicKey(KeyType::ed25519, publisherSecret_)}
     {
         auto const keys = randomKeyPair(KeyType::secp256k1);
-        auto const manifest = makeManifestString(publisherPublic_, publisherSecret_, keys.first, keys.second, 1);
+        auto const manifest =
+            makeManifestString(publisherPublic_, publisherSecret_, keys.first, keys.second, 1);
 
         std::vector<BlobInfo> blobInfo;
         blobInfo.reserve(futures.size() + 1);
         auto const [data, blob] = [&]() -> std::pair<std::string, std::string> {
             // Builds the validator list, then encodes it into a blob.
             std::string data = "{\"sequence\":" + std::to_string(sequence) +
-                ",\"expiration\":" + std::to_string(validUntil.time_since_epoch().count()) + ",\"validators\":[";
+                ",\"expiration\":" + std::to_string(validUntil.time_since_epoch().count()) +
+                ",\"validators\":[";
 
             for (auto const& val : validators)
             {
-                data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) + "\",\"manifest\":\"" +
-                    val.manifest + "\"},";
+                data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
+                    "\",\"manifest\":\"" + val.manifest + "\"},";
             }
             data.pop_back();
             data += "]}";
-            std::string blob = base64_encode(data);
+            std::string const blob = base64_encode(data);
             return std::make_pair(data, blob);
         }();
         auto const sig = strHex(sign(keys.first, keys.second, makeSlice(data)));
@@ -170,8 +178,8 @@ public:
         getList_ = [blob = blob, sig, manifest, version](int interval) {
             // Build the contents of a version 1 format UNL file
             std::stringstream l;
-            l << "{\"blob\":\"" << blob << "\"" << ",\"signature\":\"" << sig << "\"" << ",\"manifest\":\"" << manifest
-              << "\""
+            l << "{\"blob\":\"" << blob << "\"" << ",\"signature\":\"" << sig << "\""
+              << ",\"manifest\":\"" << manifest << "\""
               << ",\"refresh_interval\": " << interval << ",\"version\":" << version << '}';
             return l.str();
         };
@@ -179,17 +187,18 @@ public:
         {
             std::string data = "{\"sequence\":" + std::to_string(++sequence) +
                 ",\"effective\":" + std::to_string(future.first.time_since_epoch().count()) +
-                ",\"expiration\":" + std::to_string(future.second.time_since_epoch().count()) + ",\"validators\":[";
+                ",\"expiration\":" + std::to_string(future.second.time_since_epoch().count()) +
+                ",\"validators\":[";
 
             // Use the same set of validators for simplicity
             for (auto const& val : validators)
             {
-                data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) + "\",\"manifest\":\"" +
-                    val.manifest + "\"},";
+                data += "{\"validation_public_key\":\"" + strHex(val.masterPublic) +
+                    "\",\"manifest\":\"" + val.manifest + "\"},";
             }
             data.pop_back();
             data += "]}";
-            std::string blob = base64_encode(data);
+            std::string const blob = base64_encode(data);
             auto const sig = strHex(sign(keys.first, keys.second, makeSlice(data)));
             blobInfo.emplace_back(blob, sig);
         }
@@ -200,7 +209,8 @@ public:
             std::stringstream l;
             for (auto const& info : blobInfo)
             {
-                l << "{\"blob\":\"" << info.blob << "\"" << ",\"signature\":\"" << info.signature << "\"},";
+                l << "{\"blob\":\"" << info.blob << "\"" << ",\"signature\":\"" << info.signature
+                  << "\"},";
             }
             std::string blobs = l.str();
             blobs.pop_back();
@@ -225,12 +235,13 @@ public:
         acceptor_.set_option(boost::asio::ip::tcp::acceptor::reuse_address(true), ec);
         acceptor_.bind(ep_);
         acceptor_.listen(boost::asio::socket_base::max_listen_connections);
-        acceptor_.async_accept(sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
-            if (auto p = wp.lock())
-            {
-                p->on_accept(ec);
-            }
-        });
+        acceptor_.async_accept(
+            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
+                if (auto p = wp.lock())
+                {
+                    p->on_accept(ec);
+                }
+            });
     }
 
     void
@@ -238,7 +249,7 @@ public:
     {
         error_code ec;
         acceptor_.close(ec);
-        // TODO consider making this join
+        // TODO: consider making this join
         // any running do_peer threads
     }
 
@@ -284,7 +295,7 @@ public:
         openssl genrsa -out ca.key 2048
         openssl req -new -x509 -nodes -days 10000 -key ca.key -out ca.crt \
             -subj "/C=US/ST=CA/L=Los
-     Angeles/O=rippled-unit-tests/CN=example.com" # generate private cert
+     Angeles/O=xrpld-unit-tests/CN=example.com" # generate private cert
         openssl genrsa -out server.key 2048
         # Generate certificate signing request
         # since our unit tests can run in either ipv4 or ipv6 mode,
@@ -307,7 +318,7 @@ public:
         openssl req -new -key server.key -out server.csr \
             -config extras.cnf \
             -subj "/C=US/ST=California/L=San
-     Francisco/O=rippled-unit-tests/CN=127.0.0.1" \
+     Francisco/O=xrpld-unit-tests/CN=127.0.0.1" \
 
         # Create public certificate by signing with our CA
         openssl x509 -req -days 10000 -in server.csr -CA ca.crt -CAkey ca.key
@@ -460,12 +471,13 @@ private:
 
         static int id_ = 0;
         std::thread{lambda{++id_, *this, std::move(sock_), useSSL_}}.detach();
-        acceptor_.async_accept(sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
-            if (auto p = wp.lock())
-            {
-                p->on_accept(ec);
-            }
-        });
+        acceptor_.async_accept(
+            sock_, [wp = std::weak_ptr<TrustedPublisherServer>{shared_from_this()}](error_code ec) {
+                if (auto p = wp.lock())
+                {
+                    p->on_accept(ec);
+                }
+            });
     }
 
     void
@@ -521,7 +533,8 @@ private:
                         int refresh = 5;
                         constexpr char const* refreshPrefix = "/validators2/refresh/";
                         if (boost::starts_with(path, refreshPrefix))
-                            refresh = boost::lexical_cast<unsigned int>(path.substr(strlen(refreshPrefix)));
+                            refresh = boost::lexical_cast<unsigned int>(
+                                path.substr(strlen(refreshPrefix)));
                         res.body() = getList2_(refresh);
                     }
                 }
@@ -538,7 +551,8 @@ private:
                         int refresh = 5;
                         constexpr char const* refreshPrefix = "/validators/refresh/";
                         if (boost::starts_with(path, refreshPrefix))
-                            refresh = boost::lexical_cast<unsigned int>(path.substr(strlen(refreshPrefix)));
+                            refresh = boost::lexical_cast<unsigned int>(
+                                path.substr(strlen(refreshPrefix)));
                         res.body() = getList_(refresh);
                     }
                 }
@@ -548,14 +562,16 @@ private:
                     res.result(http::status::ok);
                     res.insert("Content-Type", "text/example");
                     // if huge was requested, lie about content length
-                    std::uint64_t cl =
-                        boost::starts_with(path, "/textfile/huge") ? std::numeric_limits<uint64_t>::max() : 1024;
+                    std::uint64_t const cl = boost::starts_with(path, "/textfile/huge")
+                        ? std::numeric_limits<uint64_t>::max()
+                        : 1024;
                     res.content_length(cl);
                     if (req.method() == http::verb::get)
                     {
                         std::stringstream body;
                         for (auto i = 0; i < 1024; ++i)
-                            body << static_cast<char>(rand_int<short>(32, 126)), res.body() = body.str();
+                            body << static_cast<char>(rand_int<short>(32, 126)),
+                                res.body() = body.str();
                     }
                 }
                 else if (boost::starts_with(path, "/sleep/"))
@@ -582,7 +598,9 @@ private:
                     else if (!boost::starts_with(path, "/redirect_nolo"))
                     {
                         location << (ssl ? "https://" : "http://") << local_endpoint()
-                                 << (boost::starts_with(path, "/redirect_forever/") ? path : "/validators");
+                                 << (boost::starts_with(path, "/redirect_forever/")
+                                         ? path
+                                         : "/validators");
                     }
                     if (!location.str().empty())
                         res.insert("Location", location.str());
@@ -637,8 +655,8 @@ make_TrustedPublisherServer(
     bool immediateStart = true,
     int sequence = 1)
 {
-    auto const r =
-        std::make_shared<TrustedPublisherServer>(ioc, validators, validUntil, futures, useSSL, version, sequence);
+    auto const r = std::make_shared<TrustedPublisherServer>(
+        ioc, validators, validUntil, futures, useSSL, version, sequence);
     if (immediateStart)
         r->start();
     return r;

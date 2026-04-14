@@ -45,11 +45,13 @@ to_string(Currency const& currency)
     if ((currency & sIsoBits).isZero())
     {
         std::string const iso(
-            currency.data() + detail::isoCodeOffset, currency.data() + detail::isoCodeOffset + detail::isoCodeLength);
+            currency.data() + detail::isoCodeOffset,
+            currency.data() + detail::isoCodeOffset + detail::isoCodeLength);
 
         // Specifying the system currency code using ISO-style representation
         // is not allowed.
-        if ((iso != systemCurrencyCode()) && (iso.find_first_not_of(detail::isoCharSet) == std::string::npos))
+        if ((iso != systemCurrencyCode()) &&
+            (iso.find_first_not_of(detail::isoCharSet) == std::string::npos))
         {
             return iso;
         }
@@ -61,7 +63,7 @@ to_string(Currency const& currency)
 bool
 to_currency(Currency& currency, std::string const& code)
 {
-    if (code.empty() || !code.compare(systemCurrencyCode()))
+    if (code.empty() || (code.compare(systemCurrencyCode()) == 0))
     {
         currency = beast::zero;
         return true;

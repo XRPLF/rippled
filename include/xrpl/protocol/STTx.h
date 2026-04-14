@@ -15,7 +15,7 @@
 
 namespace xrpl {
 
-enum TxnSql : char {
+enum class TxnSql : char {
     txnSqlNew = 'N',
     txnSqlConflict = 'C',
     txnSqlHeld = 'H',
@@ -83,6 +83,9 @@ public:
     std::uint32_t
     getSeqValue() const;
 
+    AccountID
+    getFeePayer() const;
+
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
@@ -119,7 +122,11 @@ public:
     getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) const;
 
     std::string
-    getMetaSQL(Serializer rawTxn, std::uint32_t inLedger, char status, std::string const& escapedMetaData) const;
+    getMetaSQL(
+        Serializer rawTxn,
+        std::uint32_t inLedger,
+        TxnSql status,
+        std::string const& escapedMetaData) const;
 
     std::vector<uint256> const&
     getBatchTransactionIDs() const;
@@ -172,7 +179,8 @@ sterilize(STTx const& stx);
 bool
 isPseudoTx(STObject const& tx);
 
-inline STTx::STTx(SerialIter&& sit) : STTx(sit)
+inline STTx::STTx(SerialIter&& sit)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    : STTx(sit)
 {
 }
 

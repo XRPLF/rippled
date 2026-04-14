@@ -30,10 +30,10 @@ public:
 
     // Add the address as an endpoint
     template <class C>
-    inline void
+    void
     add(beast::IP::Endpoint ep, C& c, std::uint32_t hops = 0)
     {
-        Endpoint cep{ep, hops};
+        Endpoint const cep{ep, hops};
         c.insert(cep);
     }
 
@@ -152,10 +152,12 @@ public:
         };
         all_hops before;
         all_hops before_sorted;
-        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end(); ++i.first, ++i.second)
+        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
+             ++i.first, ++i.second)
         {
             std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before[i.first]));
-            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(before_sorted[i.first]));
+            std::copy(
+                (*i.second).begin(), (*i.second).end(), std::back_inserter(before_sorted[i.first]));
             std::sort(before_sorted[i.first].begin(), before_sorted[i.first].end(), cmp_EP);
         }
 
@@ -163,10 +165,12 @@ public:
 
         all_hops after;
         all_hops after_sorted;
-        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end(); ++i.first, ++i.second)
+        for (auto i = std::make_pair(0, c.hops.begin()); i.second != c.hops.end();
+             ++i.first, ++i.second)
         {
             std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after[i.first]));
-            std::copy((*i.second).begin(), (*i.second).end(), std::back_inserter(after_sorted[i.first]));
+            std::copy(
+                (*i.second).begin(), (*i.second).end(), std::back_inserter(after_sorted[i.first]));
             std::sort(after_sorted[i.first].begin(), after_sorted[i.first].end(), cmp_EP);
         }
 

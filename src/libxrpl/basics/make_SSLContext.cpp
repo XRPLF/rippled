@@ -140,7 +140,7 @@ initAnonymous(boost::asio::ssl::context& context)
 
         auto const ts = std::time(nullptr) - (25 * 60 * 60);
 
-        int ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
+        int const ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
 
         buf[ret] = 0;
 
@@ -174,19 +174,22 @@ initAnonymous(boost::asio::ssl::context& context)
             X509V3_set_ctx_nodb(&ctx);
             X509V3_set_ctx(&ctx, x509, x509, nullptr, nullptr, 0);
 
-            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_basic_constraints, "critical,CA:FALSE"))
+            if (auto ext =
+                    X509V3_EXT_conf_nid(nullptr, &ctx, NID_basic_constraints, "critical,CA:FALSE"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_ext_key_usage, "critical,serverAuth,clientAuth"))
+            if (auto ext = X509V3_EXT_conf_nid(
+                    nullptr, &ctx, NID_ext_key_usage, "critical,serverAuth,clientAuth"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
             }
 
-            if (auto ext = X509V3_EXT_conf_nid(nullptr, &ctx, NID_key_usage, "critical,digitalSignature"))
+            if (auto ext =
+                    X509V3_EXT_conf_nid(nullptr, &ctx, NID_key_usage, "critical,digitalSignature"))
             {
                 X509_add_ext(x509, ext, -1);
                 X509_EXTENSION_free(ext);
@@ -236,6 +239,7 @@ initAuthenticated(
     {
         boost::system::error_code ec;
 
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
         context.use_certificate_file(cert_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)
@@ -249,7 +253,7 @@ initAuthenticated(
         // VFALCO Replace fopen() with RAII
         FILE* f = fopen(chain_file.c_str(), "r");
 
-        if (!f)
+        if (f == nullptr)
         {
             LogicError(
                 "Problem opening SSL chain file" +
@@ -268,9 +272,11 @@ initAuthenticated(
                 if (!cert_set)
                 {
                     if (SSL_CTX_use_certificate(ssl, x) != 1)
+                    {
                         LogicError(
                             "Problem retrieving SSL certificate from chain "
                             "file.");
+                    }
 
                     cert_set = true;
                 }
@@ -286,7 +292,8 @@ initAuthenticated(
         catch (std::exception const& ex)
         {
             fclose(f);
-            LogicError(std::string("Reading the SSL chain file generated an exception: ") + ex.what());
+            LogicError(
+                std::string("Reading the SSL chain file generated an exception: ") + ex.what());
         }
     }
 
@@ -294,6 +301,7 @@ initAuthenticated(
     {
         boost::system::error_code ec;
 
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
         context.use_private_key_file(key_file, boost::asio::ssl::context::pem, ec);
 
         if (ec)

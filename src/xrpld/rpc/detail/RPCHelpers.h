@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
@@ -9,6 +8,7 @@
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <optional>
 
@@ -47,7 +47,10 @@ getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
  * @return true if the SLE is owned by the account, false otherwise.
  */
 bool
-isRelatedToAccount(ReadView const& ledger, std::shared_ptr<SLE const> const& sle, AccountID const& accountID);
+isRelatedToAccount(
+    ReadView const& ledger,
+    std::shared_ptr<SLE const> const& sle,
+    AccountID const& accountID);
 
 /**
  * @brief Parses an array of account IDs from a JSON value.
@@ -91,16 +94,16 @@ std::optional<Seed>
 getSeedFromRPC(Json::Value const& params, Json::Value& error);
 
 /**
- * @brief Parses a RippleLib seed from RPC parameters.
+ * @brief Parses a XrplLib seed from RPC parameters.
  *
  * Attempts to extract and return a Seed from the provided JSON parameters using
- * RippleLib conventions.
+ * XrplLib conventions.
  *
  * @param params The JSON value containing RPC parameters.
  * @return An optional Seed if parsing is successful, or std::nullopt otherwise.
  */
 std::optional<Seed>
-parseRippleLibSeed(Json::Value const& params);
+parseXrplLibSeed(Json::Value const& params);
 
 /**
  * @brief Chooses the ledger entry type based on RPC parameters.
@@ -146,7 +149,19 @@ isAccountObjectsValidType(LedgerEntryType const& type);
  * or std::nullopt otherwise.
  */
 std::optional<std::pair<PublicKey, SecretKey>>
-keypairForSignature(Json::Value const& params, Json::Value& error, unsigned int apiVersion = apiVersionIfUnspecified);
+keypairForSignature(
+    Json::Value const& params,
+    Json::Value& error,
+    unsigned int apiVersion = apiVersionIfUnspecified);
+
+/** Parse subscribe/unsubscribe parameters
+ */
+error_code_i
+parseSubUnsubJson(
+    Asset& asset,
+    Json::Value const& jv,
+    Json::StaticString const& name,
+    beast::Journal j);
 
 }  // namespace RPC
 

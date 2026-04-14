@@ -70,7 +70,11 @@ sidechain_xchain_account_create(
     AnyAmount const& xChainFee);
 
 Json::Value
-sidechain_xchain_account_claim(Account const& acc, Json::Value const& bridge, Account const& dst, AnyAmount const& amt);
+sidechain_xchain_account_claim(
+    Account const& acc,
+    Json::Value const& bridge,
+    Account const& dst,
+    AnyAmount const& amt);
 
 Json::Value
 claim_attestation(
@@ -166,7 +170,7 @@ struct XChainBridgeObjects
     std::vector<signer> const alt_signers;
     std::vector<Account> const payee;
     std::vector<Account> const payees;
-    std::uint32_t const quorum;
+    std::uint32_t const quorum{UT_XCHAIN_DEFAULT_QUORUM};
 
     STAmount const reward;                 // 1 xrp
     STAmount const split_reward_quorum;    // 250,000 drops
@@ -201,7 +205,18 @@ struct XChainBridgeObjects
         std::size_t const fromIdx = 0)
     {
         return create_account_attestations(
-            scAttester, jvb, mcCarol, amt, reward, payees, true, createCount, dst, signers, numAtts, fromIdx);
+            scAttester,
+            jvb,
+            mcCarol,
+            amt,
+            reward,
+            payees,
+            true,
+            createCount,
+            dst,
+            signers,
+            numAtts,
+            fromIdx);
     }
 
     Json::Value
@@ -211,7 +226,8 @@ struct XChainBridgeObjects
         STAmount const& _reward = XRP(1),
         std::optional<STAmount> const& minAccountCreate = std::nullopt)
     {
-        return bridge_create(acc, bridge == Json::nullValue ? jvb : bridge, _reward, minAccountCreate);
+        return bridge_create(
+            acc, bridge == Json::nullValue ? jvb : bridge, _reward, minAccountCreate);
     }
 };
 

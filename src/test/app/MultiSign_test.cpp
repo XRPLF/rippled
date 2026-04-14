@@ -63,7 +63,7 @@ public:
 
         {
             // Attach a signer list to alice.  Should fail.
-            Json::Value signersList = signers(alice, 1, {{bogie, 1}});
+            Json::Value const signersList = signers(alice, 1, {{bogie, 1}});
             env(signersList, ter(tecINSUFFICIENT_RESERVE));
             env.close();
             env.require(owners(alice, 0));
@@ -81,10 +81,17 @@ public:
             env(pay(env.master, alice, fee - drops(1)));
 
             // Replace with the biggest possible signer list.  Should fail.
-            Json::Value bigSigners = signers(
+            Json::Value const bigSigners = signers(
                 alice,
                 1,
-                {{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {shade, 1}, {spook, 1}});
+                {{bogie, 1},
+                 {demon, 1},
+                 {ghost, 1},
+                 {haunt, 1},
+                 {jinni, 1},
+                 {phase, 1},
+                 {shade, 1},
+                 {spook, 1}});
             env(bigSigners, ter(tecINSUFFICIENT_RESERVE));
             env.close();
             env.require(owners(alice, 1));
@@ -129,7 +136,14 @@ public:
         env(signers(
                 alice,
                 1,
-                {{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {demon, 1}, {spook, 1}}),
+                {{bogie, 1},
+                 {demon, 1},
+                 {ghost, 1},
+                 {haunt, 1},
+                 {jinni, 1},
+                 {phase, 1},
+                 {demon, 1},
+                 {spook, 1}}),
             ter(temBAD_SIGNER));
 
         // Set a quorum of zero.  Should fail.
@@ -139,28 +153,30 @@ public:
         env(signers(
                 alice,
                 9,
-                {{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {shade, 1}, {spook, 1}}),
+                {{bogie, 1},
+                 {demon, 1},
+                 {ghost, 1},
+                 {haunt, 1},
+                 {jinni, 1},
+                 {phase, 1},
+                 {shade, 1},
+                 {spook, 1}}),
             ter(temBAD_QUORUM));
 
-        // clang-format off
         // Make a signer list that's too big.  Should fail.
         Account const spare("spare", KeyType::secp256k1);
         env(signers(
                 alice,
                 1,
-                std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
-                                          {haunt, 1}, {jinni, 1}, {phase, 1},
-                                          {shade, 1}, {spook, 1}, {spare, 1},
-                                          {acc10, 1}, {acc11, 1}, {acc12, 1},
-                                          {acc13, 1}, {acc14, 1}, {acc15, 1},
-                                          {acc16, 1}, {acc17, 1}, {acc18, 1},
-                                          {acc19, 1}, {acc20, 1}, {acc21, 1},
-                                          {acc22, 1}, {acc23, 1}, {acc24, 1},
-                                          {acc25, 1}, {acc26, 1}, {acc27, 1},
-                                          {acc28, 1}, {acc29, 1}, {acc30, 1},
-                                          {acc31, 1}, {acc32, 1}, {acc33, 1}}),
+                std::vector<signer>{
+                    {bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1},
+                    {shade, 1}, {spook, 1}, {spare, 1}, {acc10, 1}, {acc11, 1}, {acc12, 1},
+                    {acc13, 1}, {acc14, 1}, {acc15, 1}, {acc16, 1}, {acc17, 1}, {acc18, 1},
+                    {acc19, 1}, {acc20, 1}, {acc21, 1}, {acc22, 1}, {acc23, 1}, {acc24, 1},
+                    {acc25, 1}, {acc26, 1}, {acc27, 1}, {acc28, 1}, {acc29, 1}, {acc30, 1},
+                    {acc31, 1}, {acc32, 1}, {acc33, 1},
+                }),
             ter(temMALFORMED));
-        // clang-format on
         env.close();
         env.require(owners(alice, 0));
     }
@@ -243,7 +259,14 @@ public:
         env(signers(
             alice,
             1,
-            {{bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1}, {shade, 1}, {spook, 1}}));
+            {{bogie, 1},
+             {demon, 1},
+             {ghost, 1},
+             {haunt, 1},
+             {jinni, 1},
+             {phase, 1},
+             {shade, 1},
+             {spook, 1}}));
         env.close();
         env.require(owners(alice, 1));
 
@@ -264,7 +287,9 @@ public:
 
         // This should work.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(bogie, demon, ghost, haunt, jinni, phase, shade, spook), fee(9 * baseFee));
+        env(noop(alice),
+            msig(bogie, demon, ghost, haunt, jinni, phase, shade, spook),
+            fee(9 * baseFee));
         env.close();
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
@@ -300,7 +325,9 @@ public:
         msig phantoms{bogie, demon};
         std::reverse(phantoms.signers.begin(), phantoms.signers.end());
         std::uint32_t const aliceSeq = env.seq(alice);
-        env(noop(alice), phantoms, rpc("invalidTransaction", "fails local checks: Unsorted Signers array."));
+        env(noop(alice),
+            phantoms,
+            rpc("invalidTransaction", "fails local checks: Unsorted Signers array."));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
     }
@@ -454,7 +481,7 @@ public:
         env.close();
 
         auto const baseFee = env.current()->fees().base;
-        std::uint32_t aliceSeq;
+        std::uint32_t aliceSeq = 0;
 
         // these represent oft-repeated setup for input json below
         auto setup_tx = [&]() -> Json::Value {
@@ -510,7 +537,9 @@ public:
             auto jrr = env.rpc("json", "sign_for", to_string(jv_one))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "When multi-signing 'tx_json.SigningPubKey' must be empty.");
+            BEAST_EXPECT(
+                jrr[jss::error_message] ==
+                "When multi-signing 'tx_json.SigningPubKey' must be empty.");
         }
 
         {
@@ -535,7 +564,8 @@ public:
             jrr = env.rpc("json", "submit_multisigned", to_string(jv_submit))[jss::result];
             BEAST_EXPECT(jrr[jss::status] == "error");
             BEAST_EXPECT(jrr[jss::error] == "invalidParams");
-            BEAST_EXPECT(jrr[jss::error_message] == "Invalid Fee field.  Fees must be greater than zero.");
+            BEAST_EXPECT(
+                jrr[jss::error_message] == "Invalid Fee field.  Fees must be greater than zero.");
         }
 
         {
@@ -703,7 +733,11 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Require all signers to sign.
-        env(signers(alice, 0x3FFFC, {{becky, 0xFFFF}, {cheri, 0xFFFF}, {daria, 0xFFFF}, {jinni, 0xFFFF}}), sig(alie));
+        env(signers(
+                alice,
+                0x3FFFC,
+                {{becky, 0xFFFF}, {cheri, 0xFFFF}, {daria, 0xFFFF}, {jinni, 0xFFFF}}),
+            sig(alie));
         env.close();
         env.require(owners(alice, 1));
 
@@ -743,7 +777,10 @@ public:
 
         // One signer short should fail.
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(becky, cheri, haunt, jinni, phase, shade, spook), fee(8 * baseFee), ter(tefBAD_QUORUM));
+        env(noop(alice),
+            msig(becky, cheri, haunt, jinni, phase, shade, spook),
+            fee(8 * baseFee),
+            ter(tefBAD_QUORUM));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
@@ -915,7 +952,10 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Multisign a ttTRUST_SET
-        env(trust("alice", USD(100)), msig(becky, bogie), fee(3 * baseFee), require(lines("alice", 1)));
+        env(trust("alice", USD(100)),
+            msig(becky, bogie),
+            fee(3 * baseFee),
+            require(lines("alice", 1)));
         env.close();
         env.require(owners(alice, 2));
 
@@ -940,7 +980,9 @@ public:
         }
 
         // Multisign a ttSIGNER_LIST_SET.
-        env(signers(alice, 3, {{becky, 1}, {bogie, 1}, {demon, 1}}), msig(becky, bogie), fee(3 * baseFee));
+        env(signers(alice, 3, {{becky, 1}, {bogie, 1}, {demon, 1}}),
+            msig(becky, bogie),
+            fee(3 * baseFee));
         env.close();
         env.require(owners(alice, 2));
     }
@@ -970,15 +1012,17 @@ public:
         auto const baseFee = env.current()->fees().base;
         {
             // Single-sign, but leave an empty SigningPubKey.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx const tx = env.jt(noop(alice), sig(alice));
             STTx local = *(tx.stx);
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Empty SigningPubKey.");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Empty SigningPubKey.");
         }
         {
             // Single-sign, but invalidate the signature.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx const tx = env.jt(noop(alice), sig(alice));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto badSig = local.getFieldVL(sfTxnSignature);
@@ -986,41 +1030,47 @@ public:
             local.setFieldVL(sfTxnSignature, badSig);
             // Signature should fail.
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid signature.");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Invalid signature.");
         }
         {
             // Single-sign, but invalidate the sequence number.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx const tx = env.jt(noop(alice), sig(alice));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto seq = local.getFieldU32(sfSequence);
             local.setFieldU32(sfSequence, seq + 1);
             // Signature should fail.
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid signature.");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Invalid signature.");
         }
         {
             // Multisign, but leave a nonempty sfSigningPubKey.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             local[sfSigningPubKey] = alice.pk();  // Insert sfSigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception] == "fails local checks: Cannot both single- and multi-sign.");
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Cannot both single- and multi-sign.");
         }
         {
             // Both multi- and single-sign with an empty SigningPubKey.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             local.sign(alice.pk(), alice.sk());
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception] == "fails local checks: Cannot both single- and multi-sign.");
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Cannot both single- and multi-sign.");
         }
         {
             // Multisign but invalidate one of the signatures.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto& signer = local.peekFieldArray(sfSigners).back();
@@ -1030,19 +1080,21 @@ public:
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception].asString().find("Invalid signature on account r") !=
-                std::string::npos);
+                info[jss::result][jss::error_exception].asString().find(
+                    "Invalid signature on account r") != std::string::npos);
         }
         {
             // Multisign with an empty signers array should fail.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             local.peekFieldArray(sfSigners).clear();  // Empty Signers array.
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid Signers array size.");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Invalid Signers array size.");
         }
         {
-            JTx tx = env.jt(
+            JTx const tx = env.jt(
                 noop(alice),
                 fee(2 * baseFee),
 
@@ -1080,35 +1132,42 @@ public:
                     bogie,
                     bogie,
                     bogie));
-            STTx local = *(tx.stx);
+            STTx const local = *(tx.stx);
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid Signers array size.");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Invalid Signers array size.");
         }
         {
             // The account owner may not multisign for themselves.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(alice));
-            STTx local = *(tx.stx);
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(alice));
+            STTx const local = *(tx.stx);
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Invalid multisigner.");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Invalid multisigner.");
         }
         {
             // No duplicate multisignatures allowed.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie, bogie));
-            STTx local = *(tx.stx);
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie, bogie));
+            STTx const local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
-                info[jss::result][jss::error_exception] == "fails local checks: Duplicate Signers not allowed.");
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Duplicate Signers not allowed.");
         }
         {
             // Multisignatures must be submitted in sorted order.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie, demon));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie, demon));
             STTx local = *(tx.stx);
             // Unsort the Signers array.
             auto& signers = local.peekFieldArray(sfSigners);
             std::reverse(signers.begin(), signers.end());
             // Signature should fail.
             auto const info = submitSTTx(local);
-            BEAST_EXPECT(info[jss::result][jss::error_exception] == "fails local checks: Unsorted Signers array.");
+            BEAST_EXPECT(
+                info[jss::result][jss::error_exception] ==
+                "fails local checks: Unsorted Signers array.");
         }
     }
 
@@ -1248,7 +1307,8 @@ public:
         BEAST_EXPECT(hash1 != hash2);
 
         // Submit the result of the two signatures.
-        Json::Value jvResult = env.rpc("json", "submit_multisigned", to_string(jvSubmit[jss::result]));
+        Json::Value jvResult =
+            env.rpc("json", "submit_multisigned", to_string(jvSubmit[jss::result]));
         BEAST_EXPECT(jvResult[jss::result][jss::status].asString() == "success");
         BEAST_EXPECT(jvResult[jss::result][jss::engine_result].asString() == "tesSUCCESS");
 
@@ -1262,7 +1322,8 @@ public:
         Json::Value jvTx = env.rpc("tx", hash2);
         BEAST_EXPECT(jvTx[jss::result][jss::status].asString() == "success");
         BEAST_EXPECT(jvTx[jss::result][jss::validated].asString() == "true");
-        BEAST_EXPECT(jvTx[jss::result][jss::meta][sfTransactionResult.jsonName].asString() == "tesSUCCESS");
+        BEAST_EXPECT(
+            jvTx[jss::result][jss::meta][sfTransactionResult.jsonName].asString() == "tesSUCCESS");
     }
 
     void

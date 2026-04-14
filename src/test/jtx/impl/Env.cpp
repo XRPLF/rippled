@@ -10,12 +10,12 @@
 #include <test/jtx/utility.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -25,6 +25,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <memory>
 #include <source_location>
@@ -56,10 +57,11 @@ Env::AppBundle::AppBundle(
     auto timeKeeper_ = std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
     // Hack so we don't have to call Config::setup
-    HTTPClient::initializeSSLContext(config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
+    HTTPClient::initializeSSLContext(
+        config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());
     owned = make_Application(std::move(config), std::move(logs), std::move(timeKeeper_));
     app = owned.get();
-    app->logs().threshold(thresh);
+    app->getLogs().threshold(thresh);
     if (!app->setup({}))
         Throw<std::runtime_error>("Env::AppBundle: setup failed");
     timeKeeper->set(app->getLedgerMaster().getClosedLedger()->header().closeTime);
@@ -74,7 +76,7 @@ Env::AppBundle::~AppBundle()
     client.reset();
     // Make sure all jobs finish, otherwise tests
     // might not get the coverage they expect.
-    if (app)
+    if (app != nullptr)
     {
         app->getJobQueue().rendezvous();
         app->signalStop("~AppBundle");
@@ -105,7 +107,9 @@ Env::close(NetClock::time_point closeTime, std::optional<std::chrono::millisecon
     // Go through the rpc interface unless we need to simulate
     // a specific consensus delay.
     if (consensusDelay)
+    {
         app().getOPs().acceptLedger(consensusDelay);
+    }
     else
     {
         auto resp = rpc("ledger_accept");
@@ -113,11 +117,17 @@ Env::close(NetClock::time_point closeTime, std::optional<std::chrono::millisecon
         {
             std::string reason = "internal error";
             if (resp.isMember("error_what"))
+            {
                 reason = resp["error_what"].asString();
+            }
             else if (resp.isMember("error_message"))
+            {
                 reason = resp["error_message"].asString();
+            }
             else if (resp.isMember("error"))
+            {
                 reason = resp["error"].asString();
+            }
 
             JLOG(journal.error()) << "Env::close() failed: " << reason;
             res = false;
@@ -164,55 +174,47 @@ Env::balance(Account const& account) const
 }
 
 PrettyAmount
-Env::balance(Account const& account, Issue const& issue) const
-{
-    if (isXRP(issue.currency))
-        return balance(account);
-    auto const sle = le(keylet::line(account.id(), issue));
-    if (!sle)
-        return {STAmount(issue, 0), account.name()};
-    auto amount = sle->getFieldAmount(sfBalance);
-    amount.setIssuer(issue.account);
-    if (account.id() > issue.account)
-        amount.negate();
-    return {amount, lookup(issue.account).name()};
-}
-
-PrettyAmount
-Env::balance(Account const& account, MPTIssue const& mptIssue) const
-{
-    MPTID const id = mptIssue.getMptID();
-    if (!id)
-        return {STAmount(mptIssue, 0), account.name()};
-
-    AccountID const issuer = mptIssue.getIssuer();
-    if (account.id() == issuer)
-    {
-        // Issuer balance
-        auto const sle = le(keylet::mptIssuance(id));
-        if (!sle)
-            return {STAmount(mptIssue, 0), account.name()};
-
-        // Make it negative
-        STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
-        return {amount, lookup(issuer).name()};
-    }
-    else
-    {
-        // Holder balance
-        auto const sle = le(keylet::mptoken(id, account));
-        if (!sle)
-            return {STAmount(mptIssue, 0), account.name()};
-
-        STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-        return {amount, lookup(issuer).name()};
-    }
-}
-
-PrettyAmount
 Env::balance(Account const& account, Asset const& asset) const
 {
-    return std::visit([&](auto const& issue) { return balance(account, issue); }, asset.value());
+    return asset.visit(
+        [&](Issue const& issue) -> PrettyAmount {
+            if (isXRP(issue.currency))
+                return balance(account);
+            auto const sle = le(keylet::line(account.id(), issue));
+            if (!sle)
+                return {STAmount(issue, 0), account.name()};
+            auto amount = sle->getFieldAmount(sfBalance);
+            amount.get<Issue>().account = issue.account;
+            if (account.id() > issue.account)
+                amount.negate();
+            return {amount, lookup(issue.account).name()};
+        },
+        [&](MPTIssue const& mptIssue) -> PrettyAmount {
+            MPTID const& id = mptIssue.getMptID();
+            if (!id)
+                return {STAmount(mptIssue, 0), account.name()};
+
+            AccountID const& issuer = mptIssue.getIssuer();
+            if (account.id() == issuer)
+            {
+                // Issuer balance
+                auto const sle = le(keylet::mptIssuance(id));
+                if (!sle)
+                    return {STAmount(mptIssue, 0), account.name()};
+
+                // Make it negative
+                STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
+                return {amount, lookup(issuer).name()};
+            }
+
+            // Holder balance
+            auto const sle = le(keylet::mptoken(id, account));
+            if (!sle)
+                return {STAmount(mptIssue, 0), account.name()};
+
+            STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+            return {amount, lookup(issuer).name()};
+        });
 }
 
 PrettyAmount
@@ -269,12 +271,20 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
             jtx::seq(jtx::autofill),
             fee(jtx::autofill),
             sig(jtx::autofill));
-        apply(fset(account, asfDefaultRipple), jtx::seq(jtx::autofill), fee(jtx::autofill), sig(jtx::autofill));
+        apply(
+            fset(account, asfDefaultRipple),
+            jtx::seq(jtx::autofill),
+            fee(jtx::autofill),
+            sig(jtx::autofill));
         require(flags(account, asfDefaultRipple));
     }
     else
     {
-        apply(pay(master, account, amount), jtx::seq(jtx::autofill), fee(jtx::autofill), sig(jtx::autofill));
+        apply(
+            pay(master, account, amount),
+            jtx::seq(jtx::autofill),
+            fee(jtx::autofill),
+            sig(jtx::autofill));
         require(nflags(account, asfDefaultRipple));
     }
     require(jtx::balance(account, amount));
@@ -283,8 +293,14 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
 void
 Env::trust(STAmount const& amount, Account const& account)
 {
+    if (!amount.holds<Issue>())
+        Throw<std::runtime_error>("Env::trust: amount doesn't hold Issue");
     auto const start = balance(account);
-    apply(jtx::trust(account, amount), jtx::seq(jtx::autofill), fee(jtx::autofill), sig(jtx::autofill));
+    apply(
+        jtx::trust(account, amount),
+        jtx::seq(jtx::autofill),
+        fee(jtx::autofill),
+        sig(jtx::autofill));
     apply(
         pay(master, account, drops(current()->fees().base)),
         jtx::seq(jtx::autofill),
@@ -322,10 +338,14 @@ Env::parseResult(Json::Value const& jr)
             parsed.rpcCode.emplace(rpcSUCCESS);
         }
         else
+        {
             error(parsed, result);
+        }
     }
     else
+    {
         error(parsed, jr);
+    }
 
     return parsed;
 }
@@ -348,16 +368,14 @@ Env::submit(JTx const& jt, std::source_location const& loc)
 
             return jr;
         }
-        else
-        {
-            // Parsing failed or the JTx is
-            // otherwise missing the stx field.
-            parsedResult.ter = ter_ = temMALFORMED;
 
-            return Json::Value();
-        }
+        // Parsing failed or the JTx is
+        // otherwise missing the stx field.
+        parsedResult.ter = ter_ = temMALFORMED;
+
+        return Json::Value();
     }();
-    return postconditions(jt, parsedResult, jr, loc);
+    postconditions(jt, parsedResult, jr, loc);
 }
 
 void
@@ -378,8 +396,9 @@ Env::sign_and_submit(JTx const& jt, Json::Value params, std::source_location con
         // Use the provided parameters, and go straight
         // to the (RPC) client.
         assert(params.isObject());
-        if (!params.isMember(jss::secret) && !params.isMember(jss::key_type) && !params.isMember(jss::seed) &&
-            !params.isMember(jss::seed_hex) && !params.isMember(jss::passphrase))
+        if (!params.isMember(jss::secret) && !params.isMember(jss::key_type) &&
+            !params.isMember(jss::seed) && !params.isMember(jss::seed_hex) &&
+            !params.isMember(jss::passphrase))
         {
             params[jss::secret] = passphrase;
         }
@@ -394,41 +413,47 @@ Env::sign_and_submit(JTx const& jt, Json::Value params, std::source_location con
     test.expect(parsedResult.ter, "ter uninitialized!");
     ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
 
-    return postconditions(jt, parsedResult, jr, loc);
+    postconditions(jt, parsedResult, jr, loc);
 }
 
 void
-Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const& jr, std::source_location const& loc)
+Env::postconditions(
+    JTx const& jt,
+    ParsedResult const& parsed,
+    Json::Value const& jr,
+    std::source_location const& loc)
 {
-    auto const line = jt.testLine ? " (" + to_string(*jt.testLine) + ")" : "";
     auto const locStr = std::string("(") + loc.file_name() + ":" + to_string(loc.line()) + ")";
-    bool bad = !test.expect(parsed.ter, "apply " + locStr + ": No ter result!" + line);
+    bool bad = !test.expect(parsed.ter, "apply " + locStr + ": No ter result!");
     bad =
         (jt.ter && parsed.ter &&
          !test.expect(
              *parsed.ter == *jt.ter,
-             "apply " + locStr + ": Got " + transToken(*parsed.ter) + " (" + transHuman(*parsed.ter) + "); Expected " +
-                 transToken(*jt.ter) + " (" + transHuman(*jt.ter) + ")" + line));
+             "apply " + locStr + ": Got " + transToken(*parsed.ter) + " (" +
+                 transHuman(*parsed.ter) + "); Expected " + transToken(*jt.ter) + " (" +
+                 transHuman(*jt.ter) + ")"));
     using namespace std::string_literals;
     bad = (jt.rpcCode &&
            !test.expect(
                parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
                "apply " + locStr + ": Got RPC result "s +
-                   (parsed.rpcCode ? RPC::get_error_info(*parsed.rpcCode).token.c_str() : "NO RESULT") + " (" +
-                   parsed.rpcMessage + "); Expected " + RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
-                   jt.rpcCode->second + ")" + line)) ||
+                   (parsed.rpcCode ? RPC::get_error_info(*parsed.rpcCode).token.c_str()
+                                   : "NO RESULT") +
+                   " (" + parsed.rpcMessage + "); Expected " +
+                   RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
+                   jt.rpcCode->second + ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
     // optional - the 'error' field may not be defined, but if it is, it must
     // match rpcError.
-    bad =
-        (jt.rpcException &&
-         !test.expect(
-             (jt.rpcCode && parsed.rpcError.empty()) ||
-                 (parsed.rpcError == jt.rpcException->first &&
-                  (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
-             "apply " + locStr + ": Got RPC result "s + parsed.rpcError + " (" + parsed.rpcException + "); Expected " +
-                 jt.rpcException->first + " (" + jt.rpcException->second.value_or("n/a") + ")" + line)) ||
+    bad = (jt.rpcException &&
+           !test.expect(
+               (jt.rpcCode && parsed.rpcError.empty()) ||
+                   (parsed.rpcError == jt.rpcException->first &&
+                    (!jt.rpcException->second || parsed.rpcException == *jt.rpcException->second)),
+               "apply " + locStr + ": Got RPC result "s + parsed.rpcError + " (" +
+                   parsed.rpcException + "); Expected " + jt.rpcException->first + " (" +
+                   jt.rpcException->second.value_or("n/a") + ")")) ||
         bad;
     if (bad)
     {
@@ -439,7 +464,7 @@ Env::postconditions(JTx const& jt, ParsedResult const& parsed, Json::Value const
         // we didn't get the expected result.
         return;
     }
-    if (trace_)
+    if (trace_ != 0)
     {
         if (trace_ > 0)
             --trace_;
@@ -482,7 +507,7 @@ Env::autofill_sig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    scope_success success([&]() {
+    scope_success const success([&]() {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);
@@ -499,8 +524,9 @@ Env::autofill_sig(JTx& jt)
     // If the sig is still needed, get it here.
     if (!jt.fill_sig)
         return;
-    auto const account = jv.isMember(sfDelegate.jsonName) ? lookup(jv[sfDelegate.jsonName].asString())
-                                                          : lookup(jv[jss::Account].asString());
+    auto const account = jv.isMember(sfDelegate.jsonName)
+        ? lookup(jv[sfDelegate.jsonName].asString())
+        : lookup(jv[jss::Account].asString());
     if (!app().checkSigs())
     {
         jv[jss::SigningPubKey] = strHex(account.pk().slice());
@@ -510,9 +536,13 @@ Env::autofill_sig(JTx& jt)
     }
     auto const ar = le(account);
     if (ar && ar->isFieldPresent(sfRegularKey))
+    {
         jtx::sign(jv, lookup(ar->getAccountID(sfRegularKey)));
+    }
     else
+    {
         jtx::sign(jv, account);
+    }
 }
 
 void
@@ -526,7 +556,7 @@ Env::autofill(JTx& jt)
 
     if (jt.fill_netid)
     {
-        uint32_t networkID = app().config().NETWORK_ID;
+        uint32_t const networkID = app().getNetworkIDService().getNetworkID();
         if (!jv.isMember(jss::NetworkID) && networkID > 1024)
             jv[jss::NetworkID] = std::to_string(networkID);
     }
@@ -564,10 +594,10 @@ Env::st(JTx const& jt)
     {
         return sterilize(STTx{std::move(*obj)});
     }
-    catch (std::exception const&)
+    catch (...)
     {
+        return nullptr;
     }
-    return nullptr;
 }
 
 std::shared_ptr<STTx const>
@@ -590,10 +620,10 @@ Env::ust(JTx const& jt)
     {
         return std::make_shared<STTx const>(std::move(*obj));
     }
-    catch (std::exception const&)
+    catch (...)
     {
+        return nullptr;
     }
-    return nullptr;
 }
 
 Json::Value
@@ -602,14 +632,14 @@ Env::do_rpc(
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    auto response = rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+    auto response = rpcClient(args, app().config(), app().getLogs(), apiVersion, headers);
 
     for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL); ++ctr)
     {
         JLOG(journal.error()) << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        response = rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+        response = rpcClient(args, app().config(), app().getLogs(), apiVersion, headers);
     }
 
     return response.second;

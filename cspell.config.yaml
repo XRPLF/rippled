@@ -6,6 +6,7 @@ ignorePaths:
   - docs/**/*.puml
   - cmake/**
   - LICENSE.md
+  - .clang-tidy
 language: en
 allowCompoundWords: true # TODO (#6334)
 ignoreRandomStrings: true
@@ -43,6 +44,10 @@ suggestWords:
 words:
   - abempty
   - AMMID
+  - AMMMPT
+  - AMMMPToken
+  - AMMMPTokens
+  - AMMXRP
   - amt
   - amts
   - asnode
@@ -98,9 +103,11 @@ words:
   - doxyfile
   - dxrpl
   - elgamal
+  - enabled
   - endmacro
   - exceptioned
   - Falco
+  - fcontext
   - finalizers
   - firewalled
   - fmtdur
@@ -114,6 +121,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hwaddress
   - hwrap
   - ifndef
   - inequation
@@ -149,6 +157,8 @@ words:
   - ltype
   - mcmodel
   - MEMORYSTATUSEX
+  - MPTAMM
+  - MPTDEX
   - Merkle
   - Metafuncton
   - misprediction
@@ -158,6 +168,7 @@ words:
   - mptid
   - mptissuance
   - mptissuanceid
+  - mptissue
   - mptoken
   - mptokenid
   - mptokenissuance
@@ -176,6 +187,11 @@ words:
   - nftokens
   - nftpage
   - nikb
+  - nixfmt
+  - nixos
+  - nixpkgs
+  - NOLINT
+  - NOLINTNEXTLINE
   - nonxrp
   - noripple
   - nudb
@@ -203,6 +219,7 @@ words:
   - ptrs
   - pushd
   - pyenv
+  - pyparsing
   - qalloc
   - queuable
   - Raphson
@@ -229,6 +246,7 @@ words:
   - seqit
   - sf
   - SFIELD
+  - sfields
   - shamap
   - shamapitem
   - sidechain
@@ -294,6 +312,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wasmi
   - wextra
   - wptr
   - writeme

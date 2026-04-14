@@ -15,9 +15,9 @@ namespace xrpl {
     Validator key manifests
     -----------------------
 
-    Suppose the secret keys installed on a Ripple validator are compromised. Not
+    Suppose the secret keys installed on an XRPL validator are compromised. Not
     only do you have to generate and install new key pairs on each validator,
-    EVERY rippled needs to have its config updated with the new public keys, and
+    EVERY xrpld needs to have its config updated with the new public keys, and
     is vulnerable to forged validation signatures until this is done.  The
     solution is a new layer of indirection: A master secret key under
     restrictive access control is used to sign a "manifest": essentially, a
@@ -39,11 +39,11 @@ namespace xrpl {
     seen for that validator, if any.  On startup, the [validator_token] config
     entry (which contains the manifest for this validator) is decoded and
     added to the manifest cache.  Other manifests are added as "gossip"
-    received from rippled peers.
+    received from xrpld peers.
 
     When an ephemeral key is compromised, a new signing key pair is created,
     along with a new manifest vouching for it (with a higher sequence number),
-    signed by the master key.  When a rippled peer receives the new manifest,
+    signed by the master key.  When an xrpld peer receives the new manifest,
     it verifies it with the master key and (assuming it's valid) discards the
     old ephemeral key and stores the new one.  If the master key itself gets
     compromised, a manifest with sequence number 0xFFFFFFFF will supersede a
@@ -85,7 +85,11 @@ struct Manifest
         std::optional<PublicKey> const& signingKey_,
         std::uint32_t seq,
         std::string const& domain_)
-        : serialized(serialized_), masterKey(masterKey_), signingKey(signingKey_), sequence(seq), domain(domain_)
+        : serialized(serialized_)
+        , masterKey(masterKey_)
+        , signingKey(signingKey_)
+        , sequence(seq)
+        , domain(domain_)
     {
     }
 
@@ -141,14 +145,20 @@ std::optional<Manifest>
 deserializeManifest(Slice s, beast::Journal journal);
 
 inline std::optional<Manifest>
-deserializeManifest(std::string const& s, beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+deserializeManifest(
+    std::string const& s,
+    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
 {
     return deserializeManifest(makeSlice(s), journal);
 }
 
-template <class T, class = std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
+template <
+    class T,
+    class = std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
 std::optional<Manifest>
-deserializeManifest(std::vector<T> const& v, beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
+deserializeManifest(
+    std::vector<T> const& v,
+    beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
 {
     return deserializeManifest(makeSlice(v), journal);
 }
@@ -159,8 +169,9 @@ operator==(Manifest const& lhs, Manifest const& rhs)
 {
     // In theory, comparing the two serialized strings should be
     // sufficient.
-    return lhs.sequence == rhs.sequence && lhs.masterKey == rhs.masterKey && lhs.signingKey == rhs.signingKey &&
-        lhs.domain == rhs.domain && lhs.serialized == rhs.serialized;
+    return lhs.sequence == rhs.sequence && lhs.masterKey == rhs.masterKey &&
+        lhs.signingKey == rhs.signingKey && lhs.domain == rhs.domain &&
+        lhs.serialized == rhs.serialized;
 }
 
 inline bool
@@ -368,7 +379,10 @@ public:
         May be called concurrently
     */
     void
-    save(DatabaseCon& dbCon, std::string const& dbTable, std::function<bool(PublicKey const&)> const& isTrusted);
+    save(
+        DatabaseCon& dbCon,
+        std::string const& dbTable,
+        std::function<bool(PublicKey const&)> const& isTrusted);
 
     /** Invokes the callback once for every populated manifest.
 
@@ -387,7 +401,7 @@ public:
     void
     for_each_manifest(Function&& f) const
     {
-        std::shared_lock lock{mutex_};
+        std::shared_lock const lock{mutex_};
         for (auto const& [_, manifest] : map_)
         {
             (void)_;
@@ -415,7 +429,7 @@ public:
     void
     for_each_manifest(PreFun&& pf, EachFun&& f) const
     {
-        std::shared_lock lock{mutex_};
+        std::shared_lock const lock{mutex_};
         pf(map_.size());
         for (auto const& [_, manifest] : map_)
         {

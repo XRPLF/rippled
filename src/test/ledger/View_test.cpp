@@ -1,12 +1,14 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 
 #include <type_traits>
@@ -88,7 +90,7 @@ class View_test : public beast::unit_test::suite
         auto const next = v.succ(k(id).key);
         if (answer)
         {
-            if (BEAST_EXPECT(next))
+            if (BEAST_EXPECT(next); next.has_value())
                 BEAST_EXPECT(*next == k(*answer).key);
         }
         else
@@ -112,12 +114,17 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
-        std::shared_ptr<Ledger const> const genesis =
-            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+        Config const config;
+        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
         wipe(*ledger);
-        ReadView& v = *ledger;
+        ReadView const& v = *ledger;
         succ(v, 0, std::nullopt);
         ledger->rawInsert(sle(1, 1));
         BEAST_EXPECT(v.exists(k(1)));
@@ -145,7 +152,7 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v(&*open, tapNONE);
         succ(v, 0, std::nullopt);
@@ -178,7 +185,7 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v0(&*open, tapNONE);
         v0.insert(sle(1));
@@ -244,7 +251,7 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v0(&*open, tapNONE);
         v0.rawInsert(sle(1, 1));
@@ -313,7 +320,7 @@ class View_test : public beast::unit_test::suite
         using namespace std::chrono;
         {
             Env env(*this);
-            wipe(env.app().openLedger());
+            wipe(env.app().getOpenLedger());
             auto const open = env.current();
             OpenView v0(open.get());
             BEAST_EXPECT(v0.seq() != 98);
@@ -331,7 +338,7 @@ class View_test : public beast::unit_test::suite
                 BEAST_EXPECT(v2.seq() == v1.seq());
                 BEAST_EXPECT(v2.flags() == tapRETRY);
 
-                Sandbox v3(&v2);
+                Sandbox const v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() == v2.parentCloseTime());
                 BEAST_EXPECT(v3.flags() == tapRETRY);
@@ -342,7 +349,7 @@ class View_test : public beast::unit_test::suite
                 BEAST_EXPECT(v2.seq() == v0.seq());
                 BEAST_EXPECT(v2.parentCloseTime() == v0.parentCloseTime());
                 BEAST_EXPECT(v2.flags() == tapRETRY);
-                PaymentSandbox v3(&v2);
+                PaymentSandbox const v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() == v2.parentCloseTime());
                 BEAST_EXPECT(v3.flags() == v2.flags());
@@ -375,10 +382,15 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
-        std::shared_ptr<Ledger const> const genesis =
-            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+        Config const config;
+        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
 
         auto setup = [&ledger](std::vector<int> const& vec) {
             wipe(*ledger);
@@ -579,10 +591,15 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
-        std::shared_ptr<Ledger const> const genesis =
-            std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+        Config const config;
+        std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
         auto setup123 = [&ledger, this]() {
             // erase middle element
             wipe(*ledger);
@@ -732,7 +749,10 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // Alice's USD balance should be zero if frozen.
-            BEAST_EXPECT(USD(0) == accountHolds(*env.closed(), alice, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+            BEAST_EXPECT(
+                USD(0) ==
+                accountHolds(
+                    *env.closed(), alice, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // Thaw gw and try again.
             env(fclear(gw, asfGlobalFreeze));
@@ -749,12 +769,16 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // Bob's balance should be zero if frozen.
-            BEAST_EXPECT(USD(0) == accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+            BEAST_EXPECT(
+                USD(0) ==
+                accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // gw thaws bob's trust line.  bob gets his money back.
             env(trust(gw, USD(100), bob, tfClearFreeze));
             env.close();
-            BEAST_EXPECT(USD(50) == accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+            BEAST_EXPECT(
+                USD(50) ==
+                accountHolds(*env.closed(), bob, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
             // accountHolds().
@@ -762,15 +786,20 @@ class View_test : public beast::unit_test::suite
             env.close();
 
             // carol has no EUR.
-            BEAST_EXPECT(EUR(0) == accountHolds(*env.closed(), carol, EUR.currency, gw, fhZERO_IF_FROZEN, env.journal));
+            BEAST_EXPECT(
+                EUR(0) ==
+                accountHolds(
+                    *env.closed(), carol, EUR.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // But carol does have USD.
             BEAST_EXPECT(
-                USD(50) == accountHolds(*env.closed(), carol, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
+                USD(50) ==
+                accountHolds(
+                    *env.closed(), carol, USD.currency, gw, fhZERO_IF_FROZEN, env.journal));
 
             // carol's XRP balance should be her holdings minus her reserve.
-            auto const carolsXRP =
-                accountHolds(*env.closed(), carol, xrpCurrency(), xrpAccount(), fhZERO_IF_FROZEN, env.journal);
+            auto const carolsXRP = accountHolds(
+                *env.closed(), carol, xrpCurrency(), xrpAccount(), fhZERO_IF_FROZEN, env.journal);
             // carol's XRP balance:              10000
             // base reserve:                      -200
             // 1 trust line times its reserve: 1 * -50
@@ -785,16 +814,20 @@ class View_test : public beast::unit_test::suite
 
             // carol's XRP balance should now show as zero.
             BEAST_EXPECT(
-                XRP(0) == accountHolds(*env.closed(), carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal));
+                XRP(0) ==
+                accountHolds(
+                    *env.closed(), carol, xrpCurrency(), gw, fhZERO_IF_FROZEN, env.journal));
         }
         {
             // accountFunds().
             // Gateways have whatever funds they claim to have.
-            auto const gwUSD = accountFunds(*env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
+            auto const gwUSD =
+                accountFunds(*env.closed(), gw, USD(314159), fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(gwUSD == USD(314159));
 
             // carol has funds from the gateway.
-            auto carolsUSD = accountFunds(*env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
+            auto carolsUSD =
+                accountFunds(*env.closed(), carol, USD(0), fhZERO_IF_FROZEN, env.journal);
             BEAST_EXPECT(carolsUSD == USD(50));
 
             // If carol's funds are frozen she has no funds...
@@ -909,13 +942,18 @@ class View_test : public beast::unit_test::suite
         // erase the item, apply.
         {
             Env env(*this);
-            Config config;
-            std::shared_ptr<Ledger const> const genesis =
-                std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-            auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+            Config const config;
+            std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
+                create_genesis,
+                Rules{config.features},
+                config.FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
+            auto const ledger =
+                std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
             wipe(*ledger);
             ledger->rawInsert(sle(1));
-            ReadView& v0 = *ledger;
+            ReadView const& v0 = *ledger;
             ApplyViewImpl v1(&v0, tapNONE);
             {
                 Sandbox v2(&v1);
@@ -928,9 +966,9 @@ class View_test : public beast::unit_test::suite
         // Make sure OpenLedger::empty works
         {
             Env env(*this);
-            BEAST_EXPECT(env.app().openLedger().empty());
+            BEAST_EXPECT(env.app().getOpenLedger().empty());
             env.fund(XRP(10000), Account("test"));
-            BEAST_EXPECT(!env.app().openLedger().empty());
+            BEAST_EXPECT(!env.app().getOpenLedger().empty());
         }
     }
 

@@ -8,6 +8,8 @@
 
 #include <boost/asio/ip/tcp.hpp>
 
+#include "xrpld/peerfinder/detail/Tuning.h"
+
 #include <string_view>
 
 namespace xrpl {
@@ -27,7 +29,7 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    std::size_t maxPeers;
+    std::size_t maxPeers{Tuning::defaultMaxPeers};
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
@@ -39,25 +41,25 @@ struct Config
         Inbound connections are only maintained if wantIncoming
         is `true`.
     */
-    std::size_t inPeers;
+    std::size_t inPeers{0};
 
     /** `true` if we want our IP address kept private. */
     bool peerPrivate = true;
 
     /** `true` if we want to accept incoming connections. */
-    bool wantIncoming;
+    bool wantIncoming{true};
 
     /** `true` if we want to establish connections automatically */
-    bool autoConnect;
+    bool autoConnect{true};
 
     /** The listening port number. */
-    std::uint16_t listeningPort;
+    std::uint16_t listeningPort{0};
 
     /** The set of features we advertise. */
     std::string features;
 
     /** Limit how many incoming connections we allow per IP */
-    int ipLimit;
+    int ipLimit{0};
 
     //--------------------------------------------------------------------------
 
@@ -74,7 +76,7 @@ struct Config
 
     /** Write the configuration into a property stream */
     void
-    onWrite(beast::PropertyStream::Map& map);
+    onWrite(beast::PropertyStream::Map& map) const;
 
     /** Make PeerFinder::Config from configuration parameters
      * @param config server's configuration
@@ -84,7 +86,11 @@ struct Config
      * @return PeerFinder::Config
      */
     static Config
-    makeConfig(xrpl::Config const& config, std::uint16_t port, bool validationPublicKey, int ipLimit);
+    makeConfig(
+        xrpl::Config const& config,
+        std::uint16_t port,
+        bool validationPublicKey,
+        int ipLimit);
 
     friend bool
     operator==(Config const& lhs, Config const& rhs);
@@ -214,7 +220,9 @@ public:
         Usually this is because of a detected self-connection.
     */
     virtual std::pair<std::shared_ptr<Slot>, Result>
-    new_inbound_slot(beast::IP::Endpoint const& local_endpoint, beast::IP::Endpoint const& remote_endpoint) = 0;
+    new_inbound_slot(
+        beast::IP::Endpoint const& local_endpoint,
+        beast::IP::Endpoint const& remote_endpoint) = 0;
 
     /** Create a new outbound slot with the specified remote endpoint.
         If nullptr is returned, then the slot could not be assigned.

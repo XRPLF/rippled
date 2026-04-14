@@ -50,7 +50,9 @@ struct LexicalCast<Out, std::string_view>
 {
     explicit LexicalCast() = default;
 
-    static_assert(std::is_integral_v<Out>, "beast::LexicalCast can only be used with integral types");
+    static_assert(
+        std::is_integral_v<Out>,
+        "beast::LexicalCast can only be used with integral types");
 
     template <class Integral = Out>
     std::enable_if_t<std::is_integral_v<Integral> && !std::is_same_v<Integral, bool>, bool>

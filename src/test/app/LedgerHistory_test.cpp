@@ -3,11 +3,11 @@
 
 #include <xrpld/app/ledger/LedgerHistory.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/tx/apply.h>
 
 #include <xrpl/beast/insight/NullCollector.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/OpenView.h>
+#include <xrpl/tx/apply.h>
 
 #include <chrono>
 #include <sstream>
@@ -37,7 +37,11 @@ public:
         {
             assert(!stx);
             return std::make_shared<Ledger>(
-                create_genesis, env.app().config(), std::vector<uint256>{}, env.app().getNodeFamily());
+                create_genesis,
+                Rules{env.app().config().features},
+                env.app().config().FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
         }
         auto res = std::make_shared<Ledger>(*prev, prev->header().closeTime + closeOffset);
 
@@ -56,7 +60,10 @@ public:
         res->unshare();
 
         // Accept ledger
-        res->setAccepted(res->header().closeTime, res->header().closeTimeResolution, true /* close time correct*/);
+        res->setAccepted(
+            res->header().closeTime,
+            res->header().closeTimeResolution,
+            true /* close time correct*/);
         lh.insert(res, false);
         return res;
     }
@@ -84,7 +91,10 @@ public:
         // Close time mismatch
         {
             bool found = false;
-            Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>("MISMATCH on close time", &found)};
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>("MISMATCH on close time", &found)};
             LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
@@ -100,7 +110,10 @@ public:
         // Prior ledger mismatch
         {
             bool found = false;
-            Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>("MISMATCH on prior ledger", &found)};
+            Env env{
+                *this,
+                envconfig(),
+                std::make_unique<CheckMessageLogs>("MISMATCH on prior ledger", &found)};
             LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
             auto const genesis = makeLedger({}, env, lh, 0s);
             auto const ledgerA = makeLedger(genesis, env, lh, 4s);
@@ -119,29 +132,30 @@ public:
         // somehow generate different ledgers
         for (bool const txBug : {true, false})
         {
-            std::string const msg =
-                txBug ? "MISMATCH with same consensus transaction set" : "MISMATCH on consensus transaction set";
+            std::string const msg = txBug ? "MISMATCH with same consensus transaction set"
+                                          : "MISMATCH on consensus transaction set";
             bool found = false;
             Env env{*this, envconfig(), std::make_unique<CheckMessageLogs>(msg, &found)};
             LedgerHistory lh{beast::insight::NullCollector::New(), env.app()};
 
-            Account alice{"A1"};
-            Account bob{"A2"};
+            Account const alice{"A1"};
+            Account const bob{"A2"};
             env.fund(XRP(1000), alice, bob);
             env.close();
 
             auto const ledgerBase = env.app().getLedgerMaster().getClosedLedger();
 
-            JTx txAlice = env.jt(noop(alice));
+            JTx const txAlice = env.jt(noop(alice));
             auto const ledgerA = makeLedger(ledgerBase, env, lh, 4s, txAlice.stx);
 
-            JTx txBob = env.jt(noop(bob));
+            JTx const txBob = env.jt(noop(bob));
             auto const ledgerB = makeLedger(ledgerBase, env, lh, 4s, txBob.stx);
 
             lh.builtLedger(ledgerA, txAlice.stx->getTransactionID(), {});
             // Simulate the bug by claiming ledgerB had the same consensus hash
             // as ledgerA, but somehow generated different ledgers
-            lh.validatedLedger(ledgerB, txBug ? txAlice.stx->getTransactionID() : txBob.stx->getTransactionID());
+            lh.validatedLedger(
+                ledgerB, txBug ? txAlice.stx->getTransactionID() : txBob.stx->getTransactionID());
 
             BEAST_EXPECT(found);
         }

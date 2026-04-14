@@ -44,14 +44,18 @@ ManagerImp::ManagerImp()
 }
 
 std::unique_ptr<Backend>
-ManagerImp::make_Backend(Section const& parameters, std::size_t burstSize, Scheduler& scheduler, beast::Journal journal)
+ManagerImp::make_Backend(
+    Section const& parameters,
+    std::size_t burstSize,
+    Scheduler& scheduler,
+    beast::Journal journal)
 {
     std::string const type{get(parameters, "type")};
     if (type.empty())
         missing_backend();
 
     auto factory{find(type)};
-    if (!factory)
+    if (factory == nullptr)
     {
         missing_backend();
     }
@@ -69,22 +73,23 @@ ManagerImp::make_Database(
 {
     auto backend{make_Backend(config, burstSize, scheduler, journal)};
     backend->open();
-    return std::make_unique<DatabaseNodeImp>(scheduler, readThreads, std::move(backend), config, journal);
+    return std::make_unique<DatabaseNodeImp>(
+        scheduler, readThreads, std::move(backend), config, journal);
 }
 
 void
 ManagerImp::insert(Factory& factory)
 {
-    std::lock_guard _(mutex_);
+    std::lock_guard const _(mutex_);
     list_.push_back(&factory);
 }
 
 void
 ManagerImp::erase(Factory& factory)
 {
-    std::lock_guard _(mutex_);
-    auto const iter =
-        std::find_if(list_.begin(), list_.end(), [&factory](Factory* other) { return other == &factory; });
+    std::lock_guard const _(mutex_);
+    auto const iter = std::find_if(
+        list_.begin(), list_.end(), [&factory](Factory* other) { return other == &factory; });
     XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
@@ -92,9 +97,10 @@ ManagerImp::erase(Factory& factory)
 Factory*
 ManagerImp::find(std::string const& name)
 {
-    std::lock_guard _(mutex_);
-    auto const iter = std::find_if(
-        list_.begin(), list_.end(), [&name](Factory* other) { return boost::iequals(name, other->getName()); });
+    std::lock_guard const _(mutex_);
+    auto const iter = std::find_if(list_.begin(), list_.end(), [&name](Factory* other) {
+        return boost::iequals(name, other->getName());
+    });
     if (iter == list_.end())
         return nullptr;
     return *iter;

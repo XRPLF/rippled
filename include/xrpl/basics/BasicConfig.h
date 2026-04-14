@@ -84,7 +84,8 @@ public:
         if (lines_.empty())
             return "";
         if (lines_.size() > 1)
-            Throw<std::runtime_error>("A legacy value must have exactly one line. Section: " + name_);
+            Throw<std::runtime_error>(
+                "A legacy value must have exactly one line. Section: " + name_);
         return lines_[0];
     }
 
@@ -268,7 +269,8 @@ public:
     bool
     had_trailing_comments() const
     {
-        return std::any_of(map_.cbegin(), map_.cend(), [](auto s) { return s.second.had_trailing_comments(); });
+        return std::any_of(
+            map_.cbegin(), map_.cend(), [](auto s) { return s.second.had_trailing_comments(); });
     }
 
 protected:
@@ -309,7 +311,7 @@ template <class T>
 bool
 set(T& target, T const& defaultValue, std::string const& name, Section const& section)
 {
-    bool found_and_valid = set<T>(target, name, section);
+    bool const found_and_valid = set<T>(target, name, section);
     if (!found_and_valid)
         target = defaultValue;
     return found_and_valid;

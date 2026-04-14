@@ -1,18 +1,17 @@
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/server/NetworkOPs.h>
 
 namespace xrpl {
 
 ConsensusTransSetSF::ConsensusTransSetSF(Application& app, NodeCache& nodeCache)
-    : app_(app), m_nodeCache(nodeCache), j_(app.journal("TransactionAcquire"))
+    : app_(app), m_nodeCache(nodeCache), j_(app.getJournal("TransactionAcquire"))
 {
 }
 
@@ -21,7 +20,7 @@ ConsensusTransSetSF::gotNode(
     bool fromFilter,
     SHAMapHash const& nodeHash,
     std::uint32_t,
-    Blob&& nodeData,
+    Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     SHAMapNodeType type) const
 {
     if (fromFilter)
@@ -37,7 +36,7 @@ ConsensusTransSetSF::gotNode(
         try
         {
             // skip prefix
-            Serializer s(nodeData.data() + 4, nodeData.size() - 4);
+            Serializer const s(nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit(s.slice());
             auto stx = std::make_shared<STTx const>(std::ref(sit));
             XRPL_ASSERT(
@@ -50,7 +49,8 @@ ConsensusTransSetSF::gotNode(
         }
         catch (std::exception const& ex)
         {
-            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set. Exception: " << ex.what();
+            JLOG(j_.warn()) << "Fetched invalid transaction in proposed set. Exception: "
+                            << ex.what();
         }
     }
 }

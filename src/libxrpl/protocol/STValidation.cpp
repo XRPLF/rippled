@@ -38,22 +38,22 @@ STValidation::validationFormat()
     // guarantee the initialization order.
     // clang-format off
     static SOTemplate const format{
-        {sfFlags,               soeREQUIRED},
-        {sfLedgerHash,          soeREQUIRED},
-        {sfLedgerSequence,      soeREQUIRED},
-        {sfCloseTime,           soeOPTIONAL},
-        {sfLoadFee,             soeOPTIONAL},
-        {sfAmendments,          soeOPTIONAL},
-        {sfBaseFee,             soeOPTIONAL},
-        {sfReserveBase,         soeOPTIONAL},
-        {sfReserveIncrement,    soeOPTIONAL},
-        {sfSigningTime,         soeREQUIRED},
-        {sfSigningPubKey,       soeREQUIRED},
-        {sfSignature,           soeREQUIRED},
-        {sfConsensusHash,       soeOPTIONAL},
-        {sfCookie,              soeDEFAULT},
-        {sfValidatedHash,       soeOPTIONAL},
-        {sfServerVersion,       soeOPTIONAL},
+        {sfFlags,                 soeREQUIRED},
+        {sfLedgerHash,            soeREQUIRED},
+        {sfLedgerSequence,        soeREQUIRED},
+        {sfCloseTime,             soeOPTIONAL},
+        {sfLoadFee,               soeOPTIONAL},
+        {sfAmendments,            soeOPTIONAL},
+        {sfBaseFee,               soeOPTIONAL},
+        {sfReserveBase,           soeOPTIONAL},
+        {sfReserveIncrement,      soeOPTIONAL},
+        {sfSigningTime,           soeREQUIRED},
+        {sfSigningPubKey,         soeREQUIRED},
+        {sfSignature,             soeREQUIRED},
+        {sfConsensusHash,         soeOPTIONAL},
+        {sfCookie,                soeDEFAULT},
+        {sfValidatedHash,         soeOPTIONAL},
+        {sfServerVersion,         soeOPTIONAL},
         // featureXRPFees
         {sfBaseFeeDrops,          soeOPTIONAL},
         {sfReserveBaseDrops,      soeOPTIONAL},
@@ -100,10 +100,14 @@ STValidation::isValid() const noexcept
     if (!valid_)
     {
         XRPL_ASSERT(
-            publicKeyType(getSignerPublic()) == KeyType::secp256k1, "xrpl::STValidation::isValid : valid key type");
+            publicKeyType(getSignerPublic()) == KeyType::secp256k1,
+            "xrpl::STValidation::isValid : valid key type");
 
         valid_ = verifyDigest(
-            getSignerPublic(), getSigningHash(), makeSlice(getFieldVL(sfSignature)), getFlags() & vfFullyCanonicalSig);
+            getSignerPublic(),
+            getSigningHash(),
+            makeSlice(getFieldVL(sfSignature)),
+            (getFlags() & vfFullyCanonicalSig) != 0u);
     }
 
     return valid_.value();

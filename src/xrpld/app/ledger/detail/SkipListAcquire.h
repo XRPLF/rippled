@@ -1,10 +1,10 @@
 #pragma once
 
 #include <xrpld/app/ledger/InboundLedger.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/shamap/SHAMap.h>
 
 namespace xrpl {
@@ -113,7 +113,10 @@ private:
      * @param sl  lock. this function must be called with the lock
      */
     void
-    onSkipListAcquired(std::vector<uint256> const& skipList, std::uint32_t ledgerSeq, ScopedLockType& sl);
+    onSkipListAcquired(
+        std::vector<uint256> const& skipList,
+        std::uint32_t ledgerSeq,
+        ScopedLockType& sl);
 
     /**
      * Call the OnSkipListDataCB callbacks

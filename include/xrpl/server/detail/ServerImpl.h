@@ -74,7 +74,7 @@ private:
     std::vector<Port> ports_;
     std::vector<std::weak_ptr<Door<Handler>>> list_;
     int high_ = 0;
-    std::array<std::size_t, 64> hist_;
+    std::array<std::size_t, 64> hist_{};
 
     io_list ios_;
 
@@ -116,7 +116,10 @@ private:
 };
 
 template <class Handler>
-ServerImpl<Handler>::ServerImpl(Handler& handler, boost::asio::io_context& io_context, beast::Journal journal)
+ServerImpl<Handler>::ServerImpl(
+    Handler& handler,
+    boost::asio::io_context& io_context,
+    beast::Journal journal)
     : handler_(handler)
     , j_(journal)
     , io_context_(io_context)

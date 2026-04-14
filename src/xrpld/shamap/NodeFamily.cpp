@@ -9,20 +9,22 @@ namespace xrpl {
 NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     : app_(app)
     , db_(app.getNodeStore())
-    , j_(app.journal("NodeFamily"))
-    , fbCache_(std::make_shared<FullBelowCache>(
-          "Node family full below cache",
-          stopwatch(),
-          app.journal("NodeFamilyFulLBelowCache"),
-          cm.collector(),
-          fullBelowTargetSize,
-          fullBelowExpiration))
-    , tnCache_(std::make_shared<TreeNodeCache>(
-          "Node family tree node cache",
-          app.config().getValueFor(SizedItem::treeCacheSize),
-          std::chrono::seconds(app.config().getValueFor(SizedItem::treeCacheAge)),
-          stopwatch(),
-          j_))
+    , j_(app.getJournal("NodeFamily"))
+    , fbCache_(
+          std::make_shared<FullBelowCache>(
+              "Node family full below cache",
+              stopwatch(),
+              app.getJournal("NodeFamilyFulLBelowCache"),
+              cm.collector(),
+              fullBelowTargetSize,
+              fullBelowExpiration))
+    , tnCache_(
+          std::make_shared<TreeNodeCache>(
+              "Node family tree node cache",
+              app.config().getValueFor(SizedItem::treeCacheSize),
+              std::chrono::seconds(app.config().getValueFor(SizedItem::treeCacheAge)),
+              stopwatch(),
+              j_))
 {
 }
 
@@ -37,7 +39,7 @@ void
 NodeFamily::reset()
 {
     {
-        std::lock_guard lock(maxSeqMutex_);
+        std::lock_guard const lock(maxSeqMutex_);
         maxSeq_ = 0;
     }
 

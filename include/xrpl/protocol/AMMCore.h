@@ -2,7 +2,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -17,7 +17,8 @@ std::uint16_t constexpr AUCTION_SLOT_MAX_AUTH_ACCOUNTS = 4;
 std::uint32_t constexpr AUCTION_SLOT_FEE_SCALE_FACTOR = 100000;
 std::uint32_t constexpr AUCTION_SLOT_DISCOUNTED_FEE_FRACTION = 10;
 std::uint32_t constexpr AUCTION_SLOT_MIN_FEE_FRACTION = 25;
-std::uint32_t constexpr AUCTION_SLOT_INTERVAL_DURATION = TOTAL_TIME_SLOT_SECS / AUCTION_SLOT_TIME_INTERVALS;
+std::uint32_t constexpr AUCTION_SLOT_INTERVAL_DURATION =
+    TOTAL_TIME_SLOT_SECS / AUCTION_SLOT_TIME_INTERVALS;
 
 // Votes
 std::uint16_t constexpr VOTE_MAX_SLOTS = 8;
@@ -30,12 +31,12 @@ class Rules;
 /** Calculate Liquidity Provider Token (LPT) Currency.
  */
 Currency
-ammLPTCurrency(Currency const& cur1, Currency const& cur2);
+ammLPTCurrency(Asset const& asset1, Asset const& asset2);
 
 /** Calculate LPT Issue from AMM asset pair.
  */
 Issue
-ammLPTIssue(Currency const& cur1, Currency const& cur2, AccountID const& ammAccountID);
+ammLPTIssue(Asset const& asset1, Asset const& asset2, AccountID const& ammAccountID);
 
 /** Validate the amount.
  * If validZero is false and amount is beast::zero then invalid amount.
@@ -45,17 +46,19 @@ ammLPTIssue(Currency const& cur1, Currency const& cur2, AccountID const& ammAcco
 NotTEC
 invalidAMMAmount(
     STAmount const& amount,
-    std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt,
+    std::optional<std::pair<Asset, Asset>> const& pair = std::nullopt,
     bool validZero = false);
 
 NotTEC
-invalidAMMAsset(Issue const& issue, std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt);
+invalidAMMAsset(
+    Asset const& asset,
+    std::optional<std::pair<Asset, Asset>> const& pair = std::nullopt);
 
 NotTEC
 invalidAMMAssetPair(
-    Issue const& issue1,
-    Issue const& issue2,
-    std::optional<std::pair<Issue, Issue>> const& pair = std::nullopt);
+    Asset const& asset1,
+    Asset const& asset2,
+    std::optional<std::pair<Asset, Asset>> const& pair = std::nullopt);
 
 /** Get time slot of the auction slot.
  */

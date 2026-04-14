@@ -28,7 +28,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         env(trust(env.master, alice["USD"](100)), ter(tecNO_DST));
     }
@@ -40,9 +40,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this};
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -112,8 +112,8 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), alice, bob);
         env.close();
@@ -156,9 +156,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         Env env{*this, features};
         auto wsc = test::makeWSClient(env.app().config());
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -215,7 +215,8 @@ class TrustAndBalance_test : public beast::unit_test::suite
                 auto const& t = jval[jss::transaction];
                 return t[jss::TransactionType] == jss::Payment;
             }));
-            BEAST_EXPECT(wsc->findMsg(5s, [](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
+            BEAST_EXPECT(wsc->findMsg(
+                5s, [](auto const& jval) { return jval[jss::type] == "ledgerClosed"; }));
 
             BEAST_EXPECT(wsc->invoke("unsubscribe", jv)[jss::status] == "success");
         }
@@ -228,9 +229,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -275,9 +276,9 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(10000), gw, alice, bob);
         env.close();
@@ -312,15 +313,17 @@ class TrustAndBalance_test : public beast::unit_test::suite
     void
     testIndirectMultiPath(bool with_rate, FeatureBitset features)
     {
-        testcase(std::string("Indirect Payment, Multi Path, ") + (with_rate ? "With " : "Without ") + " Xfer Fee, ");
+        testcase(
+            std::string("Indirect Payment, Multi Path, ") + (with_rate ? "With " : "Without ") +
+            " Xfer Fee, ");
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account gw{"gateway"};
-        Account amazon{"amazon"};
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const gw{"gateway"};
+        Account const amazon{"amazon"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
 
         env.fund(XRP(10000), gw, amazon, alice, bob, carol);
         env.close();
@@ -340,17 +343,22 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         // alice pays amazon via multiple paths
         if (with_rate)
+        {
             env(pay(alice, amazon, gw["USD"](150)),
                 sendmax(alice["USD"](200)),
                 test::jtx::path(bob),
                 test::jtx::path(carol));
+        }
         else
+        {
             env(pay(alice, amazon, gw["USD"](150)), test::jtx::path(bob), test::jtx::path(carol));
+        }
 
         if (with_rate)
         {
-            env.require(
-                balance(alice, STAmount(carol["USD"].issue(), 6500000000000000ull, -14, true, STAmount::unchecked{})));
+            env.require(balance(
+                alice,
+                STAmount(carol["USD"], 6500000000000000ull, -14, true, STAmount::unchecked{})));
             env.require(balance(carol, gw["USD"](35)));
         }
         else
@@ -370,7 +378,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        Account alice{"alice"};
+        Account const alice{"alice"};
         auto wsc = test::makeWSClient(env.app().config());
 
         env.fund(XRP(10000), alice);
@@ -386,7 +394,8 @@ class TrustAndBalance_test : public beast::unit_test::suite
         char const* invoiceId = "243F6A8885A308D313198A2E03707344A4093822299F31D0082EFA98EC4E6C89";
 
         Json::Value jv;
-        auto tx = env.jt(pay(env.master, alice, XRP(10000)), json(sfInvoiceID.fieldName, invoiceId));
+        auto tx =
+            env.jt(pay(env.master, alice, XRP(10000)), json(sfInvoiceID.fieldName, invoiceId));
         jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
         BEAST_EXPECT(jrr[jss::status] == "success");

@@ -2,10 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/tx/apply.h>
-
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/apply.h>
 
 namespace xrpl {
 
@@ -32,18 +31,16 @@ public:
             "8B62E6440848314BB85996936E4F595287774684DC2AC6266024BEF";
 
         auto ret = strUnHex(non_fully_canonical_tx);
-        SerialIter sitTrans(makeSlice(*ret));
+        SerialIter sitTrans(makeSlice(*ret));  // NOLINT(bugprone-unchecked-optional-access)
         STTx const tx = *std::make_shared<STTx const>(std::ref(sitTrans));
 
         {
             test::jtx::Env fully_canonical(*this, test::jtx::testable_amendments());
 
-            Validity valid = checkValidity(
-                                 fully_canonical.app().getHashRouter(),
-                                 tx,
-                                 fully_canonical.current()->rules(),
-                                 fully_canonical.app().config())
-                                 .first;
+            Validity const valid =
+                checkValidity(
+                    fully_canonical.app().getHashRouter(), tx, fully_canonical.current()->rules())
+                    .first;
             if (valid == Validity::Valid)
                 fail("Non-Fully canonical signature was permitted");
         }

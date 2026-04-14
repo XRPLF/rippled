@@ -1,7 +1,7 @@
 #include <test/jtx/TestSuite.h>
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/handlers/WalletPropose.h>
+#include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
@@ -93,10 +93,12 @@ public:
         BEAST_EXPECT(result.isMember(jss::public_key_hex));
         BEAST_EXPECT(result.isMember(jss::key_type));
 
-        expectEquals(result[jss::key_type], params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
+        expectEquals(
+            result[jss::key_type],
+            params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         BEAST_EXPECT(!result.isMember(jss::warning));
 
-        std::string seed = result[jss::master_seed].asString();
+        std::string const seed = result[jss::master_seed].asString();
 
         result = walletPropose(params);
 
@@ -115,7 +117,9 @@ public:
         expectEquals(result[jss::master_seed_hex], s.master_seed_hex);
         expectEquals(result[jss::public_key], s.public_key);
         expectEquals(result[jss::public_key_hex], s.public_key_hex);
-        expectEquals(result[jss::key_type], params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
+        expectEquals(
+            result[jss::key_type],
+            params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         return result;
     }
 
@@ -148,7 +152,10 @@ public:
     }
 
     void
-    testLegacyPassphrase(char const* value, std::optional<std::string> const& keyType, key_strings const& strings)
+    testLegacyPassphrase(
+        char const* value,
+        std::optional<std::string> const& keyType,
+        key_strings const& strings)
     {
         Json::Value params;
         if (keyType)
@@ -157,9 +164,13 @@ public:
 
         auto const wallet = testSecretWallet(params, strings);
         if (value == strings.passphrase)
+        {
             BEAST_EXPECT(wallet[jss::warning] == strings.passphrase_warning);
+        }
         else
+        {
             BEAST_EXPECT(!wallet.isMember(jss::warning));
+        }
     }
 
     void
@@ -287,7 +298,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(ret->first == publicKey);
@@ -301,7 +312,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(ret->first == publicKey);
@@ -315,7 +326,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(ret->first == publicKey);
@@ -334,7 +345,7 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            if (BEAST_EXPECT(ret))
+            if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
                 BEAST_EXPECT(ret->first == publicKey);
@@ -350,7 +361,7 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            if (BEAST_EXPECT(ret))
+            if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
                 BEAST_EXPECT(ret->first == publicKey);
@@ -366,7 +377,7 @@ public:
 
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(!contains_error(error));
-            if (BEAST_EXPECT(ret))
+            if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
                 BEAST_EXPECT(ret->first == publicKey);
@@ -423,7 +434,9 @@ public:
             auto ret = keypairForSignature(params, error);
             BEAST_EXPECT(contains_error(error));
             BEAST_EXPECT(!ret);
-            BEAST_EXPECT(error[jss::error_message] == "The secret field is not allowed if key_type is used.");
+            BEAST_EXPECT(
+                error[jss::error_message] ==
+                "The secret field is not allowed if key_type is used.");
         }
 
         // Specify unknown or bad "key_type"
@@ -672,9 +685,9 @@ public:
     }
 
     void
-    testRippleLibEd25519()
+    testXrplLibEd25519()
     {
-        testcase("ripple-lib encoded Ed25519 keys");
+        testcase("XrplLib encoded Ed25519 keys");
 
         auto test = [this](char const* seed, char const* addr) {
             {
@@ -686,7 +699,7 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
@@ -703,7 +716,8 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(contains_error(error));
-                BEAST_EXPECT(error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
+                BEAST_EXPECT(
+                    error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
             }
 
             {
@@ -716,7 +730,7 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(!contains_error(error));
-                if (BEAST_EXPECT(ret))
+                if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
                     BEAST_EXPECT(toBase58(calcAccountID(ret->first)) == addr);
@@ -733,7 +747,8 @@ public:
                 auto ret = keypairForSignature(params, error);
 
                 BEAST_EXPECT(contains_error(error));
-                BEAST_EXPECT(error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
+                BEAST_EXPECT(
+                    error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
             }
         };
 
@@ -769,7 +784,7 @@ public:
         testKeypairForSignature(std::string("ed25519"), ed25519_strings);
         testKeypairForSignature(std::string("secp256k1"), strong_brain_strings);
 
-        testRippleLibEd25519();
+        testXrplLibEd25519();
 
         testKeypairForSignatureErrors();
     }

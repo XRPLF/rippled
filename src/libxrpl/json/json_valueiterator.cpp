@@ -13,11 +13,12 @@ namespace Json {
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-ValueIteratorBase::ValueIteratorBase() : current_(), isNull_(true)
+ValueIteratorBase::ValueIteratorBase() : isNull_(true)
 {
 }
 
-ValueIteratorBase::ValueIteratorBase(Value::ObjectValues::iterator const& current) : current_(current), isNull_(false)
+ValueIteratorBase::ValueIteratorBase(Value::ObjectValues::iterator const& current)
+    : current_(current), isNull_(false)
 {
 }
 
@@ -88,7 +89,7 @@ ValueIteratorBase::key() const
 {
     Value::CZString const czString = (*current_).first;
 
-    if (czString.c_str())
+    if (czString.c_str() != nullptr)
     {
         if (czString.isStaticString())
             return Value(StaticString(czString.c_str()));
@@ -104,7 +105,7 @@ ValueIteratorBase::index() const
 {
     Value::CZString const czString = (*current_).first;
 
-    if (!czString.c_str())
+    if (czString.c_str() == nullptr)
         return czString.index();
 
     return Value::UInt(-1);
@@ -114,7 +115,7 @@ char const*
 ValueIteratorBase::memberName() const
 {
     char const* name = (*current_).first.c_str();
-    return name ? name : "";
+    return (name != nullptr) ? name : "";
 }
 
 // //////////////////////////////////////////////////////////////////
@@ -125,7 +126,8 @@ ValueIteratorBase::memberName() const
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-ValueConstIterator::ValueConstIterator(Value::ObjectValues::iterator const& current) : ValueIteratorBase(current)
+ValueConstIterator::ValueConstIterator(Value::ObjectValues::iterator const& current)
+    : ValueIteratorBase(current)
 {
 }
 
@@ -144,7 +146,8 @@ ValueConstIterator::operator=(ValueIteratorBase const& other)
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-ValueIterator::ValueIterator(Value::ObjectValues::iterator const& current) : ValueIteratorBase(current)
+ValueIterator::ValueIterator(Value::ObjectValues::iterator const& current)
+    : ValueIteratorBase(current)
 {
 }
 

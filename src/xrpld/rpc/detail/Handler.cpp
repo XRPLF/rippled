@@ -1,6 +1,6 @@
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/handlers/Handlers.h>
-#include <xrpld/rpc/handlers/Version.h>
+#include <xrpld/rpc/handlers/server_info/Version.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -35,15 +35,20 @@ Status
 handle(JsonContext& context, Object& object)
 {
     XRPL_ASSERT(
-        context.apiVersion >= HandlerImpl::minApiVer && context.apiVersion <= HandlerImpl::maxApiVer,
+        context.apiVersion >= HandlerImpl::minApiVer &&
+            context.apiVersion <= HandlerImpl::maxApiVer,
         "xrpl::RPC::handle : valid API version");
     HandlerImpl handler(context);
 
     auto status = handler.check();
     if (status)
+    {
         status.inject(object);
+    }
     else
+    {
         handler.writeResult(object);
+    }
     return status;
 }
 
@@ -70,7 +75,7 @@ Handler const handlerArray[]{
     {"account_nfts", byRef(&doAccountNFTs), Role::USER, NO_CONDITION},
     {"account_objects", byRef(&doAccountObjects), Role::USER, NO_CONDITION},
     {"account_offers", byRef(&doAccountOffers), Role::USER, NO_CONDITION},
-    {"account_tx", byRef(&doAccountTxJson), Role::USER, NO_CONDITION},
+    {"account_tx", byRef(&doAccountTx), Role::USER, NO_CONDITION},
     {"amm_info", byRef(&doAMMInfo), Role::USER, NO_CONDITION},
     {"blacklist", byRef(&doBlackList), Role::ADMIN, NO_CONDITION},
     {"book_changes", byRef(&doBookChanges), Role::USER, NO_CONDITION},
@@ -145,14 +150,16 @@ private:
 
     // Use with equal_range to enforce that API range of a newly added handler
     // does not overlap with API range of an existing handler with same name
-    [[nodiscard]] bool
+    [[nodiscard]] static bool
     overlappingApiVersion(
         std::pair<handler_table_t::iterator, handler_table_t::iterator> range,
         unsigned minVer,
         unsigned maxVer)
     {
         XRPL_ASSERT(minVer <= maxVer, "xrpl::RPC::HandlerTable : valid API version range");
-        XRPL_ASSERT(maxVer <= RPC::apiMaximumValidVersion, "xrpl::RPC::HandlerTable : valid max API version");
+        XRPL_ASSERT(
+            maxVer <= RPC::apiMaximumValidVersion,
+            "xrpl::RPC::HandlerTable : valid max API version");
 
         return std::any_of(
             range.first,
@@ -167,8 +174,13 @@ private:
     {
         for (auto const& entry : entries)
         {
-            if (overlappingApiVersion(table_.equal_range(entry.name_), entry.minApiVer_, entry.maxApiVer_))
-                LogicError(std::string("Handler for ") + entry.name_ + " overlaps with an existing handler");
+            if (overlappingApiVersion(
+                    table_.equal_range(entry.name_), entry.minApiVer_, entry.maxApiVer_))
+            {
+                LogicError(
+                    std::string("Handler for ") + entry.name_ +
+                    " overlaps with an existing handler");
+            }
 
             table_.insert({entry.name_, entry});
         }
@@ -223,8 +235,14 @@ private:
         static_assert(RPC::apiMinimumSupportedVersion <= HandlerImpl::minApiVer);
 
         if (overlappingApiVersion(
-                table_.equal_range(HandlerImpl::name), HandlerImpl::minApiVer, HandlerImpl::maxApiVer))
-            LogicError(std::string("Handler for ") + HandlerImpl::name + " overlaps with an existing handler");
+                table_.equal_range(HandlerImpl::name),
+                HandlerImpl::minApiVer,
+                HandlerImpl::maxApiVer))
+        {
+            LogicError(
+                std::string("Handler for ") + HandlerImpl::name +
+                " overlaps with an existing handler");
+        }
 
         table_.insert({HandlerImpl::name, handlerFrom<HandlerImpl>()});
     }

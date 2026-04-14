@@ -1,10 +1,10 @@
 #include <test/jtx.h>
 
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <boost/format.hpp>
 
@@ -33,7 +33,7 @@ public:
     makeValidatorConfig()
     {
         auto p = std::make_unique<Config>();
-        boost::format toLoad(R"rippleConfig(
+        boost::format toLoad(R"xrpldConfig(
 [validator_token]
 %1%
 
@@ -49,7 +49,7 @@ ip = 0.0.0.0
 port = 50052
 protocol = wss2
 admin = 127.0.0.1
-)rippleConfig");
+)xrpldConfig");
 
         p->loadFromString(boost::str(toLoad % validator_data::token % validator_data::public_key));
 
@@ -81,10 +81,11 @@ admin = 127.0.0.1
                 auto const& git = info[jss::git];
                 BEAST_EXPECT(git.isMember(jss::hash) || git.isMember(jss::branch));
                 BEAST_EXPECT(
-                    !git.isMember(jss::hash) || (git[jss::hash].isString() && git[jss::hash].asString().size() == 40));
+                    !git.isMember(jss::hash) ||
+                    (git[jss::hash].isString() && git[jss::hash].asString().size() == 40));
                 BEAST_EXPECT(
                     !git.isMember(jss::branch) ||
-                    (git[jss::branch].isString() && git[jss::branch].asString().size() != 0));
+                    (git[jss::branch].isString() && !git[jss::branch].asString().empty()));
             }
         }
 
@@ -92,7 +93,7 @@ admin = 127.0.0.1
             Env env(*this);
 
             // Call NetworkOPs directly and set the admin flag to false.
-            auto const result = env.app().getOPs().getServerInfo(true, false, 0);
+            auto const result = env.app().getOPs().getServerInfo(true, false, false);
             // Expect that the admin ports are not included in the result.
             auto const& ports = result[jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 0);
@@ -115,7 +116,9 @@ admin = 127.0.0.1
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
             BEAST_EXPECT(result[jss::result].isMember(jss::info));
-            BEAST_EXPECT(result[jss::result][jss::info][jss::pubkey_validator] == validator_data::public_key);
+            BEAST_EXPECT(
+                result[jss::result][jss::info][jss::pubkey_validator] ==
+                validator_data::public_key);
 
             auto const& ports = result[jss::result][jss::info][jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 3);

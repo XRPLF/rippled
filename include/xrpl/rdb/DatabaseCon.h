@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/SociDB.h>
@@ -13,7 +14,7 @@
 
 namespace soci {
 class session;
-}
+}  // namespace soci
 
 namespace xrpl {
 
@@ -27,10 +28,12 @@ private:
     std::unique_lock<mutex> lock_;
 
 public:
-    LockedSociSession(std::shared_ptr<soci::session> it, mutex& m) : session_(std::move(it)), lock_(m)
+    LockedSociSession(std::shared_ptr<soci::session> it, mutex& m)
+        : session_(std::move(it)), lock_(m)
     {
     }
-    LockedSociSession(LockedSociSession&& rhs) noexcept : session_(std::move(rhs.session_)), lock_(std::move(rhs.lock_))
+    LockedSociSession(LockedSociSession&& rhs) noexcept
+        : session_(std::move(rhs.session_)), lock_(std::move(rhs.lock_))
     {
     }
     LockedSociSession() = delete;
@@ -67,7 +70,7 @@ public:
     {
         explicit Setup() = default;
 
-        StartUpType startUp = StartUpType::NORMAL;
+        StartUpType startUp = StartUpType::Normal;
         bool standAlone = false;
         boost::filesystem::path dataDir;
         // Indicates whether or not to return the `globalPragma`
@@ -92,7 +95,7 @@ public:
     struct CheckpointerSetup
     {
         JobQueue* jobQueue;
-        Logs* logs;
+        std::reference_wrapper<ServiceRegistry> registry;
     };
 
     template <std::size_t N, std::size_t M>
@@ -104,8 +107,8 @@ public:
         beast::Journal journal)
         // Use temporary files or regular DB files?
         : DatabaseCon(
-              setup.standAlone && setup.startUp != StartUpType::LOAD && setup.startUp != StartUpType::LOAD_FILE &&
-                      setup.startUp != StartUpType::REPLAY
+              setup.standAlone && setup.startUp != StartUpType::Load &&
+                      setup.startUp != StartUpType::LoadFile && setup.startUp != StartUpType::Replay
                   ? ""
                   : (setup.dataDir / dbName),
               setup.commonPragma(),
@@ -126,7 +129,7 @@ public:
         beast::Journal journal)
         : DatabaseCon(setup, dbName, pragma, initSQL, journal)
     {
-        setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
+        setupCheckpointing(checkpointerSetup.jobQueue, checkpointerSetup.registry.get());
     }
 
     template <std::size_t N, std::size_t M>
@@ -151,7 +154,7 @@ public:
         beast::Journal journal)
         : DatabaseCon(dataDir, dbName, pragma, initSQL, journal)
     {
-        setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
+        setupCheckpointing(checkpointerSetup.jobQueue, checkpointerSetup.registry.get());
     }
 
     ~DatabaseCon();
@@ -166,15 +169,15 @@ public:
     checkoutDb()
     {
         using namespace std::chrono_literals;
-        LockedSociSession session =
-            perf::measureDurationAndLog([&]() { return LockedSociSession(session_, lock_); }, "checkoutDb", 10ms, j_);
+        LockedSociSession session = perf::measureDurationAndLog(
+            [&]() { return LockedSociSession(session_, lock_); }, "checkoutDb", 10ms, j_);
 
         return session;
     }
 
 private:
     void
-    setupCheckpointing(JobQueue*, Logs&);
+    setupCheckpointing(JobQueue*, ServiceRegistry&);
 
     template <std::size_t N, std::size_t M>
     DatabaseCon(

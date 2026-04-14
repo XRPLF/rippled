@@ -26,7 +26,7 @@ getFileContents(
     using namespace boost::filesystem;
     using namespace boost::system::errc;
 
-    path fullPath{canonical(sourcePath, ec)};
+    path const fullPath{canonical(sourcePath, ec)};
     if (ec)
         return {};
 
@@ -45,7 +45,8 @@ getFileContents(
         return {};
     }
 
-    std::string const result{std::istreambuf_iterator<char>{fileStream}, std::istreambuf_iterator<char>{}};
+    std::string result{
+        std::istreambuf_iterator<char>{fileStream}, std::istreambuf_iterator<char>{}};
 
     if (fileStream.bad())
     {
@@ -57,7 +58,10 @@ getFileContents(
 }
 
 void
-writeFileContents(boost::system::error_code& ec, boost::filesystem::path const& destPath, std::string const& contents)
+writeFileContents(
+    boost::system::error_code& ec,
+    boost::filesystem::path const& destPath,
+    std::string const& contents)
 {
     using namespace boost::filesystem;
     using namespace boost::system::errc;

@@ -1,8 +1,7 @@
 #include <test/jtx/Env.h>
 
-#include <xrpld/app/ledger/Ledger.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/View.h>
 
 namespace xrpl {
@@ -16,13 +15,17 @@ class SkipList_test : public beast::unit_test::suite
         jtx::Env env(*this);
         std::vector<std::shared_ptr<Ledger>> history;
         {
-            Config config;
-            auto prev =
-                std::make_shared<Ledger>(create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+            Config const config;
+            auto prev = std::make_shared<Ledger>(
+                create_genesis,
+                Rules{config.features},
+                config.FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
             history.push_back(prev);
             for (auto i = 0; i < 1023; ++i)
             {
-                auto next = std::make_shared<Ledger>(*prev, env.app().timeKeeper().closeTime());
+                auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
                 next->updateSkipList();
                 history.push_back(next);
                 prev = next;
@@ -43,7 +46,8 @@ class SkipList_test : public beast::unit_test::suite
         {
             for (auto n = i; n != std::next(i, (*i)->header().seq - 256 > 1 ? 257 : 256); ++n)
             {
-                BEAST_EXPECT(hashOfSeq(**i, (*n)->header().seq, env.journal) == (*n)->header().hash);
+                BEAST_EXPECT(
+                    hashOfSeq(**i, (*n)->header().seq, env.journal) == (*n)->header().hash);
             }
 
             // edge case accessing beyond 256
@@ -55,7 +59,8 @@ class SkipList_test : public beast::unit_test::suite
         {
             for (auto n = std::next(i, 512); n != history.crend(); n += 256)
             {
-                BEAST_EXPECT(hashOfSeq(**i, (*n)->header().seq, env.journal) == (*n)->header().hash);
+                BEAST_EXPECT(
+                    hashOfSeq(**i, (*n)->header().seq, env.journal) == (*n)->header().hash);
             }
         }
     }

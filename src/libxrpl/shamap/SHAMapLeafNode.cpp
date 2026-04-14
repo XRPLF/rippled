@@ -11,7 +11,10 @@ SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std:
         "SHAMapItem const>, std::uint32_t) : minimum input size");
 }
 
-SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<SHAMapItem const> item, std::uint32_t cowid, SHAMapHash const& hash)
+SHAMapLeafNode::SHAMapLeafNode(
+    boost::intrusive_ptr<SHAMapItem const> item,
+    std::uint32_t cowid,
+    SHAMapHash const& hash)
     : SHAMapTreeNode(cowid, hash), item_(std::move(item))
 {
     XRPL_ASSERT(
@@ -48,13 +51,21 @@ SHAMapLeafNode::getString(SHAMapNodeID const& id) const
     auto const type = getType();
 
     if (type == SHAMapNodeType::tnTRANSACTION_NM)
+    {
         ret += ",txn\n";
+    }
     else if (type == SHAMapNodeType::tnTRANSACTION_MD)
+    {
         ret += ",txn+md\n";
+    }
     else if (type == SHAMapNodeType::tnACCOUNT_STATE)
+    {
         ret += ",as\n";
+    }
     else
+    {
         ret += ",leaf\n";
+    }
 
     ret += "  Tag=";
     ret += to_string(item_->key());

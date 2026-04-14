@@ -49,7 +49,10 @@ results::add(suite_results const& r)
     if (elapsed >= std::chrono::seconds{1})
     {
         auto const iter = std::lower_bound(
-            top.begin(), top.end(), elapsed, [](run_time const& t1, typename clock_type::duration const& t2) {
+            top.begin(),
+            top.end(),
+            elapsed,
+            [](run_time const& t1, typename clock_type::duration const& t2) {
                 return t1.second > t2;
             });
 
@@ -105,7 +108,7 @@ results::print(S& s)
 {
     using namespace beast::unit_test;
 
-    if (top.size() > 0)
+    if (!top.empty())
     {
         s << "Longest suite times:\n";
         for (auto const& [name, dur] : top)
@@ -151,7 +154,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::tests() const
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     return results_.total;
 }
 
@@ -159,7 +162,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::suites() const
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     return results_.suites;
 }
 
@@ -181,7 +184,7 @@ template <bool IsParent>
 void
 multi_runner_base<IsParent>::inner::add(results const& r)
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     results_.merge(r);
 }
 
@@ -190,7 +193,7 @@ template <class S>
 void
 multi_runner_base<IsParent>::inner::print_results(S& s)
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     results_.print(s);
 }
 
@@ -207,7 +210,10 @@ multi_runner_base<IsParent>::multi_runner_base()
         }
 
         shared_mem_ = boost::interprocess::shared_memory_object{
-            std::conditional_t<IsParent, boost::interprocess::create_only_t, boost::interprocess::open_only_t>{},
+            std::conditional_t<
+                IsParent,
+                boost::interprocess::create_only_t,
+                boost::interprocess::open_only_t>{},
             shared_mem_name_,
             boost::interprocess::read_write};
 
@@ -228,9 +234,13 @@ multi_runner_base<IsParent>::multi_runner_base()
 
         region_ = boost::interprocess::mapped_region{shared_mem_, boost::interprocess::read_write};
         if (IsParent)
+        {
             inner_ = new (region_.get_address()) inner{};
+        }
         else
+        {
             inner_ = reinterpret_cast<inner*>(region_.get_address());
+        }
     }
     catch (...)
     {
@@ -316,7 +326,7 @@ void
 multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
-    std::lock_guard l{inner_->m_};
+    std::lock_guard const l{inner_->m_};
     message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
     message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }
@@ -376,7 +386,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
                 if (!recvd_size)
                     continue;
                 assert(recvd_size == 1);
-                MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
+                MessageType const mt{*reinterpret_cast<MessageType*>(buf.data())};
 
                 this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
                 if (recvd_size)
@@ -457,7 +467,10 @@ multi_runner_parent::add_failures(std::size_t failures)
 //------------------------------------------------------------------------------
 
 multi_runner_child::multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log)
-    : job_index_{checkout_job_index()}, num_jobs_{num_jobs}, quiet_{quiet}, print_log_{!quiet || print_log}
+    : job_index_{checkout_job_index()}
+    , num_jobs_{num_jobs}
+    , quiet_{quiet}
+    , print_log_{!quiet || print_log}
 {
     if (num_jobs_ > 1)
     {
@@ -478,7 +491,8 @@ multi_runner_child::multi_runner_child(std::size_t num_jobs, bool quiet, bool pr
                     if (cur_count == last_count)
                     {
                         // assume parent process is no longer alive
-                        std::cerr << "multi_runner_child " << job_index_ << ": Assuming parent died, exiting.\n";
+                        std::cerr << "multi_runner_child " << job_index_
+                                  << ": Assuming parent died, exiting.\n";
                         std::exit(EXIT_FAILURE);
                     }
                 }
@@ -533,8 +547,8 @@ multi_runner_child::on_suite_end()
         std::stringstream s;
         if (num_jobs_ > 1)
             s << job_index_ << "> ";
-        s << (suite_results_.failed > 0 ? "failed: " : "") << suite_results_.name << " had " << suite_results_.failed
-          << " failures." << std::endl;
+        s << (suite_results_.failed > 0 ? "failed: " : "") << suite_results_.name << " had "
+          << suite_results_.failed << " failures." << std::endl;
         message_queue_send(MessageType::log, s.str());
     }
     results_.add(suite_results_);
@@ -552,7 +566,8 @@ multi_runner_child::on_case_begin(std::string const& name)
     std::stringstream s;
     if (num_jobs_ > 1)
         s << job_index_ << "> ";
-    s << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name)) << '\n';
+    s << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
+      << '\n';
     message_queue_send(MessageType::log, s.str());
 }
 

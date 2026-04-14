@@ -31,8 +31,9 @@ void
 toJsonHex(Json::Value& jv, AnyValue const& v);
 
 // base asset, quote asset, price, scale
-using DataSeries =
-    std::vector<std::tuple<std::string, std::string, std::optional<std::uint32_t>, std::optional<std::uint8_t>>>;
+using DataSeries = std::vector<
+    std::
+        tuple<std::string, std::string, std::optional<std::uint32_t>, std::optional<std::uint8_t>>>;
 
 // Typical defaults for Create
 struct CreateArg
@@ -80,7 +81,7 @@ struct RemoveArg
     std::optional<ter> const& err = std::nullopt;
 };
 
-// Simulate testStartTime as 10'000s from Ripple epoch time to make
+// Simulate testStartTime as 10'000s from XRPL epoch time to make
 // LastUpdateTime validation to work and to make unit-test consistent.
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime
@@ -98,7 +99,7 @@ private:
     static inline std::uint32_t fee = 0;
     Env& env_;
     AccountID owner_;
-    std::uint32_t documentID_;
+    std::uint32_t documentID_{};
 
 private:
     void

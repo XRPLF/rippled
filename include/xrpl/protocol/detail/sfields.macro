@@ -5,7 +5,6 @@
 #error "undefined macro: TYPED_SFIELD"
 #endif
 
-// clang-format off
 
 // untyped
 UNTYPED_SFIELD(sfLedgerEntry,            LEDGERENTRY, 257)
@@ -162,6 +161,8 @@ TYPED_SFIELD(sfTakerGetsIssuer,          UINT160,    4)
 // 192-bit (common)
 TYPED_SFIELD(sfMPTokenIssuanceID,        UINT192,    1)
 TYPED_SFIELD(sfShareMPTID,               UINT192,    2)
+TYPED_SFIELD(sfTakerPaysMPT,             UINT192,    3)
+TYPED_SFIELD(sfTakerGetsMPT,             UINT192,    4)
 
 // 256-bit (common)
 TYPED_SFIELD(sfLedgerHash,               UINT256,    1)
@@ -206,6 +207,7 @@ TYPED_SFIELD(sfParentBatchID,            UINT256,   36)
 TYPED_SFIELD(sfLoanBrokerID,             UINT256,   37,
     SField::sMD_PseudoAccount | SField::sMD_Default)
 TYPED_SFIELD(sfLoanID,                   UINT256,   38)
+TYPED_SFIELD(sfBlindingFactor,           UINT256,   39)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
@@ -302,8 +304,8 @@ TYPED_SFIELD(sfCredentialType,           VL,        31)
 TYPED_SFIELD(sfConfidentialBalanceInbox, VL,        32)
 TYPED_SFIELD(sfConfidentialBalanceSpending, VL,     33)
 TYPED_SFIELD(sfIssuerEncryptedBalance,   VL,        34)
-TYPED_SFIELD(sfIssuerElGamalPublicKey,   VL,        35)
-TYPED_SFIELD(sfHolderElGamalPublicKey,   VL,        36)
+TYPED_SFIELD(sfIssuerEncryptionKey,      VL,        35)
+TYPED_SFIELD(sfHolderEncryptionKey,      VL,        36)
 TYPED_SFIELD(sfZKProof,                  VL,        37)
 TYPED_SFIELD(sfHolderEncryptedAmount,    VL,        38)
 TYPED_SFIELD(sfIssuerEncryptedAmount,    VL,        39)
@@ -311,10 +313,9 @@ TYPED_SFIELD(sfSenderEncryptedAmount,    VL,        40)
 TYPED_SFIELD(sfDestinationEncryptedAmount, VL,      41)
 TYPED_SFIELD(sfAuditorEncryptedBalance,  VL,        42)
 TYPED_SFIELD(sfAuditorEncryptedAmount,   VL,        43)
-TYPED_SFIELD(sfAuditorElGamalPublicKey,  VL,        44)
-TYPED_SFIELD(sfBlindingFactor,           VL,        45)
-TYPED_SFIELD(sfAmountCommitment,         VL,        46)
-TYPED_SFIELD(sfBalanceCommitment,        VL,        47)
+TYPED_SFIELD(sfAuditorEncryptionKey,     VL,        44)
+TYPED_SFIELD(sfAmountCommitment,         VL,        45)
+TYPED_SFIELD(sfBalanceCommitment,        VL,        46)
 
 // account (common)
 TYPED_SFIELD(sfAccount,                  ACCOUNT,    1)
@@ -439,5 +440,3 @@ UNTYPED_SFIELD(sfAcceptedCredentials,    ARRAY,     28)
 UNTYPED_SFIELD(sfPermissions,            ARRAY,     29)
 UNTYPED_SFIELD(sfRawTransactions,        ARRAY,     30)
 UNTYPED_SFIELD(sfBatchSigners,           ARRAY,     31, SField::sMD_Default, SField::notSigning)
-
-// clang-format on

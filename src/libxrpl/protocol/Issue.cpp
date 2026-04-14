@@ -25,11 +25,17 @@ Issue::getText() const
         ret += "/";
 
         if (isXRP(account))
+        {
             ret += "0";
+        }
         else if (account == noAccount())
+        {
             ret += "1";
+        }
         else
+        {
             ret += to_string(account);
+        }
     }
 
     return ret;
@@ -83,7 +89,8 @@ issueFromJson(Json::Value const& v)
 {
     if (!v.isObject())
     {
-        Throw<std::runtime_error>("issueFromJson can only be specified with an 'object' Json value");
+        Throw<std::runtime_error>(
+            "issueFromJson can only be specified with an 'object' Json value");
     }
 
     if (v.isMember(jss::mpt_issuance_id))

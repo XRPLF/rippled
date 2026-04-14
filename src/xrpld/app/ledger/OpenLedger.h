@@ -1,7 +1,5 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/Log.h>
@@ -9,6 +7,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CachedSLEs.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 
 #include <mutex>
@@ -60,7 +60,10 @@ public:
 
         @param ledger A closed ledger
     */
-    explicit OpenLedger(std::shared_ptr<Ledger const> const& ledger, CachedSLEs& cache, beast::Journal journal);
+    explicit OpenLedger(
+        std::shared_ptr<Ledger const> const& ledger,
+        CachedSLEs& cache,
+        beast::Journal journal);
 
     /** Returns `true` if there are no transactions.
 

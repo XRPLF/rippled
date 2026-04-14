@@ -227,7 +227,7 @@ public:
         static typename Base::Key const&
         extract(Value const& value)
         {
-            return value;
+            return value;  // NOLINT(bugprone-return-const-ref-from-parameter)
         }
 
         static Values
@@ -292,7 +292,9 @@ public:
     template <class Base, bool IsUnordered = Base::is_unordered::value>
     struct ContType
     {
-        template <class Compare = std::less<typename Base::Key>, class Allocator = std::allocator<typename Base::Value>>
+        template <
+            class Compare = std::less<typename Base::Key>,
+            class Allocator = std::allocator<typename Base::Value>>
         using Cont = detail::aged_ordered_container<
             Base::is_multi::value,
             Base::is_map::value,
@@ -332,10 +334,12 @@ public:
     };
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    struct TestTraitsHelper : MaybeUnordered<MaybeMulti<MaybeMap<TestTraitsBase, IsMap>, IsMulti>, IsUnordered>
+    struct TestTraitsHelper
+        : MaybeUnordered<MaybeMulti<MaybeMap<TestTraitsBase, IsMap>, IsMulti>, IsUnordered>
     {
     private:
-        using Base = MaybeUnordered<MaybeMulti<MaybeMap<TestTraitsBase, IsMap>, IsMulti>, IsUnordered>;
+        using Base =
+            MaybeUnordered<MaybeMulti<MaybeMap<TestTraitsBase, IsMap>, IsMulti>, IsUnordered>;
 
     public:
         using typename Base::Key;
@@ -350,7 +354,8 @@ public:
         static std::string
         name()
         {
-            return std::string("aged_") + Base::name_ordered_part() + Base::name_multi_part() + Base::name_map_part();
+            return std::string("aged_") + Base::name_ordered_part() + Base::name_multi_part() +
+                Base::name_map_part();
         }
     };
 
@@ -518,7 +523,7 @@ public:
     testArrayCreate();
 
     template <bool IsUnordered, bool IsMulti, bool IsMap>
-    typename std::enable_if<!(IsMap && !IsMulti)>::type
+    typename std::enable_if<!IsMap || IsMulti>::type
     testArrayCreate()
     {
     }
@@ -629,7 +634,8 @@ typename std::enable_if<std::remove_reference<C>::type::is_unordered::value>::ty
 aged_associative_container_test_base::checkUnorderedContentsRefRef(C&& c, Values const& v)
 {
     using Cont = typename std::remove_reference<C>::type;
-    using Traits = TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
+    using Traits =
+        TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
     using size_type = typename Cont::size_type;
     auto const hash(c.hash_function());
     auto const key_eq(c.key_eq());
@@ -638,9 +644,10 @@ aged_associative_container_test_base::checkUnorderedContentsRefRef(C&& c, Values
         auto const last(c.end(i));
         for (auto iter(c.begin(i)); iter != last; ++iter)
         {
-            auto const match(std::find_if(v.begin(), v.end(), [iter](typename Values::value_type const& e) {
-                return Traits::extract(*iter) == Traits::extract(e);
-            }));
+            auto const match(
+                std::find_if(v.begin(), v.end(), [iter](typename Values::value_type const& e) {
+                    return Traits::extract(*iter) == Traits::extract(e);
+                }));
             BEAST_EXPECT(match != v.end());
             BEAST_EXPECT(key_eq(Traits::extract(*iter), Traits::extract(*match)));
             BEAST_EXPECT(hash(Traits::extract(*iter)) == hash(Traits::extract(*match)));
@@ -658,10 +665,14 @@ aged_associative_container_test_base::checkContentsRefRef(C&& c, Values const& v
     BEAST_EXPECT(c.size() == v.size());
     BEAST_EXPECT(size_type(std::distance(c.begin(), c.end())) == v.size());
     BEAST_EXPECT(size_type(std::distance(c.cbegin(), c.cend())) == v.size());
-    BEAST_EXPECT(size_type(std::distance(c.chronological.begin(), c.chronological.end())) == v.size());
-    BEAST_EXPECT(size_type(std::distance(c.chronological.cbegin(), c.chronological.cend())) == v.size());
-    BEAST_EXPECT(size_type(std::distance(c.chronological.rbegin(), c.chronological.rend())) == v.size());
-    BEAST_EXPECT(size_type(std::distance(c.chronological.crbegin(), c.chronological.crend())) == v.size());
+    BEAST_EXPECT(
+        size_type(std::distance(c.chronological.begin(), c.chronological.end())) == v.size());
+    BEAST_EXPECT(
+        size_type(std::distance(c.chronological.cbegin(), c.chronological.cend())) == v.size());
+    BEAST_EXPECT(
+        size_type(std::distance(c.chronological.rbegin(), c.chronological.rend())) == v.size());
+    BEAST_EXPECT(
+        size_type(std::distance(c.chronological.crbegin(), c.chronological.crend())) == v.size());
 
     checkUnorderedContentsRefRef(c, v);
 }
@@ -679,7 +690,8 @@ template <class Cont>
 void
 aged_associative_container_test_base::checkContents(Cont& c)
 {
-    using Traits = TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
+    using Traits =
+        TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
     using Values = typename Traits::Values;
     checkContents(c, Values());
 }
@@ -778,7 +790,8 @@ aged_associative_container_test_base::testConstructEmpty()
     }
 
     {
-        typename Traits::template Cont<MyHash, MyEqual, MyAlloc> c(clock, MyHash(1), MyEqual(1), MyAlloc(1));
+        typename Traits::template Cont<MyHash, MyEqual, MyAlloc> c(
+            clock, MyHash(1), MyEqual(1), MyAlloc(1));
         checkContents(c);
     }
 }
@@ -815,7 +828,8 @@ aged_associative_container_test_base::testConstructRange()
     }
 
     {
-        typename Traits::template Cont<MyComp, MyAlloc> c(v.begin(), v.end(), clock, MyComp(1), MyAlloc(1));
+        typename Traits::template Cont<MyComp, MyAlloc> c(
+            v.begin(), v.end(), clock, MyComp(1), MyAlloc(1));
         checkContents(c, v);
     }
 
@@ -853,32 +867,38 @@ aged_associative_container_test_base::testConstructRange()
     }
 
     {
-        typename Traits::template Cont<MyHash, Equal, Alloc> c(v.begin(), v.end(), clock, MyHash(1));
+        typename Traits::template Cont<MyHash, Equal, Alloc> c(
+            v.begin(), v.end(), clock, MyHash(1));
         checkContents(c, v);
     }
 
     {
-        typename Traits::template Cont<Hash, MyEqual, Alloc> c(v.begin(), v.end(), clock, MyEqual(1));
+        typename Traits::template Cont<Hash, MyEqual, Alloc> c(
+            v.begin(), v.end(), clock, MyEqual(1));
         checkContents(c, v);
     }
 
     {
-        typename Traits::template Cont<Hash, Equal, MyAlloc> c(v.begin(), v.end(), clock, MyAlloc(1));
+        typename Traits::template Cont<Hash, Equal, MyAlloc> c(
+            v.begin(), v.end(), clock, MyAlloc(1));
         checkContents(c, v);
     }
 
     {
-        typename Traits::template Cont<MyHash, MyEqual, Alloc> c(v.begin(), v.end(), clock, MyHash(1), MyEqual(1));
+        typename Traits::template Cont<MyHash, MyEqual, Alloc> c(
+            v.begin(), v.end(), clock, MyHash(1), MyEqual(1));
         checkContents(c, v);
     }
 
     {
-        typename Traits::template Cont<MyHash, Equal, MyAlloc> c(v.begin(), v.end(), clock, MyHash(1), MyAlloc(1));
+        typename Traits::template Cont<MyHash, Equal, MyAlloc> c(
+            v.begin(), v.end(), clock, MyHash(1), MyAlloc(1));
         checkContents(c, v);
     }
 
     {
-        typename Traits::template Cont<Hash, MyEqual, MyAlloc> c(v.begin(), v.end(), clock, MyEqual(1), MyAlloc(1));
+        typename Traits::template Cont<Hash, MyEqual, MyAlloc> c(
+            v.begin(), v.end(), clock, MyEqual(1), MyAlloc(1));
         checkContents(c, v);
     }
 
@@ -895,7 +915,7 @@ typename std::enable_if<!IsUnordered>::type
 aged_associative_container_test_base::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    typename Traits::ManualClock clock;
+    typename Traits::ManualClock const clock;
 
     // testcase (Traits::name() + " init-list");
     testcase("init-list");
@@ -911,7 +931,7 @@ typename std::enable_if<IsUnordered>::type
 aged_associative_container_test_base::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
-    typename Traits::ManualClock clock;
+    typename Traits::ManualClock const clock;
 
     // testcase (Traits::name() + " init-list");
     testcase("init-list");
@@ -1013,8 +1033,8 @@ aged_associative_container_test_base::testIterator()
     using const_iterator = decltype(c.cbegin());
 
     // Should be able to construct or assign an iterator from an iterator.
-    iterator nnIt_0{c.begin()};
-    iterator nnIt_1{nnIt_0};
+    iterator const nnIt_0{c.begin()};
+    iterator const nnIt_1{nnIt_0};
     BEAST_EXPECT(nnIt_0 == nnIt_1);
     iterator nnIt_2;
     nnIt_2 = nnIt_1;
@@ -1022,8 +1042,8 @@ aged_associative_container_test_base::testIterator()
 
     // Should be able to construct or assign a const_iterator from a
     // const_iterator.
-    const_iterator ccIt_0{c.cbegin()};
-    const_iterator ccIt_1{ccIt_0};
+    const_iterator const ccIt_0{c.cbegin()};
+    const_iterator const ccIt_1{ccIt_0};
     BEAST_EXPECT(ccIt_0 == ccIt_1);
     const_iterator ccIt_2;
     ccIt_2 = ccIt_1;
@@ -1034,8 +1054,8 @@ aged_associative_container_test_base::testIterator()
     BEAST_EXPECT(ccIt_1 == nnIt_1);
 
     // Should be able to construct a const_iterator from an iterator.
-    const_iterator ncIt_3{c.begin()};
-    const_iterator ncIt_4{nnIt_0};
+    const_iterator const ncIt_3{c.begin()};
+    const_iterator const ncIt_4{nnIt_0};
     BEAST_EXPECT(ncIt_3 == ncIt_4);
     const_iterator ncIt_5;
     ncIt_5 = nnIt_2;
@@ -1078,8 +1098,8 @@ aged_associative_container_test_base::testReverseIterator()
 
     // Should be able to construct or assign a reverse_iterator from a
     // reverse_iterator.
-    reverse_iterator rNrNit_0{c.rbegin()};
-    reverse_iterator rNrNit_1{rNrNit_0};
+    reverse_iterator const rNrNit_0{c.rbegin()};
+    reverse_iterator const rNrNit_1{rNrNit_0};
     BEAST_EXPECT(rNrNit_0 == rNrNit_1);
     reverse_iterator xXrNit_2;
     xXrNit_2 = rNrNit_1;
@@ -1087,8 +1107,8 @@ aged_associative_container_test_base::testReverseIterator()
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // const_reverse_iterator
-    const_reverse_iterator rCrCit_0{c.crbegin()};
-    const_reverse_iterator rCrCit_1{rCrCit_0};
+    const_reverse_iterator const rCrCit_0{c.crbegin()};
+    const_reverse_iterator const rCrCit_1{rCrCit_0};
     BEAST_EXPECT(rCrCit_0 == rCrCit_1);
     const_reverse_iterator xXrCit_2;
     xXrCit_2 = rCrCit_1;
@@ -1100,8 +1120,8 @@ aged_associative_container_test_base::testReverseIterator()
 
     // Should be able to construct or assign a const_reverse_iterator from a
     // reverse_iterator
-    const_reverse_iterator rNrCit_0{c.rbegin()};
-    const_reverse_iterator rNrCit_1{rNrNit_0};
+    const_reverse_iterator const rNrCit_0{c.rbegin()};
+    const_reverse_iterator const rNrCit_1{rNrNit_0};
     BEAST_EXPECT(rNrCit_0 == rNrCit_1);
     xXrCit_2 = rNrNit_1;
     BEAST_EXPECT(rNrCit_1 == xXrCit_2);
@@ -1112,10 +1132,10 @@ aged_associative_container_test_base::testReverseIterator()
     //  const_iterator.
     // Should be able to construct or assign reverse_iterators from
     // non-reverse iterators.
-    reverse_iterator fNrNit_0{c.begin()};
-    const_reverse_iterator fNrCit_0{c.begin()};
+    reverse_iterator const fNrNit_0{c.begin()};
+    const_reverse_iterator const fNrCit_0{c.begin()};
     BEAST_EXPECT(fNrNit_0 == fNrCit_0);
-    const_reverse_iterator fCrCit_0{c.cbegin()};
+    const_reverse_iterator const fCrCit_0{c.cbegin()};
     BEAST_EXPECT(fNrCit_0 == fCrCit_0);
 
     // None of these should compile because they construct a non-reverse
@@ -1126,7 +1146,7 @@ aged_associative_container_test_base::testReverseIterator()
 
     // You should not be able to assign an iterator to a reverse_iterator or
     // vise-versa.  So the following lines should not compile.
-    iterator xXfNit_0;
+    iterator const xXfNit_0;
     //  xXfNit_0 = xXrNit_2;
     //  xXrNit_2 = xXfNit_0;
 }
@@ -1266,13 +1286,18 @@ aged_associative_container_test_base::testChronological()
     typename Traits::template Cont<> c(v.begin(), v.end(), clock);
 
     BEAST_EXPECT(
-        std::equal(c.chronological.cbegin(), c.chronological.cend(), v.begin(), v.end(), equal_value<Traits>()));
+        std::equal(
+            c.chronological.cbegin(),
+            c.chronological.cend(),
+            v.begin(),
+            v.end(),
+            equal_value<Traits>()));
 
     // Test touch() with a non-const iterator.
     for (auto iter(v.crbegin()); iter != v.crend(); ++iter)
     {
         using iterator = typename decltype(c)::iterator;
-        iterator found(c.find(Traits::extract(*iter)));
+        iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
         if (found == c.cend())
@@ -1281,13 +1306,18 @@ aged_associative_container_test_base::testChronological()
     }
 
     BEAST_EXPECT(
-        std::equal(c.chronological.cbegin(), c.chronological.cend(), v.crbegin(), v.crend(), equal_value<Traits>()));
+        std::equal(
+            c.chronological.cbegin(),
+            c.chronological.cend(),
+            v.crbegin(),
+            v.crend(),
+            equal_value<Traits>()));
 
     // Test touch() with a const_iterator
     for (auto iter(v.cbegin()); iter != v.cend(); ++iter)
     {
         using const_iterator = typename decltype(c)::const_iterator;
-        const_iterator found(c.find(Traits::extract(*iter)));
+        const_iterator const found(c.find(Traits::extract(*iter)));
 
         BEAST_EXPECT(found != c.cend());
         if (found == c.cend())
@@ -1296,7 +1326,12 @@ aged_associative_container_test_base::testChronological()
     }
 
     BEAST_EXPECT(
-        std::equal(c.chronological.cbegin(), c.chronological.cend(), v.cbegin(), v.cend(), equal_value<Traits>()));
+        std::equal(
+            c.chronological.cbegin(),
+            c.chronological.cend(),
+            v.cbegin(),
+            v.cend(),
+            equal_value<Traits>()));
 
     {
         // Because touch (reverse_iterator pos) is not allowed, the following
@@ -1327,7 +1362,7 @@ aged_associative_container_test_base::testArrayCreate()
     {
         // Copy construct key
         typename Traits::template Cont<> c(clock);
-        for (auto e : v)
+        for (auto const& e : v)
             c[e.first] = e.second;
         checkContents(c, v);
     }
@@ -1407,7 +1442,10 @@ aged_associative_container_test_base::nextToEndIter(Iter beginIter, Iter const e
 // the whole test.
 template <class Container, class Iter>
 bool
-aged_associative_container_test_base::doElementErase(Container& c, Iter const beginItr, Iter const endItr)
+aged_associative_container_test_base::doElementErase(
+    Container& c,
+    Iter const beginItr,
+    Iter const endItr)
 {
     auto it(beginItr);
     size_t count = c.size();
@@ -1486,7 +1524,9 @@ aged_associative_container_test_base::testElementErase()
         auto tempContainer(c);
         BEAST_EXPECT(tempContainer.size() > 2);
         if (!doElementErase(
-                tempContainer, ++tempContainer.begin(), nextToEndIter(tempContainer.begin(), tempContainer.end())))
+                tempContainer,
+                ++tempContainer.begin(),
+                nextToEndIter(tempContainer.begin(), tempContainer.end())))
             return;  // Test failed
 
         BEAST_EXPECT(tempContainer.size() == 2);
@@ -1497,7 +1537,8 @@ aged_associative_container_test_base::testElementErase()
         auto tempContainer(c);
         BEAST_EXPECT(tempContainer.size() > 2);
         auto& chron(tempContainer.chronological);
-        if (!doElementErase(tempContainer, ++chron.begin(), nextToEndIter(chron.begin(), chron.end())))
+        if (!doElementErase(
+                tempContainer, ++chron.begin(), nextToEndIter(chron.begin(), chron.end())))
             return;  // Test failed
 
         BEAST_EXPECT(tempContainer.size() == 2);
@@ -1601,7 +1642,7 @@ aged_associative_container_test_base::testCompare()
     // testcase (Traits::name() + " array create");
     testcase("array create");
 
-    typename Traits::template Cont<> c1(v.begin(), v.end(), clock);
+    typename Traits::template Cont<> const c1(v.begin(), v.end(), clock);
 
     typename Traits::template Cont<> c2(v.begin(), v.end(), clock);
     c2.erase(c2.cbegin());
@@ -1631,7 +1672,7 @@ aged_associative_container_test_base::testObservers()
     // testcase (Traits::name() + " observers");
     testcase("observers");
 
-    typename Traits::template Cont<> c(clock);
+    typename Traits::template Cont<> const c(clock);
     c.key_comp();
     c.value_comp();
 
@@ -1649,7 +1690,7 @@ aged_associative_container_test_base::testObservers()
     // testcase (Traits::name() + " observers");
     testcase("observers");
 
-    typename Traits::template Cont<> c(clock);
+    typename Traits::template Cont<> const c(clock);
     c.hash_function();
     c.key_eq();
 
@@ -1696,7 +1737,8 @@ public:
         "bad alias: aged_set");
 
     static_assert(
-        std::is_same<aged_multiset<Key>, detail::aged_ordered_container<true, false, Key, void>>::value,
+        std::is_same<aged_multiset<Key>, detail::aged_ordered_container<true, false, Key, void>>::
+            value,
         "bad alias: aged_multiset");
 
     static_assert(
@@ -1704,23 +1746,32 @@ public:
         "bad alias: aged_map");
 
     static_assert(
-        std::is_same<aged_multimap<Key, T>, detail::aged_ordered_container<true, true, Key, T>>::value,
+        std::is_same<aged_multimap<Key, T>, detail::aged_ordered_container<true, true, Key, T>>::
+            value,
         "bad alias: aged_multimap");
 
     static_assert(
-        std::is_same<aged_unordered_set<Key>, detail::aged_unordered_container<false, false, Key, void>>::value,
+        std::is_same<
+            aged_unordered_set<Key>,
+            detail::aged_unordered_container<false, false, Key, void>>::value,
         "bad alias: aged_unordered_set");
 
     static_assert(
-        std::is_same<aged_unordered_multiset<Key>, detail::aged_unordered_container<true, false, Key, void>>::value,
+        std::is_same<
+            aged_unordered_multiset<Key>,
+            detail::aged_unordered_container<true, false, Key, void>>::value,
         "bad alias: aged_unordered_multiset");
 
     static_assert(
-        std::is_same<aged_unordered_map<Key, T>, detail::aged_unordered_container<false, true, Key, T>>::value,
+        std::is_same<
+            aged_unordered_map<Key, T>,
+            detail::aged_unordered_container<false, true, Key, T>>::value,
         "bad alias: aged_unordered_map");
 
     static_assert(
-        std::is_same<aged_unordered_multimap<Key, T>, detail::aged_unordered_container<true, true, Key, T>>::value,
+        std::is_same<
+            aged_unordered_multimap<Key, T>,
+            detail::aged_unordered_container<true, true, Key, T>>::value,
         "bad alias: aged_unordered_multimap");
 
     void

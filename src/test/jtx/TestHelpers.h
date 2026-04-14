@@ -5,14 +5,13 @@
 #include <xrpld/app/misc/TxQ.h>
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <source_location>
 #include <vector>
@@ -26,7 +25,10 @@ namespace jtx {
  Not every helper will be able to use this because of conversions and other
  issues, but for classes where it's straightforward, this can simplify things.
 */
-template <class SField, class StoredValue = typename SField::type::value_type, class OutputValue = StoredValue>
+template <
+    class SField,
+    class StoredValue = typename SField::type::value_type,
+    class OutputValue = StoredValue>
 struct JTxField
 {
     using SF = SField;
@@ -178,7 +180,8 @@ struct blobField : public JTxField<SF_VL, std::string>
     }
 
     template <size_t N>
-    explicit blobField(SF const& sfield, std::array<std::uint8_t, N> const& c) : blobField(sfield, makeSlice(c))
+    explicit blobField(SF const& sfield, std::array<std::uint8_t, N> const& c)
+        : blobField(sfield, makeSlice(c))
     {
     }
 };
@@ -313,7 +316,7 @@ template <typename... IOU>
 Json::Value
 getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 {
-    auto const jrr = getAccountLines(env, acctId);
+    auto jrr = getAccountLines(env, acctId);
     Json::Value res;
     for (auto const& line : jrr[jss::lines])
     {
@@ -398,6 +401,9 @@ equal(STAmount const& sa1, STAmount const& sa2);
 STPathElement
 IPE(Issue const& iss);
 
+STPathElement
+IPE(MPTIssue const& iss);
+
 template <class... Args>
 STPath
 stpath(Args const&... args)
@@ -424,6 +430,79 @@ same(STPathSet const& st1, Args const&... args)
     return true;
 }
 
+Json::Value
+rpf(jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& dstAmount,
+    std::optional<STAmount> const& sendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt);
+
+jtx::Env
+pathTestEnv(beast::unit_test::suite& suite);
+
+class gate
+{
+private:
+    std::condition_variable cv_;
+    std::mutex mutex_;
+    bool signaled_ = false;
+
+public:
+    // Thread safe, blocks until signaled or period expires.
+    // Returns `true` if signaled.
+    template <class Rep, class Period>
+    bool
+    wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+    {
+        std::unique_lock<std::mutex> lk(mutex_);
+        auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+        signaled_ = false;
+        return b;
+    }
+
+    void
+    signal()
+    {
+        std::lock_guard const lk(mutex_);
+        signaled_ = true;
+        cv_.notify_all();
+    }
+};
+
+Json::Value
+find_paths_request(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
+std::tuple<STPathSet, STAmount, STAmount>
+find_paths(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
+std::tuple<STPathSet, STAmount, STAmount>
+find_paths_by_element(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<STPathElement> const& srcElement = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
 /******************************************************************************/
 
 XRPAmount
@@ -433,7 +512,11 @@ PrettyAmount
 xrpMinusFee(Env const& env, std::int64_t xrpAmount);
 
 bool
-expectHolding(Env& env, AccountID const& account, STAmount const& value, bool defaultLimits = false);
+expectHolding(
+    Env& env,
+    AccountID const& account,
+    STAmount const& value,
+    bool defaultLimits = false);
 
 template <typename... Amts>
 bool
@@ -446,13 +529,33 @@ bool
 expectHolding(Env& env, AccountID const& account, None const& value);
 
 bool
-expectOffers(Env& env, AccountID const& account, std::uint16_t size, std::vector<Amounts> const& toMatch = {});
+expectMPT(Env& env, AccountID const& account, STAmount const& value);
+
+bool
+expectOffers(
+    Env& env,
+    AccountID const& account,
+    std::uint16_t size,
+    std::vector<Amounts> const& toMatch = {});
 
 Json::Value
 ledgerEntryRoot(Env& env, Account const& acct);
 
 Json::Value
-ledgerEntryState(Env& env, Account const& acct_a, Account const& acct_b, std::string const& currency);
+ledgerEntryState(
+    Env& env,
+    Account const& acct_a,
+    Account const& acct_b,
+    std::string const& currency);
+
+Json::Value
+ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offer_seq);
+
+Json::Value
+ledgerEntryMPT(jtx::Env& env, jtx::Account const& acct, MPTID const& mptID);
+
+Json::Value
+getBookOffers(jtx::Env& env, Asset const& taker_pays, Asset const& taker_gets);
 
 Json::Value
 accountBalance(Env& env, Account const& acct);
@@ -529,13 +632,85 @@ n_offers(Env& env, std::size_t n, Account const& account, STAmount const& in, ST
 /* Pay Strand */
 /***************************************************************/
 
-// Currency path element
+struct DirectStepInfo
+{
+    AccountID src;
+    AccountID dst;
+    Currency currency;
+};
+
+struct MPTEndpointStepInfo
+{
+    AccountID src;
+    AccountID dst;
+    MPTID mptid;
+};
+
+struct XRPEndpointStepInfo
+{
+    AccountID acc;
+};
+
+// Currency/MPTID path element
 STPathElement
-cpe(Currency const& c);
+cpe(PathAsset const& pa);
+
+// Currency/MPTID and issuer path element
+STPathElement
+ipe(Asset const& asset);
+
+// Issuer path element
+STPathElement
+iape(AccountID const& account);
+
+// Account path element
+STPathElement
+ape(AccountID const& a);
 
 // All path element
 STPathElement
-allPathElements(AccountID const& a, Issue const& iss);
+allPathElements(AccountID const& a, Asset const& asset);
+
+bool
+equal(std::unique_ptr<Step> const& s1, DirectStepInfo const& dsi);
+
+bool
+equal(std::unique_ptr<Step> const& s1, MPTEndpointStepInfo const& dsi);
+
+bool
+equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpStepInfo);
+
+bool
+equal(std::unique_ptr<Step> const& s1, xrpl::Book const& bsi);
+
+template <class Iter>
+bool
+strandEqualHelper(Iter i)
+{
+    // base case. all args processed and found equal.
+    return true;
+}
+
+template <class Iter, class StepInfo, class... Args>
+bool
+strandEqualHelper(Iter i, StepInfo&& si, Args&&... args)
+{
+    if (!jtx::equal(*i, std::forward<StepInfo>(si)))
+        return false;
+    return strandEqualHelper(++i, std::forward<Args>(args)...);
+}
+
+template <class... Args>
+bool
+equal(Strand const& strand, Args&&... args)
+{
+    if (strand.size() != sizeof...(Args))
+        return false;
+    if (strand.empty())
+        return true;
+    return strandEqualHelper(strand.begin(), std::forward<Args>(args)...);
+}
+
 /***************************************************************/
 
 /* Check */
@@ -543,7 +718,6 @@ allPathElements(AccountID const& a, Issue const& iss);
 namespace check {
 
 /** Create a check. */
-// clang-format off
 template <typename A>
     requires std::is_same_v<A, AccountID>
 Json::Value
@@ -556,7 +730,6 @@ create(A const& account, A const& dest, STAmount const& sendMax)
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;
 }
-// clang-format on
 
 inline Json::Value
 create(jtx::Account const& account, jtx::Account const& dest, STAmount const& sendMax)
@@ -568,6 +741,12 @@ create(jtx::Account const& account, jtx::Account const& dest, STAmount const& se
 
 static constexpr FeeLevel64 baseFeeLevel{TxQ::baseLevel};
 static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
+
+inline uint256
+getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+{
+    return keylet::check(account, uSequence).key;
+}
 
 template <class Suite>
 void
@@ -582,62 +761,71 @@ checkMetrics(
     std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee(),
     std::source_location const location = std::source_location::current())
 {
-    int line = location.line();
+    int const line = location.line();
     char const* file = location.file_name();
     FeeLevel64 const expectedMin{expectedMinFeeLevel};
     FeeLevel64 const expectedMed{expectedMedFeeLevel};
     auto const metrics = env.app().getTxQ().getMetrics(*env.current());
     using namespace std::string_literals;
 
-    metrics.referenceFeeLevel == baseFeeLevel ? test.pass()
-                                              : test.fail(
-                                                    "reference: "s + std::to_string(metrics.referenceFeeLevel.value()) +
-                                                        "/" + std::to_string(baseFeeLevel.value()),
-                                                    file,
-                                                    line);
+    metrics.referenceFeeLevel == baseFeeLevel
+        ? test.pass()
+        : test.fail(
+              "reference: "s + std::to_string(metrics.referenceFeeLevel.value()) + "/" +
+                  std::to_string(baseFeeLevel.value()),
+              file,
+              line);
 
     metrics.txCount == expectedCount
         ? test.pass()
-        : test.fail("txCount: "s + std::to_string(metrics.txCount) + "/" + std::to_string(expectedCount), file, line);
+        : test.fail(
+              "txCount: "s + std::to_string(metrics.txCount) + "/" + std::to_string(expectedCount),
+              file,
+              line);
 
-    metrics.txQMaxSize == expectedMaxCount ? test.pass()
-                                           : test.fail(
-                                                 "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) +
-                                                     "/" + std::to_string(expectedMaxCount.value_or(0)),
-                                                 file,
-                                                 line);
+    metrics.txQMaxSize == expectedMaxCount
+        ? test.pass()
+        : test.fail(
+              "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) + "/" +
+                  std::to_string(expectedMaxCount.value_or(0)),
+              file,
+              line);
 
     metrics.txInLedger == expectedInLedger
         ? test.pass()
         : test.fail(
-              "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" + std::to_string(expectedInLedger),
+              "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" +
+                  std::to_string(expectedInLedger),
               file,
               line);
 
     metrics.txPerLedger == expectedPerLedger
         ? test.pass()
         : test.fail(
-              "txPerLedger: "s + std::to_string(metrics.txPerLedger) + "/" + std::to_string(expectedPerLedger),
+              "txPerLedger: "s + std::to_string(metrics.txPerLedger) + "/" +
+                  std::to_string(expectedPerLedger),
               file,
               line);
 
     metrics.minProcessingFeeLevel == expectedMin
         ? test.pass()
         : test.fail(
-              "minProcessingFeeLevel: "s + std::to_string(metrics.minProcessingFeeLevel.value()) + "/" +
-                  std::to_string(expectedMin.value()),
+              "minProcessingFeeLevel: "s + std::to_string(metrics.minProcessingFeeLevel.value()) +
+                  "/" + std::to_string(expectedMin.value()),
               file,
               line);
 
-    metrics.medFeeLevel == expectedMed ? test.pass()
-                                       : test.fail(
-                                             "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) + "/" +
-                                                 std::to_string(expectedMed.value()),
-                                             file,
-                                             line);
+    metrics.medFeeLevel == expectedMed
+        ? test.pass()
+        : test.fail(
+              "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) + "/" +
+                  std::to_string(expectedMed.value()),
+              file,
+              line);
 
     auto const expectedCurFeeLevel = expectedInLedger > expectedPerLedger
-        ? expectedMed * expectedInLedger * expectedInLedger / (expectedPerLedger * expectedPerLedger)
+        ? expectedMed * expectedInLedger * expectedInLedger /
+            (expectedPerLedger * expectedPerLedger)
         : metrics.referenceFeeLevel;
 
     metrics.openLedgerFeeLevel == expectedCurFeeLevel
@@ -662,10 +850,18 @@ Json::Value
 del(AccountID const& account, uint256 const& brokerID, std::uint32_t flags = 0);
 
 Json::Value
-coverDeposit(AccountID const& account, uint256 const& brokerID, STAmount const& amount, std::uint32_t flags = 0);
+coverDeposit(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
 
 Json::Value
-coverWithdraw(AccountID const& account, uint256 const& brokerID, STAmount const& amount, std::uint32_t flags = 0);
+coverWithdraw(
+    AccountID const& account,
+    uint256 const& brokerID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
 
 // Must specify at least one of loanBrokerID or amount.
 Json::Value
@@ -679,7 +875,8 @@ auto const debtMaximum = simpleField<SF_NUMBER>(sfDebtMaximum);
 
 auto const coverRateMinimum = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
 
-auto const coverRateLiquidation = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
+auto const coverRateLiquidation =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
 
 auto const destination = JTxFieldWrapper<accountIDField>(sfDestination);
 
@@ -690,7 +887,10 @@ auto const destination = JTxFieldWrapper<accountIDField>(sfDestination);
 namespace loan {
 
 Json::Value
-set(AccountID const& account, uint256 const& loanBrokerID, Number principalRequested, std::uint32_t flags = 0);
+set(AccountID const& account,
+    uint256 const& loanBrokerID,
+    Number principalRequested,
+    std::uint32_t flags = 0);
 
 auto const counterparty = JTxFieldWrapper<accountIDField>(sfCounterparty);
 
@@ -712,7 +912,8 @@ auto const lateInterestRate = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sf
 
 auto const closeInterestRate = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
 
-auto const overpaymentInterestRate = valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
+auto const overpaymentInterestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
 
 auto const paymentTotal = simpleField<SF_UINT32>(sfPaymentTotal);
 
@@ -727,9 +928,112 @@ Json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
 
 Json::Value
-pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std::uint32_t flags = 0);
+pay(AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
 
 }  // namespace loan
+
+/** Set Expiration on a JTx. */
+class expiration
+{
+private:
+    std::uint32_t const expiry_;
+
+public:
+    explicit expiration(NetClock::time_point const& expiry)
+        : expiry_{expiry.time_since_epoch().count()}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfExpiration.jsonName] = expiry_;
+    }
+};
+
+/** Set SourceTag on a JTx. */
+class source_tag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit source_tag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfSourceTag.jsonName] = tag_;
+    }
+};
+
+/** Set DestinationTag on a JTx. */
+class dest_tag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit dest_tag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfDestinationTag.jsonName] = tag_;
+    }
+};
+
+struct IssuerArgs
+{
+    jtx::Env& env;
+    // 3-letter currency if Issue, ignored if MPT
+    std::string token = "";
+    jtx::Account issuer;
+    std::vector<jtx::Account> holders = {};
+    // trust-limit if Issue, maxAmount if MPT
+    std::optional<std::uint64_t> limit = std::nullopt;
+    // 0-50'000 (0-50%)
+    std::uint16_t transferFee = 0;
+};
+
+namespace detail {
+
+IOU
+issueHelperIOU(IssuerArgs const& args);
+
+MPT
+issueHelperMPT(IssuerArgs const& args);
+
+}  // namespace detail
+
+template <typename TTester>
+void
+testHelper2TokensMix(TTester&& tester)
+{
+    tester(detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU);
+}
+
+template <typename TTester>
+void
+testHelper3TokensMix(TTester&& tester)
+{
+    tester(detail::issueHelperMPT, detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperMPT, detail::issueHelperIOU);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU, detail::issueHelperIOU);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT, detail::issueHelperIOU);
+    tester(detail::issueHelperIOU, detail::issueHelperIOU, detail::issueHelperMPT);
+}
 
 }  // namespace jtx
 }  // namespace test

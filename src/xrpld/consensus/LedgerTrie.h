@@ -72,7 +72,7 @@ public:
         XRPL_ASSERT(ledger_.seq() == start_, "xrpl::Span::Span : ledger is genesis");
     }
 
-    Span(Ledger ledger) : start_{0}, end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
+    Span(Ledger ledger) : end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
     {
     }
 
@@ -128,7 +128,7 @@ public:
     SpanTip<Ledger>
     tip() const
     {
-        Seq tipSeq{end_ - Seq{1}};
+        Seq const tipSeq{end_ - Seq{1}};
         return SpanTip<Ledger>{tipSeq, ledger_[tipSeq], ledger_};
     }
 
@@ -149,8 +149,8 @@ private:
     std::optional<Span>
     sub(Seq from, Seq to) const
     {
-        Seq newFrom = clamp(from);
-        Seq newTo = clamp(to);
+        Seq const newFrom = clamp(from);
+        Seq const newTo = clamp(to);
         if (newFrom < newTo)
             return Span(newFrom, newTo, ledger_);
         return std::nullopt;
@@ -203,9 +203,10 @@ struct Node
     void
     erase(Node const* child)
     {
-        auto it = std::find_if(children.begin(), children.end(), [child](std::unique_ptr<Node> const& curr) {
-            return curr.get() == child;
-        });
+        auto it = std::find_if(
+            children.begin(), children.end(), [child](std::unique_ptr<Node> const& curr) {
+                return curr.get() == child;
+            });
         XRPL_ASSERT(it != children.end(), "xrpl::Node::erase : valid input");
         std::swap(*it, children.back());
         children.pop_back();
@@ -343,6 +344,7 @@ class LedgerTrie
     std::pair<Node*, Seq>
     find(Ledger const& ledger) const
     {
+        // NOLINTNEXTLINE(misc-const-correctness)
         Node* curr = root.get();
 
         // Root is always defined and is in common with all ledgers
@@ -519,7 +521,9 @@ public:
         loc->tipSupport -= count;
 
         auto const it = seqSupport.find(ledger.seq());
-        XRPL_ASSERT(it != seqSupport.end() && it->second >= count, "xrpl::LedgerTrie::remove : valid input ledger");
+        XRPL_ASSERT(
+            it != seqSupport.end() && it->second >= count,
+            "xrpl::LedgerTrie::remove : valid input ledger");
         it->second -= count;
         if (it->second == 0)
             seqSupport.erase(it->first);
@@ -670,7 +674,8 @@ public:
                 // Add any initial uncommitted support prior for ledgers
                 // earlier than nextSeq or earlier than largestIssued
                 Seq nextSeq = curr->span.start() + Seq{1};
-                while (uncommittedIt != seqSupport.end() && uncommittedIt->first < std::max(nextSeq, largestIssued))
+                while (uncommittedIt != seqSupport.end() &&
+                       uncommittedIt->first < std::max(nextSeq, largestIssued))
                 {
                     uncommitted += uncommittedIt->second;
                     uncommittedIt++;
@@ -680,7 +685,8 @@ public:
                 while (nextSeq < curr->span.end() && curr->branchSupport > uncommitted)
                 {
                     // Jump to the next seqSupport change
-                    if (uncommittedIt != seqSupport.end() && uncommittedIt->first < curr->span.end())
+                    if (uncommittedIt != seqSupport.end() &&
+                        uncommittedIt->first < curr->span.end())
                     {
                         nextSeq = uncommittedIt->first + Seq{1};
                         uncommitted += uncommittedIt->second;

@@ -161,8 +161,10 @@ LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
     {sfOwner,                soeOPTIONAL},  // for owner directories
     {sfTakerPaysCurrency,    soeOPTIONAL},  // order book directories
     {sfTakerPaysIssuer,      soeOPTIONAL},  // order book directories
+    {sfTakerPaysMPT,         soeOPTIONAL},  // order book directories
     {sfTakerGetsCurrency,    soeOPTIONAL},  // order book directories
     {sfTakerGetsIssuer,      soeOPTIONAL},  // order book directories
+    {sfTakerGetsMPT,         soeOPTIONAL},  // order book directories
     {sfExchangeRate,         soeOPTIONAL},  // order book directories
     {sfIndexes,              soeREQUIRED},
     {sfRootIndex,            soeREQUIRED},
@@ -385,21 +387,21 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
     \sa keylet::mptIssuance
  */
 LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
-    {sfIssuer,                   soeREQUIRED},
-    {sfSequence,                 soeREQUIRED},
-    {sfTransferFee,              soeDEFAULT},
-    {sfOwnerNode,                soeREQUIRED},
-    {sfAssetScale,               soeDEFAULT},
-    {sfMaximumAmount,            soeOPTIONAL},
-    {sfOutstandingAmount,        soeREQUIRED},
-    {sfLockedAmount,             soeOPTIONAL},
-    {sfMPTokenMetadata,          soeOPTIONAL},
-    {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED},
-    {sfDomainID,                 soeOPTIONAL},
-    {sfMutableFlags,             soeDEFAULT},
-    {sfIssuerElGamalPublicKey,   soeOPTIONAL},
-    {sfAuditorElGamalPublicKey,  soeOPTIONAL},
+    {sfIssuer,                        soeREQUIRED},
+    {sfSequence,                      soeREQUIRED},
+    {sfTransferFee,                   soeDEFAULT},
+    {sfOwnerNode,                     soeREQUIRED},
+    {sfAssetScale,                    soeDEFAULT},
+    {sfMaximumAmount,                 soeOPTIONAL},
+    {sfOutstandingAmount,             soeREQUIRED},
+    {sfLockedAmount,                  soeOPTIONAL},
+    {sfMPTokenMetadata,               soeOPTIONAL},
+    {sfPreviousTxnID,                 soeREQUIRED},
+    {sfPreviousTxnLgrSeq,             soeREQUIRED},
+    {sfDomainID,                      soeOPTIONAL},
+    {sfMutableFlags,                  soeDEFAULT},
+    {sfIssuerEncryptionKey,           soeOPTIONAL},
+    {sfAuditorEncryptionKey,          soeOPTIONAL},
     {sfConfidentialOutstandingAmount, soeDEFAULT},
 }))
 
@@ -407,19 +409,19 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     \sa keylet::mptoken
  */
 LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
-    {sfAccount,                  soeREQUIRED},
-    {sfMPTokenIssuanceID,        soeREQUIRED},
-    {sfMPTAmount,                soeDEFAULT},
-    {sfLockedAmount,             soeOPTIONAL},
-    {sfOwnerNode,                soeREQUIRED},
-    {sfPreviousTxnID,            soeREQUIRED},
-    {sfPreviousTxnLgrSeq,        soeREQUIRED},
-    {sfConfidentialBalanceInbox, soeOPTIONAL},
+    {sfAccount,                     soeREQUIRED},
+    {sfMPTokenIssuanceID,           soeREQUIRED},
+    {sfMPTAmount,                   soeDEFAULT},
+    {sfLockedAmount,                soeOPTIONAL},
+    {sfOwnerNode,                   soeREQUIRED},
+    {sfPreviousTxnID,               soeREQUIRED},
+    {sfPreviousTxnLgrSeq,           soeREQUIRED},
+    {sfConfidentialBalanceInbox,    soeOPTIONAL},
     {sfConfidentialBalanceSpending, soeOPTIONAL},
-    {sfConfidentialBalanceVersion, soeDEFAULT},
-    {sfIssuerEncryptedBalance,   soeOPTIONAL},
-    {sfAuditorEncryptedBalance,   soeOPTIONAL},
-    {sfHolderElGamalPublicKey,   soeOPTIONAL},
+    {sfConfidentialBalanceVersion,  soeDEFAULT},
+    {sfIssuerEncryptedBalance,      soeOPTIONAL},
+    {sfAuditorEncryptedBalance,     soeOPTIONAL},
+    {sfHolderEncryptionKey,         soeOPTIONAL},
 }))
 
 /** A ledger object which tracks Oracle
@@ -587,7 +589,7 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     //   The unrounded true total value of the loan.
     //
     // - TrueTotalPrincipalOutstanding can be computed using the algorithm
-    //   in the ripple::detail::loanPrincipalFromPeriodicPayment function.
+    //   in the xrpl::detail::loanPrincipalFromPeriodicPayment function.
     //
     // - TrueTotalInterestOutstanding = TrueTotalLoanValue -
     //      TrueTotalPrincipalOutstanding

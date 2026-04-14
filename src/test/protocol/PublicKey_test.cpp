@@ -17,7 +17,7 @@ public:
     {
         struct Table
         {
-            int val[256];
+            int val[256]{};
             Table()
             {
                 std::fill(val, val + 256, 0);
@@ -46,7 +46,7 @@ public:
         }
     }
 
-    blob
+    static blob
     sig(std::string const& hex)
     {
         blob b;
@@ -54,7 +54,7 @@ public:
         return b;
     }
 
-    bool
+    static bool
     check(std::optional<ECDSACanonicality> answer, std::string const& s)
     {
         return ecdsaCanonicality(makeSlice(sig(s))) == answer;
@@ -296,14 +296,15 @@ public:
         BEAST_EXPECT(!parseBase58<PublicKey>(TokenType::NodePublic, " "));
         BEAST_EXPECT(!parseBase58<PublicKey>(TokenType::NodePublic, "!ty89234gh45"));
 
-        auto const good = toBase58(TokenType::NodePublic, derivePublicKey(keyType, randomSecretKey()));
+        auto const good =
+            toBase58(TokenType::NodePublic, derivePublicKey(keyType, randomSecretKey()));
 
         // Short (non-empty) strings
         {
             auto s = good;
 
             // Remove all characters from the string in random order:
-            std::hash<std::string> r;
+            std::hash<std::string> const r;
 
             while (!s.empty())
             {
@@ -369,7 +370,8 @@ public:
                 auto const skj = parseBase58<PublicKey>(TokenType::NodePublic, sj);
                 BEAST_EXPECT(skj && (keys[j] == *skj));
 
-                BEAST_EXPECT((*ski == *skj) == (i == j));
+                BEAST_EXPECT(
+                    (*ski == *skj) == (i == j));  // NOLINT(bugprone-unchecked-optional-access)
             }
         }
     }
@@ -381,13 +383,14 @@ public:
 
         {
             auto const pk1 = derivePublicKey(
-                KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase")));
+                KeyType::secp256k1,
+                generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase")));
 
-            auto const pk2 =
-                parseBase58<PublicKey>(TokenType::NodePublic, "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
+            auto const pk2 = parseBase58<PublicKey>(
+                TokenType::NodePublic, "n94a1u4jAz288pZLtw6yFWVbi89YamiC6JBXPVUj5zmExe5fTVg9");
             BEAST_EXPECT(pk2);
 
-            BEAST_EXPECT(pk1 == *pk2);
+            BEAST_EXPECT(pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         testBase58(KeyType::secp256k1);
@@ -396,13 +399,14 @@ public:
 
         {
             auto const pk1 = derivePublicKey(
-                KeyType::ed25519, generateSecretKey(KeyType::ed25519, generateSeed("masterpassphrase")));
+                KeyType::ed25519,
+                generateSecretKey(KeyType::ed25519, generateSeed("masterpassphrase")));
 
-            auto const pk2 =
-                parseBase58<PublicKey>(TokenType::NodePublic, "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
+            auto const pk2 = parseBase58<PublicKey>(
+                TokenType::NodePublic, "nHUeeJCSY2dM71oxM8Cgjouf5ekTuev2mwDpc374aLMxzDLXNmjf");
             BEAST_EXPECT(pk2);
 
-            BEAST_EXPECT(pk1 == *pk2);
+            BEAST_EXPECT(pk1 == *pk2);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         testBase58(KeyType::ed25519);
@@ -414,14 +418,16 @@ public:
         testcase("Miscellaneous operations");
 
         auto const pk1 = derivePublicKey(
-            KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase")));
+            KeyType::secp256k1,
+            generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase")));
 
-        PublicKey pk2(pk1);
+        PublicKey const pk2(pk1);
         BEAST_EXPECT(pk1 == pk2);
         BEAST_EXPECT(pk2 == pk1);
 
         PublicKey pk3 = derivePublicKey(
-            KeyType::secp256k1, generateSecretKey(KeyType::secp256k1, generateSeed("arbitraryPassPhrase")));
+            KeyType::secp256k1,
+            generateSecretKey(KeyType::secp256k1, generateSeed("arbitraryPassPhrase")));
         // Testing the copy assignment operation of PublicKey class
         pk3 = pk2;
         BEAST_EXPECT(pk3 == pk2);

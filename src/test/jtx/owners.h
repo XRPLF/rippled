@@ -2,7 +2,7 @@
 
 #include <test/jtx/Env.h>
 
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -16,7 +16,11 @@ std::uint32_t
 owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type);
 
 void
-owned_count_helper(test::jtx::Env& env, AccountID const& id, LedgerEntryType type, std::uint32_t value);
+owned_count_helper(
+    test::jtx::Env& env,
+    AccountID const& id,
+    LedgerEntryType type,
+    std::uint32_t value);
 
 }  // namespace detail
 
@@ -39,7 +43,7 @@ public:
     void
     operator()(Env& env) const
     {
-        detail::owned_count_helper(env, account_.id(), Type, value_);
+        xrpl::detail::owned_count_helper(env, account_.id(), Type, value_);
     }
 };
 
@@ -64,6 +68,9 @@ using lines = owner_count<ltRIPPLE_STATE>;
 
 /** Match the number of offers in the account's owner directory */
 using offers = owner_count<ltOFFER>;
+
+/** Match the number of MPToken in the account's owner directory */
+using mptokens = owner_count<ltMPTOKEN>;
 
 }  // namespace jtx
 }  // namespace test

@@ -99,15 +99,36 @@ getBookBase(Book const& book)
 {
     XRPL_ASSERT(isConsistent(book), "xrpl::getBookBase : input is consistent");
 
-    auto const index = book.domain
-        ? indexHash(
-              LedgerNameSpace::BOOK_DIR,
-              book.in.currency,
-              book.out.currency,
-              book.in.account,
-              book.out.account,
-              *(book.domain))
-        : indexHash(LedgerNameSpace::BOOK_DIR, book.in.currency, book.out.currency, book.in.account, book.out.account);
+    auto getIndexHash = [&book]<typename... Args>(Args... args) {
+        if (book.domain)
+            return indexHash(std::forward<Args>(args)..., *book.domain);
+        return indexHash(std::forward<Args>(args)...);
+    };
+
+    auto const index = std::visit(
+        [&]<ValidIssueType TIn, ValidIssueType TOut>(TIn const& in, TOut const& out) {
+            if constexpr (std::is_same_v<TIn, Issue> && std::is_same_v<TOut, Issue>)
+            {
+                return getIndexHash(
+                    LedgerNameSpace::BOOK_DIR, in.currency, out.currency, in.account, out.account);
+            }
+            else if constexpr (std::is_same_v<TIn, Issue> && std::is_same_v<TOut, MPTIssue>)
+            {
+                return getIndexHash(
+                    LedgerNameSpace::BOOK_DIR, in.currency, out.getMptID(), in.account);
+            }
+            else if constexpr (std::is_same_v<TIn, MPTIssue> && std::is_same_v<TOut, Issue>)
+            {
+                return getIndexHash(
+                    LedgerNameSpace::BOOK_DIR, in.getMptID(), out.currency, out.account);
+            }
+            else
+            {
+                return getIndexHash(LedgerNameSpace::BOOK_DIR, in.getMptID(), out.getMptID());
+            }
+        },
+        book.in.value(),
+        book.out.value());
 
     // Return with quality 0.
     auto k = keylet::quality({ltDIR_NODE, index}, 0);
@@ -118,7 +139,8 @@ getBookBase(Book const& book)
 uint256
 getQualityNext(uint256 const& uBase)
 {
-    static constexpr uint256 nextQuality("0000000000000000000000000000000000000000000000010000000000000000");
+    static constexpr uint256 nextQuality(
+        "0000000000000000000000000000000000000000000000010000000000000000");
     return uBase + nextQuality;
 }
 
@@ -132,7 +154,7 @@ getQuality(uint256 const& uBase)
 uint256
 getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 {
-    return indexHash(LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
+    return indexHash(LedgerNameSpace::TICKET, account, ticketSeq);
 }
 
 uint256
@@ -180,7 +202,8 @@ skip(LedgerIndex ledger) noexcept
 {
     return {
         ltLEDGER_HASHES,
-        indexHash(LedgerNameSpace::SKIP_LIST, std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
+        indexHash(
+            LedgerNameSpace::SKIP_LIST, std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
 }
 
 Keylet const&
@@ -213,7 +236,7 @@ book_t::operator()(Book const& b) const
 Keylet
 line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept
 {
-    // There is code in SetTrust that calls us with id0 == id1, to allow users
+    // There is code in TrustSet that calls us with id0 == id1, to allow users
     // to locate and delete such "weird" trustlines. If we remove that code, we
     // could enable this assert:
     // XRPL_ASSERT(id0 != id1, "xrpl::keylet::line : accounts must be
@@ -228,7 +251,9 @@ line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexc
     // two accounts (smallest then largest)  and hash them in that order:
     auto const accounts = std::minmax(id0, id1);
 
-    return {ltRIPPLE_STATE, indexHash(LedgerNameSpace::TRUST_LINE, accounts.first, accounts.second, currency)};
+    return {
+        ltRIPPLE_STATE,
+        indexHash(LedgerNameSpace::TRUST_LINE, accounts.first, accounts.second, currency)};
 }
 
 Keylet
@@ -303,14 +328,17 @@ depositPreauth(AccountID const& owner, AccountID const& preauthorized) noexcept
 
 // Credentials should be sorted here, use credentials::makeSorted
 Keylet
-depositPreauth(AccountID const& owner, std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept
+depositPreauth(
+    AccountID const& owner,
+    std::set<std::pair<AccountID, Slice>> const& authCreds) noexcept
 {
     std::vector<uint256> hashes;
     hashes.reserve(authCreds.size());
     for (auto const& o : authCreds)
         hashes.emplace_back(sha512Half(o.first, o.second));
 
-    return {ltDEPOSIT_PREAUTH, indexHash(LedgerNameSpace::DEPOSIT_PREAUTH_CREDENTIALS, owner, hashes)};
+    return {
+        ltDEPOSIT_PREAUTH, indexHash(LedgerNameSpace::DEPOSIT_PREAUTH_CREDENTIALS, owner, hashes)};
 }
 
 //------------------------------------------------------------------------------
@@ -390,10 +418,37 @@ nft_sells(uint256 const& id) noexcept
 }
 
 Keylet
-amm(Asset const& issue1, Asset const& issue2) noexcept
+amm(Asset const& asset1, Asset const& asset2) noexcept
 {
-    auto const& [minI, maxI] = std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
-    return amm(indexHash(LedgerNameSpace::AMM, minI.account, minI.currency, maxI.account, maxI.currency));
+    auto const& [minA, maxA] = std::minmax(asset1, asset2);
+    return std::visit(
+        []<ValidIssueType TIss1, ValidIssueType TIss2>(TIss1 const& issue1, TIss2 const& issue2) {
+            if constexpr (std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, Issue>)
+            {
+                return amm(indexHash(
+                    LedgerNameSpace::AMM,
+                    issue1.account,
+                    issue1.currency,
+                    issue2.account,
+                    issue2.currency));
+            }
+            else if constexpr (std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, MPTIssue>)
+            {
+                return amm(indexHash(
+                    LedgerNameSpace::AMM, issue1.account, issue1.currency, issue2.getMptID()));
+            }
+            else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, Issue>)
+            {
+                return amm(indexHash(
+                    LedgerNameSpace::AMM, issue1.getMptID(), issue2.account, issue2.currency));
+            }
+            else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, MPTIssue>)
+            {
+                return amm(indexHash(LedgerNameSpace::AMM, issue1.getMptID(), issue2.getMptID()));
+            }
+        },
+        minA.value(),
+        maxA.value());
 }
 
 Keylet

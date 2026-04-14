@@ -15,11 +15,12 @@
 #define ALWAYS_OR_UNREACHABLE(cond, message) assert((message) && (cond))
 #define SOMETIMES(cond, message, ...)
 #define REACHABLE(message, ...)
-#define UNREACHABLE(message, ...) assert((message) && false)
+#define UNREACHABLE(message, ...) assert((message) && false)  // NOLINT(misc-static-assert)
 #endif
 
 #define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
-#define XRPL_ASSERT_PARTS(cond, function, description, ...) XRPL_ASSERT(cond, function " : " description)
+#define XRPL_ASSERT_PARTS(cond, function, description, ...) \
+    XRPL_ASSERT(cond, function " : " description)
 
 // How to use the instrumentation macros:
 //

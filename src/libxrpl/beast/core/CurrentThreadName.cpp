@@ -62,7 +62,8 @@ namespace beast::detail {
 inline void
 setCurrentThreadNameImpl(std::string_view name)
 {
-    pthread_setname_np(name.data());
+    // The string is assumed to be null terminated
+    pthread_setname_np(name.data());  // NOLINT(bugprone-suspicious-stringview-data-usage)
 }
 
 }  // namespace beast::detail
@@ -80,20 +81,20 @@ setCurrentThreadNameImpl(std::string_view name)
 {
     // truncate and set the thread name.
     char boundedName[maxThreadNameLength + 1];
-    std::snprintf(boundedName, sizeof(boundedName), "%.*s", static_cast<int>(maxThreadNameLength), name.data());
+    std::snprintf(
+        boundedName,
+        sizeof(boundedName),
+        "%.*s",
+        static_cast<int>(maxThreadNameLength),
+        name.data());  // NOLINT(bugprone-suspicious-stringview-data-usage)
 
     pthread_setname_np(pthread_self(), boundedName);
 
 #ifdef TRUNCATED_THREAD_NAME_LOGS
     if (name.size() > maxThreadNameLength)
     {
-        std::cerr << "WARNING: Thread name \"" << name << "\" (length " << name.size() << ") exceeds maximum of "
-                  << maxThreadNameLength << " characters on Linux.\n";
-
-        XRPL_ASSERT(
-            false,
-            "beast::detail::setCurrentThreadNameImpl : Thread name exceeds "
-            "maximum length for Linux");
+        std::cerr << "WARNING: Thread name \"" << name << "\" (length " << name.size()
+                  << ") exceeds maximum of " << maxThreadNameLength << " characters on Linux.\n";
     }
 #endif
 }

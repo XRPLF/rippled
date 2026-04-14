@@ -50,7 +50,10 @@ STNumber::associateAsset(Asset const& a)
 {
     STTakesAsset::associateAsset(a);
 
-    XRPL_ASSERT_PARTS(getFName().shouldMeta(SField::sMD_NeedsAsset), "STNumber::associateAsset", "field needs asset");
+    XRPL_ASSERT_PARTS(
+        getFName().shouldMeta(SField::sMD_NeedsAsset),
+        "STNumber::associateAsset",
+        "field needs asset");
 
     roundToAsset(a, value_);
 }
@@ -94,7 +97,8 @@ STNumber::add(Serializer& s) const
     }
 
     XRPL_ASSERT_PARTS(
-        mantissa <= std::numeric_limits<std::int64_t>::max() && mantissa >= std::numeric_limits<std::int64_t>::min(),
+        mantissa <= std::numeric_limits<std::int64_t>::max() &&
+            mantissa >= std::numeric_limits<std::int64_t>::min(),
         "xrpl::STNumber::add",
         "mantissa in valid range");
     s.add64(mantissa);
@@ -128,7 +132,8 @@ STNumber::move(std::size_t n, void* buf)
 bool
 STNumber::isEquivalent(STBase const& t) const
 {
-    XRPL_ASSERT(t.getSType() == this->getSType(), "xrpl::STNumber::isEquivalent : field type match");
+    XRPL_ASSERT(
+        t.getSType() == this->getSType(), "xrpl::STNumber::isEquivalent : field type match");
     STNumber const& v = dynamic_cast<STNumber const&>(t);
     return value_ == v;
 }
@@ -172,10 +177,10 @@ partsFromString(std::string const& number)
     //   6 = exponent sign
     //   7 = exponent number
 
-    bool negative = (match[1].matched && (match[1] == "-"));
+    bool const negative = (match[1].matched && (match[1] == "-"));
 
-    std::uint64_t mantissa;
-    int exponent;
+    std::uint64_t mantissa = 0;
+    int exponent = 0;
 
     if (!match[4].matched)  // integer only
     {
@@ -193,9 +198,13 @@ partsFromString(std::string const& number)
     {
         // we have an exponent
         if (match[6].matched && (match[6] == "-"))
+        {
             exponent -= boost::lexical_cast<int>(std::string(match[7]));
+        }
         else
+        {
             exponent += boost::lexical_cast<int>(std::string(match[7]));
+        }
     }
 
     return {mantissa, exponent, negative};
@@ -226,19 +235,23 @@ numberFromJson(SField const& field, Json::Value const& value)
     {
         parts = partsFromString(value.asString());
 
-        XRPL_ASSERT_PARTS(!getCurrentTransactionRules(), "xrpld::numberFromJson", "Not in a Transactor context");
+        XRPL_ASSERT_PARTS(
+            !getCurrentTransactionRules(), "xrpld::numberFromJson", "Not in a Transactor context");
 
         // Number mantissas are much bigger than the allowable parsed values, so
         // it can't be out of range.
         static_assert(
-            std::numeric_limits<std::uint64_t>::max() >= std::numeric_limits<decltype(parts.mantissa)>::max());
+            // NOLINTNEXTLINE(misc-redundant-expression)
+            std::numeric_limits<std::uint64_t>::max() >=
+            std::numeric_limits<decltype(parts.mantissa)>::max());
     }
     else
     {
         Throw<std::runtime_error>("not a number");
     }
 
-    return STNumber{field, Number{parts.negative, parts.mantissa, parts.exponent, Number::normalized{}}};
+    return STNumber{
+        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::normalized{}}};
 }
 
 }  // namespace xrpl

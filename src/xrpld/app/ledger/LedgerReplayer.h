@@ -52,7 +52,10 @@ std::uint32_t constexpr MAX_QUEUED_TASKS = 100;
 class LedgerReplayer final
 {
 public:
-    LedgerReplayer(Application& app, InboundLedgers& inboundLedgers, std::unique_ptr<PeerSetBuilder> peerSetBuilder);
+    LedgerReplayer(
+        Application& app,
+        InboundLedgers& inboundLedgers,
+        std::unique_ptr<PeerSetBuilder> peerSetBuilder);
 
     ~LedgerReplayer();
 
@@ -86,7 +89,9 @@ public:
      * @note info and txns must have been verified against the ledger hash
      */
     void
-    gotReplayDelta(LedgerHeader const& info, std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
+    gotReplayDelta(
+        LedgerHeader const& info,
+        std::map<std::uint32_t, std::shared_ptr<STTx const>>&& txns);
 
     /** Remove completed tasks */
     void
@@ -98,21 +103,21 @@ public:
     std::size_t
     tasksSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return tasks_.size();
     }
 
     std::size_t
     deltasSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return deltas_.size();
     }
 
     std::size_t
     skipListsSize() const
     {
-        std::lock_guard<std::mutex> lock(mtx_);
+        std::lock_guard<std::mutex> const lock(mtx_);
         return skipLists_.size();
     }
 

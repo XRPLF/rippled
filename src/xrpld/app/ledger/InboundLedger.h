@@ -1,11 +1,11 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/ledger/Ledger.h>
 
 #include <mutex>
 #include <set>
@@ -152,11 +152,11 @@ private:
     clock_type::time_point mLastAction;
 
     std::shared_ptr<Ledger> mLedger;
-    bool mHaveHeader;
-    bool mHaveState;
-    bool mHaveTransactions;
-    bool mSignaled;
-    bool mByHash;
+    bool mHaveHeader{false};
+    bool mHaveState{false};
+    bool mHaveTransactions{false};
+    bool mSignaled{false};
+    bool mByHash{true};
     std::uint32_t mSeq;
     Reason const mReason;
 
@@ -166,8 +166,9 @@ private:
 
     // Data we have received from peers
     std::mutex mReceivedDataLock;
-    std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>> mReceivedData;
-    bool mReceiveDispatched;
+    std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
+        mReceivedData;
+    bool mReceiveDispatched{false};
     std::unique_ptr<PeerSet> mPeerSet;
 };
 

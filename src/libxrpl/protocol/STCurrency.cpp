@@ -23,7 +23,8 @@ STCurrency::STCurrency(SerialIter& sit, SField const& name) : STBase{name}
     currency_ = sit.get160();
 }
 
-STCurrency::STCurrency(SField const& name, Currency const& currency) : STBase{name}, currency_{currency}
+STCurrency::STCurrency(SField const& name, Currency const& currency)
+    : STBase{name}, currency_{currency}
 {
 }
 
@@ -55,7 +56,7 @@ bool
 STCurrency::isEquivalent(STBase const& t) const
 {
     STCurrency const* v = dynamic_cast<STCurrency const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool

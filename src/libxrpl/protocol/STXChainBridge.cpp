@@ -58,7 +58,8 @@ STXChainBridge::STXChainBridge(SField const& name, Json::Value const& v) : STBas
 {
     if (!v.isObject())
     {
-        Throw<std::runtime_error>("STXChainBridge can only be specified with a 'object' Json value");
+        Throw<std::runtime_error>(
+            "STXChainBridge can only be specified with a 'object' Json value");
     }
 
     auto checkExtra = [](Json::Value const& v) {
@@ -166,14 +167,14 @@ bool
 STXChainBridge::isEquivalent(STBase const& t) const
 {
     STXChainBridge const* v = dynamic_cast<STXChainBridge const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool
 STXChainBridge::isDefault() const
 {
-    return lockingChainDoor_.isDefault() && lockingChainIssue_.isDefault() && issuingChainDoor_.isDefault() &&
-        issuingChainIssue_.isDefault();
+    return lockingChainDoor_.isDefault() && lockingChainIssue_.isDefault() &&
+        issuingChainDoor_.isDefault() && issuingChainIssue_.isDefault();
 }
 
 std::unique_ptr<STXChainBridge>

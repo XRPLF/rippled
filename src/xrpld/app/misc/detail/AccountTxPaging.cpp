@@ -1,8 +1,10 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/protocol/Serializer.h>
 
 namespace xrpl {
@@ -26,13 +28,17 @@ convertBlobsToTxResult(
 
     // if properly formed meta is available we can use it to generate ctid
     if (metaset->getAsObject().isFieldPresent(sfTransactionIndex))
+    {
         tr->setStatus(
             Transaction::sqlTransactionStatus(status),
             ledger_index,
             metaset->getAsObject().getFieldU32(sfTransactionIndex),
-            app.config().NETWORK_ID);
+            app.getNetworkIDService().getNetworkID());
+    }
     else
+    {
         tr->setStatus(Transaction::sqlTransactionStatus(status), ledger_index);
+    }
 
     to.emplace_back(std::move(tr), metaset);
 };

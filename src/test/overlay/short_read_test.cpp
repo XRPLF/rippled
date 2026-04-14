@@ -56,7 +56,7 @@ private:
         using boost::asio::buffer;
         using boost::asio::buffer_copy;
         using boost::asio::buffer_size;
-        boost::asio::const_buffer buf(s.data(), s.size());
+        boost::asio::const_buffer const buf(s.data(), s.size());
         sb.commit(buffer_copy(sb.prepare(buffer_size(buf)), buf));
     }
 
@@ -100,14 +100,14 @@ private:
         void
         add(std::shared_ptr<Child> const& child)
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             list_.emplace(child.get(), child);
         }
 
         void
         remove(Child* child)
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             list_.erase(child);
             if (list_.empty())
                 cond_.notify_one();
@@ -118,7 +118,7 @@ private:
         {
             std::vector<std::shared_ptr<Child>> v;
             {
-                std::lock_guard lock(mutex_);
+                std::lock_guard const lock(mutex_);
                 v.reserve(list_.size());
                 if (closed_)
                     return;
@@ -180,7 +180,10 @@ private:
             close() override
             {
                 if (!strand_.running_in_this_thread())
-                    return post(strand_, std::bind(&Acceptor::close, shared_from_this()));
+                {
+                    post(strand_, std::bind(&Acceptor::close, shared_from_this()));
+                    return;
+                }
                 acceptor_.close();
             }
 
@@ -189,7 +192,10 @@ private:
             {
                 acceptor_.async_accept(
                     socket_,
-                    bind_executor(strand_, std::bind(&Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
+                    bind_executor(
+                        strand_,
+                        std::bind(
+                            &Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -207,13 +213,19 @@ private:
             on_accept(error_code ec)
             {
                 if (ec)
-                    return fail("accept", ec);
+                {
+                    fail("accept", ec);
+                    return;
+                }
                 auto const p = std::make_shared<Connection>(server_, std::move(socket_));
                 server_.add(p);
                 p->run();
                 acceptor_.async_accept(
                     socket_,
-                    bind_executor(strand_, std::bind(&Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
+                    bind_executor(
+                        strand_,
+                        std::bind(
+                            &Acceptor::on_accept, shared_from_this(), std::placeholders::_1)));
             }
         };
 
@@ -242,7 +254,10 @@ private:
             close() override
             {
                 if (!strand_.running_in_this_thread())
-                    return post(strand_, std::bind(&Connection::close, shared_from_this()));
+                {
+                    post(strand_, std::bind(&Connection::close, shared_from_this()));
+                    return;
+                }
                 if (socket_.is_open())
                 {
                     socket_.close();
@@ -255,11 +270,14 @@ private:
             {
                 timer_.expires_after(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
-                    strand_, std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
                 stream_.async_handshake(
                     stream_type::server,
                     bind_executor(
-                        strand_, std::bind(&Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
+                        strand_,
+                        std::bind(
+                            &Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -280,7 +298,10 @@ private:
                 if (ec == boost::asio::error::operation_aborted)
                     return;
                 if (ec)
-                    return fail("timer", ec);
+                {
+                    fail("timer", ec);
+                    return;
+                }
                 test_.log << "[server] timeout" << std::endl;
                 socket_.close();
             }
@@ -289,7 +310,10 @@ private:
             on_handshake(error_code ec)
             {
                 if (ec)
-                    return fail("handshake", ec);
+                {
+                    fail("handshake", ec);
+                    return;
+                }
 #if 1
                 boost::asio::async_read_until(
                     stream_,
@@ -298,7 +322,10 @@ private:
                     bind_executor(
                         strand_,
                         std::bind(
-                            &Connection::on_read, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                            &Connection::on_read,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 close();
 #endif
@@ -310,11 +337,17 @@ private:
                 if (ec == boost::asio::error::eof)
                 {
                     server_.test_.log << "[server] read: EOF" << std::endl;
-                    return stream_.async_shutdown(bind_executor(
-                        strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    stream_.async_shutdown(bind_executor(
+                        strand_,
+                        std::bind(
+                            &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    return;
                 }
                 if (ec)
-                    return fail("read", ec);
+                {
+                    fail("read", ec);
+                    return;
+                }
 
                 buf_.commit(bytes_transferred);
                 buf_.consume(bytes_transferred);
@@ -325,7 +358,10 @@ private:
                     bind_executor(
                         strand_,
                         std::bind(
-                            &Connection::on_write, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                            &Connection::on_write,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
             }
 
             void
@@ -333,16 +369,24 @@ private:
             {
                 buf_.consume(bytes_transferred);
                 if (ec)
-                    return fail("write", ec);
+                {
+                    fail("write", ec);
+                    return;
+                }
                 stream_.async_shutdown(bind_executor(
-                    strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
             }
 
             void
             on_shutdown(error_code ec)
             {
                 if (ec)
-                    return fail("shutdown", ec);
+                {
+                    fail("shutdown", ec);
+                    return;
+                }
                 socket_.close();
                 timer_.cancel();
             }
@@ -403,7 +447,10 @@ private:
             close() override
             {
                 if (!strand_.running_in_this_thread())
-                    return post(strand_, std::bind(&Connection::close, shared_from_this()));
+                {
+                    post(strand_, std::bind(&Connection::close, shared_from_this()));
+                    return;
+                }
                 if (socket_.is_open())
                 {
                     socket_.close();
@@ -416,11 +463,14 @@ private:
             {
                 timer_.expires_after(std::chrono::seconds(3));
                 timer_.async_wait(bind_executor(
-                    strand_, std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(&Connection::on_timer, shared_from_this(), std::placeholders::_1)));
                 socket_.async_connect(
                     ep,
                     bind_executor(
-                        strand_, std::bind(&Connection::on_connect, shared_from_this(), std::placeholders::_1)));
+                        strand_,
+                        std::bind(
+                            &Connection::on_connect, shared_from_this(), std::placeholders::_1)));
             }
 
             void
@@ -441,7 +491,10 @@ private:
                 if (ec == boost::asio::error::operation_aborted)
                     return;
                 if (ec)
-                    return fail("timer", ec);
+                {
+                    fail("timer", ec);
+                    return;
+                }
                 test_.log << "[client] timeout";
                 socket_.close();
             }
@@ -450,18 +503,26 @@ private:
             on_connect(error_code ec)
             {
                 if (ec)
-                    return fail("connect", ec);
+                {
+                    fail("connect", ec);
+                    return;
+                }
                 stream_.async_handshake(
                     stream_type::client,
                     bind_executor(
-                        strand_, std::bind(&Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
+                        strand_,
+                        std::bind(
+                            &Connection::on_handshake, shared_from_this(), std::placeholders::_1)));
             }
 
             void
             on_handshake(error_code ec)
             {
                 if (ec)
-                    return fail("handshake", ec);
+                {
+                    fail("handshake", ec);
+                    return;
+                }
                 write(buf_, "HELLO\n");
 
 #if 1
@@ -471,10 +532,15 @@ private:
                     bind_executor(
                         strand_,
                         std::bind(
-                            &Connection::on_write, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                            &Connection::on_write,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 stream_.async_shutdown(bind_executor(
-                    strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
 #endif
             }
 
@@ -483,7 +549,10 @@ private:
             {
                 buf_.consume(bytes_transferred);
                 if (ec)
-                    return fail("write", ec);
+                {
+                    fail("write", ec);
+                    return;
+                }
 #if 1
                 boost::asio::async_read_until(
                     stream_,
@@ -492,10 +561,15 @@ private:
                     bind_executor(
                         strand_,
                         std::bind(
-                            &Connection::on_read, shared_from_this(), std::placeholders::_1, std::placeholders::_2)));
+                            &Connection::on_read,
+                            shared_from_this(),
+                            std::placeholders::_1,
+                            std::placeholders::_2)));
 #else
                 stream_.async_shutdown(bind_executor(
-                    strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
 #endif
             }
 
@@ -503,17 +577,25 @@ private:
             on_read(error_code ec, std::size_t bytes_transferred)
             {
                 if (ec)
-                    return fail("read", ec);
+                {
+                    fail("read", ec);
+                    return;
+                }
                 buf_.commit(bytes_transferred);
                 stream_.async_shutdown(bind_executor(
-                    strand_, std::bind(&Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
+                    strand_,
+                    std::bind(
+                        &Connection::on_shutdown, shared_from_this(), std::placeholders::_1)));
             }
 
             void
             on_shutdown(error_code ec)
             {
                 if (ec)
-                    return fail("shutdown", ec);
+                {
+                    fail("shutdown", ec);
+                    return;
+                }
                 socket_.close();
                 timer_.cancel();
             }
@@ -554,7 +636,7 @@ public:
     void
     run() override
     {
-        Server s(*this);
+        Server const s(*this);
         Client c(*this, s.endpoint());
         c.wait();
         pass();

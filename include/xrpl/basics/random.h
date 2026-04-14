@@ -14,13 +14,16 @@ namespace xrpl {
 
 #ifndef __INTELLISENSE__
 static_assert(
+    // NOLINTNEXTLINE(misc-redundant-expression)
     std::is_integral<beast::xor_shift_engine::result_type>::value &&
         std::is_unsigned<beast::xor_shift_engine::result_type>::value,
-    "The Ripple default PRNG engine must return an unsigned integral type.");
+    "The XRPL default PRNG engine must return an unsigned integral type.");
 
 static_assert(
-    std::numeric_limits<beast::xor_shift_engine::result_type>::max() >= std::numeric_limits<std::uint64_t>::max(),
-    "The Ripple default PRNG engine return must be at least 64 bits wide.");
+    // NOLINTNEXTLINE(misc-redundant-expression)
+    std::numeric_limits<beast::xor_shift_engine::result_type>::max() >=
+        std::numeric_limits<std::uint64_t>::max(),
+    "The XRPL default PRNG engine return must be at least 64 bits wide.");
 #endif
 
 namespace detail {
@@ -55,9 +58,9 @@ default_prng()
 
     // The thread-specific PRNGs:
     thread_local beast::xor_shift_engine engine = [] {
-        std::uint64_t seed;
+        std::uint64_t seed = 0;
         {
-            std::lock_guard lk(m);
+            std::lock_guard const lk(m);
             std::uniform_int_distribution<std::uint64_t> distribution{1};
             seed = distribution(seeder);
         }
@@ -144,12 +147,14 @@ std::enable_if_t<
     Byte>
 rand_byte(Engine& engine)
 {
-    return static_cast<Byte>(
-        rand_int<Engine, std::uint32_t>(engine, std::numeric_limits<Byte>::min(), std::numeric_limits<Byte>::max()));
+    return static_cast<Byte>(rand_int<Engine, std::uint32_t>(
+        engine, std::numeric_limits<Byte>::min(), std::numeric_limits<Byte>::max()));
 }
 
 template <class Byte = std::uint8_t>
-std::enable_if_t<(std::is_same<Byte, unsigned char>::value || std::is_same<Byte, std::uint8_t>::value), Byte>
+std::enable_if_t<
+    (std::is_same<Byte, unsigned char>::value || std::is_same<Byte, std::uint8_t>::value),
+    Byte>
 rand_byte()
 {
     return rand_byte<Byte>(default_prng());

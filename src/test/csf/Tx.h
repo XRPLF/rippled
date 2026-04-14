@@ -100,7 +100,8 @@ public:
     {
     }
 
-    TxSet(MutableTxSet&& m) : txs_{std::move(m.txs_)}, id_{calcID(txs_)}
+    TxSet(MutableTxSet&& m)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        : txs_{m.txs_}, id_{calcID(txs_)}
     {
     }
 
@@ -144,7 +145,11 @@ public:
         auto populate_diffs = [&res](auto const& a, auto const& b, bool s) {
             auto populator = [&](auto const& tx) { res[tx.id()] = s; };
             std::set_difference(
-                a.begin(), a.end(), b.begin(), b.end(), boost::make_function_output_iterator(std::ref(populator)));
+                a.begin(),
+                a.end(),
+                b.begin(),
+                b.end(),
+                boost::make_function_output_iterator(std::ref(populator)));
         };
 
         populate_diffs(txs_, other.txs_, true);
@@ -157,7 +162,7 @@ private:
     TxSetType txs_;
 
     //! The unique ID of this tx set
-    ID id_;
+    ID id_{};
 };
 
 //------------------------------------------------------------------------------

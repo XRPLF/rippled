@@ -1,9 +1,9 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 
 #include <optional>
@@ -63,7 +63,9 @@ public:
 
     /** Report that we have validated a particular ledger */
     void
-    validatedLedger(std::shared_ptr<Ledger const> const&, std::optional<uint256> const& consensusHash);
+    validatedLedger(
+        std::shared_ptr<Ledger const> const&,
+        std::optional<uint256> const& consensusHash);
 
     /** Repair a hash to index mapping
         @param ledgerIndex The index whose mapping is to be repaired

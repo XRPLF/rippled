@@ -2,7 +2,7 @@
 
 #include <xrpld/core/Config.h>
 
-#include <xrpl/basics/Log.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/asio/io_context.hpp>
@@ -20,7 +20,7 @@ namespace xrpl {
 //
 // Improvements to be more strict and to provide better diagnostics are welcome.
 
-/** Processes Ripple RPC calls. */
+/** Processes XRPL RPC calls. */
 namespace RPCCall {
 
 int
@@ -39,15 +39,20 @@ fromNetwork(
     bool const bSSL,
     bool quiet,
     Logs& logs,
-    std::function<void(Json::Value const& jvInput)> callbackFuncP = std::function<void(Json::Value const& jvInput)>(),
+    std::function<void(Json::Value const& jvInput)> callbackFuncP =
+        std::function<void(Json::Value const& jvInput)>(),
     std::unordered_map<std::string, std::string> headers = {});
 }  // namespace RPCCall
 
 Json::Value
-rpcCmdToJson(std::vector<std::string> const& args, Json::Value& retParams, unsigned int apiVersion, beast::Journal j);
+rpcCmdToJson(
+    std::vector<std::string> const& args,
+    Json::Value& retParams,
+    unsigned int apiVersion,
+    beast::Journal j);
 
 /** Internal invocation of RPC client.
- *  Used by both rippled command line as well as rippled unit tests
+ *  Used by both xrpld command line as well as xrpld unit tests
  */
 std::pair<int, Json::Value>
 rpcClient(

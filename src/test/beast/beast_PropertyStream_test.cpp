@@ -9,7 +9,10 @@ public:
     using Source = PropertyStream::Source;
 
     void
-    test_peel_name(std::string s, std::string const& expected, std::string const& expected_remainder)
+    test_peel_name(
+        std::string s,
+        std::string const& expected,
+        std::string const& expected_remainder)
     {
         try
         {
@@ -41,7 +44,10 @@ public:
     }
 
     void
-    test_peel_trailing_slashstar(std::string s, std::string const& expected_remainder, bool should_be_found)
+    test_peel_trailing_slashstar(
+        std::string s,
+        std::string const& expected_remainder,
+        bool should_be_found)
     {
         try
         {
@@ -61,7 +67,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one(name));
+            Source const* source(root.find_one(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -76,7 +82,7 @@ public:
     {
         try
         {
-            Source* source(root.find_path(path));
+            Source const* source(root.find_path(path));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -91,7 +97,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one_deep(name));
+            Source const* source(root.find_one_deep(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)

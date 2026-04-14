@@ -81,7 +81,7 @@ time.apple.com
 time.nist.gov
 pool.ntp.org
 
-# Where to find some other servers speaking the Ripple protocol.
+# Where to find some other servers speaking the XRPL protocol.
 #
 [ips]
 r.ripple.com 51235
@@ -101,12 +101,13 @@ backend=sqlite
 )xrpldConfig");
 
     std::string dbPathSection = dbPath.empty() ? "" : "[database_path]\n" + dbPath;
-    std::string valFileSection = validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
+    std::string valFileSection =
+        validatorsFile.empty() ? "" : "[validators_file]\n" + validatorsFile;
     return boost::str(configContentsTemplate % dbPathSection % valFileSection);
 }
 
 /**
-   Write a xrpld config file and remove when done.
+   Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
@@ -130,7 +131,8 @@ public:
               test,
               std::move(subDir),
               configFile,
-              confContents.empty() ? configContents(dbPath.string(), validatorsFile.string()) : confContents,
+              confContents.empty() ? configContents(dbPath.string(), validatorsFile.string())
+                                   : confContents,
               useCounter)
         , dataDir_(dbPath)
     {
@@ -266,7 +268,7 @@ public:
 
         Config c;
 
-        std::string toLoad(R"xrpldConfig(
+        std::string const toLoad(R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -282,7 +284,7 @@ port_wss_admin
         expectException([&c] { c.legacy("server"); });  // not a single line
 
         // set a legacy value
-        BEAST_EXPECT(c.legacy("not_in_file") == "");
+        BEAST_EXPECT(c.legacy("not_in_file").empty());
         c.legacy("not_in_file", "new_value");
         BEAST_EXPECT(c.legacy("not_in_file") == "new_value");
     }
@@ -295,15 +297,15 @@ port_wss_admin
         auto const cwd = current_path();
 
         // Test both config file names.
-        char const* configFiles[] = {Config::configFileName, Config::configLegacyName};
+        std::string_view const configFiles[] = {Config::configFileName, Config::configLegacyName};
 
         // Config file in current directory.
         for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
-            beast::temp_dir td;
+            beast::temp_dir const td;
             current_path(td.path());
-            path const f = td.file(configFile);
+            path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -312,7 +314,9 @@ port_wss_admin
             Config c;
             c.setup("", true, false, true);
             BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values().size() == 1);
-            BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values()[0] == "/Users/dummy/xrpld/config/log/debug.log");
+            BEAST_EXPECT(
+                c.section(SECTION_DEBUG_LOGFILE).values()[0] ==
+                "/Users/dummy/xrpld/config/log/debug.log");
         }
 
         // Config file in HOME or XDG_CONFIG_HOME directory.
@@ -321,13 +325,13 @@ port_wss_admin
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
-            beast::temp_dir td;
+            beast::temp_dir const td;
             current_path(td.path());
 
             // The XDG config directory is set: the config file must be in a
             // subdirectory named after the system.
             {
-                beast::temp_dir tc;
+                beast::temp_dir const tc;
 
                 // Set the HOME and XDG_CONFIG_HOME environment variables. The
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
@@ -340,7 +344,7 @@ port_wss_admin
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
                 path p = tc.file(systemName());
                 create_directory(p);
-                p = tc.file(systemName() + "/" + configFile);
+                p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -349,17 +353,19 @@ port_wss_admin
                 Config c;
                 c.setup("", true, false, true);
                 BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values().size() == 1);
-                BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values()[0] == "/Users/dummy/xrpld/config/log/debug.log");
+                BEAST_EXPECT(
+                    c.section(SECTION_DEBUG_LOGFILE).values()[0] ==
+                    "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
-                h ? setenv("HOME", h, 1) : unsetenv("HOME");
-                x ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
+                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
+                (x != nullptr) ? setenv("XDG_CONFIG_HOME", x, 1) : unsetenv("XDG_CONFIG_HOME");
             }
 
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
-                beast::temp_dir tc;
+                beast::temp_dir const tc;
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");
@@ -374,7 +380,7 @@ port_wss_admin
                 s += "/" + systemName();
                 p = tc.file(s);
                 create_directory(p);
-                p = tc.file(s + "/" + configFile);
+                p = tc.file(s + "/" + std::string{configFile});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -383,11 +389,13 @@ port_wss_admin
                 Config c;
                 c.setup("", true, false, true);
                 BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values().size() == 1);
-                BEAST_EXPECT(c.section(SECTION_DEBUG_LOGFILE).values()[0] == "/Users/dummy/xrpld/config/log/debug.log");
+                BEAST_EXPECT(
+                    c.section(SECTION_DEBUG_LOGFILE).values()[0] ==
+                    "/Users/dummy/xrpld/config/log/debug.log");
 
                 // Restore the environment variables.
-                h ? setenv("HOME", h, 1) : unsetenv("HOME");
-                if (x)
+                (h != nullptr) ? setenv("HOME", h, 1) : unsetenv("HOME");
+                if (x != nullptr)
                     setenv("XDG_CONFIG_HOME", x, 1);
             }
         }
@@ -426,7 +434,7 @@ port_wss_admin
                 // load will not.
                 Config c;
                 c.loadFromString("");
-                BEAST_EXPECT(c.legacy("database_path") == "");
+                BEAST_EXPECT(c.legacy("database_path").empty());
             }
         }
         {
@@ -435,7 +443,8 @@ port_wss_admin
             detail::DirGuard const g0(*this, "test_db");
             path const dataDirRel("test_data_dir");
             path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
-            detail::FileCfgGuard const g(*this, g0.subdir(), dataDirAbs, Config::configFileName, "", false);
+            detail::FileCfgGuard const g(
+                *this, g0.subdir(), dataDirAbs, Config::configFileName, "", false);
             auto const& c(g.config());
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
@@ -455,7 +464,8 @@ port_wss_admin
             // read from file no path
             detail::FileCfgGuard const g(*this, "test_db", "", Config::configFileName, "");
             auto const& c(g.config());
-            std::string const nativeDbPath = absolute(g.subdir() / path(Config::databaseDirName)).string();
+            std::string const nativeDbPath =
+                absolute(g.subdir() / path(Config::databaseDirName)).string();
             BEAST_EXPECT(g.dataDirExists());
             BEAST_EXPECT(g.configFileExists());
             BEAST_EXPECT(c.legacy("database_path") == nativeDbPath);
@@ -523,7 +533,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 0);
 
         try
@@ -536,7 +546,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 0);
 
         try
@@ -551,7 +561,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 255);
 
         try
@@ -566,7 +576,7 @@ main
             error = e.what();
         }
 
-        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(error.empty());
         BEAST_EXPECT(c.NETWORK_ID == 10000);
     }
 
@@ -581,7 +591,8 @@ main
             boost::format cc("[validators_file]\n%1%\n");
             std::string error;
             std::string const missingPath = "/no/way/this/path/exists";
-            auto const expectedError = "The file specified in [validators_file] does not exist: " + missingPath;
+            auto const expectedError =
+                "The file specified in [validators_file] does not exist: " + missingPath;
             try
             {
                 Config c;
@@ -599,7 +610,8 @@ main
             path const invalidFile = current_path() / vtg.subdir();
             boost::format cc("[validators_file]\n%1%\n");
             std::string error;
-            auto const expectedError = "Invalid file specified in [validators_file]: " + invalidFile.string();
+            auto const expectedError =
+                "Invalid file specified in [validators_file]: " + invalidFile.string();
             try
             {
                 Config c;
@@ -614,7 +626,7 @@ main
         {
             // load validators from config into single section
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
 n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj
@@ -632,7 +644,7 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
         {
             // load validator list sites and keys from config
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -645,8 +657,11 @@ trust-these-validators.gov
 )xrpldConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrpl-validators.com");
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] == "trust-these-validators.gov");
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrpl-validators.com");
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] ==
+                "trust-these-validators.gov");
             BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 1);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values()[0] ==
@@ -659,7 +674,7 @@ trust-these-validators.gov
         {
             // load validator list sites and keys from config
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -672,8 +687,11 @@ trust-these-validators.gov
 )xrpldConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values().size() == 2);
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrpl-validators.com");
-            BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] == "trust-these-validators.gov");
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_SITES).values()[0] == "xrpl-validators.com");
+            BEAST_EXPECT(
+                c.section(SECTION_VALIDATOR_LIST_SITES).values()[1] ==
+                "trust-these-validators.gov");
             BEAST_EXPECT(c.section(SECTION_VALIDATOR_LIST_KEYS).values().size() == 1);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_KEYS).values()[0] ==
@@ -687,7 +705,7 @@ trust-these-validators.gov
             // load should throw if [validator_list_threshold] is greater than
             // the number of [validator_list_keys]
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -716,7 +734,7 @@ trust-these-validators.gov
         {
             // load should throw if [validator_list_threshold] is malformed
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -745,7 +763,7 @@ value = 2
         {
             // load should throw if [validator_list_threshold] is negative
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -772,7 +790,7 @@ trust-these-validators.gov
             // load should throw if [validator_list_sites] is configured but
             // [validator_list_keys] is not
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -809,7 +827,8 @@ trust-these-validators.gov
             // in config directory
             std::string const valFileName = "validators.txt";
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", valFileName);
-            detail::FileCfgGuard const rcg(*this, vtg.subdir(), "", Config::configFileName, valFileName, false);
+            detail::FileCfgGuard const rcg(
+                *this, vtg.subdir(), "", Config::configFileName, valFileName, false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
@@ -825,7 +844,8 @@ trust-these-validators.gov
             // to config directory
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.txt");
             auto const valFilePath = ".." / vtg.subdir() / "validators.txt";
-            detail::FileCfgGuard const rcg(*this, vtg.subdir(), "", Config::configFileName, valFilePath, false);
+            detail::FileCfgGuard const rcg(
+                *this, vtg.subdir(), "", Config::configFileName, valFilePath, false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
@@ -839,7 +859,8 @@ trust-these-validators.gov
         {
             // load from validators file in default location
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.txt");
-            detail::FileCfgGuard const rcg(*this, vtg.subdir(), "", Config::configFileName, "", false);
+            detail::FileCfgGuard const rcg(
+                *this, vtg.subdir(), "", Config::configFileName, "", false);
             BEAST_EXPECT(vtg.validatorsFileExists());
             BEAST_EXPECT(rcg.configFileExists());
             auto const& c(rcg.config());
@@ -855,7 +876,8 @@ trust-these-validators.gov
             // of default location
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
             BEAST_EXPECT(vtg.validatorsFileExists());
-            detail::ValidatorsTxtGuard const vtgDefault(*this, vtg.subdir(), "validators.txt", false);
+            detail::ValidatorsTxtGuard const vtgDefault(
+                *this, vtg.subdir(), "validators.txt", false);
             BEAST_EXPECT(vtgDefault.validatorsFileExists());
             detail::FileCfgGuard const rcg(
                 *this, vtg.subdir(), "", Config::configFileName, vtg.validatorsFile(), false);
@@ -936,7 +958,7 @@ trust-these-validators.gov
             // load should throw if [validators], [validator_keys] and
             // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
-            Config c;
+            Config const c;
             boost::format cc("[validators_file]\n%1%\n");
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
@@ -946,7 +968,7 @@ trust-these-validators.gov
                 "[validators], [validator_keys] or [validator_list_keys] "
                 "section: " +
                 vtg.validatorsFile();
-            std::ofstream o(vtg.validatorsFile());
+            std::ofstream const o(vtg.validatorsFile());
             try
             {
                 Config c2;
@@ -963,7 +985,8 @@ trust-these-validators.gov
     void
     testSetup(bool explicitPath)
     {
-        detail::FileCfgGuard const cfg(*this, "testSetup", explicitPath ? "test_db" : "", Config::configFileName, "");
+        detail::FileCfgGuard const cfg(
+            *this, "testSetup", explicitPath ? "test_db" : "", Config::configFileName, "");
         /* FileCfgGuard has a Config object that gets loaded on
             construction, but Config::setup is not reentrant, so we
             need a fresh config for every test case, so ignore it.
@@ -1096,17 +1119,19 @@ trust-these-validators.gov
     void
     testZeroPort()
     {
-        auto const contents =
-            std::regex_replace(detail::configContents("", ""), std::regex("port\\s*=\\s*\\d+"), "port = 0");
+        auto const contents = std::regex_replace(
+            detail::configContents("", ""), std::regex("port\\s*=\\s*\\d+"), "port = 0");
 
         try
         {
-            detail::FileCfgGuard const cfg(*this, "testPort", "", Config::configFileName, "", true, contents);
+            detail::FileCfgGuard const cfg(
+                *this, "testPort", "", Config::configFileName, "", true, contents);
             BEAST_EXPECT(false);
         }
         catch (std::exception const& ex)
         {
-            BEAST_EXPECT(std::string_view(ex.what()).starts_with("Invalid value '0' for key 'port'"));
+            BEAST_EXPECT(
+                std::string_view(ex.what()).starts_with("Invalid value '0' for key 'port'"));
         }
     }
 
@@ -1116,23 +1141,24 @@ trust-these-validators.gov
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(R"(
+        std::string const toLoad(
+            R"(
 [port_rpc])"
-                           "\x20"
-                           R"(
+            "\x20"
+            R"(
 # comment
     # indented comment
 )"
-                           "\x20\x20"
-                           R"(
+            "\x20\x20"
+            R"(
 [ips])"
-                           "\x20"
-                           R"(
+            "\x20"
+            R"(
 r.ripple.com 51235
 
   [ips_fixed])"
-                           "\x20\x20"
-                           R"(
+            "\x20\x20"
+            R"(
     # COMMENT
     s1.ripple.com 51235
     s2.ripple.com 51235
@@ -1156,23 +1182,24 @@ r.ripple.com 51235
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(R"(
+        std::string const toLoad(
+            R"(
 [port_rpc])"
-                           "\x20"
-                           R"(
+            "\x20"
+            R"(
 # comment
     # indented comment
 )"
-                           "\x20\x20"
-                           R"(
+            "\x20\x20"
+            R"(
 [ips])"
-                           "\x20"
-                           R"(
+            "\x20"
+            R"(
 r.ripple.com:51235
 
   [ips_fixed])"
-                           "\x20\x20"
-                           R"(
+            "\x20\x20"
+            R"(
     # COMMENT
     s1.ripple.com:51235
     s2.ripple.com 51235
@@ -1234,7 +1261,7 @@ r.ripple.com:51235
             bool had_comment;
         };
 
-        std::array<TestCommentData, 13> tests = {
+        std::array<TestCommentData, 13> const tests = {
             {{"password = aaaa\\#bbbb", "password", "aaaa#bbbb", false},
              {"password = aaaa#bbbb", "password", "aaaa", true},
              {"password = aaaa #bbbb", "password", "aaaa", true},
@@ -1253,7 +1280,7 @@ r.ripple.com:51235
         for (auto const& t : tests)
         {
             Section s;
-            s.append(t.line.data());
+            s.append(std::string(t.line));
             BEAST_EXPECT(s.had_trailing_comments() == t.had_comment);
             if (t.field.empty())
             {
@@ -1262,7 +1289,7 @@ r.ripple.com:51235
             else
             {
                 std::string field;
-                BEAST_EXPECTS(set(field, t.field.data(), s), t.line);
+                BEAST_EXPECTS(set(field, std::string(t.field), s), t.line);
                 BEAST_EXPECTS(field == t.expect, t.line);
             }
         }
@@ -1272,6 +1299,7 @@ r.ripple.com:51235
             s.append("online_delete = 3000");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 3000, *(s.get<std::string>("online_delete")));
         }
 
@@ -1280,6 +1308,7 @@ r.ripple.com:51235
             s.append("online_delete = 2000 #my comment on this");
             std::uint32_t od = 0;
             BEAST_EXPECT(set(od, "online_delete", s));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECTS(od == 2000, *(s.get<std::string>("online_delete")));
         }
     }
@@ -1308,7 +1337,7 @@ r.ripple.com:51235
             auto val_3 = get<std::string>(s, "a_string");
             BEAST_EXPECT(val_3 == "mystring");
             auto val_4 = get<std::string>(s, "not_a_key");
-            BEAST_EXPECT(val_4 == "");
+            BEAST_EXPECT(val_4.empty());
             auto val_5 = get<std::string>(s, "not_a_key", "default");
             BEAST_EXPECT(val_5 == "default");
 
@@ -1390,7 +1419,7 @@ r.ripple.com:51235
             bool shouldPass;
         };
 
-        std::vector<ConfigUnit> units = {
+        std::vector<ConfigUnit> const units = {
             {"seconds", 1, 15 * 60, false},
             {"minutes", 60, 14, false},
             {"minutes", 60, 15, true},
@@ -1400,7 +1429,7 @@ r.ripple.com:51235
             {"months", 2592000, 1, false},
             {"years", 31536000, 1, false}};
 
-        std::string space = "";
+        std::string space;
         for (auto& [unit, sec, val, shouldPass] : units)
         {
             Config c;
@@ -1408,22 +1437,30 @@ r.ripple.com:51235
 [amendment_majority_time]
 )xrpldConfig");
             toLoad += std::to_string(val) + space + unit;
-            space = space == "" ? " " : "";
+            space = space.empty() ? " " : "";
 
             try
             {
                 c.loadFromString(toLoad);
                 if (shouldPass)
+                {
                     BEAST_EXPECT(c.AMENDMENT_MAJORITY_TIME.count() == val * sec);
+                }
                 else
+                {
                     fail();
+                }
             }
             catch (std::runtime_error&)
             {
                 if (!shouldPass)
+                {
                     pass();
+                }
                 else
+                {
                     fail();
+                }
             }
         }
     }

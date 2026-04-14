@@ -42,7 +42,10 @@ public:
          * @param finishLedgerHash  hash of the last ledger in the range
          * @param totalNumLedgers  number of ledgers to download
          */
-        TaskParameter(InboundLedger::Reason r, uint256 const& finishLedgerHash, std::uint32_t totalNumLedgers);
+        TaskParameter(
+            InboundLedger::Reason r,
+            uint256 const& finishLedgerHash,
+            std::uint32_t totalNumLedgers);
 
         /**
          * fill all the fields that was not filled during construction
@@ -75,7 +78,7 @@ public:
         InboundLedgers& inboundLedgers,
         LedgerReplayer& replayer,
         std::shared_ptr<SkipListAcquire>& skipListAcquirer,
-        TaskParameter&& parameter);
+        TaskParameter const& parameter);
 
     ~LedgerReplayTask();
 

@@ -1,19 +1,23 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/tx/apply.h>
+#include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 
+#include <xrpl/core/HashRouter.h>
 #include <xrpl/ledger/CachedView.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/apply.h>
 
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace xrpl {
 
-OpenLedger::OpenLedger(std::shared_ptr<Ledger const> const& ledger, CachedSLEs& cache, beast::Journal journal)
+OpenLedger::OpenLedger(
+    std::shared_ptr<Ledger const> const& ledger,
+    CachedSLEs& cache,
+    beast::Journal journal)
     : j_(journal), cache_(cache), current_(create(ledger->rules(), ledger))
 {
 }
@@ -21,26 +25,26 @@ OpenLedger::OpenLedger(std::shared_ptr<Ledger const> const& ledger, CachedSLEs& 
 bool
 OpenLedger::empty() const
 {
-    std::lock_guard lock(modify_mutex_);
+    std::lock_guard const lock(modify_mutex_);
     return current_->txCount() == 0;
 }
 
 std::shared_ptr<OpenView const>
 OpenLedger::current() const
 {
-    std::lock_guard lock(current_mutex_);
+    std::lock_guard const lock(current_mutex_);
     return current_;
 }
 
 bool
 OpenLedger::modify(modify_type const& f)
 {
-    std::lock_guard lock1(modify_mutex_);
+    std::lock_guard const lock1(modify_mutex_);
     auto next = std::make_shared<OpenView>(*current_);
     auto const changed = f(*next, j_);
     if (changed)
     {
-        std::lock_guard lock2(current_mutex_);
+        std::lock_guard const lock2(current_mutex_);
         current_ = std::move(next);
     }
     return changed;
@@ -69,7 +73,7 @@ OpenLedger::accept(
     // Block calls to modify, otherwise
     // new tx going into the open ledger
     // would get lost.
-    std::lock_guard lock1(modify_mutex_);
+    std::lock_guard const lock1(modify_mutex_);
     // Apply tx from the current open view
     if (!current_->txs.empty())
     {
@@ -79,9 +83,8 @@ OpenLedger::accept(
             *ledger,
             boost::adaptors::transform(
                 current_->txs,
-                [](std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> const& p) {
-                    return p.first;
-                }),
+                [](std::pair<std::shared_ptr<STTx const>, std::shared_ptr<STObject const>> const&
+                       p) { return p.first; }),
             retries,
             flags,
             j_);
@@ -122,13 +125,13 @@ OpenLedger::accept(
             tx->add(s);
             msg.set_rawtransaction(s.data(), s.size());
             msg.set_status(protocol::tsNEW);
-            msg.set_receivetimestamp(app.timeKeeper().now().time_since_epoch().count());
-            app.overlay().relay(txId, msg, *toSkip);
+            msg.set_receivetimestamp(app.getTimeKeeper().now().time_since_epoch().count());
+            app.getOverlay().relay(txId, msg, *toSkip);
         }
     }
 
     // Switch to the new open view
-    std::lock_guard lock2(current_mutex_);
+    std::lock_guard const lock2(current_mutex_);
     current_ = std::move(next);
 }
 
@@ -137,7 +140,8 @@ OpenLedger::accept(
 std::shared_ptr<OpenView>
 OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
 {
-    return std::make_shared<OpenView>(open_ledger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
+    return std::make_shared<OpenView>(
+        open_ledger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
 }
 
 auto

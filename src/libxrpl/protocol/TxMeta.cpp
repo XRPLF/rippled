@@ -28,7 +28,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     auto affectedNodes = dynamic_cast<STArray const*>(obj.peekAtPField(sfAffectedNodes));
     XRPL_ASSERT(affectedNodes, "xrpl::TxMeta::TxMeta(STObject) : type cast succeeded");
-    if (affectedNodes)
+    if (affectedNodes != nullptr)
         nodes_ = *affectedNodes;
 
     setAdditionalFields(obj);
@@ -39,7 +39,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
 {
     SerialIter sit(makeSlice(vec));
 
-    STObject obj(sit, sfMetadata);
+    STObject const obj(sit, sfMetadata);
     result_ = obj.getFieldU8(sfTransactionResult);
     index_ = obj.getFieldU32(sfTransactionIndex);
     nodes_ = obj.getFieldArray(sfAffectedNodes);
@@ -89,13 +89,14 @@ TxMeta::getAffectedAccounts() const
     // Meta#getAffectedAccounts
     for (auto const& node : nodes_)
     {
-        int index = node.getFieldIndex((node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
+        int const index =
+            node.getFieldIndex((node.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
         if (index != -1)
         {
             auto const* inner = dynamic_cast<STObject const*>(&node.peekAtIndex(index));
             XRPL_ASSERT(inner, "xrpl::getAffectedAccounts : STObject type cast succeeded");
-            if (inner)
+            if (inner != nullptr)
             {
                 for (auto const& field : *inner)
                 {
@@ -145,7 +146,7 @@ TxMeta::getAffectedAccounts() const
 STObject&
 TxMeta::getAffectedNode(SLE::ref node, SField const& type)
 {
-    uint256 index = node->key();
+    uint256 const index = node->key();
     for (auto& n : nodes_)
     {
         if (n.getFieldH256(sfLedgerIndex) == index)
@@ -154,7 +155,8 @@ TxMeta::getAffectedNode(SLE::ref node, SField const& type)
     nodes_.push_back(STObject(type));
     STObject& obj = nodes_.back();
 
-    XRPL_ASSERT(obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
+    XRPL_ASSERT(
+        obj.getFName() == type, "xrpl::TxMeta::getAffectedNode(SLE::ref) : field type match");
     obj.setFieldH256(sfLedgerIndex, index);
     obj.setFieldU16(sfLedgerEntryType, node->getFieldU16(sfLedgerEntryType));
 
@@ -198,7 +200,9 @@ TxMeta::addRaw(Serializer& s, TER result, std::uint32_t index)
 {
     result_ = TERtoInt(result);
     index_ = index;
-    XRPL_ASSERT((result_ == 0) || ((result_ > 100) && (result_ <= 255)), "xrpl::TxMeta::addRaw : valid TER input");
+    XRPL_ASSERT(
+        (result_ == 0) || ((result_ > 100) && (result_ <= 255)),
+        "xrpl::TxMeta::addRaw : valid TER input");
 
     nodes_.sort([](STObject const& o1, STObject const& o2) {
         return o1.getFieldH256(sfLedgerIndex) < o2.getFieldH256(sfLedgerIndex);

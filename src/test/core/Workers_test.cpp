@@ -88,7 +88,7 @@ public:
         void
         processTask(int instance) override
         {
-            std::lock_guard lk{mut};
+            std::lock_guard const lk{mut};
             if (--count == 0)
                 cv.notify_all();
         }
@@ -101,10 +101,12 @@ public:
     void
     testThreads(int const tc1, int const tc2, int const tc3)
     {
-        testcase("threadCounts: " + std::to_string(tc1) + " -> " + std::to_string(tc2) + " -> " + std::to_string(tc3));
+        testcase(
+            "threadCounts: " + std::to_string(tc1) + " -> " + std::to_string(tc2) + " -> " +
+            std::to_string(tc3));
 
         TestCallback cb;
-        std::unique_ptr<perf::PerfLog> perfLog = std::make_unique<perf::PerfLogTest>();
+        std::unique_ptr<perf::PerfLog> const perfLog = std::make_unique<perf::PerfLogTest>();
 
         Workers w(cb, perfLog.get(), "Test", tc1);
         BEAST_EXPECT(w.getNumberOfThreads() == tc1);

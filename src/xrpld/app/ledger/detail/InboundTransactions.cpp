@@ -2,13 +2,13 @@
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
 #include <memory>
 #include <mutex>
 
@@ -30,7 +30,8 @@ public:
     TransactionAcquire::pointer mAcquire;
     std::shared_ptr<SHAMap> mSet;
 
-    InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set) : mSeq(seq), mSet(set)
+    InboundTransactionSet(std::uint32_t seq, std::shared_ptr<SHAMap> const& set)
+        : mSeq(seq), mSet(set)
     {
         ;
     }
@@ -49,13 +50,13 @@ public:
         std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet,
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
-        , m_seq(0)
         , m_zeroSet(m_map[uint256()])
         , m_gotSet(std::move(gotSet))
         , m_peerSetBuilder(std::move(peerSetBuilder))
-        , j_(app_.journal("InboundTransactions"))
+        , j_(app_.getJournal("InboundTransactions"))
     {
-        m_zeroSet.mSet = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
+        m_zeroSet.mSet =
+            std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
         m_zeroSet.mSet->setUnbacked();
     }
 
@@ -63,7 +64,7 @@ public:
     getAcquire(uint256 const& hash)
     {
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard const sl(mLock);
 
             auto it = m_map.find(hash);
 
@@ -79,7 +80,7 @@ public:
         TransactionAcquire::pointer ta;
 
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard const sl(mLock);
 
             if (auto it = m_map.find(hash); it != m_map.end())
             {
@@ -112,14 +113,17 @@ public:
     /** We received a TMLedgerData from a peer.
      */
     void
-    gotData(LedgerHash const& hash, std::shared_ptr<Peer> peer, std::shared_ptr<protocol::TMLedgerData> packet_ptr)
-        override
+    gotData(
+        LedgerHash const& hash,
+        std::shared_ptr<Peer> peer,
+        std::shared_ptr<protocol::TMLedgerData> packet_ptr) override
     {
-        protocol::TMLedgerData& packet = *packet_ptr;
+        protocol::TMLedgerData const& packet = *packet_ptr;
 
-        JLOG(j_.trace()) << "Got data (" << packet.nodes().size() << ") for acquiring ledger: " << hash;
+        JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
+                         << ") for acquiring ledger: " << hash;
 
-        TransactionAcquire::pointer ta = getAcquire(hash);
+        TransactionAcquire::pointer const ta = getAcquire(hash);
 
         if (ta == nullptr)
         {
@@ -159,17 +163,20 @@ public:
         bool isNew = true;
 
         {
-            std::lock_guard sl(mLock);
+            std::lock_guard const sl(mLock);
 
             auto& inboundSet = m_map[hash];
 
-            if (inboundSet.mSeq < m_seq)
-                inboundSet.mSeq = m_seq;
+            inboundSet.mSeq = std::max(inboundSet.mSeq, m_seq);
 
             if (inboundSet.mSet)
+            {
                 isNew = false;
+            }
             else
+            {
                 inboundSet.mSet = set;
+            }
 
             inboundSet.mAcquire.reset();
         }
@@ -181,7 +188,7 @@ public:
     void
     newRound(std::uint32_t seq) override
     {
-        std::lock_guard lock(mLock);
+        std::lock_guard const lock(mLock);
 
         // Protect zero set from expiration
         m_zeroSet.mSeq = seq;
@@ -193,14 +200,18 @@ public:
             auto it = m_map.begin();
 
             std::uint32_t const minSeq = (seq < setKeepRounds) ? 0 : (seq - setKeepRounds);
-            std::uint32_t maxSeq = seq + setKeepRounds;
+            std::uint32_t const maxSeq = seq + setKeepRounds;
 
             while (it != m_map.end())
             {
                 if (it->second.mSeq < minSeq || it->second.mSeq > maxSeq)
+                {
                     it = m_map.erase(it);
+                }
                 else
+                {
                     ++it;
+                }
             }
         }
     }
@@ -208,7 +219,7 @@ public:
     void
     stop() override
     {
-        std::lock_guard lock(mLock);
+        std::lock_guard const lock(mLock);
         stopping_ = true;
         m_map.clear();
     }
@@ -222,7 +233,7 @@ private:
 
     bool stopping_{false};
     MapType m_map;
-    std::uint32_t m_seq;
+    std::uint32_t m_seq{0};
 
     // The empty transaction set whose hash is zero
     InboundTransactionSet& m_zeroSet;
@@ -244,7 +255,8 @@ make_InboundTransactions(
     beast::insight::Collector::ptr const& collector,
     std::function<void(std::shared_ptr<SHAMap> const&, bool)> gotSet)
 {
-    return std::make_unique<InboundTransactionsImp>(app, collector, std::move(gotSet), make_PeerSetBuilder(app));
+    return std::make_unique<InboundTransactionsImp>(
+        app, collector, std::move(gotSet), make_PeerSetBuilder(app));
 }
 
 }  // namespace xrpl

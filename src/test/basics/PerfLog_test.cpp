@@ -29,7 +29,7 @@ class PerfLog_test : public beast::unit_test::suite
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
     test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j_{env_.app().journal("PerfLog_test")};
+    beast::Journal j_{env_.app().getJournal("PerfLog_test")};
 
     struct Fixture
     {
@@ -63,21 +63,21 @@ class PerfLog_test : public beast::unit_test::suite
             stopSignaled = true;
         }
 
-        path
-        logDir() const
+        static path
+        logDir()
         {
             using namespace boost::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        path
-        logFile() const
+        static path
+        logFile()
         {
             return logDir() / "perf_log.txt";
         }
 
-        std::chrono::milliseconds
-        logInterval() const
+        static std::chrono::milliseconds
+        logInterval()
         {
             return std::chrono::milliseconds{10};
         }
@@ -85,15 +85,19 @@ class PerfLog_test : public beast::unit_test::suite
         std::unique_ptr<perf::PerfLog>
         perfLog(WithFile withFile)
         {
-            perf::PerfLog::Setup const setup{withFile == WithFile::no ? "" : logFile(), logInterval()};
-            return perf::make_PerfLog(setup, app_, j_, [this]() { return signalStop(); });
+            perf::PerfLog::Setup const setup{
+                withFile == WithFile::no ? "" : logFile(), logInterval()};
+            return perf::make_PerfLog(setup, app_, j_, [this]() {
+                signalStop();
+                return;
+            });
         }
 
         // Block until the log file has grown in size, indicating that the
         // PerfLog has written new values to the file and _should_ have the
         // latest update.
-        void
-        wait() const
+        static void
+        wait()
         {
             using namespace boost::filesystem;
 
@@ -235,7 +239,9 @@ public:
                 return;
 
             boost::filesystem::permissions(
-                fixture.logFile(), perms::remove_perms | perms::owner_write | perms::others_write | perms::group_write);
+                fixture.logFile(),
+                perms::remove_perms | perms::owner_write | perms::others_write |
+                    perms::group_write);
 
             // If the test is running as root, then the write protect may have
             // no effect.  Make sure write protect worked before proceeding.
@@ -260,7 +266,8 @@ public:
 
             // Fix file permissions so the file can be cleaned up.
             boost::filesystem::permissions(
-                fixture.logFile(), perms::add_perms | perms::owner_write | perms::others_write | perms::group_write);
+                fixture.logFile(),
+                perms::add_perms | perms::owner_write | perms::others_write | perms::group_write);
         }
     }
 
@@ -284,13 +291,13 @@ public:
         std::vector<std::uint64_t> ids;
         ids.reserve(labels.size() * 2);
         std::generate_n(
-            std::back_inserter(ids), labels.size(), [i = std::numeric_limits<std::uint64_t>::min()]() mutable {
-                return i++;
-            });
+            std::back_inserter(ids),
+            labels.size(),
+            [i = std::numeric_limits<std::uint64_t>::min()]() mutable { return i++; });
         std::generate_n(
-            std::back_inserter(ids), labels.size(), [i = std::numeric_limits<std::uint64_t>::max()]() mutable {
-                return i--;
-            });
+            std::back_inserter(ids),
+            labels.size(),
+            [i = std::numeric_limits<std::uint64_t>::max()]() mutable { return i--; });
         std::shuffle(ids.begin(), ids.end(), default_prng());
 
         // Start all of the RPC commands twice to show they can all be tracked
@@ -447,8 +454,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -579,7 +588,8 @@ public:
                 BEAST_EXPECT(total[jss::finished] == "0");
 
                 // Total queued duration is triangle number of (i + 1).
-                BEAST_EXPECT(jsonToUint64(total[jss::queued_duration_us]) == (((i * i) + 3 * i + 2) / 2));
+                BEAST_EXPECT(
+                    jsonToUint64(total[jss::queued_duration_us]) == (((i * i) + 3 * i + 2) / 2));
                 BEAST_EXPECT(total[jss::running_duration_us] == "0");
             }
 
@@ -765,8 +775,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -788,7 +800,7 @@ public:
         perfLog->start();
 
         // Randomly select a job type and its name.
-        JobType jobType;
+        JobType jobType = jtINVALID;
         std::string jobTypeName;
         {
             auto const& jobTypes = JobTypes::instance();
@@ -805,31 +817,34 @@ public:
         perfLog->resizeJobs(1);
 
         // Lambda to validate countersJson for this test.
-        auto verifyCounters =
-            [this, jobTypeName](
-                Json::Value const& countersJson, int started, int finished, int queued_us, int running_us) {
-                BEAST_EXPECT(countersJson.isObject());
-                BEAST_EXPECT(countersJson.size() == 2);
+        auto verifyCounters = [this, jobTypeName](
+                                  Json::Value const& countersJson,
+                                  int started,
+                                  int finished,
+                                  int queued_us,
+                                  int running_us) {
+            BEAST_EXPECT(countersJson.isObject());
+            BEAST_EXPECT(countersJson.size() == 2);
 
-                BEAST_EXPECT(countersJson.isMember(jss::rpc));
-                BEAST_EXPECT(countersJson[jss::rpc].isObject());
-                BEAST_EXPECT(countersJson[jss::rpc].size() == 0);
+            BEAST_EXPECT(countersJson.isMember(jss::rpc));
+            BEAST_EXPECT(countersJson[jss::rpc].isObject());
+            BEAST_EXPECT(countersJson[jss::rpc].size() == 0);
 
-                BEAST_EXPECT(countersJson.isMember(jss::job_queue));
-                BEAST_EXPECT(countersJson[jss::job_queue].isObject());
-                BEAST_EXPECT(countersJson[jss::job_queue].size() == 1);
-                {
-                    Json::Value const& job{countersJson[jss::job_queue][jobTypeName]};
+            BEAST_EXPECT(countersJson.isMember(jss::job_queue));
+            BEAST_EXPECT(countersJson[jss::job_queue].isObject());
+            BEAST_EXPECT(countersJson[jss::job_queue].size() == 1);
+            {
+                Json::Value const& job{countersJson[jss::job_queue][jobTypeName]};
 
-                    BEAST_EXPECT(job.isObject());
-                    BEAST_EXPECT(jsonToUint64(job[jss::queued]) == 0);
-                    BEAST_EXPECT(jsonToUint64(job[jss::started]) == started);
-                    BEAST_EXPECT(jsonToUint64(job[jss::finished]) == finished);
+                BEAST_EXPECT(job.isObject());
+                BEAST_EXPECT(jsonToUint64(job[jss::queued]) == 0);
+                BEAST_EXPECT(jsonToUint64(job[jss::started]) == started);
+                BEAST_EXPECT(jsonToUint64(job[jss::finished]) == finished);
 
-                    BEAST_EXPECT(jsonToUint64(job[jss::queued_duration_us]) == queued_us);
-                    BEAST_EXPECT(jsonToUint64(job[jss::running_duration_us]) == running_us);
-                }
-            };
+                BEAST_EXPECT(jsonToUint64(job[jss::queued_duration_us]) == queued_us);
+                BEAST_EXPECT(jsonToUint64(job[jss::running_duration_us]) == running_us);
+            }
+        };
 
         // Lambda to validate currentJson (always empty) for this test.
         auto verifyEmptyCurrent = [this](Json::Value const& currentJson) {
@@ -900,8 +915,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             verifyCounters(parsedLastLine[jss::counters], 2, 2, 24, 36);

@@ -114,7 +114,8 @@ namespace Lending {
 
     Valid values are between 0 and 10% inclusive.
 */
-TenthBips16 constexpr maxManagementFeeRate(unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
+TenthBips16 constexpr maxManagementFeeRate(
+    unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
 static_assert(maxManagementFeeRate == TenthBips16(std::uint16_t(10'000u)));
 
 /** The maximum coverage rate required of a loan broker in 1/10 bips.
@@ -208,7 +209,7 @@ std::size_t constexpr maxDIDDocumentLength = 256;
 std::size_t constexpr maxDIDURILength = 256;
 
 /** The maximum length of an Attestation inside a DID */
-std::size_t constexpr maxDIDAttestationLength = 256;
+std::size_t constexpr maxDIDDataLength = 256;
 
 /** The maximum length of a domain */
 std::size_t constexpr maxDomainLength = 256;
@@ -253,6 +254,16 @@ std::uint8_t constexpr maxAssetCheckDepth = 5;
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 
+std::uint32_t constexpr FLAG_LEDGER_INTERVAL = 256;
+
+/** Returns true if the given ledgerIndex is a voting ledgerIndex */
+bool
+isVotingLedger(LedgerIndex seq);
+
+/** Returns true if the given ledgerIndex is a flag ledgerIndex */
+bool
+isFlagLedger(LedgerIndex seq);
+
 /** A transaction identifier.
     The value is computed as the hash of the
     canonicalized, serialized transaction object.
@@ -296,11 +307,11 @@ std::size_t constexpr permissionMaxSize = 10;
 /** The maximum number of transactions that can be in a batch. */
 std::size_t constexpr maxBatchTxCount = 8;
 
-/** EC ElGamal ciphertext length 33-byte */
+/** Length of one component of EC ElGamal ciphertext */
 std::size_t constexpr ecGamalEncryptedLength = 33;
 
 /** EC ElGamal ciphertext length: two 33-byte components concatenated */
-std::size_t constexpr ecGamalEncryptedTotalLength = 66;
+std::size_t constexpr ecGamalEncryptedTotalLength = ecGamalEncryptedLength * 2;
 
 /** Length of equality ZKProof in bytes */
 std::size_t constexpr ecEqualityProofLength = 98;
@@ -320,9 +331,6 @@ std::size_t constexpr ecBlindingFactorLength = 32;
 /** Length of Schnorr ZKProof for public key registration in bytes */
 std::size_t constexpr ecSchnorrProofLength = 65;
 
-/** Length of ElGamal ciphertext equality proof in bytes */
-std::size_t constexpr ecCiphertextEqualityProofLength = 261;
-
 /** Length of ElGamal Pedersen linkage proof in bytes */
 std::size_t constexpr ecPedersenProofLength = 195;
 
@@ -334,5 +342,11 @@ std::size_t constexpr ecSingleBulletproofLength = 688;
 
 /** Length of double bulletproof (range proof for 2 commitments) in bytes */
 std::size_t constexpr ecDoubleBulletproofLength = 754;
+
+/** Compressed EC point prefix for even y-coordinate */
+std::uint8_t constexpr ecCompressedPrefixEvenY = 0x02;
+
+/** Compressed EC point prefix for odd y-coordinate */
+std::uint8_t constexpr ecCompressedPrefixOddY = 0x03;
 
 }  // namespace xrpl

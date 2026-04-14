@@ -2,13 +2,12 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/xchain_bridge.h>
 
-#include <xrpld/app/tx/detail/NFTokenMint.h>
-
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
+#include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
 #include <boost/utility/string_ref.hpp>
 
@@ -108,7 +107,7 @@ public:
 
         // test error on no account
         {
-            Json::Value params;
+            Json::Value const params;
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "Missing field 'account'.");
         }
@@ -160,7 +159,8 @@ public:
             params[jss::account] = bob.human();
             params[jss::type] = 10;
             auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'type', not string.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] == "Invalid field 'type', not string.");
         }
         // test error on type param not a valid type
         {
@@ -176,7 +176,9 @@ public:
             params[jss::account] = bob.human();
             params[jss::limit] = -1;
             auto resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'limit', not unsigned integer.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'limit', not unsigned integer.");
         }
         // test errors on marker
         {
@@ -196,7 +198,8 @@ public:
             std::string mark = to_string(resume_marker);
             params[jss::marker] = 10;
             resp = env.rpc("json", "account_objects", to_string(params));
-            BEAST_EXPECT(resp[jss::result][jss::error_message] == "Invalid field 'marker', not string.");
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] == "Invalid field 'marker', not string.");
 
             params[jss::marker] = "This is a string with no comma";
             resp = env.rpc("json", "account_objects", to_string(params));
@@ -302,9 +305,13 @@ public:
                 BEAST_EXPECT(aobjs.size() == 1);
                 auto& aobj = aobjs[0U];
                 if (i < 3)
+                {
                     BEAST_EXPECT(resp[jss::result][jss::limit] == 1);
+                }
                 else
+                {
                     BEAST_EXPECT(!resp[jss::result].isMember(jss::limit));
+                }
 
                 aobj.removeMember("PreviousTxnID");
                 aobj.removeMember("PreviousTxnLgrSeq");
@@ -481,7 +488,7 @@ public:
             params[jss::type] = jss::nft_page;
             auto resp = env.rpc("json", "account_objects", to_string(params));
             BEAST_EXPECT(!resp.isMember(jss::marker));
-            Json::Value& aobjs = resp[jss::result][jss::account_objects];
+            Json::Value const& aobjs = resp[jss::result][jss::account_objects];
             BEAST_EXPECT(aobjs.size() == 2);
         }
         // test stepped one-at-a-time with limit=1, resume from prev marker
@@ -526,7 +533,8 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        auto const features = testable_amendments() | featureXChainBridge | featurePermissionedDomains;
+        auto const features =
+            testable_amendments() | featureXChainBridge | featurePermissionedDomains;
         Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
@@ -597,7 +605,8 @@ public:
             auto const& nftPage = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(nftPage[sfNFTokens.jsonName].size() == 1);
             BEAST_EXPECT(
-                nftPage[sfNFTokens.jsonName][0u][sfNFToken.jsonName][sfNFTokenID.jsonName] == to_string(nftID));
+                nftPage[sfNFTokens.jsonName][0u][sfNFToken.jsonName][sfNFTokenID.jsonName] ==
+                to_string(nftID));
         }
 
         // Set up a trust line so we can find it.
@@ -675,7 +684,9 @@ public:
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
             auto const& permissionedDomain = resp[jss::result][jss::account_objects][0u];
-            BEAST_EXPECT(permissionedDomain.isMember(jss::Owner) && (permissionedDomain[jss::Owner] == gw.human()));
+            BEAST_EXPECT(
+                permissionedDomain.isMember(jss::Owner) &&
+                (permissionedDomain[jss::Owner] == gw.human()));
             bool const check1 = BEAST_EXPECT(
                 permissionedDomain.isMember(jss::AcceptedCredentials) &&
                 permissionedDomain[jss::AcceptedCredentials].isArray() &&
@@ -684,9 +695,11 @@ public:
 
             if (check1)
             {
-                auto const& credential = permissionedDomain[jss::AcceptedCredentials][0u][jss::Credential];
+                auto const& credential =
+                    permissionedDomain[jss::AcceptedCredentials][0u][jss::Credential];
                 BEAST_EXPECT(
-                    credential.isMember(sfIssuer.jsonName) && (credential[sfIssuer.jsonName] == issuer.human()));
+                    credential.isMember(sfIssuer.jsonName) &&
+                    (credential[sfIssuer.jsonName] == issuer.human()));
                 BEAST_EXPECT(
                     credential.isMember(sfCredentialType.jsonName) &&
                     (credential[sfCredentialType.jsonName] == strHex(credentialType1)));
@@ -769,8 +782,18 @@ public:
             // xchain_create_account_claim_id should be present on the door
             // account (Account::master) to collect the signatures until a
             // quorum is reached
-            scEnv(test::jtx::create_account_attestation(
-                x.scAttester, x.jvb, x.mcCarol, amt, x.reward, x.payees[0], true, 1, x.scuAlice, x.signers[0]));
+            scEnv(
+                test::jtx::create_account_attestation(
+                    x.scAttester,
+                    x.jvb,
+                    x.mcCarol,
+                    amt,
+                    x.reward,
+                    x.payees[0],
+                    true,
+                    1,
+                    x.scuAlice,
+                    x.signers[0]));
             scEnv.close();
 
             auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
@@ -783,12 +806,17 @@ public:
 
             {
                 // Find the xchain_create_account_claim_id
-                Json::Value const resp = scEnvAcctObjs(Account::master, jss::xchain_owned_create_account_claim_id);
+                Json::Value const resp =
+                    scEnvAcctObjs(Account::master, jss::xchain_owned_create_account_claim_id);
                 BEAST_EXPECT(acctObjsIsSize(resp, 1));
 
-                auto const& xchain_create_account_claim_id = resp[jss::result][jss::account_objects][0u];
-                BEAST_EXPECT(xchain_create_account_claim_id[sfAccount.jsonName] == Account::master.human());
-                BEAST_EXPECT(xchain_create_account_claim_id[sfXChainAccountCreateCount.getJsonName()].asUInt() == 1);
+                auto const& xchain_create_account_claim_id =
+                    resp[jss::result][jss::account_objects][0u];
+                BEAST_EXPECT(
+                    xchain_create_account_claim_id[sfAccount.jsonName] == Account::master.human());
+                BEAST_EXPECT(
+                    xchain_create_account_claim_id[sfXChainAccountCreateCount.getJsonName()]
+                        .asUInt() == 1);
             }
         }
 
@@ -897,7 +925,8 @@ public:
                 return v;
             }();
 
-            std::uint32_t const expectedAccountObjects{static_cast<std::uint32_t>(std::size(expectedLedgerTypes))};
+            std::uint32_t const expectedAccountObjects{
+                static_cast<std::uint32_t>(std::size(expectedLedgerTypes))};
 
             if (BEAST_EXPECT(acctObjsIsSize(resp, expectedAccountObjects)))
             {
@@ -937,7 +966,8 @@ public:
             };
             // Make a lambda we can use to check the number of fetched
             // account objects and their ledger type
-            auto expectObjects = [&](Json::Value const& resp, std::vector<std::string> const& types) -> bool {
+            auto expectObjects = [&](Json::Value const& resp,
+                                     std::vector<std::string> const& types) -> bool {
                 if (!acctObjsIsSize(resp, types.size()))
                     return false;
                 std::vector<std::string> typesOut;
@@ -957,16 +987,21 @@ public:
             std::vector<std::string> typesOut;
             getTypes(resp, typesOut);
             // request next two objects
-            resp = acctObjs(amm.ammAccount(), std::nullopt, 10, resp[jss::result][jss::marker].asString());
+            resp = acctObjs(
+                amm.ammAccount(), std::nullopt, 10, resp[jss::result][jss::marker].asString());
             getTypes(resp, typesOut);
             BEAST_EXPECT(
                 (typesOut ==
                  std::vector<std::string>{
-                     jss::AMM.c_str(), jss::RippleState.c_str(), jss::RippleState.c_str(), jss::RippleState.c_str()}));
+                     jss::AMM.c_str(),
+                     jss::RippleState.c_str(),
+                     jss::RippleState.c_str(),
+                     jss::RippleState.c_str()}));
             // filter by state: there are three trustlines
             resp = acctObjs(amm.ammAccount(), jss::state, 10);
-            BEAST_EXPECT(
-                expectObjects(resp, {jss::RippleState.c_str(), jss::RippleState.c_str(), jss::RippleState.c_str()}));
+            BEAST_EXPECT(expectObjects(
+                resp,
+                {jss::RippleState.c_str(), jss::RippleState.c_str(), jss::RippleState.c_str()}));
             // AMM account doesn't own offers
             BEAST_EXPECT(acctObjsIsSize(acctObjs(amm.ammAccount(), jss::offer), 0));
             // gw account doesn't own AMM object
@@ -1079,7 +1114,8 @@ public:
 
         // test an invalid marker that has a non-hex character
         BEAST_EXPECT(testInvalidMarker(
-            "00000000F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B900000000000000000G", "Invalid field \'marker\'."));
+            "00000000F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B900000000000000000G",
+            "Invalid field \'marker\'."));
 
         // this lambda function is used to create some fake marker using given
         // taxon and sequence because we want to test some unassociated markers
@@ -1090,17 +1126,18 @@ public:
                                       std::uint16_t flags = 0,
                                       std::uint16_t fee = 0) {
             // the marker has the exact same format as an NFTokenID
-            return to_string(NFTokenMint::createNFTokenID(flags, fee, issuer, nft::toTaxon(taxon), tokenSeq));
+            return to_string(
+                NFTokenMint::createNFTokenID(flags, fee, issuer, nft::toTaxon(taxon), tokenSeq));
         };
 
         // test an unassociated marker which does not exist in the NFTokenIDs
-        BEAST_EXPECT(
-            testInvalidMarker(createFakeNFTMarker(bob.id(), 0x000000000, 0x00000000), "Invalid field \'marker\'."));
+        BEAST_EXPECT(testInvalidMarker(
+            createFakeNFTMarker(bob.id(), 0x000000000, 0x00000000), "Invalid field \'marker\'."));
 
         // test an unassociated marker which exceeds the maximum value of the
         // existing NFTokenID
-        BEAST_EXPECT(
-            testInvalidMarker(createFakeNFTMarker(bob.id(), 0xFFFFFFFF, 0xFFFFFFFF), "Invalid field \'marker\'."));
+        BEAST_EXPECT(testInvalidMarker(
+            createFakeNFTMarker(bob.id(), 0xFFFFFFFF, 0xFFFFFFFF), "Invalid field \'marker\'."));
     }
 
     void
@@ -1239,7 +1276,7 @@ public:
         // valid, because when dirIndex = 0, we will use root key to find
         // dir.
         {
-            std::string s = "0," + entryIndex;
+            std::string const s = "0," + entryIndex;
             Json::Value params;
             params[jss::account] = bob.human();
             params[jss::limit] = limit;
@@ -1276,7 +1313,7 @@ public:
             auto resp = env.rpc("json", "account_objects", to_string(params));
             auto& accountObjects = resp[jss::result][jss::account_objects];
             BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
-            BEAST_EXPECT(accountObjects.size() == accountObjectSize - limit * 2);
+            BEAST_EXPECT(accountObjects.size() == accountObjectSize - (limit * 2));
             BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
         }
 

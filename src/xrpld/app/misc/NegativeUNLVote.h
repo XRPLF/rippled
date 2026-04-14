@@ -1,8 +1,7 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
-
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -125,7 +124,11 @@ private:
      * @param initialSet the transaction set
      */
     void
-    addTx(LedgerIndex seq, PublicKey const& vp, NegativeUNLModify modify, std::shared_ptr<SHAMap> const& initialSet);
+    addTx(
+        LedgerIndex seq,
+        PublicKey const& vp,
+        NegativeUNLModify modify,
+        std::shared_ptr<SHAMap> const& initialSet);
 
     /**
      * Pick one candidate from a vector of candidates.
@@ -136,7 +139,7 @@ private:
      * @param candidates the vector of candidates
      * @return the picked candidate
      */
-    NodeID
+    static NodeID
     choose(uint256 const& randomPadData, std::vector<NodeID> const& candidates);
 
     /**
@@ -168,7 +171,7 @@ private:
      * @param scoreTable the score table
      * @return the candidates to disable and the candidates to re-enable
      */
-    Candidates const
+    Candidates
     findAllCandidates(
         hash_set<NodeID> const& unl,
         hash_set<NodeID> const& negUnl,

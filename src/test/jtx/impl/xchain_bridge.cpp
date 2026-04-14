@@ -183,7 +183,15 @@ claim_attestation(
     auto const& pk = signer.account.pk();
     auto const& sk = signer.account.sk();
     auto const sig = sign_claim_attestation(
-        pk, sk, stBridge, sendingAccount, sendingAmount.value, rewardAccount, wasLockingChainSend, claimID, dst);
+        pk,
+        sk,
+        stBridge,
+        sendingAccount,
+        sendingAmount.value,
+        rewardAccount,
+        wasLockingChainSend,
+        claimID,
+        dst);
 
     Json::Value result;
 
@@ -249,7 +257,8 @@ create_account_attestation(
     result[sfAttestationRewardAccount.getJsonName()] = toBase58(rewardAccount);
     result[sfWasLockingChainSend.getJsonName()] = wasLockingChainSend ? 1 : 0;
 
-    result[sfXChainAccountCreateCount.getJsonName()] = STUInt64{createCount}.getJson(JsonOptions::none);
+    result[sfXChainAccountCreateCount.getJsonName()] =
+        STUInt64{createCount}.getJson(JsonOptions::none);
     result[sfDestination.getJsonName()] = toBase58(dst);
     result[sfSignatureReward.getJsonName()] = rewardAmount.value.getJson(JsonOptions::none);
 
@@ -277,6 +286,7 @@ claim_attestations(
     JValueVec vec;
     vec.reserve(numAtts);
     for (auto i = fromIdx; i < fromIdx + numAtts; ++i)
+    {
         vec.emplace_back(claim_attestation(
             submittingAccount,
             jvBridge,
@@ -287,6 +297,7 @@ claim_attestations(
             claimID,
             dst,
             signers[i]));
+    }
     return vec;
 }
 
@@ -310,6 +321,7 @@ create_account_attestations(
     JValueVec vec;
     vec.reserve(numAtts);
     for (auto i = fromIdx; i < fromIdx + numAtts; ++i)
+    {
         vec.emplace_back(create_account_attestation(
             submittingAccount,
             jvBridge,
@@ -321,6 +333,7 @@ create_account_attestations(
             createCount,
             dst,
             signers[i]));
+    }
     return vec;
 }
 
@@ -360,7 +373,8 @@ XChainBridgeObjects::XChainBridgeObjects()
         for (int i = 0; i < numSigners; ++i)
         {
             using namespace std::literals;
-            auto const a = Account("signer_"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
+            auto const a = Account(
+                "signer_"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
             result.emplace_back(a);
         }
         return result;
@@ -372,7 +386,9 @@ XChainBridgeObjects::XChainBridgeObjects()
         for (int i = 0; i < numSigners; ++i)
         {
             using namespace std::literals;
-            auto const a = Account("alt_signer_"s + std::to_string(i), (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
+            auto const a = Account(
+                "alt_signer_"s + std::to_string(i),
+                (i % 2) ? KeyType::ed25519 : KeyType::secp256k1);
             result.emplace_back(a);
         }
         return result;
@@ -397,23 +413,25 @@ XChainBridgeObjects::XChainBridgeObjects()
         }
         return r;
     }())
-    , quorum(UT_XCHAIN_DEFAULT_QUORUM)
     , reward(XRP(1))
-    , split_reward_quorum(divide(reward, STAmount(UT_XCHAIN_DEFAULT_QUORUM), reward.issue()))
-    , split_reward_everyone(divide(reward, STAmount(UT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.issue()))
+    , split_reward_quorum(divide(reward, STAmount(UT_XCHAIN_DEFAULT_QUORUM), reward.get<Issue>()))
+    , split_reward_everyone(
+          divide(reward, STAmount(UT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.get<Issue>()))
     , tiny_reward(drops(37))
-    , tiny_reward_split((divide(tiny_reward, STAmount(UT_XCHAIN_DEFAULT_QUORUM), tiny_reward.issue())))
+    , tiny_reward_split(
+          (divide(tiny_reward, STAmount(UT_XCHAIN_DEFAULT_QUORUM), tiny_reward.get<Issue>())))
     , tiny_reward_remainder(
-          tiny_reward - multiply(tiny_reward_split, STAmount(UT_XCHAIN_DEFAULT_QUORUM), tiny_reward.issue()))
+          tiny_reward -
+          multiply(tiny_reward_split, STAmount(UT_XCHAIN_DEFAULT_QUORUM), tiny_reward.get<Issue>()))
     , one_xrp(XRP(1))
-    , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.issue()))
+    , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.get<Issue>()))
 {
 }
 
 void
 XChainBridgeObjects::createMcBridgeObjects(Env& mcEnv)
 {
-    STAmount xrp_funds{XRP(10000)};
+    STAmount const xrp_funds{XRP(10000)};
     mcEnv.fund(xrp_funds, mcDoor, mcAlice, mcBob, mcCarol, mcGw);
 
     // Signer's list must match the attestation signers
@@ -430,7 +448,7 @@ XChainBridgeObjects::createMcBridgeObjects(Env& mcEnv)
 void
 XChainBridgeObjects::createScBridgeObjects(Env& scEnv)
 {
-    STAmount xrp_funds{XRP(10000)};
+    STAmount const xrp_funds{XRP(10000)};
     scEnv.fund(xrp_funds, scDoor, scAlice, scBob, scCarol, scGw, scAttester, scReward);
 
     // Signer's list must match the attestation signers

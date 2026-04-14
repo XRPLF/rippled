@@ -29,6 +29,18 @@ public:
         bool sslVerify,
         beast::Journal j);
 
+    /** Destroys the global SSL context created by initializeSSLContext().
+     *
+     *  This releases the underlying boost::asio::ssl::context and any
+     *  associated OpenSSL resources. Must not be called while any
+     *  HTTPClient requests are in flight.
+     *
+     *  @note Currently only called from tests during teardown. In production,
+     *        the SSL context lives for the lifetime of the process.
+     */
+    static void
+    cleanupSSLContext();
+
     static void
     get(bool bSSL,
         boost::asio::io_context& io_context,
@@ -37,8 +49,10 @@ public:
         std::string const& strPath,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function<bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
-            complete,
+        std::function<bool(
+            boost::system::error_code const& ecResult,
+            int iStatus,
+            std::string const& strData)> complete,
         beast::Journal& j);
 
     static void
@@ -49,8 +63,10 @@ public:
         std::string const& strPath,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function<bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
-            complete,
+        std::function<bool(
+            boost::system::error_code const& ecResult,
+            int iStatus,
+            std::string const& strData)> complete,
         beast::Journal& j);
 
     static void
@@ -62,8 +78,10 @@ public:
         std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> build,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
-        std::function<bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
-            complete,
+        std::function<bool(
+            boost::system::error_code const& ecResult,
+            int iStatus,
+            std::string const& strData)> complete,
         beast::Journal& j);
 };
 

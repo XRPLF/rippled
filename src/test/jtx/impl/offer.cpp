@@ -7,13 +7,17 @@ namespace test {
 namespace jtx {
 
 Json::Value
-offer(Account const& account, STAmount const& takerPays, STAmount const& takerGets, std::uint32_t flags)
+offer(
+    Account const& account,
+    STAmount const& takerPays,
+    STAmount const& takerGets,
+    std::uint32_t flags)
 {
     Json::Value jv;
     jv[jss::Account] = account.human();
     jv[jss::TakerPays] = takerPays.getJson(JsonOptions::none);
     jv[jss::TakerGets] = takerGets.getJson(JsonOptions::none);
-    if (flags)
+    if (flags != 0u)
         jv[jss::Flags] = flags;
     jv[jss::TransactionType] = jss::OfferCreate;
     return jv;

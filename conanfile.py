@@ -1,9 +1,9 @@
+import os
 import re
 
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 
 from conan import ConanFile
-from conan import __version__ as conan_version
 
 
 class Xrpl(ConanFile):
@@ -29,11 +29,11 @@ class Xrpl(ConanFile):
 
     requires = [
         "ed25519/2015.03",
-        "grpc/1.72.0",
+        "grpc/1.78.1",
         "libarchive/3.8.1",
-        "mpt-crypto/0.1.0-rc2",
+        "mpt-crypto/0.2.0-rc1",
         "nudb/2.0.9",
-        "openssl/3.5.5",
+        "openssl/3.6.1",
         "secp256k1/0.7.1",
         "soci/4.0.3",
         "zlib/1.3.1",
@@ -44,7 +44,7 @@ class Xrpl(ConanFile):
     ]
 
     tool_requires = [
-        "protobuf/6.32.1",
+        "protobuf/6.33.5",
     ]
 
     default_options = {
@@ -58,6 +58,9 @@ class Xrpl(ConanFile):
         "tests": False,
         "unity": False,
         "xrpld": False,
+        "boost/*:without_context": False,
+        "boost/*:without_coroutine": True,
+        "boost/*:without_coroutine2": False,
         "date/*:header_only": True,
         "ed25519/*:shared": False,
         "grpc/*:shared": False,
@@ -127,21 +130,23 @@ class Xrpl(ConanFile):
         if self.settings.compiler in ["clang", "gcc"]:
             self.options["boost"].without_cobalt = True
 
+        # Check if environment variable exists
+        if "SANITIZERS" in os.environ:
+            sanitizers = os.environ["SANITIZERS"]
+            if "address" in sanitizers.lower():
+                self.default_options["fPIC"] = False
+
     def requirements(self):
-        # Conan 2 requires transitive headers to be specified
-        transitive_headers_opt = (
-            {"transitive_headers": True} if conan_version.split(".")[0] == "2" else {}
-        )
-        self.requires("boost/1.90.0", force=True, **transitive_headers_opt)
-        self.requires("date/3.0.4", **transitive_headers_opt)
+        self.requires("boost/1.90.0", force=True, transitive_headers=True)
+        self.requires("date/3.0.4", transitive_headers=True)
         self.requires("lz4/1.10.0", force=True)
-        self.requires("protobuf/6.32.1", force=True)
-        self.requires("sqlite3/3.49.1", force=True)
+        self.requires("protobuf/6.33.5", force=True)
+        self.requires("sqlite3/3.51.0", force=True)
         if self.options.jemalloc:
             self.requires("jemalloc/5.3.0")
         if self.options.rocksdb:
             self.requires("rocksdb/10.5.1")
-        self.requires("xxhash/0.8.3", **transitive_headers_opt)
+        self.requires("xxhash/0.8.3", transitive_headers=True)
 
     exports_sources = (
         "CMakeLists.txt",
@@ -197,7 +202,7 @@ class Xrpl(ConanFile):
             "boost::headers",
             "boost::chrono",
             "boost::container",
-            "boost::coroutine",
+            "boost::context",
             "boost::date_time",
             "boost::filesystem",
             "boost::json",

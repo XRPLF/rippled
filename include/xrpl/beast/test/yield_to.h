@@ -40,7 +40,8 @@ public:
     /// The type of yield context passed to functions.
     using yield_context = boost::asio::yield_context;
 
-    explicit enable_yield_to(std::size_t concurrency = 1) : work_(boost::asio::make_work_guard(ios_))
+    explicit enable_yield_to(std::size_t concurrency = 1)
+        : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
         while (concurrency--)
@@ -113,7 +114,7 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
         boost::context::fixedsize_stack(2 * 1024 * 1024),
         [&](yield_context yield) {
             f(yield);
-            std::lock_guard lock{m_};
+            std::lock_guard const lock{m_};
             if (--running_ == 0)
                 cv_.notify_all();
         },

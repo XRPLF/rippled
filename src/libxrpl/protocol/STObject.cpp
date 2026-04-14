@@ -41,11 +41,12 @@
 
 namespace xrpl {
 
-STObject::STObject(STObject&& other) : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
+STObject::STObject(STObject&& other)
+    : STBase(other.getFName()), v_(std::move(other.v_)), mType(other.mType)
 {
 }
 
-STObject::STObject(SField const& name) : STBase(name), mType(nullptr)
+STObject::STObject(SField const& name) : STBase(name)
 {
 }
 
@@ -61,7 +62,7 @@ STObject::STObject(SOTemplate const& type, SerialIter& sit, SField const& name) 
     applyTemplate(type);  // May throw
 }
 
-STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false) : STBase(name), mType(nullptr)
+STObject::STObject(SerialIter& sit, SField const& name, int depth) noexcept(false) : STBase(name)
 {
     if (depth > 10)
         Throw<std::runtime_error>("Maximum nesting depth of STObject exceeded");
@@ -83,7 +84,8 @@ STObject::makeInnerObject(SField const& name)
     if (!rules || (rules->enabled(fixInnerObjTemplate) && isAMMObj) ||
         (rules->enabled(fixInnerObjTemplate2) && !isAMMObj))
     {
-        if (SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(name))
+        if (SOTemplate const* elements =
+                InnerObjectFormats::getInstance().findSOTemplateBySField(name))
             obj.set(*elements);
     }
     return obj;
@@ -138,9 +140,13 @@ STObject::set(SOTemplate const& type)
     for (auto const& elem : type)
     {
         if (elem.style() != soeREQUIRED)
+        {
             v_.emplace_back(detail::nonPresentObject, elem.sField());
+        }
         else
+        {
             v_.emplace_back(detail::defaultObject, elem.sField());
+        }
     }
 }
 
@@ -150,7 +156,7 @@ STObject::applyTemplate(SOTemplate const& type)
     auto throwFieldErr = [](std::string const& field, char const* description) {
         std::stringstream ss;
         ss << "Field '" << field << "' " << description;
-        std::string text{ss.str()};
+        std::string const text{ss.str()};
         JLOG(debugLog().error()) << "STObject::applyTemplate failed: " << text;
         Throw<FieldErr>(text);
     };
@@ -160,8 +166,9 @@ STObject::applyTemplate(SOTemplate const& type)
     v.reserve(type.size());
     for (auto const& e : type)
     {
-        auto const iter = std::find_if(
-            v_.begin(), v_.end(), [&](detail::STVar const& b) { return b.get().getFName() == e.sField(); });
+        auto const iter = std::find_if(v_.begin(), v_.end(), [&](detail::STVar const& b) {
+            return b.get().getFName() == e.sField();
+        });
         if (iter != v_.end())
         {
             if ((e.style() == soeDEFAULT) && iter->get().isDefault())
@@ -197,7 +204,7 @@ void
 STObject::applyTemplateFromSField(SField const& sField)
 {
     SOTemplate const* elements = InnerObjectFormats::getInstance().findSOTemplateBySField(sField);
-    if (elements)
+    if (elements != nullptr)
         applyTemplate(*elements);  // May throw
 }
 
@@ -212,8 +219,8 @@ STObject::set(SerialIter& sit, int depth)
     // Consume data in the pipe until we run out or reach the end
     while (!sit.empty())
     {
-        int type;
-        int field;
+        int type = 0;
+        int field = 0;
 
         // Get the metadata for the next field
         sit.getFieldID(type, field);
@@ -236,7 +243,8 @@ STObject::set(SerialIter& sit, int depth)
 
         if (fn.isInvalid())
         {
-            JLOG(debugLog().error()) << "Unknown field: field_type=" << type << ", field_name=" << field;
+            JLOG(debugLog().error())
+                << "Unknown field: field_type=" << type << ", field_name=" << field;
             Throw<std::runtime_error>("Unknown field");
         }
 
@@ -252,9 +260,10 @@ STObject::set(SerialIter& sit, int depth)
     // duplicate fields. This is a key invariant:
     auto const sf = getSortedFields(*this, withAllFields);
 
-    auto const dup = std::adjacent_find(sf.cbegin(), sf.cend(), [](STBase const* lhs, STBase const* rhs) {
-        return lhs->getFName() == rhs->getFName();
-    });
+    auto const dup =
+        std::adjacent_find(sf.cbegin(), sf.cend(), [](STBase const* lhs, STBase const* rhs) {
+            return lhs->getFName() == rhs->getFName();
+        });
 
     if (dup != sf.cend())
         Throw<std::runtime_error>("Duplicate field detected");
@@ -263,11 +272,11 @@ STObject::set(SerialIter& sit, int depth)
 }
 
 bool
-STObject::hasMatchingEntry(STBase const& t)
+STObject::hasMatchingEntry(STBase const& t) const
 {
     STBase const* o = peekAtPField(t.getFName());
 
-    if (!o)
+    if (o == nullptr)
         return false;
 
     return t == *o;
@@ -285,16 +294,22 @@ STObject::getFullText() const
         ret += " = {";
     }
     else
+    {
         ret = "{";
+    }
 
     for (auto const& elem : v_)
     {
         if (elem->getSType() != STI_NOTPRESENT)
         {
             if (!first)
+            {
                 ret += ", ";
+            }
             else
+            {
                 first = false;
+            }
 
             ret += elem->getFullText();
         }
@@ -328,22 +343,24 @@ STObject::isEquivalent(STBase const& t) const
 {
     STObject const* v = dynamic_cast<STObject const*>(&t);
 
-    if (!v)
+    if (v == nullptr)
         return false;
 
     if (mType != nullptr && v->mType == mType)
     {
-        return std::equal(begin(), end(), v->begin(), v->end(), [](STBase const& st1, STBase const& st2) {
-            return (st1.getSType() == st2.getSType()) && st1.isEquivalent(st2);
-        });
+        return std::equal(
+            begin(), end(), v->begin(), v->end(), [](STBase const& st1, STBase const& st2) {
+                return (st1.getSType() == st2.getSType()) && st1.isEquivalent(st2);
+            });
     }
 
     auto const sf1 = getSortedFields(*this, withAllFields);
     auto const sf2 = getSortedFields(*v, withAllFields);
 
-    return std::equal(sf1.begin(), sf1.end(), sf2.begin(), sf2.end(), [](STBase const* st1, STBase const* st2) {
-        return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
-    });
+    return std::equal(
+        sf1.begin(), sf1.end(), sf2.begin(), sf2.end(), [](STBase const* st1, STBase const* st2) {
+            return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
+        });
 }
 
 uint256
@@ -383,7 +400,7 @@ STObject::getFieldIndex(SField const& field) const
 STBase const&
 STObject::peekAtField(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -394,7 +411,7 @@ STObject::peekAtField(SField const& field) const
 STBase&
 STObject::getField(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -411,7 +428,7 @@ STObject::getFieldSType(int index) const
 STBase const*
 STObject::peekAtPField(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return nullptr;
@@ -422,7 +439,7 @@ STObject::peekAtPField(SField const& field) const
 STBase*
 STObject::getPField(SField const& field, bool createOkay)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
     {
@@ -438,7 +455,7 @@ STObject::getPField(SField const& field, bool createOkay)
 bool
 STObject::isFieldPresent(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return false;
@@ -463,7 +480,7 @@ STObject::setFlag(std::uint32_t f)
 {
     STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags, true));
 
-    if (!t)
+    if (t == nullptr)
         return false;
 
     t->setValue(t->value() | f);
@@ -475,7 +492,7 @@ STObject::clearFlag(std::uint32_t f)
 {
     STUInt32* t = dynamic_cast<STUInt32*>(getPField(sfFlags));
 
-    if (!t)
+    if (t == nullptr)
         return false;
 
     t->setValue(t->value() & ~f);
@@ -493,7 +510,7 @@ STObject::getFlags(void) const
 {
     STUInt32 const* t = dynamic_cast<STUInt32 const*>(peekAtPField(sfFlags));
 
-    if (!t)
+    if (t == nullptr)
         return 0;
 
     return t->value();
@@ -502,7 +519,7 @@ STObject::getFlags(void) const
 STBase*
 STObject::makeFieldPresent(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
     {
@@ -512,7 +529,7 @@ STObject::makeFieldPresent(SField const& field)
         return getPIndex(emplace_back(detail::nonPresentObject, field));
     }
 
-    STBase* f = getPIndex(index);
+    STBase* f = getPIndex(index);  // NOLINT(misc-const-correctness)
 
     if (f->getSType() != STI_NOTPRESENT)
         return f;
@@ -524,7 +541,7 @@ STObject::makeFieldPresent(SField const& field)
 void
 STObject::makeFieldAbsent(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -539,7 +556,7 @@ STObject::makeFieldAbsent(SField const& field)
 bool
 STObject::delField(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return false;
@@ -557,7 +574,7 @@ STObject::delField(int index)
 SOEStyle
 STObject::getStyle(SField const& field) const
 {
-    return mType ? mType->style(field) : soeINVALID;
+    return (mType != nullptr) ? mType->style(field) : soeINVALID;
 }
 
 unsigned char
@@ -623,7 +640,7 @@ STObject::getAccountID(SField const& field) const
 Blob
 STObject::getFieldVL(SField const& field) const
 {
-    STBlob empty;
+    STBlob const empty;
     STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
 }
@@ -730,6 +747,12 @@ void
 STObject::setFieldH128(SField const& field, uint128 const& v)
 {
     setFieldUsingSetValue<STUInt128>(field, v);
+}
+
+void
+STObject::setFieldH192(SField const& field, uint192 const& v)
+{
+    setFieldUsingSetValue<STUInt192>(field, v);
 }
 
 void
@@ -860,10 +883,7 @@ STObject::operator==(STObject const& obj) const
             ++fields;
     }
 
-    if (fields != matches)
-        return false;
-
-    return true;
+    return fields == matches;
 }
 
 void
@@ -900,7 +920,8 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     for (detail::STVar const& elem : objToSort.v_)
     {
         STBase const& base = elem.get();
-        if ((base.getSType() != STI_NOTPRESENT) && base.getFName().shouldInclude(whichFields))
+        if ((base.getSType() != STI_NOTPRESENT) &&
+            base.getFName().shouldInclude(static_cast<bool>(whichFields)))
         {
             sf.push_back(&base);
         }

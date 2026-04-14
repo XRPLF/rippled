@@ -42,9 +42,11 @@ private:
     // the only way to properly create one is to first allocate enough memory
     // so we limit this constructor to codepaths that do this right and limit
     // arbitrary construction.
-    SHAMapItem(uint256 const& tag, Slice data) : tag_(tag), size_(static_cast<std::uint32_t>(data.size()))
+    SHAMapItem(uint256 const& tag, Slice data)
+        : tag_(tag), size_(static_cast<std::uint32_t>(data.size()))
     {
-        std::memcpy(reinterpret_cast<std::uint8_t*>(this) + sizeof(*this), data.data(), data.size());
+        std::memcpy(
+            reinterpret_cast<std::uint8_t*>(this) + sizeof(*this), data.data(), data.size());
     }
 
 public:
@@ -136,8 +138,10 @@ intrusive_ptr_release(SHAMapItem const* x)
 inline boost::intrusive_ptr<SHAMapItem>
 make_shamapitem(uint256 const& tag, Slice data)
 {
-    XRPL_ASSERT(data.size() <= megabytes<std::size_t>(16), "xrpl::make_shamapitem : maximum input size");
+    XRPL_ASSERT(
+        data.size() <= megabytes<std::size_t>(16), "xrpl::make_shamapitem : maximum input size");
 
+    // NOLINTNEXTLINE(misc-const-correctness)
     std::uint8_t* raw = detail::slabber.allocate(data.size());
 
     // If we can't grab memory from the slab allocators, we fall back to

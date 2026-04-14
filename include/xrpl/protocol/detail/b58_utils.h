@@ -59,7 +59,7 @@ inplace_bigint_add(std::span<std::uint64_t> a, std::uint64_t b)
         return TokenCodecErrc::inputTooSmall;
     }
 
-    std::uint64_t carry;
+    std::uint64_t carry = 0;
     std::tie(a[0], carry) = carrying_add(a[0], b);
 
     for (auto& v : a.subspan(1))
@@ -122,7 +122,8 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
         unsigned __int128 const low128 = low;
         return ((high128 << 64) | low128);
     };
-    auto div_rem_64 = [](unsigned __int128 num, std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
+    auto div_rem_64 = [](unsigned __int128 num,
+                         std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
         unsigned __int128 const denom128 = denom;
         unsigned __int128 const d = num / denom128;
         unsigned __int128 const r = num - (denom128 * d);
@@ -161,7 +162,7 @@ b58_10_to_b58_be(std::uint64_t input)
     int i = 0;
     while (input > 0)
     {
-        std::uint64_t rem;
+        std::uint64_t rem = 0;
         std::tie(input, rem) = div_rem(input, 58);
         result[resultSize - 1 - i] = rem;
         i += 1;

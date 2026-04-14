@@ -35,7 +35,8 @@ public:
     {
     private:
         boost::asio::io_context io_context_;
-        std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
+        std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
+            work_;
         std::thread thread_;
 
     public:
@@ -65,7 +66,8 @@ public:
         beast::unit_test::suite& suite_;
 
     public:
-        explicit TestSink(beast::unit_test::suite& suite) : Sink(beast::severities::kWarning, false), suite_(suite)
+        explicit TestSink(beast::unit_test::suite& suite)
+            : Sink(beast::severities::kWarning, false), suite_(suite)
         {
         }
 
@@ -89,40 +91,49 @@ public:
 
     struct TestHandler
     {
-        bool
+        static bool
         onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
         {
             return true;
         }
 
-        Handoff
+        static Handoff
         onHandoff(
             Session& session,
-            std::unique_ptr<stream_type>&& bundle,
-            http_request_type&& request,
+            std::unique_ptr<stream_type> const& bundle,
+            http_request_type const& request,
             boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
 
-        Handoff
-        onHandoff(Session& session, http_request_type&& request, boost::asio::ip::tcp::endpoint remote_address)
+        static Handoff
+        onHandoff(
+            Session& session,
+            http_request_type const& request,
+            boost::asio::ip::tcp::endpoint remote_address)
         {
             return Handoff{};
         }
 
-        void
+        static void
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
             if (beast::rfc2616::is_keep_alive(session.request()))
+            {
                 session.complete();
+            }
             else
+            {
                 session.close(true);
+            }
         }
 
         void
-        onWSMessage(std::shared_ptr<WSSession> session, std::vector<boost::asio::const_buffer> const&)
+        onWSMessage(
+            std::shared_ptr<WSSession> session,
+            std::vector<boost::asio::const_buffer> const&)
         {
         }
 
@@ -225,7 +236,7 @@ public:
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);
+        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
 
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
@@ -261,7 +272,7 @@ public:
             return;
 
         boost::system::error_code ec;
-        s.shutdown(socket::shutdown_both, ec);
+        s.shutdown(socket::shutdown_both, ec);  // NOLINT(bugprone-unused-return-value)
     }
 
     void
@@ -271,11 +282,12 @@ public:
         TestSink sink{*this};
         TestThread thread;
         sink.threshold(beast::severities::Severity::kAll);
-        beast::Journal journal{sink};
+        beast::Journal const journal{sink};
         TestHandler handler;
         auto s = make_Server(handler, thread.get_io_context(), journal);
         std::vector<Port> serverPort(1);
-        serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()), serverPort.back().port = 0;
+        serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
+        serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
         test_request(eps.begin()->second);
@@ -291,24 +303,27 @@ public:
         testcase("stress test");
         struct NullHandler
         {
-            bool
+            static bool
             onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoint)
             {
                 return true;
             }
 
-            Handoff
+            static Handoff
             onHandoff(
                 Session& session,
-                std::unique_ptr<stream_type>&& bundle,
-                http_request_type&& request,
+                std::unique_ptr<stream_type> const& bundle,
+                http_request_type const& request,
                 boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
             }
 
-            Handoff
-            onHandoff(Session& session, http_request_type&& request, boost::asio::ip::tcp::endpoint remote_address)
+            static Handoff
+            onHandoff(
+                Session& session,
+                http_request_type const& request,
+                boost::asio::ip::tcp::endpoint remote_address)
             {
                 return Handoff{};
             }
@@ -319,7 +334,9 @@ public:
             }
 
             void
-            onWSMessage(std::shared_ptr<WSSession> session, std::vector<boost::asio::const_buffer> const& buffers)
+            onWSMessage(
+                std::shared_ptr<WSSession> session,
+                std::vector<boost::asio::const_buffer> const& buffers)
             {
             }
 
@@ -343,7 +360,8 @@ public:
             TestThread thread;
             auto s = make_Server(h, thread.get_io_context(), journal);
             std::vector<Port> serverPort(1);
-            serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()), serverPort.back().port = 0;
+            serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
+            serverPort.back().port = 0;
             serverPort.back().protocol.insert("http");
             s->ports(serverPort);
         }
@@ -359,7 +377,7 @@ public:
         std::string messages;
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -370,7 +388,7 @@ public:
         BEAST_EXPECT(messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -382,7 +400,7 @@ public:
         BEAST_EXPECT(messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -392,10 +410,11 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
+        BEAST_EXPECT(
+            messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg)["server"].set("port", "0");
@@ -403,10 +422,11 @@ public:
                 }),
                 std::make_unique<CaptureLogs>(&messages)};
         });
-        BEAST_EXPECT(messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
+        BEAST_EXPECT(
+            messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -422,7 +442,7 @@ public:
         except([&]  // this creates a standard test config without the server
                     // section
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
@@ -451,7 +471,7 @@ public:
         except([&]  // this creates a standard test config without some of the
                     // port sections
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();

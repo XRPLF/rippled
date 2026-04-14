@@ -36,7 +36,7 @@ enum MessageType {
 
 /* Provides the current ephemeral key for a validator. */
 message TMManifest {
-  // A Manifest object in the Ripple serialization format.
+  // A Manifest object in the XRPL serialization format.
   required bytes stobject = 1;
 }
 

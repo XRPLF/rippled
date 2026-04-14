@@ -39,7 +39,7 @@ public:
         @param j Journal for debugging
     */
     DisputedTx(Tx_t const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
-        : yays_(0), nays_(0), ourVote_(ourVote), tx_(tx), j_(j)
+        : ourVote_(ourVote), tx_(tx), j_(j)
     {
         votes_.reserve(numPeers);
     }
@@ -76,7 +76,8 @@ public:
         // We're have not reached the final avalanche state, or been there long
         // enough, so there's room for change. Check the times in case the state
         // machine is altered to allow states to loop.
-        if (nextCutoff.consensusTime > currentCutoff.consensusTime || avalancheCounter_ < p.avMIN_ROUNDS)
+        if (nextCutoff.consensusTime > currentCutoff.consensusTime ||
+            avalancheCounter_ < p.avMIN_ROUNDS)
             return false;
 
         // We've haven't had this vote for minimum rounds yet. Things could
@@ -88,14 +89,15 @@ public:
         // things could still change. But if _either_ has not changed in that
         // long, we're unlikely to change our vote any time soon. (This prevents
         // a malicious peer from flip-flopping a vote to prevent consensus.)
-        if (peersUnchanged < p.avSTALLED_ROUNDS && (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
+        if (peersUnchanged < p.avSTALLED_ROUNDS &&
+            (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
             return false;
 
         // Does this transaction have more than 80% agreement
 
         // Compute the percentage of nodes voting 'yes' (possibly including us)
         int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
-        int total = nays_ + yays_ + (proposing ? 1 : 0);
+        int const total = nays_ + yays_ + (proposing ? 1 : 0);
         if (!total)
             // There are no votes, so we know nothing
             return false;
@@ -109,8 +111,9 @@ public:
             // stalling is an error condition for even a single
             // transaction.
             std::stringstream s;
-            s << "Transaction " << ID() << " is stalled. We have been voting " << (getOurVote() ? "YES" : "NO")
-              << " for " << currentVoteCounter_ << " rounds. Peers have not changed their votes in " << peersUnchanged
+            s << "Transaction " << ID() << " is stalled. We have been voting "
+              << (getOurVote() ? "YES" : "NO") << " for " << currentVoteCounter_
+              << " rounds. Peers have not changed their votes in " << peersUnchanged
               << " rounds. The transaction has " << weight << "% support. ";
             JLOG(j_.error()) << s.str();
             CLOG(clog) << s.str();
@@ -170,8 +173,8 @@ public:
     getJson() const;
 
 private:
-    int yays_;      //< Number of yes votes
-    int nays_;      //< Number of no votes
+    int yays_{0};   //< Number of yes votes
+    int nays_{0};   //< Number of no votes
     bool ourVote_;  //< Our vote (true is yes)
     Tx_t tx_;       //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
@@ -255,8 +258,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, Consensu
     if (!ourVote_ && (yays_ == 0))
         return false;
 
-    bool newPosition;
-    int weight;
+    bool newPosition = false;
+    int weight = 0;
 
     // When proposing, to prevent avalanche stalls, we increase the needed
     // weight slightly over time. We also need to ensure that the consensus has
@@ -289,8 +292,9 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, Consensu
     if (newPosition == ourVote_)
     {
         ++currentVoteCounter_;
-        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on " << tx_.id() << " : weight " << weight
-                        << ", percent " << percentTime << ", round(s) with this vote: " << currentVoteCounter_;
+        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on " << tx_.id()
+                        << " : weight " << weight << ", percent " << percentTime
+                        << ", round(s) with this vote: " << currentVoteCounter_;
         JLOG(j_.debug()) << Json::Compact{getJson()};
         return false;
     }
