@@ -138,8 +138,14 @@ public:
     }
 
     virtual void
-    onLedgerFetched() override
+    onLedgerFetched(std::shared_ptr<InboundLedger> const&) override
     {
+    }
+
+    virtual std::shared_ptr<Ledger const>
+    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const&) override
+    {
+        return {};
     }
 
     virtual void

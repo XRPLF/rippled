@@ -7,10 +7,13 @@
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <deque>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <mutex>
 #include <vector>
@@ -254,6 +257,7 @@ public:
 
         mRecentFailures.clear();
         mLedgers.clear();
+        recentHistoryLedgers_.clear();
     }
 
     std::size_t
@@ -266,10 +270,89 @@ public:
     // Should only be called with an inboundledger that has
     // a reason of history
     void
-    onLedgerFetched() override
+    onLedgerFetched(std::shared_ptr<InboundLedger> const& inbound) override
     {
-        std::lock_guard const lock(fetchRateMutex_);
-        fetchRate_.add(1, m_clock.now());
+        {
+            std::lock_guard const lock(fetchRateMutex_);
+            fetchRate_.add(1, m_clock.now());
+        }
+
+        if (inbound)
+        {
+            auto const ledger = inbound->getLedger();
+            if (ledger && ledger->isFullyWired())
+            {
+                ScopedLockType const sl(mLock);
+                constexpr std::size_t historyPrimingCacheSize = 10;
+                recentHistoryLedgers_.push_back(ledger);
+                while (recentHistoryLedgers_.size() > historyPrimingCacheSize)
+                    recentHistoryLedgers_.pop_front();
+            }
+        }
+    }
+
+    std::shared_ptr<Ledger const>
+    getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger) override
+    {
+        if (!targetLedger)
+            return {};
+
+        ScopedLockType const sl(mLock);
+
+        auto const targetSeq = targetLedger->header().seq;
+        auto const targetHash = targetLedger->header().hash;
+
+        std::shared_ptr<Ledger const> best;
+        auto bestDistance = std::numeric_limits<std::uint32_t>::max();
+
+        for (auto const& candidate : recentHistoryLedgers_)
+        {
+            if (!candidate || !candidate->isFullyWired())
+                continue;
+
+            if (candidate->header().hash == targetHash)
+                continue;
+
+            bool sameChain = false;
+            try
+            {
+                if (candidate->header().seq < targetSeq)
+                {
+                    if (auto const hash = hashOfSeq(*targetLedger, candidate->header().seq, j_);
+                        hash && *hash == candidate->header().hash)
+                    {
+                        sameChain = true;
+                    }
+                }
+                else if (candidate->header().seq > targetSeq)
+                {
+                    if (auto const hash = hashOfSeq(*candidate, targetSeq, j_);
+                        hash && *hash == targetHash)
+                    {
+                        sameChain = true;
+                    }
+                }
+            }
+            catch (std::exception const&)
+            {
+                sameChain = false;
+            }
+
+            if (!sameChain)
+                continue;
+
+            auto const distance = candidate->header().seq < targetSeq
+                ? targetSeq - candidate->header().seq
+                : candidate->header().seq - targetSeq;
+
+            if (!best || distance < bestDistance)
+            {
+                best = candidate;
+                bestDistance = distance;
+            }
+        }
+
+        return best;
     }
 
     Json::Value
@@ -397,6 +480,7 @@ public:
         stopping_ = true;
         mLedgers.clear();
         mRecentFailures.clear();
+        recentHistoryLedgers_.clear();
     }
 
     std::size_t
@@ -421,6 +505,8 @@ private:
     beast::insight::Counter mCounter;
 
     std::unique_ptr<PeerSetBuilder> mPeerSetBuilder;
+
+    std::deque<std::shared_ptr<Ledger const>> recentHistoryLedgers_;
 
     std::set<uint256> pendingAcquires_;
     std::mutex acquiresMutex_;

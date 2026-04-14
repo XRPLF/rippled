@@ -12,8 +12,10 @@
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
 
 #include <cstdint>
+#include <cstdlib>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -322,6 +324,23 @@ public:
     useTxTables() const
     {
         return USE_TX_TABLES;
+    }
+
+    /** Returns true when the RWDB backend is running in null mode.
+
+        In null mode the in-memory node store never persists or retrieves
+        objects — nodes are retained purely through the Ledger -> SHAMap
+        shared_ptr retention chain.  Activated via the XRPL_RWDB_NULL
+        environment variable.
+    */
+    static bool
+    null_backend()
+    {
+        static bool const v = [] {
+            char const* e = std::getenv("XRPL_RWDB_NULL");
+            return e && *e && std::string_view(e) != "0";
+        }();
+        return v;
     }
 
     bool

@@ -1,5 +1,5 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/basics/ReaderPreferringSharedMutex.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
@@ -9,9 +9,11 @@
 #include <boost/core/ignore_unused.hpp>
 
 #include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <shared_mutex>
+#include <string_view>
 #include <vector>
 
 namespace xrpl {
@@ -84,9 +86,22 @@ public:
         // blocked by the (potentially millions-of-entries) map destructor.
     }
 
+    static bool
+    nullMode()
+    {
+        static bool const v = [] {
+            char const* e = std::getenv("XRPL_RWDB_NULL");
+            return e && *e && std::string_view{e} != "0";
+        }();
+        return v;
+    }
+
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pObject) override
     {
+        if (nullMode())
+            return notFound;
+
         std::shared_lock lock(mutex_);
         if (!isOpen_)
             return notFound;
@@ -120,8 +135,14 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& object) override
     {
-        std::lock_guard lock(mutex_);
-        if (!isOpen_ || !object)
+        if (!object)
+            return;
+
+        if (nullMode())
+            return;
+
+        std::unique_lock lock(mutex_);
+        if (!isOpen_)
             return;
 
         table_[object->getHash()] = object;

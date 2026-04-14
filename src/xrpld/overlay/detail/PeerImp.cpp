@@ -15,10 +15,13 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -2557,11 +2560,47 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                 //             need to inject the NodeStore interfaces.
                 std::uint32_t const seq{obj.has_ledgerseq() ? obj.ledgerseq() : 0};
                 auto nodeObject{app_.getNodeStore().fetchNodeObject(hash, seq)};
+
+                void const* dataPtr = nullptr;
+                std::size_t dataSize = 0;
+                Blob treeBlob;
+
                 if (nodeObject)
+                {
+                    dataPtr = nodeObject->getData().data();
+                    dataSize = nodeObject->getData().size();
+                }
+                else if (auto treeNode = app_.getNodeFamily().getTreeNodeCache()->fetch(hash))
+                {
+                    // SHAMap tree node fallback — works for state/tx nodes
+                    // held via the retained Ledgers' SHAMap inner nodes.
+                    Serializer s;
+                    treeNode->serializeWithPrefix(s);
+                    treeBlob = std::move(s.modData());
+                    dataPtr = treeBlob.data();
+                    dataSize = treeBlob.size();
+                }
+                else if (packet.type() == protocol::TMGetObjectByHash::otLEDGER)
+                {
+                    // Ledger header fallback — look up by hash in the
+                    // in-memory ledger set and serialize the header in the
+                    // same wire format used by the node store.
+                    if (auto ledger = app_.getLedgerMaster().getLedgerByHash(hash))
+                    {
+                        Serializer s(sizeof(LedgerHeader) + 4);
+                        s.add32(HashPrefix::ledgerMaster);
+                        addRaw(ledger->header(), s);
+                        treeBlob = std::move(s.modData());
+                        dataPtr = treeBlob.data();
+                        dataSize = treeBlob.size();
+                    }
+                }
+
+                if (dataPtr)
                 {
                     protocol::TMIndexedObject& newObj = *reply.add_objects();
                     newObj.set_hash(hash.begin(), hash.size());
-                    newObj.set_data(&nodeObject->getData().front(), nodeObject->getData().size());
+                    newObj.set_data(dataPtr, dataSize);
 
                     if (obj.has_nodeid())
                         newObj.set_index(obj.nodeid());

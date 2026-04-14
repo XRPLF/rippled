@@ -34,6 +34,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
+#include <limits>
 #include <memory>
 #include <vector>
 
@@ -641,10 +642,11 @@ LedgerMaster::tryFill(std::shared_ptr<Ledger const> ledger)
             if (it == ledgerHashes.end())
                 break;
 
-            if (!nodeStore.fetchNodeObject(
-                    ledgerHashes.begin()->second.ledgerHash, ledgerHashes.begin()->first))
+            auto const& firstHash = ledgerHashes.begin()->second.ledgerHash;
+            if (!nodeStore.fetchNodeObject(firstHash, ledgerHashes.begin()->first) &&
+                !getLedgerByHash(firstHash))
             {
-                // The ledger is not backed by the node store
+                // Not in node store and not in memory — genuinely missing
                 JLOG(m_journal.warn())
                     << "SQL DB ledger sequence " << seq << " mismatches node store";
                 break;
@@ -802,6 +804,37 @@ LedgerMaster::setFullLedger(
     {
         std::lock_guard const ml(mCompleteLock);
         mCompleteLedgers.insert(ledger->header().seq);
+    }
+
+    // Pin a sliding window of recently validated current ledgers so their
+    // SHAMap state trees stay resident via shared_ptr.
+    if (isCurrent && ledger_history_ > 0)
+    {
+        std::lock_guard ml(m_mutex);
+        bool const isFirst = mRetainedLedgers.empty();
+        mRetainedLedgers.push_back(ledger);
+        while (mRetainedLedgers.size() > ledger_history_)
+            mRetainedLedgers.pop_front();
+
+        if (isFirst && !ledger->isFullyWired())
+        {
+            try
+            {
+                std::size_t leafCount = 0;
+                for (auto const& item : ledger->stateMap())
+                {
+                    (void)item;
+                    ++leafCount;
+                }
+                JLOG(m_journal.info()) << "Retention: primed state tree for ledger "
+                                       << ledger->header().seq << " (" << leafCount << " leaves)";
+            }
+            catch (SHAMapMissingNode const& e)
+            {
+                JLOG(m_journal.warn()) << "Retention: incomplete state tree for ledger "
+                                       << ledger->header().seq << ": " << e.what();
+            }
+        }
     }
 
     {
@@ -1545,6 +1578,12 @@ LedgerMaster::getCloseTimeBySeq(LedgerIndex ledgerIndex)
 std::optional<NetClock::time_point>
 LedgerMaster::getCloseTimeByHash(LedgerHash const& ledgerHash, std::uint32_t index)
 {
+    // Prefer an in-memory Ledger (retained / history cache) over the node
+    // store so this works in RWDB-only configs where headers may not be
+    // persisted long-term.
+    if (auto ledger = getLedgerByHash(ledgerHash))
+        return ledger->header().closeTime;
+
     auto nodeObject = app_.getNodeStore().fetchNodeObject(ledgerHash, index);
     if (nodeObject && (nodeObject->getData().size() >= 120))
     {
@@ -1685,6 +1724,82 @@ LedgerMaster::getLedgerByHash(uint256 const& hash)
         return ret;
 
     return {};
+}
+
+std::shared_ptr<Ledger const>
+LedgerMaster::getClosestFullyWiredLedger(std::shared_ptr<Ledger const> const& targetLedger)
+{
+    if (!targetLedger)
+        return {};
+
+    std::vector<std::shared_ptr<Ledger const>> candidates;
+    {
+        std::lock_guard lock(m_mutex);
+        candidates.reserve(mRetainedLedgers.size() + 3);
+        for (auto const& ledger : mRetainedLedgers)
+            candidates.push_back(ledger);
+        if (auto const closed = mClosedLedger.get())
+            candidates.push_back(closed);
+        if (auto const valid = mValidLedger.get())
+            candidates.push_back(valid);
+        if (mPubLedger)
+            candidates.push_back(mPubLedger);
+    }
+
+    auto const targetSeq = targetLedger->header().seq;
+    auto const targetHash = targetLedger->header().hash;
+
+    std::shared_ptr<Ledger const> best;
+    auto bestDistance = std::numeric_limits<std::uint32_t>::max();
+
+    for (auto const& candidate : candidates)
+    {
+        if (!candidate || !candidate->isFullyWired())
+            continue;
+
+        if (candidate->header().hash == targetHash)
+            continue;
+
+        bool sameChain = false;
+        try
+        {
+            if (candidate->header().seq < targetSeq)
+            {
+                if (auto const hash = hashOfSeq(*targetLedger, candidate->header().seq, m_journal);
+                    hash && *hash == candidate->header().hash)
+                {
+                    sameChain = true;
+                }
+            }
+            else if (candidate->header().seq > targetSeq)
+            {
+                if (auto const hash = hashOfSeq(*candidate, targetSeq, m_journal);
+                    hash && *hash == targetHash)
+                {
+                    sameChain = true;
+                }
+            }
+        }
+        catch (std::exception const&)
+        {
+            sameChain = false;
+        }
+
+        if (!sameChain)
+            continue;
+
+        auto const distance = candidate->header().seq < targetSeq
+            ? targetSeq - candidate->header().seq
+            : candidate->header().seq - targetSeq;
+
+        if (!best || distance < bestDistance)
+        {
+            best = candidate;
+            bestDistance = distance;
+        }
+    }
+
+    return best;
 }
 
 void

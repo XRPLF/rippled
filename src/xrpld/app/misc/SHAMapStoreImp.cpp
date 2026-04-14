@@ -94,6 +94,29 @@ SHAMapStoreImp::SHAMapStoreImp(
     get_if_exists(section, "online_delete", deleteInterval_);
     isMemoryBackend_ = boost::iequals(get(section, "type"), "rwdb");
 
+    // Allow null_backend to be set via config as well as env var.
+    // If the config key is present, propagate it to the environment so
+    // that libxrpl helpers (which cannot access Config) pick it up.
+    // This runs single-threaded during startup, before worker threads.
+    if (isMemoryBackend_ && section.exists("null_backend"))
+    {
+        auto const val = get(section, "null_backend");
+        if (val == "1" || boost::iequals(val, "true"))
+            ::setenv("XRPL_RWDB_NULL", "1", 1);
+    }
+
+    isNullBackend_ = isMemoryBackend_ && Config::null_backend();
+
+    if (isNullBackend_)
+    {
+        if (config.LEDGER_HISTORY == 0)
+        {
+            Throw<std::runtime_error>("RWDB null mode requires ledger_history > 0");
+        }
+        JLOG(journal_.info()) << "RWDB null mode: node store is ephemeral, "
+                              << "retaining " << config.LEDGER_HISTORY << " ledgers in memory";
+    }
+
     // For RWDB, default online_delete to ledger_history only if user did not
     // explicitly set online_delete.  Clamp to the minimum so an implicit
     // value never triggers the "online_delete must be at least …" throw.
@@ -288,17 +311,39 @@ SHAMapStoreImp::run()
             if (healthWait() == stopping)
                 return;
 
-            if (isMemoryBackend_)
+            if (isNullBackend_)
             {
-                // For RWDB: copy only the current validated ledger's live
-                // state nodes into a fresh backend that is not yet shared,
-                // avoiding both exclusive-lock contention on the live
-                // writable backend AND stale-node accumulation.
-                //
-                // copyArchiveTo would carry forward ALL archive entries
-                // (including stale nodes from older ledger versions that
-                // were promoted via fetch duplication), causing unbounded
-                // memory growth across rotation cycles.
+                // In null mode the backend never stores anything, so
+                // rotation is just bookkeeping: update lastRotated and
+                // clear old ledger caches.
+                JLOG(journal_.debug()) << "RWDB null: skipping rotation copy, updating "
+                                          "lastRotated to "
+                                       << validatedSeq;
+
+                clearCaches(validatedSeq);
+                lastRotated = validatedSeq;
+
+                auto newBackend = makeBackendRotating();
+                dbRotating_->rotate(
+                    std::move(newBackend),
+                    [&](std::string const& writableName, std::string const& archiveName) {
+                        SavedState savedState;
+                        savedState.writableDb = writableName;
+                        savedState.archiveDb = archiveName;
+                        savedState.lastRotated = lastRotated;
+                        state_db_.setState(savedState);
+                        clearCaches(validatedSeq);
+                    });
+
+                JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
+            }
+            else if (isMemoryBackend_)
+            {
+                // For RWDB (non-null): copy only the current validated
+                // ledger's live state nodes into a fresh backend that is
+                // not yet shared, avoiding both exclusive-lock contention
+                // on the live writable backend AND stale-node
+                // accumulation.
                 JLOG(journal_.debug()) << "RWDB: copying live state for rotation";
                 auto newBackend = makeBackendRotating();
                 std::uint64_t nodeCount = 0;
@@ -309,9 +354,6 @@ SHAMapStoreImp::run()
                     validatedLedger->stateMap().snapShot(false)->visitNodes(
                         [&](SHAMapTreeNode& node) -> bool {
                             auto const hash = node.getHash().as_uint256();
-                            // Fetch the NodeObject from the rotating DB
-                            // (checks writable then archive) and store it
-                            // directly in the new unshared backend.
                             auto obj = dbRotating_->fetchNodeObject(
                                 hash, 0, NodeStore::FetchType::synchronous, false);
                             if (obj)
@@ -331,15 +373,13 @@ SHAMapStoreImp::run()
                 catch (SHAMapMissingNode const& e)
                 {
                     JLOG(journal_.error())
-                        << "Missing node while copying state before rotate: "
-                        << e.what();
+                        << "Missing node while copying state before rotate: " << e.what();
                     continue;
                 }
 
                 if (aborted)
                     return;
-                JLOG(journal_.debug())
-                    << "RWDB: copied " << nodeCount << " live nodes";
+                JLOG(journal_.debug()) << "RWDB: copied " << nodeCount << " live nodes";
 
                 clearCaches(validatedSeq);
                 lastRotated = validatedSeq;

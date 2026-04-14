@@ -1545,9 +1545,10 @@ r.ripple.com:51235
         {
             Config c;
             c.setupControl(true, true, true);
-            std::string const toLoad = "[node_db]\n"
-                                       "type=rwdb\n"
-                                       "path=main\n";
+            std::string const toLoad =
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n";
             try
             {
                 c.loadFromString(toLoad);
@@ -1559,34 +1560,34 @@ r.ripple.com:51235
             }
         }
 
+        // RWDB without online_delete is now allowed; SHAMapStoreImp
+        // defaults it to ledger_history.
         {
             Config c;
             c.setupControl(true, true, false);
-            std::string const toLoad = "[node_db]\n"
-                                       "type=rwdb\n"
-                                       "path=main\n";
+            std::string const toLoad =
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n";
             try
             {
                 c.loadFromString(toLoad);
-                fail("Expected exception for RWDB without online_delete");
-            }
-            catch (std::runtime_error const& e)
-            {
-                BEAST_EXPECT(
-                    std::string(e.what()).find(
-                        "RWDB (in-memory backend) requires online_delete") !=
-                    std::string::npos);
                 pass();
+            }
+            catch (std::runtime_error const&)
+            {
+                fail("Should not throw for RWDB without online_delete");
             }
         }
 
         {
             Config c;
             c.setupControl(true, true, false);
-            std::string const toLoad = "[node_db]\n"
-                                       "type=rwdb\n"
-                                       "path=main\n"
-                                       "online_delete=256\n";
+            std::string const toLoad =
+                "[node_db]\n"
+                "type=rwdb\n"
+                "path=main\n"
+                "online_delete=256\n";
             try
             {
                 c.loadFromString(toLoad);
@@ -1601,9 +1602,10 @@ r.ripple.com:51235
         {
             Config c;
             c.setupControl(true, true, false);
-            std::string const toLoad = "[node_db]\n"
-                                       "type=nudb\n"
-                                       "path=main\n";
+            std::string const toLoad =
+                "[node_db]\n"
+                "type=nudb\n"
+                "path=main\n";
             try
             {
                 c.loadFromString(toLoad);

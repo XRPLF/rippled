@@ -1,8 +1,10 @@
 #pragma once
 
+#include <xrpl/basics/ReaderPreferringSharedMutex.h>
 #include <xrpl/nodestore/DatabaseRotating.h>
 
 #include <mutex>
+#include <shared_mutex>
 
 namespace xrpl {
 namespace NodeStore {
@@ -27,9 +29,6 @@ public:
     {
         stop();
     }
-
-    void
-    copyArchiveTo(Backend& dest) override;
 
     void
     rotate(
@@ -62,7 +61,7 @@ public:
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
-    mutable std::mutex mutex_;
+    mutable reader_preferring_shared_mutex mutex_;
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(uint256 const& hash, std::uint32_t, FetchReport& fetchReport, bool duplicate)

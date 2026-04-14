@@ -106,10 +106,16 @@ loadLedgerHelper(
 }
 
 static void
-finishLoadByIndexOrHash(std::shared_ptr<Ledger> const& ledger, beast::Journal j)
+finishLoadByIndexOrHash(std::shared_ptr<Ledger>& ledger, beast::Journal j)
 {
     if (!ledger)
         return;
+
+    if (!ledger->fullWireForUse(j, "finishLoadByIndexOrHash"))
+    {
+        ledger.reset();
+        return;
+    }
 
     XRPL_ASSERT(
         ledger->header().seq < XRP_LEDGER_EARLIEST_FEES || ledger->read(keylet::fees()),
@@ -127,7 +133,12 @@ getLatestLedger(Rules const& rules, Fees const& fees, ServiceRegistry& registry)
     std::optional<LedgerHeader> const info = registry.getRelationalDatabase().getNewestLedgerInfo();
     if (!info)
         return {std::shared_ptr<Ledger>(), {}, {}};
-    return {loadLedgerHelper(*info, rules, fees, registry, true), info->seq, info->hash};
+    auto ledger = loadLedgerHelper(*info, rules, fees, registry, true);
+    if (ledger && !ledger->fullWireForUse(registry.getJournal("Ledger"), "getLatestLedger"))
+    {
+        ledger.reset();
+    }
+    return {ledger, info->seq, info->hash};
 }
 
 std::shared_ptr<Ledger>

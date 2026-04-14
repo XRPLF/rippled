@@ -12,12 +12,42 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdlib>
+#include <string_view>
 #include <utility>
 #include <vector>
 
 namespace xrpl {
 
 create_genesis_t const create_genesis{};
+
+namespace {
+
+// Local mirror — libxrpl cannot depend on xrpld.core.Config.
+bool
+isNullBackend()
+{
+    static bool const v = [] {
+        char const* e = std::getenv("XRPL_RWDB_NULL");
+        return e && *e && std::string_view{e} != "0";
+    }();
+    return v;
+}
+
+template <class Map>
+std::size_t
+wireCompleteSHAMap(Map const& map)
+{
+    std::size_t leaves = 0;
+    for (auto const& item : map)
+    {
+        (void)item;
+        ++leaves;
+    }
+    return leaves;
+}
+
+}  // namespace
 
 //------------------------------------------------------------------------------
 
@@ -174,6 +204,7 @@ Ledger::Ledger(
 
     stateMap_.flushDirty(hotACCOUNT_NODE);
     setImmutable();
+    setFullyWired();
 }
 
 Ledger::Ledger(
@@ -224,6 +255,7 @@ Ledger::Ledger(
 // Create a new ledger that follows this one
 Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     : mImmutable(false)
+    , fullyWired_(prevLedger.isFullyWired())
     , txMap_(SHAMapType::TRANSACTION, prevLedger.txMap_.family())
     , stateMap_(prevLedger.stateMap_, true)
     , fees_(prevLedger.fees_)
@@ -297,6 +329,29 @@ Ledger::setImmutable(bool rehash)
     txMap_.setImmutable();
     stateMap_.setImmutable();
     setup();
+}
+
+bool
+Ledger::fullWireForUse(beast::Journal journal, char const* context) const
+{
+    if (!isNullBackend() || isFullyWired())
+        return true;
+
+    try
+    {
+        auto const stateLeaves = wireCompleteSHAMap(stateMap_);
+        auto const txLeaves = wireCompleteSHAMap(txMap_);
+        setFullyWired();
+        JLOG(journal.info()) << context << ": fully wired ledger " << header_.seq << " ("
+                             << stateLeaves << " state leaves, " << txLeaves << " tx leaves)";
+        return true;
+    }
+    catch (SHAMapMissingNode const& e)
+    {
+        JLOG(journal.warn()) << context << ": incomplete ledger " << header_.seq << ": "
+                             << e.what();
+        return false;
+    }
 }
 
 void
