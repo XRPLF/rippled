@@ -716,8 +716,8 @@ public:
                 {
                     auto const nodeObject = ns.fetchNodeObject(hash);
                     std::stringstream ss;
-                    ss << "minSeq: " << minSeq << ", maxSeq: " << maxSeq << ", search: " << seq << ". Should "
-                       << (seq < minSeq ? "NOT " : "") << "be found";
+                    ss << "minSeq: " << minSeq << ", maxSeq: " << maxSeq << ", search: " << seq
+                       << ". Should " << (seq < minSeq ? "NOT " : "") << "be found";
                     if (seq < minSeq)
                         BEAST_EXPECTS(!nodeObject, ss.str());
                     else
