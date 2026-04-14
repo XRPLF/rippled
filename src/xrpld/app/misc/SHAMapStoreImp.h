@@ -80,7 +80,6 @@ private:
 
     std::uint32_t deleteInterval_ = 0;
     bool advisoryDelete_ = false;
-    bool isMemoryBackend_ = false;
     bool isNullBackend_ = false;
     std::uint32_t deleteBatch_ = 100;
     std::chrono::milliseconds backOff_{100};

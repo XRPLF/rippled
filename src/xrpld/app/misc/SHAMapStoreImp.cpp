@@ -92,20 +92,13 @@ SHAMapStoreImp::SHAMapStoreImp(
     }
 
     get_if_exists(section, "online_delete", deleteInterval_);
-    isMemoryBackend_ = boost::iequals(get(section, "type"), "rwdb");
+    isNullBackend_ = boost::iequals(get(section, "type"), "rwdb");
 
-    // Allow null_backend to be set via config as well as env var.
-    // If the config key is present, propagate it to the environment so
-    // that libxrpl helpers (which cannot access Config) pick it up.
-    // This runs single-threaded during startup, before worker threads.
-    if (isMemoryBackend_ && section.exists("null_backend"))
-    {
-        auto const val = get(section, "null_backend");
-        if (val == "1" || boost::iequals(val, "true"))
-            ::setenv("XRPL_RWDB_NULL", "1", 1);
-    }
-
-    isNullBackend_ = isMemoryBackend_ && Config::null_backend();
+    // RWDB is always null-backend: the in-memory node store never
+    // persists or retrieves objects.  Set the env var so that libxrpl
+    // helpers (which cannot access Config) can detect null mode.
+    if (isNullBackend_)
+        ::setenv("XRPL_RWDB_NULL", "1", 1);
 
     if (isNullBackend_)
     {
@@ -120,7 +113,7 @@ SHAMapStoreImp::SHAMapStoreImp(
     // For RWDB, default online_delete to ledger_history only if user did not
     // explicitly set online_delete.  Clamp to the minimum so an implicit
     // value never triggers the "online_delete must be at least …" throw.
-    if (isMemoryBackend_ && deleteInterval_ == 0)
+    if (isNullBackend_ && deleteInterval_ == 0)
     {
         auto const minInterval =
             config.standalone() ? minimumDeletionIntervalSA_ : minimumDeletionInterval_;
@@ -162,7 +155,7 @@ SHAMapStoreImp::SHAMapStoreImp(
         }
 
         state_db_.init(config, dbName_);
-        if (!isMemoryBackend_)
+        if (!isNullBackend_)
             dbPaths();
     }
 }
@@ -339,66 +332,6 @@ SHAMapStoreImp::run()
                 state_db_.setLastRotated(lastRotated);
 
                 JLOG(journal_.warn()) << "finished null-mode cleanup " << validatedSeq;
-            }
-            else if (isMemoryBackend_)
-            {
-                // For RWDB (non-null): copy only the current validated
-                // ledger's live state nodes into a fresh backend that is
-                // not yet shared, avoiding both exclusive-lock contention
-                // on the live writable backend AND stale-node
-                // accumulation.
-                JLOG(journal_.debug()) << "RWDB: copying live state for rotation";
-                auto newBackend = makeBackendRotating();
-                std::uint64_t nodeCount = 0;
-                bool aborted = false;
-
-                try
-                {
-                    validatedLedger->stateMap().snapShot(false)->visitNodes(
-                        [&](SHAMapTreeNode& node) -> bool {
-                            auto const hash = node.getHash().as_uint256();
-                            auto obj = dbRotating_->fetchNodeObject(
-                                hash, 0, NodeStore::FetchType::synchronous, false);
-                            if (obj)
-                                newBackend->store(obj);
-
-                            if ((++nodeCount % checkHealthInterval_) == 0)
-                            {
-                                if (healthWait() == stopping)
-                                {
-                                    aborted = true;
-                                    return false;
-                                }
-                            }
-                            return true;
-                        });
-                }
-                catch (SHAMapMissingNode const& e)
-                {
-                    JLOG(journal_.error())
-                        << "Missing node while copying state before rotate: " << e.what();
-                    continue;
-                }
-
-                if (aborted)
-                    return;
-                JLOG(journal_.debug()) << "RWDB: copied " << nodeCount << " live nodes";
-
-                clearCaches(validatedSeq);
-                lastRotated = validatedSeq;
-
-                dbRotating_->rotate(
-                    std::move(newBackend),
-                    [&](std::string const& writableName, std::string const& archiveName) {
-                        SavedState savedState;
-                        savedState.writableDb = writableName;
-                        savedState.archiveDb = archiveName;
-                        savedState.lastRotated = lastRotated;
-                        state_db_.setState(savedState);
-                        clearCaches(validatedSeq);
-                    });
-
-                JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
             }
             else
             {
