@@ -65,6 +65,9 @@ class ValidMPTTransfer
     };
     // MPTID: {holder: Value}
     hash_map<uint192, hash_map<AccountID, Value>> amount_;
+    // Deleted MPToken
+    // MPToken key: true if MPTAuthorized is set
+    hash_map<uint256, bool> deletedAuthorized_;
 
 public:
     void
@@ -72,6 +75,23 @@ public:
 
     bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+
+private:
+    /**
+     * @brief Check whether a holder is authorized to send or receive an MPToken.
+     *
+     * Deleted MPToken SLEs are no longer present in the view by the time
+     * finalize() runs, so their authorization state is captured during
+     * visitEntry() and stored in deletedAuthorized_. For deleted MPTokens,
+     * returns true if reqAuth is false or lsfMPTAuthorized was set at deletion.
+     * For existing MPTokens, returns the result of requireAuth()
+     */
+    bool
+    isAuthorized(
+        ReadView const& view,
+        MPTID const& mptid,
+        AccountID const& holder,
+        bool requireAuth) const;
 };
 
 }  // namespace xrpl

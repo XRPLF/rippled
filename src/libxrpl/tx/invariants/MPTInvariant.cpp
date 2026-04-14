@@ -371,7 +371,7 @@ ValidMPTPayment::finalize(
 
 void
 ValidMPTTransfer::visitEntry(
-    bool,
+    bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
@@ -391,6 +391,10 @@ ValidMPTTransfer::visitEntry(
             {
                 amount_[issuanceID][account].amtAfter = amount;
             }
+            if (isDelete && isBefore)
+            {
+                deletedAuthorized_[sle.key()] = sle.isFlag(lsfMPTAuthorized);
+            }
         }
     };
 
@@ -402,6 +406,20 @@ ValidMPTTransfer::visitEntry(
 }
 
 bool
+ValidMPTTransfer::isAuthorized(
+    ReadView const& view,
+    MPTID const& mptid,
+    AccountID const& holder,
+    bool reqAuth) const
+{
+    auto const key = keylet::mptoken(mptid, holder);
+    auto const it = deletedAuthorized_.find(key.key);
+    if (it != deletedAuthorized_.end())
+        return !reqAuth || it->second;
+    return isTesSuccess(requireAuth(view, MPTIssue{mptid}, holder));
+}
+
+bool
 ValidMPTTransfer::finalize(
     STTx const& tx,
     TER const,
@@ -409,7 +427,6 @@ ValidMPTTransfer::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    // AMMClawback is called by the issuer, so freeze restrictions do not apply.
     if (hasPrivilege(tx, overrideFreeze))
         return true;
 
@@ -437,8 +454,7 @@ ValidMPTTransfer::finalize(
     {
         std::uint16_t senders = 0;
         std::uint16_t receivers = 0;
-        bool frozen = false;
-        bool reqAuth = false;
+        bool invalidTransfer = false;
         auto const sleIssuance = view.read(keylet::mptIssuance(mptID));
         if (!sleIssuance)
         {
@@ -447,6 +463,7 @@ ValidMPTTransfer::finalize(
 
         auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer);
         auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
+        auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
 
         for (auto const& [account, value] : values)
         {
@@ -458,10 +475,6 @@ ValidMPTTransfer::finalize(
                 if (!value.amtBefore.has_value() || *value.amtAfter > *value.amtBefore)
                 {
                     ++receivers;
-                    if (!reqAuth && !isTesSuccess(requireAuth(view, MPTIssue{mptID}, account)))
-                    {
-                        reqAuth = true;
-                    }
                 }
                 else
                 {
@@ -471,17 +484,19 @@ ValidMPTTransfer::finalize(
                 // Check once: if any involved account is frozen, the whole
                 // issuance transfer is considered frozen. Only need to check for
                 // frozen if there is a transfer of funds.
-                if (!frozen && isFrozen(view, account, MPTIssue{mptID}))
+                if (!invalidTransfer &&
+                    (isFrozen(view, account, MPTIssue{mptID}) ||
+                     !isAuthorized(view, mptID, account, reqAuth)))
                 {
-                    frozen = true;
+                    invalidTransfer = true;
                 }
             }
         }
         // A transfer between holders has occurred (senders > 0 && receivers > 0).
         // Fail if the issuance is frozen, does not permit transfers, or — for
         // DEX transactions — does not permit trading.
-        if (((frozen || !canTransfer || (isDEX && !canTrade)) && senders > 0 && receivers > 0) ||
-            reqAuth)
+        if ((invalidTransfer || !canTransfer || (isDEX && !canTrade)) && senders > 0 &&
+            receivers > 0)
         {
             JLOG(j.fatal()) << "Invariant failed: invalid MPToken transfer between holders";
             return enforce;
