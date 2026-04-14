@@ -5,14 +5,13 @@
 #include <xrpld/app/misc/TxQ.h>
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
 #include <source_location>
 #include <vector>
@@ -402,6 +401,9 @@ equal(STAmount const& sa1, STAmount const& sa2);
 STPathElement
 IPE(Issue const& iss);
 
+STPathElement
+IPE(MPTIssue const& iss);
+
 template <class... Args>
 STPath
 stpath(Args const&... args)
@@ -427,6 +429,79 @@ same(STPathSet const& st1, Args const&... args)
     }
     return true;
 }
+
+Json::Value
+rpf(jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& dstAmount,
+    std::optional<STAmount> const& sendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt);
+
+jtx::Env
+pathTestEnv(beast::unit_test::suite& suite);
+
+class gate
+{
+private:
+    std::condition_variable cv_;
+    std::mutex mutex_;
+    bool signaled_ = false;
+
+public:
+    // Thread safe, blocks until signaled or period expires.
+    // Returns `true` if signaled.
+    template <class Rep, class Period>
+    bool
+    wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+    {
+        std::unique_lock<std::mutex> lk(mutex_);
+        auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+        signaled_ = false;
+        return b;
+    }
+
+    void
+    signal()
+    {
+        std::lock_guard const lk(mutex_);
+        signaled_ = true;
+        cv_.notify_all();
+    }
+};
+
+Json::Value
+find_paths_request(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
+std::tuple<STPathSet, STAmount, STAmount>
+find_paths(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
+
+std::tuple<STPathSet, STAmount, STAmount>
+find_paths_by_element(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<STPathElement> const& srcElement = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt,
+    std::optional<uint256> const& domain = std::nullopt);
 
 /******************************************************************************/
 
@@ -454,6 +529,9 @@ bool
 expectHolding(Env& env, AccountID const& account, None const& value);
 
 bool
+expectMPT(Env& env, AccountID const& account, STAmount const& value);
+
+bool
 expectOffers(
     Env& env,
     AccountID const& account,
@@ -469,6 +547,15 @@ ledgerEntryState(
     Account const& acct_a,
     Account const& acct_b,
     std::string const& currency);
+
+Json::Value
+ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offer_seq);
+
+Json::Value
+ledgerEntryMPT(jtx::Env& env, jtx::Account const& acct, MPTID const& mptID);
+
+Json::Value
+getBookOffers(jtx::Env& env, Asset const& taker_pays, Asset const& taker_gets);
 
 Json::Value
 accountBalance(Env& env, Account const& acct);
@@ -545,13 +632,85 @@ n_offers(Env& env, std::size_t n, Account const& account, STAmount const& in, ST
 /* Pay Strand */
 /***************************************************************/
 
-// Currency path element
+struct DirectStepInfo
+{
+    AccountID src;
+    AccountID dst;
+    Currency currency;
+};
+
+struct MPTEndpointStepInfo
+{
+    AccountID src;
+    AccountID dst;
+    MPTID mptid;
+};
+
+struct XRPEndpointStepInfo
+{
+    AccountID acc;
+};
+
+// Currency/MPTID path element
 STPathElement
-cpe(Currency const& c);
+cpe(PathAsset const& pa);
+
+// Currency/MPTID and issuer path element
+STPathElement
+ipe(Asset const& asset);
+
+// Issuer path element
+STPathElement
+iape(AccountID const& account);
+
+// Account path element
+STPathElement
+ape(AccountID const& a);
 
 // All path element
 STPathElement
-allPathElements(AccountID const& a, Issue const& iss);
+allPathElements(AccountID const& a, Asset const& asset);
+
+bool
+equal(std::unique_ptr<Step> const& s1, DirectStepInfo const& dsi);
+
+bool
+equal(std::unique_ptr<Step> const& s1, MPTEndpointStepInfo const& dsi);
+
+bool
+equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpStepInfo);
+
+bool
+equal(std::unique_ptr<Step> const& s1, xrpl::Book const& bsi);
+
+template <class Iter>
+bool
+strandEqualHelper(Iter i)
+{
+    // base case. all args processed and found equal.
+    return true;
+}
+
+template <class Iter, class StepInfo, class... Args>
+bool
+strandEqualHelper(Iter i, StepInfo&& si, Args&&... args)
+{
+    if (!jtx::equal(*i, std::forward<StepInfo>(si)))
+        return false;
+    return strandEqualHelper(++i, std::forward<Args>(args)...);
+}
+
+template <class... Args>
+bool
+equal(Strand const& strand, Args&&... args)
+{
+    if (strand.size() != sizeof...(Args))
+        return false;
+    if (strand.empty())
+        return true;
+    return strandEqualHelper(strand.begin(), std::forward<Args>(args)...);
+}
+
 /***************************************************************/
 
 /* Check */
@@ -582,6 +741,12 @@ create(jtx::Account const& account, jtx::Account const& dest, STAmount const& se
 
 static constexpr FeeLevel64 baseFeeLevel{TxQ::baseLevel};
 static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
+
+inline uint256
+getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+{
+    return keylet::check(account, uSequence).key;
+}
 
 template <class Suite>
 void
@@ -769,6 +934,106 @@ pay(AccountID const& account,
     std::uint32_t flags = 0);
 
 }  // namespace loan
+
+/** Set Expiration on a JTx. */
+class expiration
+{
+private:
+    std::uint32_t const expiry_;
+
+public:
+    explicit expiration(NetClock::time_point const& expiry)
+        : expiry_{expiry.time_since_epoch().count()}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfExpiration.jsonName] = expiry_;
+    }
+};
+
+/** Set SourceTag on a JTx. */
+class source_tag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit source_tag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfSourceTag.jsonName] = tag_;
+    }
+};
+
+/** Set DestinationTag on a JTx. */
+class dest_tag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit dest_tag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfDestinationTag.jsonName] = tag_;
+    }
+};
+
+struct IssuerArgs
+{
+    jtx::Env& env;
+    // 3-letter currency if Issue, ignored if MPT
+    std::string token = "";
+    jtx::Account issuer;
+    std::vector<jtx::Account> holders = {};
+    // trust-limit if Issue, maxAmount if MPT
+    std::optional<std::uint64_t> limit = std::nullopt;
+    // 0-50'000 (0-50%)
+    std::uint16_t transferFee = 0;
+};
+
+namespace detail {
+
+IOU
+issueHelperIOU(IssuerArgs const& args);
+
+MPT
+issueHelperMPT(IssuerArgs const& args);
+
+}  // namespace detail
+
+template <typename TTester>
+void
+testHelper2TokensMix(TTester&& tester)
+{
+    tester(detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU);
+}
+
+template <typename TTester>
+void
+testHelper3TokensMix(TTester&& tester)
+{
+    tester(detail::issueHelperMPT, detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperMPT, detail::issueHelperIOU);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU, detail::issueHelperMPT);
+    tester(detail::issueHelperMPT, detail::issueHelperIOU, detail::issueHelperIOU);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT, detail::issueHelperMPT);
+    tester(detail::issueHelperIOU, detail::issueHelperMPT, detail::issueHelperIOU);
+    tester(detail::issueHelperIOU, detail::issueHelperIOU, detail::issueHelperMPT);
+}
 
 }  // namespace jtx
 }  // namespace test

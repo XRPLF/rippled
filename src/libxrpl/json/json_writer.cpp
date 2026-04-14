@@ -252,7 +252,7 @@ FastWriter::writeValue(Value const& value)
 // Class StyledWriter
 // //////////////////////////////////////////////////////////////////
 
-StyledWriter::StyledWriter() : rightMargin_(74), indentSize_(3)
+StyledWriter::StyledWriter()
 {
 }
 
@@ -486,8 +486,7 @@ StyledWriter::unindent()
 // Class StyledStreamWriter
 // //////////////////////////////////////////////////////////////////
 
-StyledStreamWriter::StyledStreamWriter(std::string indentation)
-    : document_(nullptr), rightMargin_(74), indentation_(indentation)
+StyledStreamWriter::StyledStreamWriter(std::string indentation) : indentation_(indentation)
 {
 }
 

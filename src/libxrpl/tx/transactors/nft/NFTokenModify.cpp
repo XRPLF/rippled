@@ -1,7 +1,7 @@
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/nft/NFTokenModify.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 

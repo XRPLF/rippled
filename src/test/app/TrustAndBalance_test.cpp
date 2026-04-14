@@ -358,8 +358,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         {
             env.require(balance(
                 alice,
-                STAmount(
-                    carol["USD"].issue(), 6500000000000000ull, -14, true, STAmount::unchecked{})));
+                STAmount(carol["USD"], 6500000000000000ull, -14, true, STAmount::unchecked{})));
             env.require(balance(carol, gw["USD"](35)));
         }
         else

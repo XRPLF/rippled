@@ -179,13 +179,25 @@ private:
     // because the trust line was created after the XRP was removed.)
     // Return how much the reserve should be reduced.
     //
-    // Note that reduced reserve only happens if the trust line does not
+    // Note that reduced reserve only happens if the trust line or MPT does not
     // currently exist.
     static std::int32_t
     computeReserveReduction(StrandContext const& ctx, AccountID const& acc)
     {
-        if (ctx.isFirst && !ctx.view.read(keylet::line(acc, ctx.strandDeliver)))
-            return -1;
+        if (ctx.isFirst)
+        {
+            return ctx.strandDeliver.visit(
+                [&](Issue const& issue) {
+                    if (!ctx.view.exists(keylet::line(acc, issue)))
+                        return -1;
+                    return 0;
+                },
+                [&](MPTIssue const& issue) {
+                    if (!ctx.view.exists(keylet::mptoken(issue.getMptID(), acc)))
+                        return -1;
+                    return 0;
+                });
+        }
         return 0;
     }
 
@@ -283,9 +295,9 @@ XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
         return {false, EitherAmount(XRPAmount(beast::zero))};
     }
 
-    XRPL_ASSERT(in.native, "xrpl::XRPEndpointStep::validFwd : input is XRP");
+    XRPL_ASSERT(in.holds<XRPAmount>(), "xrpl::XRPEndpointStep::validFwd : input is XRP");
 
-    auto const& xrpIn = in.xrp;
+    auto const& xrpIn = in.get<XRPAmount>();
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     if (!isLast_ && balance < xrpIn)
@@ -336,7 +348,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return ter;
 
     auto const issuesIndex = isLast_ ? 0 : 1;
-    if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
+    if (!ctx.seenDirectAssets[issuesIndex].insert(xrpIssue()).second)
     {
         JLOG(j_.debug()) << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize << ' '
                          << *this;

@@ -55,7 +55,7 @@ clang --version
 ### Install Xcode Specific Version (Optional)
 
 If you develop other applications using XCode you might be consistently updating to the newest version of Apple Clang.
-This will likely cause issues building rippled. You may want to install a specific version of Xcode:
+This will likely cause issues building xrpld. You may want to install a specific version of Xcode:
 
 1. **Download Xcode**
    - Visit [Apple Developer Downloads](https://developer.apple.com/download/more/)

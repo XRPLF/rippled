@@ -44,7 +44,7 @@ private:
 
         async_op(Checker& owner, boost::asio::io_context& io_context, Handler&& handler);
 
-        ~async_op();
+        virtual ~async_op();
 
         void
         stop() override;
@@ -108,7 +108,7 @@ template <class Handler>
 Checker<Protocol>::async_op<Handler>::async_op(
     Checker& owner,
     boost::asio::io_context& io_context,
-    Handler&& handler)
+    Handler&& handler)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     : checker_(owner), socket_(io_context), handler_(std::forward<Handler>(handler))
 {
 }
