@@ -1,7 +1,8 @@
+#include <xrpl/net/HTTPClient.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/net/HTTPClient.h>
 
 #include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>  // IWYU pragma: keep

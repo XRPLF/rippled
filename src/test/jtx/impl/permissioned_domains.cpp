@@ -1,6 +1,7 @@
+#include <test/jtx/permissioned_domains.h>
+
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/permissioned_domains.h>
 
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>

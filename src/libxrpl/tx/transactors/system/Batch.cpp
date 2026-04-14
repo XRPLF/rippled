@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/system/Batch.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -15,7 +17,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/transactors/system/Batch.h>
 
 #include <algorithm>
 #include <bit>

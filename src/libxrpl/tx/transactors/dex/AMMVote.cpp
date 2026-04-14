@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/dex/AMMVote.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -14,7 +16,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/dex/AMMVote.h>
 
 #include <cstddef>
 #include <cstdint>

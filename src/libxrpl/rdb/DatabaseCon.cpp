@@ -1,6 +1,7 @@
+#include <xrpl/rdb/DatabaseCon.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
 #include <chrono>

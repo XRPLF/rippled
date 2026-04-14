@@ -1,6 +1,7 @@
+#include <xrpld/peerfinder/detail/SlotImp.h>
+
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/container/detail/aged_unordered_container.h>

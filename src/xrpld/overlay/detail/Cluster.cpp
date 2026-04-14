@@ -1,4 +1,5 @@
 #include <xrpld/overlay/Cluster.h>
+
 #include <xrpld/overlay/ClusterNode.h>
 
 #include <xrpl/basics/BasicConfig.h>

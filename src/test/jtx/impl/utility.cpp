@@ -1,5 +1,6 @@
-#include <test/jtx/Account.h>
 #include <test/jtx/utility.h>
+
+#include <test/jtx/Account.h>
 
 #include <xrpld/rpc/RPCCall.h>
 

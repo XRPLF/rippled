@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/check/CheckCash.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -24,7 +26,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/check/CheckCash.h>
 
 #include <algorithm>
 #include <cstdint>

@@ -1,6 +1,7 @@
+#include <xrpld/rpc/detail/Pathfinder.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/AssetCache.h>
-#include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
 #include <xrpld/rpc/detail/TrustLine.h>

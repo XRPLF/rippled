@@ -1,6 +1,7 @@
+#include <xrpl/basics/ResolverAsio.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
-#include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>

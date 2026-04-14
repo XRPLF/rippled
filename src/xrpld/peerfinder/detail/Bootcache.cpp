@@ -1,5 +1,6 @@
-#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Bootcache.h>
+
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Store.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 #include <xrpld/peerfinder/detail/iosformat.h>

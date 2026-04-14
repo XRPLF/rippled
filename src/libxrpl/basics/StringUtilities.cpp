@@ -1,5 +1,6 @@
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/StringUtilities.h>
+
+#include <xrpl/basics/Blob.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 

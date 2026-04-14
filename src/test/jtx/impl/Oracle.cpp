@@ -1,5 +1,6 @@
-#include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
+
+#include <test/jtx/Env.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/ter.h>

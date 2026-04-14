@@ -1,6 +1,7 @@
+#include <test/jtx/invoice_id.h>
+
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/invoice_id.h>
 
 #include <xrpl/basics/strHex.h>
 

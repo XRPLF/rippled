@@ -1,5 +1,6 @@
-#include <test/jtx/Env.h>
 #include <test/jtx/directory.h>
+
+#include <test/jtx/Env.h>
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/base_uint.h>

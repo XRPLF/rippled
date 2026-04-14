@@ -1,7 +1,8 @@
+#include <xrpl/protocol/BuildInfo.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/SystemParameters.h>
 
 #include <algorithm>

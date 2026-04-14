@@ -1,7 +1,8 @@
+#include <test/jtx/batch.h>
+
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/batch.h>
 #include <test/jtx/utility.h>
 
 #include <xrpl/basics/Number.h>

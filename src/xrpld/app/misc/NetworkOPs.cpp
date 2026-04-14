@@ -1,3 +1,5 @@
+#include <xrpl/server/NetworkOPs.h>
+
 #include <xrpld/app/consensus/RCLConsensus.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
@@ -111,7 +113,6 @@
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/Manifest.h>
-#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/tx/apply.h>
 

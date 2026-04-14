@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -14,7 +16,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
 
 #include <cstdint>
 #include <memory>

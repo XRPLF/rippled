@@ -1,6 +1,7 @@
+#include <test/jtx/jtx_json.h>
+
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/jtx_json.h>
 #include <test/jtx/utility.h>
 
 #include <xrpl/basics/contract.h>

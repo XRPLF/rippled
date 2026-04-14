@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/dex/OfferCreate.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -39,7 +41,6 @@
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/dex/OfferCreate.h>
 
 #include <algorithm>
 #include <cstdint>

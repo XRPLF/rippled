@@ -1,6 +1,7 @@
+#include <xrpld/rpc/detail/Handler.h>
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/ledger/Ledger.h>
 #include <xrpld/rpc/handlers/server_info/Version.h>

@@ -1,5 +1,6 @@
-#include <test/jtx/Account.h>
 #include <test/jtx/check.h>
+
+#include <test/jtx/Account.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>

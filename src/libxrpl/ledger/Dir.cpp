@@ -1,6 +1,7 @@
+#include <xrpl/ledger/Dir.h>
+
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>

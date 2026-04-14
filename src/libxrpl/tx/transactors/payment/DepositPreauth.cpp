@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/payment/DepositPreauth.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -15,7 +17,6 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/payment/DepositPreauth.h>
 
 #include <cstdint>
 #include <memory>

@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -8,7 +10,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <cstdint>
 #include <memory>

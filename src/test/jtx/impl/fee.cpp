@@ -1,6 +1,7 @@
+#include <test/jtx/fee.h>
+
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/fee.h>
 
 #include <xrpl/protocol/SField.h>
 

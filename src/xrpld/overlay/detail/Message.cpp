@@ -1,5 +1,6 @@
-#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
+
+#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
 #include <xrpl/beast/utility/instrumentation.h>

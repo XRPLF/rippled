@@ -1,6 +1,7 @@
+#include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
-#include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Blob.h>

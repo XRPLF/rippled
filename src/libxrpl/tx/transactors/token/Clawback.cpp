@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/token/Clawback.h>
+
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -16,7 +18,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/token/Clawback.h>
 
 #include <algorithm>
 #include <cstdint>

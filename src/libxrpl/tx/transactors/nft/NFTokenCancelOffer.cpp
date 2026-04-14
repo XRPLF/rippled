@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/nft/NFTokenCancelOffer.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/View.h>
@@ -9,7 +11,6 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/nft/NFTokenCancelOffer.h>
 
 #include <algorithm>
 

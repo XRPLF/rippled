@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/nft/NFTokenModify.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -7,7 +9,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/nft/NFTokenModify.h>
 
 namespace xrpl {
 

@@ -1,8 +1,9 @@
+#include <test/jtx/token.h>
+
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
 #include <test/jtx/flags.h>
-#include <test/jtx/token.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>

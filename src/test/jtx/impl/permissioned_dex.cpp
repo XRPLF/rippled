@@ -1,10 +1,11 @@
 
+#include <test/jtx/permissioned_dex.h>
+
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/permissioned_dex.h>
 #include <test/jtx/permissioned_domains.h>
 
 #include <xrpl/basics/base_uint.h>

@@ -1,3 +1,5 @@
+#include <xrpl/nodestore/Database.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,7 +10,6 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Backend.h>
-#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>

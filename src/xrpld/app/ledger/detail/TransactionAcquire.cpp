@@ -1,7 +1,8 @@
+#include <xrpld/app/ledger/detail/TransactionAcquire.h>
+
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
-#include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 

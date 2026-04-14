@@ -1,5 +1,6 @@
-#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+
+#include <xrpl/beast/net/IPAddress.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>

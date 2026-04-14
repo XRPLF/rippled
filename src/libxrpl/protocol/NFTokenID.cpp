@@ -1,7 +1,8 @@
+#include <xrpl/protocol/NFTokenID.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/NFTokenID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>

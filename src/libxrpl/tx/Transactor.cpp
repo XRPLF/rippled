@@ -1,3 +1,5 @@
+#include <xrpl/tx/Transactor.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -34,7 +36,6 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/SignerEntries.h>
-#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 

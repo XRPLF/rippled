@@ -1,3 +1,5 @@
+#include <xrpl/server/Wallet.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
@@ -13,7 +15,6 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 #include <xrpl/server/Manifest.h>
-#include <xrpl/server/Wallet.h>
 
 #include <boost/format/free_funcs.hpp>
 #include <boost/optional/optional.hpp>

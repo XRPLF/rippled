@@ -1,5 +1,6 @@
-#include <test/jtx/AbstractClient.h>
 #include <test/jtx/JSONRPCClient.h>
+
+#include <test/jtx/AbstractClient.h>
 
 #include <xrpld/core/Config.h>
 

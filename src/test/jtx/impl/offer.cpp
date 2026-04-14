@@ -1,5 +1,6 @@
-#include <test/jtx/Account.h>
 #include <test/jtx/offer.h>
+
+#include <test/jtx/Account.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STAmount.h>

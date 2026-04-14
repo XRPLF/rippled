@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -13,7 +15,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 
 #include <cstdint>
 #include <memory>

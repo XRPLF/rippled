@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/nft/NFTokenMint.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -14,7 +16,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
 #include <boost/endian/conversion.hpp>
 

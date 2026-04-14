@@ -1,6 +1,7 @@
+#include <test/jtx/memo.h>
+
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/memo.h>
 
 #include <xrpl/basics/strHex.h>
 

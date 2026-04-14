@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/dex/AMMDelete.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/Sandbox.h>
@@ -9,7 +11,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/dex/AMMDelete.h>
 
 namespace xrpl {
 

@@ -1,5 +1,6 @@
-#include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
+
+#include <xrpld/app/consensus/RCLValidations.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>

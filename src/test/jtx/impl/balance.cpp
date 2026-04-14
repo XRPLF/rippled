@@ -1,5 +1,6 @@
-#include <test/jtx/Env.h>
 #include <test/jtx/balance.h>
+
+#include <test/jtx/Env.h>
 
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>

@@ -26,6 +26,7 @@
 #include <memory>
 #include <optional>
 #include <set>
+#include <stdexcept>
 #include <vector>
 
 namespace xrpl {

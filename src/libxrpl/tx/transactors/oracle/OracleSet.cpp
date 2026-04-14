@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/oracle/OracleSet.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -13,7 +15,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 #include <chrono>
 #include <cstddef>

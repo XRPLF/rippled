@@ -1,7 +1,8 @@
+#include <test/jtx/paths.h>
+
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/paths.h>
 
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/Pathfinder.h>

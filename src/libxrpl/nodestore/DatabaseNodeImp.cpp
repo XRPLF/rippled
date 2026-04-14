@@ -1,3 +1,5 @@
+#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,7 +10,6 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
-#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 
 #include <chrono>
 #include <cstddef>

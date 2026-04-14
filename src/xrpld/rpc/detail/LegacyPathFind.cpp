@@ -1,5 +1,6 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
+
+#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/core/Job.h>

@@ -1,5 +1,6 @@
-#include <test/jtx/Env.h>
 #include <test/jtx/vault.h>
+
+#include <test/jtx/Env.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>

@@ -1,5 +1,6 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/LoadManager.h>
+
+#include <xrpld/app/main/Application.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>

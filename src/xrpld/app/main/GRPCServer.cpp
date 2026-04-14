@@ -1,5 +1,6 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/GRPCServer.h>
+
+#include <xrpld/app/main/Application.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>

@@ -1,5 +1,6 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeIdentity.h>
+
+#include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 

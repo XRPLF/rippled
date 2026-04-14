@@ -1,5 +1,6 @@
-#include <xrpld/app/ledger/AccountStateSF.h>
 #include <xrpld/app/ledger/InboundLedger.h>
+
+#include <xrpld/app/ledger/AccountStateSF.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
@@ -17,6 +18,7 @@
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>

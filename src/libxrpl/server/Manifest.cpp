@@ -1,3 +1,5 @@
+#include <xrpl/server/Manifest.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -19,7 +21,6 @@
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DatabaseCon.h>
-#include <xrpl/server/Manifest.h>
 #include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string/trim.hpp>

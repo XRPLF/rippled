@@ -1,4 +1,5 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
+
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Checker.h>
 #include <xrpld/peerfinder/detail/Logic.h>

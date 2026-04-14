@@ -1,6 +1,7 @@
+#include <xrpl/ledger/CanonicalTXSet.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>

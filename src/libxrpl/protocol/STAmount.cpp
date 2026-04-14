@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STAmount.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
@@ -17,7 +19,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Serializer.h>

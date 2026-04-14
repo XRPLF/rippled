@@ -1,6 +1,7 @@
+#include <test/jtx/txflags.h>
+
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/txflags.h>
 
 #include <xrpl/protocol/jss.h>
 

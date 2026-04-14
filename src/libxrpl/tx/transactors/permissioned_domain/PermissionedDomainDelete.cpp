@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -6,7 +8,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainDelete.h>
 
 namespace xrpl {
 

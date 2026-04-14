@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/delegate/DelegateSet.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -9,7 +11,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/delegate/DelegateSet.h>
 
 #include <cstdint>
 #include <memory>

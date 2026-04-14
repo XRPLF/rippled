@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/vault/VaultClawback.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -20,7 +22,6 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/vault/VaultClawback.h>
 
 #include <cstdint>
 #include <memory>

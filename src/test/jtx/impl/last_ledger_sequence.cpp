@@ -1,6 +1,7 @@
+#include <test/jtx/last_ledger_sequence.h>
+
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/last_ledger_sequence.h>
 
 namespace xrpl {
 namespace test {

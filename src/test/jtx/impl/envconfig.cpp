@@ -1,5 +1,6 @@
-#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+
+#include <test/jtx/amount.h>
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>

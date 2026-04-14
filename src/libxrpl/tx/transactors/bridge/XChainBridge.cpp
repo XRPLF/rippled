@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/bridge/XChainBridge.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -35,7 +37,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/bridge/XChainBridge.h>
 
 #include <cstdint>
 #include <limits>

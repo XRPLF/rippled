@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/account/SetRegularKey.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Indexes.h>
@@ -8,7 +10,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/account/SetRegularKey.h>
 
 namespace xrpl {
 

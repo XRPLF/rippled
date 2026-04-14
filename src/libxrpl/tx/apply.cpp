@@ -1,3 +1,5 @@
+#include <xrpl/tx/apply.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -15,7 +17,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <exception>

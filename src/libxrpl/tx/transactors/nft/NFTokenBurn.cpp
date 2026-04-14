@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/nft/NFTokenBurn.h>
+
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -5,7 +7,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/nft/NFTokenBurn.h>
 
 #include <cstddef>
 

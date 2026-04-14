@@ -1,3 +1,5 @@
+#include <xrpld/overlay/detail/PeerImp.h>
+
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -13,7 +15,6 @@
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
-#include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>

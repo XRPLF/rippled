@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/oracle/OracleDelete.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -7,7 +9,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/oracle/OracleDelete.h>
 
 #include <memory>
 

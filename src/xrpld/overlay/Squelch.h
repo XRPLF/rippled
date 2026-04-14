@@ -2,12 +2,11 @@
 
 #include <xrpld/overlay/ReduceRelayCommon.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 
-#include <algorithm>
 #include <chrono>
-#include <functional>
 
 namespace xrpl {
 

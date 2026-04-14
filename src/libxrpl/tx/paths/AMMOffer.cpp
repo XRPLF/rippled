@@ -1,3 +1,5 @@
+#include <xrpl/tx/paths/AMMOffer.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
@@ -15,7 +17,6 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMLiquidity.h>
-#include <xrpl/tx/paths/AMMOffer.h>
 
 #include <stdexcept>
 

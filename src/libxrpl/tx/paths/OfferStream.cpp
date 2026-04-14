@@ -1,3 +1,5 @@
+#include <xrpl/tx/paths/OfferStream.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -23,7 +25,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/paths/OfferStream.h>
 
 #include <algorithm>
 #include <memory>

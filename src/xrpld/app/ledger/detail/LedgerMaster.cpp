@@ -1,6 +1,7 @@
+#include <xrpld/app/ledger/LedgerMaster.h>
+
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedger.h>
-#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
@@ -38,6 +39,7 @@
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>

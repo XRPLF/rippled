@@ -1,6 +1,7 @@
+#include <xrpld/overlay/detail/Handshake.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 
 #include <xrpl/basics/Log.h>

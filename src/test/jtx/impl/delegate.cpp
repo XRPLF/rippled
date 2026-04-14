@@ -1,6 +1,7 @@
+#include <test/jtx/delegate.h>
+
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/delegate.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>

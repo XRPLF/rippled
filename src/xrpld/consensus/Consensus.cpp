@@ -1,4 +1,5 @@
 #include <xrpld/consensus/Consensus.h>
+
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 

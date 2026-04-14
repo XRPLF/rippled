@@ -1,5 +1,6 @@
-#include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
+
+#include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/contract.h>

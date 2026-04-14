@@ -1,6 +1,7 @@
+#include <test/jtx/pay.h>
+
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/pay.h>
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>

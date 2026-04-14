@@ -1,3 +1,5 @@
+#include <xrpl/tx/paths/RippleCalc.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -10,7 +12,6 @@
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/paths/RippleCalc.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <exception>

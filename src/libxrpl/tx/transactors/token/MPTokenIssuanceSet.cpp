@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
+
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -13,7 +15,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
 
 #include <algorithm>
 #include <array>

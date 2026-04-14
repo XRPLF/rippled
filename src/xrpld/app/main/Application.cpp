@@ -1,3 +1,5 @@
+#include <xrpld/app/main/Application.h>
+
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -11,7 +13,6 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/BasicApp.h>
 #include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/app/main/GRPCServer.h>
@@ -70,6 +71,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/AccountID.h>

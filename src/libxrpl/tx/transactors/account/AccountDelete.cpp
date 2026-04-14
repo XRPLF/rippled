@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/account/AccountDelete.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
@@ -21,7 +23,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/account/AccountDelete.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>

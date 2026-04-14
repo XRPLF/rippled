@@ -1,3 +1,5 @@
+#include <xrpl/nodestore/detail/ManagerImp.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -8,7 +10,6 @@
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseNodeImp.h>
-#include <xrpl/nodestore/detail/ManagerImp.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 

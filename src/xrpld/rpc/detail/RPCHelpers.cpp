@@ -1,8 +1,9 @@
+#include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>

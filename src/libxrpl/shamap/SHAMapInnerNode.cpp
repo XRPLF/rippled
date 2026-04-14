@@ -1,3 +1,5 @@
+#include <xrpl/shamap/SHAMapInnerNode.h>
+
 #include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
 #include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/SHAMapHash.h>
@@ -9,7 +11,6 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/shamap/SHAMapInnerNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/detail/TaggedPointer.h>

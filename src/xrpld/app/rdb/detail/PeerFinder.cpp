@@ -1,4 +1,5 @@
 #include <xrpld/app/rdb/PeerFinder.h>
+
 #include <xrpld/peerfinder/detail/Store.h>
 
 #include <xrpl/basics/BasicConfig.h>

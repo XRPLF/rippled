@@ -1,5 +1,6 @@
-#include <xrpld/peerfinder/detail/Source.h>
 #include <xrpld/peerfinder/detail/SourceStrings.h>
+
+#include <xrpld/peerfinder/detail/Source.h>
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>

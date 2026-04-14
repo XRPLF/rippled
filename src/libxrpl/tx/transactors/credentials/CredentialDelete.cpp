@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/credentials/CredentialDelete.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
@@ -9,7 +11,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/credentials/CredentialDelete.h>
 
 #include <cstdint>
 

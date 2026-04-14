@@ -1,4 +1,5 @@
 #include <xrpl/basics/BasicConfig.h>
+
 #include <xrpl/basics/StringUtilities.h>
 
 #include <boost/regex/v5/regbase.hpp>

@@ -1,5 +1,6 @@
-#include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/RPCSub.h>
+
+#include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>

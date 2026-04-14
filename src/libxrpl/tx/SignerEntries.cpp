@@ -1,3 +1,5 @@
+#include <xrpl/tx/SignerEntries.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,7 +10,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/SignerEntries.h>
 
 #include <cstdint>
 #include <optional>

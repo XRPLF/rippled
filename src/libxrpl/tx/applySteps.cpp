@@ -1,3 +1,5 @@
+#include <xrpl/tx/applySteps.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -14,7 +16,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
 #include <exception>

@@ -1,6 +1,7 @@
+#include <test/jtx/domain.h>
+
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
-#include <test/jtx/domain.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/SField.h>

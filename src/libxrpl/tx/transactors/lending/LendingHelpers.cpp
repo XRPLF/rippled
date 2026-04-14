@@ -1,5 +1,5 @@
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
-// DO NOT REMOVE forces header file include to sort first
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>

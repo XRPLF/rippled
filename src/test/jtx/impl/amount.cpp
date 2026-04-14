@@ -1,5 +1,6 @@
-#include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
+
+#include <test/jtx/Account.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>

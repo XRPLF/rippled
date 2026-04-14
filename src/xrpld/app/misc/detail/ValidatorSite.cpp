@@ -1,6 +1,7 @@
+#include <xrpld/app/misc/ValidatorSite.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/app/misc/detail/Work.h>
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>

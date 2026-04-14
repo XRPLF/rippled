@@ -1,6 +1,7 @@
+#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
-#include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 #include <xrpld/core/Config.h>
 

@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h>
+
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
@@ -16,7 +18,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h>
 
 #include <cstdint>
 #include <optional>

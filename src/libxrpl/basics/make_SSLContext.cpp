@@ -1,5 +1,6 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+
+#include <xrpl/basics/contract.h>
 
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>

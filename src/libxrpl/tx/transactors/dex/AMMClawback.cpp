@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/dex/AMMClawback.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -19,7 +21,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/dex/AMMClawback.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
 #include <cstdint>

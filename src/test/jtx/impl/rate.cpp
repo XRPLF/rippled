@@ -1,5 +1,6 @@
-#include <test/jtx/Account.h>
 #include <test/jtx/rate.h>
+
+#include <test/jtx/Account.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>

@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/system/TicketCreate.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -11,7 +13,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/transactors/system/TicketCreate.h>
 
 #include <cstdint>
 #include <memory>

@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
+
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
@@ -10,7 +12,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
 
 namespace xrpl {
 

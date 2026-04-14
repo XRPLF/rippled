@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/payment/Payment.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -33,7 +35,6 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/paths/RippleCalc.h>
-#include <xrpl/tx/transactors/payment/Payment.h>
 
 #include <algorithm>
 #include <cstdint>

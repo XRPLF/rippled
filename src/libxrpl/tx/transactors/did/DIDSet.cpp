@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/did/DIDSet.h>
+
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -11,7 +13,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/did/DIDSet.h>
 
 #include <cstddef>
 #include <memory>

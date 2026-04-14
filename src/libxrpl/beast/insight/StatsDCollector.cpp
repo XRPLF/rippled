@@ -1,3 +1,5 @@
+#include <xrpl/beast/insight/StatsDCollector.h>
+
 #include <xrpl/beast/core/List.h>
 #include <xrpl/beast/insight/CounterImpl.h>
 #include <xrpl/beast/insight/EventImpl.h>
@@ -5,7 +7,6 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/MeterImpl.h>
-#include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>

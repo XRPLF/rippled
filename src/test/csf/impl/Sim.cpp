@@ -1,5 +1,6 @@
-#include <test/csf/PeerGroup.h>
 #include <test/csf/Sim.h>
+
+#include <test/csf/PeerGroup.h>
 #include <test/csf/SimTime.h>
 
 #include <algorithm>

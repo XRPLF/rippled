@@ -1,6 +1,7 @@
+#include <xrpld/app/ledger/detail/SkipListAcquire.h>
+
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
-#include <xrpld/app/ledger/detail/SkipListAcquire.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>

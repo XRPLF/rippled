@@ -1,5 +1,5 @@
 #include <xrpl/protocol/STNumber.h>
-// Do not remove. Keep STNumber.h first
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>

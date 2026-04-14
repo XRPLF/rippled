@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/account/SignerListSet.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -19,7 +21,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/account/SignerListSet.h>
 
 #include <algorithm>
 #include <cstddef>

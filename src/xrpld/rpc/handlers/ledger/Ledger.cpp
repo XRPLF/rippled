@@ -1,3 +1,5 @@
+#include <xrpld/rpc/handlers/ledger/Ledger.h>
+
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
@@ -5,7 +7,6 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
-#include <xrpld/rpc/handlers/ledger/Ledger.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>

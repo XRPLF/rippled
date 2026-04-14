@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/dex/AMMBid.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
@@ -18,7 +20,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/dex/AMMBid.h>
 
 #include <algorithm>
 #include <chrono>

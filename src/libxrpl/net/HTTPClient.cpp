@@ -1,8 +1,9 @@
+#include <xrpl/net/HTTPClient.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/net/AutoSocket.h>
-#include <xrpl/net/HTTPClient.h>
 #include <xrpl/net/HTTPClientSSLContext.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
