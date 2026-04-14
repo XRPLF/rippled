@@ -452,7 +452,7 @@ public:
     {
         std::uint64_t carry = 0;
 
-        for (int i = WIDTH; (i--) != 0;)
+        for (int i = WIDTH - 1; i >= 0; i--)
         {
             std::uint64_t const n = carry + boost::endian::big_to_native(data_[i]) +
                 boost::endian::big_to_native(b.data_[i]);

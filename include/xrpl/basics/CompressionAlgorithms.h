@@ -68,12 +68,15 @@ lz4Decompress(
     if (decompressedSize <= 0)
         Throw<std::runtime_error>("lz4Decompress: integer overflow (output)");
 
-    if (LZ4_decompress_safe(          // NOLINT(readability-suspicious-call-argument)
+    // NOLINTNEXTLINE(readability-suspicious-call-argument)
+    if (LZ4_decompress_safe(
             reinterpret_cast<char const*>(in),
             reinterpret_cast<char*>(decompressed),
             inSize,
             decompressedSize) != decompressedSize)
+    {
         Throw<std::runtime_error>("lz4Decompress: failed");
+    }
 
     return decompressedSize;
 }
