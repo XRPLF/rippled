@@ -119,6 +119,32 @@ Permission::Permission()
 
     for (auto const& [gp, txType] : granularTxTypeMap_)
         granularTxTypes_.insert(txType);
+
+    // Validate that all fields listed in permissions.macro exist in the
+    // corresponding transaction type's format, catching typos at startup.
+    {
+#pragma push_macro("GRANULAR_PERMISSION")
+#undef GRANULAR_PERMISSION
+
+#define GRANULAR_PERMISSION(type, txType, value, flags, fields)                        \
+    {                                                                                  \
+        auto const* fmt = TxFormats::getInstance().findByType(txType);                 \
+        XRPL_ASSERT(                                                                   \
+            fmt != nullptr,                                                            \
+            "xrpl::Permission : " #type " must map to a valid tx type in TxFormats");  \
+        for (auto const& elem : std::vector<SOElement> fields)                         \
+        {                                                                              \
+            XRPL_ASSERT(                                                               \
+                fmt->getSOTemplate().getIndex(elem.sField()) != -1,                    \
+                "xrpl::Permission : " #type " has a field not valid for its tx type"); \
+        }                                                                              \
+    }
+
+#include <xrpl/protocol/detail/permissions.macro>
+
+#undef GRANULAR_PERMISSION
+#pragma pop_macro("GRANULAR_PERMISSION")
+    }
 }
 
 Permission const&
@@ -189,52 +215,41 @@ Permission::getTxFeature(TxType txType) const
 
     if (txFeaturesIt->second == uint256{})
         return std::nullopt;
-    return txFeaturesIt->second;
+
+    return std::optional{std::cref(txFeaturesIt->second)};
 }
 
 bool
-Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const
+Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
 {
-    auto const granularPermission =
-        getGranularName(static_cast<GranularPermissionType>(permissionValue));
-    if (granularPermission)
-    {
-        // granular permissions are always allowed to be delegated
+    // Granular permissions are always delegable.
+    if (getGranularName(static_cast<GranularPermissionType>(permissionValue)))
         return true;
-    }
 
     auto const txType = permissionToTxType(permissionValue);
     auto const it = delegableTx_.find(txType);
 
-    if (it == delegableTx_.end())
+    if (it == delegableTx_.end() || it->second == Delegation::notDelegable)
         return false;
 
-    auto const txFeaturesIt = txFeatureMap_.find(txType);
-    XRPL_ASSERT(
-        txFeaturesIt != txFeatureMap_.end(),
-        "xrpl::Permissions::isDelegable : tx exists in txFeatureMap_");
-
-    // Delegation is only allowed if the required amendment for the transaction
-    // is enabled. For transactions that do not require an amendment, delegation
-    // is always allowed.
-    if (txFeaturesIt->second != uint256{} && !rules.enabled(txFeaturesIt->second))
-        return false;
-
-    if (it->second == Delegation::notDelegable)
-        return false;
+    // Delegation is only allowed if the required amendment is enabled.
+    // getTxFeature returns nullopt for transactions that don't require an amendment.
+    if (auto const feature = getTxFeature(txType))
+        return rules.enabled(*feature);
 
     return true;
 }
 
 uint32_t
-Permission::txToPermissionType(TxType const& type)
+Permission::txToPermissionType(TxType type)
 {
     return static_cast<uint32_t>(type) + 1;
 }
 
 TxType
-Permission::permissionToTxType(uint32_t const& value)
+Permission::permissionToTxType(uint32_t value)
 {
+    XRPL_ASSERT(value > 0, "xrpl::Permission::permissionToTxType : value greater than 0");
     return static_cast<TxType>(value - 1);
 }
 
@@ -243,8 +258,6 @@ Permission::checkGranularSandbox(
     STTx const& tx,
     std::unordered_set<GranularPermissionType> const& heldPermissions) const
 {
-    auto const txFlags = tx.getFlags();
-
     // Build union of flags and templates across all held permissions.
     std::uint32_t unionFlags = 0;
     for (auto const& gp : heldPermissions)
@@ -255,7 +268,7 @@ Permission::checkGranularSandbox(
     }
 
     // Check if flags are permitted
-    if ((txFlags & ~unionFlags) != 0)
+    if ((tx.getFlags() & ~unionFlags) != 0)
         return false;
 
     // Check if fields are permitted. Every present field must appear in at least one held

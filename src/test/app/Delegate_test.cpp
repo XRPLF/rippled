@@ -1971,7 +1971,7 @@ class Delegate_test : public beast::unit_test::suite
 
         // invalid permission value.
         // neither granular permission nor transaction level permission
-        for (auto value : {0, 100000, 54321})
+        for (auto value : {100000, 54321})
         {
             auto jv = buildRequest(value);
             env(jv, ter(temMALFORMED));

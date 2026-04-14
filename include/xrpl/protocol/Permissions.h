@@ -74,18 +74,18 @@ public:
     getTxFeature(TxType txType) const;
 
     bool
-    isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
+    isDelegable(std::uint32_t permissionValue, Rules const& rules) const;
 
     bool
     hasGranularPermissions(TxType txType) const;
 
     // for tx level permission, permission value is equal to tx type plus one
     static uint32_t
-    txToPermissionType(TxType const& type);
+    txToPermissionType(TxType type);
 
     // tx type value is permission value minus one
     static TxType
-    permissionToTxType(uint32_t const& value);
+    permissionToTxType(uint32_t value);
 
     /**
      * @brief Verifies a delegated transaction against its granular permission template.
