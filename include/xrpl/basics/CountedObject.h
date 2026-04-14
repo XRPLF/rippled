@@ -112,7 +112,6 @@ private:
         return c;
     }
 
-public:
     CountedObject() noexcept
     {
         getCounter().increment();
@@ -126,10 +125,13 @@ public:
     CountedObject&
     operator=(CountedObject const&) noexcept = default;
 
+public:
     ~CountedObject() noexcept
     {
         getCounter().decrement();
     }
+
+    friend Object;
 };
 
 }  // namespace xrpl
