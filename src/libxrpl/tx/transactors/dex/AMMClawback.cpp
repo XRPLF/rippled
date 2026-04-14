@@ -105,7 +105,9 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         // permission
         if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
             ((issuerFlagsIn & lsfNoFreeze) != 0u))
-            return tesSUCCESS;
+        {
+            return tecNO_PERMISSION;
+        }
     }
 
     auto const checkClawAsset = [&](Asset const asset) -> bool {
