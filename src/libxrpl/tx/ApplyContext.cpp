@@ -1,5 +1,5 @@
 #include <xrpl/tx/ApplyContext.h>
-//
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>

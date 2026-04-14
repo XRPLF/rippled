@@ -1,5 +1,5 @@
 #include <xrpl/tx/invariants/LoanBrokerInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ReadView.h>

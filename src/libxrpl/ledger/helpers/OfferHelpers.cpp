@@ -1,5 +1,5 @@
 #include <xrpl/ledger/helpers/OfferHelpers.h>
-//
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>

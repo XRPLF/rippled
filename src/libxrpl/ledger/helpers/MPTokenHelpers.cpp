@@ -1,5 +1,5 @@
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-//
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>

@@ -1,5 +1,5 @@
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-//
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>

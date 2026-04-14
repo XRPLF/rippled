@@ -1,5 +1,5 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
-//
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>

@@ -1,5 +1,5 @@
 #include <xrpl/tx/invariants/AMMInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>

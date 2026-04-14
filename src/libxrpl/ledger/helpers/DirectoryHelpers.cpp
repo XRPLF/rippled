@@ -1,5 +1,5 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-//
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>

@@ -1,5 +1,5 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-//
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>

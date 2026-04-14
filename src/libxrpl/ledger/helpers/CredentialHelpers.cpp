@@ -1,5 +1,5 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-//
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>

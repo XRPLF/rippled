@@ -1,5 +1,5 @@
 #include <xrpl/tx/transactors/lending/LoanManage.h>
-//
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>

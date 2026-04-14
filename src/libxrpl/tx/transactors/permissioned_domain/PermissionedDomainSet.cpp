@@ -1,5 +1,5 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
-//
+
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
