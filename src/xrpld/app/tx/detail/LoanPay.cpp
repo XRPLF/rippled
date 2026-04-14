@@ -457,7 +457,7 @@ LoanPay::doApply()
 
     XRPL_ASSERT_PARTS(
         *assetsAvailableProxy <= *assetsTotalProxy,
-        "rippled::LoanPay::doApply",
+        "ripple::LoanPay::doApply",
         "assets available must not be greater than assets outstanding");
 
     JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
@@ -491,7 +491,7 @@ LoanPay::doApply()
 
     XRPL_ASSERT_PARTS(
         assetsAvailableAfter <= assetsTotalAfter,
-        "xrpl::LoanPay::doApply",
+        "ripple::LoanPay::doApply",
         "assets available must not be greater than assets outstanding");
     if (assetsAvailableAfter == assetsAvailableBefore)
     {
@@ -632,7 +632,7 @@ LoanPay::doApply()
             j_);
         XRPL_ASSERT_PARTS(
             assetsAvailableAfter == pseudoAccountBalanceAfter,
-            "xrpl::LoanPay::doApply",
+            "ripple::LoanPay::doApply",
             "vault pseudo balance agrees after");
     }
 #endif
@@ -691,7 +691,7 @@ LoanPay::doApply()
         }
         if (exponents.empty())
         {
-            UNREACHABLE("xrpl::LoanPay::doApply : all zeroes");
+            UNREACHABLE("ripple::LoanPay::doApply : all zeroes");
             return 0;
         }
         auto const [minItr, maxItr] =
@@ -789,7 +789,7 @@ LoanPay::doApply()
     XRPL_ASSERT_PARTS(
         totalBalanceBeforeRounded == totalBalanceAfterRounded ||
             totalBalanceChangeRounded == beast::zero,
-        "xrpl::LoanPay::doApply",
+        "ripple::LoanPay::doApply",
         "funds are conserved (with rounding)");
 
     XRPL_ASSERT_PARTS(

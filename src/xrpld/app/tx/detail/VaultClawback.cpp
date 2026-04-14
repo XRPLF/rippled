@@ -413,7 +413,7 @@ VaultClawback::doApply()
     {
         XRPL_ASSERT(
             amount.asset() == vaultAsset,
-            "xrpl::VaultClawback::doApply : matching asset");
+            "ripple::VaultClawback::doApply : matching asset");
 
         auto const clawbackParts =
             assetsToClawback(vault, sleIssuance, holder, amount);

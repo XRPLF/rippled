@@ -372,7 +372,7 @@ STAmount::STAmount(
     {
         XRPL_ASSERT(
             mValue <= std::numeric_limits<std::int64_t>::max(),
-            "xrpl::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
+            "ripple::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
             "maximum mantissa input");
     }
     else
