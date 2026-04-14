@@ -270,7 +270,7 @@ SHAMapStoreImp::run()
             // don't start the rotation until the validated ledger is fully
             // processed. It is not guaranteed to be done at this point. It also
             // allows the testLedgerGaps unit test to work.
-            std::unique_lock<std::mutex> lock(mutex_);
+            std::unique_lock<std::mutex> const lock(mutex_);
             lastGoodValidatedLedger_ = validatedSeq;
         }
 
