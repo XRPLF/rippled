@@ -86,8 +86,10 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // Sanity check: claw amount can not exceed confidential outstanding amount
+    // or total outstanding amount (prevents underflow in doApply)
     auto const amount = ctx.tx[sfMPTAmount];
-    if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
+    if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) ||
+        amount > (*sleIssuance)[sfOutstandingAmount])
         return tecINSUFFICIENT_FUNDS;
 
     auto const contextHash =
