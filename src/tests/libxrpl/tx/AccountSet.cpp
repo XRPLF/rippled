@@ -37,7 +37,7 @@ TEST(AccountSet, NullAccountSet)
     auto sle = view.read(keylet::account(alice));
 
     EXPECT_NE(sle, nullptr);
-    ledger_entries::AccountRoot accountRoot(sle);
+    ledger_entries::AccountRoot const accountRoot(sle);
     EXPECT_EQ(accountRoot.getFlags(), 0);
 }
 
@@ -260,7 +260,7 @@ TEST(AccountSet, Domain)
     std::size_t const maxLength = 256;
     for (std::size_t len = maxLength - 1; len <= maxLength + 1; ++len)
     {
-        std::string domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
+        std::string const domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
 
         EXPECT_EQ(domain2.length(), len);
 
@@ -335,7 +335,8 @@ TEST(AccountSet, WalletID)
     env.createAccount(alice, XRP(10000));
     env.close();
 
-    std::string_view locator = "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
+    std::string_view const locator =
+        "9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05";
     uint256 locatorHash{};
     EXPECT_TRUE(locatorHash.parseHex(locator));
 
@@ -365,7 +366,7 @@ TEST(AccountSet, EmailHash)
     env.createAccount(alice, XRP(10000));
     env.close();
 
-    std::string_view mh = "5F31A79367DC3137FADA860C05742EE6";
+    std::string_view const mh = "5F31A79367DC3137FADA860C05742EE6";
     uint128 emailHash{};
     EXPECT_TRUE(emailHash.parseHex(mh));
 
@@ -707,7 +708,7 @@ TEST(AccountSet, Gateway)
 
     // Test out-of-bounds legacy transfer rates (4.0 and 4.294967295)
     // These require direct ledger modification since the transactor blocks them
-    for (std::uint32_t transferRate : {4000000000U, 4294967295U})
+    for (std::uint32_t const transferRate : {4000000000U, 4294967295U})
     {
         TxTest env;
         env.createAccount(gw, XRP(10000), asfDefaultRipple);
