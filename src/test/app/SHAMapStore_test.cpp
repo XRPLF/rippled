@@ -577,8 +577,6 @@ public:
 
         Env env{*this, envconfig(onlineDelete)};
 
-        std::map<LedgerIndex, uint256> hashes;
-
         auto failureMessage = [&](char const* label, auto expected, auto actual) {
             std::stringstream ss;
             ss << label << ": Expected: " << expected << ", Got: " << actual;
