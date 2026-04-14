@@ -5,7 +5,7 @@
 #include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/rpc/detail/Pathfinder.h>
-#include <xrpld/rpc/detail/RippleLineCache.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
@@ -787,7 +787,7 @@ public:
         env.close();
 
         auto cache =
-            std::make_shared<RippleLineCache>(env.current(), env.app().getJournal("RippleLineCache"));
+            std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache"));
         Pathfinder pf(
             cache,
             A1.id(),
