@@ -460,17 +460,18 @@ public:
         testcase("getStaticServerDefinitions");
 
         auto const defs = getStaticServerDefinitions();
-        for (auto const& field : {jss::ACCOUNT_SET_FLAGS,
-                                  jss::FIELDS,
-                                  jss::LEDGER_ENTRY_FLAGS,
-                                  jss::LEDGER_ENTRY_FORMATS,
-                                  jss::LEDGER_ENTRY_TYPES,
-                                  jss::TRANSACTION_FLAGS,
-                                  jss::TRANSACTION_FORMATS,
-                                  jss::TRANSACTION_RESULTS,
-                                  jss::TRANSACTION_TYPES,
-                                  jss::TYPES,
-                                  jss::hash})
+        for (auto const& field :
+             {jss::ACCOUNT_SET_FLAGS,
+              jss::FIELDS,
+              jss::LEDGER_ENTRY_FLAGS,
+              jss::LEDGER_ENTRY_FORMATS,
+              jss::LEDGER_ENTRY_TYPES,
+              jss::TRANSACTION_FLAGS,
+              jss::TRANSACTION_FORMATS,
+              jss::TRANSACTION_RESULTS,
+              jss::TRANSACTION_TYPES,
+              jss::TYPES,
+              jss::hash})
         {
             BEAST_EXPECT(defs.isMember(field));
         }
