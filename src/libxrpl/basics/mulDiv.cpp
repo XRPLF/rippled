@@ -1,6 +1,6 @@
 #include <xrpl/basics/mulDiv.h>
 
-#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/cpp_int.hpp>  // IWYU pragma: keep
 
 #include <cstdint>
 #include <optional>

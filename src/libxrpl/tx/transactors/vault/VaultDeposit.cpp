@@ -10,7 +10,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>

@@ -8,7 +8,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/token.h>
@@ -29,7 +29,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <chrono>
 #include <cstddef>
 #include <optional>
 #include <string>

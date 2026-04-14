@@ -7,7 +7,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 #include <test/jtx/sendmax.h>
 #include <test/jtx/ter.h>

@@ -3,7 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/ter.h>
 #include <test/jtx/token.h>
 #include <test/jtx/txflags.h>

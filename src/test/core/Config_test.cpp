@@ -10,8 +10,8 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem.hpp>
-#include <boost/format.hpp>
+#include <boost/filesystem.hpp>  // IWYU pragma: keep
+#include <boost/format.hpp>      // IWYU pragma: keep
 
 #include <array>
 #include <cstddef>

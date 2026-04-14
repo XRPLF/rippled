@@ -9,6 +9,7 @@
 #include <test/jtx/owners.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>

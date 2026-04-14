@@ -3,7 +3,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>

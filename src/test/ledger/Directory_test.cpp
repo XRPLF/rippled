@@ -8,7 +8,7 @@
 #include <test/jtx/multisign.h>
 #include <test/jtx/noop.h>
 #include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 #include <test/jtx/tags.h>
 #include <test/jtx/ter.h>
@@ -31,6 +31,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>

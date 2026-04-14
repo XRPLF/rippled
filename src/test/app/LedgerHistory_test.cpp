@@ -21,7 +21,6 @@
 #include <xrpl/tx/apply.h>
 
 #include <cassert>
-#include <chrono>
 #include <memory>
 #include <vector>
 

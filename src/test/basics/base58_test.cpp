@@ -1,7 +1,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/detail/token_errors.h>
 
-#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/cpp_int.hpp>  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cassert>

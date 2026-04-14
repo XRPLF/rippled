@@ -17,11 +17,11 @@
 #include <xrpl/server/NetworkOPs.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio.hpp>
-#include <boost/asio/ssl.hpp>
+#include <boost/asio.hpp>      // IWYU pragma: keep
+#include <boost/asio/ssl.hpp>  // IWYU pragma: keep
 #include <boost/beast/core/multi_buffer.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/websocket.hpp>
+#include <boost/beast/http.hpp>       // IWYU pragma: keep
+#include <boost/beast/websocket.hpp>  // IWYU pragma: keep
 #include <boost/lexical_cast.hpp>
 
 #include <array>
@@ -31,6 +31,7 @@
 #include <regex>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {

@@ -9,7 +9,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
-#include <chrono>
 #include <thread>
 
 namespace xrpl {

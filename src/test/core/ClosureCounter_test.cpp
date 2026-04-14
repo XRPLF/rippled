@@ -6,7 +6,6 @@
 #include <xrpl/core/ClosureCounter.h>
 
 #include <atomic>
-#include <chrono>
 #include <optional>
 #include <thread>
 #include <utility>

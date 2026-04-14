@@ -3,7 +3,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/batch.h>
 #include <test/jtx/check.h>
 #include <test/jtx/delegate.h>
@@ -63,7 +63,6 @@
 #include <xrpl/tx/transactors/system/Batch.h>
 
 #include <algorithm>
-#include <chrono>
 #include <cstdint>
 #include <map>
 #include <memory>

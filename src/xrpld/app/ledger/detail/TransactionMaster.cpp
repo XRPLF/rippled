@@ -3,7 +3,7 @@
 #include <xrpld/app/misc/Transaction.h>
 
 #include <xrpl/basics/RangeSet.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Zero.h>

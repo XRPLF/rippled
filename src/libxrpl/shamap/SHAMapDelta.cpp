@@ -1,4 +1,4 @@
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>

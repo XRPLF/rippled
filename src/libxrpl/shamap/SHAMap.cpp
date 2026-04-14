@@ -1,8 +1,8 @@
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>

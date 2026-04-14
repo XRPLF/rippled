@@ -67,6 +67,7 @@
 #include <cstdlib>
 #include <functional>
 #include <limits>
+#include <map>
 #include <optional>
 #include <ostream>
 #include <random>
@@ -77,6 +78,7 @@
 #include <tuple>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {

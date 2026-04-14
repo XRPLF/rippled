@@ -16,7 +16,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/lexical_cast/try_lexical_convert.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cassert>

@@ -6,7 +6,7 @@
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
-#include <boost/format.hpp>
+#include <boost/format.hpp>  // IWYU pragma: keep
 
 #include <soci/into.h>
 

@@ -3,7 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>

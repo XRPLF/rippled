@@ -17,7 +17,6 @@
 
 #include <algorithm>
 #include <array>
-#include <chrono>
 #include <cstdint>
 #include <iterator>
 #include <utility>

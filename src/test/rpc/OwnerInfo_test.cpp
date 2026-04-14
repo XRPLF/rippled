@@ -2,7 +2,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 #include <test/jtx/trust.h>
 

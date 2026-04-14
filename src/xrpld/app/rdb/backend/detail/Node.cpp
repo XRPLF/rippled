@@ -18,7 +18,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/StartUpType.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/PendingSaves.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/AccountID.h>

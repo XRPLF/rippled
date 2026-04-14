@@ -3,22 +3,24 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/net/HTTPClient.h>
 
-#include <boost/asio/co_spawn.hpp>
+#include <boost/asio/co_spawn.hpp>  // IWYU pragma: keep
 #include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_awaitable.hpp>
-#include <boost/asio/use_future.hpp>
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <boost/asio/use_future.hpp>  // IWYU pragma: keep
+#include <boost/beast/core.hpp>       // IWYU pragma: keep
+#include <boost/beast/http.hpp>       // IWYU pragma: keep
 
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
 #include <chrono>
 #include <exception>
+#include <map>
 #include <string>
+#include <utility>
+#include <vector>
 
 using namespace xrpl;
 

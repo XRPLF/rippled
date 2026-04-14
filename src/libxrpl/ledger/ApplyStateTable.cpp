@@ -3,7 +3,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>

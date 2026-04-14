@@ -3,7 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/flags.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>

@@ -6,7 +6,7 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 

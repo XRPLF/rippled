@@ -1,6 +1,6 @@
 
 #include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
+#include <test/jtx/amount.h>  // IWYU pragma: keep
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>

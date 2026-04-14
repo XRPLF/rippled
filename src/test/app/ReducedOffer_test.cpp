@@ -2,7 +2,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/fee.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
@@ -14,7 +14,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>

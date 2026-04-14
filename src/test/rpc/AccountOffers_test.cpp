@@ -5,7 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/pay.h>
 
 #include <xrpl/beast/unit_test/suite.h>

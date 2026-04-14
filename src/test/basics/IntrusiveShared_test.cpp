@@ -1,5 +1,5 @@
 
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/beast/unit_test/suite.h>
 
@@ -7,7 +7,6 @@
 #include <array>
 #include <atomic>
 #include <cassert>
-#include <chrono>
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>

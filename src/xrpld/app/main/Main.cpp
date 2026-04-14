@@ -21,7 +21,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/process/v1/args.hpp>
-#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/child.hpp>  // IWYU pragma: keep
 #include <boost/process/v1/exe.hpp>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/positional_options.hpp>

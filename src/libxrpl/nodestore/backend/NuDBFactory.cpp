@@ -20,14 +20,14 @@
 #include <boost/system/detail/errc.hpp>
 
 #include <nudb/context.hpp>
-#include <nudb/create.hpp>
+#include <nudb/create.hpp>  // IWYU pragma: keep
 #include <nudb/detail/buffer.hpp>
 #include <nudb/error.hpp>
 #include <nudb/file.hpp>
 #include <nudb/progress.hpp>
 #include <nudb/store.hpp>
-#include <nudb/verify.hpp>
-#include <nudb/visit.hpp>
+#include <nudb/verify.hpp>  // IWYU pragma: keep
+#include <nudb/visit.hpp>   // IWYU pragma: keep
 #include <nudb/xxhasher.hpp>
 
 #include <atomic>

@@ -7,6 +7,7 @@
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -20,7 +21,6 @@
 #include <boost/beast/http/field.hpp>
 #include <boost/beast/http/impl/serializer.hpp>
 #include <boost/beast/http/status.hpp>
-#include <boost/chrono/config.hpp>
 #include <boost/system/detail/error_code.hpp>
 #include <boost/system/detail/generic_category.hpp>
 #include <boost/system/system_error.hpp>

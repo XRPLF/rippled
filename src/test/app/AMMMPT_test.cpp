@@ -10,7 +10,6 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/rate.h>
@@ -43,12 +42,14 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/AMMBid.h>
 
+#include <array>
 #include <chrono>
 #include <cstdint>
 #include <functional>
 #include <memory>
 #include <optional>
 #include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 

@@ -19,7 +19,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>

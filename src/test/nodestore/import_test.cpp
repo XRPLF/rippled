@@ -5,9 +5,9 @@
 #include <xrpl/nodestore/detail/codec.h>
 
 #include <boost/beast/core/string.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
 
-#include <nudb/create.hpp>
+#include <nudb/create.hpp>  // IWYU pragma: keep
 #include <nudb/detail/bucket.hpp>
 #include <nudb/detail/buffer.hpp>
 #include <nudb/detail/bulkio.hpp>

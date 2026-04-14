@@ -9,12 +9,13 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/jtx_json.h>
 #include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/permissioned_dex.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 
