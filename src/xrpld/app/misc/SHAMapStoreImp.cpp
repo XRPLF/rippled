@@ -313,29 +313,19 @@ SHAMapStoreImp::run()
 
             if (isNullBackend_)
             {
-                // In null mode the backend never stores anything, so
-                // rotation is just bookkeeping: update lastRotated and
-                // clear old ledger caches.
-                JLOG(journal_.debug()) << "RWDB null: skipping rotation copy, updating "
-                                          "lastRotated to "
-                                       << validatedSeq;
+                // In null mode the backend never stores anything.
+                // Skip clearCaches / makeBackendRotating / rotate
+                // entirely — the TreeNodeCache IS the node store and
+                // evicting it causes irrecoverable SHAMapMissingNode.
+                // Only sqlite cleanup (clearPrior above) is needed.
+                JLOG(journal_.info()) << "RWDB null: skipping rotation, "
+                                         "updating lastRotated to "
+                                      << validatedSeq;
 
-                clearCaches(validatedSeq);
                 lastRotated = validatedSeq;
+                state_db_.setLastRotated(lastRotated);
 
-                auto newBackend = makeBackendRotating();
-                dbRotating_->rotate(
-                    std::move(newBackend),
-                    [&](std::string const& writableName, std::string const& archiveName) {
-                        SavedState savedState;
-                        savedState.writableDb = writableName;
-                        savedState.archiveDb = archiveName;
-                        savedState.lastRotated = lastRotated;
-                        state_db_.setState(savedState);
-                        clearCaches(validatedSeq);
-                    });
-
-                JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
+                JLOG(journal_.warn()) << "finished null-mode cleanup " << validatedSeq;
             }
             else if (isMemoryBackend_)
             {
@@ -631,6 +621,15 @@ void
 SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 {
     ledgerMaster_->clearLedgerCachePrior(validatedSeq);
+
+    if (isNullBackend_)
+    {
+        // In null mode the TreeNodeCache is the only node store.
+        // Do NOT clear FullBelowCache or freshen TreeNodeCache —
+        // evicted entries are irrecoverable without a real backend.
+        return;
+    }
+
     // Also clear the FullBelowCache so its generation counter is bumped.
     // This prevents stale "full below" markers from persisting across
     // backend rotation/online deletion and interfering with SHAMap sync.
