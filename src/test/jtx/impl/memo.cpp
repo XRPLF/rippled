@@ -1,4 +1,8 @@
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/memo.h>
+
+#include <xrpl/basics/strHex.h>
 
 namespace xrpl {
 namespace test {

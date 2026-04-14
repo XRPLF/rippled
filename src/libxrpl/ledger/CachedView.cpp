@@ -1,5 +1,14 @@
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/CachedView.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <memory>
+#include <mutex>
+#include <optional>
 
 namespace xrpl {
 namespace detail {

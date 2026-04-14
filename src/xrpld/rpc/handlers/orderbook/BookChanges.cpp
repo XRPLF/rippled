@@ -4,6 +4,8 @@
 
 #include <xrpl/ledger/ReadView.h>
 
+#include <memory>
+
 namespace xrpl {
 
 Json::Value

@@ -1,4 +1,11 @@
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/BookListeners.h>
+#include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/server/InfoSub.h>
+
+#include <cstdint>
+#include <mutex>
 
 namespace xrpl {
 

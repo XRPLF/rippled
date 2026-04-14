@@ -6,6 +6,8 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/server/LoadFeeTrack.h>
 
+#include <atomic>
+
 namespace xrpl {
 namespace RPC {
 

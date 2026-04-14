@@ -1,8 +1,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/crypto/csprng.h>
 
+#include <openssl/opensslv.h>
 #include <openssl/rand.h>
-#include <openssl/ssl.h>
 
 #include <array>
 #include <cstddef>

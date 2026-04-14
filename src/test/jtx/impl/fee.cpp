@@ -1,6 +1,10 @@
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/fee.h>
 
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/SField.h>
+
+#include <cassert>
 
 namespace xrpl {
 namespace test {

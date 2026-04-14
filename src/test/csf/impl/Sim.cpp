@@ -1,4 +1,11 @@
+#include <test/csf/PeerGroup.h>
 #include <test/csf/Sim.h>
+#include <test/csf/SimTime.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <limits>
+#include <set>
 
 namespace xrpl {
 namespace test {

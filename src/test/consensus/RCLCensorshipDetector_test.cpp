@@ -1,8 +1,9 @@
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <algorithm>
+#include <utility>
 #include <vector>
 
 namespace xrpl {

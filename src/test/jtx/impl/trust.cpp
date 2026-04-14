@@ -1,8 +1,14 @@
+#include <test/jtx/Account.h>
 #include <test/jtx/trust.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+#include <optional>
 #include <stdexcept>
 
 namespace xrpl {

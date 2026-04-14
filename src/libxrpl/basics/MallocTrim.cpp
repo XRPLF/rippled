@@ -1,13 +1,10 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MallocTrim.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <boost/predef.h>
 
-#include <chrono>
-#include <cstdint>
-#include <cstdio>
-#include <fstream>
-#include <sstream>
+#include <string_view>
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 #include <sys/resource.h>

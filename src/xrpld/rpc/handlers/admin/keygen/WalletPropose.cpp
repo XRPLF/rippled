@@ -3,6 +3,8 @@
 #include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -10,9 +12,12 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <cmath>
 #include <map>
+#include <optional>
+#include <string>
 
 namespace xrpl {
 

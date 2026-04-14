@@ -4,8 +4,18 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/core/NetworkIDService.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
+
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 

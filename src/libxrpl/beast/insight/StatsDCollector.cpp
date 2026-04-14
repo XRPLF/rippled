@@ -13,12 +13,14 @@
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/system/detail/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <chrono>
 #include <cstddef>

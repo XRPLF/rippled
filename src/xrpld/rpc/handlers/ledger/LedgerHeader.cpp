@@ -2,8 +2,13 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+
+#include <memory>
 
 namespace xrpl {
 

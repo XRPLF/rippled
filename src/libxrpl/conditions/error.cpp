@@ -2,6 +2,8 @@
 #include <xrpl/conditions/detail/error.h>
 
 #include <string>
+#include <system_error>
+#include <type_traits>
 
 namespace xrpl {
 namespace cryptoconditions {

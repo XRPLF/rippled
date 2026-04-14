@@ -1,8 +1,6 @@
 #include <xrpl/basics/mulDiv.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
-#include <boost/multiprecision/detail/default_ops.hpp>
-#include <boost/multiprecision/fwd.hpp>
 
 #include <cstdint>
 #include <optional>

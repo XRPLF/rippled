@@ -1,4 +1,16 @@
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cstdint>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 

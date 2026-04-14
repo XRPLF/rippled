@@ -7,9 +7,12 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/bind_executor.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>

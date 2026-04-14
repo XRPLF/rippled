@@ -1,4 +1,14 @@
+#include <test/jtx/Env.h>
 #include <test/jtx/balance.h>
+
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+
+#include <variant>
 
 namespace xrpl {
 namespace test {

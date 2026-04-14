@@ -3,7 +3,11 @@
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Protocol.h>
+
+#include <chrono>
+#include <memory>
 
 namespace xrpl {
 

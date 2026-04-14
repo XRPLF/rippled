@@ -3,11 +3,14 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
@@ -27,6 +30,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/STVar.h>
+#include <xrpl/protocol/jss.h>
 
 #include <charconv>
 #include <cstdint>

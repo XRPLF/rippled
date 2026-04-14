@@ -1,3 +1,4 @@
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/detail/json_assert.h>
@@ -6,8 +7,10 @@
 #include <xrpl/json/json_writer.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <utility>
 

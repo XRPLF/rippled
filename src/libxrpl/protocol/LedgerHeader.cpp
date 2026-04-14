@@ -5,6 +5,8 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 
+#include <cstdint>
+
 namespace xrpl {
 
 void

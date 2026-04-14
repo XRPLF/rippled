@@ -1,4 +1,14 @@
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 #include <xrpl/nodestore/detail/BatchWriter.h>
+
+#include <algorithm>
+#include <chrono>
+#include <memory>
+#include <mutex>
+#include <vector>
 
 namespace xrpl {
 namespace NodeStore {

@@ -7,7 +7,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/STAmount.h>
 
-#include <boost/multiprecision/cpp_int.hpp>
+#include <boost/multiprecision/fwd.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -15,6 +15,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace xrpl {

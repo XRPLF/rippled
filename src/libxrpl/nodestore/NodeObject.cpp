@@ -1,6 +1,9 @@
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/nodestore/NodeObject.h>
 
 #include <memory>
+#include <utility>
 
 namespace xrpl {
 

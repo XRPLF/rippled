@@ -1,8 +1,10 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/predef/os.h>
 
+#include <atomic>
+#include <string>
 #include <thread>
 
 namespace xrpl {

@@ -1,6 +1,9 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
 
 namespace xrpl {

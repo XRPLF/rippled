@@ -1,3 +1,6 @@
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -6,6 +9,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -13,9 +17,13 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 

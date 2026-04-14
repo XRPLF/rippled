@@ -8,8 +8,9 @@
 
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
-#include <openssl/objects.h>
+#include <openssl/obj_mac.h>
 #include <openssl/ossl_typ.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>

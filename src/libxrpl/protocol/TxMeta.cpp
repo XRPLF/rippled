@@ -1,4 +1,5 @@
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -15,8 +16,8 @@
 #include <boost/container/flat_set.hpp>
 
 #include <cstdint>
+#include <limits>
 #include <stdexcept>
-#include <string>
 
 namespace xrpl {
 

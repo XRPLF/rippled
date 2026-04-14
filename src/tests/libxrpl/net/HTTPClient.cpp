@@ -1,24 +1,24 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/net/HTTPClient.h>
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/co_spawn.hpp>
 #include <boost/asio/detached.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <gtest/gtest.h>
 #include <helpers/TestSink.h>
 
-#include <atomic>
-#include <map>
-#include <memory>
-#include <semaphore>
-#include <thread>
+#include <chrono>
+#include <exception>
+#include <string>
 
 using namespace xrpl;
 
@@ -36,7 +36,7 @@ private:
     unsigned short port_{0};
 
     // Custom headers to return
-    std::map<std::string, std::string> customHeaders_;
+    std::map<std::string, std::string> customHeaders_{};
     std::string responseBody_;
     unsigned int statusCode_{200};
 

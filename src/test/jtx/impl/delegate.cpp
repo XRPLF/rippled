@@ -1,6 +1,14 @@
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/delegate.h>
 
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
+
+#include <string>
+#include <vector>
 
 namespace xrpl {
 namespace test {

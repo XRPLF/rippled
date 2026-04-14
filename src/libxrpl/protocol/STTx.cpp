@@ -25,12 +25,10 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
@@ -50,6 +48,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 

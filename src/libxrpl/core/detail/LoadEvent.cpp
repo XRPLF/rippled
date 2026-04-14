@@ -2,6 +2,9 @@
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/LoadMonitor.h>
 
+#include <chrono>
+#include <string>
+
 namespace xrpl {
 
 LoadEvent::LoadEvent(LoadMonitor& monitor, std::string const& name, bool shouldStart)
