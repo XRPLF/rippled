@@ -460,17 +460,20 @@ public:
         testcase("getStaticServerDefinitions");
 
         auto const defs = getStaticServerDefinitions();
-        BEAST_EXPECT(defs.isMember(jss::ACCOUNT_SET_FLAGS));
-        BEAST_EXPECT(defs.isMember(jss::FIELDS));
-        BEAST_EXPECT(defs.isMember(jss::LEDGER_ENTRY_FLAGS));
-        BEAST_EXPECT(defs.isMember(jss::LEDGER_ENTRY_FORMATS));
-        BEAST_EXPECT(defs.isMember(jss::LEDGER_ENTRY_TYPES));
-        BEAST_EXPECT(defs.isMember(jss::TRANSACTION_FLAGS));
-        BEAST_EXPECT(defs.isMember(jss::TRANSACTION_FORMATS));
-        BEAST_EXPECT(defs.isMember(jss::TRANSACTION_RESULTS));
-        BEAST_EXPECT(defs.isMember(jss::TRANSACTION_TYPES));
-        BEAST_EXPECT(defs.isMember(jss::TYPES));
-        BEAST_EXPECT(defs.isMember(jss::hash));
+        for (auto const& field : {jss::ACCOUNT_SET_FLAGS,
+                                  jss::FIELDS,
+                                  jss::LEDGER_ENTRY_FLAGS,
+                                  jss::LEDGER_ENTRY_FORMATS,
+                                  jss::LEDGER_ENTRY_TYPES,
+                                  jss::TRANSACTION_FLAGS,
+                                  jss::TRANSACTION_FORMATS,
+                                  jss::TRANSACTION_RESULTS,
+                                  jss::TRANSACTION_TYPES,
+                                  jss::TYPES,
+                                  jss::hash})
+        {
+            BEAST_EXPECT(defs.isMember(field));
+        }
 
         // verify it returns the same hash as the RPC handler
         using namespace test::jtx;
