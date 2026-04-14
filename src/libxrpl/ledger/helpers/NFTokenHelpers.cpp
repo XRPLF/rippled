@@ -607,33 +607,6 @@ removeTokenOffersWithLimit(ApplyView& view, Keylet const& directory, std::size_t
     return deletedOffersCount;
 }
 
-TER
-notTooManyOffers(ReadView const& view, uint256 const& nftokenID)
-{
-    std::size_t totalOffers = 0;
-
-    {
-        Dir const buys(view, keylet::nft_buys(nftokenID));
-        for (auto iter = buys.begin(); iter != buys.end(); iter.next_page())
-        {
-            totalOffers += iter.page_size();
-            if (totalOffers > maxDeletableTokenOfferEntries)
-                return tefTOO_BIG;
-        }
-    }
-
-    {
-        Dir const sells(view, keylet::nft_sells(nftokenID));
-        for (auto iter = sells.begin(); iter != sells.end(); iter.next_page())
-        {
-            totalOffers += iter.page_size();
-            if (totalOffers > maxDeletableTokenOfferEntries)
-                return tefTOO_BIG;
-        }
-    }
-    return tesSUCCESS;
-}
-
 bool
 deleteTokenOffer(ApplyView& view, std::shared_ptr<SLE> const& offer)
 {
