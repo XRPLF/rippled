@@ -259,7 +259,8 @@ public:
      *
      * @param account The account to create.
      * @param xrp The initial XRP balance.
-     * @param accountFlags Optional account flags to set.
+     * @param accountFlags Optional account flags to set. Defaults to 0
+     *        (no flags).
      */
     void
     createAccount(Account const& account, XRPAmount xrp, uint32_t accountFlags = 0);
