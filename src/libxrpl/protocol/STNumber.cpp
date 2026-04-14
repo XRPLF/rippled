@@ -85,7 +85,7 @@ STNumber::add(Serializer& s) const
         getFName().isBinary(), "ripple::STNumber::add : field is binary");
     XRPL_ASSERT(
         getFName().fieldType == getSType(),
-        "xrpl::STNumber::add : field type match");
+        "ripple::STNumber::add : field type match");
 
     auto value = value_;
     auto const mantissa = value.mantissa();
@@ -102,7 +102,7 @@ STNumber::add(Serializer& s) const
             roundToAsset(*asset_, value);
             XRPL_ASSERT_PARTS(
                 value_ == value,
-                "xrpl::STNumber::add",
+                "ripple::STNumber::add",
                 "value is already rounded");
         }
         else
@@ -116,7 +116,7 @@ STNumber::add(Serializer& s) const
             // STNumber is when the scale is large.
             XRPL_ASSERT_PARTS(
                 Number::getMantissaScale() == MantissaRange::large,
-                "xrpl::STNumber::add",
+                "ripple::STNumber::add",
                 "STNumber only used with large mantissa scale");
 #endif
         }
@@ -125,7 +125,7 @@ STNumber::add(Serializer& s) const
     XRPL_ASSERT_PARTS(
         mantissa <= std::numeric_limits<std::int64_t>::max() &&
             mantissa >= std::numeric_limits<std::int64_t>::min(),
-        "xrpl::STNumber::add",
+        "ripple::STNumber::add",
         "mantissa in valid range");
     s.add64(mantissa);
     s.add32(exponent);
