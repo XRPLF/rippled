@@ -1,16 +1,28 @@
+#include <test/jtx/AbstractClient.h>
 #include <test/jtx/JSONRPCClient.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/asio.hpp>                     // IWYU pragma: keep
-#include <boost/beast/http/dynamic_body.hpp>  // IWYU pragma: keep
-#include <boost/beast/http/message.hpp>       // IWYU pragma: keep
-#include <boost/beast/http/read.hpp>          // IWYU pragma: keep
-#include <boost/beast/http/string_body.hpp>   // IWYU pragma: keep
-#include <boost/beast/http/write.hpp>         // IWYU pragma: keep
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address_v4.hpp>
+#include <boost/asio/ip/address_v6.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/http/dynamic_body.hpp>
+#include <boost/beast/http/message.hpp>
+#include <boost/beast/http/read.hpp>
+#include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/beast/http/write.hpp>
 
 #include <iostream>
 #include <memory>

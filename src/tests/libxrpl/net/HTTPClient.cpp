@@ -3,10 +3,12 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/net/HTTPClient.h>
 
+#include <boost/asio/awaitable.hpp>
 #include <boost/asio/co_spawn.hpp>  // IWYU pragma: keep
 #include <boost/asio/detached.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/socket_base.hpp>
 #include <boost/asio/use_awaitable.hpp>
 #include <boost/asio/use_future.hpp>  // IWYU pragma: keep
 #include <boost/beast/core.hpp>       // IWYU pragma: keep

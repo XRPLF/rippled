@@ -17,6 +17,7 @@
 
 #include <boost/lexical_cast/try_lexical_convert.hpp>
 #include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regex_replace.hpp>
 
 #include <algorithm>
 #include <cassert>

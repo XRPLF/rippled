@@ -26,7 +26,7 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/sqlite3/soci-sqlite3.h>  // IWYU pragma: keep
 
 #include <memory>
 

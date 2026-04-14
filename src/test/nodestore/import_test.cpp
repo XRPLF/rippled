@@ -6,6 +6,9 @@
 
 #include <boost/beast/core/string.hpp>
 #include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
 #include <nudb/create.hpp>  // IWYU pragma: keep
 #include <nudb/detail/bucket.hpp>

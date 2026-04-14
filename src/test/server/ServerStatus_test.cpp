@@ -17,11 +17,22 @@
 #include <xrpl/server/NetworkOPs.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio.hpp>      // IWYU pragma: keep
-#include <boost/asio/ssl.hpp>  // IWYU pragma: keep
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/spawn.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/stream.hpp>
+#include <boost/asio/ssl/stream_base.hpp>
+#include <boost/asio/ssl/verify_mode.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/beast/core/make_printable.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
-#include <boost/beast/http.hpp>       // IWYU pragma: keep
-#include <boost/beast/websocket.hpp>  // IWYU pragma: keep
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/beast/websocket/stream.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <array>
