@@ -594,7 +594,7 @@ Number::mantissa() const noexcept
     {
         XRPL_ASSERT_PARTS(
             !isnormal() || (m % 10 == 0 && m / 10 <= maxRep),
-            "xrpl::Number::mantissa",
+            "ripple::Number::mantissa",
             "large normalized mantissa has no remainder");
         m /= 10;
     }
@@ -615,7 +615,7 @@ Number::exponent() const noexcept
     {
         XRPL_ASSERT_PARTS(
             !isnormal() || (mantissa_ % 10 == 0 && mantissa_ / 10 <= maxRep),
-            "xrpl::Number::exponent",
+            "ripple::Number::exponent",
             "large normalized mantissa has no remainder");
         ++e;
     }
@@ -748,7 +748,7 @@ Number::normalizeToRange(T minMantissa, T maxMantissa) const
     if constexpr (std::is_unsigned_v<T>)
         XRPL_ASSERT_PARTS(
             !negative,
-            "xrpl::Number::normalizeToRange",
+            "ripple::Number::normalizeToRange",
             "Number is non-negative for unsigned range.");
     Number::normalize(negative, mantissa, exponent, minMantissa, maxMantissa);
 
