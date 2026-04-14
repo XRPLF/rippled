@@ -1587,15 +1587,16 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // sfAdditionalBooks is present but empty (size 0). This is the
         // malformed state that fixSecurity3_1_3 is designed to catch.
         auto const offerKey = keylet::offer(bob.id(), bobOfferSeq);
-        env.app().getOpenLedger().modify([&offerKey](OpenView& view, beast::Journal) {
-            auto const sle = view.read(offerKey);
-            if (!sle)
-                return false;
-            auto replacement = std::make_shared<SLE>(*sle, sle->key());
-            replacement->setFieldArray(sfAdditionalBooks, STArray{});
-            view.rawReplace(replacement);
-            return true;
-        });
+        env.app().getOpenLedger().modify(
+            [&offerKey](OpenView& view, beast::Journal) {
+                auto const sle = view.read(offerKey);
+                if (!sle)
+                    return false;
+                auto replacement = std::make_shared<SLE>(*sle, sle->key());
+                replacement->setFieldArray(sfAdditionalBooks, STArray{});
+                view.rawReplace(replacement);
+                return true;
+            });
 
         if (fixS313Enabled)
         {
@@ -1612,7 +1613,10 @@ class PermissionedDEX_test : public beast::unit_test::suite
             // pre-fixSecurity3_1_3: offerInDomain only checks for a missing
             // sfAdditionalBooks field; size == 0 passes through, so the
             // malformed offer is crossed and the payment succeeds.
-            env(pay(alice, carol, USD(10)), path(~USD), sendmax(XRP(10)), domain(domainID));
+            env(pay(alice, carol, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(domainID));
         }
     }
 
