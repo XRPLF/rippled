@@ -2130,7 +2130,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject const parsed("test", faultyJson);
                 BEAST_EXPECT(!parsed.object);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 std::string const what(e.what());
                 unexpected(what.find("First level children of `Template`") != 0);
