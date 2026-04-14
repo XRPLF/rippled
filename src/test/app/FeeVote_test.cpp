@@ -247,7 +247,7 @@ class FeeVote_test : public beast::unit_test::suite
                  "owner_reserve = 1234",
                  "extension_compute_limit = 100",
                  "extension_size_limit = 200",
-                 " gas_price = 300"});
+                 "gas_price = 300"});
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == 50);
             BEAST_EXPECT(setup.account_reserve == 1234567);
