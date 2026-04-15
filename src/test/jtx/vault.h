@@ -26,6 +26,7 @@ struct Vault
         Account owner;
         Asset asset;
         std::optional<std::uint32_t> flags{};
+        std::optional<uint32_t> sequence = std::nullopt;
     };
 
     /** Return a VaultCreate transaction and the Vault's expected keylet. */

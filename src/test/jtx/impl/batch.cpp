@@ -47,6 +47,27 @@ inner::operator()(Env& env, JTx& jt) const
     batchTransaction[jss::RawTransaction] = txn_;
 }
 
+Json::Value
+make(
+    jtx::Account const& account,
+    uint32_t seq,
+    STAmount const& fee,
+    std::uint32_t flags,
+    std::uint32_t innerStartSeq,
+    std::vector<Json::Value> const& txns)
+{
+    auto jv = outer(account, seq, fee, flags);
+    for (std::size_t i = 0; i < txns.size(); ++i)
+    {
+        inner in(txns[i], innerStartSeq + static_cast<std::uint32_t>(i));
+        auto const index = jv[jss::RawTransactions].size();
+        Json::Value& batchTransaction = jv[jss::RawTransactions][index];
+        batchTransaction = Json::Value{};
+        batchTransaction[jss::RawTransaction] = in.getTxn();
+    }
+    return jv;
+}
+
 void
 sig::operator()(Env& env, JTx& jt) const
 {

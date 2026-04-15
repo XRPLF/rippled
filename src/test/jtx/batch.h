@@ -13,6 +13,7 @@
 #include <concepts>
 #include <cstdint>
 #include <optional>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -78,6 +79,16 @@ public:
         return txn_;
     }
 };
+
+/** Create a complete Batch transaction with outer envelope and inner transactions. */
+Json::Value
+make(
+    jtx::Account const& account,
+    uint32_t seq,
+    STAmount const& fee,
+    std::uint32_t flags,
+    std::uint32_t innerStartSeq,
+    std::vector<Json::Value> const& txns);
 
 /** Set a batch signature on a JTx. */
 class sig
