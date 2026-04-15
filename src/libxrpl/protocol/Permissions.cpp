@@ -106,15 +106,14 @@ Permission::Permission()
 
     XRPL_ASSERT(
         txFeatureMap_.size() == delegableTx_.size(),
-        "xrpl::Permission : txFeatureMap_ and delegableTx_ must have same "
-        "size");
+        "xrpl::Permission::Permission : txFeatureMap_ and delegableTx_ must have same size");
 
     for ([[maybe_unused]] auto const& permission : granularPermissionMap_)
     {
         XRPL_ASSERT(
             permission.second > UINT16_MAX,
-            "xrpl::Permission::granularPermissionMap_ : granular permission "
-            "value must not exceed the maximum uint16_t value.");
+            "xrpl::Permission::Permission : granular permission value must exceed the maximum "
+            "uint16_t value");
     }
 
     for (auto const& [gp, txType] : granularTxTypeMap_)
@@ -126,18 +125,17 @@ Permission::Permission()
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
-#define GRANULAR_PERMISSION(type, txType, value, flags, fields)                        \
-    {                                                                                  \
-        auto const* fmt = TxFormats::getInstance().findByType(txType);                 \
-        XRPL_ASSERT(                                                                   \
-            fmt != nullptr,                                                            \
-            "xrpl::Permission : " #type " must map to a valid tx type in TxFormats");  \
-        for (auto const& elem : std::vector<SOElement> fields)                         \
-        {                                                                              \
-            XRPL_ASSERT(                                                               \
-                fmt->getSOTemplate().getIndex(elem.sField()) != -1,                    \
-                "xrpl::Permission : " #type " has a field not valid for its tx type"); \
-        }                                                                              \
+#define GRANULAR_PERMISSION(type, txType, value, flags, fields)                                    \
+    {                                                                                              \
+        auto const* fmt = TxFormats::getInstance().findByType(txType);                             \
+        XRPL_ASSERT(                                                                               \
+            fmt != nullptr, "xrpl::Permission::Permission : granular permission txType is valid"); \
+        for (auto const& field : std::vector<SOElement> fields)                                    \
+        {                                                                                          \
+            XRPL_ASSERT(                                                                           \
+                fmt->getSOTemplate().getIndex(field.sField()) != -1,                               \
+                "xrpl::Permission::Permission : granular permission field is valid");              \
+        }                                                                                          \
     }
 
 #include <xrpl/protocol/detail/permissions.macro>
@@ -211,7 +209,7 @@ Permission::getTxFeature(TxType txType) const
     auto const txFeaturesIt = txFeatureMap_.find(txType);
     XRPL_ASSERT(
         txFeaturesIt != txFeatureMap_.end(),
-        "xrpl::Permissions::getTxFeature : tx exists in txFeatureMap_");
+        "xrpl::Permission::getTxFeature : tx exists in txFeatureMap_");
 
     if (txFeaturesIt->second == uint256{})
         return std::nullopt;
@@ -249,7 +247,7 @@ Permission::txToPermissionType(TxType type)
 TxType
 Permission::permissionToTxType(uint32_t value)
 {
-    XRPL_ASSERT(value > 0, "xrpl::Permission::permissionToTxType : value greater than 0");
+    XRPL_ASSERT(value > 0, "xrpl::Permission::permissionToTxType : value is greater than 0");
     return static_cast<TxType>(value - 1);
 }
 
