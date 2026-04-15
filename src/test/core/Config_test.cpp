@@ -1548,7 +1548,8 @@ r.ripple.com:51235
         };
 
         // Compute the max allowed value for path_workers
-        int effectiveWorkers = xrpl::Config::computeEffectiveWorkers(false, false, 0, 2); // NODE_SIZE=2 (medium)
+        int effectiveWorkers =
+            xrpl::Config::computeEffectiveWorkers(false, false, 0, 2);  // NODE_SIZE=2 (medium)
         int maxAllowed = std::max(2, (effectiveWorkers * 3) / 4);
 
         // Accept valid value (min)
@@ -1564,7 +1565,8 @@ r.ripple.com:51235
             BEAST_EXPECT(c.PATH_WORKERS == maxAllowed);
         }
         // Accept valid value (mid)
-        if (maxAllowed > 2) {
+        if (maxAllowed > 2)
+        {
             int mid = (2 + maxAllowed) / 2;
             Config c;
             c.loadFromString(makeConfig(mid));
@@ -1574,9 +1576,12 @@ r.ripple.com:51235
         {
             Config c;
             bool threw = false;
-            try {
+            try
+            {
                 c.loadFromString(makeConfig(1));
-            } catch (std::runtime_error& e) {
+            }
+            catch (std::runtime_error& e)
+            {
                 threw = true;
             }
             BEAST_EXPECT(threw);
@@ -1585,9 +1590,12 @@ r.ripple.com:51235
         {
             Config c;
             bool threw = false;
-            try {
+            try
+            {
                 c.loadFromString(makeConfig(maxAllowed + 1));
-            } catch (std::runtime_error& e) {
+            }
+            catch (std::runtime_error& e)
+            {
                 threw = true;
             }
             BEAST_EXPECT(threw);

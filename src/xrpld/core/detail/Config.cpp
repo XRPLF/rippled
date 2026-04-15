@@ -739,14 +739,15 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    auto const effectiveWorkers = Config::computeEffectiveWorkers(
-        standalone(), FORCE_MULTI_THREAD, WORKERS, NODE_SIZE);
+    auto const effectiveWorkers =
+        Config::computeEffectiveWorkers(standalone(), FORCE_MULTI_THREAD, WORKERS, NODE_SIZE);
 
     auto const maxUpdatePfLimit = std::max(2, (effectiveWorkers * 3) / 4);
     if (PATH_WORKERS > maxUpdatePfLimit)
-        Throw<std::runtime_error>(boost::str(boost::format(
-            "Invalid %1%: configured value %2% exceeds maximum %3% "
-            "(3/4 of effective job queue workers = %4%, minimum maximum of 2).") %
+        Throw<std::runtime_error>(boost::str(
+            boost::format(
+                "Invalid %1%: configured value %2% exceeds maximum %3% "
+                "(3/4 of effective job queue workers = %4%, minimum maximum of 2).") %
             SECTION_PATH_WORKERS % PATH_WORKERS % maxUpdatePfLimit % effectiveWorkers));
 
     if (getSingleSection(secConfig, SECTION_IO_WORKERS, strTemp, j_))
@@ -1345,7 +1346,12 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
     return setup;
 }
 
-int Config::computeEffectiveWorkers(bool standalone, bool forceMultiThread, int workers, std::size_t nodeSize)
+int
+Config::computeEffectiveWorkers(
+    bool standalone,
+    bool forceMultiThread,
+    int workers,
+    std::size_t nodeSize)
 {
     if (standalone && !forceMultiThread)
         return 1;

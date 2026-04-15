@@ -130,8 +130,7 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         };
 
         // Use PATH_WORKERS config to cap parallel pathfinding threads.
-        std::size_t const maxParallel = std::max(
-            2, app_.config().PATH_WORKERS);
+        std::size_t const maxParallel = std::max(2, app_.config().PATH_WORKERS);
 
         JLOG(mJournal.trace()) << "updateAll processing " << workItems.size()
                                << " requests, parallelism=" << maxParallel;
@@ -139,11 +138,9 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
         std::vector<WorkResult> allResults;
         allResults.reserve(workItems.size());
 
-        for (std::size_t batchStart = 0; batchStart < workItems.size();
-             batchStart += maxParallel)
+        for (std::size_t batchStart = 0; batchStart < workItems.size(); batchStart += maxParallel)
         {
-            std::size_t const batchEnd =
-                std::min(batchStart + maxParallel, workItems.size());
+            std::size_t const batchEnd = std::min(batchStart + maxParallel, workItems.size());
 
             std::vector<std::future<WorkResult>> futures;
             futures.reserve(batchEnd - batchStart);
@@ -151,23 +148,20 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
             for (std::size_t i = batchStart; i < batchEnd; ++i)
             {
                 auto& item = workItems[i];
-                futures.push_back(std::async(
-                    std::launch::async,
-                    [req = item.request,
-                     oneShot = item.isOneShot,
-                     &cache,
-                     &getSubscriber]() -> WorkResult {
-                        std::function<bool(void)> cb;
-                        if (!oneShot)
-                        {
-                            cb = [&getSubscriber, req]() {
-                                return (bool)getSubscriber(req);
-                            };
-                        }
-                        Json::Value update = req->doUpdate(cache, false, cb);
-                        req->updateComplete();
-                        return {req, std::move(update), oneShot};
-                    }));
+                futures.push_back(
+                    std::async(
+                        std::launch::async,
+                        [req = item.request, oneShot = item.isOneShot, &cache, &getSubscriber]()
+                            -> WorkResult {
+                            std::function<bool(void)> cb;
+                            if (!oneShot)
+                            {
+                                cb = [&getSubscriber, req]() { return (bool)getSubscriber(req); };
+                            }
+                            Json::Value update = req->doUpdate(cache, false, cb);
+                            req->updateComplete();
+                            return {req, std::move(update), oneShot};
+                        }));
             }
 
             for (auto& f : futures)
@@ -200,17 +194,14 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
             std::lock_guard const sl(mLock);
 
             auto ret = std::remove_if(
-                requests_.begin(),
-                requests_.end(),
-                [&removed, &toRemove](auto const& wl) {
+                requests_.begin(), requests_.end(), [&removed, &toRemove](auto const& wl) {
                     auto r = wl.lock();
                     if (!r)
                     {
                         ++removed;
                         return true;
                     }
-                    if (std::find(toRemove.begin(), toRemove.end(), r) !=
-                        toRemove.end())
+                    if (std::find(toRemove.begin(), toRemove.end(), r) != toRemove.end())
                     {
                         ++removed;
                         return true;
