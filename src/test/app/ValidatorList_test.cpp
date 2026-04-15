@@ -373,6 +373,7 @@ private:
 
             // load should accept valid validator list publisher keys
             std::vector<std::string> cfgPublishers;
+            cfgPublishers.reserve(keys.size());
             for (auto const& key : keys)
                 cfgPublishers.push_back(strHex(key));
 
@@ -393,6 +394,7 @@ private:
             std::vector<PublicKey> keys(
                 {randomMasterKey(), randomMasterKey(), randomMasterKey(), randomMasterKey()});
             std::vector<std::string> cfgPublishers;
+            cfgPublishers.reserve(keys.size());
             for (auto const& key : keys)
                 cfgPublishers.push_back(strHex(key));
 

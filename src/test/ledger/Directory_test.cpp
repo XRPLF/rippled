@@ -204,7 +204,7 @@ struct Directory_test : public beast::unit_test::suite
 
             BEAST_EXPECT(dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-            for (auto c : currencies)
+            for (auto const& c : currencies)
             {
                 env(trust(charlie, c(50)));
                 env.close();

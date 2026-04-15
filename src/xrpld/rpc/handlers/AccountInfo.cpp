@@ -102,7 +102,7 @@ doAccountInfo(RPC::JsonContext& context)
         RPC::inject_error(rpcACT_MALFORMED, result);
         return result;
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     static constexpr std::array<std::pair<std::string_view, LedgerSpecificFlags>, 9> lsFlags{
         {{"defaultRipple", lsfDefaultRipple},

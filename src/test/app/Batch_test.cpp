@@ -93,6 +93,7 @@ class Batch_test : public beast::unit_test::suite
 
         auto const ids = batchTxn.stx->getBatchTransactionIDs();
         std::vector<std::string> txIDs;
+        txIDs.reserve(ids.size());
         for (auto const& id : ids)
             txIDs.push_back(strHex(id));
         TxID const batchID = batchTxn.stx->getTransactionID();

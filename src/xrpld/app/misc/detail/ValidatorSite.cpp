@@ -227,12 +227,13 @@ ValidatorSite::makeRequest(
         {
         }
     };
-    auto onFetch =
-        [this, siteIdx, timeoutCancel](
-            error_code const& err, endpoint_type const& endpoint, detail::response_type&& resp) {
-            timeoutCancel();
-            onSiteFetch(err, endpoint, std::move(resp), siteIdx);
-        };
+    auto onFetch = [this, siteIdx, timeoutCancel](
+                       error_code const& err,
+                       endpoint_type const& endpoint,
+                       detail::response_type const& resp) {
+        timeoutCancel();
+        onSiteFetch(err, endpoint, resp, siteIdx);
+    };
 
     auto onFetchFile = [this, siteIdx, timeoutCancel](
                            error_code const& err, std::string const& resp) {

@@ -131,7 +131,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
     XRPL_ASSERT(
         ledger->header().hash == hash, "xrpl::RCLValidationsAdaptor::acquire : ledger hash match");
 
-    return RCLValidatedLedger(std::move(ledger), j_);
+    return RCLValidatedLedger(ledger, j_);
 }
 
 void
