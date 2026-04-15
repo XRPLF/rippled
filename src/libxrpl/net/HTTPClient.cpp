@@ -203,7 +203,7 @@ public:
             JLOG(j_.trace()) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message();
 
             // Can't do anything sound.
-            abort();
+            std::abort();
         }
         else
         {

@@ -8,6 +8,7 @@
 #include <array>
 #include <atomic>
 #include <cassert>
+#include <chrono>  // IWYU pragma: keep
 #include <condition_variable>
 #include <cstddef>
 #include <cstdint>
