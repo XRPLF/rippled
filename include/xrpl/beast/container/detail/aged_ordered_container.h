@@ -257,7 +257,8 @@ private:
 
         config_t(config_t&& other)
             : KeyValueCompare(std::move(other.key_compare()))
-            , beast::detail::empty_base_optimization<ElementAllocator>(std::move(other))
+            , beast::detail::empty_base_optimization<ElementAllocator>(std::move(
+                  static_cast<beast::detail::empty_base_optimization<ElementAllocator>&>(other)))
             , clock(other.clock)
         {
         }
