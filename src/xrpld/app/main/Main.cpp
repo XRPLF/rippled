@@ -28,8 +28,6 @@
 #include <boost/program_options/value_semantic.hpp>
 #include <boost/program_options/variables_map.hpp>
 
-#include <sys/resource.h>
-
 #include <algorithm>
 #include <atomic>
 #include <cstdint>
