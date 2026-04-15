@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -153,7 +154,7 @@ getPseudoAccountFields()
         if (!ar)
         {
             // LCOV_EXCL_START
-            LogicError(
+            Throw<std::logic_error>(
                 "xrpl::getPseudoAccountFields : unable to find account root "
                 "ledger format");
             // LCOV_EXCL_STOP
