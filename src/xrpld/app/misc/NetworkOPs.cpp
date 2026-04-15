@@ -978,8 +978,7 @@ NetworkOPsImp::processHeartbeatTimer()
         // If apply() or another operation is holding it, skip the non-critical
         // peer/mode checks and proceed directly to timerEntry() — ensuring
         // consensus timing is never delayed by mutex contention.
-        std::unique_lock lock{
-            registry_.get().getApp().getMasterMutex(), std::try_to_lock};
+        std::unique_lock lock{registry_.get().getApp().getMasterMutex(), std::try_to_lock};
 
         if (lock.owns_lock())
         {
@@ -987,8 +986,7 @@ NetworkOPsImp::processHeartbeatTimer()
             LoadManager& mgr(registry_.get().getLoadManager());
             mgr.heartbeat();
 
-            std::size_t const numPeers =
-                registry_.get().getOverlay().size();
+            std::size_t const numPeers = registry_.get().getOverlay().size();
 
             // do we have sufficient peers? If not, we are disconnected.
             if (numPeers < minPeerCount_)
@@ -998,17 +996,14 @@ NetworkOPsImp::processHeartbeatTimer()
                     setMode(OperatingMode::DISCONNECTED);
                     std::stringstream ss;
                     ss << "Node count (" << numPeers << ") has fallen "
-                       << "below required minimum (" << minPeerCount_
-                       << ").";
+                       << "below required minimum (" << minPeerCount_ << ").";
                     JLOG(m_journal.warn()) << ss.str();
-                    CLOG(clog.ss())
-                        << "set mode to DISCONNECTED: " << ss.str();
+                    CLOG(clog.ss()) << "set mode to DISCONNECTED: " << ss.str();
                 }
                 else
                 {
-                    CLOG(clog.ss())
-                        << "already DISCONNECTED. too few peers ("
-                        << numPeers << "), need at least " << minPeerCount_;
+                    CLOG(clog.ss()) << "already DISCONNECTED. too few peers (" << numPeers
+                                    << "), need at least " << minPeerCount_;
                 }
 
                 // MasterMutex lock need not be held to call
@@ -1024,10 +1019,8 @@ NetworkOPsImp::processHeartbeatTimer()
             if (mMode == OperatingMode::DISCONNECTED)
             {
                 setMode(OperatingMode::CONNECTED);
-                JLOG(m_journal.info())
-                    << "Node count (" << numPeers << ") is sufficient.";
-                CLOG(clog.ss()) << "setting mode to CONNECTED based on "
-                                << numPeers << " peers. ";
+                JLOG(m_journal.info()) << "Node count (" << numPeers << ") is sufficient.";
+                CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers << " peers. ";
             }
 
             // Check if the last validated ledger forces a change between
@@ -1045,18 +1038,15 @@ NetworkOPsImp::processHeartbeatTimer()
             auto newMode = mMode.load();
             if (origMode != newMode)
             {
-                CLOG(clog.ss())
-                    << ", changing to " << strOperatingMode(newMode, true);
+                CLOG(clog.ss()) << ", changing to " << strOperatingMode(newMode, true);
             }
             CLOG(clog.ss()) << ". ";
         }
         else
         {
-            JLOG(m_journal.debug())
-                << "Heartbeat: masterMutex contended, skipping "
-                   "peer/mode checks";
-            CLOG(clog.ss())
-                << "masterMutex contended, skipping peer/mode checks. ";
+            JLOG(m_journal.debug()) << "Heartbeat: masterMutex contended, skipping "
+                                       "peer/mode checks";
+            CLOG(clog.ss()) << "masterMutex contended, skipping peer/mode checks. ";
         }
     }
 

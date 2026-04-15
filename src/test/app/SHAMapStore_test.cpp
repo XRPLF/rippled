@@ -577,11 +577,9 @@ public:
         testcase("automatic online_delete with rwdb backend");
         using namespace jtx;
 
-        Env env(
-            *this,
-            envconfig([](std::unique_ptr<Config> cfg) {
-                return rwdb(onlineDelete(std::move(cfg)));
-            }));
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            return rwdb(onlineDelete(std::move(cfg)));
+        }));
 
         auto& store = env.app().getSHAMapStore();
 
@@ -618,11 +616,9 @@ public:
         testcase("rwdb advisory_delete can_delete controls");
         using namespace jtx;
 
-        Env env(
-            *this,
-            envconfig([](std::unique_ptr<Config> cfg) {
-                return rwdb(advisoryDelete(std::move(cfg)));
-            }));
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            return rwdb(advisoryDelete(std::move(cfg)));
+        }));
 
         auto& store = env.app().getSHAMapStore();
 

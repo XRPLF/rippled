@@ -55,9 +55,8 @@ class Transaction_test : public beast::unit_test::suite
         std::unique_ptr<Env> envHolder;
         if (rwdb)
         {
-            envHolder = std::make_unique<Env>(
-                *this,
-                test::jtx::envconfig([](std::unique_ptr<Config> cfg) {
+            envHolder =
+                std::make_unique<Env>(*this, test::jtx::envconfig([](std::unique_ptr<Config> cfg) {
                     return enableRWDB(std::move(cfg));
                 }));
         }

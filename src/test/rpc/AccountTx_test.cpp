@@ -888,8 +888,7 @@ class AccountTx_test : public beast::unit_test::suite
             if (txEntry.isMember(jss::tx) && txEntry[jss::tx].isMember(jss::hash) &&
                 txEntry[jss::tx][jss::hash].isString())
                 return txEntry[jss::tx][jss::hash].asString();
-            if (txEntry.isMember(jss::tx_json) &&
-                txEntry[jss::tx_json].isMember(jss::hash) &&
+            if (txEntry.isMember(jss::tx_json) && txEntry[jss::tx_json].isMember(jss::hash) &&
                 txEntry[jss::tx_json][jss::hash].isString())
                 return txEntry[jss::tx_json][jss::hash].asString();
             return {};
@@ -925,10 +924,8 @@ class AccountTx_test : public beast::unit_test::suite
             if (forwardRes[jss::result][jss::transactions].size() > 0 &&
                 next[jss::result][jss::transactions].size() > 0)
             {
-                auto const firstHash =
-                    getTxHash(forwardRes[jss::result][jss::transactions][0u]);
-                auto const nextHash =
-                    getTxHash(next[jss::result][jss::transactions][0u]);
+                auto const firstHash = getTxHash(forwardRes[jss::result][jss::transactions][0u]);
+                auto const nextHash = getTxHash(next[jss::result][jss::transactions][0u]);
                 BEAST_EXPECT(!firstHash.empty());
                 BEAST_EXPECT(!nextHash.empty());
                 BEAST_EXPECT(firstHash != nextHash);

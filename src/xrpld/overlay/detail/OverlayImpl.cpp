@@ -1,5 +1,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
+#include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/PeerImp.h>
@@ -7,7 +8,6 @@
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/peerfinder/make_Manager.h>
-#include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 

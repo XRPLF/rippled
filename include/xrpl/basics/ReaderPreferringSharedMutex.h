@@ -20,8 +20,9 @@
 
 #if defined(__linux__)
 
-#include <cerrno>
 #include <pthread.h>
+
+#include <cerrno>
 #include <stdexcept>
 
 namespace xrpl {
@@ -39,8 +40,7 @@ public:
         int rc = pthread_rwlock_init(&rwlock_, &attr);
         pthread_rwlockattr_destroy(&attr);
         if (rc != 0)
-            throw std::system_error(
-                rc, std::system_category(), "pthread_rwlock_init");
+            throw std::system_error(rc, std::system_category(), "pthread_rwlock_init");
     }
 
     ~reader_preferring_shared_mutex()
@@ -48,8 +48,7 @@ public:
         pthread_rwlock_destroy(&rwlock_);
     }
 
-    reader_preferring_shared_mutex(
-        reader_preferring_shared_mutex const&) = delete;
+    reader_preferring_shared_mutex(reader_preferring_shared_mutex const&) = delete;
     reader_preferring_shared_mutex&
     operator=(reader_preferring_shared_mutex const&) = delete;
 

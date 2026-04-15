@@ -3,13 +3,14 @@
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpl/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
-#include <xrpl/core/JobQueue.h>
-#include <xrpl/rdb/RelationalDatabase.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpld/core/Config.h>
+
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 
 #include <algorithm>
 #include <limits>
@@ -49,8 +50,7 @@ private:
 
 public:
     RWDBDatabase(ServiceRegistry& registry, Config const& config, JobQueue&)
-        : app_(registry.getApp())
-        , useTxTables_(config.useTxTables())
+        : app_(registry.getApp()), useTxTables_(config.useTxTables())
     {
     }
 
@@ -70,7 +70,7 @@ public:
             return {};
 
         std::shared_lock<std::shared_mutex> lock(mutex_);
-        for (const auto& [ledgerSeq, ledgerData] : ledgers_)
+        for (auto const& [ledgerSeq, ledgerData] : ledgers_)
         {
             if (!ledgerData.transactions.empty())
                 return ledgerSeq;
@@ -88,11 +88,10 @@ public:
         if (accountTxMap_.empty())
             return std::nullopt;
         LedgerIndex minSeq = std::numeric_limits<LedgerIndex>::max();
-        for (const auto& [_, accountData] : accountTxMap_)
+        for (auto const& [_, accountData] : accountTxMap_)
         {
             if (!accountData.ledgerTxMap.empty())
-                minSeq =
-                    std::min(minSeq, accountData.ledgerTxMap.begin()->first);
+                minSeq = std::min(minSeq, accountData.ledgerTxMap.begin()->first);
         }
         return minSeq == std::numeric_limits<LedgerIndex>::max()
             ? std::nullopt
@@ -118,7 +117,7 @@ public:
         auto it = ledgers_.find(ledgerSeq);
         if (it != ledgers_.end())
         {
-            for (const auto& [txHash, _] : it->second.transactions)
+            for (auto const& [txHash, _] : it->second.transactions)
             {
                 transactionMap_.erase(txHash);
             }
@@ -137,7 +136,7 @@ public:
             if (useTxTables_)
             {
                 // Purge per-ledger transaction index before removing the ledger.
-                for (const auto& [txHash, _] : it->second.transactions)
+                for (auto const& [txHash, _] : it->second.transactions)
                     transactionMap_.erase(txHash);
             }
             ledgerHashToSeq_.erase(it->second.info.hash);
@@ -172,7 +171,7 @@ public:
         auto it = ledgers_.begin();
         while (it != ledgers_.end() && it->first < ledgerSeq)
         {
-            for (const auto& [txHash, _] : it->second.transactions)
+            for (auto const& [txHash, _] : it->second.transactions)
             {
                 transactionMap_.erase(txHash);
             }
@@ -193,8 +192,7 @@ public:
         {
             auto& accountData = accountIt->second;
             auto txIt = accountData.ledgerTxMap.begin();
-            while (txIt != accountData.ledgerTxMap.end() &&
-                   txIt->first < ledgerSeq)
+            while (txIt != accountData.ledgerTxMap.end() && txIt->first < ledgerSeq)
             {
                 txIt = accountData.ledgerTxMap.erase(txIt);
             }
@@ -224,9 +222,9 @@ public:
 
         std::shared_lock<std::shared_mutex> lock(mutex_);
         std::size_t count = 0;
-        for (const auto& [_, accountData] : accountTxMap_)
+        for (auto const& [_, accountData] : accountTxMap_)
         {
-            for (const auto& [_, txVector] : accountData.ledgerTxMap)
+            for (auto const& [_, txVector] : accountData.ledgerTxMap)
             {
                 count += txVector.size();
             }
@@ -240,14 +238,11 @@ public:
         std::shared_lock<std::shared_mutex> lock(mutex_);
         if (ledgers_.empty())
             return {0, 0, 0};
-        return {
-            ledgers_.size(), ledgers_.begin()->first, ledgers_.rbegin()->first};
+        return {ledgers_.size(), ledgers_.begin()->first, ledgers_.rbegin()->first};
     }
 
     bool
-    saveValidatedLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool current) override
+    saveValidatedLedger(std::shared_ptr<Ledger const> const& ledger, bool current) override
     {
         LedgerData ledgerData;
         ledgerData.info = ledger->header();
@@ -255,26 +250,20 @@ public:
         auto j = app_.getJournal("Ledger");
         auto seq = ledger->header().seq;
 
-        JLOG(j.trace()) << "saveValidatedLedger "
-                        << (current ? "" : "fromAcquire ") << seq;
+        JLOG(j.trace()) << "saveValidatedLedger " << (current ? "" : "fromAcquire ") << seq;
 
         if (!ledger->header().accountHash.isNonZero())
         {
-            JLOG(j.fatal())
-                << "AH is zero: " << getJson({*ledger, {}}).asString();
-            UNREACHABLE(
-                "RWDBDatabase::saveValidatedLedger : account hash is zero");
+            JLOG(j.fatal()) << "AH is zero: " << getJson({*ledger, {}}).asString();
+            UNREACHABLE("RWDBDatabase::saveValidatedLedger : account hash is zero");
         }
 
-        if (ledger->header().accountHash !=
-            ledger->stateMap().getHash().as_uint256())
+        if (ledger->header().accountHash != ledger->stateMap().getHash().as_uint256())
         {
             JLOG(j.fatal()) << "sAL: " << ledger->header().accountHash
                             << " != " << ledger->stateMap().getHash();
-            JLOG(j.fatal())
-                << "saveAcceptedLedger: seq=" << seq << ", current=" << current;
-            UNREACHABLE(
-                "RWDBDatabase::saveValidatedLedger : account hash mismatch");
+            JLOG(j.fatal()) << "saveAcceptedLedger: seq=" << seq << ", current=" << current;
+            UNREACHABLE("RWDBDatabase::saveValidatedLedger : account hash mismatch");
         }
 
         XRPL_ASSERT(
@@ -341,9 +330,7 @@ public:
                     TxInsert{
                         id,
                         accTx,
-                        std::vector<AccountID>(
-                            affectedAccounts.begin(),
-                            affectedAccounts.end()),
+                        std::vector<AccountID>(affectedAccounts.begin(), affectedAccounts.end()),
                         acceptedLedgerTx->getTxnSeq()});
             }
 
@@ -371,10 +358,7 @@ public:
             for (auto const& insert : txInserts)
             {
                 app_.getMasterTransaction().inLedger(
-                    insert.id,
-                    seq,
-                    insert.txnSeq,
-                    app_.config().NETWORK_ID);
+                    insert.id, seq, insert.txnSeq, app_.config().NETWORK_ID);
             }
             return true;
         }
@@ -453,8 +437,7 @@ public:
         auto it = ledgers_.find(ledgerIndex);
         if (it != ledgers_.end())
         {
-            return LedgerHashPair{
-                it->second.info.hash, it->second.info.parentHash};
+            return LedgerHashPair{it->second.info.hash, it->second.info.parentHash};
         }
         return std::nullopt;
     }
@@ -468,8 +451,7 @@ public:
         auto end = ledgers_.upper_bound(maxSeq);
         for (; it != end; ++it)
         {
-            result[it->first] = LedgerHashPair{
-                it->second.info.hash, it->second.info.parentHash};
+            result[it->first] = LedgerHashPair{it->second.info.hash, it->second.info.parentHash};
         }
         return result;
     }
@@ -493,7 +475,7 @@ public:
         if (range)
         {
             std::size_t count = 0;
-            for (LedgerIndex seq = range->first(); ; ++seq)
+            for (LedgerIndex seq = range->first();; ++seq)
             {
                 auto found = ledgers_.find(seq);
                 if (found != ledgers_.end() && !found->second.transactionsPurged)
@@ -501,9 +483,8 @@ public:
                 if (seq == range->last())
                     break;
             }
-            return (count == (range->last() - range->first() + 1))
-                ? TxSearched::All
-                : TxSearched::Some;
+            return (count == (range->last() - range->first() + 1)) ? TxSearched::All
+                                                                   : TxSearched::Some;
         }
 
         return TxSearched::Unknown;
@@ -517,17 +498,16 @@ private:
     {
         std::uint64_t size = 0;
 
-        size += ledgers_.size() *
-            (sizeof(LedgerIndex) + sizeof(LedgerData) + MAP_NODE_OVERHEAD);
+        size += ledgers_.size() * (sizeof(LedgerIndex) + sizeof(LedgerData) + MAP_NODE_OVERHEAD);
 
-        for (const auto& [_, ledgerData] : ledgers_)
+        for (auto const& [_, ledgerData] : ledgers_)
         {
             size += ledgerData.transactions.size() *
                 (sizeof(uint256) + sizeof(AccountTx) + MAP_NODE_OVERHEAD);
         }
 
-        size += ledgerHashToSeq_.size() *
-            (sizeof(uint256) + sizeof(LedgerIndex) + MAP_NODE_OVERHEAD);
+        size +=
+            ledgerHashToSeq_.size() * (sizeof(uint256) + sizeof(LedgerIndex) + MAP_NODE_OVERHEAD);
 
         return size;
     }
@@ -540,28 +520,20 @@ private:
 
         std::uint64_t size = 0;
 
-        size += transactionMap_.size() *
-            (sizeof(uint256) + sizeof(AccountTx) + MAP_NODE_OVERHEAD);
+        size += transactionMap_.size() * (sizeof(uint256) + sizeof(AccountTx) + MAP_NODE_OVERHEAD);
 
-        for (const auto& [_, accountTx] : transactionMap_)
+        for (auto const& [_, accountTx] : transactionMap_)
         {
             if (accountTx.first)
-                size += accountTx.first->getSTransaction()
-                            ->getSerializer()
-                            .peekData()
-                            .size();
+                size += accountTx.first->getSTransaction()->getSerializer().peekData().size();
             if (accountTx.second)
-                size += accountTx.second->getAsObject()
-                            .getSerializer()
-                            .peekData()
-                            .size();
+                size += accountTx.second->getAsObject().getSerializer().peekData().size();
         }
 
-        for (const auto& [accountId, accountData] : accountTxMap_)
+        for (auto const& [accountId, accountData] : accountTxMap_)
         {
-            size +=
-                sizeof(accountId) + sizeof(AccountTxData) + MAP_NODE_OVERHEAD;
-            for (const auto& [ledgerSeq, txVector] : accountData.ledgerTxMap)
+            size += sizeof(accountId) + sizeof(AccountTxData) + MAP_NODE_OVERHEAD;
+            for (auto const& [ledgerSeq, txVector] : accountData.ledgerTxMap)
             {
                 size += sizeof(ledgerSeq) + MAP_NODE_OVERHEAD;
                 size += txVector.capacity() * sizeof(AccountTx);
@@ -577,8 +549,8 @@ public:
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
 
-        std::uint64_t size = sizeof(*this) + getBytesUsedLedger_unlocked() +
-            getBytesUsedTransaction_unlocked();
+        std::uint64_t size =
+            sizeof(*this) + getBytesUsedLedger_unlocked() + getBytesUsedTransaction_unlocked();
 
         return static_cast<std::uint32_t>(size / 1024);
     }
@@ -594,8 +566,7 @@ public:
     getKBUsedTransaction() override
     {
         std::shared_lock<std::shared_mutex> lock(mutex_);
-        return static_cast<std::uint32_t>(
-            getBytesUsedTransaction_unlocked() / 1024);
+        return static_cast<std::uint32_t>(getBytesUsedTransaction_unlocked() / 1024);
     }
 
     void
@@ -634,8 +605,8 @@ public:
 
         for (auto it = ledgers_.rbegin(); it != ledgers_.rend(); ++it)
         {
-            const auto& transactions = it->second.transactions;
-            for (const auto& [txHash, accountTx] : transactions)
+            auto const& transactions = it->second.transactions;
+            for (auto const& [txHash, accountTx] : transactions)
             {
                 if (skipped < startIndex)
                 {
@@ -670,16 +641,14 @@ public:
             return {};
 
         AccountTxs result;
-        const auto& accountData = it->second;
+        auto const& accountData = it->second;
         auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
         auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
 
         std::size_t skipped = 0;
-        for (; txIt != txEnd &&
-             (options.bUnlimited || result.size() < options.limit);
-             ++txIt)
+        for (; txIt != txEnd && (options.bUnlimited || result.size() < options.limit); ++txIt)
         {
-            for (const auto& accountTx : txIt->second)
+            for (auto const& accountTx : txIt->second)
             {
                 if (skipped < options.offset)
                 {
@@ -707,7 +676,7 @@ public:
             return {};
 
         AccountTxs result;
-        const auto& accountData = it->second;
+        auto const& accountData = it->second;
         auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
         auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
 
@@ -717,9 +686,7 @@ public:
              (options.bUnlimited || result.size() < options.limit);
              ++rIt)
         {
-            for (auto innerRIt = rIt->second.rbegin();
-                 innerRIt != rIt->second.rend();
-                 ++innerRIt)
+            for (auto innerRIt = rIt->second.rbegin(); innerRIt != rIt->second.rend(); ++innerRIt)
             {
                 if (skipped < options.offset)
                 {
@@ -748,23 +715,21 @@ public:
             return {};
 
         MetaTxsList result;
-        const auto& accountData = it->second;
+        auto const& accountData = it->second;
         auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
         auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
 
         std::size_t skipped = 0;
-        for (; txIt != txEnd &&
-             (options.bUnlimited || result.size() < options.limit);
-             ++txIt)
+        for (; txIt != txEnd && (options.bUnlimited || result.size() < options.limit); ++txIt)
         {
-            for (const auto& accountTx : txIt->second)
+            for (auto const& accountTx : txIt->second)
             {
                 if (skipped < options.offset)
                 {
                     ++skipped;
                     continue;
                 }
-                const auto& [txn, txMeta] = accountTx;
+                auto const& [txn, txMeta] = accountTx;
                 result.emplace_back(
                     txn->getSTransaction()->getSerializer().peekData(),
                     txMeta->getAsObject().getSerializer().peekData(),
@@ -789,7 +754,7 @@ public:
             return {};
 
         MetaTxsList result;
-        const auto& accountData = it->second;
+        auto const& accountData = it->second;
         auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
         auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
 
@@ -799,16 +764,14 @@ public:
              (options.bUnlimited || result.size() < options.limit);
              ++rIt)
         {
-            for (auto innerRIt = rIt->second.rbegin();
-                 innerRIt != rIt->second.rend();
-                 ++innerRIt)
+            for (auto innerRIt = rIt->second.rbegin(); innerRIt != rIt->second.rend(); ++innerRIt)
             {
                 if (skipped < options.offset)
                 {
                     ++skipped;
                     continue;
                 }
-                const auto& [txn, txMeta] = *innerRIt;
+                auto const& [txn, txMeta] = *innerRIt;
                 result.emplace_back(
                     txn->getSTransaction()->getSerializer().peekData(),
                     txMeta->getAsObject().getSerializer().peekData(),
@@ -824,9 +787,7 @@ public:
     std::pair<std::optional<RelationalDatabase::AccountTxMarker>, int>
     accountTxPage(
         std::function<void(std::uint32_t)> const& onUnsavedLedger,
-        std::function<
-            void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const&
-            onTransaction,
+        std::function<void(std::uint32_t, std::string const&, Blob&&, Blob&&)> const& onTransaction,
         RelationalDatabase::AccountTxPageOptions const& options,
         int limit_used,
         std::uint32_t page_length,
@@ -867,7 +828,7 @@ public:
 
         if (forward)
         {
-            const auto& accountData = it->second;
+            auto const& accountData = it->second;
             auto txIt = accountData.ledgerTxMap.lower_bound(
                 findLedger == 0 ? options.ledgerRange.min : findLedger);
             auto txEnd = accountData.ledgerTxMap.upper_bound(options.ledgerRange.max);
@@ -875,7 +836,7 @@ public:
             {
                 std::uint32_t const ledgerSeq = txIt->first;
                 std::uint32_t txnSeq = 0;
-                for (const auto& accountTx : txIt->second)
+                for (auto const& accountTx : txIt->second)
                 {
                     if (lookingForMarker)
                     {
@@ -884,8 +845,7 @@ public:
                         // rows; include the marker row itself.
                         // If marker ledger was pruned by online_delete, begin
                         // from the first available later ledger.
-                        if (ledgerSeq < findLedger ||
-                            (ledgerSeq == findLedger && txnSeq < findSeq))
+                        if (ledgerSeq < findLedger || (ledgerSeq == findLedger && txnSeq < findSeq))
                         {
                             ++txnSeq;
                             continue;
@@ -894,17 +854,12 @@ public:
                     }
                     else if (numberOfResults == 0)
                     {
-                        newmarker = {
-                            rangeCheckedCast<std::uint32_t>(ledgerSeq), txnSeq};
+                        newmarker = {rangeCheckedCast<std::uint32_t>(ledgerSeq), txnSeq};
                         return {newmarker, total};
                     }
 
-                    Blob rawTxn = accountTx.first->getSTransaction()
-                                      ->getSerializer()
-                                      .peekData();
-                    Blob rawMeta = accountTx.second->getAsObject()
-                                       .getSerializer()
-                                       .peekData();
+                    Blob rawTxn = accountTx.first->getSTransaction()->getSerializer().peekData();
+                    Blob rawMeta = accountTx.second->getAsObject().getSerializer().peekData();
 
                     if (rawMeta.size() == 0)
                         onUnsavedLedger(ledgerSeq);
@@ -922,7 +877,7 @@ public:
         }
         else
         {
-            const auto& accountData = it->second;
+            auto const& accountData = it->second;
             auto txIt = accountData.ledgerTxMap.lower_bound(options.ledgerRange.min);
             auto txEnd = accountData.ledgerTxMap.upper_bound(
                 findLedger == 0 ? options.ledgerRange.max : findLedger);
@@ -934,8 +889,7 @@ public:
                 if (rtxIt->second.empty())
                     continue;
                 std::uint32_t txnSeq = rtxIt->second.size() - 1;
-                for (auto innerRIt = rtxIt->second.rbegin();
-                     innerRIt != rtxIt->second.rend();
+                for (auto innerRIt = rtxIt->second.rbegin(); innerRIt != rtxIt->second.rend();
                      ++innerRIt)
                 {
                     if (lookingForMarker)
@@ -945,8 +899,7 @@ public:
                         // later rows; include the marker row itself.
                         // If marker ledger was pruned by online_delete, begin
                         // from the first available earlier ledger.
-                        if (ledgerSeq > findLedger ||
-                            (ledgerSeq == findLedger && txnSeq > findSeq))
+                        if (ledgerSeq > findLedger || (ledgerSeq == findLedger && txnSeq > findSeq))
                         {
                             if (txnSeq > 0)
                                 --txnSeq;
@@ -956,18 +909,13 @@ public:
                     }
                     else if (numberOfResults == 0)
                     {
-                        newmarker = {
-                            rangeCheckedCast<std::uint32_t>(ledgerSeq), txnSeq};
+                        newmarker = {rangeCheckedCast<std::uint32_t>(ledgerSeq), txnSeq};
                         return {newmarker, total};
                     }
 
-                    const auto& accountTx = *innerRIt;
-                    Blob rawTxn = accountTx.first->getSTransaction()
-                                      ->getSerializer()
-                                      .peekData();
-                    Blob rawMeta = accountTx.second->getAsObject()
-                                       .getSerializer()
-                                       .peekData();
+                    auto const& accountTx = *innerRIt;
+                    Blob rawTxn = accountTx.first->getSTransaction()->getSerializer().peekData();
+                    Blob rawMeta = accountTx.second->getAsObject().getSerializer().peekData();
 
                     if (rawMeta.size() == 0)
                         onUnsavedLedger(ledgerSeq);
@@ -994,8 +942,7 @@ public:
             return {};
 
         static std::uint32_t const page_length(200);
-        auto onUnsavedLedger =
-            std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
+        auto onUnsavedLedger = std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
         AccountTxs ret;
         Application& app = app_;
         auto onTransaction = [&ret, &app](
@@ -1003,14 +950,11 @@ public:
                                  std::string const& status,
                                  Blob&& rawTxn,
                                  Blob&& rawMeta) {
-            convertBlobsToTxResult(
-                ret, ledger_index, status, rawTxn, rawMeta, app);
+            convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
         };
 
         auto newmarker =
-            accountTxPage(
-                onUnsavedLedger, onTransaction, options, 0, page_length, true)
-                .first;
+            accountTxPage(onUnsavedLedger, onTransaction, options, 0, page_length, true).first;
         return {ret, newmarker};
     }
 
@@ -1021,8 +965,7 @@ public:
             return {};
 
         static std::uint32_t const page_length(200);
-        auto onUnsavedLedger =
-            std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
+        auto onUnsavedLedger = std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
         AccountTxs ret;
         Application& app = app_;
         auto onTransaction = [&ret, &app](
@@ -1030,14 +973,11 @@ public:
                                  std::string const& status,
                                  Blob&& rawTxn,
                                  Blob&& rawMeta) {
-            convertBlobsToTxResult(
-                ret, ledger_index, status, rawTxn, rawMeta, app);
+            convertBlobsToTxResult(ret, ledger_index, status, rawTxn, rawMeta, app);
         };
 
         auto newmarker =
-            accountTxPage(
-                onUnsavedLedger, onTransaction, options, 0, page_length, false)
-                .first;
+            accountTxPage(onUnsavedLedger, onTransaction, options, 0, page_length, false).first;
         return {ret, newmarker};
     }
 
@@ -1048,21 +988,17 @@ public:
             return {};
 
         static std::uint32_t const page_length(500);
-        auto onUnsavedLedger =
-            std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
+        auto onUnsavedLedger = std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
         MetaTxsList ret;
         auto onTransaction = [&ret](
                                  std::uint32_t ledgerIndex,
                                  std::string const& status,
                                  Blob&& rawTxn,
                                  Blob&& rawMeta) {
-            ret.emplace_back(
-                std::move(rawTxn), std::move(rawMeta), ledgerIndex);
+            ret.emplace_back(std::move(rawTxn), std::move(rawMeta), ledgerIndex);
         };
         auto newmarker =
-            accountTxPage(
-                onUnsavedLedger, onTransaction, options, 0, page_length, true)
-                .first;
+            accountTxPage(onUnsavedLedger, onTransaction, options, 0, page_length, true).first;
         return {ret, newmarker};
     }
 
@@ -1073,21 +1009,17 @@ public:
             return {};
 
         static std::uint32_t const page_length(500);
-        auto onUnsavedLedger =
-            std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
+        auto onUnsavedLedger = std::bind(saveLedgerAsync, std::ref(app_), std::placeholders::_1);
         MetaTxsList ret;
         auto onTransaction = [&ret](
                                  std::uint32_t ledgerIndex,
                                  std::string const& status,
                                  Blob&& rawTxn,
                                  Blob&& rawMeta) {
-            ret.emplace_back(
-                std::move(rawTxn), std::move(rawMeta), ledgerIndex);
+            ret.emplace_back(std::move(rawTxn), std::move(rawMeta), ledgerIndex);
         };
         auto newmarker =
-            accountTxPage(
-                onUnsavedLedger, onTransaction, options, 0, page_length, false)
-                .first;
+            accountTxPage(onUnsavedLedger, onTransaction, options, 0, page_length, false).first;
         return {ret, newmarker};
     }
 };
