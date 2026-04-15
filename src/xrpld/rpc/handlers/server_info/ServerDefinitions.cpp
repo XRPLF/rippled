@@ -367,7 +367,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 }  // namespace detail
 
 Json::Value const&
-getStaticServerDefinitions()
+getServerDefinitions()
 {
     static detail::ServerDefinitions const defs{};
     return defs.get();
@@ -385,7 +385,7 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    auto const& defs = getStaticServerDefinitions();
+    auto const& defs = getServerDefinitions();
     if (to_string(hash) == defs[jss::hash].asString())
     {
         Json::Value jv = Json::objectValue;

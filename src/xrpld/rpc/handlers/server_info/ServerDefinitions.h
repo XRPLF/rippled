@@ -5,6 +5,6 @@
 namespace xrpl {
 
 Json::Value const&
-getStaticServerDefinitions();
+getServerDefinitions();
 
 }  // namespace xrpl

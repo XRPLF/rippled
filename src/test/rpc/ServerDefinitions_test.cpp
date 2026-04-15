@@ -457,9 +457,9 @@ public:
     void
     testGetStaticServerDefinitions()
     {
-        testcase("getStaticServerDefinitions");
+        testcase("getServerDefinitions");
 
-        auto const defs = getStaticServerDefinitions();
+        auto const defs = getServerDefinitions();
         for (auto const& field :
              {jss::ACCOUNT_SET_FLAGS,
               jss::FIELDS,

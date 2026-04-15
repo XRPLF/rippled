@@ -494,7 +494,7 @@ run(int argc, char** argv)
     if (vm.contains("definitions"))
     {
         // LCOV_EXCL_START
-        std::cout << Json::FastWriter().write(getStaticServerDefinitions());
+        std::cout << Json::FastWriter().write(getServerDefinitions());
         return 0;
         // LCOV_EXCL_STOP
     }
