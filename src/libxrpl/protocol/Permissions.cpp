@@ -96,7 +96,7 @@ Permission::Permission()
     granularTemplates_.emplace(                                 \
         std::piecewise_construct,                               \
         std::forward_as_tuple(type),                            \
-        std::forward_as_tuple(std::vector<SOElement> fields, TxFormats::getCommonFields()));
+        std::forward_as_tuple(std::vector<SOElement>(fields), TxFormats::getCommonFields()));
 
 #include <xrpl/protocol/detail/permissions.macro>
 
@@ -127,10 +127,10 @@ Permission::Permission()
 
 #define GRANULAR_PERMISSION(type, txType, value, flags, fields)                                    \
     {                                                                                              \
-        auto const* fmt = TxFormats::getInstance().findByType(txType);                             \
+        [[maybe_unused]] auto const* fmt = TxFormats::getInstance().findByType(txType);            \
         XRPL_ASSERT(                                                                               \
             fmt != nullptr, "xrpl::Permission::Permission : granular permission txType is valid"); \
-        for (auto const& field : std::vector<SOElement> fields)                                    \
+        for ([[maybe_unused]] auto const& field : std::vector<SOElement>(fields))                  \
         {                                                                                          \
             XRPL_ASSERT(                                                                           \
                 fmt->getSOTemplate().getIndex(field.sField()) != -1,                               \
