@@ -1101,7 +1101,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(checkOffer(env, bob, hybridOfferSeq, XRP(50), USD(50), lsfHybrid, true));
 
-        if (features[fixSecurity3_1_3])
+        if (features[fixPermissionDEX1_1])
         {
             // With the fix: hybrid offer CAN still be consumed via a regular
             // open-book payment even though the domain credential was revoked.
@@ -1326,7 +1326,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
     }
 
     // Regression: hybrid offer is NOT evicted from the open book when the
-    // owner's domain credential expires (fixSecurity3_1_3).
+    // owner's domain credential expires (fixPermissionDEX1_1).
     // A domain payment after expiry should fail (domain book evicts the offer),
     // but the open book remains usable.
     void
@@ -1521,9 +1521,9 @@ public:
         testHybridBookStep(all);
         // testHybridInvalidOffer: run once without the fix (old behaviour) and
         // once with the fix (new behaviour).
+        testHybridInvalidOffer(all - fixPermissionDEX1_1);
         testHybridInvalidOffer(all);
-        testHybridInvalidOffer(all | fixSecurity3_1_3);
-        testHybridOpenBookAfterCredentialExpiry(all | fixSecurity3_1_3);
+        testHybridOpenBookAfterCredentialExpiry(all);
         testHybridOfferDirectories(all);
     }
 };
