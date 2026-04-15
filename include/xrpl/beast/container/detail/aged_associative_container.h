@@ -26,7 +26,7 @@ struct aged_associative_container_extract_t<false>
     Value const&
     operator()(Value const& value) const
     {
-        return value;
+        return value;  // NOLINT(bugprone-return-const-ref-from-parameter)
     }
 };
 
