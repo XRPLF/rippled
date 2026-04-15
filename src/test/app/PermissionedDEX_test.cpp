@@ -1587,7 +1587,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         // sfAdditionalBooks is present but empty (size 0). This is the
         // malformed state that fixSecurity3_1_3 is designed to catch.
         auto const offerKey = keylet::offer(bob.id(), bobOfferSeq);
-        env.app().getOpenLedger().modify(
+        env.app().openLedger().modify(
             [&offerKey](OpenView& view, beast::Journal) {
                 auto const sle = view.read(offerKey);
                 if (!sle)
