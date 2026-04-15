@@ -20,10 +20,9 @@
 #include <boost/system/detail/system_category.hpp>
 #include <boost/system/system_error.hpp>
 
-#include <_abort.h>
-
 #include <chrono>
 #include <cstddef>
+#include <cstdlib>
 #include <deque>
 #include <functional>
 #include <iterator>

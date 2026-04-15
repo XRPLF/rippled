@@ -28,6 +28,8 @@
 #include <boost/multiprecision/detail/endian.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>

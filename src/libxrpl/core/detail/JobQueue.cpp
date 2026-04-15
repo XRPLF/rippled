@@ -8,6 +8,7 @@
 #include <xrpl/core/JobTypeInfo.h>
 #include <xrpl/core/LoadEvent.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
 
 #include <algorithm>
 #include <chrono>

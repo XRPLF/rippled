@@ -11,6 +11,7 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/filesystem/operations.hpp>
 #include <boost/system/detail/error_code.hpp>
