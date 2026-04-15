@@ -279,7 +279,6 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        static_assert(!std::same_as<TIn, XRPAmount> || !std::same_as<TOut, XRPAmount>);
         if (shouldRmSmallIncreasedQOffer<TIn, TOut>())
         {
             auto const original_funds = accountFundsHelper(

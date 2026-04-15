@@ -1427,13 +1427,6 @@ equalHelper(Step const& step, xrpl::Book const& book)
 bool
 bookStepEqual(Step const& step, xrpl::Book const& book)
 {
-    if (isXRP(book.in) && isXRP(book.out))
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::test::bookStepEqual : no XRP to XRP book step");
-        return false;  // no such thing as xrp/xrp book step
-        // LCOV_EXCL_STOP
-    }
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
             using TIn_ = typename TIn::amount_type;
@@ -1447,8 +1440,8 @@ bookStepEqual(Step const& step, xrpl::Book const& book)
             {
                 // LCOV_EXCL_START
                 UNREACHABLE("xrpl::bookStepEqual : invalid book step");
-                // LCOV_EXCL_STOP
                 return false;
+                // LCOV_EXCL_STOP
             }
         },
         book.in.getAmountType(),
