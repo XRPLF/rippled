@@ -355,7 +355,7 @@ NoZeroEscrow::finalize(
     STTx const& txn,
     TER const,
     XRPAmount const,
-    ReadView const& rv,
+    ReadView const&,
     beast::Journal const& j) const
 {
     if (bad_)
@@ -626,7 +626,7 @@ NoXRPTrustLines::finalize(
     STTx const&,
     TER const,
     XRPAmount const,
-    ReadView const& rv,
+    ReadView const&,
     beast::Journal const& j) const
 {
     if (!xrpTrustLine_)
@@ -668,7 +668,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
     STTx const&,
     TER const,
     XRPAmount const,
-    ReadView const& rv,
+    ReadView const&,
     beast::Journal const& j) const
 {
     if (!deepFreezeWithoutFreeze_)
