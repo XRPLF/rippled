@@ -1724,47 +1724,31 @@ class Invariants_test : public beast::unit_test::suite
             STTx{ttOFFER_CREATE, [&](STObject& tx) {}},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
-        // empty sfAdditionalBooks (size 0)
-        {
-            Env env1(*this, features);
+        // empty sfAdditionalBooks (size 0) - caught by fixSecurity3_1_3
+        // (testable_amendments() always enables fixSecurity3_1_3)
+        doInvariantCheck(
+            {{"hybrid offer is malformed"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
-            Account const A1{"A1"};
-            Account const A2{"A2"};
-            env1.fund(XRP(1000), A1, A2);
-            env1.close();
+                Keylet const offerKey = keylet::offer(A2.id(), 10);
+                auto sleOffer = std::make_shared<SLE>(offerKey);
+                sleOffer->setAccountID(sfAccount, A2);
+                sleOffer->setFieldAmount(sfTakerPays, A1["USD"](10));
+                sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                sleOffer->setFlag(lsfHybrid);
+                sleOffer->setFieldH256(sfDomainID, pdKeylet.key);
 
-            [[maybe_unused]] auto [seq1, pd1] =
-                createPermissionedDomainEnv(env1, A1, A2);
-            env1.close();
-
-            doInvariantCheck(
-                std::move(env1),
-                A1,
-                A2,
-                fixS313Enabled
-                    ? std::vector<std::string>{{"hybrid offer is malformed"}}
-                    : std::vector<std::string>{},
-                [&pd1](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    Keylet const offerKey = keylet::offer(A2.id(), 10);
-                    auto sleOffer = std::make_shared<SLE>(offerKey);
-                    sleOffer->setAccountID(sfAccount, A2);
-                    sleOffer->setFieldAmount(sfTakerPays, A1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
-                    sleOffer->setFlag(lsfHybrid);
-                    sleOffer->setFieldH256(sfDomainID, pd1);
-
-                    STArray const bookArr;  // empty array, size 0
-                    sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
-                    ac.view().insert(sleOffer);
-                    return true;
-                },
-                XRPAmount{},
-                STTx{ttOFFER_CREATE, [&](STObject&) {}},
-                fixS313Enabled
-                    ? std::initializer_list<
-                          TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
-                    : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
-        }
+                STArray const bookArr;  // empty array, size 0
+                sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
+                ac.view().insert(sleOffer);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttOFFER_CREATE, [&](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
         // hybrid offer missing sfAdditionalBooks
         doInvariantCheck(
