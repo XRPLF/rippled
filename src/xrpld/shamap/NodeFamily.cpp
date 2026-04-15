@@ -5,11 +5,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/app/main/Tuning.h>
-#include <xrpld/core/Config.h>
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/shamap/FullBelowCache.h>
 #include <xrpl/shamap/TreeNodeCache.h>
 

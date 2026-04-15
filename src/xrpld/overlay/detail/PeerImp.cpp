@@ -8,7 +8,6 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/consensus/Validations.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Peer.h>
@@ -41,7 +40,6 @@
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
@@ -61,7 +59,6 @@
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
-#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
