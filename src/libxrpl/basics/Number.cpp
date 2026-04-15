@@ -846,7 +846,7 @@ to_string(Number const& amount)
     bool const negative = amount.negative_;
 
     // Use scientific notation for exponents that are too small or too large
-    auto const rangeLog = Number::mantissaLog();
+    auto rangeLog = Number::mantissaLog();
     if (((exponent != 0) && ((exponent < -(rangeLog + 10)) || (exponent > -(rangeLog - 10)))))
     {
         while (mantissa != 0 && mantissa % 10 == 0 && exponent < Number::maxExponent)

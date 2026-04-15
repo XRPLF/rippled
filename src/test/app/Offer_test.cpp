@@ -5132,7 +5132,7 @@ public:
     void
     run() override
     {
-        testAll(allFeatures - featurePermissionedDEX);
+        testAll(allFeatures - featurePermissionedDEX - featureMPTokensV2);
         testFalseAssert();
     }
 };
@@ -5142,7 +5142,7 @@ class OfferWOSmallQOffers_test : public OfferBaseUtil_test
     void
     run() override
     {
-        testAll(allFeatures - fixFillOrKill - featurePermissionedDEX);
+        testAll(allFeatures - fixFillOrKill - featurePermissionedDEX - featureMPTokensV2);
     }
 };
 
@@ -5152,6 +5152,7 @@ class OfferAllFeatures_test : public OfferBaseUtil_test
     run() override
     {
         testAll(allFeatures);
+        testAll(allFeatures - featureMPTokensV2);
     }
 };
 
@@ -5165,8 +5166,9 @@ class Offer_manual_test : public OfferBaseUtil_test
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
-        testAll(all - fillOrKill - permDEX);
-        testAll(all - permDEX);
+        testAll(all - fillOrKill - permDEX - featureMPTokensV2);
+        testAll(all - permDEX - featureMPTokensV2);
+        testAll(all - featureMPTokensV2);
         testAll(all);
     }
 };

@@ -60,18 +60,21 @@ rpf(jtx::Account const& src, jtx::Account const& dst, std::uint32_t num_src)
 class Path_test : public beast::unit_test::suite
 {
     jtx::Env
-    pathTestEnv()
+    pathTestEnv(FeatureBitset features = jtx::testable_amendments())
     {
         // These tests were originally written with search parameters that are
         // different from the current defaults. This function creates an env
         // with the search parameters that the tests were written for.
         using namespace jtx;
-        return Env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->PATH_SEARCH_OLD = 7;
-            cfg->PATH_SEARCH = 7;
-            cfg->PATH_SEARCH_MAX = 10;
-            return cfg;
-        }));
+        return Env(
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->PATH_SEARCH_OLD = 7;
+                cfg->PATH_SEARCH = 7;
+                cfg->PATH_SEARCH_MAX = 10;
+                return cfg;
+            }),
+            features);
     }
 
 public:
@@ -215,12 +218,12 @@ public:
     }
 
     void
-    source_currencies_limit()
+    source_currencies_limit(FeatureBitset features)
     {
         testcase("source currency limits");
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const gw = Account("gateway");
         env.fund(XRP(10000), "alice", "bob", gw);
         env.close();
@@ -291,11 +294,11 @@ public:
     }
 
     void
-    no_direct_path_no_intermediary_no_alternatives()
+    no_direct_path_no_intermediary_no_alternatives(FeatureBitset features)
     {
         testcase("no direct path no intermediary no alternatives");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob");
         env.close();
 
@@ -304,11 +307,11 @@ public:
     }
 
     void
-    direct_path_no_intermediary()
+    direct_path_no_intermediary(FeatureBitset features)
     {
         testcase("direct path no intermediary");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob");
         env.close();
         env.trust(Account("alice")["USD"](700), "bob");
@@ -321,11 +324,11 @@ public:
     }
 
     void
-    payment_auto_path_find()
+    payment_auto_path_find(FeatureBitset features)
     {
         testcase("payment auto path find");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         env.fund(XRP(10000), "alice", "bob", gw);
@@ -341,11 +344,11 @@ public:
     }
 
     void
-    path_find(bool const domainEnabled)
+    path_find(FeatureBitset features, bool const domainEnabled)
     {
         testcase(std::string("path find") + (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         env.fund(XRP(10000), "alice", "bob", gw);
@@ -368,11 +371,11 @@ public:
     }
 
     void
-    xrp_to_xrp(bool const domainEnabled)
+    xrp_to_xrp(FeatureBitset features, bool const domainEnabled)
     {
         using namespace jtx;
         testcase(std::string("XRP to XRP") + (domainEnabled ? " w/ " : " w/o ") + "domain");
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob");
         env.close();
 
@@ -386,14 +389,14 @@ public:
     }
 
     void
-    path_find_consume_all(bool const domainEnabled)
+    path_find_consume_all(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("path find consume all") + (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
 
         {
-            Env env = pathTestEnv();
+            Env env = pathTestEnv(features);
             env.fund(XRP(10000), "alice", "bob", "carol", "dan", "edward");
             env.close();
             env.trust(Account("alice")["USD"](10), "bob");
@@ -423,7 +426,7 @@ public:
         }
 
         {
-            Env env = pathTestEnv();
+            Env env = pathTestEnv(features);
             auto const gw = Account("gateway");
             auto const USD = gw["USD"];
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
@@ -486,13 +489,13 @@ public:
     }
 
     void
-    alternative_path_consume_both(bool const domainEnabled)
+    alternative_path_consume_both(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("alternative path consume both") + (domainEnabled ? " w/ " : " w/o ") +
             "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         auto const gw2 = Account("gateway2");
@@ -532,13 +535,13 @@ public:
     }
 
     void
-    alternative_paths_consume_best_transfer(bool const domainEnabled)
+    alternative_paths_consume_best_transfer(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("alternative paths consume best transfer") +
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         auto const gw2 = Account("gateway2");
@@ -576,11 +579,11 @@ public:
     }
 
     void
-    alternative_paths_consume_best_transfer_first()
+    alternative_paths_consume_best_transfer_first(FeatureBitset features)
     {
         testcase("alternative paths - consume best transfer first");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         auto const gw2 = Account("gateway2");
@@ -608,13 +611,15 @@ public:
     }
 
     void
-    alternative_paths_limit_returned_paths_to_best_quality(bool const domainEnabled)
+    alternative_paths_limit_returned_paths_to_best_quality(
+        FeatureBitset features,
+        bool const domainEnabled)
     {
         testcase(
             std::string("alternative paths - limit returned paths to best quality") +
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         auto const gw2 = Account("gateway2");
@@ -652,12 +657,12 @@ public:
     }
 
     void
-    issues_path_negative_issue(bool const domainEnabled)
+    issues_path_negative_issue(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("path negative: Issue #5") + (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
         env.close();
         env.trust(Account("bob")["USD"](100), "alice", "carol", "dan");
@@ -701,11 +706,11 @@ public:
     // alice --> carol --> dan --> bob
     // Balance of 100 USD Bob - Balance of 37 USD -> Rod
     void
-    issues_path_negative_ripple_client_issue_23_smaller()
+    issues_path_negative_ripple_client_issue_23_smaller(FeatureBitset features)
     {
         testcase("path negative: ripple-client issue #23: smaller");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
         env.close();
         env.trust(Account("alice")["USD"](40), "bob");
@@ -720,11 +725,11 @@ public:
     // alice -120 USD-> edward -25 USD-> bob
     // alice -25 USD-> carol -75 USD -> dan -100 USD-> bob
     void
-    issues_path_negative_ripple_client_issue_23_larger()
+    issues_path_negative_ripple_client_issue_23_larger(FeatureBitset features)
     {
         testcase("path negative: ripple-client issue #23: larger");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob", "carol", "dan", "edward");
         env.close();
         env.trust(Account("alice")["USD"](120), "edward");
@@ -747,11 +752,11 @@ public:
     // bob will hold gateway AUD
     // alice pays bob gateway AUD using XRP
     void
-    via_offers_via_gateway(bool const domainEnabled)
+    via_offers_via_gateway(FeatureBitset features, bool const domainEnabled)
     {
         testcase(std::string("via gateway") + (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const gw = Account("gateway");
         auto const AUD = gw["AUD"];
         env.fund(XRP(10000), "alice", "bob", "carol", gw);
@@ -789,11 +794,11 @@ public:
     }
 
     void
-    indirect_paths_path_find()
+    indirect_paths_path_find(FeatureBitset features)
     {
         testcase("path find");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob", "carol");
         env.close();
         env.trust(Account("alice")["USD"](1000), "bob");
@@ -808,11 +813,11 @@ public:
     }
 
     void
-    quality_paths_quality_set_and_test()
+    quality_paths_quality_set_and_test(FeatureBitset features)
     {
         testcase("quality set and test");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob");
         env.close();
         env(trust("bob", Account("alice")["USD"](1000)),
@@ -853,11 +858,11 @@ public:
     }
 
     void
-    trust_auto_clear_trust_normal_clear()
+    trust_auto_clear_trust_normal_clear(FeatureBitset features)
     {
         testcase("trust normal clear");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob");
         env.close();
         env.trust(Account("bob")["USD"](1000), "alice");
@@ -899,11 +904,11 @@ public:
     }
 
     void
-    trust_auto_clear_trust_auto_clear()
+    trust_auto_clear_trust_auto_clear(FeatureBitset features)
     {
         testcase("trust auto clear");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(10000), "alice", "bob");
         env.close();
         env.trust(Account("bob")["USD"](1000), "alice");
@@ -948,13 +953,13 @@ public:
     }
 
     void
-    path_find_01(bool const domainEnabled)
+    path_find_01(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: XRP -> XRP and XRP -> IOU") +
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const A3{"A3"};
@@ -1049,13 +1054,13 @@ public:
     }
 
     void
-    path_find_02(bool const domainEnabled)
+    path_find_02(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: non-XRP -> XRP") + (domainEnabled ? " w/ " : " w/o ") +
             "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const G3{"G3"};
@@ -1109,13 +1114,13 @@ public:
     }
 
     void
-    path_find_04(bool const domainEnabled)
+    path_find_04(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: Bitstamp and SnapSwap, liquidity with no offers") +
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const G1BS{"G1BS"};
@@ -1195,13 +1200,13 @@ public:
     }
 
     void
-    path_find_05(bool const domainEnabled)
+    path_find_05(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: non-XRP -> non-XRP, same currency") +
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const A3{"A3"};
@@ -1338,13 +1343,13 @@ public:
     }
 
     void
-    path_find_06(bool const domainEnabled)
+    path_find_06(FeatureBitset features, bool const domainEnabled)
     {
         testcase(
             std::string("Path Find: non-XRP -> non-XRP, same currency)") +
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const A3{"A3"};
@@ -1393,7 +1398,7 @@ public:
     }
 
     void
-    receive_max(bool const domainEnabled)
+    receive_max(FeatureBitset features, bool const domainEnabled)
     {
         testcase(std::string("Receive max") + (domainEnabled ? " w/ " : " w/o ") + "domain");
 
@@ -1405,7 +1410,7 @@ public:
         auto const USD = gw["USD"];
         {
             // XRP -> IOU receive max
-            Env env = pathTestEnv();
+            Env env = pathTestEnv(features);
             env.fund(XRP(10000), alice, bob, charlie, gw);
             env.close();
             env.trust(USD(100), alice, bob, charlie);
@@ -1440,7 +1445,7 @@ public:
         }
         {
             // IOU -> XRP receive max
-            Env env = pathTestEnv();
+            Env env = pathTestEnv(features);
             env.fund(XRP(10000), alice, bob, charlie, gw);
             env.close();
             env.trust(USD(100), alice, bob, charlie);
@@ -1476,7 +1481,7 @@ public:
     }
 
     void
-    noripple_combinations()
+    noripple_combinations(FeatureBitset features)
     {
         using namespace jtx;
         // This test will create trust lines with various values of the noRipple
@@ -1490,7 +1495,7 @@ public:
         auto test = [&](std::string casename, bool aliceRipple, bool bobRipple, bool expectPath) {
             testcase(casename);
 
-            Env env = pathTestEnv();
+            Env env = pathTestEnv(features);
             env.fund(XRP(10000), noripple(alice, bob, george));
             env.close();
             // Set the same flags at both ends of the trustline, even though
@@ -1525,7 +1530,7 @@ public:
     }
 
     void
-    hybrid_offer_path()
+    hybrid_offer_path(FeatureBitset features)
     {
         testcase("Hybrid offer path");
         using namespace jtx;
@@ -1534,7 +1539,7 @@ public:
         // different combinations of open/domain/hybrid offers. `func` is a
         // lambda param that creates different types of offers
         auto testPathfind = [&](auto func, bool const domainEnabled = false) {
-            Env env = pathTestEnv();
+            Env env = pathTestEnv(features);
             Account const A1{"A1"};
             Account const A2{"A2"};
             Account const A3{"A3"};
@@ -1806,11 +1811,11 @@ public:
     }
 
     void
-    amm_domain_path()
+    amm_domain_path(FeatureBitset features)
     {
         testcase("AMM not used in domain path");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         PermissionedDEX const permDex(env);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] = permDex;
         AMM const amm(env, alice, XRP(10), USD(50));
@@ -1833,46 +1838,50 @@ public:
     void
     run() override
     {
-        source_currencies_limit();
-        no_direct_path_no_intermediary_no_alternatives();
-        direct_path_no_intermediary();
-        payment_auto_path_find();
-        indirect_paths_path_find();
-        alternative_paths_consume_best_transfer_first();
-        issues_path_negative_ripple_client_issue_23_smaller();
-        issues_path_negative_ripple_client_issue_23_larger();
-        quality_paths_quality_set_and_test();
-        trust_auto_clear_trust_normal_clear();
-        trust_auto_clear_trust_auto_clear();
-        noripple_combinations();
-
-        for (bool const domainEnabled : {false, true})
+        auto const all = jtx::testable_amendments();
+        for (auto const& features : {all, all - featureMPTokensV2})
         {
-            path_find(domainEnabled);
-            path_find_consume_all(domainEnabled);
-            alternative_path_consume_both(domainEnabled);
-            alternative_paths_consume_best_transfer(domainEnabled);
-            alternative_paths_limit_returned_paths_to_best_quality(domainEnabled);
-            issues_path_negative_issue(domainEnabled);
-            via_offers_via_gateway(domainEnabled);
-            xrp_to_xrp(domainEnabled);
-            receive_max(domainEnabled);
+            source_currencies_limit(features);
+            no_direct_path_no_intermediary_no_alternatives(features);
+            direct_path_no_intermediary(features);
+            payment_auto_path_find(features);
+            indirect_paths_path_find(features);
+            alternative_paths_consume_best_transfer_first(features);
+            issues_path_negative_ripple_client_issue_23_smaller(features);
+            issues_path_negative_ripple_client_issue_23_larger(features);
+            quality_paths_quality_set_and_test(features);
+            trust_auto_clear_trust_normal_clear(features);
+            trust_auto_clear_trust_auto_clear(features);
+            noripple_combinations(features);
 
-            // The following path_find_NN tests are data driven tests
-            // that were originally implemented in js/coffee and migrated
-            // here. The quantities and currencies used are taken directly from
-            // those legacy tests, which in some cases probably represented
-            // customer use cases.
+            for (bool const domainEnabled : {false, true})
+            {
+                path_find(features, domainEnabled);
+                path_find_consume_all(features, domainEnabled);
+                alternative_path_consume_both(features, domainEnabled);
+                alternative_paths_consume_best_transfer(features, domainEnabled);
+                alternative_paths_limit_returned_paths_to_best_quality(features, domainEnabled);
+                issues_path_negative_issue(features, domainEnabled);
+                via_offers_via_gateway(features, domainEnabled);
+                xrp_to_xrp(features, domainEnabled);
+                receive_max(features, domainEnabled);
 
-            path_find_01(domainEnabled);
-            path_find_02(domainEnabled);
-            path_find_04(domainEnabled);
-            path_find_05(domainEnabled);
-            path_find_06(domainEnabled);
+                // The following path_find_NN tests are data driven tests
+                // that were originally implemented in js/coffee and migrated
+                // here. The quantities and currencies used are taken directly from
+                // those legacy tests, which in some cases probably represented
+                // customer use cases.
+
+                path_find_01(features, domainEnabled);
+                path_find_02(features, domainEnabled);
+                path_find_04(features, domainEnabled);
+                path_find_05(features, domainEnabled);
+                path_find_06(features, domainEnabled);
+            }
+
+            hybrid_offer_path(features);
+            amm_domain_path(features);
         }
-
-        hybrid_offer_path();
-        amm_domain_path();
     }
 };
 

@@ -2452,6 +2452,7 @@ public:
     {
         using namespace test::jtx;
         auto const sa = testable_amendments();
+        testWithFeats(sa - featureMPTokensV2);
         testWithFeats(sa);
         testTrustLineCreation(sa);
     }

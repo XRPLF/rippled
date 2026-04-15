@@ -1275,10 +1275,12 @@ struct Flow_manual_test : public Flow_test
         auto const all = testable_amendments();
         FeatureBitset const permDex{featurePermissionedDEX};
 
-        testWithFeats(all - permDex);
+        testWithFeats(all - permDex - featureMPTokensV2);
+        testWithFeats(all - featureMPTokensV2);
         testWithFeats(all);
 
-        testEmptyStrand(all - permDex);
+        testEmptyStrand(all - permDex - featureMPTokensV2);
+        testEmptyStrand(all - featureMPTokensV2);
         testEmptyStrand(all);
     }
 };

@@ -1303,13 +1303,12 @@ private:
     }
 
     void
-    testOffers()
+    testOffers(FeatureBitset features)
     {
         using namespace jtx;
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
-        FeatureBitset const all{
-            testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+        FeatureBitset const all{features - featureSingleAssetVault - featureLendingProtocol};
 
         testRmFundedOffer(all);
         testRmFundedOffer(all - fixAMMv1_1 - fixAMMv1_3);
@@ -1340,12 +1339,12 @@ private:
     }
 
     void
-    path_find_consume_all()
+    path_find_consume_all(FeatureBitset features)
     {
         testcase("path find consume all");
         using namespace jtx;
 
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         env.fund(XRP(100'000'250), alice);
         fund(env, gw, {carol, bob}, {USD(100)}, Fund::All);
         fund(env, gw, {alice}, {USD(100)}, Fund::TokenOnly);
@@ -1370,12 +1369,12 @@ private:
     // bob will hold gateway AUD
     // alice pays bob gateway AUD using XRP
     void
-    via_offers_via_gateway()
+    via_offers_via_gateway(FeatureBitset features)
     {
         testcase("via gateway");
         using namespace jtx;
 
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         auto const AUD = gw["AUD"];
         env.fund(XRP(10'000), alice, bob, carol, gw);
         env.close();
@@ -1395,14 +1394,14 @@ private:
     }
 
     void
-    receive_max()
+    receive_max(FeatureBitset features)
     {
         testcase("Receive max");
         using namespace jtx;
         auto const charlie = Account("charlie");
         {
             // XRP -> IOU receive max
-            Env env = pathTestEnv();
+            Env env = pathTestEnv(features);
             fund(env, gw, {alice, bob, charlie}, {USD(11)}, Fund::All);
             AMM const ammCharlie(env, charlie, XRP(10), USD(11));
             auto [st, sa, da] = find_paths(env, alice, bob, USD(-1), XRP(1).value());
@@ -1418,7 +1417,7 @@ private:
         }
         {
             // IOU -> XRP receive max
-            Env env = pathTestEnv();
+            Env env = pathTestEnv(features);
             fund(env, gw, {alice, bob, charlie}, {USD(11)}, Fund::All);
             AMM const ammCharlie(env, charlie, XRP(11), USD(10));
             env.close();
@@ -1436,11 +1435,11 @@ private:
     }
 
     void
-    path_find_01()
+    path_find_01(FeatureBitset features)
     {
         testcase("Path Find: XRP -> XRP and XRP -> IOU");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const A3{"A3"};
@@ -1521,11 +1520,11 @@ private:
     }
 
     void
-    path_find_02()
+    path_find_02(FeatureBitset features)
     {
         testcase("Path Find: non-XRP -> XRP");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const G3{"G3"};
@@ -1557,11 +1556,11 @@ private:
     }
 
     void
-    path_find_05()
+    path_find_05(FeatureBitset features)
     {
         testcase("Path Find: non-XRP -> non-XRP, same currency");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const A3{"A3"};
@@ -1687,11 +1686,11 @@ private:
     }
 
     void
-    path_find_06()
+    path_find_06(FeatureBitset features)
     {
         testcase("Path Find: non-XRP -> non-XRP, same currency");
         using namespace jtx;
-        Env env = pathTestEnv();
+        Env env = pathTestEnv(features);
         Account const A1{"A1"};
         Account const A2{"A2"};
         Account const A3{"A3"};
@@ -3434,25 +3433,24 @@ private:
     }
 
     void
-    testPaths()
+    testPaths(FeatureBitset features)
     {
-        path_find_consume_all();
-        via_offers_via_gateway();
-        receive_max();
-        path_find_01();
-        path_find_02();
-        path_find_05();
-        path_find_06();
+        path_find_consume_all(features);
+        via_offers_via_gateway(features);
+        receive_max(features);
+        path_find_01(features);
+        path_find_02(features);
+        path_find_05(features);
+        path_find_06(features);
     }
 
     void
-    testFlow()
+    testFlow(FeatureBitset features)
     {
         using namespace jtx;
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas in the transaction engine
-        FeatureBitset const all{
-            testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+        FeatureBitset const all{features - featureSingleAssetVault - featureLendingProtocol};
 
         testFalseDry(all);
         testBookStep(all);
@@ -3463,81 +3461,79 @@ private:
     }
 
     void
-    testCrossingLimits()
+    testCrossingLimits(FeatureBitset features)
     {
         using namespace jtx;
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas in the transaction engine
-        FeatureBitset const all{
-            testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+        FeatureBitset const all{features - featureSingleAssetVault - featureLendingProtocol};
         testStepLimit(all);
         testStepLimit(all - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void
-    testDeliverMin()
+    testDeliverMin(FeatureBitset features)
     {
         using namespace jtx;
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas in the transaction engine
-        FeatureBitset const all{
-            testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+        FeatureBitset const all{features - featureSingleAssetVault - featureLendingProtocol};
         test_convert_all_of_an_asset(all);
         test_convert_all_of_an_asset(all - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void
-    testDepositAuth()
+    testDepositAuth(FeatureBitset features)
     {
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas in the transaction engine
-        FeatureBitset const all{
-            jtx::testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+        FeatureBitset const all{features - featureSingleAssetVault - featureLendingProtocol};
         testPayment(all);
         testPayIOU();
     }
 
     void
-    testFreeze()
+    testFreeze(FeatureBitset features)
     {
         using namespace test::jtx;
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas in the transaction engine
-        FeatureBitset const sa{
-            testable_amendments() - featureSingleAssetVault - featureLendingProtocol};
+        FeatureBitset const sa{features - featureSingleAssetVault - featureLendingProtocol};
         testRippleState(sa);
         testGlobalFreeze(sa);
         testOffersWhenFrozen(sa);
     }
 
     void
-    testMultisign()
+    testMultisign(FeatureBitset features)
     {
-        testTxMultisign(jtx::testable_amendments());
+        testTxMultisign(features);
     }
 
     void
-    testPayStrand()
+    testPayStrand(FeatureBitset features)
     {
-        auto const all = jtx::testable_amendments();
-
-        testToStrand(all);
-        testRIPD1373(all);
-        testLoop(all);
+        testToStrand(features);
+        testRIPD1373(features);
+        testLoop(features);
     }
 
     void
     run() override
     {
-        testOffers();
-        testPaths();
-        testFlow();
-        testCrossingLimits();
-        testDeliverMin();
-        testDepositAuth();
-        testFreeze();
-        testMultisign();
-        testPayStrand();
+        auto const all = testable_amendments();
+        for (auto const& features : {all, all - featureMPTokensV2})
+        {
+            testOffers(features);
+            testPaths(features);
+            testFlow(features);
+            testCrossingLimits(features);
+            testDeliverMin(features);
+            testDepositAuth(features);
+            testFreeze(features);
+            testMultisign(features);
+            testPayStrand(features);
+        }
     }
 };
 

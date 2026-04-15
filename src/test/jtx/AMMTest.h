@@ -149,7 +149,7 @@ protected:
     };
 
     jtx::Env
-    pathTestEnv();
+    pathTestEnv(FeatureBitset features = testable_amendments());
 };
 
 }  // namespace jtx
