@@ -38,6 +38,12 @@ SHAMapTreeNode::makeTransaction(
     SHAMapHash const& hash,
     bool hashValid)
 {
+    if (data.size() < minSHAMapItemBytes)
+        Throw<std::runtime_error>(
+            "Short TXN node: " + std::to_string(data.size()) +
+            " bytes (minimum " + std::to_string(minSHAMapItemBytes) +
+            " required)");
+
     auto item =
         make_shamapitem(sha512Half(HashPrefix::transactionID, data), data);
 
@@ -67,6 +73,12 @@ SHAMapTreeNode::makeTransactionWithMeta(
             "Short TXN+MD node (" + std::to_string(s.size()) + ")");
 
     s.chop(tag.bytes);
+
+    if (s.size() < minSHAMapItemBytes)
+        Throw<std::runtime_error>(
+            "Short TXN+MD node: " + std::to_string(s.size()) +
+            " bytes after tag removal (minimum " +
+            std::to_string(minSHAMapItemBytes) + " required)");
 
     auto item = make_shamapitem(tag, s.slice());
 
@@ -99,6 +111,12 @@ SHAMapTreeNode::makeAccountState(
 
     if (tag.isZero())
         Throw<std::runtime_error>("Invalid AS node");
+
+    if (s.size() < minSHAMapItemBytes)
+        Throw<std::runtime_error>(
+            "Short AS node: " + std::to_string(s.size()) +
+            " bytes after tag removal (minimum " +
+            std::to_string(minSHAMapItemBytes) + " required)");
 
     auto item = make_shamapitem(tag, s.slice());
 

@@ -41,6 +41,9 @@ static constexpr unsigned char const wireTypeInner = 2;
 static constexpr unsigned char const wireTypeCompressedInner = 3;
 static constexpr unsigned char const wireTypeTransactionWithMeta = 4;
 
+// Lower-bound sanity check for SHAMap leaf payloads.
+inline constexpr std::size_t minSHAMapItemBytes = 12;
+
 enum class SHAMapNodeType {
     tnINNER = 1,
     tnTRANSACTION_NM = 2,  // transaction, no metadata
