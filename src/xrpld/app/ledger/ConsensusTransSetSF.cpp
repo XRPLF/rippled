@@ -11,6 +11,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>  // IWYU pragma: keep
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
