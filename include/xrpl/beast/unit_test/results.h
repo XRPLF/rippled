@@ -145,9 +145,9 @@ public:
     void
     insert(case_results&& r)
     {
-        cont().emplace_back(std::move(r));
         total_ += r.tests.total();
         failed_ += r.tests.failed();
+        cont().emplace_back(std::move(r));
     }
 
     void
