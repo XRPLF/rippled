@@ -9618,6 +9618,161 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testCrossStatementProofSubstitution(FeatureBitset features)
+    {
+        testcase("test Cross-Statement Proof Substitution");
+
+        // This test verifies that proofs generated for one protocol component
+        // cannot be used in place of another, and that proofs bound to
+        // different public parameters are rejected.
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .flags =
+                 tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer | tfMPTCanClawback});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        uint64_t const sendAmount = 10;
+
+        // Variant A: Swap proof type (cross-statement substitution)
+        // -----------------------------------------------------------------
+        // Attack: Generate a valid convertBack proof (Pedersen linkage +
+        // single bulletproof) and attempt to use it as the ZK proof in a
+        // ConfidentialMPTSend transaction.
+        //
+        // Expected: The send proof has a different structure
+        // (equality + 2×pedersen + double bulletproof). Even if sized to
+        // match, the domain-separated Fiat-Shamir transcript differs,
+        // so verification equations fail.
+        {
+            ZkpTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
+
+            // Generate a valid convertBack proof for bob
+            auto const spendingBalance =
+                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(spendingBalance.has_value());
+            auto const encryptedSpending =
+                mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(encryptedSpending.has_value());
+
+            Buffer const pcBlindingFactor = generateBlindingFactor();
+            Buffer const pedersenCommitment =
+                mptAlice.getPedersenCommitment(*spendingBalance, pcBlindingFactor);
+
+            auto const version = mptAlice.getMPTokenVersion(bob);
+            uint256 const convertBackCtxHash =
+                getConvertBackContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), version);
+
+            Buffer const convertBackProof = mptAlice.getConvertBackProof(
+                bob,
+                sendAmount,
+                convertBackCtxHash,
+                {.pedersenCommitment = pedersenCommitment,
+                 .amt = *spendingBalance,
+                 .encryptedAmt = *encryptedSpending,
+                 .blindingFactor = pcBlindingFactor});
+
+            // Resize the convertBack proof to match the expected send proof
+            // size so it passes preflight's size check and reaches the actual
+            // ZK verification in doApply.
+            auto const expectedSendSize = getEqualityProofSize(setup.nRecipients) +
+                2 * ecPedersenProofLength + ecDoubleBulletproofLength;
+            Buffer resizedProof(expectedSendSize);
+            auto const copyLen = std::min(convertBackProof.size(), expectedSendSize);
+            std::memcpy(resizedProof.data(), convertBackProof.data(), copyLen);
+            // Zero-pad the rest (if convertBack proof is shorter)
+            if (copyLen < expectedSendSize)
+                std::memset(resizedProof.data() + copyLen, 0, expectedSendSize - copyLen);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(resizedProof),
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Variant B: Valid proof bound to wrong public parameters
+        // -----------------------------------------------------------------
+        // Attack: Generate a valid send proof using a wrong context hash
+        // (computed with a different issuanceID). The proof is
+        // mathematically valid for the wrong statement, but when the
+        // verifier recomputes the Fiat-Shamir challenge using the correct
+        // issuanceID, the challenge differs and verification fails.
+        {
+            ZkpTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
+
+            // Compute context hash with a fabricated (wrong) issuanceID
+            uint192 const fakeIssuanceID{1};
+            auto const wrongCtxHash = getSendContextHash(
+                bob.id(), fakeIssuanceID, env.seq(bob), carol.id(), setup.version);
+
+            // Generate a proof that is valid for the wrong issuanceID
+            auto const wrongProof = mptAlice.getConfidentialSendProof(
+                bob,
+                sendAmount,
+                setup.recipients,
+                setup.blindingFactor,
+                setup.nRecipients,
+                wrongCtxHash,
+                {.pedersenCommitment = setup.amountCommitment,
+                 .amt = sendAmount,
+                 .encryptedAmt = setup.senderAmt,
+                 .blindingFactor = setup.amountBlindingFactor},
+                {.pedersenCommitment = setup.balanceCommitment,
+                 .amt = setup.prevSpending,
+                 .encryptedAmt = setup.prevEncryptedSpending,
+                 .blindingFactor = setup.balanceBlindingFactor});
+
+            if (!BEAST_EXPECT(wrongProof.has_value()))
+                return;
+
+            // Submit with the correct issuanceID — verifier recomputes
+            // the challenge using the real issuanceID, which differs from
+            // the one baked into the proof.
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(*wrongProof),
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = setup.destAmt,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // ConfidentialMPTConvert
@@ -9683,6 +9838,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testFiatShamirBinding(features);
         testProofComponentReuse(features);
         testSpecialWitnessValues(features);
+        testCrossStatementProofSubstitution(features);
 
         // Replay tests
         testProofContextBinding(features);
