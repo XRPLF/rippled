@@ -3,6 +3,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
+#include <xrpl/git/Git.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
 
 #include <algorithm>

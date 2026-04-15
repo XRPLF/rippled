@@ -13,6 +13,13 @@
 #include <malloc.h>
 #include <unistd.h>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <fstream>
+#include <sstream>
+#include <string>
+
 // Require RUSAGE_THREAD for thread-scoped page fault tracking
 #ifndef RUSAGE_THREAD
 #error "MallocTrim rusage instrumentation requires RUSAGE_THREAD on Linux/glibc"

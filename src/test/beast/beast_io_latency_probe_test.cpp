@@ -3,15 +3,20 @@
 #include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/executor_work_guard.hpp>  // IWYU pragma: keep
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <chrono>
+#include <condition_variable>  // IWYU pragma: keep
 #include <cstddef>
 #include <functional>
+#include <mutex>     // IWYU pragma: keep
+#include <optional>  // IWYU pragma: keep
 #include <stdexcept>
 #include <string>
+#include <thread>  // IWYU pragma: keep
 #include <vector>
 
 using namespace std::chrono_literals;
