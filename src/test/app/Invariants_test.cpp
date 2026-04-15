@@ -129,6 +129,10 @@ class Invariants_test : public beast::unit_test::suite
         beast::Journal const jlog{sink};
         ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, jlog};
 
+        // Invariants normally run in the Transaction's "apply" (operator()) context, and can access
+        // global Rules. (Not dependent on amendments.)
+        CurrentTransactionRulesGuard const rg(ov.rules());
+
         BEAST_EXPECT(precheck(A1, A2, ac));
 
         // invoke check twice to cover tec and tef cases
