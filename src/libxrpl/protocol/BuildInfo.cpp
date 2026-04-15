@@ -6,6 +6,8 @@
 #include <xrpl/git/Git.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
 
+#include <boost/preprocessor/stringize.hpp>  // IWYU pragma: keep
+
 #include <algorithm>
 #include <cstdint>
 #include <string>
