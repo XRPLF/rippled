@@ -60,7 +60,7 @@ class SlabAllocator
             {
                 // Use memcpy to avoid unaligned UB
                 // (will optimize to equivalent code)
-                std::memcpy(data, &l_, sizeof(std::uint8_t*));
+                std::memcpy(data, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
                 l_ = data;
                 data += item;
             }
@@ -102,7 +102,7 @@ class SlabAllocator
                 {
                     // Use memcpy to avoid unaligned UB
                     // (will optimize to equivalent code)
-                    std::memcpy(&l_, ret, sizeof(std::uint8_t*));
+                    std::memcpy(static_cast<void*>(&l_), ret, sizeof(std::uint8_t*));
                 }
             }
 
@@ -127,7 +127,7 @@ class SlabAllocator
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
-            std::memcpy(ptr, &l_, sizeof(std::uint8_t*));
+            std::memcpy(ptr, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
             l_ = ptr;
         }
     };
