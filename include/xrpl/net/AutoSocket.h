@@ -134,7 +134,7 @@ public:
             {
                 lowest_layer().shutdown(plain_socket::shutdown_both);
             }
-            catch (boost::system::system_error& e)
+            catch (boost::system::system_error const& e)
             {
                 ec = e.code();
             }
