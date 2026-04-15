@@ -71,7 +71,8 @@ setCurrentThreadNameImpl(std::string_view name)
 #if BOOST_OS_LINUX
 #include <pthread.h>
 
-#include <iostream>
+#include <cstdio>
+#include <iostream>  // IWYU pragma: keep
 
 namespace beast::detail {
 

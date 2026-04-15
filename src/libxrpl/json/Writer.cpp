@@ -6,6 +6,7 @@
 #include <cstddef>
 #include <map>
 #include <memory>
+#include <set>  // IWYU pragma: keep
 #include <stack>
 #include <string>
 #include <utility>

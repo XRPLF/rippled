@@ -27,8 +27,7 @@
 #include <boost/format/free_funcs.hpp>
 #include <boost/multiprecision/detail/endian.hpp>
 #include <boost/predef.h>
-#include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_match.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
 #include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
@@ -70,7 +69,7 @@ getMemorySize()
 #endif
 
 #if BOOST_OS_LINUX
-#include <sys/sysinfo.h>
+#include <sys/sysinfo.h>  // IWYU pragma: keep
 
 namespace xrpl {
 namespace detail {

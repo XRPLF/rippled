@@ -6,8 +6,6 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/system/detail/error_code.hpp>
 
-#include <netinet/in.h>
-
 #include <cctype>
 #include <ios>
 #include <istream>
