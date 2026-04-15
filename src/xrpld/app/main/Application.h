@@ -16,15 +16,6 @@
 
 namespace xrpl {
 
-namespace unl {
-class Manager;
-}  // namespace unl
-namespace Resource {
-class Manager;
-}  // namespace Resource
-namespace NodeStore {
-class Database;
-}  // namespace NodeStore
 namespace perf {
 class PerfLog;
 }  // namespace perf
