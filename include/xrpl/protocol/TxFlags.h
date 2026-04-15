@@ -235,7 +235,7 @@ XMACRO(NULL_NAME, TO_VALUE, NULL_OUTPUT, NULL_MASK_ADJ)
 // The mask adjustment (maskAdj) allows adding flags back to the mask, making them invalid.
 // For example, Batch uses MASK_ADJ(tfInnerBatchTxn) to reject tfInnerBatchTxn on outer Batch.
 #define TO_MASK(name, values, maskAdj) \
-    inline constexpr FlagValue tf##name##Mask = ~(tfUniversal values) | maskAdj;
+    inline constexpr FlagValue tf##name##Mask = ~(tfUniversal values) | (maskAdj);
 #define VALUE_TO_MASK(name, value) | name
 #define MASK_ADJ_TO_MASK(value) value
 XMACRO(TO_MASK, VALUE_TO_MASK, VALUE_TO_MASK, MASK_ADJ_TO_MASK)
