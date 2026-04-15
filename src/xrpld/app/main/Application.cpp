@@ -1399,7 +1399,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                                   "implications and have";
         JLOG(m_journal.warn()) << "*** been deprecated. They will be removed "
                                   "in a future release of";
-        JLOG(m_journal.warn()) << "*** rippled.";
+        JLOG(m_journal.warn()) << "*** xrpld.";
         JLOG(m_journal.warn()) << "*** If you do not use them to sign "
                                   "transactions please edit your";
         JLOG(m_journal.warn()) << "*** configuration file and remove the [enable_signing] stanza.";
@@ -1811,7 +1811,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             // VFALCO TODO This is the only place that
             //             constructor is used, try to remove it
-            STLedgerEntry sle(*stp.object, uIndex);
+            STLedgerEntry const sle(*stp.object, uIndex);
 
             if (!loadLedger->addSLE(sle))
             {
@@ -1949,7 +1949,7 @@ ApplicationImp::loadOldLedger(
                                     << " UTC.\n"
                                        "This replay will not handle your ledger as it was "
                                        "originally "
-                                       "handled.\nConsider running an earlier version of rippled "
+                                       "handled.\nConsider running an earlier version of xrpld "
                                        "to "
                                        "get the older rules.\n*** CONTINUING ***\n";
         }

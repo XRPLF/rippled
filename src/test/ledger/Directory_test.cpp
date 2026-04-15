@@ -123,7 +123,7 @@ struct Directory_test : public beast::unit_test::suite
 
         // Now check the orderbook: it should be in the order we placed
         // the offers.
-        auto book = BookDirs(*env.current(), Book({xrpIssue(), USD.issue(), std::nullopt}));
+        auto book = BookDirs(*env.current(), Book({xrpIssue(), USD, std::nullopt}));
         int count = 1;
 
         for (auto const& offer : book)
@@ -282,8 +282,8 @@ struct Directory_test : public beast::unit_test::suite
         // All the offers have been cancelled, so the book
         // should have no entries and be empty:
         {
-            Sandbox sb(env.closed().get(), tapNONE);
-            uint256 const bookBase = getBookBase({xrpIssue(), USD.issue(), std::nullopt});
+            Sandbox const sb(env.closed().get(), tapNONE);
+            uint256 const bookBase = getBookBase({xrpIssue(), USD, std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
             BEAST_EXPECT(!sb.succ(bookBase, getQualityNext(bookBase)));
@@ -475,7 +475,7 @@ struct Directory_test : public beast::unit_test::suite
     testDirectoryFull()
     {
         using namespace test::jtx;
-        Account alice("alice");
+        Account const alice("alice");
 
         auto const testCase = [&, this](FeatureBitset features, auto setup) {
             using namespace test::jtx;

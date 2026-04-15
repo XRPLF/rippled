@@ -60,7 +60,7 @@ class SlabAllocator
             {
                 // Use memcpy to avoid unaligned UB
                 // (will optimize to equivalent code)
-                std::memcpy(data, &l_, sizeof(std::uint8_t*));
+                std::memcpy(data, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
                 l_ = data;
                 data += item;
             }
@@ -91,10 +91,10 @@ class SlabAllocator
         std::uint8_t*
         allocate() noexcept
         {
-            std::uint8_t* ret;
+            std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::lock_guard l(m_);
+                std::lock_guard const l(m_);
 
                 ret = l_;
 
@@ -102,7 +102,7 @@ class SlabAllocator
                 {
                     // Use memcpy to avoid unaligned UB
                     // (will optimize to equivalent code)
-                    std::memcpy(&l_, ret, sizeof(std::uint8_t*));
+                    std::memcpy(static_cast<void*>(&l_), ret, sizeof(std::uint8_t*));
                 }
             }
 
@@ -123,11 +123,11 @@ class SlabAllocator
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard l(m_);
+            std::lock_guard const l(m_);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
-            std::memcpy(ptr, &l_, sizeof(std::uint8_t*));
+            std::memcpy(ptr, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
             l_ = ptr;
         }
     };
@@ -210,16 +210,13 @@ public:
 
         // No slab can satisfy our request, so we attempt to allocate a new
         // one here:
-        std::size_t size = slabSize_;
+        std::size_t const size = slabSize_;
 
         // We want to allocate the memory at a 2 MiB boundary, to make it
         // possible to use hugepage mappings on Linux:
         auto buf = boost::alignment::aligned_alloc(megabytes(std::size_t(2)), size);
-
-        // clang-format off
         if (!buf) [[unlikely]]
             return nullptr;
-        // clang-format on
 
 #if BOOST_OS_LINUX
         // When allocating large blocks, attempt to leverage Linux's

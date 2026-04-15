@@ -206,7 +206,10 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if (params.isMember(jss::build_path) && ((!doPath) || amount.holds<MPTIssue>()))
+    if (params.isMember(jss::build_path) &&
+        (!doPath ||
+         (!app.getOpenLedger().current()->rules().enabled(featureMPTokensV2) &&
+          amount.holds<MPTIssue>())))
     {
         return RPC::make_error(
             rpcINVALID_PARAMS, "Field 'build_path' not allowed in this context.");
@@ -242,16 +245,18 @@ checkPayment(
         }
         else
         {
-            // If no SendMax, default to Amount with sender as issuer.
+            // If no SendMax, default to Amount with sender as issuer if Issue.
             sendMax = amount;
-            sendMax.setIssuer(srcAddressID);
+            sendMax.asset().visit(
+                [&](Issue const&) { sendMax.get<Issue>().account = srcAddressID; },
+                [](MPTIssue const&) {});
         }
 
         if (sendMax.native() && amount.native())
             return RPC::make_error(rpcINVALID_PARAMS, "Cannot build XRP to XRP paths.");
 
         {
-            LegacyPathFind lpf(isUnlimited(role), app);
+            LegacyPathFind const lpf(isUnlimited(role), app);
             if (!lpf.isOk())
                 return rpcError(rpcTOO_BUSY);
 
@@ -260,11 +265,11 @@ checkPayment(
             if (auto ledger = app.getOpenLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(ledger, app.getJournal("RippleLineCache")),
+                    std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
                     srcAddressID,
                     *dstAccountID,
-                    sendMax.issue().currency,
-                    sendMax.issue().account,
+                    sendMax.asset(),
+                    sendMax.getIssuer(),
                     amount,
                     std::nullopt,
                     domain,
@@ -274,8 +279,8 @@ checkPayment(
                     // 4 is the maximum paths
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
-                    STPathSet paths;
-                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.issue().account);
+                    STPathSet const paths;
+                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.getIssuer());
                 }
             }
 
@@ -614,7 +619,7 @@ transactionPreProcessImpl(
 
         stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
-    catch (STObject::FieldErr& err)
+    catch (STObject::FieldErr const& err)
     {
         return RPC::make_error(rpcINVALID_PARAMS, err.what());
     }
@@ -631,7 +636,7 @@ transactionPreProcessImpl(
     // If multisign then return multiSignature, else set TxnSignature field.
     if (signingArgs.isMultiSigning())
     {
-        Serializer s = buildMultiSigningData(*stTx, signingArgs.getSigner());
+        Serializer const s = buildMultiSigningData(*stTx, signingArgs.getSigner());
 
         auto multisig = xrpl::sign(pk, sk, s.slice());
 
@@ -673,7 +678,7 @@ transactionConstructImpl(
         {
             Serializer s;
             tpTrans->getSTransaction()->add(s);
-            Blob transBlob = s.getData();
+            Blob const transBlob = s.getData();
             SerialIter sit{makeSlice(transBlob)};
 
             // Check the signature if that's called for.
@@ -954,15 +959,15 @@ transactionSign(
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    transactionPreProcessResult preprocResult =
+    transactionPreProcessResult const preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<ReadView const> ledger = app.getOpenLedger().current();
+    std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<Json::Value, Transaction::pointer> const txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -990,7 +995,7 @@ transactionSubmit(
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    transactionPreProcessResult preprocResult =
+    transactionPreProcessResult const preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
@@ -1150,7 +1155,7 @@ transactionSignFor(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams(*signerAccountID);
 
-    transactionPreProcessResult preprocResult =
+    transactionPreProcessResult const preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
@@ -1160,7 +1165,8 @@ transactionSignFor(
         signForParams.validMultiSign(), "xrpl::RPC::transactionSignFor : valid multi-signature");
 
     {
-        std::shared_ptr<SLE const> account_state = ledger->read(keylet::account(*signerAccountID));
+        std::shared_ptr<SLE const> const account_state =
+            ledger->read(keylet::account(*signerAccountID));
         // Make sure the account and secret belong together.
         auto const err =
             acctMatchesPubKey(account_state, *signerAccountID, signForParams.getPublicKey());
@@ -1198,7 +1204,7 @@ transactionSignFor(
     }
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<Json::Value, Transaction::pointer> const txn =
         transactionConstructImpl(sttx, ledger->rules(), app);
 
     if (!txn.second)
@@ -1245,7 +1251,7 @@ transactionSubmitMultiSigned(
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
 
-    std::shared_ptr<SLE const> sle = ledger->read(keylet::account(srcAddressID));
+    std::shared_ptr<SLE const> const sle = ledger->read(keylet::account(srcAddressID));
 
     if (!sle)
     {
@@ -1285,13 +1291,13 @@ transactionSubmitMultiSigned(
         {
             stTx = std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
         }
-        catch (STObject::FieldErr& err)
+        catch (STObject::FieldErr const& err)
         {
             return RPC::make_error(rpcINVALID_PARAMS, err.what());
         }
         catch (std::exception& ex)
         {
-            std::string reason(ex.what());
+            std::string const reason(ex.what());
             return RPC::make_error(
                 rpcINTERNAL, "Exception while serializing transaction: " + reason);
         }

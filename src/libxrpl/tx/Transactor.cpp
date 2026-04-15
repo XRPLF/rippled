@@ -4,6 +4,8 @@
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
@@ -16,8 +18,6 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -34,7 +34,7 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
-        uint32_t nodeNID = ctx.registry.get().getNetworkIDService().getNetworkID();
+        uint32_t const nodeNID = ctx.registry.get().getNetworkIDService().getNetworkID();
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
 
         if (nodeNID <= 1024)
@@ -363,6 +363,13 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     auto const balance = (*sle)[sfBalance].xrp();
 
+    // NOTE: Because preclaim evaluates against a static readview, it
+    // does not reflect fee deductions from other transactions paid by
+    // the same account within the current ledger.
+    // As a result, if an account's balance is over-committed across multiple
+    // transactions, this check may pass optimistically.
+    // The fee shortfall will be handled by the Transactor::reset mechanism,
+    // which caps the fee to the remaining actual balance.
     if (balance < feePaid)
     {
         JLOG(ctx.j.trace()) << "Insufficient balance:" << " balance=" << to_string(balance)
@@ -777,7 +784,7 @@ Transactor::checkMultiSign(
     beast::Journal const j)
 {
     // Get id's SignerList and Quorum.
-    std::shared_ptr<STLedgerEntry const> sleAccountSigners = view.read(keylet::signers(id));
+    std::shared_ptr<STLedgerEntry const> const sleAccountSigners = view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
     if (!sleAccountSigners)
     {
@@ -999,6 +1006,26 @@ removeDeletedTrustLines(
     }
 }
 
+static void
+removeDeletedMPTs(ApplyView& view, std::vector<uint256> const& mpts, beast::Journal viewJ)
+{
+    // There could be at most two MPTs - one for each side of AMM pool
+    if (mpts.size() > 2)
+    {
+        JLOG(viewJ.error()) << "removeDeletedMPTs: deleted mpts exceed 2 " << mpts.size();
+        return;
+    }
+
+    for (auto const& index : mpts)
+    {
+        if (auto const sleState = view.peek({ltMPTOKEN, index}); sleState &&
+            deleteAMMMPToken(view, sleState, (*sleState)[sfIssuer], viewJ) != tesSUCCESS)
+        {
+            JLOG(viewJ.error()) << "removeDeletedMPTs: failed to delete AMM MPT";
+        }
+    }
+}
+
 /** Reset the context, discarding any changes made and adjust the fee.
 
     @param fee The transaction fee to be charged.
@@ -1073,15 +1100,15 @@ Transactor::operator()()
     //
     // raii classes for the current ledger rules.
     // fixUniversalNumber predate the rulesGuard and should be replaced.
-    NumberSO stNumberSO{view().rules().enabled(fixUniversalNumber)};
-    CurrentTransactionRulesGuard currentTransactionRulesGuard(view().rules());
+    NumberSO const stNumberSO{view().rules().enabled(fixUniversalNumber)};
+    CurrentTransactionRulesGuard const currentTransactionRulesGuard(view().rules());
 
 #ifdef DEBUG
     {
         Serializer ser;
         ctx_.tx.add(ser);
         SerialIter sit(ser.slice());
-        STTx s2(sit);
+        STTx const s2(sit);
 
         if (!s2.isEquivalent(ctx_.tx))
         {
@@ -1137,19 +1164,21 @@ Transactor::operator()()
         //        when transactions fail with a `tec` code.
         std::vector<uint256> removedOffers;
         std::vector<uint256> removedTrustLines;
+        std::vector<uint256> removedMPTs;
         std::vector<uint256> expiredNFTokenOffers;
         std::vector<uint256> expiredCredentials;
 
         bool const doOffers = ((result == tecOVERSIZE) || (result == tecKILLED));
-        bool const doLines = (result == tecINCOMPLETE);
+        bool const doLinesOrMPTs = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
         bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers || doCredentials)
+        if (doOffers || doLinesOrMPTs || doNFTokenOffers || doCredentials)
         {
             ctx_.visit([doOffers,
                         &removedOffers,
-                        doLines,
+                        doLinesOrMPTs,
                         &removedTrustLines,
+                        &removedMPTs,
                         doNFTokenOffers,
                         &expiredNFTokenOffers,
                         doCredentials,
@@ -1171,10 +1200,17 @@ Transactor::operator()()
                         removedOffers.push_back(index);
                     }
 
-                    if (doLines && before && after && (before->getType() == ltRIPPLE_STATE))
+                    if (doLinesOrMPTs && before && after)
                     {
                         // Removal of obsolete AMM trust line
-                        removedTrustLines.push_back(index);
+                        if (before->getType() == ltRIPPLE_STATE)
+                        {
+                            removedTrustLines.push_back(index);
+                        }
+                        else if (before->getType() == ltMPTOKEN)
+                        {
+                            removedMPTs.push_back(index);
+                        }
                     }
 
                     if (doNFTokenOffers && before && after &&
@@ -1212,6 +1248,7 @@ Transactor::operator()()
         {
             removeDeletedTrustLines(
                 view(), removedTrustLines, ctx_.registry.get().getJournal("View"));
+            removeDeletedMPTs(view(), removedMPTs, ctx_.registry.get().getJournal("View"));
         }
 
         if (result == tecEXPIRED)

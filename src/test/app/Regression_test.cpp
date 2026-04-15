@@ -113,7 +113,8 @@ struct Regression_test : public beast::unit_test::suite
         auto test256r1key = [&env](Account const& acct) {
             auto const baseFee = env.current()->fees().base;
             std::uint32_t const acctSeq = env.seq(acct);
-            Json::Value jsonNoop = env.json(noop(acct), fee(baseFee), seq(acctSeq), sig(acct));
+            Json::Value const jsonNoop =
+                env.json(noop(acct), fee(baseFee), seq(acctSeq), sig(acct));
             JTx jt = env.jt(jsonNoop);
             jt.fill_sig = false;
 
@@ -237,8 +238,8 @@ struct Regression_test : public beast::unit_test::suite
         using namespace jtx;
         Env env(*this);
 
-        Account alice("alice");
-        Account bob("bob");
+        Account const alice("alice");
+        Account const bob("bob");
         env.fund(XRP(10'000), alice, bob);
         env.close();
 

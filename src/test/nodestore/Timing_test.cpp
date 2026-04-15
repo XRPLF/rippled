@@ -211,7 +211,7 @@ public:
     parallel_for(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
@@ -224,7 +224,7 @@ public:
     parallel_for_id(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
@@ -490,7 +490,7 @@ public:
         backend->close();
     }
 
-    // Simulate a rippled workload:
+    // Simulate an xrpld workload:
     // Each thread randomly:
     //      inserts a new key
     //      fetches an old key
@@ -645,7 +645,7 @@ public:
             params.threads = threads;
             for (auto i = default_repeat; (i--) != 0u;)
             {
-                beast::temp_dir tempDir;
+                beast::temp_dir const tempDir;
                 Section config = parse(config_string);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
@@ -672,7 +672,7 @@ public:
             items           Number of objects to create in the database
 
         */
-        std::string default_args =
+        std::string const default_args =
             "type=nudb"
 #if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"

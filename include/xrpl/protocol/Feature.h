@@ -37,10 +37,10 @@
  * 5) If a supported feature (`Supported::yes`) was _ever_ in a released
  *     version, it can never be changed back to `Supported::no`, because
  *     it _may_ still become enabled at any time. This would cause newer
- *     versions of `rippled` to become amendment blocked.
+ *     versions of `xrpld` to become amendment blocked.
  *     Instead, to prevent newer versions from voting on the feature, use
  *     `VoteBehavior::Obsolete`. Obsolete features can not be voted for
- *     by any versions of `rippled` built with that setting, but will still
+ *     by any versions of `xrpld` built with that setting, but will still
  *     work correctly if they get enabled. If a feature remains obsolete
  *     for long enough that _all_ clients that could vote for it are
  *     amendment blocked, the feature can be removed from the code
@@ -125,10 +125,12 @@ namespace detail {
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define XRPL_FEATURE(name, supported, vote) +1
 #define XRPL_FIX(name, supported, vote) +1
 #define XRPL_RETIRE_FEATURE(name) +1
 #define XRPL_RETIRE_FIX(name) +1
+// NOLINTEND(bugprone-macro-parentheses)
 
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how

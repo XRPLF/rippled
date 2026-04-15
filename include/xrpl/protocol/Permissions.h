@@ -20,7 +20,7 @@ enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
 
-#define PERMISSION(type, txType, value) type = value,
+#define PERMISSION(type, txType, value) type = (value),
 
 #include <xrpl/protocol/detail/permissions.macro>
 

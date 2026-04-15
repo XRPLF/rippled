@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <limits>
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -80,7 +81,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
-    auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
+    auto const balance = view.balanceHookIOU(id, xrpAccount(), fullBalance);
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 
@@ -153,7 +154,7 @@ getPseudoAccountFields()
         if (!ar)
         {
             // LCOV_EXCL_START
-            LogicError(
+            Throw<std::logic_error>(
                 "xrpl::getPseudoAccountFields : unable to find account root "
                 "ledger format");
             // LCOV_EXCL_STOP

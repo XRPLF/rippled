@@ -392,7 +392,7 @@ BaseWSPeer<Handler, Impl>::cancel_timer()
     {
         timer_.cancel();
     }
-    catch (boost::system::system_error const&)
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
     {
         // ignored
     }
@@ -418,7 +418,7 @@ BaseWSPeer<Handler, Impl>::on_ping_pong(
 {
     if (kind == boost::beast::websocket::frame_type::pong)
     {
-        boost::beast::string_view p(payload_.begin());
+        boost::beast::string_view const p(payload_.begin());
         if (payload == p)
         {
             close_on_timer_ = false;

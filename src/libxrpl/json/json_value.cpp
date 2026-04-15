@@ -60,6 +60,7 @@ public:
 static ValueAllocator*&
 valueAllocator()
 {
+    // NOLINTNEXTLINE(misc-const-correctness)
     static ValueAllocator* valueAllocator = new DefaultValueAllocator;
     return valueAllocator;
 }
@@ -333,11 +334,11 @@ Value::swap(Value& other) noexcept
 {
     std::swap(value_, other.value_);
 
-    ValueType temp = type_;
+    ValueType const temp = type_;
     type_ = other.type_;
     other.type_ = temp;
 
-    int temp2 = allocated_;
+    int const temp2 = allocated_;
     allocated_ = other.allocated_;
     other.allocated_ = temp2;
 }
@@ -401,7 +402,7 @@ operator<(Value const& x, Value const& y)
 
         case arrayValue:
         case objectValue: {
-            if (int signum = int(x.value_.map_->size()) - y.value_.map_->size())
+            if (int const signum = int(x.value_.map_->size()) - y.value_.map_->size())
                 return signum < 0;
 
             return *x.value_.map_ < *y.value_.map_;
@@ -848,13 +849,13 @@ Value::operator[](UInt index)
     if (type_ == nullValue)
         *this = Value(arrayValue);
 
-    CZString key(index);
+    CZString const key(index);
     ObjectValues::iterator it = value_.map_->lower_bound(key);
 
     if (it != value_.map_->end() && (*it).first == key)
         return (*it).second;
 
-    ObjectValues::value_type defaultValue(key, null);
+    ObjectValues::value_type const defaultValue(key, null);
     it = value_.map_->insert(it, defaultValue);
     return (*it).second;
 }
@@ -869,8 +870,8 @@ Value::operator[](UInt index) const
     if (type_ == nullValue)
         return null;
 
-    CZString key(index);
-    ObjectValues::const_iterator it = value_.map_->find(key);
+    CZString const key(index);
+    ObjectValues::const_iterator const it = value_.map_->find(key);
 
     if (it == value_.map_->end())
         return null;
@@ -893,13 +894,13 @@ Value::resolveReference(char const* key, bool isStatic)
     if (type_ == nullValue)
         *this = Value(objectValue);
 
-    CZString actualKey(key, isStatic ? CZString::noDuplication : CZString::duplicateOnCopy);
+    CZString const actualKey(key, isStatic ? CZString::noDuplication : CZString::duplicateOnCopy);
     ObjectValues::iterator it = value_.map_->lower_bound(actualKey);
 
     if (it != value_.map_->end() && (*it).first == actualKey)
         return (*it).second;
 
-    ObjectValues::value_type defaultValue(actualKey, null);
+    ObjectValues::value_type const defaultValue(actualKey, null);
     it = value_.map_->insert(it, defaultValue);
     Value& value = (*it).second;
     return value;
@@ -928,8 +929,8 @@ Value::operator[](char const* key) const
     if (type_ == nullValue)
         return null;
 
-    CZString actualKey(key, CZString::noDuplication);
-    ObjectValues::const_iterator it = value_.map_->find(actualKey);
+    CZString const actualKey(key, CZString::noDuplication);
+    ObjectValues::const_iterator const it = value_.map_->find(actualKey);
 
     if (it == value_.map_->end())
         return null;
@@ -995,8 +996,8 @@ Value::removeMember(char const* key)
     if (type_ == nullValue)
         return null;
 
-    CZString actualKey(key, CZString::noDuplication);
-    ObjectValues::iterator it = value_.map_->find(actualKey);
+    CZString const actualKey(key, CZString::noDuplication);
+    ObjectValues::iterator const it = value_.map_->find(actualKey);
 
     if (it == value_.map_->end())
         return null;
@@ -1046,7 +1047,7 @@ Value::getMemberNames() const
     Members members;
     members.reserve(value_.map_->size());
     ObjectValues::const_iterator it = value_.map_->begin();
-    ObjectValues::const_iterator itEnd = value_.map_->end();
+    ObjectValues::const_iterator const itEnd = value_.map_->end();
 
     for (; it != itEnd; ++it)
         members.push_back(std::string((*it).first.c_str()));

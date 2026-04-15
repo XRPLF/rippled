@@ -257,12 +257,15 @@ private:
 
         config_t(config_t&& other)
             : KeyValueCompare(std::move(other.key_compare()))
-            , beast::detail::empty_base_optimization<ElementAllocator>(std::move(other))
+            , beast::detail::empty_base_optimization<ElementAllocator>(std::move(
+                  static_cast<beast::detail::empty_base_optimization<ElementAllocator>&>(other)))
             , clock(other.clock)
         {
         }
 
-        config_t(config_t&& other, Allocator const& alloc)
+        config_t(
+            config_t&& other,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+            Allocator const& alloc)
             : KeyValueCompare(std::move(other.key_compare()))
             , beast::detail::empty_base_optimization<ElementAllocator>(alloc)
             , clock(other.clock)
@@ -552,7 +555,10 @@ public:
 
     aged_ordered_container(aged_ordered_container&& other);
 
-    aged_ordered_container(aged_ordered_container&& other, Allocator const& alloc);
+    aged_ordered_container(
+        // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
+        aged_ordered_container&& other,
+        Allocator const& alloc);
 
     aged_ordered_container(std::initializer_list<value_type> init, clock_type& clock);
 
@@ -1290,7 +1296,7 @@ aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_
 
 template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
 aged_ordered_container<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::aged_ordered_container(
-    aged_ordered_container&& other,
+    aged_ordered_container&& other,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     Allocator const& alloc)
     : m_config(std::move(other.m_config), alloc)
 #if BOOST_VERSION >= 108000

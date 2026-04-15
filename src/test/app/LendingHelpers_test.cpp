@@ -264,7 +264,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const expectedOverpaymentManagementFee = Number{10};   // 10% of 100
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
-        auto const components = detail::computeOverpaymentComponents(
+        auto const components = xrpl::detail::computeOverpaymentComponents(
             IOU,
             loanScale,
             overpayment,
@@ -592,7 +592,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -679,7 +679,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -772,7 +772,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -871,7 +871,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -978,7 +978,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -1085,7 +1085,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace xrpl::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;

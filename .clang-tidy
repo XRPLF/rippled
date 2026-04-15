@@ -10,26 +10,26 @@ Checks: "-*,
   bugprone-chained-comparison,
   bugprone-compare-pointer-to-member-virtual-function,
   bugprone-copy-constructor-init,
-  # bugprone-crtp-constructor-accessibility, # has issues
+  bugprone-crtp-constructor-accessibility,
   bugprone-dangling-handle,
   bugprone-dynamic-static-initializers,
-  # bugprone-empty-catch, # has issues
+  bugprone-empty-catch,
   bugprone-fold-init-type,
-  # bugprone-forward-declaration-namespace, # has issues
-  # bugprone-inaccurate-erase,
-  # bugprone-inc-dec-in-conditions,
-  # bugprone-incorrect-enable-if,
-  # bugprone-incorrect-roundings,
-  # bugprone-infinite-loop,
-  # bugprone-integer-division,
+  bugprone-forward-declaration-namespace,
+  bugprone-inaccurate-erase,
+  bugprone-inc-dec-in-conditions,
+  bugprone-incorrect-enable-if,
+  bugprone-incorrect-roundings,
+  bugprone-infinite-loop,
+  bugprone-integer-division,
   bugprone-lambda-function-name,
-  # bugprone-macro-parentheses, # has issues
+  bugprone-macro-parentheses,
   bugprone-macro-repeated-side-effects,
   bugprone-misplaced-operator-in-strlen-in-alloc,
   bugprone-misplaced-pointer-arithmetic-in-alloc,
   bugprone-misplaced-widening-cast,
   bugprone-move-forwarding-reference,
-  # bugprone-multi-level-implicit-pointer-conversion, # has issues
+  bugprone-multi-level-implicit-pointer-conversion,
   bugprone-multiple-new-in-one-expression,
   bugprone-multiple-statement-macro,
   bugprone-no-escape,
@@ -39,13 +39,13 @@ Checks: "-*,
   bugprone-pointer-arithmetic-on-polymorphic-object,
   bugprone-posix-return,
   bugprone-redundant-branch-condition,
-  # bugprone-reserved-identifier, # has issues
-  # bugprone-return-const-ref-from-parameter, # has issues
+  bugprone-reserved-identifier,
+  bugprone-return-const-ref-from-parameter,
   bugprone-shared-ptr-array-mismatch,
   bugprone-signal-handler,
   bugprone-signed-char-misuse,
   bugprone-sizeof-container,
-  # bugprone-sizeof-expression, # has issues
+  bugprone-sizeof-expression,
   bugprone-spuriously-wake-up-functions,
   bugprone-standalone-empty,
   bugprone-string-constructor,
@@ -62,7 +62,7 @@ Checks: "-*,
   bugprone-suspicious-string-compare,
   bugprone-suspicious-stringview-data-usage,
   bugprone-swapped-arguments,
-  # bugprone-switch-missing-default-case, # has issues
+  bugprone-switch-missing-default-case,
   bugprone-terminating-continue,
   bugprone-throw-keyword-missing,
   bugprone-too-small-loop-variable,
@@ -73,30 +73,33 @@ Checks: "-*,
   bugprone-unhandled-self-assignment,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
-  # bugprone-use-after-move, # has issues
+  bugprone-use-after-move, # has issues
   bugprone-unused-raii,
   bugprone-unused-return-value,
   bugprone-unused-local-non-trivial-variable,
   bugprone-virtual-near-miss,
-  # cppcoreguidelines-init-variables, # has issues
-  # cppcoreguidelines-misleading-capture-default-by-value, # has issues
+  cppcoreguidelines-init-variables,
+  cppcoreguidelines-misleading-capture-default-by-value,
   cppcoreguidelines-no-suspend-with-lock,
-  # cppcoreguidelines-pro-type-member-init, # has issues
+  cppcoreguidelines-pro-type-member-init,
   cppcoreguidelines-pro-type-static-cast-downcast,
-  # cppcoreguidelines-rvalue-reference-param-not-moved, # has issues
-  # cppcoreguidelines-use-default-member-init, # has issues
-  # cppcoreguidelines-virtual-class-destructor, # has issues
+  cppcoreguidelines-rvalue-reference-param-not-moved,
+  cppcoreguidelines-use-default-member-init,
+  cppcoreguidelines-virtual-class-destructor,
   hicpp-ignored-remove-result,
-  # misc-definitions-in-headers, # has issues
+  misc-const-correctness,
+  misc-definitions-in-headers,
   misc-header-include-cycle,
   misc-misplaced-const,
+  misc-redundant-expression,
   misc-static-assert,
-  # misc-throw-by-value-catch-by-reference, # has issues
+  misc-throw-by-value-catch-by-reference,
   misc-unused-alias-decls,
   misc-unused-using-decls,
   modernize-deprecated-headers,
   modernize-make-shared,
   modernize-make-unique,
+  llvm-namespace-comment,
   performance-faster-string-find,
   performance-for-range-copy,
   performance-implicit-conversion-in-loop,
@@ -134,10 +137,7 @@ Checks: "-*,
 # ---
 # other checks that have issues that need to be resolved:
 #
-# llvm-namespace-comment,
-# misc-const-correctness,
 # misc-include-cleaner,
-# misc-redundant-expression,
 #
 # readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable

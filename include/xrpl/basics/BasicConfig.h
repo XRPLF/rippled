@@ -296,7 +296,7 @@ set(T& target, std::string const& name, Section const& section)
         if ((found_and_valid = val.has_value()))
             target = *val;
     }
-    catch (boost::bad_lexical_cast&)
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
     {
     }
     return found_and_valid;
@@ -311,7 +311,7 @@ template <class T>
 bool
 set(T& target, T const& defaultValue, std::string const& name, Section const& section)
 {
-    bool found_and_valid = set<T>(target, name, section);
+    bool const found_and_valid = set<T>(target, name, section);
     if (!found_and_valid)
         target = defaultValue;
     return found_and_valid;
@@ -330,7 +330,7 @@ get(Section const& section, std::string const& name, T const& defaultValue = T{}
     {
         return section.value_or<T>(name, defaultValue);
     }
-    catch (boost::bad_lexical_cast&)
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
     {
     }
     return defaultValue;
@@ -345,7 +345,7 @@ get(Section const& section, std::string const& name, char const* defaultValue)
         if (val.has_value())
             return *val;
     }
-    catch (boost::bad_lexical_cast&)
+    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
     {
     }
     return defaultValue;
