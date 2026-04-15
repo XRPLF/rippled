@@ -36,7 +36,7 @@ make_reason(String const& reason, char const* file, int line)
 
 }  // namespace detail
 
-class thread;
+class Thread;
 
 enum abort_t { no_abort_on_fail, abort_on_fail };
 
@@ -295,7 +295,7 @@ public:
     }
 
 private:
-    friend class thread;
+    friend class Thread;
 
     static suite**
     p_this_suite()
@@ -538,7 +538,7 @@ suite::run(runner& r)
     {
         run();
     }
-    catch (abort_exception const&)
+    catch (abort_exception const&)  // NOLINT(bugprone-empty-catch)
     {
         // ends the suite
     }

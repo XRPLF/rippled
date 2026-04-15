@@ -1345,7 +1345,7 @@ vp_enable=0
             {
                 c.loadFromString(toLoad);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -1389,7 +1389,7 @@ vp_base_squelch_max_selected_peers=2
             {
                 c2.loadFromString(toLoad);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }

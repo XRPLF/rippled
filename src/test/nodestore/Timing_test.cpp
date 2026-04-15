@@ -211,7 +211,7 @@ public:
     parallel_for(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
@@ -224,7 +224,7 @@ public:
     parallel_for_id(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
