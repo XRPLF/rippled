@@ -226,7 +226,7 @@ private:
 // expensive argument lists if the stream is not active.
 #ifndef JLOG
 #define JLOG(x) \
-    if (!x)     \
+    if (!(x))   \
     {           \
     }           \
     else        \
@@ -235,7 +235,7 @@ private:
 
 #ifndef CLOG
 #define CLOG(ss) \
-    if (!ss)     \
+    if (!(ss))   \
         ;        \
     else         \
         *ss

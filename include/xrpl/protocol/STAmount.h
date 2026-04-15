@@ -401,7 +401,7 @@ amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource);
 inline STAmount const&
 toSTAmount(STAmount const& a)
 {
-    return a;
+    return a;  // NOLINT(bugprone-return-const-ref-from-parameter)
 }
 
 //------------------------------------------------------------------------------

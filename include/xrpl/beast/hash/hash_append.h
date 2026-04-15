@@ -203,7 +203,8 @@ template <class Hasher, class T>
 inline std::enable_if_t<is_contiguously_hashable<T, Hasher>::value>
 hash_append(Hasher& h, T const& t) noexcept
 {
-    h(std::addressof(t), sizeof(t));
+    // NOLINTNEXTLINE(bugprone-sizeof-expression)
+    h(static_cast<void const*>(std::addressof(t)), sizeof(t));
 }
 
 template <class Hasher, class T>
