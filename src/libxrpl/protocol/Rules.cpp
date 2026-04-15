@@ -140,10 +140,12 @@ Rules::operator!=(Rules const& other) const
 }
 
 bool
-isFeatureEnabled(uint256 const& feature)
+isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
 {
     auto const& rules = getCurrentTransactionRules();
-    return rules && rules->enabled(feature);
+    if (!rules)
+        return resultIfNoRules;
+    return rules->enabled(feature);
 }
 
 }  // namespace xrpl
