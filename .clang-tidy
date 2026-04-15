@@ -193,7 +193,7 @@ CheckOptions:
   #   readability-identifier-naming.FunctionIgnoredRegexp: ".*tag_invoke.*"
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
-  misc-include-cleaner.IgnoreHeaders: ".*/(detail|impl)/.*;.*fwd\\.h(pp)?;time.h;stdlib.h;sqlite3.h;netinet/in\\.h;__chrono/.*;bits/.*;_abort\\.h;boost/uuid/uuid_hash.hpp;boost/beast/core/flat_buffer\\.hpp;boost/beast/http/field\\.hpp;boost/beast/http/dynamic_body\\.hpp;boost/beast/http/message\\.hpp;boost/beast/http/read\\.hpp;boost/beast/http/write\\.hpp"
+  misc-include-cleaner.IgnoreHeaders: ".*/(detail|impl)/.*;.*fwd\\.h(pp)?;time.h;stdlib.h;sqlite3.h;netinet/in\\.h;__chrono/.*;bits/.*;_abort\\.h;boost/uuid/uuid_hash.hpp;boost/beast/core/flat_buffer\\.hpp;boost/beast/http/field\\.hpp;boost/beast/http/dynamic_body\\.hpp;boost/beast/http/message\\.hpp;boost/beast/http/read\\.hpp;boost/beast/http/write\\.hpp;openssl/obj_mac\\.h"
 #
 HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp)$'
 ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'

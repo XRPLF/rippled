@@ -11,7 +11,7 @@
 #include <openssl/bn.h>
 #include <openssl/crypto.h>
 #include <openssl/evp.h>
-#include <openssl/obj_mac.h>
+#include <openssl/objects.h>  // IWYU pragma: keep
 #include <openssl/ossl_typ.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
