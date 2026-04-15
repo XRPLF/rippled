@@ -1632,7 +1632,7 @@ rpcClient(
         // YYY We could have a command line flag for single line output for
         // scripts. YYY We would intercept output here and simplify it.
     }
-    catch (RequestNotParsable& e)
+    catch (RequestNotParsable const& e)
     {
         jvOutput = rpcError(rpcINVALID_PARAMS);
         jvOutput["error_what"] = e.what();
