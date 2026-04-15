@@ -293,7 +293,8 @@ private:
         int64_t gas,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports);
+        ImportVec const& imports,
+        beast::Journal j);
 
     NotTEC
     checkHlp(
@@ -301,7 +302,8 @@ private:
         HostFunctions& hfs,
         std::string_view funcName,
         std::vector<WasmParam> const& params,
-        ImportVec const& imports);
+        ImportVec const& imports,
+        beast::Journal j);
 
     int
     addModule(Bytes const& wasmCode, bool instantiate, ImportVec const& imports, int64_t gas);
