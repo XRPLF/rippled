@@ -92,13 +92,13 @@ Permission::Permission()
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define GRANULAR_PERMISSION(type, txType, value, flags, fields) \
     granularTemplates_.emplace(                                 \
         std::piecewise_construct,                               \
         std::forward_as_tuple(type),                            \
-        std::forward_as_tuple(                                  \
-            std::vector<SOElement> fields,                      \
-            TxFormats::getCommonFields()));  // NOLINT(bugprone-macro-parentheses)
+        std::forward_as_tuple(std::vector<SOElement> fields, TxFormats::getCommonFields()));
+        // NOLINTEND(bugprone-macro-parentheses)
 
 #include <xrpl/protocol/detail/permissions.macro>
 
@@ -127,19 +127,20 @@ Permission::Permission()
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define GRANULAR_PERMISSION(type, txType, value, flags, fields)                                    \
     {                                                                                              \
         [[maybe_unused]] auto const* fmt = TxFormats::getInstance().findByType(txType);            \
         XRPL_ASSERT(                                                                               \
             fmt != nullptr, "xrpl::Permission::Permission : granular permission txType is valid"); \
-        for ([[maybe_unused]] auto const& field :                                                  \
-             std::vector<SOElement> fields) /* NOLINT(bugprone-macro-parentheses) */               \
+        for ([[maybe_unused]] auto const& field : std::vector<SOElement> fields)                   \
         {                                                                                          \
             XRPL_ASSERT(                                                                           \
                 fmt->getSOTemplate().getIndex(field.sField()) != -1,                               \
                 "xrpl::Permission::Permission : granular permission field is valid");              \
         }                                                                                          \
     }
+        // NOLINTEND(bugprone-macro-parentheses)
 
 #include <xrpl/protocol/detail/permissions.macro>
 
