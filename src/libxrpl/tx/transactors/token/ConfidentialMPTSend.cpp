@@ -40,7 +40,7 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
         return temBAD_CIPHERTEXT;
 
     // Check the length of the ZKProof (fixed size regardless of recipient count)
-    if (ctx.tx[sfZKProof].length() != ecCompactSendProofLength)
+    if (ctx.tx[sfZKProof].length() != ecSendProofLength)
         return temMALFORMED;
 
     // Check the Pedersen commitments are valid

@@ -346,7 +346,7 @@ verifyClawbackProof(
     uint256 const& contextHash)
 {
     if (ciphertext.size() != ecGamalEncryptedTotalLength || pubKeySlice.size() != ecPubKeyLength ||
-        proof.size() != ecCompactClawbackProofLength)
+        proof.size() != ecClawbackProofLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (mpt_verify_clawback_proof(
@@ -369,7 +369,7 @@ verifySendProof(
     uint256 const& contextHash)
 {
     auto const recipientCount = getConfidentialRecipientCount(auditor.has_value());
-    if (proof.size() != ecCompactSendProofLength || sender.publicKey.size() != ecPubKeyLength ||
+    if (proof.size() != ecSendProofLength || sender.publicKey.size() != ecPubKeyLength ||
         sender.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
         destination.publicKey.size() != ecPubKeyLength ||
         destination.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
@@ -421,7 +421,7 @@ verifyConvertBackProof(
     uint64_t amount,
     uint256 const& contextHash)
 {
-    if (proof.size() != ecCompactConvertBackProofLength || pubKeySlice.size() != ecPubKeyLength ||
+    if (proof.size() != ecConvertBackProofLength || pubKeySlice.size() != ecPubKeyLength ||
         spendingBalance.size() != ecGamalEncryptedTotalLength ||
         balanceCommitment.size() != ecPedersenCommitmentLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE

@@ -73,13 +73,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     std::string
     getTrivialSendProofHex()
     {
-        Buffer buf(ecCompactSendProofLength);
-        std::memset(buf.data(), 0, ecCompactSendProofLength);
+        Buffer buf(ecSendProofLength);
+        std::memset(buf.data(), 0, ecSendProofLength);
 
-        for (std::size_t i = 0; i < ecCompactSendProofLength; i += ecGamalEncryptedLength)
+        for (std::size_t i = 0; i < ecSendProofLength; i += ecGamalEncryptedLength)
         {
             buf.data()[i] = ecCompressedPrefixEvenY;
-            if (i + ecGamalEncryptedLength - 1 < ecCompactSendProofLength)
+            if (i + ecGamalEncryptedLength - 1 < ecSendProofLength)
                 buf.data()[i + ecGamalEncryptedLength - 1] = 0x01;
         }
 
@@ -4972,7 +4972,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfHolder] = bob.human();
             jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
             jv[sfMPTAmount] = std::to_string(10);
-            std::string const dummyProof(ecCompactClawbackProofLength * 2, '0');
+            std::string const dummyProof(ecClawbackProofLength * 2, '0');
             jv[sfZKProof] = dummyProof;
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
 
@@ -6666,8 +6666,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 {.account = carol, .amt = 30, .holderPubKey = mptAlice.getPubKey(carol)});
             mptAlice.mergeInbox({.account = carol});
 
-            Buffer badProof(ecCompactSendProofLength);
-            std::memset(badProof.data(), 0xFF, ecCompactSendProofLength);
+            Buffer badProof(ecSendProofLength);
+            std::memset(badProof.data(), 0xFF, ecSendProofLength);
             badProof.data()[0] = ecCompressedPrefixEvenY;
 
             mptAlice.send({
@@ -8355,7 +8355,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
             jv[sfHolder] = bob.human();
             jv[sfMPTAmount.jsonName] = "50";
-            jv[sfZKProof.jsonName] = std::string(ecCompactClawbackProofLength * 2, '0');
+            jv[sfZKProof.jsonName] = std::string(ecClawbackProofLength * 2, '0');
             env(jv, delegate::as(dave), ter(temMALFORMED));
         }
 
@@ -8368,7 +8368,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             jv[sfMPTokenIssuanceID] = to_string(mptAlice.issuanceID());
             jv[sfHolder] = carol.human();
             jv[sfMPTAmount.jsonName] = "100";
-            jv[sfZKProof.jsonName] = std::string(ecCompactClawbackProofLength * 2, '0');
+            jv[sfZKProof.jsonName] = std::string(ecClawbackProofLength * 2, '0');
             env(jv, delegate::as(dave), ter(temMALFORMED));
         }
     }

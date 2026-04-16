@@ -31,7 +31,7 @@ ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     // Verify proof length
-    if (ctx.tx[sfZKProof].length() != ecCompactClawbackProofLength)
+    if (ctx.tx[sfZKProof].length() != ecClawbackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;

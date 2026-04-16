@@ -792,7 +792,7 @@ MPTTester::getClawbackProof(
     if (pubKeyBlob.size() != ecPubKeyLength)
         return std::nullopt;
 
-    Buffer proof(ecCompactClawbackProofLength);
+    Buffer proof(ecClawbackProofLength);
 
     if (mpt_get_clawback_proof(
             privateKey.data(),
@@ -868,7 +868,7 @@ MPTTester::getConfidentialSendProof(
         std::memcpy(participants[i].ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
     }
 
-    size_t proofLen = ecCompactSendProofLength;
+    size_t proofLen = ecSendProofLength;
     Buffer proof(proofLen);
 
     if (mpt_get_confidential_send_proof(
@@ -922,7 +922,7 @@ MPTTester::getConvertBackProof(
     PedersenProofParams const& pcParams) const
 {
     // Expected total proof length: compact sigma proof (128 bytes) + single bulletproof (688 bytes)
-    std::size_t constexpr expectedProofLength = ecCompactConvertBackProofLength;
+    std::size_t constexpr expectedProofLength = ecConvertBackProofLength;
 
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
@@ -1410,7 +1410,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
         {
-            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecCompactSendProofLength));
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSendProofLength));
         }
     }
 
@@ -1657,7 +1657,7 @@ MPTTester::sendJV(
         if (proof)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
-            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecCompactSendProofLength));
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSendProofLength));
     }
 
     return jv;
@@ -1752,7 +1752,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         if (proof)
             jv[sfZKProof] = strHex(*proof);
         else
-            jv[sfZKProof] = strHex(makeZeroBuffer(ecCompactClawbackProofLength));
+            jv[sfZKProof] = strHex(makeZeroBuffer(ecClawbackProofLength));
     }
 
     auto const holderPubAmt = getBalance(*arg.holder);
@@ -2067,7 +2067,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         // generate a dummy proof if no encrypted amount field, so that other
         // preflight/preclaim are checked
         if (!prevEncryptedSpendingBalance)
-            proof = makeZeroBuffer(ecCompactConvertBackProofLength);
+            proof = makeZeroBuffer(ecConvertBackProofLength);
         else
         {
             proof = getConvertBackProof(
@@ -2199,7 +2199,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
 
         Buffer proof;
         if (!prevEncSpending)
-            proof = makeZeroBuffer(ecCompactConvertBackProofLength);
+            proof = makeZeroBuffer(ecConvertBackProofLength);
         else
             proof = getConvertBackProof(
                 *arg.account,

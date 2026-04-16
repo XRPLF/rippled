@@ -34,7 +34,7 @@ ConfidentialMPTConvertBack::preflight(PreflightContext const& ctx)
         return res;
 
     // ConvertBack proof = compact sigma proof (128 bytes) + single bulletproof (688 bytes)
-    if (ctx.tx[sfZKProof].size() != ecCompactConvertBackProofLength)
+    if (ctx.tx[sfZKProof].size() != ecConvertBackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;

@@ -303,7 +303,7 @@ getConfidentialRecipientCount(bool hasAuditor)
  * can decrypt the balance using their private key.
  *
  * @param amount      The revealed plaintext amount.
- * @param proof       The zero-knowledge proof bytes (ecCompactClawbackProofLength).
+ * @param proof       The zero-knowledge proof bytes (ecClawbackProofLength).
  * @param pubKeySlice The issuer's ElGamal public key (ecPubKeyLength bytes).
  * @param ciphertext  The issuer's encrypted balance on the holder's account
  * (ecGamalEncryptedTotalLength bytes).
