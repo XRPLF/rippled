@@ -487,7 +487,7 @@ public:
     run() override
     {
         testServerDefinitions();
-        testGetStaticServerDefinitions();
+        testGetServerDefinitions();
     }
 };
 
