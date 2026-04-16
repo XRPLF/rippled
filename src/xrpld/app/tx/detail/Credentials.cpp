@@ -261,7 +261,7 @@ CredentialDelete::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if ((subject != account_) && (issuer != account_) &&
-        !checkExpired(sleCred, ctx_.view().info().parentCloseTime))
+        !checkExpired(*sleCred, ctx_.view().info().parentCloseTime))
     {
         JLOG(j_.trace()) << "Can't delete non-expired credential.";
         return tecNO_PERMISSION;
@@ -355,7 +355,7 @@ CredentialAccept::doApply()
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
 
-    if (checkExpired(sleCred, view().info().parentCloseTime))
+    if (checkExpired(*sleCred, view().info().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed

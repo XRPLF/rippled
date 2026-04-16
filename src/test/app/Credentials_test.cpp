@@ -1180,7 +1180,7 @@ struct Credentials_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 sleCred &&
                 ripple::credentials::checkExpired(
-                    sleCred, env.current()->info().parentCloseTime));
+                    *sleCred, env.current()->info().parentCloseTime));
         }
 
         // Create an ApplyViewImpl on top of the current closed ledger
