@@ -365,12 +365,10 @@ public:
         Logic<TestChecker> logic(clock, store, checker, journal_);
 
         auto const pass = [&](std::string const& s) {
-            BEAST_EXPECT(
-                logic.is_valid_address(beast::IP::Endpoint::from_string(s)));
+            BEAST_EXPECT(logic.is_valid_address(beast::IP::Endpoint::from_string(s)));
         };
         auto const fail = [&](std::string const& s) {
-            BEAST_EXPECT(
-                !logic.is_valid_address(beast::IP::Endpoint::from_string(s)));
+            BEAST_EXPECT(!logic.is_valid_address(beast::IP::Endpoint::from_string(s)));
         };
 
         // Invalid: port 0
@@ -562,8 +560,7 @@ public:
             }
 
             auto const remote = beast::IP::Endpoint::from_string("65.0.0.1:5");
-            auto const local =
-                beast::IP::Endpoint::from_string("65.0.0.2:1024");
+            auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
 
             auto const [slot, r] = logic.new_outbound_slot(remote);
             BEAST_EXPECT(slot != nullptr);
@@ -585,16 +582,12 @@ public:
 
             // Valid public addresses
             Endpoints eps;
-            eps.push_back(
-                Endpoint{beast::IP::Endpoint::from_string("44.0.0.1:5"), 1});
-            eps.push_back(
-                Endpoint{beast::IP::Endpoint::from_string("44.0.0.2:6"), 1});
+            eps.push_back(Endpoint{beast::IP::Endpoint::from_string("44.0.0.1:5"), 1});
+            eps.push_back(Endpoint{beast::IP::Endpoint::from_string("44.0.0.2:6"), 1});
             // Invalid: private address
-            eps.push_back(
-                Endpoint{beast::IP::Endpoint::from_string("10.0.0.1:5"), 1});
+            eps.push_back(Endpoint{beast::IP::Endpoint::from_string("10.0.0.1:5"), 1});
             // Invalid: port 0
-            eps.push_back(
-                Endpoint{beast::IP::Endpoint::from_string("44.0.0.3:0"), 1});
+            eps.push_back(Endpoint{beast::IP::Endpoint::from_string("44.0.0.3:0"), 1});
 
             // With verification enabled, only the 2 valid endpoints survive
             BEAST_EXPECT(run(true, eps) == 2);
@@ -603,16 +596,12 @@ public:
             testcase("verify_endpoints disabled");
 
             Endpoints eps;
-            eps.push_back(
-                Endpoint{beast::IP::Endpoint::from_string("44.0.0.1:5"), 1});
-            eps.push_back(
-                Endpoint{beast::IP::Endpoint::from_string("44.0.0.2:6"), 1});
+            eps.push_back(Endpoint{beast::IP::Endpoint::from_string("44.0.0.1:5"), 1});
+            eps.push_back(Endpoint{beast::IP::Endpoint::from_string("44.0.0.2:6"), 1});
             // Private address — kept when verification is off
-            eps.push_back(
-                Endpoint{beast::IP::Endpoint::from_string("10.0.0.1:5"), 1});
+            eps.push_back(Endpoint{beast::IP::Endpoint::from_string("10.0.0.1:5"), 1});
             // Port 0 — kept when verification is off
-            eps.push_back(
-                Endpoint{beast::IP::Endpoint::from_string("44.0.0.3:0"), 1});
+            eps.push_back(Endpoint{beast::IP::Endpoint::from_string("44.0.0.3:0"), 1});
 
             // Without verification, all 4 endpoints survive
             BEAST_EXPECT(run(false, eps) == 4);
@@ -675,7 +664,7 @@ public:
                 (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 && c.PEERS_OUT_MAX == 0) ||
                 (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
 
-            Config config = Config::makeConfig(c, port, false, 0, true);
+            Config const config = Config::makeConfig(c, port, false, 0, true);
 
             Counts counts;
             counts.onConfig(config);
