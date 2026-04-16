@@ -1,4 +1,4 @@
-# Grafana Tempo configuration for rippled telemetry stack.
+# Grafana Tempo configuration for xrpld telemetry stack.
 #
 # Runs in single-binary mode for local development.
 # Receives traces via OTLP/gRPC from the OTel Collector and stores
@@ -40,8 +40,10 @@ metrics_generator:
       source: tempo
   storage:
     path: /var/tempo/generator/wal
-    remote_write:
-      - url: http://prometheus:9090/api/v1/write
+    # Uncomment and add a Prometheus service to docker-compose.yml
+    # to enable remote_write for service graph metrics:
+    # remote_write:
+    #   - url: http://prometheus:9090/api/v1/write
 
 overrides:
   defaults:

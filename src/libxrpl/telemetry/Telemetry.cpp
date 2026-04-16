@@ -93,6 +93,12 @@ public:
         return false;
     }
 
+    bool
+    shouldTraceLedger() const override
+    {
+        return false;
+    }
+
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view) override
     {
@@ -241,6 +247,12 @@ public:
         return setup_.tracePeer;
     }
 
+    bool
+    shouldTraceLedger() const override
+    {
+        return setup_.traceLedger;
+    }
+
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view name) override
     {
@@ -252,7 +264,7 @@ public:
     opentelemetry::nostd::shared_ptr<trace_api::Span>
     startSpan(std::string_view name, trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer("rippled");
+        auto tracer = getTracer("xrpld");
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         return tracer->StartSpan(std::string(name), opts);
@@ -264,7 +276,7 @@ public:
         opentelemetry::context::Context const& parentContext,
         trace_api::SpanKind kind) override
     {
-        auto tracer = getTracer("rippled");
+        auto tracer = getTracer("xrpld");
         trace_api::StartSpanOptions opts;
         opts.kind = kind;
         opts.parent = parentContext;

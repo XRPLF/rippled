@@ -1,7 +1,7 @@
-# OpenTelemetry Collector configuration for rippled development.
+# OpenTelemetry Collector configuration for xrpld development.
 #
 # Pipeline: OTLP receiver -> batch processor -> debug + Tempo.
-# rippled sends traces via OTLP/HTTP to port 4318. The collector batches
+# xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
 # them and forwards to Tempo via OTLP/gRPC on the Docker network. Tempo
 # is queryable via Grafana Explore using TraceQL.
 
@@ -26,7 +26,12 @@ exporters:
     tls:
       insecure: true
 
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
 service:
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]

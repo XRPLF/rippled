@@ -1,7 +1,7 @@
 # Grafana datasource provisioning for Grafana Tempo.
 # Auto-configures Tempo as a trace data source on Grafana startup.
 # Access Grafana at http://localhost:3000, then use Explore -> Tempo
-# to browse rippled traces using TraceQL.
+# to browse xrpld traces using TraceQL.
 #
 # Search filters provide pre-configured dropdowns in the Explore UI.
 # Each phase adds filters for the span attributes it introduces.
@@ -18,6 +18,9 @@ datasources:
     jsonData:
       nodeGraph:
         enabled: true
+      # Service map and traces-to-metrics require a Prometheus datasource
+      # (not included in this stack). These features are inactive until a
+      # Prometheus service is added to docker-compose.yml.
       serviceMap:
         datasourceUid: prometheus
       tracesToMetrics:
@@ -27,7 +30,7 @@ datasources:
       search:
         filters:
           # --- Node identification filters ---
-          # service.name: logical service name (default: "rippled").
+          # service.name: logical service name (default: "xrpld").
           #   Useful when running multiple service types in the same collector.
           - id: service-name
             tag: service.name
@@ -42,7 +45,7 @@ datasources:
             operator: "="
             scope: resource
             type: static
-          # service.version: rippled build version (e.g., "2.4.0-b1").
+          # service.version: xrpld build version (e.g., "2.4.0-b1").
           #   Filter traces from specific software releases.
           - id: node-version
             tag: service.version
@@ -51,29 +54,36 @@ datasources:
             type: dynamic
           # xrpl.network.id: numeric network identifier
           #   (0 = mainnet, 1 = testnet, 2 = devnet, etc.).
+          #   Derived from the [network_id] config section.
           - id: network-id
             tag: xrpl.network.id
             operator: "="
             scope: resource
             type: dynamic
-          # xrpl.network.type: human-readable network name
-          #   ("mainnet", "testnet", "devnet", "standalone").
+          # xrpl.network.type: human-readable network name derived from
+          #   network ID ("mainnet", "testnet", "devnet", "unknown").
           - id: network-type
             tag: xrpl.network.type
             operator: "="
             scope: resource
             type: static
           # --- Span intrinsic filters ---
+          # name: the span operation name (e.g., "rpc.command.server_info").
+          #   Use to find traces for a specific RPC command or subsystem.
           - id: span-name
             tag: name
             operator: "="
             scope: intrinsic
             type: static
+          # status: span completion status ("ok", "error", "unset").
+          #   Filter for failed operations to diagnose errors.
           - id: span-status
             tag: status
             operator: "="
             scope: intrinsic
             type: static
+          # duration: span wall-clock duration. Use with ">" operator
+          #   to find slow operations (e.g., duration > 500ms).
           - id: span-duration
             tag: duration
             operator: ">"

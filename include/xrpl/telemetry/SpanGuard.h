@@ -6,10 +6,65 @@
     activated on the current thread's context (via Scope). On destruction,
     the span is ended and the previous context is restored.
 
+    Dependency diagram:
+
+        +------------------------------------+
+        |            SpanGuard               |
+        +------------------------------------+
+        | - span_  : shared_ptr<Span>        |
+        | - scope_ : Scope                   |
+        +------------------------------------+
+                        |  uses
+                +-------+-------+
+                |               |
+           +--------+   +-------------+
+           |  Span  |   |    Scope    |
+           | (OTel) |   | (OTel, non- |
+           |        |   |  movable)   |
+           +--------+   +-------------+
+
     Used by the XRPL_TRACE_* macros in TracingInstrumentation.h. Can also
     be stored in std::optional for conditional tracing (move-constructible).
 
     Only compiled when XRPL_ENABLE_TELEMETRY is defined.
+
+    Usage examples:
+
+    1. Basic RAII tracing:
+    @code
+        {
+            SpanGuard guard(telemetry.startSpan("rpc.command.submit"));
+            guard.setAttribute("xrpl.rpc.command", "submit");
+            // ... span is active on this thread's context
+        }  // span ended, previous context restored
+    @endcode
+
+    2. Conditional tracing with std::optional:
+    @code
+        std::optional<SpanGuard> guard;
+        if (telemetry.isEnabled() && telemetry.shouldTraceRpc())
+            guard.emplace(telemetry.startSpan("rpc.request"));
+        // ... guard may or may not hold a span
+    @endcode
+
+    3. Error recording:
+    @code
+        SpanGuard guard(telemetry.startSpan("rpc.command.submit"));
+        try {
+            // ... do work
+            guard.setOk();
+        } catch (std::exception const& e) {
+            guard.recordException(e);  // sets status to error
+        }
+    @endcode
+
+    @note Thread safety: A SpanGuard must only be used on the thread where
+    it was constructed (the Scope binds to the thread-local context stack).
+    Use context() to propagate the trace to other threads.
+
+    @note Limitation: Move assignment is deleted because re-scoping a span
+    mid-flight would corrupt the context stack. Only move construction is
+    supported (for std::optional emplacement).
 */
 
 #ifdef XRPL_ENABLE_TELEMETRY

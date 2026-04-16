@@ -326,7 +326,8 @@ public:
                   telemetry::setup_Telemetry(
                       config_->section("telemetry"),
                       "",  // Updated later via setServiceInstanceId()
-                      BuildInfo::getVersionString()),
+                      BuildInfo::getVersionString(),
+                      config_->NETWORK_ID),
                   logs_->journal("Telemetry")))
 
         , m_txMaster(*this)
@@ -1140,6 +1141,8 @@ public:
             JLOG(m_journal.debug()) << "CachedSLEs sweep.  Size before: " << oldCachedSLEsSize
                                     << "; size after: " << cachedSLEs_.size();
         }
+
+        mallocTrim("doSweep", m_journal);
 
         // Set timer to do another sweep later.
         setSweepTimer();

@@ -3,12 +3,28 @@
 /** Abstract interface for OpenTelemetry distributed tracing.
 
     Provides the Telemetry base class that all components use to create trace
-    spans. Two implementations exist:
+    spans. Two concrete implementations exist, selected at construction time
+    by make_Telemetry():
 
       - TelemetryImpl (Telemetry.cpp): real OTel SDK integration, compiled
         only when XRPL_ENABLE_TELEMETRY is defined and enabled at runtime.
       - NullTelemetry (NullTelemetry.cpp): no-op stub used when telemetry is
         disabled at compile time or runtime.
+
+    Inheritance / dependency diagram:
+
+        +--------------------+
+        |    Telemetry       |  (abstract, this file)
+        |  <<interface>>     |
+        +---------+----------+
+                  |
+        +---------+-----------+-------------------+
+        |                     |                   |
+    +---+------------+  +-----+---------+  +------+----------+
+    | TelemetryImpl  |  | NullTelemetry |  | NullTelemetryOtel|
+    | (Telemetry.cpp)|  |(NullTelemetry |  | (Telemetry.cpp)  |
+    | OTel SDK       |  | .cpp)         |  | noop w/ OTel API |
+    +----------------+  +---------------+  +------------------+
 
     The Setup struct holds all configuration parsed from the [telemetry]
     section of xrpld.cfg. See TelemetryConfig.cpp for the parser and
@@ -16,6 +32,41 @@
 
     OTel SDK headers are conditionally included behind XRPL_ENABLE_TELEMETRY
     so that builds without telemetry have zero dependency on opentelemetry-cpp.
+
+    Usage examples:
+
+    1. Check before tracing (typical guard pattern):
+    @code
+        auto& telemetry = registry.getTelemetry();
+        if (telemetry.isEnabled() && telemetry.shouldTraceRpc())
+        {
+            auto span = telemetry.startSpan("rpc.command.server_info");
+            // ... do work, span ends when shared_ptr refcount drops to 0
+        }
+    @endcode
+
+    2. RAII tracing with SpanGuard (preferred):
+    @code
+        if (telemetry.isEnabled() && telemetry.shouldTraceRpc())
+        {
+            SpanGuard guard(telemetry.startSpan("rpc.command.submit"));
+            guard.setAttribute("xrpl.rpc.command", "submit");
+            // ... guard ends span automatically on scope exit
+        }
+    @endcode
+
+    3. Cross-thread context propagation:
+    @code
+        // On thread A: capture context
+        auto ctx = guard.context();
+        // On thread B: create child span with explicit parent
+        auto child = telemetry.startSpan("async.work", ctx);
+    @endcode
+
+    @note Thread safety: The Telemetry interface is safe for concurrent reads
+    (isEnabled, shouldTrace*, getTracer, startSpan) after start() completes.
+    setServiceInstanceId() must be called before start() and is not thread-safe.
+    The OTel SDK's TracerProvider and Tracer are internally thread-safe.
 */
 
 #include <xrpl/basics/BasicConfig.h>
@@ -50,7 +101,7 @@ public:
         bool enabled = false;
 
         /** OTel resource attribute `service.name`. */
-        std::string serviceName = "rippled";
+        std::string serviceName = "xrpld";
 
         /** OTel resource attribute `service.version` (set from BuildInfo). */
         std::string serviceVersion;
@@ -58,9 +109,6 @@ public:
         /** OTel resource attribute `service.instance.id` (defaults to node
             public key). */
         std::string serviceInstanceId;
-
-        /** Exporter type: currently only "otlp_http" is supported. */
-        std::string exporterType = "otlp_http";
 
         /** OTLP/HTTP endpoint URL where spans are sent. */
         std::string exporterEndpoint = "http://localhost:4318/v1/traces";
@@ -157,6 +205,10 @@ public:
     virtual bool
     shouldTracePeer() const = 0;
 
+    /** @return true if ledger close/accept should be traced. */
+    virtual bool
+    shouldTraceLedger() const = 0;
+
 #ifdef XRPL_ENABLE_TELEMETRY
     /** Get or create a named tracer instance.
 
@@ -164,7 +216,7 @@ public:
         @return A shared pointer to the Tracer.
     */
     virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
-    getTracer(std::string_view name = "rippled") = 0;
+    getTracer(std::string_view name = "xrpld") = 0;
 
     /** Start a new span on the current thread's context.
 
@@ -214,13 +266,16 @@ make_Telemetry(Telemetry::Setup const& setup, beast::Journal journal);
     @param section        The [telemetry] config section.
     @param nodePublicKey  Node public key, used as default instance ID.
     @param version        Build version string.
+    @param networkId      Network identifier from [network_id] config
+                          (0 = mainnet, 1 = testnet, 2 = devnet).
     @return A populated Setup struct with defaults for missing values.
 */
 Telemetry::Setup
 setup_Telemetry(
     Section const& section,
     std::string const& nodePublicKey,
-    std::string const& version);
+    std::string const& version,
+    std::uint32_t networkId);
 
 }  // namespace telemetry
 }  // namespace xrpl
