@@ -35,9 +35,11 @@ struct CopyConst<T const, U>
 template <typename T, typename Tag>
 class ListNode
 {
-private:
+    ListNode() = default;
+
     using value_type = T;
 
+    friend T;
     friend class List<T, Tag>;
 
     template <typename>

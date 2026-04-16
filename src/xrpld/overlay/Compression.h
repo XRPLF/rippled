@@ -49,7 +49,7 @@ decompress(
             // LCOV_EXCL_STOP
         }
     }
-    catch (...)
+    catch (...)  // NOLINT(bugprone-empty-catch)
     {
     }
     return 0;
@@ -88,7 +88,7 @@ compress(
             // LCOV_EXCL_STOP
         }
     }
-    catch (...)
+    catch (...)  // NOLINT(bugprone-empty-catch)
     {
     }
     return 0;

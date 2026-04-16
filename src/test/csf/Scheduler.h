@@ -265,7 +265,7 @@ inline Scheduler::queue_type::~queue_type()
         auto e = &*iter;
         ++iter;
         e->~event();
-        alloc_->deallocate(e, sizeof(e));
+        alloc_->deallocate(e, sizeof(e));  // NOLINT(bugprone-sizeof-expression)
     }
 }
 
