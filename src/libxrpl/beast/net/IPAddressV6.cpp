@@ -26,16 +26,52 @@ namespace IP {
 bool
 is_private(AddressV6 const& addr)
 {
-    return (
-        (addr.to_bytes()[0] & 0xfd) ||  // TODO  fc00::/8 too ?
-        (addr.is_v4_mapped() && is_private(addr.to_v4())));
+    // fc00::/7 - Unique Local Address (ULA), covers fc00:: and fd00::
+    if ((addr.to_bytes()[0] & 0xfe) == 0xfc)
+        return true;
+    if (addr.is_v4_mapped())
+        return is_private(addr.to_v4());
+    return false;
 }
 
 bool
 is_public(AddressV6 const& addr)
 {
-    // TODO is this correct?
-    return !is_private(addr) && !addr.is_multicast();
+    if (addr.is_loopback())
+        return false;
+    if (addr.is_v4_mapped())
+        return is_public(
+            boost::asio::ip::make_address_v4(boost::asio::ip::v4_mapped, addr));
+    if (is_private(addr))
+        return false;
+    if (addr.is_multicast())
+        return false;
+
+    auto const b = addr.to_bytes();
+
+    // fe80::/10 - Link-local
+    if (b[0] == 0xfe && (b[1] & 0xc0) == 0x80)
+        return false;
+    // 100::/64 - Discard prefix (RFC 6666)
+    if (b[0] == 0x01 && b[1] == 0x00 && b[2] == 0 && b[3] == 0 && b[4] == 0 &&
+        b[5] == 0 && b[6] == 0 && b[7] == 0)
+        return false;
+    // 2001:db8::/32 - Documentation (RFC 3849)
+    if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x0d && b[3] == 0xb8)
+        return false;
+    // 2001::/32 - IETF Protocol Assignments / Teredo (RFC 4380)
+    if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x00 && b[3] == 0x00)
+        return false;
+    // 2001:20::/28 - ORCHIDv2 (RFC 7343)
+    // 28-bit prefix: 0x2001002 => b[0]=0x20, b[1]=0x01, b[2]=0x00,
+    // top nibble of b[3]=0x2
+    if (b[0] == 0x20 && b[1] == 0x01 && b[2] == 0x00 && (b[3] & 0xf0) == 0x20)
+        return false;
+    // 2002::/16 - 6to4 (RFC 3056, deprecated by RFC 7526)
+    if (b[0] == 0x20 && b[1] == 0x02)
+        return false;
+
+    return true;
 }
 
 }  // namespace IP

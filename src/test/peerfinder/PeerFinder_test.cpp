@@ -440,7 +440,7 @@ public:
                  c.PEERS_OUT_MAX == 0) ||
                 (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
 
-            Config config = Config::makeConfig(c, port, false, 0);
+            Config config = Config::makeConfig(c, port, false, 0, true);
 
             Counts counts;
             counts.onConfig(config);

@@ -483,7 +483,8 @@ OverlayImpl::start()
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
-        setup_.ipLimit);
+        setup_.ipLimit,
+        setup_.verifyEndpoints);
 
     m_peerFinder->setConfig(config);
     m_peerFinder->start();
@@ -1493,7 +1494,7 @@ OverlayImpl::deleteIdlePeers()
 //------------------------------------------------------------------------------
 
 Overlay::Setup
-setup_Overlay(BasicConfig const& config)
+setup_Overlay(BasicConfig const& config, beast::Journal j)
 {
     Overlay::Setup setup;
 
@@ -1513,6 +1514,14 @@ setup_Overlay(BasicConfig const& config)
             setup.public_ip = beast::IP::Address::from_string(ip, ec);
             if (ec || beast::IP::is_private(setup.public_ip))
                 Throw<std::runtime_error>("Configured public IP is invalid");
+        }
+
+        set(setup.verifyEndpoints, true, "verify_endpoints", section);
+        if (!setup.verifyEndpoints)
+        {
+            JLOG(j.warn()) << "Endpoint verification is disabled. This is a "
+                              "security risk and should only be used for "
+                              "testing.";
         }
     }
 
