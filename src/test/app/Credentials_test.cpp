@@ -1094,7 +1094,7 @@ struct Credentials_test : public beast::unit_test::suite
             auto const sleCred = env.current()->read(credKeylet);
             BEAST_EXPECT(
                 sleCred &&
-                xrpl::credentials::checkExpired(sleCred, env.current()->header().parentCloseTime));
+                xrpl::credentials::checkExpired(*sleCred, env.current()->header().parentCloseTime));
         }
 
         // Create an ApplyViewImpl on top of the current closed ledger

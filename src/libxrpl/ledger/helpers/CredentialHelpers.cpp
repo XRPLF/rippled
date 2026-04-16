@@ -33,12 +33,10 @@ namespace xrpl {
 namespace credentials {
 
 bool
-checkExpired(std::shared_ptr<SLE const> const& sleCredential, NetClock::time_point const& closed)
+checkExpired(SLE const& sleCredential, NetClock::time_point const& closed)
 {
-    XRPL_ASSERT(static_cast<bool>(sleCredential), "credentials::checkExpired: empty SLE.");
-
     std::uint32_t const exp =
-        (*sleCredential)[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
+        sleCredential[~sfExpiration].value_or(std::numeric_limits<std::uint32_t>::max());
     std::uint32_t const now = closed.time_since_epoch().count();
     return now > exp;
 }
@@ -56,7 +54,7 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
         auto const k = keylet::credential(h);
         auto const sleCred = view.peek(k);
 
-        if (sleCred && checkExpired(sleCred, closeTime))
+        if (sleCred && checkExpired(*sleCred, closeTime))
         {
             JLOG(j.trace()) << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
@@ -210,7 +208,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         // allows expired credentials to be deleted by any transaction.
         if (sleCredential)
         {
-            if (checkExpired(sleCredential, closeTime))
+            if (checkExpired(*sleCredential, closeTime))
             {
                 foundExpired = true;
                 continue;

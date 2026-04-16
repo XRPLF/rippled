@@ -106,7 +106,7 @@ CredentialAccept::doApply()
     Keylet const credentialKey = keylet::credential(account_, issuer, credType);
     auto const sleCred = view().peek(credentialKey);  // Checked in preclaim()
 
-    if (checkExpired(sleCred, view().header().parentCloseTime))
+    if (checkExpired(*sleCred, view().header().parentCloseTime))
     {
         JLOG(j_.trace()) << "Credential is expired: " << sleCred->getText();
         // delete expired credentials even if the transaction failed
