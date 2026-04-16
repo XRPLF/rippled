@@ -304,7 +304,10 @@ FeeVoteImpl::doVoting(
         extensionSize.second || gasPrice.second)
     {
         JLOG(journal_.warn()) << "We are voting for a fee change: " << baseFee.first << "/"
-                              << baseReserve.first << "/" << incReserve.first;
+                              << baseReserve.first << "/" << incReserve.first
+                              << " extensionCompute=" << extensionCompute.first
+                              << " extensionSize=" << extensionSize.first
+                              << " gasPrice=" << gasPrice.first;
 
         STTx const feeTx(ttFEE, [=, &rules](auto& obj) {
             obj[sfAccount] = AccountID();
