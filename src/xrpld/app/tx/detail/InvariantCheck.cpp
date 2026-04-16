@@ -413,7 +413,6 @@ NoZeroEscrow::visitEntry(
         if (auto const locked = (*after)[~sfLockedAmount])
         {
             checkAmount(*locked);
-            bad_ = outstanding < *locked;
             bool const isBad = outstanding < *locked;
             if (overwriteFixEnabled)
                 bad_ |= isBad;
