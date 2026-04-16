@@ -69,6 +69,8 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/telemetry/DiscardFlag.h>
+
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/scope.h>
@@ -201,6 +203,39 @@ public:
     context() const
     {
         return opentelemetry::context::RuntimeContext::GetCurrent();
+    }
+
+    /** Mark this span for discard and end it immediately.
+
+        Sets the tl_discardCurrentSpan thread-local flag before calling
+        End(). The OTel SDK calls FilteringSpanProcessor::OnEnd()
+        synchronously on the same thread, where the flag is checked and
+        cleared. The span is dropped before entering the batch export
+        queue — never sent over the network or stored.
+
+        After calling discard(), the guard is inert — the destructor will
+        not call End() again.
+
+        Typical usage:
+        @code
+            SpanGuard guard(telemetry.startSpan("tx.process"));
+            auto result = preflight(tx);
+            if (result != tesSUCCESS)
+            {
+                guard.discard();
+                return result;
+            }
+        @endcode
+    */
+    void
+    discard()
+    {
+        if (span_)
+        {
+            tl_discardCurrentSpan = true;
+            span_->End();
+            span_ = nullptr;
+        }
     }
 };
 

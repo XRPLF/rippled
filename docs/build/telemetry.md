@@ -251,18 +251,42 @@ The Conan package provides a single umbrella target
 
 ### Key files
 
-| File                                           | Purpose                                                     |
-| ---------------------------------------------- | ----------------------------------------------------------- |
-| `include/xrpl/telemetry/Telemetry.h`           | Abstract telemetry interface and `Setup` struct             |
-| `include/xrpl/telemetry/SpanGuard.h`           | RAII span guard (activates scope, ends span on destruction) |
-| `src/libxrpl/telemetry/Telemetry.cpp`          | OTel-backed implementation (`TelemetryImpl`)                |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp`    | Config parser (`setup_Telemetry()`)                         |
-| `src/libxrpl/telemetry/NullTelemetry.cpp`      | No-op implementation (used when disabled)                   |
-| `src/xrpld/telemetry/TracingInstrumentation.h` | Convenience macros (`XRPL_TRACE_RPC`, etc.)                 |
-| `src/xrpld/rpc/detail/ServerHandler.cpp`       | RPC entry point instrumentation                             |
-| `src/xrpld/rpc/detail/RPCHandler.cpp`          | Per-command instrumentation                                 |
-| `docker/telemetry/docker-compose.yml`          | Observability stack (Collector + Tempo + Grafana)           |
-| `docker/telemetry/otel-collector-config.yaml`  | OTel Collector pipeline configuration                       |
+| File                                           | Purpose                                                      |
+| ---------------------------------------------- | ------------------------------------------------------------ |
+| `include/xrpl/telemetry/Telemetry.h`           | Abstract telemetry interface and `Setup` struct              |
+| `include/xrpl/telemetry/SpanGuard.h`           | RAII span guard with `discard()` for dropping unwanted spans |
+| `include/xrpl/telemetry/DiscardFlag.h`         | Thread-local discard flag (zero-dependency header)           |
+| `src/libxrpl/telemetry/Telemetry.cpp`          | OTel SDK setup, `FilteringSpanProcessor`, provider lifecycle |
+| `src/libxrpl/telemetry/TelemetryConfig.cpp`    | Config parser (`setup_Telemetry()`)                          |
+| `src/libxrpl/telemetry/NullTelemetry.cpp`      | No-op implementation (used when disabled)                    |
+| `src/xrpld/telemetry/TracingInstrumentation.h` | Convenience macros (`XRPL_TRACE_RPC`, etc.)                  |
+| `src/xrpld/rpc/detail/ServerHandler.cpp`       | RPC entry point instrumentation                              |
+| `src/xrpld/rpc/detail/RPCHandler.cpp`          | Per-command instrumentation                                  |
+| `docker/telemetry/docker-compose.yml`          | Observability stack (Collector + Tempo + Grafana)            |
+| `docker/telemetry/otel-collector-config.yaml`  | OTel Collector pipeline configuration                        |
+
+### Span discard mechanism
+
+`SpanGuard::discard()` allows callers to silently drop spans that turn out to be
+uninteresting (e.g., failed preflight transactions). This saves both network bandwidth
+and storage by preventing the span from being exported.
+
+The mechanism uses a thread-local flag (`tl_discardCurrentSpan` in `DiscardFlag.h`) as a
+side-channel to the `FilteringSpanProcessor` (in `Telemetry.cpp`):
+
+1. `SpanGuard::discard()` sets the thread-local flag and calls `Span::End()`
+2. The OTel SDK calls `FilteringSpanProcessor::OnEnd()` synchronously on the same thread
+3. The processor checks the flag, clears it, and drops the span before it enters the batch queue
+
+```cpp
+SpanGuard guard(telemetry.startSpan("tx.process"));
+auto result = preflight(tx);
+if (result != tesSUCCESS)
+{
+    guard.discard();  // span is dropped, never exported
+    return result;
+}
+```
 
 ### Conditional compilation
 

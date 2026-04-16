@@ -3,8 +3,11 @@
     Compiled only when XRPL_ENABLE_TELEMETRY is defined (via CMake
     telemetry=ON). Contains:
 
+      - FilteringSpanProcessor: decorator that drops spans marked with
+        kDiscardedAttr before they enter the batch export queue.
       - TelemetryImpl: configures the OTel SDK with an OTLP/HTTP exporter,
-        batch span processor, trace-ID-ratio sampler, and resource attributes.
+        FilteringSpanProcessor wrapping a batch span processor,
+        trace-ID-ratio sampler, and resource attributes.
       - NullTelemetryOtel: no-op fallback used when telemetry is compiled in
         but disabled at runtime (enabled=0 in config).
       - make_Telemetry(): factory that selects the appropriate implementation.
@@ -13,6 +16,7 @@
 #ifdef XRPL_ENABLE_TELEMETRY
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
@@ -20,6 +24,7 @@
 #include <opentelemetry/sdk/resource/semantic_conventions.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_factory.h>
 #include <opentelemetry/sdk/trace/batch_span_processor_options.h>
+#include <opentelemetry/sdk/trace/processor.h>
 #include <opentelemetry/sdk/trace/sampler.h>
 #include <opentelemetry/sdk/trace/samplers/trace_id_ratio.h>
 #include <opentelemetry/sdk/trace/tracer_provider.h>
@@ -36,6 +41,91 @@ namespace trace_api = opentelemetry::trace;
 namespace trace_sdk = opentelemetry::sdk::trace;
 namespace otlp_http = opentelemetry::exporter::otlp;
 namespace resource = opentelemetry::sdk::resource;
+
+/** SpanProcessor decorator that drops discarded spans.
+
+    Wraps a delegate processor (typically BatchSpanProcessor). In OnEnd(),
+    checks the tl_discardCurrentSpan thread-local flag. If set (by
+    SpanGuard::discard()), the span is silently dropped — never entering
+    the batch queue, never sent over the network, never stored.
+
+    Uses a thread-local flag rather than inspecting Recordable attributes
+    because the Recordable type varies by exporter (SpanData for simple
+    exporters, OtlpRecordable for OTLP) and none expose a uniform getter.
+    The flag is safe because Span::End() calls OnEnd() synchronously on
+    the same thread.
+
+    All other methods delegate directly to the wrapped processor.
+
+    Dependency diagram:
+
+        +---------------------------+
+        | FilteringSpanProcessor    |
+        +---------------------------+
+        | - delegate_ : unique_ptr  |
+        |   <SpanProcessor>         |
+        +---------------------------+
+                    |  wraps
+          +---------+-----------+
+          | BatchSpanProcessor  |
+          +---------------------+
+
+    @note Thread safety: OnEnd() may be called concurrently from multiple
+    threads. The tl_discardCurrentSpan flag is thread-local, so each
+    thread's discard state is independent — no synchronization needed.
+*/
+class FilteringSpanProcessor : public trace_sdk::SpanProcessor
+{
+    std::unique_ptr<trace_sdk::SpanProcessor> delegate_;
+
+public:
+    explicit FilteringSpanProcessor(std::unique_ptr<trace_sdk::SpanProcessor> delegate)
+        : delegate_(std::move(delegate))
+    {
+    }
+
+    std::unique_ptr<trace_sdk::Recordable>
+    MakeRecordable() noexcept override
+    {
+        return delegate_->MakeRecordable();
+    }
+
+    void
+    OnStart(
+        trace_sdk::Recordable& span,
+        opentelemetry::trace::SpanContext const& parentContext) noexcept override
+    {
+        delegate_->OnStart(span, parentContext);
+    }
+
+    void
+    OnEnd(std::unique_ptr<trace_sdk::Recordable>&& span) noexcept override
+    {
+        if (tl_discardCurrentSpan)
+        {
+            // SpanGuard::discard() set the flag on this thread just before
+            // calling Span::End(), which invokes OnEnd() synchronously.
+            // Clear the flag and drop the span.
+            tl_discardCurrentSpan = false;
+            return;
+        }
+        delegate_->OnEnd(std::move(span));
+    }
+
+    bool
+    ForceFlush(
+        std::chrono::microseconds timeout = (std::chrono::microseconds::max)()) noexcept override
+    {
+        return delegate_->ForceFlush(timeout);
+    }
+
+    bool
+    Shutdown(
+        std::chrono::microseconds timeout = (std::chrono::microseconds::max)()) noexcept override
+    {
+        return delegate_->Shutdown(timeout);
+    }
+};
 
 /** No-op implementation used when XRPL_ENABLE_TELEMETRY is defined but
     setup.enabled is false at runtime.
@@ -175,8 +265,12 @@ public:
         processorOpts.schedule_delay_millis = std::chrono::milliseconds(setup_.batchDelay);
         processorOpts.max_export_batch_size = setup_.batchSize;
 
-        auto processor =
+        auto batchProcessor =
             trace_sdk::BatchSpanProcessorFactory::Create(std::move(exporter), processorOpts);
+
+        // Wrap batch processor with filtering processor that drops spans
+        // marked with kDiscardedAttr (via SpanGuard::discard()).
+        auto processor = std::make_unique<FilteringSpanProcessor>(std::move(batchProcessor));
 
         // Configure resource attributes
         auto resourceAttrs = resource::Resource::Create({
