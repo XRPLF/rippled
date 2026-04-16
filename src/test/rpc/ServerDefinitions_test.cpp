@@ -455,7 +455,7 @@ public:
     }
 
     void
-    testGetStaticServerDefinitions()
+    testGetServerDefinitions()
     {
         testcase("getServerDefinitions");
 
