@@ -2137,6 +2137,102 @@ class AMMClawback_test : public beast::unit_test::suite
             }
             BEAST_EXPECT(env.balance(carol, EUR) == EUR(7750));
         }
+
+        // test issuer individually freezes the AMM trust line (between AMM
+        // pseudo-account and issuer). AMMClawback must succeed even though the
+        // AMM trust line itself is frozen.
+        {
+            Env env(*this, features);
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
+            env.fund(XRP(1000000), gw, gw2, alice);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            env.require(flags(gw, asfAllowTrustLineClawback));
+
+            auto const USD = gw["USD"];
+            env.trust(USD(100000), alice);
+            env(pay(gw, alice, USD(3000)));
+            env.close();
+
+            auto const EUR = gw2["EUR"];
+            env.trust(EUR(100000), alice);
+            env(pay(gw2, alice, EUR(3000)));
+            env.close();
+
+            AMM const amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(
+                amm.expectBalances(USD(2000), EUR(1000), IOUAmount{1414213562373095, -12}));
+
+            // gw individually freezes the AMM trust line (AMM pseudo-account
+            // <-> gw), not alice's trust line.
+            env(trust(gw, STAmount{Issue{USD.currency, amm.ammAccount()}, 0}, tfSetFreeze));
+            env.close();
+
+            // AMMClawback must succeed despite the AMM trust line being frozen.
+            env(amm::ammClawback(gw, alice, USD, EUR, USD(1000)), ter(tesSUCCESS));
+            env.close();
+
+            env.require(balance(alice, USD(1000)));
+            env.require(balance(alice, EUR(2500)));
+            BEAST_EXPECT(amm.expectBalances(USD(1000), EUR(500), IOUAmount{7071067811865475, -13}));
+            BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{7071067811865475, -13}));
+        }
+
+        // test issuer deep-freezes the AMM trust line. AMMClawback must
+        // succeed even though the AMM trust line is deep-frozen.
+        if (features[featureDeepFreeze])
+        {
+            Env env(*this, features);
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
+            Account const alice{"alice"};
+            env.fund(XRP(1000000), gw, gw2, alice);
+            env.close();
+
+            env(fset(gw, asfAllowTrustLineClawback));
+            env.close();
+            env.require(flags(gw, asfAllowTrustLineClawback));
+
+            auto const USD = gw["USD"];
+            env.trust(USD(100000), alice);
+            env(pay(gw, alice, USD(3000)));
+            env.close();
+
+            auto const EUR = gw2["EUR"];
+            env.trust(EUR(100000), alice);
+            env(pay(gw2, alice, EUR(3000)));
+            env.close();
+
+            AMM const amm(env, alice, EUR(1000), USD(2000), ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(
+                amm.expectBalances(USD(2000), EUR(1000), IOUAmount{1414213562373095, -12}));
+
+            // gw deep-freezes the AMM trust line (requires individual freeze
+            // first per DeepFreeze spec).
+            env(trust(
+                gw,
+                STAmount{Issue{USD.currency, amm.ammAccount()}, 0},
+                tfSetFreeze | tfSetDeepFreeze));
+            env.close();
+
+            // AMMClawback must succeed despite the AMM trust line being
+            // deep-frozen.
+            env(amm::ammClawback(gw, alice, USD, EUR, USD(1000)), ter(tesSUCCESS));
+            env.close();
+
+            env.require(balance(alice, USD(1000)));
+            env.require(balance(alice, EUR(2500)));
+            BEAST_EXPECT(amm.expectBalances(USD(1000), EUR(500), IOUAmount{7071067811865475, -13}));
+            BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{7071067811865475, -13}));
+        }
     }
 
     void

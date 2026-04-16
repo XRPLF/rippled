@@ -247,15 +247,13 @@ TransfersNotFrozen::validateFrozenState(
     bool const deepFreeze = change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     bool const frozen = globalFreeze || deepFreeze || freeze;
 
-    bool const isAMMLine = change.line->isFlag(lsfAMMNode);
-
     if (!frozen)
     {
         return true;
     }
 
-    // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && hasPrivilege(tx, overrideFreeze))
+    // AMMClawbacks are allowed to override all freeze rules
+    if (hasPrivilege(tx, overrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
