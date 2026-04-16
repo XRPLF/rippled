@@ -173,86 +173,96 @@ setup_Telemetry(
 
 ### 5.3.1 ApplicationImp Changes
 
+> **Deferred identity**: The node public key (`nodeIdentity_`) is not
+> available during `ApplicationImp`'s member initializer list — it is
+> resolved later in `setup()`. The `Telemetry` object is therefore
+> constructed with an empty `serviceInstanceId` and patched via
+> `setServiceInstanceId()` once `setup()` has called `getNodeIdentity()`.
+
 ```cpp
 // src/xrpld/app/main/Application.cpp (modified)
 
 #include <xrpl/telemetry/Telemetry.h>
 
-class ApplicationImp : public Application
+class ApplicationImp : public Application, public BasicApp
 {
-    // ... existing members ...
+    // ... existing members (perfLog_, etc.) ...
 
-    // Telemetry (must be constructed early, destroyed late)
+    // Telemetry — constructed in the member initializer list with
+    // an empty serviceInstanceId, patched in setup().
     std::unique_ptr<telemetry::Telemetry> telemetry_;
 
-public:
-    ApplicationImp(...)
+    // Member initializer list (excerpt):
+    // ...
+    // , telemetry_(
+    //       telemetry::make_Telemetry(
+    //           telemetry::setup_Telemetry(
+    //               config_->section("telemetry"),
+    //               "",  // Updated later via setServiceInstanceId()
+    //               BuildInfo::getVersionString()),
+    //           logs_->journal("Telemetry")))
+    // ...
+
+    bool setup(...) override
     {
-        // Initialize telemetry early (before other components)
-        auto telemetrySection = config_->section("telemetry");
-        auto telemetrySetup = telemetry::setup_Telemetry(
-            telemetrySection,
-            toBase58(TokenType::NodePublic, nodeIdentity_.publicKey()),
-            BuildInfo::getVersionString());
+        // ... existing setup code ...
 
-        // Set network attributes
-        telemetrySetup.networkId = config_->NETWORK_ID;
-        telemetrySetup.networkType = [&]() {
-            if (config_->NETWORK_ID == 0) return "mainnet";
-            if (config_->NETWORK_ID == 1) return "testnet";
-            if (config_->NETWORK_ID == 2) return "devnet";
-            return "custom";
-        }();
+        nodeIdentity_ = getNodeIdentity(*this, cmdline);
 
-        telemetry_ = telemetry::make_Telemetry(
-            telemetrySetup,
-            logs_->journal("Telemetry"));
+        // Inject node identity into telemetry resource attributes,
+        // unless the user already set a custom service_instance_id.
+        if (!config_->section("telemetry").exists("service_instance_id"))
+            telemetry_->setServiceInstanceId(
+                toBase58(TokenType::NodePublic, nodeIdentity_->first));
 
-        // ... rest of initialization ...
+        // ... rest of setup ...
     }
 
-    void start() override
+    void start(bool withTimers) override
     {
-        // Start telemetry first
-        if (telemetry_)
-            telemetry_->start();
-
         // ... existing start code ...
+        telemetry_->start();
     }
 
-    void stop() override
+    void run() override
     {
-        // ... existing stop code ...
-
-        // Stop telemetry last (to capture shutdown spans)
-        if (telemetry_)
-            telemetry_->stop();
+        // ... existing run/shutdown code ...
+        telemetry_->stop();
     }
 
-    telemetry::Telemetry& getTelemetry() override
+    telemetry::Telemetry&
+    getTelemetry() override
     {
-        assert(telemetry_);
         return *telemetry_;
     }
 };
 ```
 
-### 5.3.2 Application Interface Addition
+### 5.3.2 ServiceRegistry Interface Addition
 
 ```cpp
-// include/xrpl/app/main/Application.h (modified)
+// include/xrpl/core/ServiceRegistry.h (modified)
 
-namespace telemetry { class Telemetry; }
+namespace telemetry {
+class Telemetry;
+}  // namespace telemetry
 
-class Application
+class ServiceRegistry
 {
 public:
     // ... existing virtual methods ...
 
-    /** Get the telemetry system for distributed tracing */
-    virtual telemetry::Telemetry& getTelemetry() = 0;
+    /** Get the telemetry system for distributed tracing. */
+    virtual telemetry::Telemetry&
+    getTelemetry() = 0;
 };
 ```
+
+> **Note:** `Application` extends `ServiceRegistry`, so `getTelemetry()` is
+> available on both. Components that hold a `ServiceRegistry&` (e.g.
+> `NetworkOPsImp`) call `registry_.get().getTelemetry()`. Components that
+> still hold an `Application&` (e.g. `ServerHandler`, `PeerImp`,
+> `RCLConsensusAdaptor`) call `app_.getTelemetry()` directly.
 
 ---
 

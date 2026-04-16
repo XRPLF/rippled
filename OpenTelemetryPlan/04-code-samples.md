@@ -724,7 +724,7 @@ PeerImp::handleTransaction(
                 relayGuard.context(), protoCtx);
 
             // Relay to other peers
-            app_.overlay().relay(
+            app_.getOverlay().relay(
                 stx->getTransactionID(),
                 *m,
                 protoCtx,  // Pass trace context
@@ -957,62 +957,95 @@ ServerHandler::onRequest(
 
 ### 4.5.4 JobQueue Context Propagation
 
+> **Architecture note**: `JobQueue` and its inner `Workers` class do not
+> hold an `Application&` or `ServiceRegistry&`. They receive a
+> `perf::PerfLog*` at construction. To instrument job execution, a
+> `telemetry::Telemetry&` must be threaded into `JobQueue`'s constructor
+> alongside the existing `PerfLog&`, or the trace context can be
+> captured/restored without starting new spans inside the worker itself.
+>
+> The approach below captures trace context at job-creation time and
+> restores it when the job executes, so that any spans created _inside_
+> the job body automatically become children of the original caller's
+> trace. This requires adding a `telemetry::Telemetry&` to `JobQueue`.
+
 ```cpp
-// src/xrpld/core/JobQueue.h (modified)
+// include/xrpl/core/JobQueue.h (modified)
 
+#ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/context/context.h>
+#endif
 
-class Job
+class JobQueue : private Workers::Callback
 {
     // ... existing members ...
 
-    // Captured trace context at job creation
-    opentelemetry::context::Context traceContext_;
+    // Telemetry reference for job execution spans (added alongside
+    // the existing perf::PerfLog& member).
+    telemetry::Telemetry& telemetry_;
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Per-job trace context captured at addJob() time and restored
+    // on the worker thread when the job runs.
+    struct JobContext
+    {
+        opentelemetry::context::Context traceCtx;
+    };
+#endif
 
 public:
-    // Constructor captures current trace context
-    Job(JobType type, std::function<void()> func, ...)
-        : type_(type)
-        , func_(std::move(func))
-        , traceContext_(opentelemetry::context::RuntimeContext::GetCurrent())
-        // ... other initializations ...
-    {
-    }
-
-    // Get trace context for restoration during execution
-    opentelemetry::context::Context const&
-    traceContext() const { return traceContext_; }
+    JobQueue(
+        int threadCount,
+        beast::insight::Collector::ptr const& collector,
+        beast::Journal journal,
+        Logs& logs,
+        perf::PerfLog& perfLog,
+        telemetry::Telemetry& telemetry);  // New parameter
+    // ...
 };
+```
 
-// src/xrpld/core/JobQueue.cpp (modified)
+```cpp
+// src/libxrpl/core/detail/JobQueue.cpp (modified — processTask)
 
 void
-Worker::run()
+JobQueue::processTask(int instance)
 {
-    while (auto job = getJob())
+    // ... existing job dequeue logic ...
+
+#ifdef XRPL_ENABLE_TELEMETRY
+    // Restore the trace context that was captured when the job was
+    // enqueued.  Any spans created inside the job body will become
+    // children of the original caller's trace.
+    auto token = opentelemetry::context::RuntimeContext::Attach(
+        job.traceContext());
+
+    // Start an execution span if telemetry is enabled at runtime
+    std::optional<telemetry::SpanGuard> guard;
+    if (telemetry_.isEnabled())
     {
-        // Restore trace context from job creation
-        auto token = opentelemetry::context::RuntimeContext::Attach(
-            job->traceContext());
+        guard.emplace(telemetry_.startSpan("job.execute"));
+        guard->setAttribute("xrpl.job.type", to_string(job.type()));
+        guard->setAttribute("xrpl.job.worker",
+            static_cast<int64_t>(instance));
+    }
+#endif
 
-        // Start execution span
-        auto span = app_.getTelemetry().startSpan("job.execute");
-        telemetry::SpanGuard guard(span);
-
-        guard.setAttribute("xrpl.job.type", to_string(job->type()));
-        guard.setAttribute("xrpl.job.queue_ms", job->queueTimeMs());
-        guard.setAttribute("xrpl.job.worker", workerId_);
-
-        try
-        {
-            job->execute();
-            guard.setOk();
-        }
-        catch (std::exception const& e)
-        {
-            guard.recordException(e);
-            JLOG(journal_.error()) << "Job execution failed: " << e.what();
-        }
+    try
+    {
+        job.execute();
+#ifdef XRPL_ENABLE_TELEMETRY
+        if (guard)
+            guard->setOk();
+#endif
+    }
+    catch (std::exception const& e)
+    {
+#ifdef XRPL_ENABLE_TELEMETRY
+        if (guard)
+            guard->recordException(e);
+#endif
+        JLOG(journal_.error()) << "Job execution failed: " << e.what();
     }
 }
 ```

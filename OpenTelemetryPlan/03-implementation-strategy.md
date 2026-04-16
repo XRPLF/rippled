@@ -395,7 +395,7 @@ pie title Code Changes by Component
 | File                                              | Lines Added | Lines Changed | Risk Level |
 | ------------------------------------------------- | ----------- | ------------- | ---------- |
 | `src/xrpld/app/main/Application.cpp`              | ~15         | ~3            | Low        |
-| `include/xrpl/app/main/Application.h`             | ~5          | ~2            | Low        |
+| `include/xrpl/core/ServiceRegistry.h`             | ~5          | ~2            | Low        |
 | `src/xrpld/rpc/detail/ServerHandler.cpp`          | ~40         | ~10           | Low        |
 | `src/xrpld/rpc/handlers/*.cpp`                    | ~30         | ~8            | Low        |
 | `src/xrpld/overlay/detail/PeerImp.cpp`            | ~60         | ~15           | Medium     |

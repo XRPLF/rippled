@@ -225,43 +225,59 @@
 
 ## Task 4: Integrate Telemetry into Application Lifecycle
 
-**Objective**: Wire the `Telemetry` object into `Application` so all components can access it.
+**Objective**: Wire the `Telemetry` object into the `ServiceRegistry` / `Application` so all components can access it.
 
 **What to do**:
 
-- Edit `src/xrpld/app/main/Application.h`:
-  - Forward-declare `namespace xrpl::telemetry { class Telemetry; }`
+- Edit `include/xrpl/core/ServiceRegistry.h`:
+  - Forward-declare `namespace telemetry { class Telemetry; }` inside `namespace xrpl`
   - Add pure virtual method: `virtual telemetry::Telemetry& getTelemetry() = 0;`
+  - (`Application` extends `ServiceRegistry`, so this is automatically available on `Application` too)
 
 - Edit `src/xrpld/app/main/Application.cpp` (the `ApplicationImp` class):
   - Add member: `std::unique_ptr<telemetry::Telemetry> telemetry_;`
-  - In the constructor, after config is loaded and node identity is known:
+  - In the member initializer list, construct telemetry with an empty
+    `serviceInstanceId` (node identity is not yet known):
     ```cpp
-    auto const telemetrySection = config_->section("telemetry");
-    auto telemetrySetup = telemetry::setup_Telemetry(
-        telemetrySection,
-        toBase58(TokenType::NodePublic, nodeIdentity_.publicKey()),
-        BuildInfo::getVersionString());
-    telemetry_ = telemetry::make_Telemetry(telemetrySetup, logs_->journal("Telemetry"));
+    , telemetry_(
+          telemetry::make_Telemetry(
+              telemetry::setup_Telemetry(
+                  config_->section("telemetry"),
+                  "",  // Updated later via setServiceInstanceId()
+                  BuildInfo::getVersionString()),
+              logs_->journal("Telemetry")))
     ```
-  - In `start()`: call `telemetry_->start()` early
-  - In `stop()` or destructor: call `telemetry_->stop()` late (to flush pending spans)
+  - In `setup()`, after `nodeIdentity_` is resolved, inject the node
+    public key as the service instance ID:
+    ```cpp
+    if (!config_->section("telemetry").exists("service_instance_id"))
+        telemetry_->setServiceInstanceId(
+            toBase58(TokenType::NodePublic, nodeIdentity_->first));
+    ```
+  - In `start()`: call `telemetry_->start()`
+  - In `run()` (shutdown path): call `telemetry_->stop()` (to flush pending spans)
   - Implement `getTelemetry()` override: return `*telemetry_`
 
-- Add `[telemetry]` section to the example config `cfg/rippled-example.cfg`:
+- Add `[telemetry]` section to the example config `cfg/xrpld-example.cfg`:
   ```ini
   # [telemetry]
   # enabled=1
-  # endpoint=localhost:4317
+  # endpoint=http://localhost:4318/v1/traces
   # sampling_ratio=1.0
   # trace_rpc=1
   ```
 
+> **Access patterns**: Components holding `ServiceRegistry&` (e.g.
+> `NetworkOPsImp`) call `registry_.get().getTelemetry()`. Components
+> holding `Application&` (e.g. `ServerHandler`, `PeerImp`,
+> `RCLConsensusAdaptor`) call `app_.getTelemetry()` directly. Both
+> resolve to the same `Telemetry` instance.
+
 **Key modified files**:
 
-- `src/xrpld/app/main/Application.h`
+- `include/xrpl/core/ServiceRegistry.h`
 - `src/xrpld/app/main/Application.cpp`
-- `cfg/rippled-example.cfg` (or equivalent example config)
+- `cfg/xrpld-example.cfg` (example config)
 
 **Reference**:
 
