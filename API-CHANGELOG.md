@@ -79,6 +79,40 @@ This version is supported by all `rippled` versions. For WebSocket and HTTP JSON
 
 The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/request-formatting/#commandline-format) always uses the latest API version. The command line is intended for ad-hoc usage by humans, not programs or automated scripts. The command line is not meant for use in production code.
 
+## XRP Ledger server version 3.1.3
+
+### Bugfixes in 3.1.3
+
+- Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
+
+## XRP Ledger server version 3.1.0
+
+[Version 3.1.0](https://github.com/XRPLF/rippled/releases/tag/3.1.0) was released on Jan 27, 2026.
+
+### Additions in 3.1.0
+
+- `vault_info`: New RPC method to retrieve information about a specific vault (part of XLS-66 Lending Protocol). ([#6156](https://github.com/XRPLF/rippled/pull/6156))
+
+## XRP Ledger server version 3.0.0
+
+[Version 3.0.0](https://github.com/XRPLF/rippled/releases/tag/3.0.0) was released on Dec 9, 2025.
+
+### Additions in 3.0.0
+
+- `ledger_entry`: Supports all ledger entry types with dedicated parsers. ([#5237](https://github.com/XRPLF/rippled/pull/5237))
+- `ledger_entry`: New error codes `entryNotFound` and `unexpectedLedgerType` for more specific error handling. ([#5237](https://github.com/XRPLF/rippled/pull/5237))
+- `ledger_entry`: Improved error messages with more context (e.g., specifying which field is invalid or missing). ([#5237](https://github.com/XRPLF/rippled/pull/5237))
+- `ledger_entry`: Assorted bug fixes in RPC processing. ([#5237](https://github.com/XRPLF/rippled/pull/5237))
+- `simulate`: Supports additional metadata in the response. ([#5754](https://github.com/XRPLF/rippled/pull/5754))
+
+## XRP Ledger server version 2.6.2
+
+[Version 2.6.2](https://github.com/XRPLF/rippled/releases/tag/2.6.2) was released on Nov 19, 2025.
+
+This release contains bug fixes only and no API changes.
+
+## XRP Ledger server version 2.6.1
+
 ### Inconsistency: server_info - network_id
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode). However, use of reporting mode is now discouraged, in favor of using [Clio](https://github.com/XRPLF/clio) instead.

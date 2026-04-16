@@ -357,7 +357,7 @@ STAmount::operator=(IOUAmount const& iou)
 {
     XRPL_ASSERT(
         integral() == false,
-        "xrpl::STAmount::operator=(IOUAmount) : is not integral");
+        "ripple::STAmount::operator=(IOUAmount) : is not integral");
     mOffset = iou.exponent();
     mIsNegative = iou < beast::zero;
     if (mIsNegative)

@@ -8,6 +8,7 @@
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <algorithm>
 #include <bit>
 
 namespace ripple {
@@ -149,7 +150,9 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn())
             << "Requested overpayment on a loan that doesn't allow it";
-        return temINVALID_FLAG;
+        return ctx.view.rules().enabled(fixSecurity3_1_3)
+            ? TER{tecNO_PERMISSION}
+            : temINVALID_FLAG;
     }
 
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
@@ -430,9 +433,10 @@ LoanPay::doApply()
     // Vault object state changes
     view.update(vaultSle);
 
+    Number const assetsAvailableBefore = *assetsAvailableProxy;
+    Number const assetsTotalBefore = *assetsTotalProxy;
 #if !NDEBUG
     {
-        Number const assetsAvailableBefore = *assetsAvailableProxy;
         Number const pseudoAccountBalanceBefore = accountHolds(
             view,
             vaultPseudoAccount,
@@ -453,19 +457,8 @@ LoanPay::doApply()
 
     XRPL_ASSERT_PARTS(
         *assetsAvailableProxy <= *assetsTotalProxy,
-        "rippled::LoanPay::doApply",
+        "ripple::LoanPay::doApply",
         "assets available must not be greater than assets outstanding");
-
-    if (*assetsAvailableProxy > *assetsTotalProxy)
-    {
-        // LCOV_EXCL_START
-        JLOG(j_.fatal()) << "Vault assets available must not be greater "
-                            "than assets outstanding. Available: "
-                         << *assetsAvailableProxy
-                         << ", Total: " << *assetsTotalProxy;
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
-    }
 
     JLOG(j_.debug()) << "total paid to vault raw: " << totalPaidToVaultRaw
                      << ", total paid to vault rounded: "
@@ -493,12 +486,74 @@ LoanPay::doApply()
     associateAsset(*vaultSle, asset);
 
     // Duplicate some checks after rounding
-    XRPL_ASSERT_PARTS(
-        *assetsAvailableProxy <= *assetsTotalProxy,
-        "xrpl::LoanPay::doApply",
-        "assets available must not be greater than assets outstanding");
+    Number const assetsAvailableAfter = *assetsAvailableProxy;
+    Number const assetsTotalAfter = *assetsTotalProxy;
 
-#if !NDEBUG
+    XRPL_ASSERT_PARTS(
+        assetsAvailableAfter <= assetsTotalAfter,
+        "ripple::LoanPay::doApply",
+        "assets available must not be greater than assets outstanding");
+    if (assetsAvailableAfter == assetsAvailableBefore)
+    {
+        // An unchanged assetsAvailable indicates that the amount paid to the
+        // vault was zero, or rounded to zero. That should be impossible, but I
+        // can't rule it out for extreme edge cases, so fail gracefully if it
+        // happens.
+        //
+        // LCOV_EXCL_START
+        JLOG(j_.warn())
+            << "LoanPay: Vault assets available unchanged after rounding: "  //
+            << "Before: " << assetsAvailableBefore                           //
+            << ", After: " << assetsAvailableAfter;
+        return tecPRECISION_LOSS;
+        // LCOV_EXCL_STOP
+    }
+    if (paymentParts->valueChange != beast::zero &&
+        assetsTotalAfter == assetsTotalBefore)
+    {
+        // Non-zero valueChange with an unchanged assetsTotal indicates that the
+        // actual value change rounded to zero. That should be impossible, but I
+        // can't rule it out for extreme edge cases, so fail gracefully if it
+        // happens.
+        //
+        // LCOV_EXCL_START
+        JLOG(j_.warn()) << "LoanPay: Vault assets expected change, but "
+                           "unchanged after rounding: "     //
+                        << "Before: " << assetsTotalBefore  //
+                        << ", After: " << assetsTotalAfter  //
+                        << ", ValueChange: " << paymentParts->valueChange;
+        return tecPRECISION_LOSS;
+        // LCOV_EXCL_STOP
+    }
+    if (paymentParts->valueChange == beast::zero &&
+        assetsTotalAfter != assetsTotalBefore)
+    {
+        // A change in assetsTotal when there was no valueChange indicates that
+        // something really weird happened. That should be flat out impossible.
+        //
+        // LCOV_EXCL_START
+        JLOG(j_.fatal())
+            << "LoanPay: Vault assets changed unexpectedly after rounding: "  //
+            << "Before: " << assetsTotalBefore                                //
+            << ", After: " << assetsTotalAfter                                //
+            << ", ValueChange: " << paymentParts->valueChange;
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+    if (assetsAvailableAfter > assetsTotalAfter)
+    {
+        // Assets available are not allowed to be larger than assets total.
+        // LCOV_EXCL_START
+        JLOG(j_.fatal())
+            << "LoanPay: Vault assets available must not be greater "
+               "than assets outstanding. Available: "
+            << assetsAvailableAfter << ", Total: " << assetsTotalAfter;
+        return tecINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
+    // These three values are used to check that funds are conserved after the
+    // transfers
     auto const accountBalanceBefore = accountHolds(
         view,
         account_,
@@ -527,7 +582,6 @@ LoanPay::doApply()
               ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
-#endif
 
     if (totalPaidToVaultRounded != beast::zero)
     {
@@ -568,19 +622,22 @@ LoanPay::doApply()
         return ter;
 
 #if !NDEBUG
-    Number const assetsAvailableAfter = *assetsAvailableProxy;
-    Number const pseudoAccountBalanceAfter = accountHolds(
-        view,
-        vaultPseudoAccount,
-        asset,
-        FreezeHandling::fhIGNORE_FREEZE,
-        AuthHandling::ahIGNORE_AUTH,
-        j_);
-    XRPL_ASSERT_PARTS(
-        assetsAvailableAfter == pseudoAccountBalanceAfter,
-        "ripple::LoanPay::doApply",
-        "vault pseudo balance agrees after");
+    {
+        Number const pseudoAccountBalanceAfter = accountHolds(
+            view,
+            vaultPseudoAccount,
+            asset,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_);
+        XRPL_ASSERT_PARTS(
+            assetsAvailableAfter == pseudoAccountBalanceAfter,
+            "ripple::LoanPay::doApply",
+            "vault pseudo balance agrees after");
+    }
+#endif
 
+    // Check that funds are conserved
     auto const accountBalanceAfter = accountHolds(
         view,
         account_,
@@ -609,16 +666,132 @@ LoanPay::doApply()
               ahIGNORE_AUTH,
               j_,
               SpendableHandling::shFULL_BALANCE);
+    auto const balanceScale = [&]() {
+        // Find a reasonable scale to use for the balance comparisons.
+        //
+        // First find the minimum and maximum exponent of all the non-zero
+        // balances, before and after. If min and max are equal, use that value.
+        // If they are not, use "max + 1" to reduce rounding discrepancies
+        // without making the result meaningless. Cap the scale at
+        // STAmount::cMaxOffset, just in case the numbers are all very large.
+        std::vector<int> exponents;
 
+        for (auto const& a : {
+                 accountBalanceBefore,
+                 vaultBalanceBefore,
+                 brokerBalanceBefore,
+                 accountBalanceAfter,
+                 vaultBalanceAfter,
+                 brokerBalanceAfter,
+             })
+        {
+            // Exclude zeroes
+            if (a != beast::zero)
+                exponents.push_back(a.exponent());
+        }
+        if (exponents.empty())
+        {
+            UNREACHABLE("ripple::LoanPay::doApply : all zeroes");
+            return 0;
+        }
+        auto const [minItr, maxItr] =
+            std::minmax_element(exponents.begin(), exponents.end());
+        auto const min = *minItr;
+        auto const max = *maxItr;
+        JLOG(j_.trace()) << "Min scale: " << min << ", max scale: " << max;
+        // IOU rounding can be interesting. We want all the balance checks to
+        // agree, but don't want to round to such an extreme that it becomes
+        // meaningless.  e.g. Everything rounds to one digit. So add 1 to the
+        // max (reducing the number of digits after the decimal point by 1) if
+        // the scales are not already all the same.
+        return std::min(min == max ? max : max + 1, STAmount::cMaxOffset);
+    }();
+
+    auto const accountBalanceBeforeRounded =
+        roundToScale(accountBalanceBefore, balanceScale);
+    auto const vaultBalanceBeforeRounded =
+        roundToScale(vaultBalanceBefore, balanceScale);
+    auto const brokerBalanceBeforeRounded =
+        roundToScale(brokerBalanceBefore, balanceScale);
+
+    auto const totalBalanceBefore =
+        accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore;
+    auto const totalBalanceBeforeRounded =
+        roundToScale(totalBalanceBefore, balanceScale);
+
+    JLOG(j_.trace()) << "Before: "  //
+                     << "account " << Number(accountBalanceBeforeRounded)
+                     << " (" << Number(accountBalanceBefore) << ")"
+                     << ", vault " << Number(vaultBalanceBeforeRounded) << " ("
+                     << Number(vaultBalanceBefore) << ")"
+                     << ", broker " << Number(brokerBalanceBeforeRounded)
+                     << " (" << Number(brokerBalanceBefore) << ")"
+                     << ", total " << Number(totalBalanceBeforeRounded) << " ("
+                     << Number(totalBalanceBefore) << ")";
+
+    auto const accountBalanceAfterRounded =
+        roundToScale(accountBalanceAfter, balanceScale);
+    auto const vaultBalanceAfterRounded =
+        roundToScale(vaultBalanceAfter, balanceScale);
+    auto const brokerBalanceAfterRounded =
+        roundToScale(brokerBalanceAfter, balanceScale);
+
+    auto const totalBalanceAfter =
+        accountBalanceAfter + vaultBalanceAfter + brokerBalanceAfter;
+    auto const totalBalanceAfterRounded =
+        roundToScale(totalBalanceAfter, balanceScale);
+
+    JLOG(j_.trace()) << "After: "  //
+                     << "account " << Number(accountBalanceAfterRounded) << " ("
+                     << Number(accountBalanceAfter) << ")"
+                     << ", vault " << Number(vaultBalanceAfterRounded) << " ("
+                     << Number(vaultBalanceAfter) << ")"
+                     << ", broker " << Number(brokerBalanceAfterRounded) << " ("
+                     << Number(brokerBalanceAfter) << ")"
+                     << ", total " << Number(totalBalanceAfterRounded) << " ("
+                     << Number(totalBalanceAfter) << ")";
+
+    auto const accountBalanceChange =
+        accountBalanceAfter - accountBalanceBefore;
+    auto const vaultBalanceChange = vaultBalanceAfter - vaultBalanceBefore;
+    auto const brokerBalanceChange = brokerBalanceAfter - brokerBalanceBefore;
+
+    auto const totalBalanceChange =
+        accountBalanceChange + vaultBalanceChange + brokerBalanceChange;
+    auto const totalBalanceChangeRounded =
+        roundToScale(totalBalanceChange, balanceScale);
+
+    JLOG(j_.trace()) << "Changes: "                                    //
+                     << "account " << to_string(accountBalanceChange)  //
+                     << ", vault " << to_string(vaultBalanceChange)    //
+                     << ", broker " << to_string(brokerBalanceChange)  //
+                     << ", total " << to_string(totalBalanceChangeRounded)
+                     << " (" << Number(totalBalanceChange) << ")";
+
+    if (totalBalanceBeforeRounded != totalBalanceAfterRounded)
+    {
+        JLOG(j_.warn()) << "Total rounded balances don't match"
+                        << (totalBalanceChangeRounded == beast::zero
+                                ? ", but total changes do"
+                                : "");
+    }
+    if (totalBalanceChangeRounded != beast::zero)
+    {
+        JLOG(j_.warn()) << "Total balance changes don't match"
+                        << (totalBalanceBeforeRounded ==
+                                    totalBalanceAfterRounded
+                                ? ", but total balances do"
+                                : "");
+    }
+
+    // Rounding for IOUs can be weird, so check a few different ways to show
+    // that funds are conserved.
     XRPL_ASSERT_PARTS(
-        accountBalanceBefore + vaultBalanceBefore + brokerBalanceBefore ==
-            accountBalanceAfter + vaultBalanceAfter + brokerBalanceAfter,
+        totalBalanceBeforeRounded == totalBalanceAfterRounded ||
+            totalBalanceChangeRounded == beast::zero,
         "ripple::LoanPay::doApply",
         "funds are conserved (with rounding)");
-    XRPL_ASSERT_PARTS(
-        accountBalanceAfter >= beast::zero,
-        "ripple::LoanPay::doApply",
-        "positive account balance");
+
     XRPL_ASSERT_PARTS(
         accountBalanceAfter < accountBalanceBefore ||
             account_ == asset.getIssuer(),
@@ -641,7 +814,6 @@ LoanPay::doApply()
             brokerBalanceAfter > brokerBalanceBefore,
         "ripple::LoanPay::doApply",
         "vault and/or broker balance increased");
-#endif
 
     return tesSUCCESS;
 }

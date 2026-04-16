@@ -235,7 +235,7 @@ Transactor::preflight2(PreflightContext const& ctx)
     // featureBatch being enabled
     XRPL_ASSERT_PARTS(
         !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
-        "xrpl::Transactor::preflight2",
+        "ripple::Transactor::preflight2",
         "InnerBatch flag only set if feature enabled");
     // Skip signature check on batch inner transactions
     if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))

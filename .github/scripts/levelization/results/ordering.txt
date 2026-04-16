@@ -93,6 +93,7 @@ test.overlay > test.toplevel
 test.overlay > test.unit_test
 test.overlay > xrpl.basics
 test.overlay > xrpld.app
+test.overlay > xrpld.nodestore
 test.overlay > xrpld.overlay
 test.overlay > xrpld.peerfinder
 test.overlay > xrpld.shamap

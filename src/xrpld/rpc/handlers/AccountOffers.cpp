@@ -86,9 +86,6 @@ doAccountOffers(RPC::JsonContext& context)
     if (auto err = readLimitField(limit, RPC::Tuning::accountOffers, context))
         return *err;
 
-    if (limit == 0)
-        return RPC::invalid_field_error(jss::limit);
-
     Json::Value& jsonOffers(result[jss::offers] = Json::arrayValue);
     std::vector<std::shared_ptr<SLE const>> offers;
     uint256 startAfter = beast::zero;

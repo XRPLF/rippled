@@ -1636,6 +1636,20 @@ public:
         {
             Json::Value jvParams;
             jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::taker] = env.master.human();
+            jvParams[jss::limit] = 0;  // must be > 0
+            jvParams[jss::taker_pays][jss::currency] = "XRP";
+            jvParams[jss::taker_gets][jss::currency] = "USD";
+            jvParams[jss::taker_gets][jss::issuer] = gw.human();
+            auto const jrr = env.rpc(
+                "json", "book_offers", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(jrr[jss::error] == "invalidParams");
+            BEAST_EXPECT(jrr[jss::error_message] == "Invalid field 'limit'.");
+        }
+
+        {
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
             jvParams[jss::taker_pays][jss::currency] = "USD";
             jvParams[jss::taker_pays][jss::issuer] = gw.human();
             jvParams[jss::taker_gets][jss::currency] = "USD";
@@ -1709,11 +1723,6 @@ public:
         BEAST_EXPECT(jrr[jss::offers].isArray());
         BEAST_EXPECT(jrr[jss::offers].size() == (asAdmin ? 1u : 0u));
         // NOTE - a marker field is not returned for this method
-
-        jvParams[jss::limit] = 0u;
-        jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];
-        BEAST_EXPECT(jrr[jss::offers].isArray());
-        BEAST_EXPECT(jrr[jss::offers].size() == 0u);
 
         jvParams[jss::limit] = RPC::Tuning::bookOffers.rmax + 1;
         jrr = env.rpc("json", "book_offers", to_string(jvParams))[jss::result];

@@ -470,7 +470,7 @@ doNormalize(
     // (maxRep * 10 > maxMantissa)
     XRPL_ASSERT_PARTS(
         m <= maxRep,
-        "xrpl::doNormalize",
+        "ripple::doNormalize",
         "intermediate mantissa fits in int64");
     mantissa_ = m;
 
@@ -483,7 +483,7 @@ doNormalize(
         "Number::normalize 2");
     XRPL_ASSERT_PARTS(
         mantissa_ >= minMantissa && mantissa_ <= maxMantissa,
-        "xrpl::doNormalize",
+        "ripple::doNormalize",
         "final mantissa fits in range");
 }
 
@@ -536,7 +536,8 @@ Number::normalize()
 Number
 Number::shiftExponent(int exponentDelta) const
 {
-    XRPL_ASSERT_PARTS(isnormal(), "xrpl::Number::shiftExponent", "normalized");
+    XRPL_ASSERT_PARTS(
+        isnormal(), "ripple::Number::shiftExponent", "normalized");
     auto const newExponent = exponent_ + exponentDelta;
     if (newExponent >= maxExponent)
         throw std::overflow_error("Number::shiftExponent");
@@ -547,7 +548,7 @@ Number::shiftExponent(int exponentDelta) const
     Number const result{negative_, mantissa_, newExponent, unchecked{}};
     XRPL_ASSERT_PARTS(
         result.isnormal(),
-        "xrpl::Number::shiftExponent",
+        "ripple::Number::shiftExponent",
         "result is normalized");
     return result;
 }
@@ -571,7 +572,7 @@ Number::operator+=(Number const& y)
 
     XRPL_ASSERT(
         isnormal() && y.isnormal(),
-        "xrpl::Number::operator+=(Number) : is normal");
+        "ripple::Number::operator+=(Number) : is normal");
     // *n = negative
     // *m = mantissa
     // *e = exponent
@@ -837,7 +838,7 @@ Number::operator/=(Number const& y)
     mantissa_ = static_cast<internalrep>(zm);
     exponent_ = ze;
     XRPL_ASSERT_PARTS(
-        isnormal(), "xrpl::Number::operator/=", "result is normalized");
+        isnormal(), "ripple::Number::operator/=", "result is normalized");
 
     return *this;
 }
@@ -1048,7 +1049,7 @@ root(Number f, unsigned d)
     f = f.shiftExponent(-e);  // f /= 10^e;
 
     XRPL_ASSERT_PARTS(
-        f.isnormal(), "xrpl::root(Number, unsigned)", "f is normalized");
+        f.isnormal(), "ripple::root(Number, unsigned)", "f is normalized");
     bool neg = false;
     if (f < zero)
     {
@@ -1083,7 +1084,7 @@ root(Number f, unsigned d)
     auto const result = r.shiftExponent(e / di);
     XRPL_ASSERT_PARTS(
         result.isnormal(),
-        "xrpl::root(Number, unsigned)",
+        "ripple::root(Number, unsigned)",
         "result is normalized");
     return result;
 }
@@ -1106,7 +1107,7 @@ root2(Number f)
     if (e % 2 != 0)
         ++e;
     f = f.shiftExponent(-e);  // f /= 10^e;
-    XRPL_ASSERT_PARTS(f.isnormal(), "xrpl::root2(Number)", "f is normalized");
+    XRPL_ASSERT_PARTS(f.isnormal(), "ripple::root2(Number)", "f is normalized");
 
     // Quadratic least squares curve fit of f^(1/d) in the range [0, 1]
     auto const D = 105;
@@ -1129,7 +1130,7 @@ root2(Number f)
     //  return r * 10^(e/2) to reverse scaling
     auto const result = r.shiftExponent(e / 2);
     XRPL_ASSERT_PARTS(
-        result.isnormal(), "xrpl::root2(Number)", "result is normalized");
+        result.isnormal(), "ripple::root2(Number)", "result is normalized");
 
     return result;
 }

@@ -314,17 +314,11 @@ protected:
                         env.balance(vaultPseudo, broker.asset).number());
                     if (ownerCount == 0)
                     {
-                        // Allow some slop for rounding IOUs
-
-                        // TODO: This needs to be an exact match once all the
-                        // other rounding issues are worked out.
+                        // The Vault must be perfectly balanced if there
+                        // are no loans outstanding
                         auto const total = vaultSle->at(sfAssetsTotal);
                         auto const available = vaultSle->at(sfAssetsAvailable);
-                        env.test.BEAST_EXPECT(
-                            total == available ||
-                            (!broker.asset.integral() && available != 0 &&
-                             ((total - available) / available <
-                              Number(1, -6))));
+                        env.test.BEAST_EXPECT(total == available);
                         env.test.BEAST_EXPECT(
                             vaultSle->at(sfLossUnrealized) == 0);
                     }
@@ -2273,7 +2267,23 @@ protected:
                     fee(XRPAmount{
                         baseFee *
                         (Number{15, -1} / loanPaymentsPerFeeIncrement + 1)}),
-                    ter(temINVALID_FLAG));
+                    ter(tecNO_PERMISSION));
+
+                {
+                    env.disableFeature(fixSecurity3_1_3);
+                    env(pay(borrower,
+                            loanKeylet.key,
+                            STAmount{
+                                broker.asset,
+                                state.periodicPayment * Number{15, -1}},
+                            tfLoanOverpayment),
+                        fee(XRPAmount{
+                            baseFee *
+                            (Number{15, -1} / loanPaymentsPerFeeIncrement +
+                             1)}),
+                        ter(temINVALID_FLAG));
+                    env.enableFeature(fixSecurity3_1_3);
+                }
             }
             // Try to send a payment marked as multiple mutually exclusive
             // payment types. Do not include `txFlags`, so we don't duplicate
@@ -7644,6 +7654,133 @@ protected:
         BEAST_EXPECT(afterSecondCoverAvailable == 0);
     }
 
+    void
+    testYieldTheftRounding(std::uint32_t flags)
+    {
+        testcase("Yield Theft via Rounding Manipulation");
+        using namespace jtx;
+        using namespace loan;
+
+        // 1. Setup Environment
+        Env env(*this, all);
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1000), issuer, lender, borrower);
+        env.close();
+
+        // 2. Asset Selection
+        PrettyAsset const iou = issuer["USD"];
+        env(trust(lender, iou(100'000'000)));
+        env(trust(borrower, iou(100'000'000)));
+        env(pay(issuer, lender, iou(100'000'000)));
+        env(pay(issuer, borrower, iou(100'000'000)));
+        env.close();
+
+        // 3. Create Vault and Broker with High Debt Limit (100M)
+        auto const brokerInfo = createVaultAndBroker(
+            env,
+            iou,
+            lender,
+            {
+                .vaultDeposit = 5'000'000,
+                .debtMax = Number{100'000'000},
+                .coverDeposit = 500'000,
+            });
+        auto const [currentSeq, vaultId, vaultKeylet] = [&]() {
+            auto const brokerSle =
+                env.le(keylet::loanbroker(brokerInfo.brokerID));
+            auto const currentSeq = brokerSle->at(sfLoanSequence);
+            auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
+            auto const vaultId = brokerSle->at(sfVaultID);
+            return std::make_tuple(currentSeq, vaultId, vaultKeylet);
+        }();
+
+        // 4. Loan Parameters (Attack Vector)
+        Number const principal = 1'000'000;
+        TenthBips32 const interestRate = TenthBips32{1};  // 0.001%
+        std::uint32_t const paymentInterval = 86400;
+        std::uint32_t const paymentTotal = 3650;
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        env(set(borrower, brokerInfo.brokerID, iou(principal).value(), flags),
+            sig(sfCounterpartySignature, lender),
+            loan::interestRate(interestRate),
+            loan::paymentInterval(paymentInterval),
+            loan::paymentTotal(paymentTotal),
+            fee(loanSetFee));
+        env.close();
+
+        // --- RETRIEVE OBJECTS & SETUP ATTACK ---
+
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, currentSeq);
+        auto const [periodicPayment, loanScale] = [&]() {
+            auto const loanSle = env.le(loanKeylet);
+            // Construct Payment
+            return std::make_tuple(
+                STAmount{iou, loanSle->at(sfPeriodicPayment)},
+                loanSle->at(sfLoanScale));
+        }();
+        auto const roundedPayment =
+            roundToScale(periodicPayment, loanScale, Number::upward);
+
+        // ATTACK: Add dust buffer (1e-9) to force 'excess' logic execution
+        STAmount const paymentBuffer{iou, Number(1, -9)};
+        STAmount const attackPayment = periodicPayment + paymentBuffer;
+
+        auto const initialVaultAssets = env.le(vaultKeylet)->at(sfAssetsTotal);
+
+        // 5. Execution Loop
+        int yieldTheftCount = 0;
+        auto previousAssetsTotal = initialVaultAssets;
+
+        auto borrowerBalance = [&]() { return env.balance(borrower, iou); };
+
+        for (int i = 0; i < 100; ++i)
+        {
+            auto const balanceBefore = borrowerBalance();
+            env(pay(borrower, loanKeylet.key, attackPayment, flags));
+            env.close();
+            auto const borrowerDelta = borrowerBalance() - balanceBefore;
+
+            auto const loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                break;
+            auto const updatedPayment =
+                STAmount{iou, loanSle->at(sfPeriodicPayment)};
+            BEAST_EXPECT(
+                (roundToScale(updatedPayment, loanScale, Number::upward) ==
+                 roundedPayment));
+            BEAST_EXPECT(
+                (updatedPayment == periodicPayment) ||
+                (flags == tfLoanOverpayment && i >= 2 &&
+                 updatedPayment < periodicPayment));
+
+            auto const currentVaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(currentVaultSle))
+                break;
+
+            auto const currentAssetsTotal = currentVaultSle->at(sfAssetsTotal);
+            auto const delta = currentAssetsTotal - previousAssetsTotal;
+
+            BEAST_EXPECT(
+                (delta == beast::zero && borrowerDelta <= roundedPayment) ||
+                (delta > beast::zero && borrowerDelta > roundedPayment));
+
+            // If tx succeeded but Assets Total didn't change, interest was
+            // stolen.
+            if (delta == beast::zero && borrowerDelta > roundedPayment)
+            {
+                yieldTheftCount++;
+            }
+
+            previousAssetsTotal = currentAssetsTotal;
+        }
+
+        BEAST_EXPECTS(yieldTheftCount == 0, std::to_string(yieldTheftCount));
+    }
+
 public:
     void
     run() override
@@ -7652,6 +7789,11 @@ public:
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        for (auto const flags : {0u, tfLoanOverpayment})
+        {
+            testYieldTheftRounding(flags);
+        }
+
         testInvalidLoanSet();
 
         testCoverDepositWithdrawNonTransferableMPT();

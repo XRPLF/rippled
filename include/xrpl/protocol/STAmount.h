@@ -62,8 +62,8 @@ private:
 public:
     using value_type = STAmount;
 
-    static int const cMinOffset = -96;
-    static int const cMaxOffset = 80;
+    static constexpr int cMinOffset = -96;
+    static constexpr int cMaxOffset = 80;
 
     // Maximum native value supported by the code
     constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
@@ -372,7 +372,7 @@ STAmount::STAmount(
     {
         XRPL_ASSERT(
             mValue <= std::numeric_limits<std::int64_t>::max(),
-            "xrpl::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
+            "ripple::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
             "maximum mantissa input");
     }
     else

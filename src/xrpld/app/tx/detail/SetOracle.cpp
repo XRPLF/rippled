@@ -116,7 +116,7 @@ SetOracle::preclaim(PreclaimContext const& ctx)
         return !v || *v == (*sle)[field];
     };
 
-    std::uint32_t adjustReserve = 0;
+    std::int8_t adjustReserve = 0;
     if (sle)
     {
         // update
