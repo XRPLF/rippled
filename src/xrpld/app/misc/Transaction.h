@@ -21,7 +21,6 @@ namespace xrpl {
 //
 
 class Application;
-class Database;
 class Rules;
 
 enum TransStatus {

@@ -47,7 +47,7 @@ protected:
     endpoint_type lastEndpoint_;
     bool lastStatus_;
 
-public:
+private:
     WorkBase(
         std::string const& host,
         std::string const& path,
@@ -56,6 +56,8 @@ public:
         endpoint_type const& lastEndpoint,
         bool lastStatus,
         callback_type cb);
+
+public:
     ~WorkBase();
 
     Impl&
@@ -91,6 +93,8 @@ public:
 private:
     void
     close();
+
+    friend Impl;
 };
 
 //------------------------------------------------------------------------------

@@ -53,8 +53,9 @@ is_white(char c)
         case '\t':
         case '\v':
             return true;
+        default:
+            return false;
     };
-    return false;
 }
 
 template <class FwdIter>

@@ -431,8 +431,10 @@ toStrands(
 template <StepAmount TIn, StepAmount TOut, class TDerived>
 struct StepImp : public Step
 {
+private:
     explicit StepImp() = default;
 
+public:
     std::pair<EitherAmount, EitherAmount>
     rev(PaymentSandbox& sb,
         ApplyView& afView,
@@ -472,6 +474,7 @@ struct StepImp : public Step
     {
         return get<TIn>(lhs) == get<TIn>(rhs);
     }
+    friend TDerived;
 };
 /// @endcond
 

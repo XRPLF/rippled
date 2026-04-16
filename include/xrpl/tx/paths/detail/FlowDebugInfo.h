@@ -220,6 +220,7 @@ struct FlowDebugInfo
                 write_list(amts, get_val, delim);
             };
             auto writeIntList = [&write_list](std::vector<size_t> const& vals, char delim = ';') {
+                // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
                 auto get_val = [](size_t const& v) -> size_t const& { return v; };
                 write_list(vals, get_val);
             };

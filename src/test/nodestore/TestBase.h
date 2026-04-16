@@ -75,9 +75,10 @@ public:
                         return hotTRANSACTION_NODE;
                     case 3:
                         return hotUNKNOWN;
+                    default:
+                        // will never happen, but make static analysis tool happy.
+                        return hotUNKNOWN;
                 }
-                // will never happen, but make static analysis tool happy.
-                return hotUNKNOWN;
             }();
 
             uint256 hash;

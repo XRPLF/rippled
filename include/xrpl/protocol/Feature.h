@@ -125,10 +125,12 @@ namespace detail {
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
+// NOLINTBEGIN(bugprone-macro-parentheses)
 #define XRPL_FEATURE(name, supported, vote) +1
 #define XRPL_FIX(name, supported, vote) +1
 #define XRPL_RETIRE_FEATURE(name) +1
 #define XRPL_RETIRE_FIX(name) +1
+// NOLINTEND(bugprone-macro-parentheses)
 
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how
