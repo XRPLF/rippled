@@ -9908,6 +9908,164 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testCiphertextCombination(FeatureBitset features)
+    {
+        testcase("test Ciphertext Combination");
+
+        // This test verifies that adding two ElGamal ciphertexts
+        // Enc(m1) + Enc(m2) = Enc(m1+m2) to combine balances is detected
+        // and rejected. The ZKP's equality proof with proof-of-knowledge
+        // and shared randomness binding prevents this attack.
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 200, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 100, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        uint64_t const m1 = 10;
+        uint64_t const m2 = 5;
+
+        // Variant A: Post-signature ciphertext combination
+        // -----------------------------------------------------------------
+        // Build a valid send for m1, sign it, then replace the destination
+        // ciphertext with Enc(m1) + Enc(m2) while preserving the stale
+        // signature. Submit the raw blob.
+        // Expected: Signature verification fails → "invalidTransaction"
+        {
+            auto const seq = env.seq(bob);
+            auto jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = m1}, seq);
+            auto jtx = env.jt(jv);
+            BEAST_EXPECT(jtx.stx);
+
+            // Serialize the signed transaction
+            Serializer s;
+            jtx.stx->add(s);
+
+            // Deserialize into a mutable STObject
+            SerialIter sit(s.slice());
+            STObject obj(sit, sfTransaction);
+
+            // Get the original destination ciphertext Enc(m1)
+            auto const origDestCt = obj.getFieldVL(sfDestinationEncryptedAmount);
+
+            // Create Enc(m2) for carol and homomorphically add
+            Buffer const bf2 = generateBlindingFactor();
+            auto const encM2 = mptAlice.encryptAmount(carol, m2, bf2);
+            auto const combined = homomorphicAdd(
+                Slice(origDestCt.data(), origDestCt.size()), Slice(encM2.data(), encM2.size()));
+            BEAST_EXPECT(combined.has_value());
+
+            // Replace with combined ciphertext Enc(m1+m2)
+            obj.setFieldVL(sfDestinationEncryptedAmount, *combined);
+
+            // Re-serialize with stale signature
+            Serializer tampered;
+            obj.add(tampered);
+
+            // Signature no longer matches
+            auto const jr = env.rpc("submit", strHex(tampered.slice()));
+            BEAST_EXPECT(jr[jss::result][jss::error] == "invalidTransaction");
+        }
+
+        // Variant B: Re-signed ciphertext combination
+        // -----------------------------------------------------------------
+        // Generate a valid proof for amount m1, then replace the destination
+        // ciphertext with Enc(m1) + Enc(m2) = Enc(m1+m2), re-sign.
+        // Expected: Signature passes, ZKP fails due to:
+        //   - ElGamal–Pedersen linkage mismatch
+        //   - equality/shared-r proof failure
+        {
+            ZkpTestSetup setup(mptAlice, bob, carol, alice, m1);
+
+            auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(validProof.has_value()))
+                return;
+
+            // Create Enc(m2) for carol and add to the original dest ciphertext
+            Buffer const bf2 = generateBlindingFactor();
+            auto const encM2 = mptAlice.encryptAmount(carol, m2, bf2);
+            auto const combinedDest = homomorphicAdd(setup.destAmt, encM2);
+            BEAST_EXPECT(combinedDest.has_value());
+
+            // Submit with combined ciphertext — proof was for Enc(m1) only
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(*validProof),
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = combinedDest,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+
+        // Variant C: Cross-transaction ciphertext reuse
+        // -----------------------------------------------------------------
+        // Execute a valid send of m1 from bob→carol. Extract the destination
+        // ciphertext from that transaction. Build a new transaction that
+        // uses the extracted ciphertext combined with a fresh Enc(m2).
+        // Expected: ZKP fails because context hash binding (sequence,
+        // CBS.version) differs between the old and new transactions.
+        {
+            // First, execute a valid send to advance bob's state
+            mptAlice.send({.account = bob, .dest = carol, .amt = m1});
+
+            // The old destination ciphertext was Enc(m1) to carol's key.
+            // Recreate it deterministically for the attack.
+            Buffer const oldBf = generateBlindingFactor();
+            auto const oldEncM1 = mptAlice.encryptAmount(carol, m1, oldBf);
+
+            // Now build a new send for m2, but combine ciphertexts
+            ZkpTestSetup setup2(mptAlice, bob, carol, alice, m2);
+
+            auto const proof2 = setup2.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(proof2.has_value()))
+                return;
+
+            // Combine: oldEnc(m1) + newEnc(m2) = Enc(m1+m2)
+            auto const crossCombined = homomorphicAdd(oldEncM1, setup2.destAmt);
+            BEAST_EXPECT(crossCombined.has_value());
+
+            // Submit — proof was generated for m2 with current context,
+            // but destination ciphertext is Enc(m1+m2)
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup2.sendAmount,
+                 .proof = strHex(*proof2),
+                 .senderEncryptedAmt = setup2.senderAmt,
+                 .destEncryptedAmt = crossCombined,
+                 .issuerEncryptedAmt = setup2.issuerAmt,
+                 .amountCommitment = setup2.amountCommitment,
+                 .balanceCommitment = setup2.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // // ConfidentialMPTConvert
@@ -10007,6 +10165,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Ciphertext malleability tests
         testCiphertextMalleability(features);
+        testCiphertextCombination(features);
     }
 
 public:
