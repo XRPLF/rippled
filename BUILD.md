@@ -459,6 +459,21 @@ install ccache --version 4.11.3 --allow-downgrade`.
    The location of `xrpld` binary in your build directory depends on your
    CMake generator. Pass `--help` to see the rest of the command line options.
 
+## Code generation
+
+The protocol wrapper classes in `include/xrpl/protocol_autogen/` are generated
+from macro definition files in `include/xrpl/protocol/detail/`. If you modify
+the macro files (e.g. `transactions.macro`, `ledger_entries.macro`) or the
+generation scripts/templates in `cmake/scripts/codegen/`, you need to regenerate the
+files:
+
+```
+cmake --build . --target setup_code_gen  # create venv and install dependencies (once)
+cmake --build . --target code_gen        # regenerate code
+```
+
+The regenerated files should be committed alongside your changes.
+
 ## Coverage report
 
 The coverage report is intended for developers using compilers GCC
