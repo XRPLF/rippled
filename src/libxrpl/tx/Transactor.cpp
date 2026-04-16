@@ -174,6 +174,16 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 
         if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
             return temBAD_SIGNER;
+
+        auto const& perm = Permission::getInstance();
+        auto const txType = ctx.tx.getTxnType();
+
+        // If the transaction is not delegable and does not have granular permissions, fail earlier
+        // with temMALFORMED. This is to prevent transactions that are not delegable at all from
+        // being processed further in the checkPermissions function.
+        if (!perm.isDelegable(Permission::txToPermissionType(txType), ctx.rules) &&
+            !perm.hasGranularPermissions(txType))
+            return temMALFORMED;
     }
 
     if (auto const ret = preflight0(ctx, flagMask))
