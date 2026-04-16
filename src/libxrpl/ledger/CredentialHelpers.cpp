@@ -32,6 +32,10 @@ checkExpired(
     std::shared_ptr<SLE const> const& sleCredential,
     NetClock::time_point const& closed)
 {
+    XRPL_ASSERT(
+        static_cast<bool>(sleCredential),
+        "credentials::checkExpired: empty SLE.");
+
     std::uint32_t const exp = (*sleCredential)[~sfExpiration].value_or(
         std::numeric_limits<std::uint32_t>::max());
     std::uint32_t const now = closed.time_since_epoch().count();

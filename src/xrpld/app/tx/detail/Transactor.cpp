@@ -1091,8 +1091,15 @@ removeExpiredCredentials(
     for (auto const& index : creds)
     {
         if (auto const sle = view.peek(keylet::credential(index)))
-            [[maybe_unused]]
-            auto const ter = credentials::deleteSLE(view, sle, viewJ);
+        {
+            if (auto const ter = credentials::deleteSLE(view, sle, viewJ);
+                !isTesSuccess(ter))
+            {
+                JLOG(viewJ.error()) << "removeExpiredCredentials: failed to "
+                                       "delete expired credential. Err: "
+                                    << transToken(ter);
+            }
+        }
     }
 }
 
