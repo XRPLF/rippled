@@ -459,7 +459,7 @@ public:
     {
         testcase("getServerDefinitions");
 
-        auto const defs = getServerDefinitions();
+        auto const& defs = getServerDefinitions();
         for (auto const& field :
              {jss::ACCOUNT_SET_FLAGS,
               jss::FIELDS,
