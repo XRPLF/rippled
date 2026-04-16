@@ -32,6 +32,7 @@
 #include <cstdint>
 #include <iterator>
 #include <optional>
+#include <ranges>
 #include <vector>
 
 namespace xrpl::test {
@@ -1351,6 +1352,86 @@ public:
     }
 
     void
+    testAccountObjectDoesntShowCancelledOffers()
+    {
+        testcase("AccountObjectDoesntShowCancelledOffers");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        auto const EUR = bob["EUR"];
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        auto const rpcAccountObjects = [&](std::optional<uint32_t> limit = std::nullopt) {
+            Json::Value params;
+            params[jss::account] = alice.human();
+            if (limit.has_value())
+            {
+                params[jss::limit] = *limit;
+            }
+            return env.rpc("json", "account_objects", to_string(params));
+        };
+
+        auto const numEntries = 33;
+        std::vector<uint32_t> seqs;
+        seqs.reserve(numEntries);
+        for ([[maybe_unused]] auto _ : std::ranges::iota_view{0, numEntries})
+        {
+            Json::Value params;
+            params[jss::secret] = toBase58(generateSeed("alice"));
+            params[jss::tx_json] = offer(alice, EUR(1), XRP(2));
+            auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
+            BEAST_EXPECT(res[jss::status].asString() == "success");
+            seqs.push_back(env.seq(alice));
+        }
+
+        auto res = rpcAccountObjects();
+        BEAST_EXPECT(res[jss::result][jss::account_objects].size() == numEntries);
+        BEAST_EXPECT(not res[jss::result].isMember(jss::limit));
+        BEAST_EXPECT(not res[jss::result].isMember(jss::marker));
+
+        for (auto const s : std::views::all(seqs) | std::views::take(numEntries - 1))
+        {
+            Json::Value params;
+            params[jss::secret] = toBase58(generateSeed("alice"));
+            params[jss::tx_json] = offer_cancel(alice, s - 1);
+            auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
+            BEAST_EXPECT(res[jss::status].asString() == "success");
+        }
+
+        res = rpcAccountObjects();
+        BEAST_EXPECT(res[jss::result][jss::account_objects].size() == 1);
+        BEAST_EXPECT(not res[jss::result].isMember(jss::limit));
+        BEAST_EXPECT(not res[jss::result].isMember(jss::marker));
+
+        {
+            Json::Value params;
+            params[jss::secret] = toBase58(generateSeed("alice"));
+            Json::Value tx_json;
+            tx_json[jss::TransactionType] = jss::NFTokenMint;
+            tx_json[jss::Account] = to_string(alice.id());
+            tx_json["NFTokenTaxon"] = 1;
+            params[jss::tx_json] = tx_json;
+            auto const res = env.rpc("json", "submit", to_string(params))[jss::result];
+            BEAST_EXPECT(res[jss::status].asString() == "success");
+        }
+        env.close();
+
+        res = rpcAccountObjects();
+        BEAST_EXPECT(res[jss::result][jss::account_objects].size() == 2);
+        BEAST_EXPECT(not res[jss::result].isMember(jss::limit));
+        BEAST_EXPECT(not res[jss::result].isMember(jss::marker));
+
+        res = rpcAccountObjects(1);
+        BEAST_EXPECT(res[jss::result][jss::account_objects].size() == 1);
+        BEAST_EXPECT(res[jss::result][jss::limit].asUInt() == 1);
+        BEAST_EXPECT(res[jss::result].isMember(jss::marker));
+    }
+
+    void
     run() override
     {
         testErrors();
@@ -1360,6 +1441,7 @@ public:
         testNFTsMarker();
         testAccountNFTs();
         testAccountObjectMarker();
+        testAccountObjectDoesntShowCancelledOffers();
     }
 };
 
