@@ -1324,9 +1324,9 @@ MPTTester::send(MPTConfidentialSend const& arg)
     }
 
     // Fill in the commitment if not provided
-    // PC_m = m*G + r*H where r = blindingFactor (the ElGamal randomness).
-    // The sigma proof proves knowledge of r as the blinding factor of PC_m,
-    // so both ElGamal encryption and PC_m must use the same scalar r.
+    // The amount commitment must use the same blinding factor as the ElGamal
+    // encryption. The sigma proof links the two, so using different randomness
+    // for each would cause proof verification to fail.
     Buffer amountCommitment, balanceCommitment;
     if (arg.amountCommitment)
         amountCommitment = *arg.amountCommitment;
@@ -1586,9 +1586,8 @@ MPTTester::sendJV(
         version = getMPTokenVersion(*arg.account);
     }
 
-    // PC_m = m*G + r*H where r = blindingFactor (the ElGamal randomness).
-    // The sigma proof proves knowledge of r as the blinding factor of PC_m,
-    // so both ElGamal encryption and PC_m must use the same scalar r.
+    // The amount commitment must use the same blinding factor as the tx ElGamal
+    // encryption blinding factor.
     Buffer amountCommitment, balanceCommitment;
     if (arg.amountCommitment)
         amountCommitment = *arg.amountCommitment;

@@ -270,34 +270,31 @@ verifyRevealedAmount(
         issuer.encryptedAmount.size() != ecGamalEncryptedTotalLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    secp256k1_context* ctx = mpt_secp256k1_context();
-    if (!ctx)
-        return tecINTERNAL;  // LCOV_EXCL_LINE
-
-    // All calls are evaluated before combining results to prevent timing attacks.
-    auto verifyCiphertext = [&](ConfidentialRecipient const& r) -> bool {
-        secp256k1_pubkey pk, c1, c2;
-        if (secp256k1_ec_pubkey_parse(ctx, &pk, r.publicKey.data(), r.publicKey.size()) != 1)
-            return false;
-        if (!mpt_make_ec_pair(r.encryptedAmount.data(), &c1, &c2))
-            return false;
-        return secp256k1_elgamal_verify_encryption(
-                   ctx, &c1, &c2, &pk, amount, blindingFactor.data()) == 1;
+    auto toParticipant = [](ConfidentialRecipient const& r) {
+        mpt_confidential_participant p;
+        std::memcpy(p.pubkey, r.publicKey.data(), kMPT_PUBKEY_SIZE);
+        std::memcpy(p.ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
+        return p;
     };
 
-    bool const holderOk = verifyCiphertext(holder);
-    bool const issuerOk = verifyCiphertext(issuer);
-    bool valid = holderOk && issuerOk;
+    auto const holderP = toParticipant(holder);
+    auto const issuerP = toParticipant(issuer);
+    mpt_confidential_participant auditorP;
+    mpt_confidential_participant const* auditorPtr = nullptr;
     if (auditor)
     {
         if (auditor->publicKey.size() != ecPubKeyLength ||
             auditor->encryptedAmount.size() != ecGamalEncryptedTotalLength)
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        bool const auditorOk = verifyCiphertext(*auditor);
-        valid = valid && auditorOk;
+        auditorP = toParticipant(*auditor);
+        auditorPtr = &auditorP;
     }
 
-    return valid ? TER{tesSUCCESS} : TER{tecBAD_PROOF};
+    if (mpt_verify_revealed_amount(amount, blindingFactor.data(), &holderP, &issuerP, auditorPtr) !=
+        0)
+        return tecBAD_PROOF;
+
+    return tesSUCCESS;
 }
 
 NotTEC
