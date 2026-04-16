@@ -15,12 +15,13 @@ include/xrpl/
 │   ├── Telemetry.h              # Main telemetry interface
 │   ├── TelemetryConfig.h        # Configuration structures
 │   ├── TraceContext.h           # Context propagation utilities
-│   ├── SpanGuard.h              # RAII span management
+│   ├── SpanGuard.h              # RAII span management with discard()
+│   ├── DiscardFlag.h            # Thread-local discard flag
 │   └── SpanAttributes.h         # Attribute helper functions
 
 src/libxrpl/
 ├── telemetry/
-│   ├── Telemetry.cpp            # Implementation
+│   ├── Telemetry.cpp            # Implementation + FilteringSpanProcessor
 │   ├── TelemetryConfig.cpp      # Config parsing
 │   ├── TraceContext.cpp         # Context serialization
 │   └── NullTelemetry.cpp        # No-op implementation
@@ -380,15 +381,16 @@ pie title Code Changes by Component
 
 #### New Files (No Impact on Existing Code)
 
-| File                                           | Lines | Purpose              |
-| ---------------------------------------------- | ----- | -------------------- |
-| `include/xrpl/telemetry/Telemetry.h`           | ~160  | Main interface       |
-| `include/xrpl/telemetry/SpanGuard.h`           | ~120  | RAII wrapper         |
-| `include/xrpl/telemetry/TraceContext.h`        | ~80   | Context propagation  |
-| `src/xrpld/telemetry/TracingInstrumentation.h` | ~60   | Macros               |
-| `src/libxrpl/telemetry/Telemetry.cpp`          | ~200  | Implementation       |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp`    | ~60   | Config parsing       |
-| `src/libxrpl/telemetry/NullTelemetry.cpp`      | ~40   | No-op implementation |
+| File                                           | Lines | Purpose                                 |
+| ---------------------------------------------- | ----- | --------------------------------------- |
+| `include/xrpl/telemetry/Telemetry.h`           | ~160  | Main interface                          |
+| `include/xrpl/telemetry/SpanGuard.h`           | ~120  | RAII wrapper + discard                  |
+| `include/xrpl/telemetry/DiscardFlag.h`         | ~28   | Thread-local discard flag               |
+| `include/xrpl/telemetry/TraceContext.h`        | ~80   | Context propagation                     |
+| `src/xrpld/telemetry/TracingInstrumentation.h` | ~60   | Macros                                  |
+| `src/libxrpl/telemetry/Telemetry.cpp`          | ~400  | Implementation + FilteringSpanProcessor |
+| `src/libxrpl/telemetry/TelemetryConfig.cpp`    | ~60   | Config parsing                          |
+| `src/libxrpl/telemetry/NullTelemetry.cpp`      | ~40   | No-op implementation                    |
 
 #### Modified Files (Existing Xrpld Code)
 

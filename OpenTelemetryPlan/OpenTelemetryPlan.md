@@ -146,7 +146,7 @@ Span naming follows a hierarchical `<component>.<operation>` convention (e.g., `
 
 ## 3. Implementation Strategy
 
-The telemetry code is organized under `include/xrpl/telemetry/` for headers and `src/libxrpl/telemetry/` for implementation. Key principles include RAII-based span management via `SpanGuard`, conditional compilation with `XRPL_ENABLE_TELEMETRY`, and minimal runtime overhead through batch processing and efficient sampling.
+The telemetry code is organized under `include/xrpl/telemetry/` for headers and `src/libxrpl/telemetry/` for implementation. Key principles include RAII-based span management via `SpanGuard` (with `discard()` for dropping unwanted spans), a `FilteringSpanProcessor` that intercepts `OnEnd()` to prevent discarded spans from entering the export pipeline, conditional compilation with `XRPL_ENABLE_TELEMETRY`, and minimal runtime overhead through batch processing and efficient sampling.
 
 Performance optimization strategies include probabilistic head sampling (10% default), tail-based sampling at the collector for errors and slow traces, batch export to reduce network overhead, and conditional instrumentation that compiles to no-ops when disabled.
 
@@ -159,7 +159,8 @@ Performance optimization strategies include probabilistic head sampling (10% def
 C++ implementation examples are provided for the core telemetry infrastructure and key modules:
 
 - `Telemetry.h` - Core interface for tracer access and span creation
-- `SpanGuard.h` - RAII wrapper for automatic span lifecycle management
+- `SpanGuard.h` - RAII wrapper for automatic span lifecycle management with `discard()` support
+- `DiscardFlag.h` - Thread-local flag for span discard signaling between SpanGuard and FilteringSpanProcessor
 - `TracingInstrumentation.h` - Macros for conditional instrumentation
 - Protocol Buffer extensions for trace context propagation
 - Module-specific instrumentation (RPC, Consensus, P2P, JobQueue)
