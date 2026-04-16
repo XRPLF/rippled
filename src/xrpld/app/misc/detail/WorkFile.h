@@ -60,11 +60,9 @@ WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
     {
-        {
-            boost::asio::post(
-                ios_,
-                boost::asio::bind_executor(strand_, std::bind(&WorkFile::run, shared_from_this())));
-        }
+        boost::asio::post(
+            ios_,
+            boost::asio::bind_executor(strand_, std::bind(&WorkFile::run, shared_from_this())));
         return;
     }
 
