@@ -583,26 +583,6 @@ public:
     getMPTokenVersion(Account const account) const;
 
     Buffer
-    getAmountLinkageProof(
-        Buffer const& pubKey,
-        Buffer const& blindingFactor,
-        uint256 const& contextHash,
-        PedersenProofParams const& params) const;
-
-    Buffer
-    getBalanceLinkageProof(
-        Account const& account,
-        uint256 const& contextHash,
-        Buffer const& pubKey,
-        PedersenProofParams const& params) const;
-
-    Buffer
-    getBulletproof(
-        std::vector<std::uint64_t> const& values,
-        std::vector<Buffer> const& blindingFactors,
-        uint256 const& contextHash) const;
-
-    Buffer
     getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor);
 
     friend BookSpec

@@ -792,7 +792,7 @@ MPTTester::getClawbackProof(
     if (pubKeyBlob.size() != ecPubKeyLength)
         return std::nullopt;
 
-    Buffer proof(ecEqualityProofLength);
+    Buffer proof(ecClawbackProofLength);
 
     if (mpt_get_clawback_proof(
             privateKey.data(),
@@ -838,7 +838,6 @@ MPTTester::getConfidentialSendProof(
     PedersenProofParams const& amountParams,
     PedersenProofParams const& balanceParams) const
 {
-    auto const pedersenAmountParams = makePedersenParams(amountParams);
     auto const pedersenBalanceParams = makePedersenParams(balanceParams);
     if (recipients.size() != nRecipients)
         return std::nullopt;
@@ -848,6 +847,13 @@ MPTTester::getConfidentialSendProof(
 
     auto const senderPrivKey = getPrivKey(sender);
     if (!senderPrivKey)
+        return std::nullopt;
+
+    auto const senderPubKey = getPubKey(sender);
+    if (!senderPubKey || senderPubKey->size() != ecPubKeyLength)
+        return std::nullopt;
+
+    if (amountParams.pedersenCommitment.size() != ecPedersenCommitmentLength)
         return std::nullopt;
 
     // Build mpt_confidential_participant array
@@ -862,17 +868,18 @@ MPTTester::getConfidentialSendProof(
         std::memcpy(participants[i].ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
     }
 
-    size_t proofLen = get_confidential_send_proof_size(nRecipients);
+    size_t proofLen = ecSendProofLength;
     Buffer proof(proofLen);
 
     if (mpt_get_confidential_send_proof(
             senderPrivKey->data(),
+            senderPubKey->data(),
             amount,
             participants.data(),
             nRecipients,
             blindingFactor.data(),
             contextHash.data(),
-            &pedersenAmountParams,
+            amountParams.pedersenCommitment.data(),
             &pedersenBalanceParams,
             proof.data(),
             &proofLen) != 0)
@@ -914,8 +921,8 @@ MPTTester::getConvertBackProof(
     uint256 const& contextHash,
     PedersenProofParams const& pcParams) const
 {
-    // Expected total proof length: pedersen proof + single bulletproof
-    std::size_t constexpr expectedProofLength = ecPedersenProofLength + ecSingleBulletproofLength;
+    // Expected total proof length: compact sigma proof (128 bytes) + single bulletproof (688 bytes)
+    std::size_t constexpr expectedProofLength = ecConvertBackProofLength;
 
     auto const sleMptoken = env_.le(keylet::mptoken(*id_, holder.id()));
     if (!sleMptoken || !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
@@ -1317,12 +1324,14 @@ MPTTester::send(MPTConfidentialSend const& arg)
     }
 
     // Fill in the commitment if not provided
+    // The amount commitment must use the same blinding factor as the ElGamal
+    // encryption. The sigma proof links the two, so using different randomness
+    // for each would cause proof verification to fail.
     Buffer amountCommitment, balanceCommitment;
-    auto const amountBlindingFactor = generateBlindingFactor();
     if (arg.amountCommitment)
         amountCommitment = *arg.amountCommitment;
     else
-        amountCommitment = getPedersenCommitment(*arg.amt, amountBlindingFactor);
+        amountCommitment = getPedersenCommitment(*arg.amt, blindingFactor);
 
     jv[sfAmountCommitment] = strHex(amountCommitment);
 
@@ -1390,7 +1399,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 blindingFactor,
                 nRecipients,
                 ctxHash,
-                {amountCommitment, *arg.amt, senderAmt, amountBlindingFactor},
+                {amountCommitment, *arg.amt, senderAmt, blindingFactor},
                 {balanceCommitment,
                  *prevSenderSpending,
                  *prevEncryptedSenderSpending,
@@ -1401,11 +1410,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
         {
-            size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
-            size_t const dummySize =
-                sizeEquality + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
-
-            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(dummySize));
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSendProofLength));
         }
     }
 
@@ -1581,12 +1586,13 @@ MPTTester::sendJV(
         version = getMPTokenVersion(*arg.account);
     }
 
+    // The amount commitment must use the same blinding factor as the tx ElGamal
+    // encryption blinding factor.
     Buffer amountCommitment, balanceCommitment;
-    auto const amountBlindingFactor = generateBlindingFactor();
     if (arg.amountCommitment)
         amountCommitment = *arg.amountCommitment;
     else
-        amountCommitment = getPedersenCommitment(*arg.amt, amountBlindingFactor);
+        amountCommitment = getPedersenCommitment(*arg.amt, blindingFactor);
 
     jv[sfAmountCommitment] = strHex(amountCommitment);
 
@@ -1641,7 +1647,7 @@ MPTTester::sendJV(
                 blindingFactor,
                 nRecipients,
                 ctxHash,
-                {amountCommitment, *arg.amt, senderAmt, amountBlindingFactor},
+                {amountCommitment, *arg.amt, senderAmt, blindingFactor},
                 {balanceCommitment,
                  prevSenderSpending,
                  *prevEncryptedSenderSpending,
@@ -1651,12 +1657,7 @@ MPTTester::sendJV(
         if (proof)
             jv[sfZKProof.jsonName] = strHex(*proof);
         else
-        {
-            size_t const sizeEquality = secp256k1_mpt_proof_equality_shared_r_size(nRecipients);
-            size_t const dummySize =
-                sizeEquality + 2 * ecPedersenProofLength + ecDoubleBulletproofLength;
-            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(dummySize));
-        }
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSendProofLength));
     }
 
     return jv;
@@ -1751,7 +1752,7 @@ MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
         if (proof)
             jv[sfZKProof] = strHex(*proof);
         else
-            jv[sfZKProof] = strHex(makeZeroBuffer(ecEqualityProofLength));
+            jv[sfZKProof] = strHex(makeZeroBuffer(ecClawbackProofLength));
     }
 
     auto const holderPubAmt = getBalance(*arg.holder);
@@ -2066,7 +2067,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         // generate a dummy proof if no encrypted amount field, so that other
         // preflight/preclaim are checked
         if (!prevEncryptedSpendingBalance)
-            proof = makeZeroBuffer(ecPedersenProofLength + ecSingleBulletproofLength);
+            proof = makeZeroBuffer(ecConvertBackProofLength);
         else
         {
             proof = getConvertBackProof(
@@ -2198,7 +2199,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
 
         Buffer proof;
         if (!prevEncSpending)
-            proof = makeZeroBuffer(ecPedersenProofLength + ecSingleBulletproofLength);
+            proof = makeZeroBuffer(ecConvertBackProofLength);
         else
             proof = getConvertBackProof(
                 *arg.account,
@@ -2215,110 +2216,6 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     }
 
     return jv;
-}
-
-Buffer
-MPTTester::getAmountLinkageProof(
-    Buffer const& pubKey,
-    Buffer const& blindingFactor,
-    uint256 const& contextHash,
-    PedersenProofParams const& params) const
-{
-    if (pubKey.size() != ecPubKeyLength || blindingFactor.size() != ecBlindingFactorLength)
-        return makeZeroBuffer(ecPedersenProofLength);
-
-    auto const pedersenParams = makePedersenParams(params);
-    Buffer proof(ecPedersenProofLength);
-
-    if (mpt_get_amount_linkage_proof(
-            pubKey.data(),
-            blindingFactor.data(),
-            contextHash.data(),
-            &pedersenParams,
-            proof.data()) != 0)
-    {
-        Throw<std::runtime_error>("Amount Linkage Proof generation failed");
-    }
-
-    return proof;
-}
-
-Buffer
-MPTTester::getBalanceLinkageProof(
-    Account const& account,
-    uint256 const& contextHash,
-    Buffer const& pubKey,
-    PedersenProofParams const& params) const
-{
-    if (pubKey.size() != ecPubKeyLength)
-        return makeZeroBuffer(ecPedersenProofLength);
-
-    auto const privKey = getPrivKey(account);
-    if (!privKey || privKey->size() != ecPrivKeyLength)
-        Throw<std::runtime_error>("Failed to get Pedersen proof private key");
-
-    auto const pedersenParams = makePedersenParams(params);
-    Buffer proof(ecPedersenProofLength);
-
-    if (mpt_get_balance_linkage_proof(
-            privKey->data(), pubKey.data(), contextHash.data(), &pedersenParams, proof.data()) != 0)
-        Throw<std::runtime_error>("Pedersen proof generation failed");
-
-    return proof;
-}
-
-Buffer
-MPTTester::getBulletproof(
-    std::vector<std::uint64_t> const& values,
-    std::vector<Buffer> const& blindingFactors,
-    uint256 const& contextHash) const
-{
-    std::size_t const m = values.size();
-
-    if (m == 0 || m > 2 || m != blindingFactors.size())
-        Throw<std::runtime_error>("getBulletproof: invalid input parameters");
-
-    for (auto const& bf : blindingFactors)
-    {
-        if (bf.size() != ecBlindingFactorLength)
-            Throw<std::runtime_error>("Invalid blinding factor length");
-    }
-
-    // Flatten blinding factors into contiguous memory (m * 32 bytes)
-    std::vector<unsigned char> blindingsFlat(m * ecBlindingFactorLength);
-    for (std::size_t i = 0; i < m; ++i)
-        std::memcpy(
-            blindingsFlat.data() + i * ecBlindingFactorLength,
-            blindingFactors[i].data(),
-            ecBlindingFactorLength);
-
-    secp256k1_pubkey pk_base;
-    if (secp256k1_mpt_get_h_generator(secp256k1Context(), &pk_base) != 1)
-        Throw<std::runtime_error>("Failed to get H generator");
-
-    // Proof size scales with m; use safe upper bound
-    Buffer bulletproof(4096);
-    std::size_t proofLen = 4096;
-
-    if (secp256k1_bulletproof_prove_agg(
-            secp256k1Context(),
-            bulletproof.data(),
-            &proofLen,
-            values.data(),
-            blindingsFlat.data(),
-            m,
-            &pk_base,
-            contextHash.data()) != 1)
-    {
-        Throw<std::runtime_error>("Bulletproof generation failed");
-    }
-
-    std::size_t const expectedLen =
-        (m == 1) ? ecSingleBulletproofLength : ecDoubleBulletproofLength;
-    if (proofLen != expectedLen)
-        Throw<std::runtime_error>("Unexpected bulletproof length");
-
-    return Buffer(bulletproof.data(), proofLen);
 }
 
 }  // namespace jtx
