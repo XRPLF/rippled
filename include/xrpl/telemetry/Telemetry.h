@@ -72,6 +72,7 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/utility/Journal.h>
 
+#include <atomic>
 #include <chrono>
 #include <memory>
 #include <string>
@@ -92,9 +93,12 @@ class Telemetry
     /** Global singleton pointer, set by start()/stop() in the active
         implementation. Allows SpanGuard factory methods to access the
         Telemetry instance without callers passing it explicitly.
+
+        Atomic with acquire/release ordering: start()/stop() store on
+        the initialization thread, factory methods load on worker threads.
         @see setInstance(), getInstance()
     */
-    inline static Telemetry* instance_ = nullptr;
+    inline static std::atomic<Telemetry*> instance_{nullptr};
 
 public:
     /** Get the global Telemetry instance.
@@ -103,7 +107,7 @@ public:
     static Telemetry*
     getInstance()
     {
-        return instance_;
+        return instance_.load(std::memory_order_acquire);
     }
 
     /** Set the global Telemetry instance.
@@ -114,7 +118,7 @@ public:
     static void
     setInstance(Telemetry* t)
     {
-        instance_ = t;
+        instance_.store(t, std::memory_order_release);
     }
 
     /** Configuration parsed from the [telemetry] section of xrpld.cfg.

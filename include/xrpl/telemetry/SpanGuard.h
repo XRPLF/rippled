@@ -139,8 +139,16 @@ public:
     SpanContext() = default;
 
     /** @return true if this context holds a valid trace context. */
+#ifdef XRPL_ENABLE_TELEMETRY
     bool
     isValid() const;
+#else
+    bool
+    isValid() const
+    {
+        return false;
+    }
+#endif
 };
 
 // ---------------------------------------------------------------------------

@@ -200,7 +200,13 @@ SpanGuard::linkedSpan(std::string_view name) const
     auto tracer = tel->getTracer("xrpld");
     auto spanCtx = impl_->span->GetContext();
 
+    // Mark as root span so it starts a new trace sub-tree rather than
+    // inheriting the current thread's active span as parent.
     otel_trace::StartSpanOptions opts;
+    opentelemetry::context::Context rootCtx;
+    rootCtx = rootCtx.SetValue(otel_trace::kIsRootSpanKey, true);
+    opts.parent = rootCtx;
+
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name), {}, {{spanCtx, {{"xrpl.link.type", "follows_from"}}}}, opts)));
@@ -218,16 +224,22 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
     auto tracer = tel->getTracer("xrpld");
 
     // Extract the span from the captured context to get its SpanContext.
-    auto parentSpan = otel_trace::GetSpan(linkCtx.impl_->ctx);
-    if (!parentSpan || !parentSpan->GetContext().IsValid())
+    auto linkSpan = otel_trace::GetSpan(linkCtx.impl_->ctx);
+    if (!linkSpan || !linkSpan->GetContext().IsValid())
         return {};
 
+    // Mark as root span so it starts a new trace sub-tree rather than
+    // inheriting the current thread's active span as parent.
     otel_trace::StartSpanOptions opts;
+    opentelemetry::context::Context rootCtx;
+    rootCtx = rootCtx.SetValue(otel_trace::kIsRootSpanKey, true);
+    opts.parent = rootCtx;
+
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name),
             {},
-            {{parentSpan->GetContext(), {{"xrpl.link.type", "follows_from"}}}},
+            {{linkSpan->GetContext(), {{"xrpl.link.type", "follows_from"}}}},
             opts)));
 }
 
