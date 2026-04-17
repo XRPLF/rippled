@@ -26,7 +26,9 @@
 #include <exception>
 #include <string>
 
-namespace xrpl::RPC {
+namespace xrpl {
+using namespace telemetry;
+namespace RPC {
 
 namespace {
 
@@ -160,7 +162,7 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
-    auto span = telemetry::SpanGuard::rpcSpan("rpc.command." + name);
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc.command", name);
     span.setAttribute("xrpl.rpc.command", name.c_str());
     span.setAttribute("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));
     span.setAttribute("xrpl.rpc.role", (context.role == Role::ADMIN ? "admin" : "user"));
@@ -245,4 +247,5 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
     return handler->role_;
 }
 
-}  // namespace xrpl::RPC
+}  // namespace RPC
+}  // namespace xrpl

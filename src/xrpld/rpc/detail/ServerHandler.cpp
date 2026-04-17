@@ -73,6 +73,7 @@
 #include <vector>
 
 namespace xrpl {
+using namespace telemetry;
 
 class Peer;
 class LedgerMaster;
@@ -418,7 +419,7 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     Json::Value const& jv)
 {
-    auto span = telemetry::SpanGuard::rpcSpan("rpc.ws_message");
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "ws_message");
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(m_journal))
     {
@@ -563,7 +564,7 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
-    auto span = telemetry::SpanGuard::rpcSpan("rpc.http_request");
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "http_request");
 
     processRequest(
         session->port(),
@@ -615,7 +616,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    auto span = telemetry::SpanGuard::rpcSpan("rpc.process");
+    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "process");
     auto rpcJ = app_.getJournal("RPC");
 
     Json::Value jsonOrig;
