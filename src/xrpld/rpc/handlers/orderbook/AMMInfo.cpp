@@ -10,6 +10,7 @@
 #include <xrpl/protocol/Issue.h>
 
 #include <grpcpp/support/status.h>
+#include <eh.h>
 
 namespace xrpl {
 
@@ -98,6 +99,9 @@ doAMMInfo(RPC::JsonContext& context)
 
         if (params.isMember(jss::amm_account))
         {
+            if (!params[jss::amm_account].isString())
+                return Unexpected(rpcACT_MALFORMED);
+
             auto const id = parseBase58<AccountID>((params[jss::amm_account].asString()));
             if (!id)
                 return Unexpected(rpcACT_MALFORMED);
@@ -111,6 +115,9 @@ doAMMInfo(RPC::JsonContext& context)
 
         if (params.isMember(jss::account))
         {
+            if (!params[jss::account].isString())
+                return Unexpected(rpcACT_MALFORMED);
+
             accountID = parseBase58<AccountID>(params[jss::account].asString());
             if (!accountID || !ledger->read(keylet::account(*accountID)))
                 return Unexpected(rpcACT_MALFORMED);
