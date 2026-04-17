@@ -179,6 +179,7 @@ test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
 tests.libxrpl > xrpl.json
 tests.libxrpl > xrpl.net
+tests.libxrpl > xrpl.nodestore
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
 xrpl.conditions > xrpl.basics

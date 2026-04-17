@@ -42,3 +42,7 @@ if(NOT WIN32)
     target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
     add_dependencies(xrpl.tests xrpl.test.net)
 endif()
+
+xrpl_add_test(nodestore)
+target_link_libraries(xrpl.test.nodestore PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.nodestore)

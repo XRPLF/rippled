@@ -7,15 +7,22 @@
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
 
+#include <boost/asio/post.hpp>
+#include <boost/asio/thread_pool.hpp>
 #include <boost/filesystem.hpp>
 
 #include <nudb/nudb.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
+#include <latch>
 #include <memory>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 namespace xrpl {
 namespace NodeStore {
@@ -23,21 +30,6 @@ namespace NodeStore {
 class NuDBBackend : public Backend
 {
 public:
-    // "appnum" is an application-defined constant stored in the header of a
-    // NuDB database. We used it to identify shard databases before that code
-    // was removed. For now, its only use is a sanity check that the database
-    // was created by xrpld.
-    static constexpr std::uint64_t appnum = 1;
-
-    beast::Journal const j_;
-    size_t const keyBytes_;
-    std::size_t const burstSize_;
-    std::string const name_;
-    std::size_t const blockSize_;
-    nudb::store db_;
-    std::atomic<bool> deletePath_;
-    Scheduler& scheduler_;
-
     NuDBBackend(
         size_t keyBytes,
         Section const& keyValues,
@@ -51,6 +43,7 @@ public:
         , blockSize_(parseBlockSize(name_, keyValues, journal))
         , deletePath_(false)
         , scheduler_(scheduler)
+        , threadPool_(numHardwareThreads)
     {
         if (name_.empty())
             Throw<std::runtime_error>("nodestore: Missing path in NuDB backend");
@@ -71,6 +64,7 @@ public:
         , db_(context)
         , deletePath_(false)
         , scheduler_(scheduler)
+        , threadPool_(numHardwareThreads)
     {
         if (name_.empty())
             Throw<std::runtime_error>("nodestore: Missing path in NuDB backend");
@@ -80,7 +74,32 @@ public:
     {
         try
         {
-            // close can throw and we don't want the destructor to throw.
+            // Set shutdown flag to prevent new batch operations from starting. This must happen
+            // before stop() is called to ensure fetchBatch/storeBatch check the flag before posting
+            // any new tasks.
+            shutdown_.store(true, std::memory_order_release);
+
+            // Wait for all active operations to complete.
+            while (pendingReads_.load(std::memory_order_acquire) > 0 ||
+                   pendingWrites_.load(std::memory_order_acquire) > 0)
+            {
+                std::this_thread::yield();
+            }
+
+            // Signal the thread pool to stop accepting new work. This ensures no new tasks will be
+            // posted after this point.
+            threadPool_.stop();
+
+            // Wait for all currently executing thread pool tasks to complete. This prevents worker
+            // threads from accessing the database after close().
+            threadPool_.join();
+
+            // Verify all writes have completed.
+            XRPL_ASSERT(
+                pendingWrites_.load() == 0, "xrpl::NuDBBackend::~NuDBBackend : pendingWrites == 0");
+
+            // Close the database. At this point, all threads have stopped and no pending reads and
+            // writes remain, so it's safe to close the database.
             close();
         }
         catch (nudb::system_error const&)  // NOLINT(bugprone-empty-catch)
@@ -109,9 +128,7 @@ public:
         if (db_.is_open())
         {
             // LCOV_EXCL_START
-            UNREACHABLE(
-                "xrpl::NodeStore::NuDBBackend::open : database is already "
-                "open");
+            UNREACHABLE("xrpl::NodeStore::NuDBBackend::open : database is already open");
             JLOG(j_.error()) << "database is already open";
             return;
             // LCOV_EXCL_STOP
@@ -127,16 +144,24 @@ public:
             nudb::create<nudb::xxhasher>(
                 dp, kp, lp, appType, uid, salt, keyBytes_, blockSize_, 0.50, ec);
             if (ec == nudb::errc::file_exists)
+            {
                 ec = {};
+            }
             if (ec)
+            {
                 Throw<nudb::system_error>(ec);
+            }
         }
         db_.open(dp, kp, lp, ec);
         if (ec)
+        {
             Throw<nudb::system_error>(ec);
+        }
 
         if (db_.appnum() != appnum)
+        {
             Throw<std::runtime_error>("nodestore: unknown appnum");
+        }
         db_.set_burst(burstSize_);
     }
 
@@ -181,9 +206,22 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
+        // Increment pending reads counter on entry, decrement on exit. This ensures the destructor
+        // waits for this operation to complete.
+        ++pendingReads_;
+        auto guard = [this](void*) { --pendingReads_; };
+        std::unique_ptr<void, decltype(guard)> const opGuard(reinterpret_cast<void*>(1), guard);
+
+        // Check if we're shutting down. If so, return immediately instead of doing any work.
+        if (shutdown_.load(std::memory_order_acquire))
+        {
+            return backendError;
+        }
+
         Status status = ok;
         pno->reset();
         nudb::error_code ec;
+
         db_.fetch(
             hash.data(),
             [&hash, pno, &status](void const* data, std::size_t size) {
@@ -199,30 +237,119 @@ public:
                 status = ok;
             },
             ec);
+
         if (ec == nudb::error::key_not_found)
+        {
             return notFound;
+        }
         if (ec)
+        {
             Throw<nudb::system_error>(ec);
+        }
         return status;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
     fetchBatch(std::vector<uint256> const& hashes) override
     {
-        std::vector<std::shared_ptr<NodeObject>> results;
-        results.reserve(hashes.size());
-        for (auto const& h : hashes)
+        if (hashes.empty())
         {
-            std::shared_ptr<NodeObject> nObj;
-            Status const status = fetch(h, &nObj);
-            if (status != ok)
+            return {{}, ok};
+        }
+
+        // Increment pending reads counter on entry, decrement on exit. This ensures the destructor
+        // waits for this operation to complete.
+        pendingReads_ += hashes.size();
+        auto guard = [this, &hashes](void*) { pendingReads_ -= hashes.size(); };
+        std::unique_ptr<void, decltype(guard)> const opGuard(reinterpret_cast<void*>(1), guard);
+
+        // Check if we're shutting down. If so, return immediately instead of doing any work.
+        if (shutdown_.load(std::memory_order_acquire))
+        {
+            return {{}, backendError};
+        }
+
+        std::vector<std::shared_ptr<NodeObject>> results(hashes.size());
+
+        // Calculate parallelization parameters for the batch.
+        auto const [numThreads, numItems] =
+            Backend::calculateBatchParallelism(hashes.size(), numHardwareThreads);
+
+        // If we need only one thread, just do it sequentially. Although it should be impossible to
+        // get 0 threads here, handle it gracefully just in case.
+        if (numThreads <= 1u)
+        {
+            for (size_t i = 0; i < hashes.size(); ++i)
             {
-                results.push_back({});
+                std::shared_ptr<NodeObject> nObj;
+                if (fetch(hashes[i], &nObj) == ok)
+                {
+                    results[i] = nObj;
+                }
             }
-            else
+            return {results, ok};
+        }
+
+        // Use a latch to synchronize task completion.
+        std::latch taskCompletion(numThreads);
+
+        // Track exceptions from worker threads.
+        std::exception_ptr eptr;
+        std::mutex emutex;
+
+        // Submit fetch tasks to the thread pool.
+        for (auto t = 0u; t < numThreads; ++t)
+        {
+            auto const startIdx = t * numItems;
+            XRPL_ASSERT(
+                startIdx < hashes.size(),
+                "xrpl::NuDBFactory::fetchBatch : startIdx < hashes.size()");
+            if (startIdx >= hashes.size())
             {
-                results.push_back(nObj);
+                // This should never happen, but is kept as a safety check.
+                taskCompletion.count_down();
+                continue;
             }
+            auto const endIdx = std::min<std::size_t>(startIdx + numItems, hashes.size());
+
+            auto task =
+                [this, &hashes, &results, &taskCompletion, &eptr, &emutex, startIdx, endIdx]() {
+                    try
+                    {
+                        // Fetch the items assigned to this task.
+                        for (size_t i = startIdx; i < endIdx; ++i)
+                        {
+                            std::shared_ptr<NodeObject> nObj;
+                            if (fetch(hashes[i], &nObj) == ok)
+                            {
+                                results[i] = nObj;
+                            }
+                        }
+                    }
+                    catch (...)
+                    {
+                        // Store the first exception that occurs. Ensures count_down() is always
+                        // called to prevent deadlock.
+                        std::lock_guard<std::mutex> const lock(emutex);
+                        if (!eptr)
+                        {
+                            eptr = std::current_exception();
+                        }
+                    }
+                    // Signal task completion.
+                    taskCompletion.count_down();
+                };
+
+            boost::asio::post(threadPool_, std::move(task));
+        }
+
+        // Wait for all fetch tasks to complete.
+        taskCompletion.wait();
+
+        // Rethrow the first exception if one occurred.
+        if (eptr)
+        {
+            std::rethrow_exception(eptr);
         }
 
         return {results, ok};
@@ -232,21 +359,39 @@ public:
     do_insert(std::shared_ptr<NodeObject> const& no)
     {
         EncodedBlob const e(no);
-        nudb::error_code ec;
+
         nudb::detail::buffer bf;
         auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);
+
+        nudb::error_code ec;
         db_.insert(e.getKey(), result.first, result.second, ec);
         if (ec && ec != nudb::error::key_exists)
+        {
             Throw<nudb::system_error>(ec);
+        }
     }
 
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
+        // Increment pending writes counter on entry, decrement on exit. This ensures the destructor
+        // waits for this operation to complete.
+        ++pendingWrites_;
+        auto guard = [this](void*) { --pendingWrites_; };
+        std::unique_ptr<void, decltype(guard)> const opGuard(reinterpret_cast<void*>(1), guard);
+
+        // Check if we're shutting down. If so, return immediately instead of doing any work.
+        if (shutdown_.load(std::memory_order_acquire))
+        {
+            return;
+        }
+
         BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
+
         do_insert(no);
+
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
         scheduler_.onBatchWrite(report);
@@ -255,11 +400,127 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
+        if (batch.empty())
+        {
+            return;
+        }
+
+        // Increment pending writes counter on entry, decrement on exit. This ensures the destructor
+        // waits for this operation to complete.
+        pendingWrites_ += batch.size();
+        auto guard = [this, &batch](void*) { pendingWrites_ -= batch.size(); };
+        std::unique_ptr<void, decltype(guard)> const opGuard(reinterpret_cast<void*>(1), guard);
+
+        // Check if we're shutting down. If so, return immediately instead of doing any work.
+        if (shutdown_.load(std::memory_order_acquire))
+        {
+            return;
+        }
+
         BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
-        for (auto const& e : batch)
-            do_insert(e);
+
+        // Calculate parallelization parameters for the batch.
+        auto const [numThreads, numItems] =
+            Backend::calculateBatchParallelism(batch.size(), numHardwareThreads);
+
+        // If we need only one thread, just do it sequentially. Although it should be impossible to
+        // get 0 threads here, handle it gracefully just in case.
+        if (numThreads <= 1u)
+        {
+            for (auto const& e : batch)
+            {
+                do_insert(e);
+            }
+
+            report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::steady_clock::now() - start);
+            scheduler_.onBatchWrite(report);
+            return;
+        }
+
+        // Helper struct that stores actual item data, not pointers, to avoid dangling references
+        // after EncodedBlob and buffer go out of scope in the thread.
+        struct CompressedData
+        {
+            std::vector<std::uint8_t> key;
+            std::vector<std::uint8_t> data;
+            std::exception_ptr eptr;
+        };
+        std::vector<CompressedData> compressed(batch.size());
+
+        // Use a latch to synchronize task completion.
+        std::latch taskCompletion(numThreads);
+
+        // Submit compression tasks to the thread pool.
+        for (auto t = 0u; t < numThreads; ++t)
+        {
+            auto const startIdx = t * numItems;
+            XRPL_ASSERT(
+                startIdx < batch.size(), "xrpl::NuDBFactory::storeBatch : startIdx < batch.size()");
+            if (startIdx >= batch.size())
+            {
+                // This should never happen, but is kept as a safety check.
+                taskCompletion.count_down();
+                continue;
+            }
+            auto const endIdx = std::min<std::size_t>(startIdx + numItems, batch.size());
+
+            auto task =
+                [&batch, &compressed, &taskCompletion, startIdx, endIdx, keyBytes = keyBytes_]() {
+                    // Compress the items assigned to this task.
+                    for (size_t i = startIdx; i < endIdx; ++i)
+                    {
+                        auto& item = compressed[i];
+                        try
+                        {
+                            EncodedBlob const e(batch[i]);
+
+                            // Copy the key data to avoid dangling pointer.
+                            auto const* keyPtr = static_cast<std::uint8_t const*>(e.getKey());
+                            item.key.assign(keyPtr, keyPtr + keyBytes);
+
+                            // Compress and copy the data to avoid dangling pointer.
+                            nudb::detail::buffer bf;
+                            auto const comp = nodeobject_compress(e.getData(), e.getSize(), bf);
+                            auto const* dataPtr = static_cast<std::uint8_t const*>(comp.first);
+                            item.data.assign(dataPtr, dataPtr + comp.second);
+                        }
+                        catch (...)
+                        {
+                            // Store the exception so it can be rethrown in the sequential phase
+                            // below.
+                            item.eptr = std::current_exception();
+                        }
+                    }
+                    // Signal task completion.
+                    taskCompletion.count_down();
+                };
+
+            boost::asio::post(threadPool_, std::move(task));
+        }
+
+        // Wait for all compression tasks to complete.
+        taskCompletion.wait();
+
+        // Insert the compressed data sequentially, since NuDB is designed as an append-only data
+        // store that limits concurrent writes.
+        for (auto const& item : compressed)
+        {
+            if (item.eptr)
+            {
+                std::rethrow_exception(item.eptr);
+            }
+
+            nudb::error_code ec;
+            db_.insert(item.key.data(), item.data.data(), item.data.size(), ec);
+            if (ec && ec != nudb::error::key_exists)
+            {
+                Throw<nudb::system_error>(ec);
+            }
+        }
+
         report.elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
             std::chrono::steady_clock::now() - start);
         scheduler_.onBatchWrite(report);
@@ -276,7 +537,7 @@ public:
         auto const dp = db_.dat_path();
         auto const kp = db_.key_path();
         auto const lp = db_.log_path();
-        // auto const appnum = db_.appnum();
+
         nudb::error_code ec;
         db_.close(ec);
         if (ec)
@@ -310,7 +571,7 @@ public:
     int
     getWriteLoad() override
     {
-        return 0;
+        return pendingWrites_.load();
     }
 
     void
@@ -385,6 +646,28 @@ private:
             Throw<std::runtime_error>(s.str());
         }
     }
+
+    // "appnum" is an application-defined constant stored in the header of a
+    // NuDB database. We used it to identify shard databases before that code
+    // was removed. For now, its only use is a sanity check that the database
+    // was created by xrpld.
+    static constexpr std::uint64_t appnum = 1;
+
+    beast::Journal const j_;
+    size_t const keyBytes_;
+    std::size_t const burstSize_;
+    std::string const name_;
+    std::size_t const blockSize_;
+    nudb::store db_;
+    std::atomic<bool> deletePath_;
+    Scheduler& scheduler_;
+    std::atomic<size_t> pendingReads_{
+        0};  // Declare before threadPool_ to ensure it's destroyed after.
+    std::atomic<size_t> pendingWrites_{
+        0};  // Declare before threadPool_ to ensure it's destroyed after.
+    std::atomic<bool> shutdown_{
+        false};  // Declare before threadPool_ to ensure it's destroyed after.
+    boost::asio::thread_pool threadPool_;  // Declare after db_ to ensure it's destroyed before.
 };
 
 //------------------------------------------------------------------------------
