@@ -20,7 +20,7 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
@@ -31,6 +31,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -38,6 +39,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <map>
+#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
