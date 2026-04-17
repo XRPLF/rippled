@@ -25,7 +25,7 @@ allFeatures()
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
-        for (auto const& [name, [[maybe_unused]] _] : sa)
+        for ([[maybe_unused]] auto const& [name, _] : sa)
         {
             if (auto const f = getRegisteredFeature(name); f.has_value())
                 feats.push_back(*f);
