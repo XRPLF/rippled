@@ -281,7 +281,7 @@ public:
 
         double const minVD = static_cast<double>(minVMantissa);
         double const maxVD =
-            expDiff ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
+            (expDiff != 0) ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
 
         // maxVD and minVD are scaled so they have the same exponents. Dividing
         // cancels out the exponents, so we only need to deal with the (scaled)

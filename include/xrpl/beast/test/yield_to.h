@@ -44,7 +44,7 @@ public:
         : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
-        while (concurrency--)
+        while ((concurrency--) != 0u)
             threads_.emplace_back([&] { ios_.run(); });
     }
 

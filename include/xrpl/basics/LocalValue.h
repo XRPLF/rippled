@@ -42,10 +42,10 @@ struct LocalValues
     // Keys are the address of a LocalValue.
     std::unordered_map<void const*, std::unique_ptr<BasicValue>> values;
 
-    static inline void
+    static void
     cleanup(LocalValues* lvs)
     {
-        if (lvs && !lvs->onCoro)
+        if ((lvs != nullptr) && !lvs->onCoro)
             delete lvs;
     }
 };
@@ -89,7 +89,7 @@ T&
 LocalValue<T>::operator*()
 {
     auto lvs = detail::getLocalValues().get();
-    if (!lvs)
+    if (lvs == nullptr)
     {
         lvs = new detail::LocalValues();
         lvs->onCoro = false;

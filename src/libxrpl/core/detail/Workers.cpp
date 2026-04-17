@@ -1,6 +1,11 @@
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/core/PerfLog.h>
 #include <xrpl/core/detail/Workers.h>
+
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/core/LockFreeStack.h>
+#include <xrpl/core/PerfLog.h>
+
+#include <mutex>
+#include <string>
 
 namespace xrpl {
 

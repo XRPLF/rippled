@@ -1,21 +1,48 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
 
-#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/system/detail/errc.hpp>
 
-#include <nudb/nudb.hpp>
+#include <nudb/context.hpp>
+#include <nudb/create.hpp>  // IWYU pragma: keep
+#include <nudb/detail/buffer.hpp>
+#include <nudb/error.hpp>
+#include <nudb/file.hpp>
+#include <nudb/progress.hpp>
+#include <nudb/store.hpp>
+#include <nudb/verify.hpp>  // IWYU pragma: keep
+#include <nudb/visit.hpp>   // IWYU pragma: keep
+#include <nudb/xxhasher.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace NodeStore {

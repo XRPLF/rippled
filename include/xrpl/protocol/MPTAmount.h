@@ -109,7 +109,9 @@ operator bool() const noexcept
 constexpr int
 MPTAmount::signum() const noexcept
 {
-    return (value_ < 0) ? -1 : (value_ ? 1 : 0);
+    if (value_ < 0)
+        return -1;
+    return (value_ != 0) ? 1 : 0;
 }
 
 /** Returns the underlying value. Code SHOULD NOT call this
@@ -141,7 +143,7 @@ mulRatio(MPTAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
 {
     using namespace boost::multiprecision;
 
-    if (!den)
+    if (den == 0u)
         Throw<std::runtime_error>("division by zero");
 
     int128_t const amt128(amt.value());

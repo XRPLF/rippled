@@ -1,7 +1,19 @@
 #include <xrpld/app/ledger/LocalTxs.h>
 
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <list>
+#include <memory>
+#include <mutex>
 
 /*
  This code prevents scenarios like the following:

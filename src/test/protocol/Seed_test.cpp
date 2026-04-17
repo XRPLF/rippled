@@ -1,11 +1,18 @@
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 
 namespace xrpl {
 

@@ -1,5 +1,13 @@
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 
+#include <xrpld/peerfinder/detail/Source.h>
+
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <memory>
+#include <string>
+
 namespace xrpl {
 namespace PeerFinder {
 
