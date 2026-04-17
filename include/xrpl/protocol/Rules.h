@@ -44,7 +44,7 @@ isFeatureEnabled(uint256 const& feature, bool resultIfNoRules);
  * Returns false if no global Rules object is available. i.e. Outside of
  * a Transactor context
  */
-bool
+inline bool
 isFeatureEnabled(uint256 const& feature)
 {
     return isFeatureEnabled(feature, false);
