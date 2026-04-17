@@ -1,5 +1,6 @@
 #pragma once
 
+#include <test/csf/Digraph.h>
 #include <test/csf/random.h>
 
 #include <boost/container/flat_set.hpp>

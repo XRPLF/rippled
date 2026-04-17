@@ -85,10 +85,10 @@ public:
     }
 };
 
-inline bool
+bool
 operator==(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
-inline bool
+bool
 operator!=(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
 //------------------------------------------------------------------------------

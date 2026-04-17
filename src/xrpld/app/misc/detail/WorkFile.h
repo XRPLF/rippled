@@ -59,9 +59,12 @@ inline void
 WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
-        return boost::asio::post(
+    {
+        boost::asio::post(
             ios_,
             boost::asio::bind_executor(strand_, std::bind(&WorkFile::run, shared_from_this())));
+        return;
+    }
 
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));

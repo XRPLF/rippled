@@ -1,10 +1,26 @@
+#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 

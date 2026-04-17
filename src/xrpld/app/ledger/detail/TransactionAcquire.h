@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/shamap/SHAMap.h>

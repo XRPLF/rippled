@@ -350,8 +350,10 @@ bool
 token_in_list(boost::string_ref const& value, boost::string_ref const& token)
 {
     for (auto const& item : make_list(value))
+    {
         if (ci_equal(item, token))
             return true;
+    }
     return false;
 }
 
@@ -360,8 +362,10 @@ bool
 is_keep_alive(boost::beast::http::message<isRequest, Body, Fields> const& m)
 {
     if (m.version() <= 10)
+    {
         return boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists(
             "keep-alive");
+    }
     return !boost::beast::http::token_list{m[boost::beast::http::field::connection]}.exists(
         "close");
 }
