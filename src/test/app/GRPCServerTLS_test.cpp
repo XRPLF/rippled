@@ -306,7 +306,7 @@ public:
     }
 
 private:
-    void
+    static void
     writeFile(std::filesystem::path const& path, std::string_view content)
     {
         std::ofstream file(path);

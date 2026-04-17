@@ -668,9 +668,13 @@ GRPCServerImpl::start()
 
     std::string tlsMode = "without TLS";
     if (mtlsEnabled)
+    {
         tlsMode = "with mutual TLS (mTLS)";
+    }
     else if (tlsEnabled)
+    {
         tlsMode = "with TLS";
+    }
 
     JLOG(journal_.info()) << "Starting gRPC server at " << serverAddress_ << " "
                           << tlsMode;  // LCOV_EXCL_LINE
@@ -703,7 +707,7 @@ GRPCServerImpl::start()
     server_ = builder.BuildAndStart();
     serverPort_ = static_cast<std::uint16_t>(port);
 
-    if (serverPort_)
+    if (serverPort_ != 0u)
     {
         JLOG(journal_.info()) << "gRPC server started successfully on port " << serverPort_;
     }
