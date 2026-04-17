@@ -105,6 +105,9 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     auto const regularPayment =
         roundPeriodicPayment(asset, loanSle->at(sfPeriodicPayment), scale) +
         loanSle->at(sfLoanServiceFee);
+    if (view.rules().enabled(fixSecurity3_1_3) &&
+        amount >= regularPayment * loanMaximumPaymentsPerTransaction)
+        return loanMaximumPaymentsPerTransaction * normalCost;
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
