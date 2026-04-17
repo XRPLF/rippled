@@ -11,7 +11,7 @@ namespace xrpl {
 class TimeKeeper : public beast::abstract_clock<NetClock>
 {
 private:
-    std::atomic<std::chrono::seconds> closeOffset_{};
+    std::atomic<std::chrono::seconds> closeOffset_;
 
     // Adjust system_clock::time_point for NetClock epoch
     static constexpr time_point

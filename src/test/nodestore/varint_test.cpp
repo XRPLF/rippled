@@ -1,7 +1,9 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/detail/varint.h>
 
 #include <array>
+#include <cstddef>
+#include <cstdint>
 #include <vector>
 
 namespace xrpl {

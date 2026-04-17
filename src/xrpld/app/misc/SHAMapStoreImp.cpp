@@ -1,16 +1,45 @@
-#include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
+
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 void
@@ -601,7 +630,7 @@ SHAMapStoreImp::healthWait()
     {
         // this value shouldn't change, so grab it while we have the
         // lock
-        auto const lastGood = lastGoodValidatedLedger_;
+        auto const lowerBound = lastGoodValidatedLedger_;
 
         lock.unlock();
 
@@ -610,13 +639,14 @@ SHAMapStoreImp::healthWait()
         JLOG(stream) << "Waiting " << recoveryWaitTime_.count()
                      << "s for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age " << age.count()
-                     << "s. Missing ledgers: " << numMissing << ". Expect: " << lastGood << "-"
+                     << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
         std::this_thread::sleep_for(recoveryWaitTime_);
         index = ledgerMaster_->getValidLedgerIndex();
         age = ledgerMaster_->getValidatedLedgerAge();
         mode = netOPs_->getOperatingMode();
-        numMissing = ledgerMaster_->missingFromCompleteLedgerRange(lastGood, index);
+        numMissing =
+            lowerBound == 0 ? 0 : ledgerMaster_->missingFromCompleteLedgerRange(lowerBound, index);
 
         lock.lock();
     }

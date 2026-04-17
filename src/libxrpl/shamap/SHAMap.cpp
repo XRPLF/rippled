@@ -1,12 +1,42 @@
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/shamap/SHAMap.h>
+
+#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/shamap/Family.h>
 #include <xrpl/shamap/SHAMapAccountStateLeafNode.h>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapLeafNode.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/SHAMapTxLeafNode.h>
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <stack>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
