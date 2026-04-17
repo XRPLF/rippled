@@ -1,6 +1,13 @@
 #include <xrpld/rpc/Status.h>
 
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
+
 #include <sstream>
+#include <string>
 
 namespace xrpl {
 namespace RPC {

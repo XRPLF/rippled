@@ -134,10 +134,12 @@ void
 WorkBase<Impl>::run()
 {
     if (!strand_.running_in_this_thread())
+    {
         return boost::asio::post(
             ios_,
             boost::asio::bind_executor(
                 strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
+    }
 
     resolver_.async_resolve(
         host_,

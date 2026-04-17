@@ -183,7 +183,7 @@ operator==(Slice const& lhs, Slice const& rhs) noexcept
     if (lhs.size() != rhs.size())
         return false;
 
-    if (lhs.size() == 0)
+    if (lhs.empty())
         return true;
 
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;

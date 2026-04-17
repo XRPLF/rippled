@@ -24,7 +24,8 @@ public:
     Buffer() = default;
 
     /** Create an uninitialized buffer with the given size. */
-    explicit Buffer(std::size_t size) : p_(size ? new std::uint8_t[size] : nullptr), size_(size)
+    explicit Buffer(std::size_t size)
+        : p_((size != 0u) ? new std::uint8_t[size] : nullptr), size_(size)
     {
     }
 
@@ -36,7 +37,7 @@ public:
     */
     Buffer(void const* data, std::size_t size) : Buffer(size)
     {
-        if (size)
+        if (size != 0u)
             std::memcpy(p_.get(), data, size);
     }
 
@@ -114,7 +115,7 @@ public:
 
     operator Slice() const noexcept
     {
-        if (!size_)
+        if (size_ == 0u)
             return Slice{};
         return Slice{p_.get(), size_};
     }
@@ -155,7 +156,7 @@ public:
     {
         if (n != size_)
         {
-            p_.reset(n ? new std::uint8_t[n] : nullptr);
+            p_.reset((n != 0u) ? new std::uint8_t[n] : nullptr);
             size_ = n;
         }
         return p_.get();
@@ -199,7 +200,7 @@ operator==(Buffer const& lhs, Buffer const& rhs) noexcept
     if (lhs.size() != rhs.size())
         return false;
 
-    if (lhs.size() == 0)
+    if (lhs.empty())
         return true;
 
     return std::memcmp(lhs.data(), rhs.data(), lhs.size()) == 0;

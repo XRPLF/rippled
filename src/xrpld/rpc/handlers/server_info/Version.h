@@ -13,14 +13,14 @@ public:
     {
     }
 
-    Status
+    static Status
     check()
     {
         return Status::OK;
     }
 
     void
-    writeResult(Json::Value& obj)
+    writeResult(Json::Value& obj) const
     {
         setVersion(obj, apiVersion_, betaEnabled_);
     }

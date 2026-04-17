@@ -30,8 +30,10 @@ public:
             registerSSLCerts(ssl_context_, ec, j_);
 
             if (ec && sslVerifyDir.empty())
+            {
                 Throw<std::runtime_error>(boost::str(
                     boost::format("Failed to set_default_verify_paths: %s") % ec.message()));
+            }
         }
         else
         {
@@ -43,8 +45,10 @@ public:
             ssl_context_.add_verify_path(sslVerifyDir, ec);
 
             if (ec)
+            {
                 Throw<std::runtime_error>(
                     boost::str(boost::format("Failed to add verify path: %s") % ec.message()));
+            }
         }
     }
 
