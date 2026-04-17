@@ -7121,6 +7121,9 @@ protected:
 
         // --- RETRIEVE OBJECTS & SETUP ATTACK ---
 
+        auto borrowerBalance = [&]() { return env.balance(borrower, iou); };
+        auto const borrowerScale = static_cast<STAmount const&>(borrowerBalance()).exponent();
+
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, currentSeq);
         auto const [periodicPayment, loanScale] = [&]() {
             auto const loanSle = env.le(loanKeylet);
@@ -7128,7 +7131,7 @@ protected:
             return std::make_tuple(
                 STAmount{iou, loanSle->at(sfPeriodicPayment)}, loanSle->at(sfLoanScale));
         }();
-        auto const roundedPayment = roundToScale(periodicPayment, loanScale, Number::upward);
+        auto const roundedPayment = roundToScale(periodicPayment, borrowerScale, Number::upward);
 
         // ATTACK: Add dust buffer (1e-9) to force 'excess' logic execution
         STAmount const paymentBuffer{iou, Number(1, -9)};
@@ -7140,21 +7143,20 @@ protected:
         int yieldTheftCount = 0;
         auto previousAssetsTotal = initialVaultAssets;
 
-        auto borrowerBalance = [&]() { return env.balance(borrower, iou); };
-
         for (int i = 0; i < 100; ++i)
         {
             auto const balanceBefore = borrowerBalance();
             env(pay(borrower, loanKeylet.key, attackPayment, flags));
             env.close();
-            auto const borrowerDelta = borrowerBalance() - balanceBefore;
+            auto const borrowerDelta = balanceBefore - borrowerBalance();
+            BEAST_EXPECT(borrowerDelta.signum() == roundedPayment.signum());
 
             auto const loanSle = env.le(loanKeylet);
             if (!BEAST_EXPECT(loanSle))
                 break;
             auto const updatedPayment = STAmount{iou, loanSle->at(sfPeriodicPayment)};
             BEAST_EXPECT(
-                (roundToScale(updatedPayment, loanScale, Number::upward) == roundedPayment));
+                (roundToScale(updatedPayment, borrowerScale, Number::upward) == roundedPayment));
             BEAST_EXPECT(
                 (updatedPayment == periodicPayment) ||
                 (flags == tfLoanOverpayment && i >= 2 && updatedPayment < periodicPayment));
