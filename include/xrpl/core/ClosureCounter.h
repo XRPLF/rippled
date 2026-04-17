@@ -34,9 +34,9 @@ template <typename Ret_t, typename... Args_t>
 class ClosureCounter
 {
 private:
-    std::mutex mutable mutex_{};
-    std::condition_variable allClosuresDoneCond_{};  // guard with mutex_
-    bool waitForClosures_{false};                    // guard with mutex_
+    std::mutex mutable mutex_;
+    std::condition_variable allClosuresDoneCond_;  // guard with mutex_
+    bool waitForClosures_{false};                  // guard with mutex_
     std::atomic<int> closureCount_{0};
 
     // Increment the count.

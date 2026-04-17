@@ -62,8 +62,8 @@ struct Peer
             return proposal_.getJson();
         }
 
-        std::string
-        render() const
+        static std::string
+        render()
         {
             return "";
         }
@@ -295,9 +295,13 @@ struct Peer
         using namespace std::chrono_literals;
 
         if (when == 0ns)
+        {
             what();
+        }
         else
+        {
             scheduler.in(when, std::forward<T>(what));
+        }
     }
 
     // Issue a new event to the collectors
@@ -340,8 +344,10 @@ struct Peer
     trusts(PeerID const& oId)
     {
         for (auto const p : trustGraph.trustedPeers(this))
+        {
             if (p->id == oId)
                 return true;
+        }
         return false;
     }
 
@@ -774,7 +780,7 @@ struct Peer
     {
         // Ignore and suppress relay of transactions already in last ledger
         TxSetType const& lastClosedTxs = lastClosedLedger.txs();
-        if (lastClosedTxs.find(tx) != lastClosedTxs.end())
+        if (lastClosedTxs.contains(tx))
             return false;
 
         // only relay if it was new to our open ledger
@@ -830,8 +836,8 @@ struct Peer
     {
     }
 
-    bool
-    validating() const
+    static bool
+    validating()
     {
         // does not matter
         return false;

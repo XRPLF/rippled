@@ -93,9 +93,13 @@ public:
         if (auto ec = toErrorCode())
         {
             if (messages_.empty())
+            {
                 inject_error(ec, object);
+            }
             else
+            {
                 inject_error(ec, message(), object);
+            }
         }
     }
 

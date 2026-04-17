@@ -383,7 +383,7 @@ class LedgerTrie
     Node*
     findByLedgerID(Ledger const& ledger, Node* parent = nullptr) const
     {
-        if (!parent)
+        if (parent == nullptr)
             parent = root.get();
         if (ledger.id() == parent->span.tip().id)
             return parent;
@@ -513,7 +513,7 @@ public:
     {
         Node* loc = findByLedgerID(ledger);
         // Must be exact match with tip support
-        if (!loc || loc->tipSupport == 0)
+        if ((loc == nullptr) || loc->tipSupport == 0)
             return false;
 
         // found our node, remove it
@@ -553,7 +553,9 @@ public:
                 parent->erase(loc);
             }
             else
+            {
                 break;
+            }
             loc = parent;
         }
         return true;
@@ -582,7 +584,7 @@ public:
     branchSupport(Ledger const& ledger) const
     {
         Node const* loc = findByLedgerID(ledger);
-        if (!loc)
+        if (loc == nullptr)
         {
             Seq diffSeq;
             std::tie(loc, diffSeq) = find(ledger);
@@ -692,8 +694,10 @@ public:
                         uncommitted += uncommittedIt->second;
                         uncommittedIt++;
                     }
-                    else  // otherwise we jump to the end of the span
+                    else
+                    {  // otherwise we jump to the end of the span
                         nextSeq = curr->span.end();
+                    }
                 }
                 // We did not consume the entire span, so we have found the
                 // preferred ledger
@@ -736,9 +740,13 @@ public:
             // If the best child has margin exceeding the uncommitted support,
             // continue from that child, otherwise we are done
             if (best && ((margin > uncommitted) || (uncommitted == 0)))
+            {
                 curr = best;
-            else  // current is the best
+            }
+            else
+            {  // current is the best
                 done = true;
+            }
         }
         return curr->span.tip();
     }
@@ -785,7 +793,7 @@ public:
         {
             Node const* curr = nodes.top();
             nodes.pop();
-            if (!curr)
+            if (curr == nullptr)
                 continue;
 
             // Node with 0 tip support must have multiple children

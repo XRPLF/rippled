@@ -98,7 +98,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 
     std::lock_guard const lock(mutex_);
 
-    auto const it = table_.find({nodeId});
+    auto const it = table_.find({.nodeId = nodeId});
     if (it != table_.end())
     {
         previous = *it;
