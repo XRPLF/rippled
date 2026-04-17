@@ -7,7 +7,6 @@
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/Tuning.h>
-#include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/core/Job.h>
@@ -17,6 +16,9 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/InfoSub.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <atomic>
 #include <chrono>
@@ -158,10 +160,10 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
-    XRPL_TRACE_RPC(context.app.getTelemetry(), "rpc.command." + name);
-    XRPL_TRACE_SET_ATTR("xrpl.rpc.command", name.c_str());
-    XRPL_TRACE_SET_ATTR("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));
-    XRPL_TRACE_SET_ATTR("xrpl.rpc.role", (context.role == Role::ADMIN ? "admin" : "user"));
+    auto span = telemetry::SpanGuard::rpcSpan("rpc.command." + name);
+    span.setAttribute("xrpl.rpc.command", name.c_str());
+    span.setAttribute("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));
+    span.setAttribute("xrpl.rpc.role", (context.role == Role::ADMIN ? "admin" : "user"));
 
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
@@ -178,15 +180,15 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
-        XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "success");
+        span.setAttribute("xrpl.rpc.status", "success");
         return ret;
     }
     catch (std::exception& e)
     {
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
-        XRPL_TRACE_EXCEPTION(e);
-        XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");
+        span.recordException(e);
+        span.setAttribute("xrpl.rpc.status", "error");
 
         if (context.loadType == Resource::feeReferenceRPC)
             context.loadType = Resource::feeExceptionRPC;

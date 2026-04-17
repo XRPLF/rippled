@@ -119,7 +119,7 @@ endif()
 
 # OpenTelemetry distributed tracing (optional).
 # When ON, links against opentelemetry-cpp and defines XRPL_ENABLE_TELEMETRY
-# so that tracing macros in TracingInstrumentation.h are compiled in.
+# so that SpanGuard factory methods produce real OTel spans.
 # When OFF (default), all tracing code compiles to no-ops with zero overhead.
 # Enable via: conan install -o telemetry=True, or cmake -Dtelemetry=ON.
 option(telemetry "Enable OpenTelemetry tracing" OFF)

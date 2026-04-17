@@ -8,7 +8,6 @@
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 #include <xrpld/rpc/json_body.h>
-#include <xrpld/telemetry/TracingInstrumentation.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
@@ -45,6 +44,7 @@
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/buffer.hpp>
@@ -418,7 +418,7 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     Json::Value const& jv)
 {
-    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.ws_message");
+    auto span = telemetry::SpanGuard::rpcSpan("rpc.ws_message");
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(m_journal))
     {
@@ -502,8 +502,8 @@ ServerHandler::processSession(
         jr[jss::result] = RPC::make_error(rpcINTERNAL);
         JLOG(m_journal.error()) << "Exception while processing WS: " << ex.what() << "\n"
                                 << "Input JSON: " << Json::Compact{Json::Value{jv}};
-        XRPL_TRACE_EXCEPTION(ex);
-        XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");
+        span.recordException(ex);
+        span.setAttribute("xrpl.rpc.status", "error");
         // LCOV_EXCL_STOP
     }
 
@@ -563,7 +563,7 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
-    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.http_request");
+    auto span = telemetry::SpanGuard::rpcSpan("rpc.http_request");
 
     processRequest(
         session->port(),
@@ -615,7 +615,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.process");
+    auto span = telemetry::SpanGuard::rpcSpan("rpc.process");
     auto rpcJ = app_.getJournal("RPC");
 
     Json::Value jsonOrig;
@@ -892,8 +892,8 @@ ServerHandler::processRequest(
             JLOG(m_journal.error())
                 << "Internal error : " << ex.what()
                 << " when processing request: " << Json::Compact{Json::Value{params}};
-            XRPL_TRACE_EXCEPTION(ex);
-            XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");
+            span.recordException(ex);
+            span.setAttribute("xrpl.rpc.status", "error");
             // LCOV_EXCL_STOP
         }
 
