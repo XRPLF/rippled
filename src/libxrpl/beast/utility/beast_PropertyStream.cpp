@@ -1,3 +1,4 @@
+#include <xrpl/beast/core/List.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -15,7 +16,7 @@ namespace beast {
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Item::Item(Source* source) : ListNode(), m_source(source)
+PropertyStream::Item::Item(Source* source) : m_source(source)
 {
 }
 

@@ -1,16 +1,65 @@
 #include <test/jtx/TestHelpers.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/envconfig.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/rate.h>
 #include <test/jtx/trust.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/tx/paths/detail/Steps.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 namespace test {

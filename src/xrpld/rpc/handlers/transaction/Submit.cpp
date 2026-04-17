@@ -1,12 +1,26 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/tx/apply.h>
+
+#include <exception>
+#include <functional>
+#include <memory>
 
 namespace xrpl {
 

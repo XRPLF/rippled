@@ -177,12 +177,12 @@ public:
     }
 
 private:
-    inline void
+    void
     erase(std::false_type)
     {
     }
 
-    inline void
+    void
     erase(std::true_type)
     {
         secure_erase(&h_, sizeof(h_));

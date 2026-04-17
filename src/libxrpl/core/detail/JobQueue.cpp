@@ -1,8 +1,23 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/core/PerfLog.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/LoadEvent.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
+
+#include <algorithm>
+#include <chrono>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <set>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 

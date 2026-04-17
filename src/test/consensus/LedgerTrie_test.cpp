@@ -2,8 +2,10 @@
 
 #include <xrpld/consensus/LedgerTrie.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <cstdint>
+#include <optional>
 #include <random>
 
 namespace xrpl {

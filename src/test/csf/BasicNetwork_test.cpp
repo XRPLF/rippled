@@ -1,7 +1,7 @@
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/Scheduler.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <set>
 #include <vector>

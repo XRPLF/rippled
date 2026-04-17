@@ -221,9 +221,13 @@ operator==(Asset const& lhs, Asset const& rhs)
     return std::visit(
         [&]<typename TLhs, typename TRhs>(TLhs const& issLhs, TRhs const& issRhs) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
+            {
                 return issLhs == issRhs;
+            }
             else
+            {
                 return false;
+            }
         },
         lhs.issue_,
         rhs.issue_);
@@ -235,11 +239,17 @@ operator<=>(Asset const& lhs, Asset const& rhs)
     return std::visit(
         []<ValidIssueType TLhs, ValidIssueType TRhs>(TLhs const& lhs_, TRhs const& rhs_) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
+            {
                 return std::weak_ordering(lhs_ <=> rhs_);
+            }
             else if constexpr (is_issue_v<TLhs> && is_mptissue_v<TRhs>)
+            {
                 return std::weak_ordering::greater;
+            }
             else
+            {
                 return std::weak_ordering::less;
+            }
         },
         lhs.issue_,
         rhs.issue_);
@@ -267,11 +277,17 @@ equalTokens(Asset const& lhs, Asset const& rhs)
     return std::visit(
         [&]<typename TLhs, typename TRhs>(TLhs const& issLhs, TRhs const& issRhs) {
             if constexpr (std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, Issue>)
+            {
                 return issLhs.currency == issRhs.currency;
+            }
             else if constexpr (std::is_same_v<TLhs, MPTIssue> && std::is_same_v<TRhs, MPTIssue>)
+            {
                 return issLhs.getMptID() == issRhs.getMptID();
+            }
             else
+            {
                 return false;
+            }
         },
         lhs.issue_,
         rhs.issue_);
@@ -291,9 +307,6 @@ validJSONAsset(Json::Value const& jv);
 
 Asset
 assetFromJson(Json::Value const& jv);
-
-Json::Value
-to_json(Asset const& asset);
 
 inline bool
 isConsistent(Asset const& asset)

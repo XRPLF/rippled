@@ -1,5 +1,6 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+
+#include <xrpl/basics/contract.h>
 
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
@@ -8,8 +9,9 @@
 
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
-#include <openssl/objects.h>
+#include <openssl/objects.h>  // IWYU pragma: keep
 #include <openssl/ossl_typ.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
