@@ -1353,7 +1353,6 @@ MPTTester::send(MPTConfidentialSend const& arg)
         auto const ctxHash =
             getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
 
-        auto const nRecipients = getConfidentialRecipientCount(auditorAmt.has_value());
         std::vector<ConfidentialRecipient> recipients;
 
         auto const senderPubKey = getPubKey(*arg.account);
@@ -1361,8 +1360,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
         auto const issuerPubKey = getPubKey(issuer_);
 
         // If a key is missing, we skip adding the recipient. This intentionally
-        // causes proof generation to fail (due to recipient count mismatch),
-        // triggering the dummy proof fallback.
+        // causes proof generation to fail, triggering the dummy proof fallback.
         if (senderPubKey)
             recipients.push_back({Slice(*senderPubKey), senderAmt});
         if (destPubKey)
@@ -1610,7 +1608,6 @@ MPTTester::sendJV(
         auto const ctxHash =
             getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
 
-        auto const nRecipients = getConfidentialRecipientCount(auditorAmt.has_value());
         std::vector<ConfidentialRecipient> recipients;
 
         auto const senderPubKey = getPubKey(*arg.account);
