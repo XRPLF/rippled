@@ -142,7 +142,7 @@ issueFromJson(Json::Value const& v)
     }
     auto const issuer = parseBase58<AccountID>(issStr.asString());
 
-    if (!issuer)
+    if (!issuer || *issuer == noAccount() || *issuer == xrpAccount())
     {
         Throw<Json::error>("issueFromJson issuer must be a valid account");
     }
