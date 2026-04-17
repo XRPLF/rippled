@@ -289,7 +289,7 @@ verifyRevealedAmount(
  * @param hasAuditor Whether the issuance has an auditor configured.
  * @return The number of recipients (3 or 4).
  */
-constexpr std::size_t
+constexpr uint8_t
 getConfidentialRecipientCount(bool hasAuditor)
 {
     return hasAuditor ? 4 : 3;

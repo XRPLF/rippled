@@ -101,11 +101,7 @@ makeEcPair(Slice const& buffer)
         return std::nullopt;  // LCOV_EXCL_LINE
 
     auto parsePubKey = [](Slice const& slice, secp256k1_pubkey& out) {
-        return secp256k1_ec_pubkey_parse(
-            secp256k1Context(),
-            &out,
-            reinterpret_cast<unsigned char const*>(slice.data()),
-            slice.length());
+        return secp256k1_ec_pubkey_parse(secp256k1Context(), &out, slice.data(), slice.length());
     };
 
     Slice const s1{buffer.data(), ecGamalEncryptedLength};
@@ -123,13 +119,13 @@ serializeEcPair(EcPair const& pair)
 {
     auto serializePubKey = [](secp256k1_pubkey const& pub, unsigned char* out) {
         size_t outLen = ecGamalEncryptedLength;  // 33 bytes
-        int const ret = secp256k1_ec_pubkey_serialize(
+        auto const ret = secp256k1_ec_pubkey_serialize(
             secp256k1Context(), out, &outLen, &pub, SECP256K1_EC_COMPRESSED);
         return ret == 1 && outLen == ecGamalEncryptedLength;
     };
 
     Buffer buffer(ecGamalEncryptedTotalLength);
-    unsigned char* ptr = buffer.data();
+    auto const ptr = buffer.data();
     bool const res1 = serializePubKey(pair.c1, ptr);
     bool const res2 = serializePubKey(pair.c2, ptr + ecGamalEncryptedLength);
 
@@ -195,7 +191,7 @@ homomorphicSubtract(Slice const& a, Slice const& b)
         return std::nullopt;
 
     EcPair diff{};
-    if (auto res = secp256k1_elgamal_subtract(
+    if (auto const res = secp256k1_elgamal_subtract(
             secp256k1Context(), &diff.c1, &diff.c2, &pairA->c1, &pairA->c2, &pairB->c1, &pairB->c2);
         res != 1)
     {
@@ -268,7 +264,9 @@ verifyRevealedAmount(
         holder.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
         issuer.publicKey.size() != ecPubKeyLength ||
         issuer.encryptedAmount.size() != ecGamalEncryptedTotalLength)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto toParticipant = [](ConfidentialRecipient const& r) {
         mpt_confidential_participant p;
@@ -285,14 +283,18 @@ verifyRevealedAmount(
     {
         if (auditor->publicKey.size() != ecPubKeyLength ||
             auditor->encryptedAmount.size() != ecGamalEncryptedTotalLength)
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
         auditorP = toParticipant(*auditor);
         auditorPtr = &auditorP;
     }
 
     if (mpt_verify_revealed_amount(amount, blindingFactor.data(), &holderP, &issuerP, auditorPtr) !=
         0)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -305,11 +307,15 @@ checkEncryptedAmountFormat(STObject const& object)
     // are present.
     if (!object.isFieldPresent(sfHolderEncryptedAmount) ||
         !object.isFieldPresent(sfIssuerEncryptedAmount))
+    {
         return temMALFORMED;  // LCOV_EXCL_LINE
+    }
 
     if (object[sfHolderEncryptedAmount].length() != ecGamalEncryptedTotalLength ||
         object[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+    {
         return temBAD_CIPHERTEXT;
+    }
 
     bool const hasAuditor = object.isFieldPresent(sfAuditorEncryptedAmount);
     if (hasAuditor && object[sfAuditorEncryptedAmount].length() != ecGamalEncryptedTotalLength)
@@ -317,7 +323,9 @@ checkEncryptedAmountFormat(STObject const& object)
 
     if (!isValidCiphertext(object[sfHolderEncryptedAmount]) ||
         !isValidCiphertext(object[sfIssuerEncryptedAmount]))
+    {
         return temBAD_CIPHERTEXT;
+    }
 
     if (hasAuditor && !isValidCiphertext(object[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
@@ -347,11 +355,15 @@ verifyClawbackProof(
 {
     if (ciphertext.size() != ecGamalEncryptedTotalLength || pubKeySlice.size() != ecPubKeyLength ||
         proof.size() != ecClawbackProofLength)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     if (mpt_verify_clawback_proof(
             proof.data(), amount, pubKeySlice.data(), ciphertext.data(), contextHash.data()) != 0)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -378,7 +390,9 @@ verifySendProof(
         spendingBalance.size() != ecGamalEncryptedTotalLength ||
         amountCommitment.size() != ecPedersenCommitmentLength ||
         balanceCommitment.size() != ecPedersenCommitmentLength)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     auto makeParticipant = [](ConfidentialRecipient const& r) {
         mpt_confidential_participant p;
@@ -395,19 +409,23 @@ verifySendProof(
     {
         if (auditor->publicKey.size() != ecPubKeyLength ||
             auditor->encryptedAmount.size() != ecGamalEncryptedTotalLength)
-            return tecINTERNAL;
+        {
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+        }
         participants[3] = makeParticipant(*auditor);
     }
 
     if (mpt_verify_send_proof(
             proof.data(),
             participants.data(),
-            static_cast<uint8_t>(recipientCount),
+            recipientCount,
             spendingBalance.data(),
             amountCommitment.data(),
             balanceCommitment.data(),
             contextHash.data()) != 0)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }
@@ -424,7 +442,9 @@ verifyConvertBackProof(
     if (proof.size() != ecConvertBackProofLength || pubKeySlice.size() != ecPubKeyLength ||
         spendingBalance.size() != ecGamalEncryptedTotalLength ||
         balanceCommitment.size() != ecPedersenCommitmentLength)
+    {
         return tecINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     if (mpt_verify_convert_back_proof(
             proof.data(),
@@ -433,7 +453,9 @@ verifyConvertBackProof(
             balanceCommitment.data(),
             amount,
             contextHash.data()) != 0)
+    {
         return tecBAD_PROOF;
+    }
 
     return tesSUCCESS;
 }

@@ -567,7 +567,6 @@ public:
         std::uint64_t const amount,
         std::vector<ConfidentialRecipient> const& recipients,
         Slice const& blindingFactor,
-        std::size_t const nRecipients,
         uint256 const& contextHash,
         PedersenProofParams const& amountParams,
         PedersenProofParams const& balanceParams) const;

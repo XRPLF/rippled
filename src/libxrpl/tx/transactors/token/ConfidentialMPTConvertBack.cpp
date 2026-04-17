@@ -164,9 +164,7 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     // holder is trying to convert back, we know for sure this txn should
     // fail
     if ((*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) < amount)
-    {
         return tecINSUFFICIENT_FUNDS;
-    }
 
     // Check lock
     MPTIssue const mptIssue(mptIssuanceID);

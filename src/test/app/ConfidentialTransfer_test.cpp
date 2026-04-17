@@ -3247,7 +3247,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Get the share MPTID from vault
             auto const vaultSle = env.le(vaultKeylet);
             BEAST_EXPECT(vaultSle != nullptr);
-            MPTID share = vaultSle->at(sfShareMPTID);
+            auto const share = vaultSle->at(sfShareMPTID);
 
             // Depositor deposits into vault
             tx = vault.deposit(
@@ -3272,7 +3272,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 view.rawReplace(issuance);
 
                 auto const k = keylet::mptoken(share, depositor.id());
-                auto sle = std::const_pointer_cast<SLE>(view.read(k));
+                auto const sle = std::const_pointer_cast<SLE>(view.read(k));
                 if (!sle)
                     return false;
                 // Inject dummy confidential balance fields
@@ -5368,11 +5368,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                         .err = expectedResult,
                     });
                 else
+                {
                     mptAlice.convert({
                         .account = bob,
                         .amt = amt,
                         .err = expectedResult,
                     });
+                }
 
                 if (expectedResult == tesSUCCESS)
                 {
