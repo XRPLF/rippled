@@ -41,7 +41,7 @@ private:
     unsigned short port_{0};
 
     // Custom headers to return
-    std::map<std::string, std::string> customHeaders_{};
+    std::map<std::string, std::string> customHeaders_;
     std::string responseBody_;
     unsigned int statusCode_{200};
 
