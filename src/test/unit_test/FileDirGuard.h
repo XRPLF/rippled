@@ -30,10 +30,14 @@ protected:
     rmDir(path const& toRm)
     {
         if (is_directory(toRm) && is_empty(toRm))
+        {
             remove(toRm);
+        }
         else
+        {
             test_.log << "Expected " << toRm.string() << " to be an empty existing directory."
                       << std::endl;
+        }
     }
 
 public:
@@ -51,7 +55,9 @@ public:
             rmSubDir_ = true;
         }
         else if (is_directory(subDir_))
+        {
             rmSubDir_ = false;
+        }
         else
         {
             // Cannot run the test. Someone created a file where we want to
@@ -129,8 +135,10 @@ public:
             else
             {
                 if (created_)
+                {
                     test_.log << "Expected " << file_.string() << " to be an existing file."
                               << std::endl;
+                }
             }
         }
         catch (std::exception& e)

@@ -1,11 +1,12 @@
+#include <xrpl/protocol/BuildInfo.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/git/Git.h>
-#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/git/Git.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
 
-#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/stringize.hpp>  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cstdint>

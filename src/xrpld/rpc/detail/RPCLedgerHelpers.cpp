@@ -1,12 +1,30 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
-#include <xrpl/protocol/RPCErr.h>
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Status.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
-#include <boost/algorithm/string/case_conv.hpp>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerShortcut.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/jss.h>
+
+#include <org/xrpl/rpc/v1/ledger.pb.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 namespace RPC {

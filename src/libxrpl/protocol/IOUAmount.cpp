@@ -1,13 +1,10 @@
 #include <xrpl/protocol/IOUAmount.h>
-// Do not remove. Forces IOUAmount.h to stay first, to verify it can compile
-// without any hidden dependencies
+
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/STAmount.h>
-
-#include <boost/multiprecision/cpp_int.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -15,6 +12,7 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace xrpl {

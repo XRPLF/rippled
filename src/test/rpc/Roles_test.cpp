@@ -1,7 +1,11 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/envconfig.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/asio/ip/address.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <string>
 #include <unordered_map>

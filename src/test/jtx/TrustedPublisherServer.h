@@ -54,7 +54,7 @@ class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublis
 
     // Load a signed certificate into the ssl context, and configure
     // the context for use with a server.
-    inline void
+    void
     load_server_certificate()
     {
         sslCtx_.set_password_callback(
@@ -507,9 +507,13 @@ private:
             try
             {
                 if (ssl)
+                {
                     http::read(*ssl_stream, sb, req, ec);
+                }
                 else
+                {
                     http::read(sock, sb, req, ec);
+                }
 
                 if (ec)
                     break;
@@ -525,16 +529,22 @@ private:
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
                     if (path == "/validators2/bad")
+                    {
                         res.body() = "{ 'bad': \"2']";
+                    }
                     else if (path == "/validators2/missing")
+                    {
                         res.body() = "{\"version\": 2}";
+                    }
                     else
                     {
                         int refresh = 5;
                         constexpr char const* refreshPrefix = "/validators2/refresh/";
                         if (boost::starts_with(path, refreshPrefix))
+                        {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(refreshPrefix)));
+                        }
                         res.body() = getList2_(refresh);
                     }
                 }
@@ -543,16 +553,22 @@ private:
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
                     if (path == "/validators/bad")
+                    {
                         res.body() = "{ 'bad': \"1']";
+                    }
                     else if (path == "/validators/missing")
+                    {
                         res.body() = "{\"version\": 1}";
+                    }
                     else
                     {
                         int refresh = 5;
                         constexpr char const* refreshPrefix = "/validators/refresh/";
                         if (boost::starts_with(path, refreshPrefix))
+                        {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(refreshPrefix)));
+                        }
                         res.body() = getList_(refresh);
                     }
                 }
@@ -570,8 +586,10 @@ private:
                     {
                         std::stringstream body;
                         for (auto i = 0; i < 1024; ++i)
+                        {
                             body << static_cast<char>(rand_int<short>(32, 126)),
                                 res.body() = body.str();
+                        }
                     }
                 }
                 else if (boost::starts_with(path, "/sleep/"))
@@ -582,13 +600,21 @@ private:
                 else if (boost::starts_with(path, "/redirect"))
                 {
                     if (boost::ends_with(path, "/301"))
+                    {
                         res.result(http::status::moved_permanently);
+                    }
                     else if (boost::ends_with(path, "/302"))
+                    {
                         res.result(http::status::found);
+                    }
                     else if (boost::ends_with(path, "/307"))
+                    {
                         res.result(http::status::temporary_redirect);
+                    }
                     else if (boost::ends_with(path, "/308"))
+                    {
                         res.result(http::status::permanent_redirect);
+                    }
 
                     std::stringstream location;
                     if (boost::starts_with(path, "/redirect_to/"))
@@ -630,9 +656,13 @@ private:
             }
 
             if (ssl)
+            {
                 write(*ssl_stream, res, ec);
+            }
             else
+            {
                 write(sock, res, ec);
+            }
 
             if (ec || req.need_eof())
                 break;

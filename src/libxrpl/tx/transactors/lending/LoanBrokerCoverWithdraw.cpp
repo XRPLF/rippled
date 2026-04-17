@@ -1,11 +1,20 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverWithdraw.h>
-//
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
-#include <xrpl/tx/transactors/payment/Payment.h>
 
 namespace xrpl {
 

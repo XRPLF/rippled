@@ -1,5 +1,16 @@
 #include <xrpld/rpc/detail/AccountAssets.h>
 
+#include <xrpld/rpc/detail/AssetCache.h>
+#include <xrpld/rpc/detail/TrustLine.h>
+
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <memory>
+
 namespace xrpl {
 
 hash_set<PathAsset>
