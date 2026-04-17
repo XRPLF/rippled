@@ -457,9 +457,9 @@ public:
     void
     testGetServerDefinitions()
     {
-        testcase("getServerDefinitions");
+        testcase("getServerDefinitionsJson");
 
-        auto const& defs = getServerDefinitions();
+        auto const& defs = getServerDefinitionsJson();
         for (auto const& field :
              {jss::ACCOUNT_SET_FLAGS,
               jss::FIELDS,

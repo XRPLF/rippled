@@ -374,7 +374,7 @@ getDefinitions()
 }  // namespace detail
 
 Json::Value const&
-getServerDefinitions()
+getServerDefinitionsJson()
 {
     return detail::getDefinitions().get();
 }
