@@ -89,7 +89,34 @@ namespace telemetry {
 
 class Telemetry
 {
+    /** Global singleton pointer, set by start()/stop() in the active
+        implementation. Allows SpanGuard factory methods to access the
+        Telemetry instance without callers passing it explicitly.
+        @see setInstance(), getInstance()
+    */
+    inline static Telemetry* instance_ = nullptr;
+
 public:
+    /** Get the global Telemetry instance.
+        @return Pointer to the active instance, or nullptr if not started.
+    */
+    static Telemetry*
+    getInstance()
+    {
+        return instance_;
+    }
+
+    /** Set the global Telemetry instance.
+        Called by start()/stop() in concrete implementations.
+        Tests can call this with a mock to override the global instance.
+        @param t  Pointer to the Telemetry instance, or nullptr to clear.
+    */
+    static void
+    setInstance(Telemetry* t)
+    {
+        instance_ = t;
+    }
+
     /** Configuration parsed from the [telemetry] section of xrpld.cfg.
 
         All fields have sensible defaults so the section can be minimal
@@ -119,7 +146,12 @@ public:
         /** Path to a CA certificate bundle for TLS verification. */
         std::string tlsCertPath;
 
-        /** Head-based sampling ratio in [0.0, 1.0]. 1.0 = trace everything. */
+        /** Head-based sampling ratio in [0.0, 1.0]. 1.0 = trace everything.
+            This is a head-based (pre-decision) sampler using
+            TraceIdRatioBasedSampler — the decision to record or drop a
+            trace is made before the root span starts. For post-hoc
+            (tail-based) filtering, see SpanGuard::discard().
+        */
         double samplingRatio = 1.0;
 
         /** Maximum number of spans per batch export. */
@@ -224,7 +256,12 @@ public:
         OpenTelemetry's context propagation.
 
         @param name  Span name (typically "rpc.command.<cmd>").
-        @param kind  The span kind (defaults to kInternal).
+        @param kind  The span kind (defaults to kInternal). Possible values:
+                     - kInternal: default, in-process operation
+                     - kServer:   incoming synchronous request (e.g. RPC)
+                     - kClient:   outgoing synchronous request
+                     - kProducer: async message send (e.g. peer broadcast)
+                     - kConsumer: async message receive
         @return A shared pointer to the new Span.
     */
     virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span>

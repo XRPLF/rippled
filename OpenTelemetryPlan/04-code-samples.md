@@ -181,136 +181,130 @@ setup_Telemetry(
 
 ---
 
-## 4.2 RAII Span Guard
+## 4.2 RAII Span Guard with Factory Methods
+
+SpanGuard is a self-contained RAII wrapper that creates, activates, and
+ends trace spans. It uses the pimpl idiom to hide all OpenTelemetry
+types -- the public header has **zero `opentelemetry/` includes**.
+Callers never interact with OTel SDK types directly.
+
+SpanGuard provides static factory methods (`rpcSpan()`, `txSpan()`,
+`consensusSpan()`, etc.) that access the global `Telemetry` singleton
+internally. Each factory checks both the runtime enable flag and the
+relevant component filter before creating a span.
+
+When `XRPL_ENABLE_TELEMETRY` is **not** defined, the entire SpanGuard
+class compiles to a no-op stub with empty inline method bodies, giving
+zero compile-time and runtime cost.
 
 ```cpp
 // include/xrpl/telemetry/SpanGuard.h
+//
+// Public API -- no opentelemetry/ includes.
+// OTel types are hidden behind the pimpl (Impl struct, defined in the
+// #ifdef XRPL_ENABLE_TELEMETRY section at the bottom of the header).
 #pragma once
 
-#include <opentelemetry/trace/span.h>
-#include <opentelemetry/trace/scope.h>
-#include <opentelemetry/trace/status.h>
-
+#include <memory>
 #include <string_view>
-#include <exception>
 
 namespace xrpl {
 namespace telemetry {
 
-/**
- * RAII guard for OpenTelemetry spans.
- *
- * Automatically ends the span on destruction and makes it the current
- * span in the thread-local context.
- */
+#ifdef XRPL_ENABLE_TELEMETRY
+
 class SpanGuard
 {
-    opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span> span_;
-    opentelemetry::trace::Scope scope_;
+    struct Impl;                         // pimpl -- defined in .cpp or
+    std::unique_ptr<Impl> impl_;         // in the guarded section below
 
 public:
-    /**
-     * Construct guard with span.
-     * The span becomes the current span in thread-local context.
-     *
-     * @note If span is nullptr (e.g., telemetry disabled), the guard
-     * becomes a no-op. All methods safely check for null before access.
-     */
-    explicit SpanGuard(
-        opentelemetry::nostd::shared_ptr<opentelemetry::trace::Span> span)
-        : span_(span ? std::move(span) : nullptr)
-        , scope_(span_ ? opentelemetry::trace::Scope(span_)
-                       : opentelemetry::trace::Scope(
-                           opentelemetry::nostd::shared_ptr<
-                               opentelemetry::trace::Span>(nullptr)))
-    {
-    }
+    // ═══════════════════════════════════════════════════════════════════
+    // FACTORY METHODS  (access global Telemetry internally)
+    // ═══════════════════════════════════════════════════════════════════
 
-    // Non-copyable, non-movable
+    /** Create a span for RPC request handling.
+     *  Returns a no-op guard if telemetry is disabled or
+     *  shouldTraceRpc() is false.
+     */
+    static SpanGuard rpcSpan(std::string_view name);
+
+    /** Create a span for transaction processing. */
+    static SpanGuard txSpan(std::string_view name);
+
+    /** Create a span for consensus rounds. */
+    static SpanGuard consensusSpan(std::string_view name);
+
+    /** Create a span for peer-to-peer messages. */
+    static SpanGuard peerSpan(std::string_view name);
+
+    /** Create a span for ledger operations. */
+    static SpanGuard ledgerSpan(std::string_view name);
+
+    /** Create an uncategorized span (always created when enabled). */
+    static SpanGuard span(std::string_view name);
+
+    // ═══════════════════════════════════════════════════════════════════
+    // INSTANCE METHODS
+    // ═══════════════════════════════════════════════════════════════════
+
+    SpanGuard();                         // constructs a no-op guard
+    ~SpanGuard();
+    SpanGuard(SpanGuard&& other) noexcept;
+    SpanGuard& operator=(SpanGuard&&) = delete;
     SpanGuard(SpanGuard const&) = delete;
     SpanGuard& operator=(SpanGuard const&) = delete;
-    SpanGuard(SpanGuard&&) = delete;
-    SpanGuard& operator=(SpanGuard&&) = delete;
 
-    ~SpanGuard()
-    {
-        if (span_)
-            span_->End();
-    }
+    /** Mark the span status as OK. */
+    void setOk();
 
-    /** Access the underlying span */
-    opentelemetry::trace::Span& span() { return *span_; }
-    opentelemetry::trace::Span const& span() const { return *span_; }
+    /** Set an explicit status code. */
+    void setStatus(int code, std::string_view description = "");
 
-    /** Set span status to OK */
-    void setOk()
-    {
-        span_->SetStatus(opentelemetry::trace::StatusCode::kOk);
-    }
-
-    /** Set span status with code and description */
-    void setStatus(
-        opentelemetry::trace::StatusCode code,
-        std::string_view description = "")
-    {
-        span_->SetStatus(code, std::string(description));
-    }
-
-    /** Set an attribute on the span */
+    /** Set a key-value attribute on the span. */
     template<typename T>
-    void setAttribute(std::string_view key, T&& value)
-    {
-        span_->SetAttribute(
-            opentelemetry::nostd::string_view(key.data(), key.size()),
-            std::forward<T>(value));
-    }
+    void setAttribute(std::string_view key, T&& value);
 
-    /** Add an event to the span */
-    void addEvent(std::string_view name)
-    {
-        span_->AddEvent(std::string(name));
-    }
+    /** Add an event to the span timeline. */
+    void addEvent(std::string_view name);
 
-    /** Record an exception on the span */
-    void recordException(std::exception const& e)
-    {
-        span_->RecordException(e);
-        span_->SetStatus(
-            opentelemetry::trace::StatusCode::kError,
-            e.what());
-    }
+    /** Record an exception and set error status. */
+    void recordException(std::exception const& e);
 
-    /** Get the current trace context */
-    opentelemetry::context::Context context() const
-    {
-        return opentelemetry::context::RuntimeContext::GetCurrent();
-    }
+    /** Get the current trace context (for cross-thread propagation). */
+    // Returns an opaque context handle.
+    auto context() const;
+
+    /** Discard this span -- dropped before export. */
+    void discard();
 };
 
-/**
- * No-op span guard for when tracing is disabled.
- * Provides the same interface but does nothing.
- */
-class NullSpanGuard
+#else  // XRPL_ENABLE_TELEMETRY not defined -- zero-cost stub
+
+class SpanGuard
 {
 public:
-    NullSpanGuard() = default;
+    // Factory methods -- all return no-op guards
+    static SpanGuard rpcSpan(std::string_view) { return {}; }
+    static SpanGuard txSpan(std::string_view) { return {}; }
+    static SpanGuard consensusSpan(std::string_view) { return {}; }
+    static SpanGuard peerSpan(std::string_view) { return {}; }
+    static SpanGuard ledgerSpan(std::string_view) { return {}; }
+    static SpanGuard span(std::string_view) { return {}; }
 
+    // Instance methods -- all no-ops
     void setOk() {}
-    void setStatus(opentelemetry::trace::StatusCode, std::string_view = "") {}
+    void setStatus(int, std::string_view = "") {}
 
     template<typename T>
     void setAttribute(std::string_view, T&&) {}
 
     void addEvent(std::string_view) {}
     void recordException(std::exception const&) {}
-
-    /** Return a default empty context (matches SpanGuard interface) */
-    opentelemetry::context::Context context() const
-    {
-        return opentelemetry::context::Context{};
-    }
+    void discard() {}
 };
+
+#endif  // XRPL_ENABLE_TELEMETRY
 
 } // namespace telemetry
 } // namespace xrpl
@@ -318,134 +312,96 @@ public:
 
 ---
 
-## 4.3 Instrumentation Macros
+## 4.3 SpanGuard API Reference
+
+The previous macro-based approach (`TracingInstrumentation.h` with
+`XRPL_TRACE_*` macros) has been replaced by SpanGuard's static factory
+methods. This eliminates preprocessor macros from instrumentation call
+sites and provides a cleaner, type-safe API.
+
+### 4.3.1 Factory Methods
+
+Each factory method accesses the global `Telemetry::getInstance()`
+singleton internally and checks the corresponding component filter.
+If telemetry is disabled (compile-time or runtime) or the component
+filter is off, the factory returns a no-op guard whose methods are
+all empty inlines.
+
+| Factory Method                   | Component Filter            | Typical Span Names                   |
+| -------------------------------- | --------------------------- | ------------------------------------ |
+| `SpanGuard::rpcSpan(name)`       | `shouldTraceRpc()`          | `rpc.request`, `rpc.command.submit`  |
+| `SpanGuard::txSpan(name)`        | `shouldTraceTransactions()` | `tx.receive`, `tx.validate`          |
+| `SpanGuard::consensusSpan(name)` | `shouldTraceConsensus()`    | `consensus.round`, `consensus.phase` |
+| `SpanGuard::peerSpan(name)`      | `shouldTracePeer()`         | `peer.message.receive`               |
+| `SpanGuard::ledgerSpan(name)`    | `shouldTraceLedger()`       | `ledger.close`, `ledger.accept`      |
+| `SpanGuard::span(name)`          | (always, if enabled)        | `job.execute`, custom spans          |
+
+### 4.3.2 Usage Pattern
 
 ```cpp
-// src/xrpld/telemetry/TracingInstrumentation.h
-#pragma once
-
-#include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
-namespace xrpl {
-namespace telemetry {
+void ServerHandler::onRequest(...)
+{
+    // Factory creates a span if RPC tracing is enabled, no-op otherwise.
+    // No Telemetry& reference needed -- accessed via global singleton.
+    auto span = telemetry::SpanGuard::rpcSpan("rpc.request");
+    span.setAttribute("xrpl.rpc.command", command);
 
-// ═══════════════════════════════════════════════════════════════════════════
-// INSTRUMENTATION MACROS
-// ═══════════════════════════════════════════════════════════════════════════
+    auto result = processRequest(req);
 
-#ifdef XRPL_ENABLE_TELEMETRY
+    span.setAttribute("xrpl.rpc.status", result.status());
+    span.setOk();
+    // span ended automatically when it goes out of scope
+}
+```
 
-// Start a span that is automatically ended when guard goes out of scope
-#define XRPL_TRACE_SPAN(telemetry, name) \
-    auto _xrpl_span_ = (telemetry).startSpan(name); \
-    ::xrpl::telemetry::SpanGuard _xrpl_guard_(_xrpl_span_)
+### 4.3.3 Compile-Time Disabled Behavior
 
-// Start a span with specific kind
-#define XRPL_TRACE_SPAN_KIND(telemetry, name, kind) \
-    auto _xrpl_span_ = (telemetry).startSpan(name, kind); \
-    ::xrpl::telemetry::SpanGuard _xrpl_guard_(_xrpl_span_)
+When `XRPL_ENABLE_TELEMETRY` is **not** defined, SpanGuard compiles to
+a zero-cost no-op stub. All factory methods return a default-constructed
+guard, and all instance methods have empty bodies:
 
-// Conditional span based on component
-#define XRPL_TRACE_TX(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTraceTransactions()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
+```cpp
+// When XRPL_ENABLE_TELEMETRY is not defined:
+class SpanGuard
+{
+public:
+    static SpanGuard rpcSpan(std::string_view) { return {}; }
+    static SpanGuard txSpan(std::string_view) { return {}; }
+    static SpanGuard consensusSpan(std::string_view) { return {}; }
+    static SpanGuard peerSpan(std::string_view) { return {}; }
+    static SpanGuard ledgerSpan(std::string_view) { return {}; }
+    static SpanGuard span(std::string_view) { return {}; }
 
-#define XRPL_TRACE_CONSENSUS(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTraceConsensus()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
+    void setOk() {}
+    void setStatus(int, std::string_view = "") {}
+    template<typename T>
+    void setAttribute(std::string_view, T&&) {}
+    void addEvent(std::string_view) {}
+    void recordException(std::exception const&) {}
+    void discard() {}
+};
+```
 
-#define XRPL_TRACE_RPC(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTraceRpc()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
+The compiler optimizes away all calls to these empty methods, producing
+the same binary as if no instrumentation code were present.
 
-#define XRPL_TRACE_PEER(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTracePeer()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
+### 4.3.4 Discard Support
 
-#define XRPL_TRACE_LEDGER(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTraceLedger()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
+SpanGuard supports discarding a span before it is exported. This is
+useful for filtering out uninteresting spans (e.g. successful
+preflight checks) after the span has been started:
 
-#define XRPL_TRACE_PATHFIND(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTracePathfind()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
-
-#define XRPL_TRACE_TXQ(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTraceTxQ()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
-
-#define XRPL_TRACE_VALIDATOR(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTraceValidator()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
-
-#define XRPL_TRACE_AMENDMENT(telemetry, name) \
-    std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-    if ((telemetry).shouldTraceAmendment()) { \
-        _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-    }
-
-// Set attribute on current span (if exists).
-// Works with both std::optional<SpanGuard> (from conditional macros)
-// and bare SpanGuard (from XRPL_TRACE_SPAN). Uses 'if constexpr'-like
-// dispatch via a helper that checks for .has_value().
-#define XRPL_TRACE_SET_ATTR(key, value) \
-    do { \
-        if constexpr (requires { _xrpl_guard_.has_value(); }) { \
-            if (_xrpl_guard_.has_value()) \
-                _xrpl_guard_->setAttribute(key, value); \
-        } else { \
-            _xrpl_guard_.setAttribute(key, value); \
-        } \
-    } while(0)
-
-// Record exception on current span
-#define XRPL_TRACE_EXCEPTION(e) \
-    do { \
-        if constexpr (requires { _xrpl_guard_.has_value(); }) { \
-            if (_xrpl_guard_.has_value()) \
-                _xrpl_guard_->recordException(e); \
-        } else { \
-            _xrpl_guard_.recordException(e); \
-        } \
-    } while(0)
-
-#else  // XRPL_ENABLE_TELEMETRY not defined
-
-#define XRPL_TRACE_SPAN(telemetry, name) ((void)0)
-#define XRPL_TRACE_SPAN_KIND(telemetry, name, kind) ((void)0)
-#define XRPL_TRACE_TX(telemetry, name) ((void)0)
-#define XRPL_TRACE_CONSENSUS(telemetry, name) ((void)0)
-#define XRPL_TRACE_RPC(telemetry, name) ((void)0)
-#define XRPL_TRACE_PEER(telemetry, name) ((void)0)
-#define XRPL_TRACE_LEDGER(telemetry, name) ((void)0)
-#define XRPL_TRACE_PATHFIND(telemetry, name) ((void)0)
-#define XRPL_TRACE_TXQ(telemetry, name) ((void)0)
-#define XRPL_TRACE_VALIDATOR(telemetry, name) ((void)0)
-#define XRPL_TRACE_AMENDMENT(telemetry, name) ((void)0)
-#define XRPL_TRACE_SET_ATTR(key, value) ((void)0)
-#define XRPL_TRACE_EXCEPTION(e) ((void)0)
-
-#endif  // XRPL_ENABLE_TELEMETRY
-
-} // namespace telemetry
-} // namespace xrpl
+```cpp
+auto span = telemetry::SpanGuard::txSpan("tx.process");
+auto result = preflight(tx);
+if (result != tesSUCCESS)
+{
+    // Span is dropped before entering the batch export queue.
+    span.discard();
+    return result;
+}
 ```
 
 ---
@@ -644,7 +600,7 @@ TraceContextPropagator::inject(
 ```cpp
 // src/xrpld/overlay/detail/PeerImp.cpp (modified)
 
-#include <xrpl/telemetry/TracingInstrumentation.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 void
 PeerImp::handleTransaction(
@@ -749,7 +705,7 @@ PeerImp::handleTransaction(
 ```cpp
 // src/xrpld/app/consensus/RCLConsensus.cpp (modified)
 
-#include <xrpl/telemetry/TracingInstrumentation.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 void
 RCLConsensusAdaptor::startRound(
@@ -759,20 +715,18 @@ RCLConsensusAdaptor::startRound(
     hash_set<NodeID> const& peers,
     bool proposing)
 {
-    XRPL_TRACE_CONSENSUS(app_.getTelemetry(), "consensus.round");
+    auto span = telemetry::SpanGuard::consensusSpan("consensus.round");
 
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.prev", to_string(prevLedgerHash));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.ledger.seq",
+    span.setAttribute("xrpl.consensus.ledger.prev", to_string(prevLedgerHash));
+    span.setAttribute("xrpl.consensus.ledger.seq",
         static_cast<int64_t>(prevLedger.seq() + 1));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.proposers",
+    span.setAttribute("xrpl.consensus.proposers",
         static_cast<int64_t>(peers.size()));
-    XRPL_TRACE_SET_ATTR("xrpl.consensus.mode",
+    span.setAttribute("xrpl.consensus.mode",
         proposing ? "proposing" : "observing");
 
     // Store trace context for use in phase transitions
-    currentRoundContext_ = _xrpl_guard_.has_value()
-        ? _xrpl_guard_->context()
-        : opentelemetry::context::Context{};
+    currentRoundContext_ = span.context();
 
     // ... existing implementation ...
 }
@@ -844,34 +798,22 @@ RCLConsensusAdaptor::peerProposal(
 ```cpp
 // src/xrpld/rpc/detail/ServerHandler.cpp (modified)
 
-#include <xrpl/telemetry/TracingInstrumentation.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 void
 ServerHandler::onRequest(
     http_request_type&& req,
     std::function<void(http_response_type&&)>&& send)
 {
-    // Extract trace context from HTTP headers (W3C Trace Context)
-    auto parentCtx = telemetry::TraceContextPropagator::extractFromHeaders(
-        [&req](std::string_view name) -> std::optional<std::string> {
-            // Beast's find() accepts a string_view for custom header lookup
-            auto it = req.find(name);
-            if (it != req.end())
-                return std::string(it->value());
-            return std::nullopt;
-        });
-
-    // Start request span
-    auto span = app_.getTelemetry().startSpan(
-        "rpc.request",
-        parentCtx,
-        opentelemetry::trace::SpanKind::kServer);
-    telemetry::SpanGuard guard(span);
+    // SpanGuard::rpcSpan() accesses the global Telemetry instance
+    // and checks shouldTraceRpc() internally. Returns a no-op guard
+    // if tracing is disabled.
+    auto span = telemetry::SpanGuard::rpcSpan("rpc.request");
 
     // Add HTTP attributes
-    guard.setAttribute("http.method", std::string(req.method_string()));
-    guard.setAttribute("http.target", std::string(req.target()));
-    guard.setAttribute("http.user_agent",
+    span.setAttribute("http.method", std::string(req.method_string()));
+    span.setAttribute("http.target", std::string(req.target()));
+    span.setAttribute("http.user_agent",
         std::string(req[boost::beast::http::field::user_agent]));
 
     auto const startTime = std::chrono::steady_clock::now();
@@ -885,8 +827,8 @@ ServerHandler::onRequest(
 
         if (!reader.parse(body, jv))
         {
-            guard.setStatus(
-                opentelemetry::trace::StatusCode::kError,
+            span.setStatus(
+                /* kError */ 2,
                 "Invalid JSON");
             sendError(send, "Invalid JSON");
             return;
@@ -899,13 +841,12 @@ ServerHandler::onRequest(
                 ? jv["method"].asString()
                 : "unknown";
 
-        guard.setAttribute("xrpl.rpc.command", command);
+        span.setAttribute("xrpl.rpc.command", command);
 
         // Create child span for command execution
-        auto cmdSpan = app_.getTelemetry().startSpan(
-            "rpc.command." + command);
         {
-            telemetry::SpanGuard cmdGuard(cmdSpan);
+            auto cmdSpan = telemetry::SpanGuard::rpcSpan(
+                "rpc.command." + command);
 
             // Execute RPC command
             auto result = processRequest(jv);
@@ -913,42 +854,42 @@ ServerHandler::onRequest(
             // Record result attributes
             if (result.isMember("status"))
             {
-                cmdGuard.setAttribute("xrpl.rpc.status",
+                cmdSpan.setAttribute("xrpl.rpc.status",
                     result["status"].asString());
             }
 
             if (result["status"].asString() == "error")
             {
-                cmdGuard.setStatus(
-                    opentelemetry::trace::StatusCode::kError,
+                cmdSpan.setStatus(
+                    /* kError */ 2,
                     result.isMember("error_message")
                         ? result["error_message"].asString()
                         : "RPC error");
             }
             else
             {
-                cmdGuard.setOk();
+                cmdSpan.setOk();
             }
         }
 
         auto const duration = std::chrono::steady_clock::now() - startTime;
-        guard.setAttribute("http.duration_ms",
+        span.setAttribute("http.duration_ms",
             std::chrono::duration<double, std::milli>(duration).count());
 
         // Inject trace context into response headers
         http_response_type resp;
         telemetry::TraceContextPropagator::injectToHeaders(
-            guard.context(),
+            span.context(),
             [&resp](std::string_view name, std::string_view value) {
                 resp.set(std::string(name), std::string(value));
             });
 
-        guard.setOk();
+        span.setOk();
         send(std::move(resp));
     }
     catch (std::exception const& e)
     {
-        guard.recordException(e);
+        span.recordException(e);
         JLOG(journal_.error()) << "RPC request failed: " << e.what();
         sendError(send, e.what());
     }
@@ -959,92 +900,40 @@ ServerHandler::onRequest(
 
 > **Architecture note**: `JobQueue` and its inner `Workers` class do not
 > hold an `Application&` or `ServiceRegistry&`. They receive a
-> `perf::PerfLog*` at construction. To instrument job execution, a
-> `telemetry::Telemetry&` must be threaded into `JobQueue`'s constructor
-> alongside the existing `PerfLog&`, or the trace context can be
-> captured/restored without starting new spans inside the worker itself.
+> `perf::PerfLog*` at construction. Because SpanGuard's factory methods
+> access the global `Telemetry` instance directly, no `Telemetry&`
+> reference needs to be threaded into `JobQueue`.
 >
 > The approach below captures trace context at job-creation time and
 > restores it when the job executes, so that any spans created _inside_
 > the job body automatically become children of the original caller's
-> trace. This requires adding a `telemetry::Telemetry&` to `JobQueue`.
+> trace.
 
 ```cpp
-// include/xrpl/core/JobQueue.h (modified)
+// src/libxrpl/core/detail/JobQueue.cpp (modified -- processTask)
 
-#ifdef XRPL_ENABLE_TELEMETRY
-#include <opentelemetry/context/context.h>
-#endif
-
-class JobQueue : private Workers::Callback
-{
-    // ... existing members ...
-
-    // Telemetry reference for job execution spans (added alongside
-    // the existing perf::PerfLog& member).
-    telemetry::Telemetry& telemetry_;
-
-#ifdef XRPL_ENABLE_TELEMETRY
-    // Per-job trace context captured at addJob() time and restored
-    // on the worker thread when the job runs.
-    struct JobContext
-    {
-        opentelemetry::context::Context traceCtx;
-    };
-#endif
-
-public:
-    JobQueue(
-        int threadCount,
-        beast::insight::Collector::ptr const& collector,
-        beast::Journal journal,
-        Logs& logs,
-        perf::PerfLog& perfLog,
-        telemetry::Telemetry& telemetry);  // New parameter
-    // ...
-};
-```
-
-```cpp
-// src/libxrpl/core/detail/JobQueue.cpp (modified — processTask)
+#include <xrpl/telemetry/SpanGuard.h>
 
 void
 JobQueue::processTask(int instance)
 {
     // ... existing job dequeue logic ...
 
-#ifdef XRPL_ENABLE_TELEMETRY
-    // Restore the trace context that was captured when the job was
-    // enqueued.  Any spans created inside the job body will become
-    // children of the original caller's trace.
-    auto token = opentelemetry::context::RuntimeContext::Attach(
-        job.traceContext());
-
-    // Start an execution span if telemetry is enabled at runtime
-    std::optional<telemetry::SpanGuard> guard;
-    if (telemetry_.isEnabled())
-    {
-        guard.emplace(telemetry_.startSpan("job.execute"));
-        guard->setAttribute("xrpl.job.type", to_string(job.type()));
-        guard->setAttribute("xrpl.job.worker",
-            static_cast<int64_t>(instance));
-    }
-#endif
+    // SpanGuard::span() uses the global Telemetry instance --
+    // no Telemetry& member needed on JobQueue.
+    auto span = telemetry::SpanGuard::span("job.execute");
+    span.setAttribute("xrpl.job.type", to_string(job.type()));
+    span.setAttribute("xrpl.job.worker",
+        static_cast<int64_t>(instance));
 
     try
     {
         job.execute();
-#ifdef XRPL_ENABLE_TELEMETRY
-        if (guard)
-            guard->setOk();
-#endif
+        span.setOk();
     }
     catch (std::exception const& e)
     {
-#ifdef XRPL_ENABLE_TELEMETRY
-        if (guard)
-            guard->recordException(e);
-#endif
+        span.recordException(e);
         JLOG(journal_.error()) << "Job execution failed: " << e.what();
     }
 }

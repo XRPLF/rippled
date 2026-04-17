@@ -6,16 +6,16 @@
 
 ### Related Plan Documents
 
-| Document                                                         | Relevance to POC                                                                                                                                        |
-| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Core concepts: traces, spans, context propagation, sampling                                                                                             |
-| [01-architecture-analysis.md](./01-architecture-analysis.md)     | RPC request flow (§1.5), key trace points (§1.6), instrumentation priority (§1.7)                                                                       |
-| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection (§2.1), exporter config (§2.2), span naming (§2.3), attribute schema (§2.4), coexistence with PerfLog/Insight (§2.6)                      |
-| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure (§3.1), key principles (§3.2), performance overhead (§3.3-3.6), conditional compilation (§3.7.3), code intrusiveness (§3.9)         |
-| [04-code-samples.md](./04-code-samples.md)                       | Telemetry interface (§4.1), SpanGuard (§4.2), macros (§4.3), RPC instrumentation (§4.5.3)                                                               |
-| [05-configuration-reference.md](./05-configuration-reference.md) | xrpld config (§5.1), config parser (§5.2), Application integration (§5.3), CMake (§5.4), Collector config (§5.5), Docker Compose (§5.6), Grafana (§5.8) |
-| [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 1 core tasks (§6.2), Phase 2 RPC tasks (§6.3), quick wins (§6.10), definition of done (§6.11)                                                     |
-| [07-observability-backends.md](./07-observability-backends.md)   | Tempo dev setup (§7.1), Grafana dashboards (§7.6), alert rules (§7.6.3)                                                                                 |
+| Document                                                         | Relevance to POC                                                                                                                                          |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Core concepts: traces, spans, context propagation, sampling                                                                                               |
+| [01-architecture-analysis.md](./01-architecture-analysis.md)     | RPC request flow (§1.5), key trace points (§1.6), instrumentation priority (§1.7)                                                                         |
+| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection (§2.1), exporter config (§2.2), span naming (§2.3), attribute schema (§2.4), coexistence with PerfLog/Insight (§2.6)                        |
+| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure (§3.1), key principles (§3.2), performance overhead (§3.3-3.6), conditional compilation (§3.7.3), code intrusiveness (§3.9)           |
+| [04-code-samples.md](./04-code-samples.md)                       | Telemetry interface (§4.1), SpanGuard factory methods (§4.2-4.3), RPC instrumentation (§4.5.3)                                                            |
+| [05-configuration-reference.md](./05-configuration-reference.md) | xrpld config (§5.1), config parser (§5.2), Application integration (§5.3), CMake (§5.4), Collector config (§5.5), Docker Compose (§5.6), Grafana (§5.8)  |
+| [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 1 core tasks (§6.2), Phase 2 RPC tasks (§6.3), quick wins (§6.10), definition of done (§6.11)                                                       |
+| [07-observability-backends.md](./07-observability-backends.md)   | Tempo dev setup (§7.1), Grafana dashboards (§7.6), alert rules (§7.6.3)                                                                                   |
 
 ---
 
@@ -147,9 +147,11 @@
   - Config parser: `Telemetry::Setup setup_Telemetry(Section const&, std::string const& nodePublicKey, std::string const& version);`
 
 - Create `include/xrpl/telemetry/SpanGuard.h`:
-  - RAII guard that takes an `nostd::shared_ptr<Span>`, creates a `Scope`, and calls `span->End()` in destructor.
-  - Convenience: `setAttribute()`, `setOk()`, `setStatus()`, `addEvent()`, `recordException()`, `context()`
-  - See [04-code-samples.md](./04-code-samples.md) §4.2 for the full implementation.
+  - RAII guard with static factory methods (`rpcSpan()`, `txSpan()`, `consensusSpan()`, etc.) that access the global `Telemetry::getInstance()` singleton internally.
+  - Uses pimpl idiom to hide all OTel types -- the public header has zero `opentelemetry/` includes.
+  - Convenience instance methods: `setAttribute()`, `setOk()`, `setStatus()`, `addEvent()`, `recordException()`, `context()`, `discard()`
+  - When `XRPL_ENABLE_TELEMETRY` is not defined, the entire class compiles to a no-op stub.
+  - See [04-code-samples.md](./04-code-samples.md) §4.2-4.3 for the full API reference.
 
 - Create `src/libxrpl/telemetry/NullTelemetry.cpp`:
   - Implements `Telemetry` with all no-ops.
@@ -167,7 +169,7 @@
 **Reference**:
 
 - [04-code-samples.md §4.1](./04-code-samples.md) — Full `Telemetry` interface with `Setup` struct, lifecycle, tracer access, span creation, and component filtering methods
-- [04-code-samples.md §4.2](./04-code-samples.md) — Full `SpanGuard` RAII implementation and `NullSpanGuard` no-op class
+- [04-code-samples.md §4.2-4.3](./04-code-samples.md) — SpanGuard with factory methods, pimpl design, no-op stub, and discard support
 - [03-implementation-strategy.md §3.1](./03-implementation-strategy.md) — Directory structure: `include/xrpl/telemetry/` for headers, `src/libxrpl/telemetry/` for implementation
 - [03-implementation-strategy.md §3.7.3](./03-implementation-strategy.md) — Conditional instrumentation and zero-cost compile-time disabled pattern
 
@@ -287,47 +289,37 @@
 
 ---
 
-## Task 5: Create Instrumentation Macros
+## Task 5: Add SpanGuard Factory Methods
 
-**Objective**: Define convenience macros that make instrumenting code one-liners, and that compile to zero-cost no-ops when telemetry is disabled.
+**Objective**: Add static factory methods to SpanGuard that provide type-safe, one-liner instrumentation and compile to zero-cost no-ops when telemetry is disabled. This replaces the earlier macro-based approach (`TracingInstrumentation.h` has been removed).
 
 **What to do**:
 
-- Create `src/xrpld/telemetry/TracingInstrumentation.h`:
-  - When `XRPL_ENABLE_TELEMETRY` is defined:
+- Update `include/xrpl/telemetry/SpanGuard.h`:
+  - Add static factory methods that access the global `Telemetry::getInstance()` singleton and check the relevant component filter before creating a span:
 
     ```cpp
-    #define XRPL_TRACE_SPAN(telemetry, name) \
-        auto _xrpl_span_ = (telemetry).startSpan(name); \
-        ::xrpl::telemetry::SpanGuard _xrpl_guard_(_xrpl_span_)
-
-    #define XRPL_TRACE_RPC(telemetry, name) \
-        std::optional<::xrpl::telemetry::SpanGuard> _xrpl_guard_; \
-        if ((telemetry).shouldTraceRpc()) { \
-            _xrpl_guard_.emplace((telemetry).startSpan(name)); \
-        }
-
-    #define XRPL_TRACE_SET_ATTR(key, value) \
-        if (_xrpl_guard_.has_value()) { \
-            _xrpl_guard_->setAttribute(key, value); \
-        }
-
-    #define XRPL_TRACE_EXCEPTION(e) \
-        if (_xrpl_guard_.has_value()) { \
-            _xrpl_guard_->recordException(e); \
-        }
+    // Each factory checks the global Telemetry instance internally.
+    // No Telemetry& reference needed at the call site.
+    auto span = telemetry::SpanGuard::rpcSpan("rpc.request");
+    span.setAttribute("xrpl.rpc.command", command);
+    span.setAttribute("xrpl.rpc.status", status);
     ```
 
-  - When `XRPL_ENABLE_TELEMETRY` is NOT defined, all macros expand to `((void)0)`
+  - Factory methods: `rpcSpan()`, `txSpan()`, `consensusSpan()`, `peerSpan()`, `ledgerSpan()`, `span()`
+  - Use the pimpl idiom to hide all OTel types from the public header (zero `opentelemetry/` includes)
+  - When `XRPL_ENABLE_TELEMETRY` is NOT defined, the entire class compiles to a no-op stub with empty inline method bodies
 
-**Key new file**:
+- No separate `TracingInstrumentation.h` file is needed. All instrumentation call sites use `#include <xrpl/telemetry/SpanGuard.h>` directly.
 
-- `src/xrpld/telemetry/TracingInstrumentation.h`
+**Key modified file**:
+
+- `include/xrpl/telemetry/SpanGuard.h`
 
 **Reference**:
 
-- [04-code-samples.md §4.3](./04-code-samples.md) — Full macro definitions for `XRPL_TRACE_SPAN`, `XRPL_TRACE_RPC`, `XRPL_TRACE_CONSENSUS`, `XRPL_TRACE_SET_ATTR`, `XRPL_TRACE_EXCEPTION` with both enabled and disabled branches
-- [03-implementation-strategy.md §3.7.3](./03-implementation-strategy.md) — Conditional instrumentation pattern: compile-time `#ifndef` and runtime `shouldTrace*()` checks
+- [04-code-samples.md §4.3](./04-code-samples.md) — SpanGuard API reference: factory methods, usage patterns, compile-time disabled behavior, and discard support
+- [03-implementation-strategy.md §3.7.3](./03-implementation-strategy.md) — Conditional instrumentation pattern: factory methods handle compile-time and runtime checks internally
 - [03-implementation-strategy.md §3.9.7](./03-implementation-strategy.md) — Before/after code examples showing minimal intrusiveness (~1-3 lines per instrumentation point)
 
 ---
@@ -341,17 +333,17 @@
 **What to do**:
 
 - Edit `src/xrpld/rpc/detail/ServerHandler.cpp`:
-  - `#include` the `TracingInstrumentation.h` header
+  - `#include <xrpl/telemetry/SpanGuard.h>`
   - In `ServerHandler::onRequest(Session& session)`:
-    - At the top of the method, add: `XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.request");`
-    - After the RPC command name is extracted, set attribute: `XRPL_TRACE_SET_ATTR("xrpl.rpc.command", command);`
-    - After the response status is known, set: `XRPL_TRACE_SET_ATTR("http.status_code", static_cast<int64_t>(statusCode));`
-    - Wrap error paths with: `XRPL_TRACE_EXCEPTION(e);`
+    - At the top of the method, add: `auto span = telemetry::SpanGuard::rpcSpan("rpc.request");`
+    - After the RPC command name is extracted, set attribute: `span.setAttribute("xrpl.rpc.command", command);`
+    - After the response status is known, set: `span.setAttribute("http.status_code", static_cast<int64_t>(statusCode));`
+    - Wrap error paths with: `span.recordException(e);`
   - In `ServerHandler::processRequest(...)`:
-    - Add a child span: `XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.process");`
-    - Set method attribute: `XRPL_TRACE_SET_ATTR("xrpl.rpc.method", request_method);`
+    - Add a child span: `auto span = telemetry::SpanGuard::rpcSpan("rpc.process");`
+    - Set method attribute: `span.setAttribute("xrpl.rpc.method", request_method);`
   - In `ServerHandler::onWSMessage(...)` (WebSocket path):
-    - Add: `XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.ws.message");`
+    - Add: `auto span = telemetry::SpanGuard::rpcSpan("rpc.ws.message");`
 
 - The goal is to see spans like:
   ```
@@ -366,7 +358,7 @@
 
 **Reference**:
 
-- [04-code-samples.md §4.5.3](./04-code-samples.md) — Complete `ServerHandler::onRequest()` instrumented code sample with W3C header extraction, span creation, attribute setting, and error handling
+- [04-code-samples.md §4.5.3](./04-code-samples.md) — Complete `ServerHandler::onRequest()` instrumented code sample using SpanGuard factory methods
 - [01-architecture-analysis.md §1.5](./01-architecture-analysis.md) — RPC request flow diagram: HTTP request -> attributes -> jobqueue.enqueue -> rpc.command -> response
 - [01-architecture-analysis.md §1.6](./01-architecture-analysis.md) — Key trace points table: `rpc.request` in `ServerHandler.cpp::onRequest()` (Priority: High)
 - [02-design-decisions.md §2.3](./02-design-decisions.md) — Span naming convention: `rpc.request`, `rpc.command.*`
@@ -382,15 +374,15 @@
 **What to do**:
 
 - Edit `src/xrpld/rpc/detail/RPCHandler.cpp`:
-  - `#include` the `TracingInstrumentation.h` header
+  - `#include <xrpl/telemetry/SpanGuard.h>`
   - In `doCommand(RPC::JsonContext& context, Json::Value& result)`:
-    - At the top: `XRPL_TRACE_RPC(context.app.getTelemetry(), "rpc.command." + context.method);`
+    - At the top: `auto span = telemetry::SpanGuard::rpcSpan("rpc.command." + context.method);`
     - Set attributes:
-      - `XRPL_TRACE_SET_ATTR("xrpl.rpc.command", context.method);`
-      - `XRPL_TRACE_SET_ATTR("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));`
-      - `XRPL_TRACE_SET_ATTR("xrpl.rpc.role", (context.role == Role::ADMIN) ? "admin" : "user");`
-    - On success: `XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "success");`
-    - On error: `XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");` and set the error message
+      - `span.setAttribute("xrpl.rpc.command", context.method);`
+      - `span.setAttribute("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));`
+      - `span.setAttribute("xrpl.rpc.role", (context.role == Role::ADMIN) ? "admin" : "user");`
+    - On success: `span.setAttribute("xrpl.rpc.status", "success");`
+    - On error: `span.setAttribute("xrpl.rpc.status", "error");` and set the error message
 
 - After this, traces in Tempo/Grafana should look like:
   ```
@@ -553,7 +545,7 @@
 | 2    | Core Telemetry interface + NullImpl  | 3         | 0              | 1          |
 | 3    | OTel-backed Telemetry implementation | 2         | 1              | 1, 2       |
 | 4    | Application lifecycle integration    | 0         | 3              | 2, 3       |
-| 5    | Instrumentation macros               | 1         | 0              | 2          |
+| 5    | SpanGuard factory methods            | 0         | 1              | 2          |
 | 6    | Instrument RPC ServerHandler         | 0         | 1              | 4, 5       |
 | 7    | Instrument RPC command execution     | 0         | 1              | 4, 5       |
 | 8    | End-to-end verification              | 0         | 0              | 0-7        |
@@ -631,6 +623,6 @@ Issues encountered during POC implementation that inform future work:
 | Conan package only builds OTLP HTTP exporter, not gRPC                                             | Switched from gRPC to HTTP exporter (`localhost:4318/v1/traces`)              | HTTP exporter is the default; gRPC requires custom Conan profile |
 | CMake target `opentelemetry-cpp::api` etc. don't exist in Conan package                            | Use umbrella target `opentelemetry-cpp::opentelemetry-cpp`                    | Conan targets differ from upstream CMake targets                 |
 | OTel Collector `logging` exporter deprecated                                                       | Renamed to `debug` exporter                                                   | Use `debug` in all collector configs going forward               |
-| Macro parameter `telemetry` collided with `::xrpl::telemetry::` namespace                          | Renamed macro params to `_tel_obj_`, `_span_name_`                            | Avoid common words as macro parameter names                      |
+| Macro parameter `telemetry` collided with `::xrpl::telemetry::` namespace                          | Replaced macros with SpanGuard factory methods (no macros needed)             | Factory methods avoid macro hygiene issues entirely              |
 | `opentelemetry::trace::Scope` creates new context on move                                          | Store scope as member, create once in constructor                             | SpanGuard move semantics need care with Scope lifecycle          |
 | `TracerProviderFactory::Create` returns `unique_ptr<sdk::TracerProvider>`, not `nostd::shared_ptr` | Use `std::shared_ptr` member, wrap in `nostd::shared_ptr` for global provider | OTel SDK factory return types don't match API provider types     |

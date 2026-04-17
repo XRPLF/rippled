@@ -203,6 +203,7 @@ words:
   - permdex
   - perminute
   - permissioned
+  - pimpl
   - pointee
   - populator
   - preauth

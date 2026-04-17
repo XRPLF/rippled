@@ -1,0 +1,332 @@
+/** Pimpl implementation for SpanGuard and SpanContext.
+
+    All OpenTelemetry SDK types are confined to this translation unit.
+    The public SpanGuard.h header contains only standard-library types
+    and forward-declares the Impl struct.
+
+    Static factory methods (rpcSpan, txSpan, etc.) access the global
+    Telemetry instance via Telemetry::getInstance(), check the relevant
+    shouldTrace*() flag, and return either an active guard with a real
+    Span+Scope or a null guard whose methods are all no-ops.
+
+    The Impl struct holds the OTel Span (shared_ptr) and Scope.
+    Scope is non-movable, but since Impl lives behind a unique_ptr,
+    SpanGuard's move constructor simply transfers the pointer — no
+    double-Scope issues.
+
+    @see SpanGuard (SpanGuard.h), Telemetry (Telemetry.h),
+         FilteringSpanProcessor (Telemetry.cpp)
+*/
+
+#ifdef XRPL_ENABLE_TELEMETRY
+
+#include <xrpl/telemetry/DiscardFlag.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/Telemetry.h>
+
+#include <opentelemetry/context/runtime_context.h>
+#include <opentelemetry/nostd/shared_ptr.h>
+#include <opentelemetry/trace/context.h>
+#include <opentelemetry/trace/provider.h>
+#include <opentelemetry/trace/scope.h>
+#include <opentelemetry/trace/span.h>
+#include <opentelemetry/trace/span_startoptions.h>
+#include <opentelemetry/trace/tracer.h>
+
+#include <string>
+#include <utility>
+
+namespace xrpl {
+namespace telemetry {
+
+namespace otel_trace = opentelemetry::trace;
+
+// ===== SpanContext::Impl ===================================================
+
+struct SpanContext::Impl
+{
+    opentelemetry::context::Context ctx;
+
+    explicit Impl(opentelemetry::context::Context c) : ctx(std::move(c))
+    {
+    }
+};
+
+SpanContext::SpanContext(std::shared_ptr<Impl> impl) : impl_(std::move(impl))
+{
+}
+
+bool
+SpanContext::isValid() const
+{
+    return impl_ != nullptr;
+}
+
+// ===== SpanGuard::Impl ====================================================
+
+struct SpanGuard::Impl
+{
+    /** The OTel span being guarded. Set to nullptr after discard(). */
+    opentelemetry::nostd::shared_ptr<otel_trace::Span> span;
+
+    /** Scope that activates span on the current thread's context stack. */
+    otel_trace::Scope scope;
+
+    explicit Impl(opentelemetry::nostd::shared_ptr<otel_trace::Span> s)
+        : span(std::move(s)), scope(span)
+    {
+    }
+
+    ~Impl()
+    {
+        if (span)
+            span->End();
+    }
+
+    Impl(Impl const&) = delete;
+    Impl&
+    operator=(Impl const&) = delete;
+    Impl(Impl&&) = delete;
+    Impl&
+    operator=(Impl&&) = delete;
+};
+
+// ===== SpanGuard core lifecycle ============================================
+
+SpanGuard::SpanGuard() = default;
+SpanGuard::~SpanGuard() = default;
+SpanGuard::SpanGuard(SpanGuard&&) noexcept = default;
+
+SpanGuard::SpanGuard(std::unique_ptr<Impl> impl) : impl_(std::move(impl))
+{
+}
+
+SpanGuard::
+operator bool() const
+{
+    return impl_ != nullptr;
+}
+
+// ===== Static factory methods ==============================================
+
+SpanGuard
+SpanGuard::span(std::string_view name)
+{
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled())
+        return {};
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
+}
+
+SpanGuard
+SpanGuard::rpcSpan(std::string_view name)
+{
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled() || !tel->shouldTraceRpc())
+        return {};
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
+}
+
+SpanGuard
+SpanGuard::txSpan(std::string_view name)
+{
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled() || !tel->shouldTraceTransactions())
+        return {};
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
+}
+
+SpanGuard
+SpanGuard::consensusSpan(std::string_view name)
+{
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled() || !tel->shouldTraceConsensus())
+        return {};
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
+}
+
+SpanGuard
+SpanGuard::peerSpan(std::string_view name)
+{
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled() || !tel->shouldTracePeer())
+        return {};
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
+}
+
+SpanGuard
+SpanGuard::ledgerSpan(std::string_view name)
+{
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled() || !tel->shouldTraceLedger())
+        return {};
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
+}
+
+// ===== Child / linked span creation ========================================
+
+SpanGuard
+SpanGuard::childSpan(std::string_view name) const
+{
+    if (!impl_)
+        return {};
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled())
+        return {};
+    auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name, ctx)));
+}
+
+SpanGuard
+SpanGuard::childSpan(std::string_view name, SpanContext const& parentCtx)
+{
+    if (!parentCtx.isValid())
+        return {};
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled())
+        return {};
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name, parentCtx.impl_->ctx)));
+}
+
+SpanGuard
+SpanGuard::linkedSpan(std::string_view name) const
+{
+    if (!impl_)
+        return {};
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled())
+        return {};
+
+    auto tracer = tel->getTracer("xrpld");
+    auto spanCtx = impl_->span->GetContext();
+
+    otel_trace::StartSpanOptions opts;
+    return SpanGuard(
+        std::make_unique<Impl>(tracer->StartSpan(
+            std::string(name), {}, {{spanCtx, {{"xrpl.link.type", "follows_from"}}}}, opts)));
+}
+
+SpanGuard
+SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
+{
+    if (!linkCtx.isValid())
+        return {};
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled())
+        return {};
+
+    auto tracer = tel->getTracer("xrpld");
+
+    // Extract the span from the captured context to get its SpanContext.
+    auto parentSpan = otel_trace::GetSpan(linkCtx.impl_->ctx);
+    if (!parentSpan || !parentSpan->GetContext().IsValid())
+        return {};
+
+    otel_trace::StartSpanOptions opts;
+    return SpanGuard(
+        std::make_unique<Impl>(tracer->StartSpan(
+            std::string(name),
+            {},
+            {{parentSpan->GetContext(), {{"xrpl.link.type", "follows_from"}}}},
+            opts)));
+}
+
+// ===== Context capture =====================================================
+
+SpanContext
+SpanGuard::captureContext() const
+{
+    if (!impl_)
+        return {};
+    auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+    return SpanContext(std::make_shared<SpanContext::Impl>(ctx));
+}
+
+// ===== Attribute setters ===================================================
+
+void
+SpanGuard::setAttribute(std::string_view key, std::string_view value)
+{
+    if (impl_)
+        impl_->span->SetAttribute(
+            opentelemetry::nostd::string_view(key.data(), key.size()),
+            opentelemetry::nostd::string_view(value.data(), value.size()));
+}
+
+void
+SpanGuard::setAttribute(std::string_view key, char const* value)
+{
+    setAttribute(key, std::string_view(value));
+}
+
+void
+SpanGuard::setAttribute(std::string_view key, std::int64_t value)
+{
+    if (impl_)
+        impl_->span->SetAttribute(opentelemetry::nostd::string_view(key.data(), key.size()), value);
+}
+
+void
+SpanGuard::setAttribute(std::string_view key, double value)
+{
+    if (impl_)
+        impl_->span->SetAttribute(opentelemetry::nostd::string_view(key.data(), key.size()), value);
+}
+
+void
+SpanGuard::setAttribute(std::string_view key, bool value)
+{
+    if (impl_)
+        impl_->span->SetAttribute(opentelemetry::nostd::string_view(key.data(), key.size()), value);
+}
+
+// ===== Status / events =====================================================
+
+void
+SpanGuard::setOk()
+{
+    if (impl_)
+        impl_->span->SetStatus(otel_trace::StatusCode::kOk);
+}
+
+void
+SpanGuard::setError(std::string_view description)
+{
+    if (impl_)
+        impl_->span->SetStatus(otel_trace::StatusCode::kError, std::string(description));
+}
+
+void
+SpanGuard::addEvent(std::string_view name)
+{
+    if (impl_)
+        impl_->span->AddEvent(std::string(name));
+}
+
+void
+SpanGuard::recordException(std::exception const& e)
+{
+    if (!impl_)
+        return;
+    impl_->span->AddEvent(
+        "exception",
+        {{"exception.type", "std::exception"}, {"exception.message", std::string(e.what())}});
+    impl_->span->SetStatus(otel_trace::StatusCode::kError, e.what());
+}
+
+void
+SpanGuard::discard()
+{
+    if (impl_)
+    {
+        tl_discardCurrentSpan = true;
+        impl_->span->End();
+        impl_->span = nullptr;  // prevent ~Impl from calling End() again
+        impl_.reset();
+    }
+}
+
+}  // namespace telemetry
+}  // namespace xrpl
+
+#endif  // XRPL_ENABLE_TELEMETRY

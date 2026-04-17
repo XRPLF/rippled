@@ -146,11 +146,13 @@ public:
     void
     start() override
     {
+        Telemetry::setInstance(this);
     }
 
     void
     stop() override
     {
+        Telemetry::setInstance(nullptr);
     }
 
     bool
@@ -292,6 +294,10 @@ public:
         trace_api::Provider::SetTracerProvider(
             opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(sdkProvider_));
 
+        // Register as the global Telemetry instance so SpanGuard factory
+        // methods can access it without callers passing a reference.
+        Telemetry::setInstance(this);
+
         JLOG(journal_.info()) << "Telemetry started successfully";
     }
 
@@ -299,10 +305,15 @@ public:
     stop() override
     {
         JLOG(journal_.info()) << "Telemetry stopping";
+
+        // Unregister global instance before tearing down the pipeline.
+        Telemetry::setInstance(nullptr);
+
         if (sdkProvider_)
         {
-            // Force flush before shutdown
-            sdkProvider_->ForceFlush();
+            // Force flush with timeout to avoid blocking indefinitely
+            // when the OTLP endpoint is unreachable.
+            sdkProvider_->ForceFlush(std::chrono::milliseconds(5000));
             sdkProvider_.reset();
             trace_api::Provider::SetTracerProvider(
                 opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(

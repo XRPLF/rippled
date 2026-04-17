@@ -67,9 +67,14 @@ services:
     networks:
       - xrpld-telemetry
 
+# Named volume for Tempo trace storage (WAL and compacted blocks).
+# Data persists across container restarts. Remove with:
+#   docker compose -f docker/telemetry/docker-compose.yml down -v
 volumes:
   tempo-data:
 
+# Isolated bridge network so services communicate by container name
+# (e.g., the collector reaches Tempo at http://tempo:4317).
 networks:
   xrpld-telemetry:
     driver: bridge

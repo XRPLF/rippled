@@ -39,11 +39,13 @@ public:
     void
     start() override
     {
+        Telemetry::setInstance(this);
     }
 
     void
     stop() override
     {
+        Telemetry::setInstance(nullptr);
     }
 
     bool
