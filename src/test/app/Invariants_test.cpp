@@ -124,7 +124,6 @@ class Invariants_test : public beast::unit_test::suite
      * @precheck, but is the last parameter for historical reasons
      * @setTxAccount optionally set to add sfAccount to tx (either A1 or A2)
      */
-    enum class TxAccount : int { None = 0, A1, A2 };
     void
     doInvariantCheck(
         test::jtx::Env&& env,
