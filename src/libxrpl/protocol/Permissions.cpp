@@ -243,13 +243,13 @@ Permission::isDelegable(std::uint32_t permissionValue, Rules const& rules) const
 }
 
 uint32_t
-Permission::txToPermissionType(TxType type)
+Permission::txToPermissionType(TxType const type)
 {
     return static_cast<uint32_t>(type) + 1;
 }
 
 TxType
-Permission::permissionToTxType(uint32_t value)
+Permission::permissionToTxType(uint32_t const value)
 {
     XRPL_ASSERT(value > 0, "xrpl::Permission::permissionToTxType : value is greater than 0");
     return static_cast<TxType>(value - 1);

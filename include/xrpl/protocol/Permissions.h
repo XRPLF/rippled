@@ -81,11 +81,11 @@ public:
 
     // for tx level permission, permission value is equal to tx type plus one
     static uint32_t
-    txToPermissionType(TxType type);
+    txToPermissionType(TxType const type);
 
     // tx type value is permission value minus one
     static TxType
-    permissionToTxType(uint32_t value);
+    permissionToTxType(uint32_t const value);
 
     /**
      * @brief Verifies a delegated transaction against its granular permission template.
