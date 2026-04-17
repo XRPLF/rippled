@@ -49,25 +49,24 @@ doLogLevel(RPC::JsonContext& context)
         return Json::objectValue;
     }
 
-    // log_level partition severity base?
-    if (context.params.isMember(jss::partition))
+    // log_level partition severity
+    // At this point jss::partition is guaranteed to be present: the branch
+    // above already returned for the no-partition case. The previous
+    // `if (context.params.isMember(jss::partition))` guard was redundant
+    // and the trailing `return rpcError(rpcINVALID_PARAMS)` was unreachable
+    // (see #6752).
+    std::string const partition(context.params[jss::partition].asString());
+
+    if (boost::iequals(partition, "base"))
     {
-        // set partition threshold
-        std::string const partition(context.params[jss::partition].asString());
-
-        if (boost::iequals(partition, "base"))
-        {
-            context.app.getLogs().threshold(severity);
-        }
-        else
-        {
-            context.app.getLogs().get(partition).threshold(severity);
-        }
-
-        return Json::objectValue;
+        context.app.getLogs().threshold(severity);
+    }
+    else
+    {
+        context.app.getLogs().get(partition).threshold(severity);
     }
 
-    return rpcError(rpcINVALID_PARAMS);
+    return Json::objectValue;
 }
 
 }  // namespace xrpl
