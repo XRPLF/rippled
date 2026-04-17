@@ -1,8 +1,10 @@
 #include <test/csf/Digraph.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <sstream>
 #include <string>
+#include <tuple>
 #include <vector>
 
 namespace xrpl {

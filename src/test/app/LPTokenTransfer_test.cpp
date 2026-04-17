@@ -1,6 +1,24 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/check.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
 namespace test {

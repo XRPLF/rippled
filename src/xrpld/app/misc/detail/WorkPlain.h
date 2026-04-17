@@ -51,7 +51,10 @@ inline void
 WorkPlain::onConnect(error_code const& ec)
 {
     if (ec)
-        return fail(ec);
+    {
+        fail(ec);
+        return;
+    }
 
     onStart();
 }

@@ -29,31 +29,31 @@ private:
         friend bool
         operator<(Key const& lhs, Key const& rhs);
 
-        inline friend bool
+        friend bool
         operator>(Key const& lhs, Key const& rhs)
         {
             return rhs < lhs;
         }
 
-        inline friend bool
+        friend bool
         operator<=(Key const& lhs, Key const& rhs)
         {
             return !(lhs > rhs);
         }
 
-        inline friend bool
+        friend bool
         operator>=(Key const& lhs, Key const& rhs)
         {
             return !(lhs < rhs);
         }
 
-        inline friend bool
+        friend bool
         operator==(Key const& lhs, Key const& rhs)
         {
             return lhs.txId_ == rhs.txId_;
         }
 
-        inline friend bool
+        friend bool
         operator!=(Key const& lhs, Key const& rhs)
         {
             return !(lhs == rhs);

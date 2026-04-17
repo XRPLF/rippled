@@ -994,9 +994,9 @@ struct IssuerArgs
 {
     jtx::Env& env;
     // 3-letter currency if Issue, ignored if MPT
-    std::string token = "";
+    std::string token;
     jtx::Account issuer;
-    std::vector<jtx::Account> holders = {};
+    std::vector<jtx::Account> holders = {};  // NOLINT(readability-redundant-member-init)
     // trust-limit if Issue, maxAmount if MPT
     std::optional<std::uint64_t> limit = std::nullopt;
     // 0-50'000 (0-50%)

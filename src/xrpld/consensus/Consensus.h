@@ -779,9 +779,13 @@ Consensus<Adaptor>::peerProposalInternal(
         }
 
         if (peerPosIt != currPeerPositions_.end())
+        {
             peerPosIt->second = newPeerPos;
+        }
         else
+        {
             currPeerPositions_.emplace(peerID, newPeerPos);
+        }
     }
 
     if (newPeerProp.isInitial())
@@ -803,7 +807,9 @@ Consensus<Adaptor>::peerProposalInternal(
             // spawn a request for it and return nullopt/nullptr.  It will call
             // gotTxSet once it arrives
             if (auto set = adaptor_.acquireTxSet(newPeerProp.position()))
+            {
                 gotTxSet(now_, *set);
+            }
             else
                 JLOG(j_.debug()) << "Don't have tx set for peer";
         }
@@ -843,9 +849,13 @@ Consensus<Adaptor>::timerEntry(
     }
 
     if (phase_ == ConsensusPhase::open)
+    {
         phaseOpen(clog);
+    }
     else if (phase_ == ConsensusPhase::establish)
+    {
         phaseEstablish(clog);
+    }
     CLOG(clog) << "timerEntry finishing in phase " << to_string(phase_) << ". ";
 }
 
@@ -932,7 +942,9 @@ Consensus<Adaptor>::getJson(bool full) const
         ret["close_granularity"] = static_cast<Int>(closeResolution_.count());
     }
     else
+    {
         ret["synched"] = false;
+    }
 
     ret["phase"] = to_string(phase_);
 
@@ -1137,9 +1149,13 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
             : prevCloseTime_;  // use the time we saw internally
 
         if (now_ >= lastCloseTime)
+        {
             sinceClose = duration_cast<milliseconds>(now_ - lastCloseTime);
+        }
         else
+        {
             sinceClose = -duration_cast<milliseconds>(lastCloseTime - now_);
+        }
         CLOG(clog) << "calculating how long since last ledger's close time "
                       "based on mode : "
                    << to_string(mode) << ", previous closeAgree: " << closeAgree
@@ -1201,7 +1217,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
          << "offline: " << offline << ", "
          << "quorum: " << quorum << ")";
 
-    if (!ahead || !laggards || !totalValidators || !adaptor_.validator() ||
+    if ((ahead == 0u) || (laggards == 0u) || (totalValidators == 0u) || !adaptor_.validator() ||
         !adaptor_.haveValidated() || result_->roundTime.read() > parms.ledgerMAX_CONSENSUS)
     {
         j_.debug() << "not pausing (early)" << vars.str();
