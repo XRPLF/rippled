@@ -27,6 +27,7 @@
 #include <algorithm>
 #include <bit>
 #include <cstdint>
+#include <vector>
 
 namespace xrpl {
 
