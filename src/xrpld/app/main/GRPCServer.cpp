@@ -571,6 +571,8 @@ GRPCServerImpl::createServerCredentials()
     try
     {
         boost::system::error_code ec;
+        grpc::SslServerCredentialsOptions sslOpts;
+        grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
 
         std::string const certContents = getFileContents(ec, *sslCertPath_);
         if (ec)
@@ -588,6 +590,8 @@ GRPCServerImpl::createServerCredentials()
             return nullptr;
         }
 
+        keyCertPair.private_key = keyContents;
+
         // Read intermediate CA certificates for server certificate chain (optional)
         std::string certChainContents;
         if (sslCertChainPath_.has_value())
@@ -603,10 +607,9 @@ GRPCServerImpl::createServerCredentials()
         }
 
         // Read CA certificate for client verification (mTLS, optional)
-        std::string clientCAContents;
         if (sslClientCAPath_.has_value())
         {
-            clientCAContents = getFileContents(ec, *sslClientCAPath_);
+            auto const clientCAContents = getFileContents(ec, *sslClientCAPath_);
             if (ec)
             {
                 JLOG(journal_.error())
@@ -614,25 +617,7 @@ GRPCServerImpl::createServerCredentials()
                     << ec.message();  // LCOV_EXCL_LINE
                 return nullptr;
             }
-        }
 
-        grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
-        keyCertPair.private_key = keyContents;
-        // Combine server cert with intermediate CA certs for complete chain
-        keyCertPair.cert_chain = certContents;
-        if (!certChainContents.empty())
-        {
-            keyCertPair.cert_chain += '\n' + certChainContents;
-            JLOG(journal_.info()) << "gRPC server certificate chain configured with "
-                                     "intermediate CA certificates";  // LCOV_EXCL_LINE
-        }
-
-        grpc::SslServerCredentialsOptions sslOpts;
-        sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
-
-        // Configure client certificate verification (mTLS) if CA is provided
-        if (sslClientCAPath_.has_value())
-        {
             if (clientCAContents.empty())
             {
                 JLOG(journal_.error())
@@ -647,6 +632,17 @@ GRPCServerImpl::createServerCredentials()
             JLOG(journal_.info()) << "gRPC mutual TLS enabled - client certificates will be "
                                      "required and verified";
         }
+
+        // Combine server cert with intermediate CA certs for complete chain
+        keyCertPair.cert_chain = certContents;
+        if (!certChainContents.empty())
+        {
+            keyCertPair.cert_chain += '\n' + certChainContents;
+            JLOG(journal_.info()) << "gRPC server certificate chain configured with "
+                                     "intermediate CA certificates";  // LCOV_EXCL_LINE
+        }
+
+        sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
 
         JLOG(journal_.info()) << "gRPC TLS credentials configured successfully";  // LCOV_EXCL_LINE
         return grpc::SslServerCredentials(sslOpts);
