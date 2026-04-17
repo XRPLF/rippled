@@ -1,8 +1,15 @@
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/View.h>
+
+#include <iterator>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 namespace test {

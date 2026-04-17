@@ -3,18 +3,34 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/handlers/ledger/LedgerEntryHelpers.h>
 
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
+#include <grpcpp/support/status.h>
+#include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>
+
+#include <array>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 

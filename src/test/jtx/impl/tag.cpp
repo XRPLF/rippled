@@ -1,5 +1,8 @@
 #include <test/jtx/tag.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
 namespace xrpl {
 namespace test {
 namespace jtx {

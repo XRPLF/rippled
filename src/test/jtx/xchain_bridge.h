@@ -224,7 +224,7 @@ struct XChainBridgeObjects
         Account const& acc,
         Json::Value const& bridge = Json::nullValue,
         STAmount const& _reward = XRP(1),
-        std::optional<STAmount> const& minAccountCreate = std::nullopt)
+        std::optional<STAmount> const& minAccountCreate = std::nullopt) const
     {
         return bridge_create(
             acc, bridge == Json::nullValue ? jvb : bridge, _reward, minAccountCreate);

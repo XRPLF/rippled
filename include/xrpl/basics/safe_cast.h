@@ -17,7 +17,7 @@ concept SafeToCast = (std::is_integral_v<Src> && std::is_integral_v<Dest>) &&
                                                                : sizeof(Dest) >= sizeof(Src));
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
 safe_cast(Src s) noexcept
 {
     static_assert(
@@ -30,14 +30,14 @@ safe_cast(Src s) noexcept
 }
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
 safe_cast(Src s) noexcept
 {
     return static_cast<Dest>(safe_cast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
 safe_cast(Src s) noexcept
 {
     return safe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
@@ -48,7 +48,7 @@ safe_cast(Src s) noexcept
 // underlying types become safe, it can be converted to a safe_cast.
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
 unsafe_cast(Src s) noexcept
 {
     static_assert(
@@ -59,14 +59,14 @@ unsafe_cast(Src s) noexcept
 }
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
 unsafe_cast(Src s) noexcept
 {
     return static_cast<Dest>(unsafe_cast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
 unsafe_cast(Src s) noexcept
 {
     return unsafe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
