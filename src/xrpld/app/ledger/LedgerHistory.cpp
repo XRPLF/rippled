@@ -1,11 +1,33 @@
 #include <xrpld/app/ledger/LedgerHistory.h>
+
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+
+#include <algorithm>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

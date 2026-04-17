@@ -1,9 +1,18 @@
 #include <xrpl/tx/invariants/LoanInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
 
 namespace xrpl {
 

@@ -3,11 +3,19 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
 
+#include <boost/beast/core/string_type.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 

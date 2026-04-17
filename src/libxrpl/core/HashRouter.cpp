@@ -1,5 +1,17 @@
 #include <xrpl/core/HashRouter.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/container/detail/aged_unordered_container.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <chrono>
+#include <functional>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <utility>
+
 namespace xrpl {
 
 auto

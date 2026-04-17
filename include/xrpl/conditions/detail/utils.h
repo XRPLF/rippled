@@ -89,7 +89,7 @@ parsePreamble(Slice& s, std::error_code& ec)
     p.length = s[0];
     s += 1;
 
-    if (p.length & 0x80)
+    if ((p.length & 0x80) != 0u)
     {  // Long form length:
         std::size_t const cnt = p.length & 0x7F;
 

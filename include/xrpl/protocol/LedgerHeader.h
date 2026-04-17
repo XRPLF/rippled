@@ -19,7 +19,7 @@ struct LedgerHeader
     //
 
     LedgerIndex seq = 0;
-    NetClock::time_point parentCloseTime = {};
+    NetClock::time_point parentCloseTime;
 
     //
     // For closed ledgers
@@ -51,7 +51,7 @@ struct LedgerHeader
     // closed. For open ledgers, the time the ledger
     // will close if there's no transactions.
     //
-    NetClock::time_point closeTime = {};
+    NetClock::time_point closeTime;
 };
 
 // ledger close flags

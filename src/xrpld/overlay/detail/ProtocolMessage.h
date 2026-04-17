@@ -264,7 +264,9 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
             return {};
     }
     else if (!m->ParseFromZeroCopyStream(&stream))
+    {
         return {};
+    }
 
     return m;
 }

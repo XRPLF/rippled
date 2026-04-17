@@ -1,16 +1,29 @@
-#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
+
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
 
-#include <xrpl/core/JobQueue.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
