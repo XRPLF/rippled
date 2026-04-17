@@ -4,10 +4,10 @@
     The public SpanGuard.h header contains only standard-library types
     and forward-declares the Impl struct.
 
-    Static factory methods (rpcSpan, txSpan, etc.) access the global
-    Telemetry instance via Telemetry::getInstance(), check the relevant
-    shouldTrace*() flag, and return either an active guard with a real
-    Span+Scope or a null guard whose methods are all no-ops.
+    Static factory methods access the global Telemetry instance via
+    Telemetry::getInstance(), check whether the requested TraceCategory
+    is enabled, and return either an active guard with a real Span+Scope
+    or a null guard whose methods are all no-ops.
 
     The Impl struct holds the OTel Span (shared_ptr) and Scope.
     Scope is non-movable, but since Impl lives behind a unique_ptr,
@@ -109,6 +109,28 @@ operator bool() const
 
 // ===== Static factory methods ==============================================
 
+/** Check whether the given TraceCategory is enabled on the Telemetry instance.
+    @return true if the category's shouldTrace*() flag is on.
+*/
+static bool
+isCategoryEnabled(Telemetry const& tel, TraceCategory cat)
+{
+    switch (cat)
+    {
+        case TraceCategory::Rpc:
+            return tel.shouldTraceRpc();
+        case TraceCategory::Transactions:
+            return tel.shouldTraceTransactions();
+        case TraceCategory::Consensus:
+            return tel.shouldTraceConsensus();
+        case TraceCategory::Peer:
+            return tel.shouldTracePeer();
+        case TraceCategory::Ledger:
+            return tel.shouldTraceLedger();
+    }
+    return false;  // unreachable, silences compiler warning
+}
+
 SpanGuard
 SpanGuard::span(std::string_view name)
 {
@@ -119,48 +141,13 @@ SpanGuard::span(std::string_view name)
 }
 
 SpanGuard
-SpanGuard::rpcSpan(std::string_view name)
+SpanGuard::span(TraceCategory cat, std::string_view prefix, std::string_view name)
 {
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !tel->shouldTraceRpc())
+    if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
-}
-
-SpanGuard
-SpanGuard::txSpan(std::string_view name)
-{
-    auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !tel->shouldTraceTransactions())
-        return {};
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
-}
-
-SpanGuard
-SpanGuard::consensusSpan(std::string_view name)
-{
-    auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !tel->shouldTraceConsensus())
-        return {};
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
-}
-
-SpanGuard
-SpanGuard::peerSpan(std::string_view name)
-{
-    auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !tel->shouldTracePeer())
-        return {};
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
-}
-
-SpanGuard
-SpanGuard::ledgerSpan(std::string_view name)
-{
-    auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !tel->shouldTraceLedger())
-        return {};
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
+    auto fullName = std::string(prefix) + "." + std::string(name);
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName)));
 }
 
 // ===== Child / linked span creation ========================================

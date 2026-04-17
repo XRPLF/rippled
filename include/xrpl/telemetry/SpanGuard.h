@@ -9,27 +9,23 @@
 
     Dependency diagram:
 
-        +-----------------------------------------+
-        |              SpanGuard                   |
-        +-----------------------------------------+
-        | - impl_ : unique_ptr<Impl>  (pimpl)     |
-        +-----------------------------------------+
-        | + rpcSpan(name) : SpanGuard    [static]  |
-        | + txSpan(name) : SpanGuard     [static]  |
-        | + consensusSpan(name)          [static]  |
-        | + peerSpan(name)               [static]  |
-        | + ledgerSpan(name)             [static]  |
-        | + span(name)                   [static]  |
-        | + childSpan(name) : SpanGuard            |
-        | + linkedSpan(name) : SpanGuard           |
-        | + captureContext() : SpanContext          |
-        | + setAttribute(key, value)               |
-        | + setOk() / setError(desc)               |
-        | + addEvent(name)                         |
-        | + recordException(e)                     |
-        | + discard()                              |
-        | + operator bool()                        |
-        +-----------------------------------------+
+        +-------------------------------------------+
+        |              SpanGuard                     |
+        +-------------------------------------------+
+        | - impl_ : unique_ptr<Impl>  (pimpl)       |
+        +-------------------------------------------+
+        | + span(name) : SpanGuard          [static] |
+        | + span(cat, prefix, name)         [static] |
+        | + childSpan(name) : SpanGuard              |
+        | + linkedSpan(name) : SpanGuard             |
+        | + captureContext() : SpanContext            |
+        | + setAttribute(key, value)                 |
+        | + setOk() / setError(desc)                 |
+        | + addEvent(name)                           |
+        | + recordException(e)                       |
+        | + discard()                                |
+        | + operator bool()                          |
+        +-------------------------------------------+
                         |  hides (pimpl)
                 +-------+-------+
                 |               |
@@ -47,9 +43,14 @@
 
     Usage examples:
 
-    1. Basic RPC tracing (factory method):
+    1. Basic RPC tracing (factory method with category):
     @code
-        auto span = SpanGuard::rpcSpan("rpc.command.submit");
+        // Define prefix at class level:
+        static constexpr std::string_view spanPrefix_ = "rpc.command";
+
+        // At the call site:
+        auto span = SpanGuard::span(
+            TraceCategory::Rpc, spanPrefix_, "submit");
         span.setAttribute("xrpl.rpc.command", "submit");
         span.setAttribute("xrpl.rpc.status", "success");
         // span ended automatically on scope exit
@@ -57,7 +58,8 @@
 
     2. Error recording:
     @code
-        auto span = SpanGuard::rpcSpan("rpc.command.submit");
+        auto span = SpanGuard::span(
+            TraceCategory::Rpc, "rpc.command", "submit");
         try {
             doWork();
             span.setOk();
@@ -69,7 +71,8 @@
     3. Cross-thread context propagation:
     @code
         // Thread A: create span and capture context
-        auto span = SpanGuard::consensusSpan("consensus.round");
+        auto span = SpanGuard::span(
+            TraceCategory::Consensus, "consensus", "round");
         auto ctx = span.captureContext();
 
         // Thread B: create child with captured context
@@ -78,7 +81,8 @@
 
     4. Conditional check (rarely needed — methods are no-ops on null):
     @code
-        auto span = SpanGuard::rpcSpan("rpc.request");
+        auto span = SpanGuard::span(
+            TraceCategory::Rpc, "rpc", "request");
         if (span) {
             // expensive attribute computation only when active
             span.setAttribute("xrpl.rpc.payload_size", computeSize());
@@ -87,7 +91,8 @@
 
     5. Tail-based filtering via discard():
     @code
-        auto span = SpanGuard::txSpan("tx.process");
+        auto span = SpanGuard::span(
+            TraceCategory::Transactions, "tx", "process");
         auto result = preflight(tx);
         if (result != tesSUCCESS) {
             span.discard();  // drop span, never exported
@@ -118,6 +123,14 @@
 
 namespace xrpl {
 namespace telemetry {
+
+/** Trace subsystem categories for conditional span creation.
+
+    Each value maps to a runtime config flag (e.g. `trace_rpc=1`).
+    Used by SpanGuard::span(TraceCategory, prefix, name) to decide
+    whether to create a real span or return a null guard.
+*/
+enum class TraceCategory { Rpc, Transactions, Consensus, Peer, Ledger };
 
 /** Opaque wrapper for an OTel context snapshot.
 
@@ -180,32 +193,22 @@ public:
     operator=(SpanGuard const&) = delete;
 
     // --- Static factory methods ----------------------------------------
-    // Each checks the global Telemetry instance and the corresponding
-    // shouldTrace*() flag. Returns a null guard if tracing is off.
 
-    /** Create an unconditional span (always created if telemetry is on). */
+    /** Create an unconditional span (always created if telemetry is on).
+        @param name  Full span name (e.g. "app.startup").
+    */
     static SpanGuard
     span(std::string_view name);
 
-    /** Create a span guarded by shouldTraceRpc(). */
+    /** Create a span guarded by a TraceCategory flag.
+        The span name is built as "prefix.name". Returns a null guard
+        if the category is disabled in config.
+        @param cat     Trace subsystem category.
+        @param prefix  Span name prefix (e.g. "rpc.command").
+        @param name    Span name suffix (e.g. "submit").
+    */
     static SpanGuard
-    rpcSpan(std::string_view name);
-
-    /** Create a span guarded by shouldTraceTransactions(). */
-    static SpanGuard
-    txSpan(std::string_view name);
-
-    /** Create a span guarded by shouldTraceConsensus(). */
-    static SpanGuard
-    consensusSpan(std::string_view name);
-
-    /** Create a span guarded by shouldTracePeer(). */
-    static SpanGuard
-    peerSpan(std::string_view name);
-
-    /** Create a span guarded by shouldTraceLedger(). */
-    static SpanGuard
-    ledgerSpan(std::string_view name);
+    span(TraceCategory cat, std::string_view prefix, std::string_view name);
 
     // --- Child / linked span creation ----------------------------------
 
@@ -332,27 +335,7 @@ public:
         return {};
     }
     static SpanGuard
-    rpcSpan(std::string_view)
-    {
-        return {};
-    }
-    static SpanGuard
-    txSpan(std::string_view)
-    {
-        return {};
-    }
-    static SpanGuard
-    consensusSpan(std::string_view)
-    {
-        return {};
-    }
-    static SpanGuard
-    peerSpan(std::string_view)
-    {
-        return {};
-    }
-    static SpanGuard
-    ledgerSpan(std::string_view)
+    span(TraceCategory, std::string_view, std::string_view)
     {
         return {};
     }
