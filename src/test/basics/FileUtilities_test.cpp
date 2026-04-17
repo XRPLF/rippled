@@ -2,7 +2,10 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 namespace xrpl {
 

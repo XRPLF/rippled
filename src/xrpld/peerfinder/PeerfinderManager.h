@@ -2,13 +2,12 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 
 #include <boost/asio/ip/tcp.hpp>
-
-#include "xrpld/peerfinder/detail/Tuning.h"
 
 #include <string_view>
 

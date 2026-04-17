@@ -1,16 +1,35 @@
+#include <xrpl/net/HTTPClient.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/net/AutoSocket.h>
-#include <xrpl/net/HTTPClient.h>
 #include <xrpl/net/HTTPClientSSLContext.h>
 
-#include <boost/asio.hpp>
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/completion_condition.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/resolver_query_base.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/detail/system_category.hpp>
+#include <boost/system/system_error.hpp>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdlib>
+#include <deque>
+#include <functional>
+#include <iterator>
+#include <memory>
 #include <optional>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 
@@ -184,7 +203,7 @@ public:
             JLOG(j_.trace()) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message();
 
             // Can't do anything sound.
-            abort();
+            std::abort();
         }
         else
         {

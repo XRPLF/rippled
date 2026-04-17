@@ -120,7 +120,7 @@ public:
         return amount_;
     }
 
-    inline int
+    int
     signum() const
     {
         return amount_.signum();
@@ -257,8 +257,8 @@ struct XRP_t
         return xrpIssue();
     }
 
-    bool
-    integral() const
+    static bool
+    integral()
     {
         return true;
     }
@@ -482,11 +482,10 @@ public:
     MPT(std::string const& n = "") : name(n), issuanceID(noMPT())
     {
     }
-    MPT(Asset const& asset) : name(""), issuanceID(asset.get<MPTIssue>())
+    MPT(Asset const& asset) : issuanceID(asset.get<MPTIssue>())
     {
     }
-    MPT(AccountID const& account, std::int32_t seq = 0)
-        : name(""), issuanceID(makeMptID(seq, account))
+    MPT(AccountID const& account, std::int32_t seq = 0) : issuanceID(makeMptID(seq, account))
     {
     }
 
@@ -508,8 +507,8 @@ public:
     {
         return mptIssue();
     }
-    bool
-    integral() const
+    static bool
+    integral()
     {
         return true;
     }
