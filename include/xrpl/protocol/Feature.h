@@ -107,8 +107,8 @@ validFeatureName(auto fn) -> bool
     return true;
 }
 
-enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
-enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
+enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes = 1 };
+enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported = 1 };
 
 /** All amendments libxrpl knows about. */
 std::map<std::string, AmendmentSupport> const&
@@ -375,8 +375,10 @@ void
 foreachFeature(FeatureBitset bs, F&& f)
 {
     for (size_t i = 0; i < bs.size(); ++i)
+    {
         if (bs[i])
             f(bitsetIndexToFeature(i));
+    }
 }
 
 #pragma push_macro("XRPL_FEATURE")

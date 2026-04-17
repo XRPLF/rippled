@@ -41,8 +41,10 @@ findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
     {
         node = view.peek(keylet::page(directory, page));
         if (!node)
+        {
             Throw<std::logic_error>(
                 "Directory chain: root back-pointer broken.");  // LCOV_EXCL_LINE
+        }
     }
 
     auto indexes = node->getFieldV256(sfIndexes);

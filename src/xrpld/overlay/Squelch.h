@@ -89,7 +89,7 @@ Squelch<clock_type>::expireSquelch(PublicKey const& validator)
     auto const& it = squelched_.find(validator);
     if (it == squelched_.end())
         return true;
-    else if (it->second > now)
+    if (it->second > now)
         return false;
 
     // squelch expired

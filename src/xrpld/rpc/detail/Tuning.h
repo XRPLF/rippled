@@ -55,7 +55,7 @@ static int constexpr binaryPageLength = 2048;
 static int constexpr jsonPageLength = 256;
 
 /** Maximum number of pages in a LedgerData response. */
-inline int constexpr pageLength(bool isBinary)
+int constexpr pageLength(bool isBinary)
 {
     return isBinary ? binaryPageLength : jsonPageLength;
 }

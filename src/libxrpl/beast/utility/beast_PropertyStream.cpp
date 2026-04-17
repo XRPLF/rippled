@@ -15,7 +15,7 @@ namespace beast {
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Item::Item(Source* source) : ListNode(), m_source(source)
+PropertyStream::Item::Item(Source* source) : m_source(source)
 {
 }
 
