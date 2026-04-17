@@ -303,8 +303,6 @@ buffers_to_string(ConstBufferSequence const& bs)
 void
 ServerHandler::onRequest(Session& session)
 {
-    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.request");
-
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
@@ -504,6 +502,8 @@ ServerHandler::processSession(
         jr[jss::result] = RPC::make_error(rpcINTERNAL);
         JLOG(m_journal.error()) << "Exception while processing WS: " << ex.what() << "\n"
                                 << "Input JSON: " << Json::Compact{Json::Value{jv}};
+        XRPL_TRACE_EXCEPTION(ex);
+        XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");
         // LCOV_EXCL_STOP
     }
 
@@ -563,6 +563,8 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
+    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.http_request");
+
     processRequest(
         session->port(),
         buffers_to_string(session->request().body().data()),
@@ -890,6 +892,8 @@ ServerHandler::processRequest(
             JLOG(m_journal.error())
                 << "Internal error : " << ex.what()
                 << " when processing request: " << Json::Compact{Json::Value{params}};
+            XRPL_TRACE_EXCEPTION(ex);
+            XRPL_TRACE_SET_ATTR("xrpl.rpc.status", "error");
             // LCOV_EXCL_STOP
         }
 
