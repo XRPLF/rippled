@@ -8,15 +8,18 @@
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/core/Config.h>
 
+#include <xrpl/basics/ToString.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
 #include <memory>
+#include <sstream>
 #include <vector>
 
 namespace xrpl {

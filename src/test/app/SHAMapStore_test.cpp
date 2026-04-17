@@ -1,6 +1,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/noop.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
@@ -30,6 +31,7 @@
 #include <map>
 #include <memory>
 #include <optional>
+#include <sstream>
 #include <string>
 #include <thread>
 #include <utility>
@@ -653,9 +655,13 @@ public:
                     std::stringstream expectedRange;
                     expectedRange << minSeq << "-" << (deleteSeq - 1);
                     if (deleteSeq + 1 == maxSeq)
+                    {
                         expectedRange << "," << maxSeq;
+                    }
                     else if (deleteSeq < maxSeq)
+                    {
                         expectedRange << "," << (deleteSeq + 1) << "-" << maxSeq;
+                    }
                     return expectedRange.str();
                 };
                 BEAST_EXPECTS(

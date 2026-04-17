@@ -6,8 +6,10 @@
 #include <xrpld/core/ConfigSections.h>
 
 #include <atomic>
+#include <cstdint>
 #include <map>
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace xrpl {

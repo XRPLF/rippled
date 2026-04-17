@@ -624,7 +624,7 @@ SHAMapStoreImp::healthWait()
     {
         // this value shouldn't change, so grab it while we have the
         // lock
-        auto const lastGood = lastGoodValidatedLedger_;
+        auto const lowerBound = lastGoodValidatedLedger_;
 
         lock.unlock();
 
@@ -633,13 +633,14 @@ SHAMapStoreImp::healthWait()
         JLOG(stream) << "Waiting " << recoveryWaitTime_.count()
                      << "s for node to stabilize. state: "
                      << app_.getOPs().strOperatingMode(mode, false) << ". age " << age.count()
-                     << "s. Missing ledgers: " << numMissing << ". Expect: " << lastGood << "-"
+                     << "s. Missing ledgers: " << numMissing << ".  Expect: " << lowerBound << "-"
                      << index << ". Complete ledgers: " << ledgerMaster_->getCompleteLedgers();
         std::this_thread::sleep_for(recoveryWaitTime_);
         index = ledgerMaster_->getValidLedgerIndex();
         age = ledgerMaster_->getValidatedLedgerAge();
         mode = netOPs_->getOperatingMode();
-        numMissing = ledgerMaster_->missingFromCompleteLedgerRange(lastGood, index);
+        numMissing =
+            lowerBound == 0 ? 0 : ledgerMaster_->missingFromCompleteLedgerRange(lowerBound, index);
 
         lock.lock();
     }
