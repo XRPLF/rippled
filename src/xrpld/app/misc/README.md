@@ -1,6 +1,6 @@
 # Fee Voting
 
-The Ripple payment protocol enforces a fee schedule expressed in units of the
+The XRPL payment protocol enforces a fee schedule expressed in units of the
 native currency, XRP. Fees for transactions are paid directly from the account
 owner. There are also reserve requirements for each item that occupies storage
 in the ledger. The reserve fee schedule contains both a per-account reserve,
@@ -20,7 +20,7 @@ subsequent ledgers a new fee schedule is enacted.
 
 ## Consensus
 
-The Ripple consensus algorithm allows distributed participants to arrive at
+The XRPL consensus algorithm allows distributed participants to arrive at
 the same answer for yes/no questions. The canonical case for consensus is
 whether or not a particular transaction is included in the ledger. Fees
 present a more difficult challenge, since the decision on the new fee is not
@@ -54,7 +54,7 @@ be converged in the consensus process, the following algorithm is used:
 
 ## Configuration
 
-A validating instance of rippled uses information in the configuration file
+A validating instance of xrpld uses information in the configuration file
 to determine how it wants to vote on the fee schedule. It is the responsibility
 of the administrator to set these values.
 
@@ -64,7 +64,7 @@ of the administrator to set these values.
 
 An Amendment is a new or proposed change to a ledger rule. Ledger rules affect
 transaction processing and consensus; peers must use the same set of rules for
-consensus to succeed, otherwise different instances of rippled will get
+consensus to succeed, otherwise different instances of xrpld will get
 different results. Amendments can be almost anything but they must be accepted
 by a network majority through a consensus process before they are utilized. An
 Amendment must receive at least an 80% approval rate from validating nodes for
@@ -77,7 +77,7 @@ process of an Amendment from its conception to approval and usage.
 
 - Some members contribute their time and work to develop the Amendment.
 
-- A pull request is created and the new code is folded into a rippled build
+- A pull request is created and the new code is folded into an xrpld build
   and made available for use.
 
 - The consensus process begins with the validating nodes.

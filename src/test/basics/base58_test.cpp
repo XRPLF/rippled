@@ -1,11 +1,23 @@
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/detail/token_errors.h>
+
+#include <boost/multiprecision/cpp_int.hpp>  // IWYU pragma: keep
+
+#include <algorithm>
+#include <cassert>
+#include <cstdint>
+#include <cstring>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <vector>
 #ifndef _MSC_VER
 
-#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/detail/b58_utils.h>
 #include <xrpl/protocol/tokens.h>
-
-#include <boost/multiprecision/cpp_int.hpp>
-#include <boost/random.hpp>
 
 #include <array>
 #include <cstddef>

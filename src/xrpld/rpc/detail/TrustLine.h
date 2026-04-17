@@ -69,25 +69,25 @@ public:
     bool
     getAuth() const
     {
-        return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return (mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
     bool
     getAuthPeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return (mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
     bool
     getNoRipple() const
     {
-        return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return (mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
     bool
     getNoRipplePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return (mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
     LineDirection
@@ -106,28 +106,28 @@ public:
     bool
     getFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return (mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
     /** Have we set the deep freeze flag on our peer */
     bool
     getDeepFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return (mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
     /** Has the peer set the freeze flag on us */
     bool
     getFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return (mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
     /** Has the peer set the deep freeze flag on us */
     bool
     getDeepFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return (mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
     STAmount const&

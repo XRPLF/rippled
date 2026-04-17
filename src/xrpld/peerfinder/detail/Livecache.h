@@ -409,7 +409,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
                                 << " at hops " << ep.hops;
         return;
     }
-    else if (!result.second && (ep.hops > e.endpoint.hops))
+    if (!result.second && (ep.hops > e.endpoint.hops))
     {
         // Drop duplicates at higher hops
         std::size_t const excess(ep.hops - e.endpoint.hops);

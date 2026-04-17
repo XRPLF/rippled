@@ -41,14 +41,14 @@ public:
     addOrderBook(Book const& book) override;
 
     std::vector<Book>
-    getBooksByTakerPays(Issue const& issue, std::optional<Domain> const& domain = std::nullopt)
+    getBooksByTakerPays(Asset const& asset, std::optional<Domain> const& domain = std::nullopt)
         override;
 
     int
-    getBookSize(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) override;
+    getBookSize(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) override;
 
     bool
-    isBookToXRP(Issue const& issue, std::optional<Domain> const& domain = std::nullopt) override;
+    isBookToXRP(Asset const& asset, std::optional<Domain> const& domain = std::nullopt) override;
 
     // OrderBookDBImpl-specific methods
     void
@@ -71,16 +71,16 @@ private:
     int const pathSearchMax_;
     bool const standalone_;
 
-    // Maps order books by "issue in" to "issue out":
-    hardened_hash_map<Issue, hardened_hash_set<Issue>> allBooks_;
+    // Maps order books by "asset in" to "asset out":
+    hardened_hash_map<Asset, hardened_hash_set<Asset>> allBooks_;
 
-    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>> domainBooks_;
-
-    // does an order book to XRP exist
-    hash_set<Issue> xrpBooks_;
+    hardened_hash_map<std::pair<Asset, Domain>, hardened_hash_set<Asset>> domainBooks_;
 
     // does an order book to XRP exist
-    hash_set<std::pair<Issue, Domain>> xrpDomainBooks_;
+    hash_set<Asset> xrpBooks_;
+
+    // does an order book to XRP exist
+    hash_set<std::pair<Asset, Domain>> xrpDomainBooks_;
 
     std::recursive_mutex mLock;
 

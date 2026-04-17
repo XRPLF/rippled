@@ -208,18 +208,19 @@ struct FlowDebugInfo
             auto writeXrpAmtList = [&write_list](
                                        std::vector<EitherAmount> const& amts, char delim = ';') {
                 auto get_val = [](EitherAmount const& a) -> std::string {
-                    return xrpl::to_string(a.xrp);
+                    return xrpl::to_string(a.get<XRPAmount>());
                 };
                 write_list(amts, get_val, delim);
             };
             auto writeIouAmtList = [&write_list](
                                        std::vector<EitherAmount> const& amts, char delim = ';') {
                 auto get_val = [](EitherAmount const& a) -> std::string {
-                    return xrpl::to_string(a.iou);
+                    return xrpl::to_string(a.get<IOUAmount>());
                 };
                 write_list(amts, get_val, delim);
             };
             auto writeIntList = [&write_list](std::vector<size_t> const& vals, char delim = ';') {
+                // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
                 auto get_val = [](size_t const& v) -> size_t const& { return v; };
                 write_list(vals, get_val);
             };
@@ -254,28 +255,44 @@ struct FlowDebugInfo
 
             ostr << ", in_pass: ";
             if (passInfo.nativeIn)
+            {
                 writeXrpAmtList(passInfo.in);
+            }
             else
+            {
                 writeIouAmtList(passInfo.in);
+            }
             ostr << ", out_pass: ";
             if (passInfo.nativeOut)
+            {
                 writeXrpAmtList(passInfo.out);
+            }
             else
+            {
                 writeIouAmtList(passInfo.out);
+            }
             ostr << ", num_active: ";
             writeIntList(passInfo.numActive);
             if (!passInfo.liquiditySrcIn.empty() && !passInfo.liquiditySrcIn.back().empty())
             {
                 ostr << ", l_src_in: ";
                 if (passInfo.nativeIn)
+                {
                     writeNestedXrpAmtList(passInfo.liquiditySrcIn);
+                }
                 else
+                {
                     writeNestedIouAmtList(passInfo.liquiditySrcIn);
+                }
                 ostr << ", l_src_out: ";
                 if (passInfo.nativeOut)
+                {
                     writeNestedXrpAmtList(passInfo.liquiditySrcOut);
+                }
                 else
+                {
                     writeNestedIouAmtList(passInfo.liquiditySrcOut);
+                }
             }
         }
 

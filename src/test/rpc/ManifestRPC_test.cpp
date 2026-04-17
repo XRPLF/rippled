@@ -1,12 +1,15 @@
 // Copyright (c) 2020 Dev Null Productions
 
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 
+#include <memory>
 #include <string>
 
 namespace xrpl {

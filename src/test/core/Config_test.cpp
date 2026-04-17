@@ -4,15 +4,31 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem.hpp>
-#include <boost/format.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/format.hpp>  // IWYU pragma: keep
+#include <boost/format/free_funcs.hpp>
+#include <boost/lexical_cast/bad_lexical_cast.hpp>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <exception>
 #include <fstream>
+#include <optional>
+#include <ostream>
 #include <regex>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace detail {
@@ -81,7 +97,7 @@ time.apple.com
 time.nist.gov
 pool.ntp.org
 
-# Where to find some other servers speaking the Ripple protocol.
+# Where to find some other servers speaking the XRPL protocol.
 #
 [ips]
 r.ripple.com 51235
@@ -107,7 +123,7 @@ backend=sqlite
 }
 
 /**
-   Write a xrpld config file and remove when done.
+   Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
@@ -507,7 +523,7 @@ port_wss_admin
             {
                 c.loadFromString(boost::str(configTemplate % validationSeed % token));
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -528,7 +544,7 @@ port_wss_admin
 main
 )xrpldConfig");
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -541,7 +557,7 @@ main
             c.loadFromString(R"xrpldConfig(
 )xrpldConfig");
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -556,7 +572,7 @@ main
 255
 )xrpldConfig");
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -571,7 +587,7 @@ main
 10000
 )xrpldConfig");
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -598,7 +614,7 @@ main
                 Config c;
                 c.loadFromString(boost::str(cc % missingPath));
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -617,7 +633,7 @@ main
                 Config c;
                 c.loadFromString(boost::str(cc % invalidFile.string()));
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -725,7 +741,7 @@ trust-these-validators.gov
                 c.loadFromString(toLoad);
                 fail();
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -754,7 +770,7 @@ value = 2
                 c.loadFromString(toLoad);
                 fail();
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -802,7 +818,7 @@ trust-these-validators.gov
                 c.loadFromString(toLoad);
                 fail();
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -948,7 +964,7 @@ trust-these-validators.gov
                 c.loadFromString(boost::str(cc % vtg.validatorsFile()));
                 fail();
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -974,7 +990,7 @@ trust-these-validators.gov
                 Config c2;
                 c2.loadFromString(boost::str(cc % vtg.validatorsFile()));
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -1451,7 +1467,7 @@ r.ripple.com:51235
                     fail();
                 }
             }
-            catch (std::runtime_error&)
+            catch (std::runtime_error const&)
             {
                 if (!shouldPass)
                 {
@@ -1477,7 +1493,7 @@ r.ripple.com:51235
                 c.loadFromString("[overlay]\nmax_unknown_time=" + value);
                 return c.MAX_UNKNOWN_TIME;
             }
-            catch (std::runtime_error&)
+            catch (std::runtime_error const&)
             {
                 return {};
             }
@@ -1511,7 +1527,7 @@ r.ripple.com:51235
                 c.loadFromString("[overlay]\nmax_diverged_time=" + value);
                 return c.MAX_DIVERGED_TIME;
             }
-            catch (std::runtime_error&)
+            catch (std::runtime_error const&)
             {
                 return {};
             }

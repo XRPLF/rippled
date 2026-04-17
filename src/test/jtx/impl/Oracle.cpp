@@ -1,11 +1,32 @@
 #include <test/jtx/Oracle.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/lexical_cast/try_lexical_convert.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regex_replace.hpp>
 
-#include <vector>
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <variant>
 
 namespace xrpl {
 namespace test {
@@ -18,7 +39,7 @@ Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
     // {close-maxLastUpdateTimeDelta, close+maxLastUpdateTimeDelta}.
     // To make the validation work and to make the clock consistent
     // for tests running at different time, simulate Unix time starting
-    // on testStartTime since Ripple epoch.
+    // on testStartTime since XRPL epoch.
     auto const now = env_.timeKeeper().now();
     if (now.time_since_epoch().count() == 0 || arg.close)
         env_.close(now + testStartTime - epoch_offset);

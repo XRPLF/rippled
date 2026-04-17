@@ -1,19 +1,62 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/delivermin.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/quality.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/require.h>
 #include <test/jtx/sendmax.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/tx/paths/AMMOffer.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/paths/detail/StrandFlow.h>
-#include <xrpl/tx/transactors/dex/AMMContext.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
+#include <cstdint>
+#include <optional>
+#include <set>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -1348,7 +1391,7 @@ private:
         Env env = pathTestEnv();
         env.fund(XRP(100'000'250), alice);
         fund(env, gw, {carol, bob}, {USD(100)}, Fund::All);
-        fund(env, gw, {alice}, {USD(100)}, Fund::IOUOnly);
+        fund(env, gw, {alice}, {USD(100)}, Fund::TokenOnly);
         AMM const ammCarol(env, carol, XRP(100), USD(100));
 
         STPathSet st;
@@ -1363,7 +1406,7 @@ private:
         BEAST_EXPECT(sa == XRP(100'000'000));
         // Bob gets ~99.99USD. This is the amount Bob
         // can get out of AMM for 100,000,000XRP.
-        BEAST_EXPECT(equal(da, STAmount{bob["USD"].issue(), UINT64_C(99'9999000001), -10}));
+        BEAST_EXPECT(equal(da, STAmount{bob["USD"], UINT64_C(99'9999000001), -10}));
     }
 
     // carol holds gateway AUD, sells gateway AUD for XRP
@@ -1941,10 +1984,10 @@ private:
                 };
                 {
                     // BTC -> USD
-                    STPath const p1({IPE(USD.issue())});
+                    STPath const p1({IPE(USD)});
                     paths.push_back(p1);
                     // BTC -> EUR -> USD
-                    STPath const p2({IPE(EUR.issue()), IPE(USD.issue())});
+                    STPath const p2({IPE(EUR), IPE(USD)});
                     paths.push_back(p2);
                 }
 
@@ -3324,8 +3367,7 @@ private:
             env.trust(USD(1'000), alice, bob);
             env.trust(EUR(1'000), alice, bob);
             env.close();
-            fund(env, bob, {alice, gw}, {BobUSD(100), BobEUR(100)}, Fund::IOUOnly);
-            env.close();
+            fund(env, bob, {alice, gw}, {BobUSD(100), BobEUR(100)}, Fund::TokenOnly);
 
             AMM const ammBobXRP_USD(env, bob, XRP(100), BobUSD(100));
             env(offer(gw, XRP(100), USD(100)), txflags(tfPassive));

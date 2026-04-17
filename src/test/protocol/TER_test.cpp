@@ -1,6 +1,8 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstddef>
+#include <string>
 #include <tuple>
 #include <type_traits>
 
