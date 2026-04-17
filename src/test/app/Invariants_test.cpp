@@ -65,7 +65,7 @@ class Invariants_test : public beast::unit_test::suite
     defaultAmendments()
     {
         return ripple::test::jtx::testable_amendments() |
-            featureInvariantsV1_1 | fixSecurity3_1_3;
+            featureInvariantsV1_1 | featureSingleAssetVault | fixSecurity3_1_3;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -96,10 +96,48 @@ class Invariants_test : public beast::unit_test::suite
         Preclose const& preclose = {},
         TxAccount setTxAccount = TxAccount::None)
     {
+        doInvariantCheck(
+            test::jtx::Env(*this, defaultAmendments()),
+            expect_logs,
+            precheck,
+            fee,
+            tx,
+            ters,
+            preclose,
+            setTxAccount);
+    }
+
+    /** Run a specific test case to put the ledger into a state that will be
+     * detected by an invariant. Simulates the actions of a transaction that
+     * would violate an invariant.
+     *
+     * @param env Custom Env to be used by the tests
+     * @param expect_logs One or more messages related to the failing invariant
+     *  that should be in the log output
+     * @precheck See "Precheck" above
+     * @fee If provided, the fee amount paid by the simulated transaction.
+     * @tx A mock transaction that took the actions to trigger the invariant. In
+     *  most cases, only the type matters.
+     * @ters The TER results expected on the two passes of the invariant
+     *  checker.
+     * @preclose See "Preclose" above. Note that @preclose runs *before*
+     * @precheck, but is the last parameter for historical reasons
+     * @setTxAccount optionally set to add sfAccount to tx (either A1 or A2)
+     */
+    enum class TxAccount : int { None = 0, A1, A2 };
+    void
+    doInvariantCheck(
+        test::jtx::Env&& env,
+        std::vector<std::string> const& expect_logs,
+        Precheck const& precheck,
+        XRPAmount fee = XRPAmount{},
+        STTx tx = STTx{ttACCOUNT_SET, [](STObject&) {}},
+        std::initializer_list<TER> ters =
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+        Preclose const& preclose = {},
+        TxAccount setTxAccount = TxAccount::None)
+    {
         using namespace test::jtx;
-        FeatureBitset amendments = testable_amendments() |
-            featureInvariantsV1_1 | featureSingleAssetVault;
-        Env env{*this, amendments};
 
         Account const A1{"A1"};
         Account const A2{"A2"};
