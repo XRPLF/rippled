@@ -382,11 +382,12 @@ private:
             , targetTxnCount_(
                   setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
                                                              : setup.targetTxnInLedger)
-            , maximumTxnCount_(
-                  setup.maximumTxnInLedger ? *setup.maximumTxnInLedger < targetTxnCount_
-                          ? targetTxnCount_
-                          : *setup.maximumTxnInLedger
-                                           : std::optional<std::size_t>(std::nullopt))
+            , maximumTxnCount_([&]() -> std::optional<std::size_t> {
+                if (!setup.maximumTxnInLedger)
+                    return std::nullopt;
+                return *setup.maximumTxnInLedger < targetTxnCount_ ? targetTxnCount_
+                                                                   : *setup.maximumTxnInLedger;
+            }())
             , txnsExpected_(minimumTxnCount_)
             , recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
@@ -672,7 +673,7 @@ private:
         bool
         empty() const
         {
-            return !getTxnCount();
+            return getTxnCount() == 0u;
         }
 
         /// Find the entry in transactions that precedes seqProx, if one does.

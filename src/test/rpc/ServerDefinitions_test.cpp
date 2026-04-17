@@ -1,6 +1,7 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/TxFlags.h>

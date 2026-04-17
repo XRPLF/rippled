@@ -183,11 +183,17 @@ private:
                 return ParseResult::badChar;
 
             if (c >= 'a')
+            {
                 nibble = static_cast<std::uint32_t>(c - 'a' + 0xA);
+            }
             else if (c >= 'A')
+            {
                 nibble = static_cast<std::uint32_t>(c - 'A' + 0xA);
+            }
             else if (c <= '9')
+            {
                 nibble = static_cast<std::uint32_t>(c - '0');
+            }
 
             if (nibble > 0xFu)
                 return ParseResult::badChar;
@@ -308,8 +314,10 @@ public:
     signum() const
     {
         for (int i = 0; i < WIDTH; i++)
+        {
             if (data_[i] != 0)
                 return 1;
+        }
 
         return 0;
     }
@@ -390,7 +398,7 @@ public:
         return *this;
     }
 
-    base_uint const
+    base_uint
     operator++(int)
     {
         // postfix operator
@@ -415,7 +423,7 @@ public:
         return *this;
     }
 
-    base_uint const
+    base_uint
     operator--(int)
     {
         // postfix operator
@@ -444,7 +452,7 @@ public:
     {
         std::uint64_t carry = 0;
 
-        for (int i = WIDTH; i--;)
+        for (int i = WIDTH - 1; i >= 0; i--)
         {
             std::uint64_t const n = carry + boost::endian::big_to_native(data_[i]) +
                 boost::endian::big_to_native(b.data_[i]);
@@ -532,7 +540,7 @@ using uint256 = base_uint<256>;
 using uint192 = base_uint<192>;
 
 template <std::size_t Bits, class Tag>
-[[nodiscard]] inline constexpr std::strong_ordering
+[[nodiscard]] constexpr std::strong_ordering
 operator<=>(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 {
     // This comparison might seem wrong on a casual inspection because it
@@ -553,7 +561,7 @@ operator<=>(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 }
 
 template <std::size_t Bits, typename Tag>
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 {
     return (lhs <=> rhs) == 0;
@@ -561,7 +569,7 @@ operator==(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline constexpr bool
+constexpr bool
 operator==(base_uint<Bits, Tag> const& a, std::uint64_t b)
 {
     return a == base_uint<Bits, Tag>(b);
@@ -569,28 +577,28 @@ operator==(base_uint<Bits, Tag> const& a, std::uint64_t b)
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator^(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) ^= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator&(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) &= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator|(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) |= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator+(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) += b;

@@ -1,13 +1,28 @@
-#include <xrpld/app/ledger/ConsensusTransSetSF.h>
-#include <xrpld/app/ledger/InboundLedgers.h>
-#include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
-#include <xrpld/app/main/Application.h>
 
+#include <xrpld/app/ledger/ConsensusTransSetSF.h>
+#include <xrpld/app/ledger/InboundTransactions.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <exception>
 #include <memory>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -33,7 +48,7 @@ TransactionAcquire::TransactionAcquire(
           app.getJournal("TransactionAcquire"))
     , mPeerSet(std::move(peerSet))
 {
-    mMap = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
+    mMap = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app.getNodeFamily());
     mMap->setUnbacked();
 }
 

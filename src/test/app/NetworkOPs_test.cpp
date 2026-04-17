@@ -1,8 +1,19 @@
-#include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
+
+#include <memory>
 
 namespace xrpl {
 namespace test {

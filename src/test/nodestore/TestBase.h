@@ -119,7 +119,7 @@ public:
     }
 
     // Store a batch in a backend
-    void
+    static void
     storeBatch(Backend& backend, Batch const& batch)
     {
         for (int i = 0; i < batch.size(); ++i)

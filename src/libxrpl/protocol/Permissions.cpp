@@ -1,7 +1,15 @@
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
-#include <xrpl/protocol/jss.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TxFormats.h>
+
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
