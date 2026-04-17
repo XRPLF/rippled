@@ -112,9 +112,13 @@ private:
     construct(Args&&... args)
     {
         if constexpr (sizeof(T) > max_size)
+        {
             p_ = new T(std::forward<Args>(args)...);
+        }
         else
+        {
             p_ = new (&d_) T(std::forward<Args>(args)...);
+        }
     }
 
     /** Construct requested Serializable Type according to id.

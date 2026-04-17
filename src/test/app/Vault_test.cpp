@@ -4870,8 +4870,8 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        Account owner{"alice"};
-        Account depositor{"bob"};
+        Account const owner{"alice"};
+        Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
         env.fund(XRP(10000), issuer, owner, depositor);
@@ -5370,7 +5370,7 @@ class Vault_test : public beast::unit_test::suite
         };
 
         Account owner{"alice"};
-        Account depositor{"bob"};
+        Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
         env.fund(XRP(10000), issuer, owner, depositor);

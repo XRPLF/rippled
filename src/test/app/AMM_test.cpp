@@ -5976,6 +5976,7 @@ private:
     }
 
     void
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     testFixOverflowOffer(FeatureBitset featuresInitial)
     {
         using namespace jtx;
