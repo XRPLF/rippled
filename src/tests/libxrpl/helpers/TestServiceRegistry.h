@@ -28,7 +28,7 @@ public:
     }
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink(std::string const& partition, beast::severities::Severity threshold) override
+    makeSink([[maybe_unused]] std::string const&, beast::severities::Severity threshold) override
     {
         return std::make_unique<TestSink>(threshold);
     }
@@ -42,7 +42,7 @@ public:
     {
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getNetworkID() const noexcept override
     {
         return networkID_;
@@ -62,7 +62,6 @@ private:
 */
 class TestServiceRegistry : public ServiceRegistry
 {
-private:
     TestLogs logs_{beast::severities::kWarning};
     boost::asio::io_context io_context_;
     TestFamily family_{logs_.journal("TestFamily")};

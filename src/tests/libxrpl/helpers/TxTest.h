@@ -193,14 +193,14 @@ public:
      * @param feature The feature to check.
      * @return True if the feature is enabled.
      */
-    bool
+    [[nodiscard]] bool
     isEnabled(uint256 const& feature) const;
 
     /**
      * @brief Get the current rules.
      * @return The current consensus rules.
      */
-    Rules const&
+    [[nodiscard]] Rules const&
     getRules() const;
 
     /**
@@ -272,28 +272,28 @@ public:
      * @throws std::runtime_error if the account does not exist.
      * @todo Once we make keylet strongly typed, we can ditch this method.
      */
-    ledger_entries::AccountRoot
+    [[nodiscard]] ledger_entries::AccountRoot
     getAccountRoot(AccountID const& id) const;
 
     /**
      * @brief Get the current open ledger view.
      * @return A mutable reference to the open ledger.
      */
-    OpenView&
+    [[nodiscard]] OpenView&
     getOpenLedger();
 
     /**
      * @brief Get the current open ledger view (const).
      * @return A const reference to the open ledger.
      */
-    OpenView const&
+    [[nodiscard]] OpenView const&
     getOpenLedger() const;
 
     /**
      * @brief Get the closed (base) ledger view.
      * @return A const reference to the closed ledger.
      */
-    ReadView const&
+    [[nodiscard]] ReadView const&
     getClosedLedger() const;
 
     /**
@@ -320,7 +320,7 @@ public:
      * @brief Get the current ledger close time.
      * @return The current close time.
      */
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     getCloseTime() const;
 
     /**
@@ -334,7 +334,7 @@ public:
      * @return The balance as an STAmount.
      * @todo Once we make keylet strongly typed, we can ditch this method.
      */
-    STAmount
+    [[nodiscard]] STAmount
     getBalance(AccountID const& account, IOU const& iou) const;
 
     /**
@@ -350,7 +350,7 @@ public:
 private:
     TestServiceRegistry registry_;
     std::unordered_set<uint256, beast::uhash<>> featureSet_;
-    std::unique_ptr<Rules> rules_;
+    std::optional<Rules> rules_;
     std::shared_ptr<Ledger const> closedLedger_;
     std::shared_ptr<OpenView> openLedger_;
 

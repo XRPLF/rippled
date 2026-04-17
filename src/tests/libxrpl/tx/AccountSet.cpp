@@ -50,17 +50,19 @@ TEST(AccountSet, MostFlags)
 
     // Give alice a regular key so she can legally set and clear
     // her asfDisableMaster flag.
-    Account const alie{"alie", KeyType::secp256k1};
+    Account const aliceRegularKey{"aliceRegularKey", KeyType::secp256k1};
 
-    env.createAccount(alie, XRP(10000));
+    env.createAccount(aliceRegularKey, XRP(10000));
     env.close();
 
     EXPECT_EQ(
-        env.submit(transactions::SetRegularKeyBuilder{alice}.setRegularKey(alie), alice).ter,
+        env.submit(transactions::SetRegularKeyBuilder{alice}.setRegularKey(aliceRegularKey), alice)
+            .ter,
         tesSUCCESS);
     env.close();
 
-    auto testFlags = [&alice, &alie, &env](std::initializer_list<std::uint32_t> goodFlags) {
+    auto testFlags = [&alice, &aliceRegularKey, &env](
+                         std::initializer_list<std::uint32_t> goodFlags) {
         std::uint32_t const orig_flags = env.getAccountRoot(alice).getFlags();
         for (std::uint32_t flag{1u}; flag < std::numeric_limits<std::uint32_t>::digits; ++flag)
         {
@@ -110,7 +112,10 @@ TEST(AccountSet, MostFlags)
                 EXPECT_TRUE(env.getAccountRoot(alice).isFlag(asfToLsf(flag)));
 
                 EXPECT_EQ(
-                    env.submit(transactions::AccountSetBuilder{alice}.setClearFlag(flag), alie).ter,
+                    env.submit(
+                           transactions::AccountSetBuilder{alice}.setClearFlag(flag),
+                           aliceRegularKey)
+                        .ter,
                     tesSUCCESS);
                 env.close();
 
@@ -130,21 +135,25 @@ TEST(AccountSet, MostFlags)
                 EXPECT_EQ(env.getAccountRoot(alice).getFlags(), orig_flags);
 
                 EXPECT_EQ(
-                    env.submit(transactions::AccountSetBuilder{alice}.setClearFlag(flag), alie).ter,
+                    env.submit(
+                           transactions::AccountSetBuilder{alice}.setClearFlag(flag),
+                           aliceRegularKey)
+                        .ter,
                     tesSUCCESS);
                 env.close();
                 EXPECT_EQ(env.getAccountRoot(alice).getFlags(), orig_flags);
             }
         }
     };
-    testFlags(
-        {asfRequireDest,
-         asfRequireAuth,
-         asfDisallowXRP,
-         asfGlobalFreeze,
-         asfDisableMaster,
-         asfDefaultRipple,
-         asfDepositAuth});
+    testFlags({
+        asfRequireDest,
+        asfRequireAuth,
+        asfDisallowXRP,
+        asfGlobalFreeze,
+        asfDisableMaster,
+        asfDefaultRipple,
+        asfDepositAuth,
+    });
 }
 
 TEST(AccountSet, SetAndResetAccountTxnID)

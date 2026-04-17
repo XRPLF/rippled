@@ -25,10 +25,9 @@ allFeatures()
         auto const& sa = allAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
-        for (auto const& [name, vote] : sa)
+        for (auto const& [name, [[maybe_unused]] _] : sa)
         {
-            (void)vote;
-            if (auto const f = getRegisteredFeature(name))
+            if (auto const f = getRegisteredFeature(name); f.has_value())
                 feats.push_back(*f);
         }
         return FeatureBitset(feats);
@@ -47,7 +46,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
     foreachFeature(featureBits, [&](uint256 const& f) { featureSet_.insert(f); });
 
     // Create rules with the specified features
-    rules_ = std::make_unique<Rules>(featureSet_);
+    rules_.emplace(featureSet_);
 
     // Default fees for testing
     Fees const fees{XRPAmount{10}, XRPAmount{10000000}, XRPAmount{2000000}};
@@ -160,22 +159,16 @@ TxTest::close()
 
     auto const& prevLedger = *closedLedger_;
 
-    // Use provided close time, or advance by resolution
     auto const ledgerCloseTime = now_ + prevLedger.header().closeTimeResolution;
 
-    // Update our tracked time
     now_ = ledgerCloseTime;
 
-    // Create new ledger following the previous one
     auto newLedger = std::make_shared<Ledger>(prevLedger, ledgerCloseTime);
 
-    // Put transactions into canonical order
-    // The salt is the hash of the previous ledger (used to randomize ordering)
     CanonicalTXSet txSet(prevLedger.header().hash);
     for (auto const& tx : pendingTxs_)
         txSet.insert(tx);
 
-    // Create an OpenView on the new ledger and apply transactions in order
     {
         OpenView accum(&*newLedger);
         for (auto const& [key, tx] : txSet)
@@ -189,20 +182,12 @@ TxTest::close()
         accum.apply(*newLedger);
     }
 
-    // Mark the ledger as accepted (makes it immutable)
-    newLedger->setAccepted(
-        ledgerCloseTime,
-        newLedger->header().closeTimeResolution,
-        true);  // closeTimeCorrect
+    newLedger->setAccepted(ledgerCloseTime, newLedger->header().closeTimeResolution, true);
 
-    // The new ledger becomes our closed ledger
     closedLedger_ = newLedger;
 
-    // Clear pending transactions
     pendingTxs_.clear();
 
-    // Create a fresh open view on top of the new closed ledger
-    // Use our rules_ to ensure consistent feature flags
     openLedger_ =
         std::make_shared<OpenView>(open_ledger, closedLedger_.get(), *rules_, closedLedger_);
 }
