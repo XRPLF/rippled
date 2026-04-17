@@ -181,8 +181,10 @@ VaultCreate::doApply()
             .sequence = 1,
             .flags = mptFlags,
             .assetScale = scale,
+            .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
+            .mutableFlags = std::nullopt,
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE

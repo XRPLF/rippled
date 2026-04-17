@@ -190,7 +190,7 @@ private:
     struct ChargeWithContext
     {
         Resource::Charge fee = Resource::feeTrivialPeer;
-        std::string context = {};
+        std::string context{};  // NOLINT(readability-redundant-member-init)
 
         void
         update(Resource::Charge f, std::string const& add)

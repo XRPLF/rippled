@@ -24,7 +24,7 @@ class AssetCache;
 class PathRequestManager;
 
 // Return values from parseJson <0 = invalid, >0 = valid
-#define PFR_PJ_INVALID -1
+#define PFR_PJ_INVALID (-1)
 #define PFR_PJ_NOCHANGE 0
 
 class PathRequest final : public InfoSubRequest,

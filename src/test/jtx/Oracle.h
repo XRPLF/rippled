@@ -58,7 +58,7 @@ struct UpdateArg
 {
     std::optional<AccountID> owner = std::nullopt;
     std::optional<AnyValue> documentID = std::nullopt;
-    DataSeries series = {};
+    DataSeries series = {};  // NOLINT(readability-redundant-member-init)
     std::optional<AnyValue> assetClass = std::nullopt;
     std::optional<AnyValue> provider = std::nullopt;
     std::optional<AnyValue> uri = "URI";

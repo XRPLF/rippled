@@ -265,7 +265,7 @@ inline Scheduler::queue_type::~queue_type()
         auto e = &*iter;
         ++iter;
         e->~event();
-        alloc_->deallocate(e, sizeof(e));
+        alloc_->deallocate(e, sizeof(e));  // NOLINT(bugprone-sizeof-expression)
     }
 }
 
@@ -381,8 +381,10 @@ Scheduler::step()
     if (!step_one())
         return false;
     for (;;)
+    {
         if (!step_one())
             break;
+    }
     return true;
 }
 

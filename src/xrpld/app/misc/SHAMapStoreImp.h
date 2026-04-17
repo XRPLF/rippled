@@ -61,7 +61,7 @@ private:
     // minimum # of ledgers required for standalone mode.
     static std::uint32_t const minimumDeletionIntervalSA_ = 8;
     // minimum ledger to maintain online.
-    std::atomic<LedgerIndex> minimumOnline_{};
+    std::atomic<LedgerIndex> minimumOnline_;
 
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
@@ -102,7 +102,7 @@ public:
     std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const override
     {
-        return deleteInterval_ ? std::min(fetch_depth, deleteInterval_) : fetch_depth;
+        return (deleteInterval_ != 0u) ? std::min(fetch_depth, deleteInterval_) : fetch_depth;
     }
 
     std::unique_ptr<NodeStore::Database>
@@ -209,7 +209,7 @@ public:
     void
     start() override
     {
-        if (deleteInterval_)
+        if (deleteInterval_ != 0u)
             thread_ = std::thread(&SHAMapStoreImp::run, this);
     }
 
