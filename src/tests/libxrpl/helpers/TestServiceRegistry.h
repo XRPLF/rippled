@@ -28,7 +28,7 @@ public:
     }
 
     std::unique_ptr<beast::Journal::Sink>
-    makeSink([[maybe_unused]] std::string const&, beast::severities::Severity threshold) override
+    makeSink(std::string const&, beast::severities::Severity threshold) override
     {
         return std::make_unique<TestSink>(threshold);
     }
