@@ -74,7 +74,7 @@ class BasicNetwork
     {
         bool inbound = false;
         duration delay{};
-        time_point established{};
+        time_point established;
         link_type() = default;
         link_type(bool inbound_, duration delay_, time_point established_)
             : inbound(inbound_), delay(delay_), established(established_)

@@ -1,8 +1,8 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 
 #include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/TxFlags.h>

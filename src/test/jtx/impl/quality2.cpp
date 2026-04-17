@@ -1,7 +1,12 @@
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/quality.h>
 
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
+
+#include <cassert>
+#include <cstdint>
 
 namespace xrpl {
 namespace test {

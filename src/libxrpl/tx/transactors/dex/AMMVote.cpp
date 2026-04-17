@@ -1,9 +1,26 @@
+#include <xrpl/tx/transactors/dex/AMMVote.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/dex/AMMVote.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 

@@ -1,7 +1,12 @@
+#include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
+#include <xrpl/beast/utility/PropertyStream.h>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 namespace xrpl {
 namespace PeerFinder {

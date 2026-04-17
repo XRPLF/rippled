@@ -1,4 +1,7 @@
 #include <test/jtx/sig.h>
+
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
 namespace xrpl {
