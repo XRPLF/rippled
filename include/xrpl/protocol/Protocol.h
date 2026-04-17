@@ -313,9 +313,6 @@ std::size_t constexpr ecGamalEncryptedLength = 33;
 /** EC ElGamal ciphertext length: two 33-byte components concatenated */
 std::size_t constexpr ecGamalEncryptedTotalLength = ecGamalEncryptedLength * 2;
 
-/** Length of equality ZKProof in bytes */
-std::size_t constexpr ecEqualityProofLength = 98;
-
 /** Length of EC point (compressed) */
 std::size_t constexpr compressedECPointLength = 33;
 
@@ -328,11 +325,8 @@ std::size_t constexpr ecPrivKeyLength = 32;
 /** Length of the EC blinding factor in bytes */
 std::size_t constexpr ecBlindingFactorLength = 32;
 
-/** Length of Schnorr ZKProof for public key registration in bytes */
-std::size_t constexpr ecSchnorrProofLength = 65;
-
-/** Length of ElGamal Pedersen linkage proof in bytes */
-std::size_t constexpr ecPedersenProofLength = 195;
+/** Length of Schnorr ZKProof for public key registration (compact form) in bytes */
+std::size_t constexpr ecSchnorrProofLength = 64;
 
 /** Length of Pedersen Commitment (compressed) */
 std::size_t constexpr ecPedersenCommitmentLength = compressedECPointLength;
@@ -342,6 +336,17 @@ std::size_t constexpr ecSingleBulletproofLength = 688;
 
 /** Length of double bulletproof (range proof for 2 commitments) in bytes */
 std::size_t constexpr ecDoubleBulletproofLength = 754;
+
+/** Length of the ZKProof for ConfidentialMPTSend.
+ *  192 bytes compact sigma proof + 754 bytes double bulletproof. */
+std::size_t constexpr ecSendProofLength = 946;
+
+/** Length of the ZKProof for ConfidentialMPTConvertBack.
+ *  128 bytes compact sigma proof + 688 bytes single bulletproof. */
+std::size_t constexpr ecConvertBackProofLength = 816;
+
+/** Length of the ZKProof for ConfidentialMPTClawback. */
+std::size_t constexpr ecClawbackProofLength = 64;
 
 /** Compressed EC point prefix for even y-coordinate */
 std::uint8_t constexpr ecCompressedPrefixEvenY = 0x02;
