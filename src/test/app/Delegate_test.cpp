@@ -42,6 +42,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -50,8 +51,6 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-#include <algorithm>
 
 namespace xrpl {
 namespace test {
