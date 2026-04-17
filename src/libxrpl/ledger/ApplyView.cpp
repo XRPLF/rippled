@@ -1,10 +1,25 @@
+#include <xrpl/ledger/ApplyView.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STVector256.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
+#include <optional>
 #include <stdexcept>
+#include <tuple>
 #include <type_traits>
 
 namespace xrpl {

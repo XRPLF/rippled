@@ -1,10 +1,15 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Env.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/json/json_reader.h>       // Json::Reader
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_reader.h>  // Json::Reader
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
+
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 

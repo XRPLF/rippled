@@ -5,28 +5,48 @@
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/SlabAllocator.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite_info.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/server/Vacuum.h>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/process/v1/args.hpp>
-#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/child.hpp>  // IWYU pragma: keep
 #include <boost/process/v1/exe.hpp>
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/positional_options.hpp>
+#include <boost/program_options/value_semantic.hpp>
+#include <boost/program_options/variables_map.hpp>
+
+#include <algorithm>
+#include <atomic>
+#include <cstdint>
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <vector>
 
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
-#include <boost/algorithm/string.hpp>
-#include <boost/program_options.hpp>
 
 #include <google/protobuf/stubs/common.h>
 
 #include <cstdlib>
-#include <fstream>
 #include <stdexcept>
 #include <utility>
 
@@ -49,7 +69,7 @@
 #endif
 
 #ifdef ENABLE_VOIDSTAR
-#include "antithesis_instrumentation.h"
+#include <antithesis_instrumentation.h>
 #endif
 
 namespace po = boost::program_options;
