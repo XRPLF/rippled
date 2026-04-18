@@ -363,7 +363,7 @@ private:
     LedgerIndex const max_ledger_difference_{1000000};
 
     // Time that the previous upgrade warning was issued.
-    TimeKeeper::time_point upgradeWarningPrevTime_{};
+    TimeKeeper::time_point upgradeWarningPrevTime_;
 
 private:
     struct Stats

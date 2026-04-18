@@ -113,9 +113,11 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
         {
             auto const hs = field<std::uint16_t>::size;  // Mask
             if (in_size < hs + 32)
+            {
                 Throw<std::runtime_error>(
                     "nodeobject codec v1: short inner node size: " + std::string("in_size = ") +
                     std::to_string(in_size) + " hs = " + std::to_string(hs));
+            }
             istream is(p, in_size);
             std::uint16_t mask = 0;
             read<std::uint16_t>(is, mask);  // Mask
@@ -136,10 +138,12 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
                 if (mask & bit)
                 {
                     if (in_size < 32)
+                    {
                         Throw<std::runtime_error>(
                             "nodeobject codec v1: short inner node subsize: " +
                             std::string("in_size = ") + std::to_string(in_size) +
                             " i = " + std::to_string(i));
+                    }
                     std::memcpy(os.data(32), is(32), 32);
                     in_size -= 32;
                 }
@@ -149,16 +153,20 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
                 }
             }
             if (in_size > 0)
+            {
                 Throw<std::runtime_error>(
                     "nodeobject codec v1: long inner node, in_size = " + std::to_string(in_size));
+            }
             break;
         }
         case 3:  // full v1 inner node
         {
-            if (in_size != 16 * 32)  // hashes
+            if (in_size != 16 * 32)
+            {  // hashes
                 Throw<std::runtime_error>(
                     "nodeobject codec v1: short full inner node, in_size = " +
                     std::to_string(in_size));
+            }
             istream is(p, in_size);
             result.second = 525;
             void* const out = bf(result.second);
@@ -214,7 +222,7 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
                 void const* const h = is(32);
                 if (std::memcmp(h, zero32(), 32) == 0)
                     continue;
-                std::memcpy(vh.data() + 32 * n, h, 32);
+                std::memcpy(vh.data() + (32 * n), h, 32);
                 mask |= bit;
                 ++n;
             }
@@ -225,7 +233,7 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
                 auto const type = 2U;
                 auto const vs = size_varint(type);
                 result.second = vs + field<std::uint16_t>::size +  // mask
-                    n * 32;                                        // hashes
+                    (n * 32);                                      // hashes
                 std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
                 result.first = out;
                 ostream os(out, result.second);
@@ -237,7 +245,7 @@ nodeobject_compress(void const* in, std::size_t in_size, BufferFactory&& bf)
             // 3 = full v1 inner node
             auto const type = 3U;
             auto const vs = size_varint(type);
-            result.second = vs + n * 32;  // hashes
+            result.second = vs + (n * 32);  // hashes
             std::uint8_t* out = reinterpret_cast<std::uint8_t*>(bf(result.second));
             result.first = out;
             ostream os(out, result.second);

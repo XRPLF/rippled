@@ -324,7 +324,7 @@ Slot<clock_type>::update(
         // idled peers.
         std::unordered_set<id_t> selected;
         auto const consideredPoolSize = considered_.size();
-        while (selected.size() != maxSelectedPeers_ && considered_.size() != 0)
+        while (selected.size() != maxSelectedPeers_ && !considered_.empty())
         {
             auto i = considered_.size() == 1 ? 0 : rand_int(considered_.size() - 1);
             auto it = std::next(considered_.begin(), i);
@@ -366,7 +366,9 @@ Slot<clock_type>::update(
             v.count = 0;
 
             if (selected.find(k) != selected.end())
+            {
                 v.state = PeerState::Selected;
+            }
             else if (v.state != PeerState::Squelched)
             {
                 if (journal_.trace())
@@ -411,7 +413,7 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
 
         JLOG(journal_.trace()) << "deletePeer: " << Slice(validator) << " " << id << " selected "
                                << (it->second.state == PeerState::Selected) << " considered "
-                               << (considered_.find(id) != considered_.end()) << " erase " << erase;
+                               << (considered_.contains(id)) << " erase " << erase;
         auto now = clock_type::now();
         if (it->second.state == PeerState::Selected)
         {
@@ -428,7 +430,7 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
             reachedThreshold_ = 0;
             state_ = SlotState::Counting;
         }
-        else if (considered_.find(id) != considered_.end())
+        else if (considered_.contains(id))
         {
             if (it->second.count > MAX_MESSAGE_THRESHOLD)
                 --reachedThreshold_;
@@ -490,8 +492,10 @@ Slot<clock_type>::getSelected() const
 {
     std::set<id_t> r;
     for (auto const& [id, info] : peers_)
+    {
         if (info.state == PeerState::Selected)
             r.insert(id);
+    }
     return r;
 }
 
@@ -504,6 +508,7 @@ Slot<clock_type>::getPeers() const
         unordered_map<id_t, std::tuple<PeerState, std::uint16_t, std::uint32_t, std::uint32_t>>();
 
     for (auto const& [id, info] : peers_)
+    {
         r.emplace(
             std::make_pair(
                 id,
@@ -513,6 +518,7 @@ Slot<clock_type>::getPeers() const
                         info.count,
                         epoch<milliseconds>(info.expire).count(),
                         epoch<milliseconds>(info.lastMessage).count()))));
+    }
 
     return r;
 }
@@ -560,8 +566,10 @@ public:
     reduceRelayReady()
     {
         if (!reduceRelayReady_)
+        {
             reduceRelayReady_ = reduce_relay::epoch<std::chrono::minutes>(clock_type::now()) >
                 reduce_relay::WAIT_ON_BOOTUP;
+        }
 
         return reduceRelayReady_;
     }
@@ -756,7 +764,9 @@ Slots<clock_type>::updateSlotAndSquelch(
         it->second.update(validator, id, type, callback);
     }
     else
+    {
         it->second.update(validator, id, type, callback);
+    }
 }
 
 template <typename clock_type>
@@ -782,7 +792,9 @@ Slots<clock_type>::deleteIdlePeers()
             it = slots_.erase(it);
         }
         else
+        {
             ++it;
+        }
     }
 }
 

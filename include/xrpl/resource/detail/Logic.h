@@ -352,7 +352,9 @@ public:
                 iter = importTable_.erase(iter);
             }
             else
+            {
                 ++iter;
+            }
         }
     }
 
@@ -506,7 +508,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    void
+    static void
     writeList(
         clock_type::time_point const now,
         beast::PropertyStream::Set& items,

@@ -98,9 +98,11 @@ public:
         // Compute the percentage of nodes voting 'yes' (possibly including us)
         int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
         int const total = nays_ + yays_ + (proposing ? 1 : 0);
-        if (!total)
+        if (total == 0)
+        {
             // There are no votes, so we know nothing
             return false;
+        }
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
@@ -210,7 +212,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         return true;
     }
     // changes vote to yes
-    else if (votesYes && !it->second)
+    if (votesYes && !it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
         --nays_;
@@ -219,7 +221,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         return true;
     }
     // changes vote to no
-    else if (!votesYes && it->second)
+    if (!votesYes && it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
         ++nays_;
@@ -240,9 +242,13 @@ DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)
     if (it != votes_.end())
     {
         if (it->second)
+        {
             --yays_;
+        }
         else
+        {
             --nays_;
+        }
 
         votes_.erase(it);
     }

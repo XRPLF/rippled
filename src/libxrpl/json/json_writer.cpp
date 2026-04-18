@@ -1,7 +1,8 @@
+#include <xrpl/json/json_writer.h>
+
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/json/json_writer.h>
 
 #include <cstdio>
 #include <cstring>

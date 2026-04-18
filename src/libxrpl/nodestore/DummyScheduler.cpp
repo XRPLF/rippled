@@ -1,5 +1,8 @@
 #include <xrpl/nodestore/DummyScheduler.h>
 
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Task.h>
+
 namespace xrpl {
 namespace NodeStore {
 

@@ -1,9 +1,14 @@
 #include <test/jtx/attester.h>
 
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/XChainAttestations.h>
+
+#include <cstdint>
+#include <optional>
 
 namespace xrpl {
 namespace test {

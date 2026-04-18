@@ -1,18 +1,48 @@
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/optional/optional.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <mutex>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
