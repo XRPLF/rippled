@@ -139,11 +139,7 @@ class Invariants_test : public beast::unit_test::suite
         for (TER const& terExpect : ters)
         {
             terActual = ac.checkInvariants(terActual, fee);
-            if (!BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual))))
-            {
-                std::cout << terExpect << " " << terActual << " "
-                          << std::to_string(TERtoInt(terActual)) << std::endl;
-            }
+            BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual)));
             auto const messages = sink.messages().str();
 
             if (!isTesSuccess(terActual))
@@ -157,10 +153,7 @@ class Invariants_test : public beast::unit_test::suite
             // std::cerr << messages << '\n';
             for (auto const& m : expect_logs)
             {
-                if (!BEAST_EXPECTS(messages.find(m) != std::string::npos, m))
-                {
-                    std::cout << messages << " " << m << std::endl;
-                }
+                BEAST_EXPECTS(messages.find(m) != std::string::npos, m);
             }
         }
     }
@@ -4084,6 +4077,112 @@ class Invariants_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testAMM()
+    {
+        testcase << "AMM";
+        using namespace jtx;
+
+        MPTID mptID{};
+        uint256 ammID{};
+        AccountID ammAccountID{};
+        Account const gw{"gw"};
+        Issue lptIssue{};
+        PrettyAsset poolAsset{xrpIssue()};
+
+        auto deleteAMMAccount = [&](ApplyContext& ac, bool) {
+            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            if (!sle)
+                return false;
+            ac.view().erase(sle);
+            return true;
+        };
+
+        auto updateLPTokensBalance = [&](ApplyContext& ac, std::int64_t amount) {
+            auto sle = ac.view().peek(keylet::amm(ammID));
+            if (!sle)
+                return false;
+            sle->setFieldAmount(sfLPTokenBalance, STAmount{lptIssue, amount});
+            ac.view().update(sle);
+            return true;
+        };
+        auto updateLPTokensBadAmount = [&](ApplyContext& ac, bool) {
+            return updateLPTokensBalance(ac, -1);
+        };
+        auto updateLPTokensBadBalance = [&](ApplyContext& ac, bool) {
+            return updateLPTokensBalance(ac, 200'000'000);
+        };
+        auto updateAMM = [&](ApplyContext& ac, bool) { return updateLPTokensBalance(ac, 10); };
+
+        auto updateAMMPool = [&](ApplyContext& ac, bool isMPT) {
+            if (isMPT)
+            {
+                auto sle = ac.view().peek(keylet::mptoken(mptID, ammAccountID));
+                if (!sle)
+                    return false;
+                sle->setFieldU64(sfMPTAmount, 1);
+                ac.view().update(sle);
+                return true;
+            }
+            auto sle = ac.view().peek(keylet::account(ammAccountID));
+            if (!sle)
+                return false;
+            sle->setFieldAmount(sfBalance, XRP(1));
+            ac.view().update(sle);
+            return true;
+        };
+
+        auto test =
+            [&](auto const txType, auto&& update, bool isMPT, TER error = tecINVARIANT_FAILED) {
+                doInvariantCheck(
+                    {{"AMM"}},
+                    [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                        return update(ac, isMPT);
+                    },
+                    XRPAmount{},
+                    STTx{txType, [&](STObject& tx) {}},
+                    {tecINVARIANT_FAILED, error},
+                    [&](Account const& A1, Account const& A2, Env& env) {
+                        env.fund(XRP(1'000), gw);
+                        poolAsset = [&]() -> PrettyAsset {
+                            if (isMPT)
+                            {
+                                MPT const mpt = MPTTester({.env = env, .issuer = gw});
+                                mptID = mpt.issuanceID;
+                                return mpt;
+                            }
+                            return gw["USD"];
+                        }();
+                        AMM const amm(env, gw, XRP(100), poolAsset(100));
+                        ammAccountID = amm.ammAccount();
+                        ammID = amm.ammID();
+                        lptIssue = amm.lptIssue();
+                        return true;
+                    });
+            };
+
+        for (bool const isMPT : {false, true})
+        {
+            auto const error = isMPT ? TER(tecINVARIANT_FAILED) : TER(tefINVARIANT_FAILED);
+            for (auto txType : {ttAMM_CREATE, ttAMM_DEPOSIT, ttAMM_CLAWBACK, ttAMM_WITHDRAW})
+            {
+                test(txType, deleteAMMAccount, isMPT, tefINVARIANT_FAILED);
+                test(txType, updateLPTokensBadAmount, isMPT);
+                test(txType, updateLPTokensBadBalance, isMPT);
+            }
+            for (auto txType : {ttAMM_BID, ttAMM_VOTE})
+            {
+                test(txType, updateAMMPool, isMPT, error);
+                test(txType, updateLPTokensBadAmount, isMPT);
+                test(txType, updateLPTokensBadBalance, isMPT);
+            }
+            for (auto txType : {ttAMM_DELETE, ttCHECK_CASH, ttOFFER_CREATE, ttPAYMENT})
+            {
+                test(txType, updateAMM, isMPT);
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -4110,6 +4209,7 @@ public:
         testValidLoanBroker();
         testVault();
         testMPT();
+        testAMM();
     }
 };
 
