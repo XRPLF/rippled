@@ -1,13 +1,15 @@
 #include <xrpl/core/PeerReservationTable.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
 
 #include <algorithm>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 

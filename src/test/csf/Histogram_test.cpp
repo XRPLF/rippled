@@ -1,6 +1,6 @@
 #include <test/csf/Histogram.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 namespace xrpl {
 namespace test {

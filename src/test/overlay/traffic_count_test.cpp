@@ -1,8 +1,11 @@
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <cstdint>
 
 namespace xrpl {
 

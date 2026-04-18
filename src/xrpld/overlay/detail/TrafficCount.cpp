@@ -1,5 +1,11 @@
 #include <xrpld/overlay/detail/TrafficCount.h>
 
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <unordered_map>
+
 namespace xrpl {
 
 std::unordered_map<protocol::MessageType, TrafficCount::category> const type_lookup = {

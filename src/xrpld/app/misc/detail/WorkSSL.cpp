@@ -1,5 +1,21 @@
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
+#include <xrpld/app/misc/detail/WorkBase.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/stream_base.hpp>
+#include <boost/format/free_funcs.hpp>
+
+#include <functional>
+#include <stdexcept>
+#include <string>
+
 namespace xrpl {
 namespace detail {
 
