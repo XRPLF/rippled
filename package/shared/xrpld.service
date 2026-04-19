@@ -2,16 +2,17 @@
 Description=XRP Ledger Daemon
 After=network-online.target
 Wants=network-online.target
-StartLimitIntervalSec=60
-StartLimitBurst=3
+StartLimitIntervalSec=300
+StartLimitBurst=5
 
 [Service]
 Type=simple
 ExecStart=/opt/xrpld/bin/xrpld --net --silent --conf /etc/opt/xrpld/xrpld.cfg
-Restart=on-failure
-RestartSec=5
+Restart=always
+RestartSec=5s
 NoNewPrivileges=true
 ProtectSystem=full
+ProtectHome=true
 PrivateTmp=true
 User=xrpld
 Group=xrpld

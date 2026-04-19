@@ -1,74 +1,134 @@
 #!/usr/bin/env bash
+set -euo pipefail
 
-# auto-update script for xrpld daemon
+# Optional: also write logs to a legacy file in addition to journald.
+# By default, this script logs to systemd/journald, viewable via:
+#   journalctl -t update-xrpld
+#
+# Uncomment the line below if you need a flat file for compatibility with
+# external tooling, manual inspection, or environments where journald logs
+# are not persisted or easily accessible.
+#
+# Note: This duplicates all output (stdout/stderr) to both journald and the file.
+# It is generally not needed on modern systems and may cause log file growth
+# if left enabled long-term.
+#
+# Requires /var/log/xrpld/ to exist and be writable by the service (root).
+#
+# exec > >(tee -a /var/log/xrpld/update.log) 2>&1
 
-# Check for sudo/root permissions
-if [[ $(id -u) -ne 0 ]] ; then
-   echo "This update script must be run as root or sudo"
-   exit 1
-fi
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
 
-LOCKDIR=/run/lock/xrpld-update.lock
-UPDATELOG=/var/log/xrpld/update.log
+PKG_NAME=${PKG_NAME:-xrpld}
 
-function cleanup {
-  # If this directory isn't removed, future updates will fail.
-  rmdir "$LOCKDIR"
+log() {
+  # If running under systemd/journald, let it handle timestamps.
+  if [[ -n "${JOURNAL_STREAM:-}" ]]; then
+    printf '%s\n' "$*"
+  else
+    printf '%s %s\n' "$(date -u +'%Y-%m-%dT%H:%M:%SZ')" "$*"
+  fi
 }
 
-# Use mkdir to check if process is already running. mkdir is atomic, as against file create.
-if ! mkdir "$LOCKDIR" 2>/dev/null; then
-  echo "$(date -u) lockdir exists - won't proceed." >> "$UPDATELOG"
-  exit 1
-fi
-trap cleanup EXIT
+require_root() {
+  if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
+    log "This update script must be run as root"
+    exit 1
+  fi
+}
 
-can_update=false
-
-if command -v apt-get &>/dev/null; then
+apt_can_update() {
   apt-get update -qq
+  apt-get -s --only-upgrade install "$PKG_NAME" 2>/dev/null | grep -q "^Inst ${PKG_NAME}\b"
+}
 
-  if apt-get -s --only-upgrade install xrpld 2>/dev/null | grep -q '^Inst xrpld'; then
-    can_update=true
+apt_apply_update() {
+  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$PKG_NAME"
+}
+
+get_rpm_pm() {
+  if command -v dnf >/dev/null 2>&1; then
+    printf 'dnf\n'
+  elif command -v yum >/dev/null 2>&1; then
+    printf 'yum\n'
+  else
+    return 1
   fi
+}
 
-  function apply_update {
-    DEBIAN_FRONTEND=noninteractive apt-get install -y -qq xrpld
-  }
-elif command -v yum &>/dev/null; then
-  REPO=${REPO:-stable}
-  if [[ ! "$REPO" =~ ^(stable|unstable|nightly|develop)$ ]]; then
-    echo "Invalid REPO value: ${REPO}" >&2
-    exit 1
+rpm_refresh_metadata() {
+  local pm=$1
+
+  if [[ "$pm" == "dnf" ]]; then
+    dnf makecache --refresh -q >/dev/null
+  else
+    yum clean expire-cache -q >/dev/null
   fi
-  yum --disablerepo=* --enablerepo="ripple-${REPO}" clean expire-cache
+}
 
-  # yum check-update exits 100 when updates are available, 0 for none, 1 for errors.
-  yum check-update -q --enablerepo="ripple-${REPO}" xrpld
+rpm_can_update() {
+  local pm=$1
+
+  rpm_refresh_metadata "$pm"
+
+  local rc=0
+  set +e
+  "$pm" check-update -q "$PKG_NAME" >/dev/null 2>&1
   rc=$?
-  if [ $rc -eq 100 ]; then
-    can_update=true
-  elif [ $rc -ne 0 ]; then
-    echo "yum check-update failed with exit code $rc"
+  set -e
+
+  if [[ $rc -eq 100 ]]; then
+    return 0
+  elif [[ $rc -eq 0 ]]; then
+    return 1
+  else
+    log "$pm check-update failed with exit code $rc"
     exit 1
   fi
+}
 
-  function apply_update {
-    yum update -y --enablerepo="ripple-${REPO}" xrpld
-  }
-else
-  echo "No supported package manager found (apt-get or yum)"
+rpm_apply_update() {
+  local pm=$1
+  "$pm" update -y "$PKG_NAME"
+}
+
+restart_service() {
+  systemctl restart "${PKG_NAME}.service"
+  log "${PKG_NAME} service restarted successfully"
+}
+
+main() {
+  require_root
+
+  if command -v apt-get >/dev/null 2>&1; then
+    log "Checking for ${PKG_NAME} updates via apt"
+    if apt_can_update; then
+      log "Update available; installing"
+      apt_apply_update
+      restart_service
+      log "${PKG_NAME} updated successfully"
+    else
+      log "No updates available"
+    fi
+    return
+  fi
+
+  local rpm_pm=""
+  if rpm_pm="$(get_rpm_pm)"; then
+    log "Checking for ${PKG_NAME} updates via ${rpm_pm}"
+    if rpm_can_update "$rpm_pm"; then
+      log "Update available; installing"
+      rpm_apply_update "$rpm_pm"
+      restart_service
+      log "${PKG_NAME} updated successfully"
+    else
+      log "No updates available"
+    fi
+    return
+  fi
+
+  log "No supported package manager found (apt-get, dnf, or yum)"
   exit 1
-fi
+}
 
-# Do the actual update and restart the service after reloading systemctl daemon.
-if [ "$can_update" = true ] ; then
-  exec >>"${UPDATELOG}" 2>&1
-  set -e
-  apply_update
-  systemctl daemon-reload
-  systemctl restart xrpld.service || { echo "$(date -u) xrpld daemon restart FAILED"; exit 1; }
-  echo "$(date -u) xrpld daemon updated."
-else
-  echo "$(date -u) no updates available" >> "$UPDATELOG"
-fi
+main "$@"

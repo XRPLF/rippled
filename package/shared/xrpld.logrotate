@@ -6,8 +6,7 @@
   missingok
   notifempty
   compress
-  compresscmd /usr/bin/nice
-  compressoptions -n19 ionice -c3 gzip
+  compresscmd /usr/bin/gzip
   compressext .gz
   postrotate
     /opt/xrpld/bin/xrpld --conf /etc/opt/xrpld/xrpld.cfg logrotate
