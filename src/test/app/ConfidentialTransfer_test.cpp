@@ -8894,27 +8894,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("test Forged Range Proof");
 
-        // Forge range proof for value exceeding MaxAmount.
-        //
-        // Attack: Bypass the supply cap by constructing a confidential send
-        // with uint64_max as the transfer amount, creating more tokens than
-        // authorized. The range proof upper bound must match MaxAmount exactly.
-        //
-        // Attack variant: Forged range proof transcript.
-        //
-        // Steps:
-        // 1. Construct Enc(uint64_max) — a ciphertext encoding a value
-        //    outside the legitimate range.
-        // 2. Attach a forged/manually modified range proof without changing
-        //    the ciphertext algebraically.
-        // 3. Re-sign and submit the transaction.
-        //
-        // Expected:
-        // - Bulletproof verification fails due to invalid inner-product
-        //   relations or commitment mismatch.
-        // - Fiat-Shamir transcript challenge mismatch detected.
-        // - Validator rejects the transaction.
-        // - Supply invariant remains preserved.
+        // Attack: send uint64_max tokens using Enc(uint64_max) ciphertexts
+        // and a corrupted bulletproof. Verifier rejects due to inner-product
+        // mismatch and Fiat-Shamir transcript divergence. Supply invariant
+        // is preserved.
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -8945,23 +8928,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
         mptAlice.mergeInbox({.account = carol});
 
-        // The attacker (Bob) attempts to send uint64_max tokens — far
-        // exceeding his actual balance of 100 and the entire token supply.
         uint64_t const badAmount = std::numeric_limits<uint64_t>::max();
         Buffer const blindingFactor = generateBlindingFactor();
 
-        // Step 1: Construct Enc(uint64_max) for each recipient.
-        // The ciphertexts are algebraically well-formed ElGamal encryptions
-        // of uint64_max under each recipient's public key.
+        // Construct Enc(uint64_max) ciphertexts and commitment.
         auto const senderAmt = mptAlice.encryptAmount(bob, badAmount, blindingFactor);
         auto const destAmt = mptAlice.encryptAmount(carol, badAmount, blindingFactor);
         auto const issuerAmt = mptAlice.encryptAmount(alice, badAmount, blindingFactor);
-
-        // Pedersen commitment PC(uint64_max, r) — commits to the forged
-        // amount using the same blinding factor as the ciphertext.
         auto const amountCommitment = mptAlice.getPedersenCommitment(badAmount, blindingFactor);
 
-        // The balance commitment is for Bob's actual spending balance (100).
+        // Balance commitment for Bob's actual balance.
         auto const prevSpending =
             mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(prevSpending.has_value());
@@ -8969,35 +8945,19 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto const balanceCommitment =
             mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
 
-        // Step 2: Build a forged proof blob.
-        // We take a legitimately-structured proof (for the real amount 10)
-        // and corrupt the bulletproof portion. This simulates an attacker
-        // who constructs a proof claiming uint64_max is in the valid range.
-        //
-        // Because the compact sigma proof and the bulletproof are bound
-        // together through the Fiat-Shamir transcript (which includes
-        // commitments and ciphertexts), any substitution breaks the
-        // inner-product relations.
-        uint64_t const legitimateAmount = 10;
-        ZkpTestSetup setup(mptAlice, bob, carol, alice, legitimateAmount);
-
+        // Generate a valid proof for a legitimate amount, then corrupt
+        // the bulletproof segment to simulate a forged range proof.
+        ZkpTestSetup setup(mptAlice, bob, carol, alice, 10);
         auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
         if (!BEAST_EXPECT(validProof.has_value()))
             return;
 
-        // Corrupt the bulletproof segment (last ecDoubleBulletproofLength
-        // bytes) to simulate a forged range proof for uint64_max.
+        // Corrupt bulletproof bytes.
         Buffer forgedProof = *validProof;
         for (size_t i = bulletproofOffset; i < forgedProof.size(); i += 7)
             forgedProof.data()[i] ^= 0xFF;
 
-        // Step 3: Submit the transaction with forged proof.
-        // The validator must reject this:
-        // - The bulletproof's inner-product check fails because the
-        //   corrupted proof cannot satisfy V = v*G + r*H for uint64_max.
-        // - The Fiat-Shamir challenge computed by the verifier differs
-        //   from what the (corrupted) prover transcript would produce.
-        // - The supply invariant is preserved: no tokens are created.
+        // Submit — rejected due to commitment mismatch.
         mptAlice.send(
             {.account = bob,
              .dest = carol,
@@ -9010,7 +8970,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .balanceCommitment = balanceCommitment,
              .err = tecBAD_PROOF});
 
-        // Verify supply invariant: Bob's balance is unchanged.
+        // Supply invariant: Bob's balance unchanged.
         auto const postSpending =
             mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(postSpending.has_value());
@@ -9022,28 +8982,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("test Negative Value Malleability");
 
-        // Attack: Two's complement overflow to forge a negative remaining
-        // balance.
-        //
-        // Scenario: Bob has exactly 10 confidential tokens and sends 10
-        // to Carol. The honest remaining balance is 0. The attacker forges
-        // a bulletproof claiming remaining = (uint64_t)(-10) = 0xFFFFFFFFFFFFFFF6,
-        // which is a valid uint64 but represents a wrapped negative value.
-        //
-        // Why this must fail:
-        //   The verifier never trusts the claimed remaining balance. Instead
-        //   it independently derives:
-        //     PC_remaining = PC_balance - sendAmount * G
-        //                  = PC(10, r_bal) - 10*G
-        //                  = PC(0, r_bal)
-        //
-        //   The forged bulletproof proves {10, 0xFFFFFFFFFFFFFFF6} in range,
-        //   using commitment PC(0xFFFFFFFFFFFFFFF6, r_bal). Since
-        //   PC(0, r_bal) != PC(0xFFFFFFFFFFFFFFF6, r_bal), the bulletproof
-        //   commitment mismatch causes verification to fail.
-        //
-        // If accepted, the attacker would overdraft their balance and
-        // claim an effectively infinite remaining balance.
+        // Attack: forge a bulletproof claiming remaining = (uint64_t)(-10).
+        // Bob has 10 tokens, sends 10. Honest remaining is 0, but the
+        // forged proof claims 0xFFFFFFFFFFFFFFF6. Rejected because
+        // PC(0) != PC(0xFFFFFFFFFFFFFFF6).
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -9067,8 +9009,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
 
-        // Bob converts exactly 10 tokens — the minimum needed to execute
-        // a send of 10, leaving an honest remaining balance of 0.
+        // Bob converts exactly 10 tokens, leaving honest remaining = 0.
         mptAlice.convert({.account = bob, .amt = 10, .holderPubKey = mptAlice.getPubKey(bob)});
         mptAlice.mergeInbox({.account = bob});
 
@@ -9076,7 +9017,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.mergeInbox({.account = carol});
 
         uint64_t const sendAmount = 10;
-        // -10 reinterpreted as uint64_t via two's complement wraparound.
         uint64_t const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
 
         ZkpTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
@@ -9084,22 +9024,16 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto const ctxHash = getSendContextHash(
             bob.id(), mptAlice.issuanceID(), env.seq(bob), carol.id(), setup.version);
 
-        // Generate a valid proof for the legitimate send (10 out of 10).
         auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
         if (!BEAST_EXPECT(validProof.has_value()))
             return;
 
-        // Forge a bulletproof claiming {sendAmount=10, remaining=0xFFFFFFFFFFFFFFF6}.
-        // The forged bulletproof is internally valid for these values, but
-        // the verifier derives PC_remaining = PC(0, r_bal) which doesn't
-        // match the forged PC(0xFFFFFFFFFFFFFFF6, r_bal).
+        // Forge bulletproof for {10, 0xFFFFFFFFFFFFFFF6} and splice it in.
         auto const forgedBulletproof = getForgedBulletproof(
             {sendAmount, negativeRemaining},
             {setup.amountBlindingFactor, setup.balanceBlindingFactor},
             ctxHash);
 
-        // Splice the forged bulletproof into the valid proof.
-        // Proof layout: [compact_sigma | bulletproof]
         Buffer forgedProof(validProof->size());
         std::memcpy(forgedProof.data(), validProof->data(), bulletproofOffset);
         std::memcpy(
@@ -9107,8 +9041,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             forgedBulletproof.data(),
             ecDoubleBulletproofLength);
 
-        // The validator must reject: the bulletproof proves a wrapped
-        // negative remaining balance, not the honest value (0).
+        // Rejected — commitment mismatch.
         mptAlice.send(
             {.account = bob,
              .dest = carol,
@@ -9121,7 +9054,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .balanceCommitment = setup.balanceCommitment,
              .err = tecBAD_PROOF});
 
-        // Verify supply invariant: Bob's balance is unchanged.
+        // Supply invariant: Bob's balance unchanged.
         auto const postSpending =
             mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(postSpending.has_value());
