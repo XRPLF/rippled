@@ -34,6 +34,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
@@ -46,8 +47,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/apply.h>
-#include <xrpl/tx/invariants/InvariantCheck.h>
+#include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
 #include <array>

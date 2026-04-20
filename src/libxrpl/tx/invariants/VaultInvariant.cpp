@@ -21,10 +21,12 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <memory>
 #include <optional>
 #include <variant>
+#include <vector>
 
 namespace xrpl {
 
