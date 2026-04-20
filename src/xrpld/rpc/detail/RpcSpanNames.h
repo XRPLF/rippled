@@ -16,6 +16,34 @@
  *      span.setAttribute(rpc_span::attr::command, "submit");
  *      span.setAttribute(rpc_span::attr::status, rpc_span::val::success);
  *  @endcode
+ *
+ *  Span hierarchy (automatic nesting via OTel thread-local context):
+ *
+ *      HTTP path:
+ *        rpc.http_request            ServerHandler::processSession(Session)
+ *          rpc.process               ServerHandler::processRequest()
+ *            rpc.command.{name}      RPC::callMethod()  [repeats for batch]
+ *
+ *      WebSocket path:
+ *        rpc.ws_message              ServerHandler::processSession(WSSession)
+ *          rpc.command.{name}        RPC::callMethod()
+ *
+ *  Covered paths:
+ *    - HTTP JSON-RPC (single and batch requests)
+ *    - WebSocket RPC commands
+ *    - Admin CLI (connects via HTTP internally)
+ *    - Command execution: timing, success/failure, exceptions
+ *    - Per-command attributes: name, API version, role, status
+ *
+ *  Known gaps (not yet instrumented):
+ *    - gRPC endpoints (GRPCServer.cpp) — no spans at all
+ *    - Early validation errors in processRequest() before rpc.process span
+ *      (malformed JSON, auth failures, oversized requests)
+ *    - fillHandler() rejections in doCommand() before rpc.command span
+ *      (unknown command, too busy, permission denied)
+ *    - WebSocket upgrade failures in onHandoff()
+ *    - WebSocket message parse errors in onWSMessage()
+ *    - Subscription push notifications (server-initiated, not RPC)
  */
 
 #include <xrpl/telemetry/SpanNames.h>
