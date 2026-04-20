@@ -21,6 +21,7 @@
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/telemetry/TxSpanNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
@@ -1423,10 +1424,11 @@ PeerImp::handleTransaction(
     bool batch)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Transactions, "tx", "receive");
-    span.setAttribute("xrpl.peer.id", static_cast<int64_t>(id_));
+    auto span =
+        SpanGuard::span(TraceCategory::Transactions, tx_span::prefix::tx, tx_span::op::receive);
+    span.setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
     if (auto const version = getVersion(); !version.empty())
-        span.setAttribute("xrpl.peer.version", version.c_str());
+        span.setAttribute(tx_span::attr::peerVersion, version.c_str());
 
     XRPL_ASSERT(eraseTxQueue != batch, ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
@@ -1446,7 +1448,7 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 const txID = stx->getTransactionID();
-        span.setAttribute("xrpl.tx.hash", to_string(txID).c_str());
+        span.setAttribute(tx_span::attr::hash, to_string(txID).c_str());
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
@@ -1480,11 +1482,11 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
         {
-            span.setAttribute("xrpl.tx.suppressed", true);
+            span.setAttribute(tx_span::attr::suppressed, true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
-                span.setAttribute("xrpl.tx.status", "known_bad");
+                span.setAttribute(tx_span::attr::status, tx_span::val::knownBad);
                 fee_.update(Resource::feeUselessData, "known bad");
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
             }
