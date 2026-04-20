@@ -1,3 +1,4 @@
+#include <xrpl/beast/core/List.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 

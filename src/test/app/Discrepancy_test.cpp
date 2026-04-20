@@ -1,12 +1,24 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <cstdint>
 
 namespace xrpl {
 

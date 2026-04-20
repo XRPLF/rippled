@@ -1,8 +1,12 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
