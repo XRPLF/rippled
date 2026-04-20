@@ -1,3 +1,5 @@
+#include <xrpl/protocol/SecretKey.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -8,7 +10,6 @@
 #include <xrpl/crypto/secure_erase.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
@@ -17,6 +18,7 @@
 #include <boost/utility/string_view.hpp>
 
 #include <ed25519.h>
+#include <secp256k1.h>
 
 #include <algorithm>
 #include <array>

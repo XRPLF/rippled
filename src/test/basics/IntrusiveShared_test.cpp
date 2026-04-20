@@ -1,21 +1,27 @@
-#include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/IntrusiveRefCounts.h>
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
-#include <barrier>
-#include <chrono>
+#include <cassert>
+#include <chrono>  // IWYU pragma: keep
 #include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <latch>
+#include <mutex>
 #include <optional>
 #include <random>
 #include <string>
 #include <thread>
+#include <utility>
 #include <variant>
+#include <vector>
 
 namespace xrpl {
 namespace tests {

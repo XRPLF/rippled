@@ -1,10 +1,18 @@
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <array>
+#include <cstdint>
+#include <limits>
+#include <map>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 #include <tuple>
 
 namespace xrpl {

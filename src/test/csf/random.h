@@ -111,7 +111,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator&)
     {
         return t_;
@@ -140,7 +140,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator& g)
     {
         // use inverse transform of CDF to sample

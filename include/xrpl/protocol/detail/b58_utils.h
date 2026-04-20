@@ -33,7 +33,7 @@ carrying_mul(std::uint64_t a, std::uint64_t b, std::uint64_t carry)
 {
     unsigned __int128 const x = a;
     unsigned __int128 const y = b;
-    unsigned __int128 const c = x * y + carry;
+    unsigned __int128 const c = (x * y) + carry;
     return {c & 0xffff'ffff'ffff'ffff, c >> 64};
 }
 
@@ -64,13 +64,13 @@ inplace_bigint_add(std::span<std::uint64_t> a, std::uint64_t b)
 
     for (auto& v : a.subspan(1))
     {
-        if (!carry)
+        if (carry == 0u)
         {
             return TokenCodecErrc::success;
         }
         std::tie(v, carry) = carrying_add(v, 1);
     }
-    if (carry)
+    if (carry != 0u)
     {
         return TokenCodecErrc::overflowAdd;
     }
@@ -105,7 +105,7 @@ inplace_bigint_mul(std::span<std::uint64_t> a, std::uint64_t b)
 [[nodiscard]] inline std::uint64_t
 inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 {
-    if (numerator.size() == 0)
+    if (numerator.empty())
     {
         // should never happen, but if it does then it seems natural to define
         // the a null set of numbers to be zero, so the remainder is also zero.

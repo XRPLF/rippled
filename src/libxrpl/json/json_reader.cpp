@@ -1,5 +1,6 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
+
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 
 #include <algorithm>

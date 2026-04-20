@@ -1,7 +1,11 @@
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+
+#include <atomic>
+#include <memory>
 
 namespace xrpl {
 namespace test {

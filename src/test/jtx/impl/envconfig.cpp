@@ -1,7 +1,14 @@
-#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
+#include <test/jtx/amount.h>
+
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
+
+#include <atomic>
+#include <map>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -122,6 +129,49 @@ addGrpcConfigWithSecureGateway(std::unique_ptr<Config> cfg, std::string const& s
     // "ip_local_port_range" section for using 0 ports
     (*cfg)[SECTION_PORT_GRPC].set("port", "0");
     (*cfg)[SECTION_PORT_GRPC].set("secure_gateway", secureGateway);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLS(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndClientCA(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& clientCAPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", clientCAPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndCertChain(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& certChainPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", certChainPath);
     return cfg;
 }
 

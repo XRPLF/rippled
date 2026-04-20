@@ -173,14 +173,22 @@ void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
     if constexpr (std::is_same_v<TIn, XRPAmount>)
+    {
         m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
+    }
     else
+    {
         m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, assetIn_));
+    }
 
     if constexpr (std::is_same_v<TOut, XRPAmount>)
+    {
         m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
+    }
     else
+    {
         m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, assetOut_));
+    }
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -200,11 +208,13 @@ TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& li
 {
     if (auto const& rules = getCurrentTransactionRules();
         rules && rules->enabled(fixReducedOffersV2))
+    {
         // It turns out that the ceil_in implementation has some slop in
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
         // an amendment.
         return quality().ceil_in_strict(offerAmount, limit, roundUp);
+    }
     return m_quality.ceil_in(offerAmount, limit);
 }
 

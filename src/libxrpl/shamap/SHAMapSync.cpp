@@ -1,8 +1,33 @@
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iterator>
+#include <mutex>
+#include <optional>
+#include <stack>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
