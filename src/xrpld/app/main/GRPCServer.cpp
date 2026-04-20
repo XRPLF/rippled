@@ -8,6 +8,7 @@
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
@@ -27,6 +28,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/icl/interval_set.hpp>
 
+#include <grpc/grpc_security_constants.h>
 #include <grpcpp/completion_queue.h>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server_builder.h>
@@ -387,6 +389,48 @@ GRPCServerImpl::GRPCServerImpl(Application& app)
                 Throw<std::runtime_error>("Error parsing secure_gateway section");
             }
         }
+
+        // Read TLS certificate configuration (optional)
+        sslCertPath_ = section.get("ssl_cert");
+        sslKeyPath_ = section.get("ssl_key");
+        sslCertChainPath_ = section.get("ssl_cert_chain");
+        sslClientCAPath_ = section.get("ssl_client_ca");
+
+        // If cert or key is specified, both must be specified
+        if (sslCertPath_.has_value() || sslKeyPath_.has_value())
+        {
+            if (!sslCertPath_.has_value() || !sslKeyPath_.has_value())
+            {
+                JLOG(journal_.error())
+                    << "Both ssl_cert and ssl_key must be specified for gRPC TLS";
+                Throw<std::runtime_error>("Incomplete TLS configuration for gRPC");
+            }
+            JLOG(journal_.info()) << "gRPC TLS enabled with certificate: " << *sslCertPath_;
+        }
+
+        // Validate TLS configuration consistency: ssl_cert_chain only makes sense when TLS is
+        // enabled
+        if (sslCertChainPath_.has_value() &&
+            (!sslCertPath_.has_value() || !sslKeyPath_.has_value()))
+        {
+            JLOG(journal_.error())
+                << "ssl_cert_chain specified for gRPC without both ssl_cert and ssl_key; "
+                << "this is an invalid TLS configuration";
+            Throw<std::runtime_error>(
+                "Invalid gRPC TLS configuration: ssl_cert_chain requires both ssl_cert and "
+                "ssl_key");
+        }
+
+        // Validate TLS configuration consistency: ssl_client_ca only makes sense when TLS is
+        // enabled
+        if (sslClientCAPath_.has_value() && (!sslCertPath_.has_value() || !sslKeyPath_.has_value()))
+        {
+            JLOG(journal_.error())
+                << "ssl_client_ca specified for gRPC without both ssl_cert and ssl_key; "
+                << "this is an invalid TLS configuration";
+            Throw<std::runtime_error>(
+                "Invalid gRPC TLS configuration: ssl_client_ca requires both ssl_cert and ssl_key");
+        }
     }
 }
 
@@ -558,6 +602,104 @@ GRPCServerImpl::setupListeners()
     return requests;
 }
 
+std::shared_ptr<grpc::ServerCredentials>
+GRPCServerImpl::createServerCredentials()
+{
+    if (not sslCertPath_.has_value() or not sslKeyPath_.has_value())
+    {
+        JLOG(journal_.info()) << "Configuring gRPC server without TLS";
+        return grpc::InsecureServerCredentials();
+    }
+
+    JLOG(journal_.info()) << "Configuring gRPC server with TLS";
+
+    try
+    {
+        boost::system::error_code ec;
+        grpc::SslServerCredentialsOptions sslOpts;
+        grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
+
+        std::string const certContents = getFileContents(ec, *sslCertPath_);
+        if (ec)
+        {
+            JLOG(journal_.error()) << "Failed to read gRPC SSL certificate file: " << *sslCertPath_
+                                   << " - " << ec.message();  // LCOV_EXCL_LINE
+            return nullptr;
+        }
+
+        std::string const keyContents = getFileContents(ec, *sslKeyPath_);
+        if (ec)
+        {
+            JLOG(journal_.error()) << "Failed to read gRPC SSL key file: " << *sslKeyPath_ << " - "
+                                   << ec.message();  // LCOV_EXCL_LINE
+            return nullptr;
+        }
+
+        keyCertPair.private_key = keyContents;
+
+        // Read intermediate CA certificates for server certificate chain (optional)
+        std::string certChainContents;
+        if (sslCertChainPath_.has_value())
+        {
+            certChainContents = getFileContents(ec, *sslCertChainPath_);
+            if (ec)
+            {
+                JLOG(journal_.error())
+                    << "Failed to read gRPC SSL cert chain file: " << *sslCertChainPath_ << " - "
+                    << ec.message();  // LCOV_EXCL_LINE
+                return nullptr;
+            }
+        }
+
+        // Read CA certificate for client verification (mTLS, optional)
+        if (sslClientCAPath_.has_value())
+        {
+            auto const clientCAContents = getFileContents(ec, *sslClientCAPath_);
+            if (ec)
+            {
+                JLOG(journal_.error())
+                    << "Failed to read gRPC SSL client CA file: " << *sslClientCAPath_ << " - "
+                    << ec.message();  // LCOV_EXCL_LINE
+                return nullptr;
+            }
+
+            if (clientCAContents.empty())
+            {
+                JLOG(journal_.error())
+                    << "Empty/truncated gRPC SSL client CA file: " << *sslClientCAPath_
+                    << " - failed to configure mutual TLS";  // LCOV_EXCL_LINE
+                return nullptr;
+            }
+
+            sslOpts.pem_root_certs = clientCAContents;
+            sslOpts.client_certificate_request =
+                GRPC_SSL_REQUEST_AND_REQUIRE_CLIENT_CERTIFICATE_AND_VERIFY;
+            JLOG(journal_.info()) << "gRPC mutual TLS enabled - client certificates will be "
+                                     "required and verified";
+        }
+
+        // Combine server cert with intermediate CA certs for complete chain
+        keyCertPair.cert_chain = certContents;
+        if (!certChainContents.empty())
+        {
+            keyCertPair.cert_chain += '\n' + certChainContents;
+            JLOG(journal_.info()) << "gRPC server certificate chain configured with "
+                                     "intermediate CA certificates";  // LCOV_EXCL_LINE
+        }
+
+        sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
+
+        JLOG(journal_.info()) << "gRPC TLS credentials configured successfully";  // LCOV_EXCL_LINE
+        return grpc::SslServerCredentials(sslOpts);
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(journal_.error()) << "Exception while configuring gRPC TLS: "
+                               << e.what();  // LCOV_EXCL_LINE
+        return nullptr;
+    }
+}
+
 bool
 GRPCServerImpl::start()
 {
@@ -565,23 +707,62 @@ GRPCServerImpl::start()
     if (serverAddress_.empty())
         return false;
 
-    JLOG(journal_.info()) << "Starting gRPC server at " << serverAddress_;
+    // Determine TLS mode for logging
+    bool const tlsEnabled = sslCertPath_.has_value() && sslKeyPath_.has_value();
+    bool const mtlsEnabled = tlsEnabled && sslClientCAPath_.has_value();
+
+    std::string tlsMode = "without TLS";
+    if (mtlsEnabled)
+    {
+        tlsMode = "with mutual TLS (mTLS)";
+    }
+    else if (tlsEnabled)
+    {
+        tlsMode = "with TLS";
+    }
+
+    JLOG(journal_.info()) << "Starting gRPC server at " << serverAddress_ << " "
+                          << tlsMode;  // LCOV_EXCL_LINE
 
     grpc::ServerBuilder builder;
-
-    // Listen on the given address without any authentication mechanism.
-    // Actually binded port will be returned into "port" variable.
     int port = 0;
-    builder.AddListeningPort(serverAddress_, grpc::InsecureServerCredentials(), &port);
+
+    // Create credentials (TLS or insecure) based on configuration
+    auto credentials = createServerCredentials();
+    if (!credentials)
+    {
+        JLOG(journal_.error()) << "Failed to create gRPC server credentials for " << serverAddress_
+                               << " (TLS mode: " << tlsMode
+                               << ") - server will not start";  // LCOV_EXCL_LINE
+        return false;
+    }
+
+    // Add listening port with appropriate credentials
+    builder.AddListeningPort(serverAddress_, credentials, &port);
+
     // Register "service_" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *asynchronous* service.
     builder.RegisterService(&service_);
+
     // Get hold of the completion queue used for the asynchronous communication
     // with the gRPC runtime.
     cq_ = builder.AddCompletionQueue();
+
     // Finally assemble the server.
     server_ = builder.BuildAndStart();
     serverPort_ = static_cast<std::uint16_t>(port);
+
+    if (serverPort_ != 0u)
+    {
+        JLOG(journal_.info()) << "gRPC server started successfully on port " << serverPort_;
+    }
+    else
+    {
+        JLOG(journal_.error())
+            << "Failed to start gRPC server at " << serverAddress_ << " (TLS mode: " << tlsMode
+            << "); Possible causes: address already in use, invalid address format, or permission "
+               "denied";  // LCOV_EXCL_LINE
+    }
 
     return static_cast<bool>(serverPort_);
 }
