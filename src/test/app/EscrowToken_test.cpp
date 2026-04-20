@@ -1015,16 +1015,16 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), aa) !=
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), aa) != aod.end());
             }
 
             {
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), aa) !=
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), aa) != iod.end());
             }
 
             env(escrow::create(bob, bob, USD(1'000)),
@@ -1040,16 +1040,16 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) != bod.end());
             }
 
             {
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 5);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), bb) !=
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), bb) != iod.end());
             }
 
             env.close(5s);
@@ -1062,20 +1062,20 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), aa) ==
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), aa) == aod.end());
 
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) != bod.end());
 
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), bb) !=
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), bb) != iod.end());
             }
 
             env.close(5s);
@@ -1088,14 +1088,14 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) ==
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) == bod.end());
 
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), bb) ==
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), bb) == iod.end());
             }
         }
         {
@@ -1135,32 +1135,32 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) !=
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) != aod.end());
 
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 3);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) != bod.end());
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) != bod.end());
 
                 xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(cod.begin(), cod.end(), bc) !=
-                    cod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(cod.begin(), cod.end(), bc) != cod.end());
 
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 5);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), ab) !=
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), ab) != iod.end());
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), bc) !=
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), bc) != iod.end());
             }
 
             env.close(5s);
@@ -1172,17 +1172,17 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) ==
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) == aod.end());
 
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) ==
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) != bod.end());
 
                 xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
@@ -1190,11 +1190,11 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 4);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), ab) ==
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), ab) == iod.end());
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), bc) !=
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), bc) != iod.end());
             }
 
             env.close(5s);
@@ -1206,17 +1206,17 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) ==
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) == aod.end());
 
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) ==
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) ==
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) == bod.end());
 
                 xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
@@ -1224,11 +1224,11 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), ab) ==
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), ab) == iod.end());
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), bc) ==
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), bc) == iod.end());
             }
         }
 
@@ -1264,8 +1264,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ag) !=
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ag) != aod.end());
 
                 xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
@@ -1273,8 +1273,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 3);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), ag) !=
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), ag) != iod.end());
             }
 
             env.close(5s);
@@ -1285,8 +1285,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ag) ==
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ag) == aod.end());
 
                 xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
@@ -1294,8 +1294,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), ag) ==
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), ag) == iod.end());
             }
         }
     }
@@ -3190,16 +3190,16 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), aa) !=
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), aa) != aod.end());
             }
 
             {
                 xrpl::Dir const iod(*env.current(), keylet::ownerDir(gw.id()));
                 BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(iod.begin(), iod.end(), aa) ==
-                    iod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(iod.begin(), iod.end(), aa) == iod.end());
             }
 
             env(escrow::create(bob, bob, MPT(1'000)),
@@ -3215,8 +3215,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) != bod.end());
             }
 
             env.close(5s);
@@ -3229,14 +3229,14 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), aa) ==
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), aa) == aod.end());
 
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) != bod.end());
             }
 
             env.close(5s);
@@ -3249,8 +3249,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) ==
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) == bod.end());
             }
         }
 
@@ -3293,23 +3293,23 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) !=
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) != aod.end());
 
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 3);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) != bod.end());
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) != bod.end());
 
                 xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(cod.begin(), cod.end(), bc) !=
-                    cod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(cod.begin(), cod.end(), bc) != cod.end());
             }
 
             env.close(5s);
@@ -3321,17 +3321,17 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) ==
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) == aod.end());
 
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) ==
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) !=
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) != bod.end());
 
                 xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 2);
@@ -3346,17 +3346,17 @@ struct EscrowToken_test : public beast::unit_test::suite
                 xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) ==
-                    aod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) == aod.end());
 
                 xrpl::Dir const bod(*env.current(), keylet::ownerDir(bob.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) ==
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) == bod.end());
                 BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) ==
-                    bod.end());  // NOLINT(modernize-use-ranges)
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) == bod.end());
 
                 xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);

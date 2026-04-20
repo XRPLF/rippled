@@ -639,8 +639,10 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
+        {
             fullyValidatedJumps.emplace_back(
                 Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
+        }
     }
 };
 

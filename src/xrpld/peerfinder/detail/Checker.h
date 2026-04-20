@@ -72,7 +72,7 @@ public:
         operation_aborted) and the associated thread and io_context have
         no more work remaining.
     */
-    ~Checker();
+    virtual ~Checker();
 
     /** Stop the service.
         Pending I/O operations will be canceled.
