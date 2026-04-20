@@ -110,7 +110,7 @@ TxTest::submit(std::shared_ptr<STTx const> stx)
         .ter = result.ter,
         .applied = result.applied,
         .metadata = std::move(result).metadata,
-        .tx = stx};
+        .tx = std::move(stx)};
 }
 
 void
