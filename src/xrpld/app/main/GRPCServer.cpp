@@ -6,6 +6,8 @@
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/resource/Fees.h>
 
+#include <grpc/grpc_security_constants.h>
+
 namespace xrpl {
 
 namespace {
