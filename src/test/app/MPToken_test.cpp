@@ -3042,45 +3042,83 @@ class MPToken_test : public beast::unit_test::suite
         testcase("Mutate MPTRequireAuth");
         using namespace test::jtx;
 
-        Env env{*this, features};
-        Account const alice("alice");
-        Account const bob("bob");
+        // test mutating RequireAuth flag on the issuance and its effect on payment authorization
+        {
+            Env env{*this, features};
+            Account const alice("alice");
+            Account const bob("bob");
 
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
-        mptAlice.create(
-            {.ownerCount = 1,
-             .flags = tfMPTRequireAuth,
-             .mutableFlags = tmfMPTCanMutateRequireAuth});
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create(
+                {.ownerCount = 1,
+                 .flags = tfMPTRequireAuth,
+                 .mutableFlags = tmfMPTCanMutateRequireAuth});
 
-        mptAlice.authorize({.account = bob});
-        mptAlice.authorize({.account = alice, .holder = bob});
+            mptAlice.authorize({.account = bob});
+            mptAlice.authorize({.account = alice, .holder = bob});
 
-        // Pay to bob
-        mptAlice.pay(alice, bob, 1000);
+            // Pay to bob
+            mptAlice.pay(alice, bob, 1000);
 
-        // Unauthorize bob
-        mptAlice.authorize({.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
+            // Unauthorize bob
+            mptAlice.authorize({.account = alice, .holder = bob, .flags = tfMPTUnauthorize});
 
-        // Can not pay to bob
-        mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+            // Can not pay to bob
+            mptAlice.pay(bob, alice, 100, tecNO_AUTH);
 
-        // Clear RequireAuth
-        mptAlice.set({.account = alice, .mutableFlags = tmfMPTClearRequireAuth});
+            // Clear RequireAuth
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTClearRequireAuth});
 
-        // Can pay to bob
-        mptAlice.pay(alice, bob, 1000);
+            // Can pay to bob
+            mptAlice.pay(alice, bob, 1000);
 
-        // Set RequireAuth again
-        mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
+            // Set RequireAuth again
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
 
-        // Can not pay to bob since he is not authorized
-        mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+            // Can not pay to bob since he is not authorized
+            mptAlice.pay(bob, alice, 100, tecNO_AUTH);
 
-        // Authorize bob again
-        mptAlice.authorize({.account = alice, .holder = bob});
+            // Authorize bob again
+            mptAlice.authorize({.account = alice, .holder = bob});
 
-        // Can pay to bob again
-        mptAlice.pay(alice, bob, 100);
+            // Can pay to bob again
+            mptAlice.pay(alice, bob, 100);
+        }
+
+        // Cannot clear RequireAuth when a DomainID is set on the issuance
+        {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const credIssuer{"credIssuer"};
+            pdomain::Credentials const credentials{
+                {.issuer = credIssuer, .credType = "credential"}};
+
+            Env env{*this, features};
+            env.fund(XRP(1000), credIssuer);
+            env.close();
+
+            env(pdomain::setTx(credIssuer, credentials));
+            env.close();
+            auto const domainId = pdomain::getNewDomain(env.meta());
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+            mptAlice.create({
+                .ownerCount = 1,
+                .flags = tfMPTRequireAuth,
+                .mutableFlags = tmfMPTCanMutateRequireAuth,
+                .domainID = domainId,
+            });
+
+            // Clearing RequireAuth while a DomainID is present must be rejected,
+            mptAlice.set({
+                .account = alice,
+                .mutableFlags = tmfMPTClearRequireAuth,
+                .err = tecNO_PERMISSION,
+            });
+
+            // Setting RequireAuth (already set) is still allowed, though it has no effect.
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetRequireAuth});
+        }
     }
 
     void
