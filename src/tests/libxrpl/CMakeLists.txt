@@ -42,3 +42,14 @@ if(NOT WIN32)
     target_link_libraries(xrpl.test.net PRIVATE xrpl.imports.test)
     add_dependencies(xrpl.tests xrpl.test.net)
 endif()
+
+xrpl_add_test(telemetry)
+target_link_libraries(xrpl.test.telemetry PRIVATE xrpl.imports.test)
+target_include_directories(xrpl.test.telemetry PRIVATE ${CMAKE_SOURCE_DIR}/src)
+if(telemetry)
+    target_link_libraries(
+        xrpl.test.telemetry
+        PRIVATE opentelemetry-cpp::opentelemetry-cpp
+    )
+endif()
+add_dependencies(xrpl.tests xrpl.test.telemetry)
