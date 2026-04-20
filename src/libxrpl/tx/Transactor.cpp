@@ -23,6 +23,7 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
@@ -45,6 +46,7 @@
 #include <memory>
 #include <optional>
 #include <stdexcept>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 

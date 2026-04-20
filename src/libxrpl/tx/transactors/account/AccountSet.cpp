@@ -6,7 +6,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
-#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -19,12 +18,10 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <cstdint>
-#include <unordered_set>
 
 namespace xrpl {
 

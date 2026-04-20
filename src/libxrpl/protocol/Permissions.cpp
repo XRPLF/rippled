@@ -2,14 +2,21 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxFlags.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFormats.h>
 
 #include <cstdint>
 #include <functional>
 #include <optional>
 #include <string>
+#include <tuple>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

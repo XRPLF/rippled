@@ -24,6 +24,7 @@
 #include <test/jtx/txflags.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
@@ -32,6 +33,7 @@
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
