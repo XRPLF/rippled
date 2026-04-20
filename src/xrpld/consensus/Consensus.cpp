@@ -1,6 +1,16 @@
 #include <xrpld/consensus/Consensus.h>
 
+#include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/consensus/ConsensusTypes.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <memory>
+#include <sstream>
 
 namespace xrpl {
 

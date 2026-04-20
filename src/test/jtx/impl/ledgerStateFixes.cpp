@@ -1,6 +1,8 @@
+#include <test/jtx/Account.h>
 #include <test/jtx/ledgerStateFix.h>
 
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/transactors/system/LedgerStateFix.h>
 

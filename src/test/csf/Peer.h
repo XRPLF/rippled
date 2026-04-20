@@ -1,5 +1,6 @@
 #pragma once
 
+#include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
 #include <test/csf/Scheduler.h>
 #include <test/csf/TrustGraph.h>
