@@ -1,16 +1,16 @@
-#include <xrpl/basics/LocalValue.h>
+#include <xrpl/protocol/STAmount.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
@@ -19,7 +19,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Serializer.h>
@@ -31,11 +30,6 @@
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/multiprecision/detail/default_ops.hpp>
-#include <boost/multiprecision/fwd.hpp>
-#include <boost/regex/v5/regbase.hpp>
-#include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
-#include <boost/regex/v5/regex_match.hpp>
 
 #include <algorithm>
 #include <cstddef>
@@ -44,9 +38,11 @@
 #include <iterator>
 #include <limits>
 #include <memory>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace xrpl {

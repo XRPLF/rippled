@@ -1,5 +1,6 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
@@ -7,10 +8,14 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <limits>
 #include <regex>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 

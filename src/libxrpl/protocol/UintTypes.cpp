@@ -1,7 +1,8 @@
+#include <xrpl/protocol/UintTypes.h>
+
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
 #include <cstddef>

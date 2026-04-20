@@ -1,8 +1,15 @@
+#include <xrpl/tx/transactors/nft/NFTokenCreateOffer.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/nft/NFTokenCreateOffer.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
 
 namespace xrpl {
 

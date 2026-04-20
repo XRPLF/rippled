@@ -1,17 +1,49 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <stdexcept>
 #include <utility>
 #include <vector>
 
@@ -461,14 +493,14 @@ void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (!stateMap_.delItem(sle->key()))
-        LogicError("Ledger::rawErase: key not found");
+        Throw<std::logic_error>("Ledger::rawErase: key not found");
 }
 
 void
 Ledger::rawErase(uint256 const& key)
 {
     if (!stateMap_.delItem(key))
-        LogicError("Ledger::rawErase: key not found");
+        Throw<std::logic_error>("Ledger::rawErase: key not found");
 }
 
 void
@@ -478,7 +510,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_.addGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
-        LogicError("Ledger::rawInsert: key already exists");
+        Throw<std::logic_error>("Ledger::rawInsert: key already exists");
 }
 
 void
@@ -488,7 +520,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_.updateGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
-        LogicError("Ledger::rawReplace: key not found");
+        Throw<std::logic_error>("Ledger::rawReplace: key not found");
 }
 
 void
@@ -504,7 +536,7 @@ Ledger::rawTxInsert(
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
     if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
-        LogicError("duplicate_tx: " + to_string(key));
+        Throw<std::logic_error>("duplicate_tx: " + to_string(key));
 }
 
 uint256
@@ -522,7 +554,7 @@ Ledger::rawTxInsertWithHash(
     auto item = make_shamapitem(key, s.slice());
     auto hash = sha512Half(HashPrefix::txNode, item->slice(), item->key());
     if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
-        LogicError("duplicate_tx: " + to_string(key));
+        Throw<std::logic_error>("duplicate_tx: " + to_string(key));
 
     return hash;
 }

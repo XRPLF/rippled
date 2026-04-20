@@ -75,10 +75,12 @@ public:
     doValidatedLedger(std::shared_ptr<ReadView const> const& lastValidatedLedger)
     {
         if (needValidatedLedger(lastValidatedLedger->seq()))
+        {
             doValidatedLedger(
                 lastValidatedLedger->seq(),
                 getEnabledAmendments(*lastValidatedLedger),
                 getMajorityAmendments(*lastValidatedLedger));
+        }
     }
 
     /** Called to determine whether the amendment logic needs to process

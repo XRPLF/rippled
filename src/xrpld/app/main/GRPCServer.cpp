@@ -1,10 +1,54 @@
 #include <xrpld/app/main/GRPCServer.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/ConfigSections.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/Handler.h>
+
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/InfoSub.h>
+
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/icl/interval_set.hpp>
+
+#include <grpcpp/completion_queue.h>
+#include <grpcpp/security/server_credentials.h>
+#include <grpcpp/server_builder.h>
+#include <grpcpp/support/status.h>
+#include <org/xrpl/rpc/v1/get_ledger.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_data.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_diff.pb.h>
+#include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>
+#include <org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <grpc/grpc_security_constants.h>
 
@@ -573,6 +617,8 @@ GRPCServerImpl::createServerCredentials()
     try
     {
         boost::system::error_code ec;
+        grpc::SslServerCredentialsOptions sslOpts;
+        grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
 
         std::string const certContents = getFileContents(ec, *sslCertPath_);
         if (ec)
@@ -590,6 +636,8 @@ GRPCServerImpl::createServerCredentials()
             return nullptr;
         }
 
+        keyCertPair.private_key = keyContents;
+
         // Read intermediate CA certificates for server certificate chain (optional)
         std::string certChainContents;
         if (sslCertChainPath_.has_value())
@@ -605,10 +653,9 @@ GRPCServerImpl::createServerCredentials()
         }
 
         // Read CA certificate for client verification (mTLS, optional)
-        std::string clientCAContents;
         if (sslClientCAPath_.has_value())
         {
-            clientCAContents = getFileContents(ec, *sslClientCAPath_);
+            auto const clientCAContents = getFileContents(ec, *sslClientCAPath_);
             if (ec)
             {
                 JLOG(journal_.error())
@@ -616,25 +663,7 @@ GRPCServerImpl::createServerCredentials()
                     << ec.message();  // LCOV_EXCL_LINE
                 return nullptr;
             }
-        }
 
-        grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
-        keyCertPair.private_key = keyContents;
-        // Combine server cert with intermediate CA certs for complete chain
-        keyCertPair.cert_chain = certContents;
-        if (!certChainContents.empty())
-        {
-            keyCertPair.cert_chain += '\n' + certChainContents;
-            JLOG(journal_.info()) << "gRPC server certificate chain configured with "
-                                     "intermediate CA certificates";  // LCOV_EXCL_LINE
-        }
-
-        grpc::SslServerCredentialsOptions sslOpts;
-        sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
-
-        // Configure client certificate verification (mTLS) if CA is provided
-        if (sslClientCAPath_.has_value())
-        {
             if (clientCAContents.empty())
             {
                 JLOG(journal_.error())
@@ -649,6 +678,17 @@ GRPCServerImpl::createServerCredentials()
             JLOG(journal_.info()) << "gRPC mutual TLS enabled - client certificates will be "
                                      "required and verified";
         }
+
+        // Combine server cert with intermediate CA certs for complete chain
+        keyCertPair.cert_chain = certContents;
+        if (!certChainContents.empty())
+        {
+            keyCertPair.cert_chain += '\n' + certChainContents;
+            JLOG(journal_.info()) << "gRPC server certificate chain configured with "
+                                     "intermediate CA certificates";  // LCOV_EXCL_LINE
+        }
+
+        sslOpts.pem_key_cert_pairs.push_back(keyCertPair);
 
         JLOG(journal_.info()) << "gRPC TLS credentials configured successfully";  // LCOV_EXCL_LINE
         return grpc::SslServerCredentials(sslOpts);
@@ -674,9 +714,13 @@ GRPCServerImpl::start()
 
     std::string tlsMode = "without TLS";
     if (mtlsEnabled)
+    {
         tlsMode = "with mutual TLS (mTLS)";
+    }
     else if (tlsEnabled)
+    {
         tlsMode = "with TLS";
+    }
 
     JLOG(journal_.info()) << "Starting gRPC server at " << serverAddress_ << " "
                           << tlsMode;  // LCOV_EXCL_LINE
@@ -709,7 +753,7 @@ GRPCServerImpl::start()
     server_ = builder.BuildAndStart();
     serverPort_ = static_cast<std::uint16_t>(port);
 
-    if (serverPort_)
+    if (serverPort_ != 0u)
     {
         JLOG(journal_.info()) << "gRPC server started successfully on port " << serverPort_;
     }

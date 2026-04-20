@@ -36,7 +36,7 @@ make_reason(String const& reason, char const* file, int line)
 
 }  // namespace detail
 
-class thread;
+class Thread;
 
 enum abort_t { no_abort_on_fail, abort_on_fail };
 
@@ -295,7 +295,7 @@ public:
     }
 
 private:
-    friend class thread;
+    friend class Thread;
 
     static suite**
     p_this_suite()
@@ -309,7 +309,7 @@ private:
     run() = 0;
 
     void
-    propagate_abort();
+    propagate_abort() const;
 
     template <class = void>
     void
@@ -486,9 +486,13 @@ suite::unexpected(Condition shouldBeFalse, String const& reason)
 {
     bool const b = static_cast<bool>(shouldBeFalse);
     if (!b)
+    {
         pass();
+    }
     else
+    {
         fail(reason);
+    }
     return !b;
 }
 
@@ -522,7 +526,7 @@ suite::fail(String const& reason, char const* file, int line)
 }
 
 inline void
-suite::propagate_abort()
+suite::propagate_abort() const
 {
     if (abort_ && aborted_)
         BOOST_THROW_EXCEPTION(abort_exception());
@@ -538,7 +542,7 @@ suite::run(runner& r)
     {
         run();
     }
-    catch (abort_exception const&)
+    catch (abort_exception const&)  // NOLINT(bugprone-empty-catch)
     {
         // ends the suite
     }

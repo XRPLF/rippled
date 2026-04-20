@@ -3,10 +3,17 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <optional>
+#include <string>
 
 namespace xrpl {
 

@@ -1,9 +1,47 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/deposit.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpld/app/misc/Transaction.h>
 
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 
