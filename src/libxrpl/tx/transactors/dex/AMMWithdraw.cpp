@@ -1087,53 +1087,69 @@ AMMWithdraw::singleWithdrawEPrice(
     STAmount const& ePrice,
     std::uint16_t tfee)
 {
-    // LPTokens is asset in => E = t / a and formula (8) is:
-    // a = A*(t1**2 + t1*(f - 2))/(t1*f - 1)
-    // substitute a as t/E =>
-    // t/E = A*(t1**2 + t1*(f - 2))/(t1*f - 1), t1=t/T => t = t1*T
-    // t1*T/E = A*((t/T)**2 + t*(f - 2)/T)/(t*f/T - 1) =>
-    // T/E = A*(t1 + f-2)/(t1*f - 1) =>
-    // T*(t1*f - 1) = A*E*(t1 + f - 2) =>
-    // t1*T*f - T = t1*A*E + A*E*(f - 2) =>
-    // t1*(T*f - A*E) = T + A*E*(f - 2) =>
-    // t = T*(T + A*E*(f - 2))/(T*f - A*E)
-    Number const ae = amountBalance * ePrice;
-    auto const f = getFee(tfee);
-    auto tokNoRoundCb = [&] {
-        return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae);
-    };
-    auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae); };
-    auto const tokensAdj =
-        getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::No);
-    if (tokensAdj <= beast::zero)
+    try
     {
-        if (!view.rules().enabled(fixAMMv1_3))
+        // LPTokens is asset in => E = t / a and formula (8) is:
+        // a = A*(t1**2 + t1*(f - 2))/(t1*f - 1)
+        // substitute a as t/E =>
+        // t/E = A*(t1**2 + t1*(f - 2))/(t1*f - 1), t1=t/T => t = t1*T
+        // t1*T/E = A*((t/T)**2 + t*(f - 2)/T)/(t*f/T - 1) =>
+        // T/E = A*(t1 + f-2)/(t1*f - 1) =>
+        // T*(t1*f - 1) = A*E*(t1 + f - 2) =>
+        // t1*T*f - T = t1*A*E + A*E*(f - 2) =>
+        // t1*(T*f - A*E) = T + A*E*(f - 2) =>
+        // t = T*(T + A*E*(f - 2))/(T*f - A*E)
+        Number const ae = amountBalance * ePrice;
+        auto const f = getFee(tfee);
+        // Bug #40: guard against division by zero when ePrice == lptAMMBalance*f/amountBalance
+        auto const denom = lptAMMBalance * f - ae;
+        if (denom == beast::zero)
         {
-            return {tecAMM_FAILED, STAmount{}};
+            if (!view.rules().enabled(fixAMMv1_3))
+                return {tecAMM_FAILED, STAmount{}};
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+        }
+        auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
+        auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
+        auto const tokensAdj =
+            getRoundedLPTokens(view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::No);
+        if (tokensAdj <= beast::zero)
+        {
+            if (!view.rules().enabled(fixAMMv1_3))
+            {
+                return {tecAMM_FAILED, STAmount{}};
+            }
+
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+        }
+        auto amtNoRoundCb = [&] { return tokensAdj / ePrice; };
+        auto amtProdCb = [&] { return tokensAdj / ePrice; };
+        // the adjusted tokens are factored in
+        auto const amountWithdraw =
+            getRoundedAsset(view.rules(), amtNoRoundCb, amount, amtProdCb, IsDeposit::No);
+        if (amount == beast::zero || amountWithdraw >= amount)
+        {
+            return withdraw(
+                view,
+                ammSle,
+                ammAccount,
+                amountBalance,
+                amountWithdraw,
+                std::nullopt,
+                lptAMMBalance,
+                tokensAdj,
+                tfee);
         }
 
-        return {tecAMM_INVALID_TOKENS, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};
     }
-    auto amtNoRoundCb = [&] { return tokensAdj / ePrice; };
-    auto amtProdCb = [&] { return tokensAdj / ePrice; };
-    // the adjusted tokens are factored in
-    auto const amountWithdraw =
-        getRoundedAsset(view.rules(), amtNoRoundCb, amount, amtProdCb, IsDeposit::No);
-    if (amount == beast::zero || amountWithdraw >= amount)
+    // LCOV_EXCL_START
+    catch (std::exception const& e)
     {
-        return withdraw(
-            view,
-            ammSle,
-            ammAccount,
-            amountBalance,
-            amountWithdraw,
-            std::nullopt,
-            lptAMMBalance,
-            tokensAdj,
-            tfee);
+        JLOG(j_.error()) << "AMMWithdraw::singleWithdrawEPrice exception " << e.what();
     }
-
-    return {tecAMM_FAILED, STAmount{}};
+    return {tecINTERNAL, STAmount{}};
+    // LCOV_EXCL_STOP
 }
 
 WithdrawAll
