@@ -28,6 +28,7 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/icl/interval_set.hpp>
 
+#include <grpc/grpc_security_constants.h>
 #include <grpcpp/completion_queue.h>
 #include <grpcpp/security/server_credentials.h>
 #include <grpcpp/server_builder.h>
@@ -49,8 +50,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include <grpc/grpc_security_constants.h>
 
 namespace xrpl {
 
