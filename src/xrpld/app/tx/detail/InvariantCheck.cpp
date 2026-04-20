@@ -1873,13 +1873,16 @@ ValidPermissionedDEX::visitEntry(
 
         if (after->isFlag(lsfHybrid))
         {
-            if (!after->isFieldPresent(sfDomainID) ||
-                !after->isFieldPresent(sfAdditionalBooks) ||
-                after->getFieldArray(sfAdditionalBooks).size() > 1)
+            bool const hasDomainID = after->isFieldPresent(sfDomainID);
+            std::optional<std::size_t> additionalBooksSize;
+            if (after->isFieldPresent(sfAdditionalBooks))
+                additionalBooksSize =
+                    after->getFieldArray(sfAdditionalBooks).size();
+            if (!hasDomainID || !additionalBooksSize ||
+                *additionalBooksSize > 1)
                 badHybridsOld_ = true;
-            if (!after->isFieldPresent(sfDomainID) ||
-                !after->isFieldPresent(sfAdditionalBooks) ||
-                after->getFieldArray(sfAdditionalBooks).size() != 1)
+            if (!hasDomainID || !additionalBooksSize ||
+                *additionalBooksSize != 1)
                 badHybrids_ = true;
         }
     }
