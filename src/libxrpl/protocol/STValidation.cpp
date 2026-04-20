@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STValidation.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -10,7 +12,6 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>

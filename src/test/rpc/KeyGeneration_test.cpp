@@ -1,12 +1,19 @@
 #include <test/jtx/TestSuite.h>
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/handlers/WalletPropose.h>
+#include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
@@ -685,9 +692,9 @@ public:
     }
 
     void
-    testRippleLibEd25519()
+    testXrplLibEd25519()
     {
-        testcase("ripple-lib encoded Ed25519 keys");
+        testcase("XrplLib encoded Ed25519 keys");
 
         auto test = [this](char const* seed, char const* addr) {
             {
@@ -784,7 +791,7 @@ public:
         testKeypairForSignature(std::string("ed25519"), ed25519_strings);
         testKeypairForSignature(std::string("secp256k1"), strong_brain_strings);
 
-        testRippleLibEd25519();
+        testXrplLibEd25519();
 
         testKeypairForSignatureErrors();
     }

@@ -252,4 +252,14 @@ deleteAMMTrustLine(
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
 
+/** Delete AMMs MPToken. The passed `sle` must be obtained from a prior
+ * call to view.peek().
+ */
+[[nodiscard]] TER
+deleteAMMMPToken(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleMPT,
+    AccountID const& ammAccountID,
+    beast::Journal j);
+
 }  // namespace xrpl

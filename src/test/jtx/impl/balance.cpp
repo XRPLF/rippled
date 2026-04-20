@@ -1,5 +1,16 @@
 #include <test/jtx/balance.h>
 
+#include <test/jtx/Env.h>
+
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+
+#include <variant>
+
 namespace xrpl {
 namespace test {
 namespace jtx {
@@ -35,8 +46,8 @@ doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, 
         else if (TEST_EXPECT(sle))
         {
             auto amount = sle->getFieldAmount(sfBalance);
-            amount.setIssuer(issue.account);
-            if (account > issue.account)
+            amount.get<Issue>().account = value.getIssuer();
+            if (account > value.getIssuer())
                 amount.negate();
             TEST_EXPECTS(amount == value, amount.getText());
         }

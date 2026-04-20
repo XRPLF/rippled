@@ -190,7 +190,7 @@ private:
     struct ChargeWithContext
     {
         Resource::Charge fee = Resource::feeTrivialPeer;
-        std::string context = {};
+        std::string context{};  // NOLINT(readability-redundant-member-init)
 
         void
         update(Resource::Charge f, std::string const& add)
@@ -408,7 +408,7 @@ public:
         return publicKey_;
     }
 
-    /** Return the version of rippled that the peer is running, if reported. */
+    /** Return the version of xrpld that the peer is running, if reported. */
     std::string
     getVersion() const;
 

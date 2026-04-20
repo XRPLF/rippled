@@ -1,10 +1,23 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/ledger/AcceptedLedgerTx.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/protocol/UintTypes.h>
+
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -43,13 +56,14 @@ AcceptedLedgerTx::AcceptedLedgerTx(
         auto const amount = mTxn->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
-        if (account != amount.issue().account)
+        if (account != amount.getIssuer())
         {
             auto const ownerFunds = accountFunds(
                 *ledger,
                 account,
                 amount,
                 fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
                 beast::Journal{beast::Journal::getNullSink()});
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }

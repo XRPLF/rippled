@@ -1,24 +1,50 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/Slot.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/Handshake.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/messages.h>
 
-#include <boost/thread.hpp>
+#include <boost/asio/ip/address.hpp>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <iostream>
+#include <iterator>
+#include <memory>
 #include <numeric>
 #include <optional>
+#include <random>
+#include <ratio>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -1270,10 +1296,10 @@ protected:
         doTest("Test Config - squelch enabled (legacy)", log, [&](bool log) {
             Config c;
 
-            std::string const toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_enable=1
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == true);
@@ -1282,19 +1308,19 @@ vp_enable=1
         doTest("Test Config - squelch disabled (legacy)", log, [&](bool log) {
             Config c;
 
-            std::string toLoad(R"rippleConfig(
+            std::string toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_enable=0
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
 
             Config c1;
 
-            toLoad = R"rippleConfig(
+            toLoad = R"xrpldConfig(
 [reduce_relay]
-)rippleConfig";
+)xrpldConfig";
 
             c1.loadFromString(toLoad);
             BEAST_EXPECT(c1.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
@@ -1303,10 +1329,10 @@ vp_enable=0
         doTest("Test Config - squelch enabled", log, [&](bool log) {
             Config c;
 
-            std::string const toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_enable=1
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == true);
@@ -1315,10 +1341,10 @@ vp_base_squelch_enable=1
         doTest("Test Config - squelch disabled", log, [&](bool log) {
             Config c;
 
-            std::string const toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_enable=0
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
@@ -1327,11 +1353,11 @@ vp_base_squelch_enable=0
         doTest("Test Config - legacy and new", log, [&](bool log) {
             Config c;
 
-            std::string const toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_enable=0
 vp_enable=0
-)rippleConfig");
+)xrpldConfig");
 
             std::string error;
             auto const expectedError =
@@ -1345,7 +1371,7 @@ vp_enable=0
             {
                 c.loadFromString(toLoad);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -1356,29 +1382,29 @@ vp_enable=0
         doTest("Test Config - max selected peers", log, [&](bool log) {
             Config c;
 
-            std::string toLoad(R"rippleConfig(
+            std::string toLoad(R"xrpldConfig(
 [reduce_relay]
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS == 5);
 
             Config c1;
 
-            toLoad = R"rippleConfig(
+            toLoad = R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_max_selected_peers=6
-)rippleConfig";
+)xrpldConfig";
 
             c1.loadFromString(toLoad);
             BEAST_EXPECT(c1.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS == 6);
 
             Config c2;
 
-            toLoad = R"rippleConfig(
+            toLoad = R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_max_selected_peers=2
-)rippleConfig";
+)xrpldConfig";
 
             std::string error;
             auto const expectedError =
@@ -1389,7 +1415,7 @@ vp_base_squelch_max_selected_peers=2
             {
                 c2.loadFromString(toLoad);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }

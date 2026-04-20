@@ -1,5 +1,6 @@
-#include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Fees.h>
+
+#include <xrpl/resource/Charge.h>
 
 namespace xrpl {
 namespace Resource {

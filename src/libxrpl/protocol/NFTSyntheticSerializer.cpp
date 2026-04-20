@@ -1,5 +1,6 @@
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
+
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/NFTokenID.h>
 #include <xrpl/protocol/NFTokenOfferID.h>
 #include <xrpl/protocol/STTx.h>

@@ -4,14 +4,14 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/messages.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapLeafNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <exception>
 #include <optional>
-#include <string>
+#include <string_view>
 
 namespace xrpl {
 

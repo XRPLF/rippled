@@ -2,9 +2,11 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/owners.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl {
@@ -95,7 +97,7 @@ struct MPTCreate
 
 struct MPTInit
 {
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
@@ -109,10 +111,11 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;
@@ -271,6 +274,12 @@ public:
     operator()(std::int64_t amount) const;
 
     operator Asset() const;
+
+    friend BookSpec
+    operator~(MPTTester const& mpt)
+    {
+        return ~static_cast<MPT>(mpt);
+    }
 
 private:
     using SLEP = SLE::const_pointer;

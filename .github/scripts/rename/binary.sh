@@ -29,7 +29,7 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
-pushd ${DIRECTORY}
+pushd "${DIRECTORY}"
 
 # Remove the binary name override added by the cmake.sh script.
 ${SED_COMMAND} -z -i -E 's@\s+# For the time being.+"rippled"\)@@' cmake/XrplCore.cmake
@@ -49,6 +49,7 @@ ${SED_COMMAND} -i -E 's@ripple/xrpld@XRPLF/rippled@g' BUILD.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' BUILD.md
 ${SED_COMMAND} -i -E 's@xrpld \(`xrpld`\)@xrpld@g' BUILD.md
 ${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' CONTRIBUTING.md
+${SED_COMMAND} -i -E 's@XRPLF/xrpld@XRPLF/rippled@g' docs/build/install.md
 
 popd
 echo "Processing complete."

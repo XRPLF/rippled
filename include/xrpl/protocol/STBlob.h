@@ -95,7 +95,7 @@ STBlob::size() const
 inline std::uint8_t const*
 STBlob::data() const
 {
-    return reinterpret_cast<std::uint8_t const*>(value_.data());
+    return value_.data();
 }
 
 inline STBlob&

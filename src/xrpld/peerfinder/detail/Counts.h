@@ -179,15 +179,12 @@ public:
         //
         // Fixed peers do not count towards the active outgoing total.
 
-        if (m_out_max > 0)
-            return false;
-
-        return true;
+        return m_out_max <= 0;
     }
 
     /** Output statistics. */
     void
-    onWrite(beast::PropertyStream::Map& map)
+    onWrite(beast::PropertyStream::Map& map) const
     {
         map["accept"] = acceptCount();
         map["connect"] = connectCount();
@@ -243,9 +240,13 @@ private:
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
+                    {
                         m_in_active += n;
+                    }
                     else
+                    {
                         m_out_active += n;
+                    }
                 }
                 m_active += n;
                 break;

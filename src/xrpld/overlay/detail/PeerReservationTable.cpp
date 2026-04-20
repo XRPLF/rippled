@@ -1,13 +1,15 @@
 #include <xrpl/core/PeerReservationTable.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
 
 #include <algorithm>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -38,7 +40,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
     return list;
 }
 
-// See `ripple/app/main/DBInit.cpp` for the `CREATE TABLE` statement.
+// See `include/xrpl/rdb/DBInit.h` for the `CREATE TABLE` statement.
 // It is unfortunate that we do not get to define a function for it.
 
 // We choose a `bool` return type to fit in with the error handling scheme
@@ -98,7 +100,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 
     std::lock_guard const lock(mutex_);
 
-    auto const it = table_.find({nodeId});
+    auto const it = table_.find({.nodeId = nodeId});
     if (it != table_.end())
     {
         previous = *it;

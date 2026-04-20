@@ -1,28 +1,66 @@
+#include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/detail/TransactionSign.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/mulDiv.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/apply.h>  // Validity::Valid
 #include <xrpl/tx/applySteps.h>
 
 #include <algorithm>
-#include <iterator>
+#include <chrono>
+#include <exception>
+#include <functional>
+#include <memory>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 namespace RPC {
@@ -206,7 +244,10 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if (params.isMember(jss::build_path) && ((!doPath) || amount.holds<MPTIssue>()))
+    if (params.isMember(jss::build_path) &&
+        (!doPath ||
+         (!app.getOpenLedger().current()->rules().enabled(featureMPTokensV2) &&
+          amount.holds<MPTIssue>())))
     {
         return RPC::make_error(
             rpcINVALID_PARAMS, "Field 'build_path' not allowed in this context.");
@@ -242,9 +283,11 @@ checkPayment(
         }
         else
         {
-            // If no SendMax, default to Amount with sender as issuer.
+            // If no SendMax, default to Amount with sender as issuer if Issue.
             sendMax = amount;
-            sendMax.setIssuer(srcAddressID);
+            sendMax.asset().visit(
+                [&](Issue const&) { sendMax.get<Issue>().account = srcAddressID; },
+                [](MPTIssue const&) {});
         }
 
         if (sendMax.native() && amount.native())
@@ -260,11 +303,11 @@ checkPayment(
             if (auto ledger = app.getOpenLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(ledger, app.getJournal("RippleLineCache")),
+                    std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
                     srcAddressID,
                     *dstAccountID,
-                    sendMax.issue().currency,
-                    sendMax.issue().account,
+                    sendMax.asset(),
+                    sendMax.getIssuer(),
                     amount,
                     std::nullopt,
                     domain,
@@ -275,7 +318,7 @@ checkPayment(
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
                     STPathSet const paths;
-                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.issue().account);
+                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.getIssuer());
                 }
             }
 
@@ -614,7 +657,7 @@ transactionPreProcessImpl(
 
         stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
-    catch (STObject::FieldErr& err)
+    catch (STObject::FieldErr const& err)
     {
         return RPC::make_error(rpcINVALID_PARAMS, err.what());
     }
@@ -1286,7 +1329,7 @@ transactionSubmitMultiSigned(
         {
             stTx = std::make_shared<STTx>(std::move(parsedTx_json.object.value()));
         }
-        catch (STObject::FieldErr& err)
+        catch (STObject::FieldErr const& err)
         {
             return RPC::make_error(rpcINVALID_PARAMS, err.what());
         }
