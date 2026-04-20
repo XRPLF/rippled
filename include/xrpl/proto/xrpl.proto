@@ -239,6 +239,9 @@ message TMGetObjectByHash {
   optional bytes ledgerHash = 4;         // the hash of the ledger these queries are for
   optional bool fat = 5;                 // return related nodes
   repeated TMIndexedObject objects = 6;  // the specific objects requested
+
+  reserved 3;
+  reserved "seq";
 }
 
 message TMLedgerNode {
