@@ -206,7 +206,7 @@ private:
 
 #ifndef NDEBUG
         /** What tags have we already seen in this collection? */
-        std::set<std::string> tags;
+        std::set<std::string> tags{};  // NOLINT(readability-redundant-member-init)
 #endif
     };
 
