@@ -3,7 +3,6 @@
 #include <test/jtx.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
-#include <test/jtx/mpt.h>
 
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
@@ -276,7 +275,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const expectedOverpaymentManagementFee = Number{10};  // 10% of 100
         auto const expectedPrincipalPortion = Number{400};  // 1,000 - 100 - 500
 
-        auto const components = detail::computeOverpaymentComponents(
+        auto const components = ripple::detail::computeOverpaymentComponents(
             IOU,
             loanScale,
             overpayment,
@@ -634,7 +633,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace ripple::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -741,7 +740,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace ripple::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -848,7 +847,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace ripple::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -962,7 +961,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace ripple::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -1083,7 +1082,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace ripple::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;
@@ -1207,7 +1206,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace ripple::detail;
 
-        Env env{*this};
+        Env const env{*this};
         Account const issuer{"issuer"};
         PrettyAsset const asset = issuer["USD"];
         std::int32_t const loanScale = -5;

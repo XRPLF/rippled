@@ -90,7 +90,7 @@ protected:
         Number
         maxCoveredLoanValue(Number const& currentDebt) const
         {
-            NumberRoundModeGuard mg(Number::downward);
+            NumberRoundModeGuard const mg(Number::downward);
             auto debtLimit =
                 coverDeposit * tenthBipsPerUnity.value() / coverRateMin.value();
 
@@ -314,17 +314,11 @@ protected:
                         env.balance(vaultPseudo, broker.asset).number());
                     if (ownerCount == 0)
                     {
-                        // Allow some slop for rounding IOUs
-
-                        // TODO: This needs to be an exact match once all the
-                        // other rounding issues are worked out.
+                        // The Vault must be perfectly balanced if there
+                        // are no loans outstanding
                         auto const total = vaultSle->at(sfAssetsTotal);
                         auto const available = vaultSle->at(sfAssetsAvailable);
-                        env.test.BEAST_EXPECT(
-                            total == available ||
-                            (!broker.asset.integral() && available != 0 &&
-                             ((total - available) / available <
-                              Number(1, -6))));
+                        env.test.BEAST_EXPECT(total == available);
                         env.test.BEAST_EXPECT(
                             vaultSle->at(sfLossUnrealized) == 0);
                     }
@@ -417,8 +411,8 @@ protected:
                             env.le(keylet::vault(brokerSle->at(sfVaultID)));
                         env.test.BEAST_EXPECT(vaultSle))
                     {
-                        if ((flags & lsfLoanImpaired) &&
-                            !(flags & lsfLoanDefault))
+                        if (((flags & lsfLoanImpaired) != 0u) &&
+                            ((flags & lsfLoanDefault) == 0u))
                         {
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
@@ -560,7 +554,7 @@ protected:
                        state.principalOutstanding.exponent())));
         BEAST_EXPECT(state.paymentInterval == 600);
         {
-            NumberRoundModeGuard mg(Number::upward);
+            NumberRoundModeGuard const mg(Number::upward);
             BEAST_EXPECT(
                 state.totalValue ==
                 roundToAsset(
@@ -811,7 +805,7 @@ protected:
         return std::make_tuple(broker, loanKeylet, pseudoAcct);
     }
 
-    void
+    static void
     topUpBorrower(
         jtx::Env& env,
         BrokerInfo const& broker,
@@ -965,7 +959,7 @@ protected:
         auto const borrowerInitialBalance =
             env.balance(borrower, broker.asset).number();
         auto const initialState = state;
-        detail::PaymentComponents totalPaid{
+        ripple::detail::PaymentComponents totalPaid{
             .trackedValueDelta = 0,
             .trackedPrincipalDelta = 0,
             .trackedManagementFeeDelta = 0};
@@ -1005,21 +999,22 @@ protected:
         {
             validateBorrowerBalance();
             // Compute the expected principal amount
-            auto const paymentComponents = detail::computePaymentComponents(
-                broker.asset.raw(),
-                state.loanScale,
-                state.totalValue,
-                state.principalOutstanding,
-                state.managementFeeOutstanding,
-                state.periodicPayment,
-                periodicRate,
-                state.paymentRemaining,
-                broker.params.managementFeeRate);
+            auto const paymentComponents =
+                ripple::detail::computePaymentComponents(
+                    broker.asset.raw(),
+                    state.loanScale,
+                    state.totalValue,
+                    state.principalOutstanding,
+                    state.managementFeeOutstanding,
+                    state.periodicPayment,
+                    periodicRate,
+                    state.paymentRemaining,
+                    broker.params.managementFeeRate);
 
             BEAST_EXPECT(
                 paymentComponents.trackedValueDelta <= roundedPeriodicPayment ||
                 (paymentComponents.specialCase ==
-                     detail::PaymentSpecialCase::final &&
+                     ripple::detail::PaymentSpecialCase::final &&
                  paymentComponents.trackedValueDelta >=
                      roundedPeriodicPayment));
             BEAST_EXPECT(
@@ -1033,14 +1028,14 @@ protected:
                 periodicRate,
                 state.paymentRemaining - 1,
                 broker.params.managementFeeRate);
-            detail::LoanStateDeltas const deltas =
+            ripple::detail::LoanStateDeltas const deltas =
                 currentTrueState - nextTrueState;
             BEAST_EXPECT(
                 deltas.total() ==
                 deltas.principal + deltas.interest + deltas.managementFee);
             BEAST_EXPECT(
                 paymentComponents.specialCase ==
-                    detail::PaymentSpecialCase::final ||
+                    ripple::detail::PaymentSpecialCase::final ||
                 deltas.total() == state.periodicPayment ||
                 (state.loanScale -
                  (deltas.total() - state.periodicPayment).exponent()) > 14);
@@ -1056,10 +1051,10 @@ protected:
                     << paymentComponents.trackedInterestPart() << ", "
                     << paymentComponents.trackedManagementFeeDelta << ", "
                     << (paymentComponents.specialCase ==
-                                detail::PaymentSpecialCase::final
+                                ripple::detail::PaymentSpecialCase::final
                             ? "final"
                             : paymentComponents.specialCase ==
-                                detail::PaymentSpecialCase::extra
+                                ripple::detail::PaymentSpecialCase::extra
                             ? "extra"
                             : "none")
                     << std::endl;
@@ -1078,7 +1073,7 @@ protected:
                 Number const diff = totalDue - totalDueAmount;
                 BEAST_EXPECT(
                     paymentComponents.specialCase ==
-                        detail::PaymentSpecialCase::final ||
+                        ripple::detail::PaymentSpecialCase::final ||
                     diff == beast::zero ||
                     (diff > beast::zero &&
                      ((broker.asset.integral() &&
@@ -1091,7 +1086,7 @@ protected:
                         state.principalOutstanding);
                 BEAST_EXPECT(
                     paymentComponents.specialCase !=
-                        detail::PaymentSpecialCase::final ||
+                        ripple::detail::PaymentSpecialCase::final ||
                     paymentComponents.trackedPrincipalDelta ==
                         state.principalOutstanding);
             }
@@ -1159,7 +1154,7 @@ protected:
             --state.paymentRemaining;
             state.previousPaymentDate = state.nextPaymentDate;
             if (paymentComponents.specialCase ==
-                detail::PaymentSpecialCase::final)
+                ripple::detail::PaymentSpecialCase::final)
             {
                 state.paymentRemaining = 0;
                 state.nextPaymentDate = 0;
@@ -1270,7 +1265,8 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(
+            env, broker, pseudoAcct, loanKeylet);
 
         makeLoanPayments(
             env,
@@ -1588,7 +1584,7 @@ protected:
         // Either the borrower or the lender can delete the loan. Alternate
         // between who does it across tests.
         static unsigned deleteCounter = 0;
-        auto const deleter = ++deleteCounter % 2 ? lender : borrower;
+        auto const deleter = ((++deleteCounter % 2) != 0u) ? lender : borrower;
         env(del(deleter, keylet.key));
         env.close();
 
@@ -1617,7 +1613,7 @@ protected:
         }
     }
 
-    std::string
+    static std::string
     getCurrencyLabel(Asset const& asset)
     {
         return (
@@ -1689,7 +1685,7 @@ protected:
         auto const pseudoAcct = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                return lender;
+                return Account{lender};
             auto const brokerPseudo = brokerSle->at(sfAccount);
             return Account("Broker pseudo-account", brokerPseudo);
         }();
@@ -1961,8 +1957,8 @@ protected:
                     env.le(keylet::vault(brokerSle->at(sfVaultID)));
                 if (!BEAST_EXPECT(vaultSle))
                     // This will be wrong, but the test has failed anyway.
-                    return lender;
-                auto const vaultPseudo =
+                    return Account{lender};
+                auto vaultPseudo =
                     Account("Vault pseudo-account", vaultSle->at(sfAccount));
                 return vaultPseudo;
             }();
@@ -1974,7 +1970,7 @@ protected:
                           std::function<void(Account const& holder)>,
                           TER> {
                 // Freeze / lock the asset
-                std::function<void(Account const& holder)> empty;
+                std::function<void(Account const& holder)> const empty;
                 if (broker.asset.native())
                 {
                     // XRP can't be frozen
@@ -2116,7 +2112,7 @@ protected:
                          : std::max(
                                broker.vaultScale(env),
                                state.principalOutstanding.exponent())));
-                NumberRoundModeGuard mg(Number::upward);
+                NumberRoundModeGuard const mg(Number::upward);
                 auto const defaultAmount = roundToAsset(
                     broker.asset,
                     std::min(
@@ -2273,7 +2269,23 @@ protected:
                     fee(XRPAmount{
                         baseFee *
                         (Number{15, -1} / loanPaymentsPerFeeIncrement + 1)}),
-                    ter(temINVALID_FLAG));
+                    ter(tecNO_PERMISSION));
+
+                {
+                    env.disableFeature(fixSecurity3_1_3);
+                    env(pay(borrower,
+                            loanKeylet.key,
+                            STAmount{
+                                broker.asset,
+                                state.periodicPayment * Number{15, -1}},
+                            tfLoanOverpayment),
+                        fee(XRPAmount{
+                            baseFee *
+                            (Number{15, -1} / loanPaymentsPerFeeIncrement +
+                             1)}),
+                        ter(temINVALID_FLAG));
+                    env.enableFeature(fixSecurity3_1_3);
+                }
             }
             // Try to send a payment marked as multiple mutually exclusive
             // payment types. Do not include `txFlags`, so we don't duplicate
@@ -2361,7 +2373,7 @@ protected:
             state.totalValue = 0;
             state.managementFeeOutstanding = 0;
             state.previousPaymentDate = state.nextPaymentDate +
-                state.paymentInterval * (numPayments - 1);
+                (state.paymentInterval * (numPayments - 1));
             state.nextPaymentDate = 0;
             verifyLoanStatus(state);
 
@@ -2465,7 +2477,7 @@ protected:
                 // service fee is 2
                 auto const startingPayments = state.paymentRemaining;
                 STAmount const payoffAmount = [&]() {
-                    NumberRoundModeGuard mg(Number::upward);
+                    NumberRoundModeGuard const mg(Number::upward);
                     auto const rawPayoff = startingPayments *
                         (state.periodicPayment + broker.asset(2).value());
                     STAmount payoffAmount{broker.asset, rawPayoff};
@@ -2732,7 +2744,7 @@ protected:
                         Number::upward));
 
                 auto const initialState = state;
-                detail::PaymentComponents totalPaid{
+                ripple::detail::PaymentComponents totalPaid{
                     .trackedValueDelta = 0,
                     .trackedPrincipalDelta = 0,
                     .trackedManagementFeeDelta = 0};
@@ -2750,7 +2762,7 @@ protected:
                 {
                     // Compute the expected principal amount
                     auto const paymentComponents =
-                        detail::computePaymentComponents(
+                        ripple::detail::computePaymentComponents(
                             broker.asset.raw(),
                             state.loanScale,
                             state.totalValue,
@@ -2763,7 +2775,7 @@ protected:
 
                     BEAST_EXPECTS(
                         paymentComponents.specialCase ==
-                                detail::PaymentSpecialCase::final ||
+                                ripple::detail::PaymentSpecialCase::final ||
                             paymentComponents.trackedValueDelta <=
                                 roundedPeriodicPayment,
                         "Delta: " +
@@ -2777,7 +2789,7 @@ protected:
                             periodicRate,
                             state.paymentRemaining - 1,
                             broker.params.managementFeeRate);
-                    detail::LoanStateDeltas const deltas =
+                    ripple::detail::LoanStateDeltas const deltas =
                         currentTrueState - nextTrueState;
 
                     testcase
@@ -2790,10 +2802,10 @@ protected:
                         << paymentComponents.trackedInterestPart() << ", "
                         << paymentComponents.trackedManagementFeeDelta << ", "
                         << (paymentComponents.specialCase ==
-                                    detail::PaymentSpecialCase::final
+                                    ripple::detail::PaymentSpecialCase::final
                                 ? "final"
                                 : paymentComponents.specialCase ==
-                                    detail::PaymentSpecialCase::extra
+                                    ripple::detail::PaymentSpecialCase::extra
                                 ? "extra"
                                 : "none");
 
@@ -2811,7 +2823,7 @@ protected:
                     Number const diff = totalDue - totalDueAmount;
                     BEAST_EXPECT(
                         paymentComponents.specialCase ==
-                            detail::PaymentSpecialCase::final ||
+                            ripple::detail::PaymentSpecialCase::final ||
                         diff == beast::zero ||
                         (diff > beast::zero &&
                          ((broker.asset.integral() &&
@@ -2825,7 +2837,7 @@ protected:
                             paymentComponents.trackedManagementFeeDelta);
                     BEAST_EXPECT(
                         paymentComponents.specialCase ==
-                            detail::PaymentSpecialCase::final ||
+                            ripple::detail::PaymentSpecialCase::final ||
                         paymentComponents.trackedValueDelta <=
                             roundedPeriodicPayment);
 
@@ -2849,12 +2861,12 @@ protected:
                             state.principalOutstanding);
                     BEAST_EXPECT(
                         paymentComponents.specialCase !=
-                            detail::PaymentSpecialCase::final ||
+                            ripple::detail::PaymentSpecialCase::final ||
                         paymentComponents.trackedPrincipalDelta ==
                             state.principalOutstanding);
                     BEAST_EXPECT(
                         paymentComponents.specialCase ==
-                            detail::PaymentSpecialCase::final ||
+                            ripple::detail::PaymentSpecialCase::final ||
                         (state.periodicPayment.exponent() -
                          (deltas.principal + deltas.interest +
                           deltas.managementFee - state.periodicPayment)
@@ -2892,7 +2904,7 @@ protected:
                     --state.paymentRemaining;
                     state.previousPaymentDate = state.nextPaymentDate;
                     if (paymentComponents.specialCase ==
-                        detail::PaymentSpecialCase::final)
+                        ripple::detail::PaymentSpecialCase::final)
                     {
                         state.paymentRemaining = 0;
                         state.nextPaymentDate = 0;
@@ -2952,7 +2964,7 @@ protected:
                     ter(tecNO_PERMISSION));
             });
 
-#if LOANTODO
+#if LOAN_TODO
         // TODO
 
         /*
@@ -3138,7 +3150,7 @@ protected:
                     {.flags = tfMPTCanTransfer | tfMPTCanLock |
                          (args.requireAuth ? tfMPTRequireAuth : none)});
                 env.close();
-                PrettyAsset mptAsset = mptt.issuanceID();
+                PrettyAsset const mptAsset = mptt.issuanceID();
                 mptt.authorize({.account = lender});
                 mptt.authorize({.account = borrower});
                 env.close();
@@ -3178,6 +3190,7 @@ protected:
                 // Create vaults and loan brokers
                 std::array const assets{mptAsset, iouAsset};
                 std::vector<BrokerInfo> brokers;
+                brokers.reserve(assets.size());
                 for (auto const& asset : assets)
                 {
                     brokers.emplace_back(
@@ -3265,7 +3278,7 @@ protected:
             CaseArgs{.requireAuth = true});
 
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
-            Env env{*this, testable_amendments()};
+            Env const env{*this, testable_amendments()};
             return {
                 env.current()->fees().accountReserve(0).drops() /
                     DROPS_PER_XRP.drops(),
@@ -3291,7 +3304,8 @@ protected:
                 BEAST_EXPECT(sleMPT1 == nullptr);
 
                 // Burn some XRP
-                env(noop(borrower), fee(XRP(acctReserve * 2 + incReserve * 2)));
+                env(noop(borrower),
+                    fee(XRP((acctReserve * 2) + (incReserve * 2))));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create MPToken
@@ -3315,7 +3329,7 @@ protected:
                 BEAST_EXPECT(sleMPT2 != nullptr);
             },
             {},
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             {},
@@ -3338,7 +3352,8 @@ protected:
                 BEAST_EXPECT(sleLine1 == nullptr);
 
                 // Burn some XRP
-                env(noop(borrower), fee(XRP(acctReserve * 2 + incReserve * 2)));
+                env(noop(borrower),
+                    fee(XRP((acctReserve * 2) + (incReserve * 2))));
                 env.close();
 
                 // Cannot create loan, not enough reserve to create trust line
@@ -3361,7 +3376,7 @@ protected:
                 auto const sleLine2 = env.le(trustline);
                 BEAST_EXPECT(sleLine2 != nullptr);
             },
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
@@ -3412,7 +3427,7 @@ protected:
                 BEAST_EXPECT(sleMPT3 != nullptr);
             },
             {},
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             {},
@@ -3466,7 +3481,7 @@ protected:
                 auto const sleLine3 = env.le(trustline);
                 BEAST_EXPECT(sleLine3 != nullptr);
             },
-            CaseArgs{.initialXRP = acctReserve * 2 + incReserve * 8 + 1});
+            CaseArgs{.initialXRP = (acctReserve * 2) + (incReserve * 8) + 1});
 
         testCase(
             [&, this](Env& env, BrokerInfo const& broker, MPTTester& mptt) {
@@ -3561,7 +3576,8 @@ protected:
         jtx::Account const alice{"alice"};
         jtx::Account const bella{"bella"};
         auto const msigSetup = [&](Env& env, Account const& account) {
-            Json::Value tx1 = signers(account, 2, {{alice, 1}, {bella, 1}});
+            Json::Value const tx1 =
+                signers(account, 2, {{alice, 1}, {bella, 1}});
             env(tx1);
             env.close();
         };
@@ -3727,6 +3743,7 @@ protected:
 
         // Create vaults and loan brokers
         std::vector<BrokerInfo> brokers;
+        brokers.reserve(assets.size());
         for (auto const& asset : assets)
         {
             brokers.emplace_back(createVaultAndBroker(
@@ -3802,7 +3819,7 @@ protected:
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
         // Create vaults and loan brokers
-        BrokerInfo broker{createVaultAndBroker(env, xrpAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, xrpAsset, lender)};
 
         using namespace loan;
 
@@ -3940,13 +3957,13 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        BrokerParameters brokerParams;
+        BrokerParameters const brokerParams;
         env.fund(XRP(brokerParams.vaultDeposit * 100), lender, borrower);
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
-        BrokerInfo broker{
+        BrokerInfo const broker{
             createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         using namespace loan;
@@ -4007,14 +4024,14 @@ protected:
         Account const issuer{"issuer"};
         Account const lender{"lender"};
 
-        BrokerParameters brokerParams{.debtMax = 0};
+        BrokerParameters const brokerParams{.debtMax = 0};
         env.fund(
             XRP(brokerParams.vaultDeposit * 100), issuer, noripple(lender));
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
-        BrokerInfo broker{
+        BrokerInfo const broker{
             createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
@@ -4059,13 +4076,13 @@ protected:
         Account const lender{"lender"};
         Account const borrower{"borrower"};
 
-        BrokerParameters brokerParams;
+        BrokerParameters const brokerParams;
         env.fund(
             XRP(brokerParams.vaultDeposit * 100), issuer, lender, borrower);
         env.close();
 
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-        BrokerInfo broker{
+        BrokerInfo const broker{
             createVaultAndBroker(env, xrpAsset, lender, brokerParams)};
 
         using namespace loan;
@@ -4137,10 +4154,10 @@ protected:
         Account const alice{"alice"};
         std::string const borrowerPass = "borrower";
         std::string const borrowerSeed = "ssBRAsLpH4778sLNYC4ik1JBJsBVf";
-        Account borrower{borrowerPass, KeyType::ed25519};
+        Account const borrower{borrowerPass, KeyType::ed25519};
         auto const lenderPass = "lender";
         std::string const lenderSeed = "shPTCZGwTEhJrYT8NbcNkeaa8pzPM";
-        Account lender{lenderPass, KeyType::ed25519};
+        Account const lender{lenderPass, KeyType::ed25519};
 
         env.fund(XRP(1'000'000), alice, lender, borrower);
         env.close();
@@ -4560,7 +4577,7 @@ protected:
         env.fund(XRP(1'000), issuer, lender);
 
         std::int64_t constexpr issuerBalance = 10'000'000;
-        MPTTester asset(
+        MPTTester const asset(
             {.env = env,
              .issuer = issuer,
              .holders = {lender},
@@ -4639,7 +4656,8 @@ protected:
         env.fund(XRP(1'000), lender, issuer, borrower);
         env(trust(lender, IOU(10'000'000)), THISLINE);
         env(pay(issuer, lender, IOU(5'000'000)), THISLINE);
-        BrokerInfo brokerInfo{createVaultAndBroker(env, issuer["IOU"], lender)};
+        BrokerInfo const brokerInfo{
+            createVaultAndBroker(env, issuer["IOU"], lender)};
 
         auto const loanSetFee = fee(env.current()->fees().base * 2);
         STAmount const debtMaximumRequest = brokerInfo.asset(1'000).value();
@@ -4746,7 +4764,7 @@ protected:
             env.fund(XRP(1'000), lender, issuer, borrower);
             env(trust(lender, IOU(10'000'000)));
             env(pay(issuer, lender, IOU(5'000'000)));
-            BrokerInfo brokerInfo{
+            BrokerInfo const brokerInfo{
                 createVaultAndBroker(env, issuer["IOU"], lender)};
 
             auto const loanSetFee = fee(env.current()->fees().base * 2);
@@ -4810,7 +4828,7 @@ protected:
             // can it happen? the signature is checked before transactor
             // executes
 
-            JTx tx = env.jt(
+            JTx const tx = env.jt(
                 set(borrower, brokerInfo.brokerID, debtMaximumRequest),
                 sig(sfCounterpartySignature, lender),
                 loanSetFee);
@@ -4901,7 +4919,7 @@ protected:
         env(pay(issuer, borrower, mptAsset(1'000)));
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, mptAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, mptAsset, lender)};
 
         using namespace loan;
 
@@ -4966,7 +4984,7 @@ protected:
         env(payIssuerTx);
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
 
         using namespace loan;
 
@@ -5002,12 +5020,13 @@ protected:
         auto const pseudoAcct = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
             if (!BEAST_EXPECT(brokerSle))
-                return lender;
+                return Account{lender};
             auto const brokerPseudo = brokerSle->at(sfAccount);
             return Account("Broker pseudo-account", brokerPseudo);
         }();
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, keylet);
+        VerifyLoanStatus const verifyLoanStatus(
+            env, broker, pseudoAcct, keylet);
         auto const originalState = getCurrentState(env, broker, keylet);
         verifyLoanStatus(originalState);
 
@@ -5069,7 +5088,7 @@ protected:
         env(payIssuerTx);
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
 
         using namespace loan;
 
@@ -5133,7 +5152,7 @@ protected:
         env(pay(issuer, borrower, iouAsset(1'000)));
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
 
         using namespace loan;
 
@@ -5222,7 +5241,7 @@ protected:
         env(payIssuerTx);
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
 
         using namespace loan;
 
@@ -5334,7 +5353,7 @@ protected:
         env(payIssuerTx);
         env.close();
 
-        BrokerInfo broker{createVaultAndBroker(env, iouAsset, lender)};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender)};
         {
             auto const coverDepositValue =
                 broker.asset(broker.params.coverDeposit * 10).value();
@@ -5674,7 +5693,7 @@ protected:
 
             // pay all but the last payment
             {
-                NumberRoundModeGuard mg{Number::upward};
+                NumberRoundModeGuard const mg{Number::upward};
                 Number const payment =
                     beforeState.periodicPayment * (total - 1);
                 XRPAmount const payFee{
@@ -5864,7 +5883,7 @@ protected:
         }
     }
 
-#if LOANTODO
+#if LOAN_TODO
     void
     testLoanPayLateFullPaymentBypassesPenalties()
     {
@@ -6211,7 +6230,7 @@ protected:
         auto state = getCurrentState(env, broker, loanKeylet);
         Number const periodicRate =
             loanPeriodicRate(state.interestRate, state.paymentInterval);
-        auto const components = detail::computePaymentComponents(
+        auto const components = ripple::detail::computePaymentComponents(
             asset.raw(),
             state.loanScale,
             state.totalValue,
@@ -6632,7 +6651,8 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(
+            env, broker, pseudoAcct, loanKeylet);
 
         if (auto const brokerSle = env.le(broker.brokerKeylet());
             BEAST_EXPECT(brokerSle))
@@ -6855,7 +6875,8 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(
+            env, broker, pseudoAcct, loanKeylet);
 
         makeLoanPayments(
             env,
@@ -7029,7 +7050,8 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(
+            env, broker, pseudoAcct, loanKeylet);
 
         makeLoanPayments(
             env,
@@ -7090,7 +7112,8 @@ protected:
         auto loanKeylet = std::get<Keylet>(*loanResult);
         auto pseudoAcct = std::get<Account>(*loanResult);
 
-        VerifyLoanStatus verifyLoanStatus(env, broker, pseudoAcct, loanKeylet);
+        VerifyLoanStatus const verifyLoanStatus(
+            env, broker, pseudoAcct, loanKeylet);
 
         auto const state = getCurrentState(env, broker, loanKeylet);
 
@@ -7644,14 +7667,290 @@ protected:
         BEAST_EXPECT(afterSecondCoverAvailable == 0);
     }
 
+    void
+    testYieldTheftRounding(std::uint32_t flags)
+    {
+        testcase("Yield Theft via Rounding Manipulation");
+        using namespace jtx;
+        using namespace loan;
+
+        // 1. Setup Environment
+        Env env(*this, all);
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1000), issuer, lender, borrower);
+        env.close();
+
+        // 2. Asset Selection
+        PrettyAsset const iou = issuer["USD"];
+        env(trust(lender, iou(100'000'000)));
+        env(trust(borrower, iou(100'000'000)));
+        env(pay(issuer, lender, iou(100'000'000)));
+        env(pay(issuer, borrower, iou(100'000'000)));
+        env.close();
+
+        // 3. Create Vault and Broker with High Debt Limit (100M)
+        auto const brokerInfo = createVaultAndBroker(
+            env,
+            iou,
+            lender,
+            {
+                .vaultDeposit = 5'000'000,
+                .debtMax = Number{100'000'000},
+                .coverDeposit = 500'000,
+            });
+        auto const [currentSeq, vaultId, vaultKeylet] = [&]() {
+            auto const brokerSle =
+                env.le(keylet::loanbroker(brokerInfo.brokerID));
+            auto const currentSeq = brokerSle->at(sfLoanSequence);
+            auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
+            auto const vaultId = brokerSle->at(sfVaultID);
+            return std::make_tuple(currentSeq, vaultId, vaultKeylet);
+        }();
+
+        // 4. Loan Parameters (Attack Vector)
+        Number const principal = 1'000'000;
+        TenthBips32 const interestRate = TenthBips32{1};  // 0.001%
+        std::uint32_t const paymentInterval = 86400;
+        std::uint32_t const paymentTotal = 3650;
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        env(set(borrower, brokerInfo.brokerID, iou(principal).value(), flags),
+            sig(sfCounterpartySignature, lender),
+            loan::interestRate(interestRate),
+            loan::paymentInterval(paymentInterval),
+            loan::paymentTotal(paymentTotal),
+            fee(loanSetFee));
+        env.close();
+
+        // --- RETRIEVE OBJECTS & SETUP ATTACK ---
+
+        auto const loanKeylet = keylet::loan(brokerInfo.brokerID, currentSeq);
+        auto const [periodicPayment, loanScale] = [&]() {
+            auto const loanSle = env.le(loanKeylet);
+            // Construct Payment
+            return std::make_tuple(
+                STAmount{iou, loanSle->at(sfPeriodicPayment)},
+                loanSle->at(sfLoanScale));
+        }();
+        auto const roundedPayment =
+            roundToScale(periodicPayment, loanScale, Number::upward);
+
+        // ATTACK: Add dust buffer (1e-9) to force 'excess' logic execution
+        STAmount const paymentBuffer{iou, Number(1, -9)};
+        STAmount const attackPayment = periodicPayment + paymentBuffer;
+
+        auto const initialVaultAssets = env.le(vaultKeylet)->at(sfAssetsTotal);
+
+        // 5. Execution Loop
+        int yieldTheftCount = 0;
+        auto previousAssetsTotal = initialVaultAssets;
+
+        auto borrowerBalance = [&]() { return env.balance(borrower, iou); };
+
+        for (int i = 0; i < 100; ++i)
+        {
+            auto const balanceBefore = borrowerBalance();
+            env(pay(borrower, loanKeylet.key, attackPayment, flags));
+            env.close();
+            auto const borrowerDelta = borrowerBalance() - balanceBefore;
+
+            auto const loanSle = env.le(loanKeylet);
+            if (!BEAST_EXPECT(loanSle))
+                break;
+            auto const updatedPayment =
+                STAmount{iou, loanSle->at(sfPeriodicPayment)};
+            BEAST_EXPECT(
+                (roundToScale(updatedPayment, loanScale, Number::upward) ==
+                 roundedPayment));
+            BEAST_EXPECT(
+                (updatedPayment == periodicPayment) ||
+                (flags == tfLoanOverpayment && i >= 2 &&
+                 updatedPayment < periodicPayment));
+
+            auto const currentVaultSle = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(currentVaultSle))
+                break;
+
+            auto const currentAssetsTotal = currentVaultSle->at(sfAssetsTotal);
+            auto const delta = currentAssetsTotal - previousAssetsTotal;
+
+            BEAST_EXPECT(
+                (delta == beast::zero && borrowerDelta <= roundedPayment) ||
+                (delta > beast::zero && borrowerDelta > roundedPayment));
+
+            // If tx succeeded but Assets Total didn't change, interest was
+            // stolen.
+            if (delta == beast::zero && borrowerDelta > roundedPayment)
+            {
+                yieldTheftCount++;
+            }
+
+            previousAssetsTotal = currentAssetsTotal;
+        }
+
+        BEAST_EXPECTS(yieldTheftCount == 0, std::to_string(yieldTheftCount));
+    }
+
+    // Tests that vault withdrawals work correctly when the vault has unrealized
+    // loss from an impaired loan, ensuring the invariant check properly
+    // accounts for the loss.
+    void
+    testWithdrawReflectsUnrealizedLoss()
+    {
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        testcase("Vault withdraw reflects sfLossUnrealized");
+
+        // Test constants
+        static constexpr std::int64_t INITIAL_FUNDING = 1'000'000;
+        static constexpr std::int64_t LENDER_INITIAL_IOU = 5'000'000;
+        static constexpr std::int64_t DEPOSITOR_INITIAL_IOU = 1'000'000;
+        static constexpr std::int64_t BORROWER_INITIAL_IOU = 100'000;
+        static constexpr std::int64_t DEPOSIT_AMOUNT = 5'000;
+        static constexpr std::int64_t PRINCIPAL_AMOUNT = 99;
+        static constexpr std::uint64_t EXPECTED_SHARES_PER_DEPOSITOR =
+            5'000'000'000;
+        static constexpr std::uint32_t PAYMENT_INTERVAL = 600;
+        static constexpr std::uint32_t PAYMENT_TOTAL = 2;
+
+        Env env(*this, all);
+
+        // Setup accounts
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const depositorA{"lpA"};
+        Account const depositorB{"lpB"};
+        Account const borrower{"borrowerA"};
+
+        env.fund(
+            XRP(INITIAL_FUNDING),
+            issuer,
+            lender,
+            depositorA,
+            depositorB,
+            borrower);
+        env.close();
+
+        // Setup trust lines
+        PrettyAsset const iouAsset = issuer[iouCurrency];
+        env(trust(lender, iouAsset(10'000'000)));
+        env(trust(depositorA, iouAsset(10'000'000)));
+        env(trust(depositorB, iouAsset(10'000'000)));
+        env(trust(borrower, iouAsset(10'000'000)));
+        env.close();
+
+        // Fund accounts with IOUs
+        env(pay(issuer, lender, iouAsset(LENDER_INITIAL_IOU)));
+        env(pay(issuer, depositorA, iouAsset(DEPOSITOR_INITIAL_IOU)));
+        env(pay(issuer, depositorB, iouAsset(DEPOSITOR_INITIAL_IOU)));
+        env(pay(issuer, borrower, iouAsset(BORROWER_INITIAL_IOU)));
+        env.close();
+
+        // Create vault and broker, then add deposits from two depositors
+        auto const broker = createVaultAndBroker(env, iouAsset, lender);
+        Vault v{env};
+
+        env(v.deposit({
+                .depositor = depositorA,
+                .id = broker.vaultKeylet().key,
+                .amount = iouAsset(DEPOSIT_AMOUNT),
+            }),
+            ter(tesSUCCESS));
+        env(v.deposit({
+                .depositor = depositorB,
+                .id = broker.vaultKeylet().key,
+                .amount = iouAsset(DEPOSIT_AMOUNT),
+            }),
+            ter(tesSUCCESS));
+        env.close();
+
+        // Create a loan
+        auto const sleBroker = env.le(keylet::loanbroker(broker.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+
+        auto const loanKeylet =
+            keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+
+        env(set(borrower, broker.brokerID, PRINCIPAL_AMOUNT),
+            sig(sfCounterpartySignature, lender),
+            paymentTotal(PAYMENT_TOTAL),
+            paymentInterval(PAYMENT_INTERVAL),
+            fee(env.current()->fees().base * 2),
+            ter(tesSUCCESS));
+        env.close();
+
+        // Impair the loan to create unrealized loss
+        env(manage(lender, loanKeylet.key, tfLoanImpair), ter(tesSUCCESS));
+        env.close();
+
+        // Verify unrealized loss is recorded in the vault
+        auto const vaultAfterImpair = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfterImpair))
+            return;
+
+        BEAST_EXPECT(
+            vaultAfterImpair->at(sfLossUnrealized) ==
+            broker.asset(PRINCIPAL_AMOUNT).value());
+
+        // Helper to get share balance for a depositor
+        auto const shareAsset = vaultAfterImpair->at(sfShareMPTID);
+        auto const getShareBalance =
+            [&](Account const& depositor) -> std::uint64_t {
+            auto const token =
+                env.le(keylet::mptoken(shareAsset, depositor.id()));
+            return token ? token->getFieldU64(sfMPTAmount) : 0;
+        };
+
+        // Verify both depositors have equal shares
+        auto const sharesLpA = getShareBalance(depositorA);
+        auto const sharesLpB = getShareBalance(depositorB);
+        BEAST_EXPECT(sharesLpA == EXPECTED_SHARES_PER_DEPOSITOR);
+        BEAST_EXPECT(sharesLpB == EXPECTED_SHARES_PER_DEPOSITOR);
+        BEAST_EXPECT(sharesLpA == sharesLpB);
+
+        // Helper to attempt withdrawal
+        auto const attemptWithdrawShares = [&](Account const& depositor,
+                                               std::uint64_t shareAmount,
+                                               TER expected) {
+            STAmount const shareAmt{MPTIssue{shareAsset}, Number(shareAmount)};
+            env(v.withdraw(
+                    {.depositor = depositor,
+                     .id = broker.vaultKeylet().key,
+                     .amount = shareAmt}),
+                ter(expected));
+            env.close();
+        };
+
+        // Regression test: Both depositors should successfully withdraw despite
+        // unrealized loss. Previously failed with invariant violation:
+        // "withdrawal must change vault and destination balance by equal
+        // amount". This was caused by sharesToAssetsWithdraw rounding down,
+        // creating a mismatch where vaultDeltaAssets * -1 != destinationDelta
+        // when unrealized loss exists.
+        attemptWithdrawShares(depositorA, sharesLpA, tesSUCCESS);
+        attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
+    }
+
 public:
     void
     run() override
     {
-#if LOANTODO
+#if LOAN_TODO
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        for (auto const flags : {0u, tfLoanOverpayment})
+        {
+            testYieldTheftRounding(flags);
+        }
+
+        testWithdrawReflectsUnrealizedLoss();
         testInvalidLoanSet();
 
         testCoverDepositWithdrawNonTransferableMPT();

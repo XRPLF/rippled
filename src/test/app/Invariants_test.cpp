@@ -23,6 +23,7 @@
 
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/InvariantCheck.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -1939,39 +1940,41 @@ class Invariants_test : public beast::unit_test::suite
         {
             // Initialize with a placeholder value because there's no default
             // ctor
-            Keylet loanBrokerKeylet = keylet::amendments();
-            Preclose createLoanBroker = [&, this](
-                                            Account const& alice,
-                                            Account const& issuer,
-                                            Env& env) {
-                PrettyAsset const asset = [&]() {
-                    switch (assetType)
-                    {
-                        case Asset::IOU: {
-                            PrettyAsset const iouAsset = issuer["IOU"];
-                            env(trust(alice, iouAsset(1000)));
-                            env(pay(issuer, alice, iouAsset(1000)));
-                            env.close();
-                            return iouAsset;
-                        }
-
-                        case Asset::MPT: {
-                            MPTTester mptt{env, issuer, mptInitNoFund};
-                            mptt.create(
-                                {.flags = tfMPTCanClawback | tfMPTCanTransfer |
-                                     tfMPTCanLock});
-                            PrettyAsset const mptAsset = mptt.issuanceID();
-                            mptt.authorize({.account = alice});
-                            env(pay(issuer, alice, mptAsset(1000)));
-                            env.close();
-                            return mptAsset;
-                        }
-
-                        case Asset::XRP:
-                        default:
-                            return PrettyAsset{xrpIssue(), 1'000'000};
+            auto const setupAsset = [&](Account const& alice,
+                                        Account const& issuer,
+                                        Env& env) -> PrettyAsset {
+                switch (assetType)
+                {
+                    case Asset::IOU: {
+                        PrettyAsset const iouAsset = issuer["IOU"];
+                        env(trust(alice, iouAsset(1000)));
+                        env(pay(issuer, alice, iouAsset(1000)));
+                        env.close();
+                        return iouAsset;
                     }
-                }();
+                    case Asset::MPT: {
+                        MPTTester mptt{env, issuer, mptInitNoFund};
+                        mptt.create(
+                            {.flags = tfMPTCanClawback | tfMPTCanTransfer |
+                                 tfMPTCanLock});
+                        PrettyAsset const mptAsset = mptt.issuanceID();
+                        mptt.authorize({.account = alice});
+                        env(pay(issuer, alice, mptAsset(1000)));
+                        env.close();
+                        return mptAsset;
+                    }
+                    case Asset::XRP:
+                    default:
+                        return PrettyAsset{xrpIssue(), 1'000'000};
+                }
+            };
+
+            Keylet loanBrokerKeylet = keylet::amendments();
+            Preclose const createLoanBroker = [&, this](
+                                                  Account const& alice,
+                                                  Account const& issuer,
+                                                  Env& env) {
+                auto const asset = setupAsset(alice, issuer, env);
                 loanBrokerKeylet = this->createLoanBroker(alice, env, asset);
                 return BEAST_EXPECT(env.le(loanBrokerKeylet));
             };
@@ -2153,6 +2156,61 @@ class Invariants_test : public beast::unit_test::suite
 
                     sleBroker->at(sfLoanSequence) -= 1;
 
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            // Test: cover available less than pseudo-account asset balance
+            {
+                Keylet brokerKeylet = keylet::amendments();
+                Preclose const createBrokerWithCover =
+                    [&, this](
+                        Account const& alice, Account const& issuer, Env& env) {
+                        auto const asset = setupAsset(alice, issuer, env);
+                        brokerKeylet =
+                            this->createLoanBroker(alice, env, asset);
+                        if (!BEAST_EXPECT(env.le(brokerKeylet)))
+                            return false;
+                        env(loanBroker::coverDeposit(
+                            alice, brokerKeylet.key, asset(10)));
+                        env.close();
+                        return BEAST_EXPECT(env.le(brokerKeylet));
+                    };
+
+                doInvariantCheck(
+                    {{"Loan Broker cover available is less than pseudo-account "
+                      "asset balance"}},
+                    [&](Account const&, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(brokerKeylet);
+                        if (!BEAST_EXPECT(sle))
+                            return false;
+                        // Pseudo-account holds 10 units, set cover to 5
+                        sle->at(sfCoverAvailable) = Number(5);
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createBrokerWithCover);
+            }
+
+            // Test: cover available greater than pseudo-account asset balance
+            // (requires fixSecurity3_1_3)
+            doInvariantCheck(
+                {{"Loan Broker cover available is greater than pseudo-account "
+                  "asset balance"}},
+                [&](Account const&, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(loanBrokerKeylet);
+                    if (!BEAST_EXPECT(sle))
+                        return false;
+                    // Pseudo-account has no cover deposited; set cover
+                    // higher than any incidental balance
+                    sle->at(sfCoverAvailable) = Number(1'000'000);
+                    ac.view().update(sle);
                     return true;
                 },
                 XRPAmount{},
@@ -3907,6 +3965,140 @@ class Invariants_test : public beast::unit_test::suite
             precloseMpt);
     }
 
+    void
+    testVaultComputeCoarsestScale()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        PrettyAsset const vaultAsset = issuer["IOU"];
+
+        struct TestCase
+        {
+            std::string name;
+            std::int32_t expectedMinScale;
+            std::vector<ValidVault::DeltaInfo> values;
+        };
+
+        NumberMantissaScaleGuard const g{MantissaRange::large};
+
+        auto makeDelta =
+            [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+            return {n, scale(n, vaultAsset.raw())};
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {
+                .name = "No values",
+                .expectedMinScale = 0,
+                .values = {},
+            },
+            {
+                .name = "Mixed integer and Number values",
+                .expectedMinScale = -15,
+                .values =
+                    {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
+            },
+            {
+                .name = "Mixed scales",
+                .expectedMinScale = -17,
+                .values =
+                    {makeDelta(Number{1, -2}),
+                     makeDelta(Number{5, -3}),
+                     makeDelta(Number{3, -2})},
+            },
+            {
+                .name = "Equal scales",
+                .expectedMinScale = -16,
+                .values =
+                    {makeDelta(Number{1, -1}),
+                     makeDelta(Number{5, -1}),
+                     makeDelta(Number{1, -1})},
+            },
+            {
+                .name = "Mixed mantissa sizes",
+                .expectedMinScale = -12,
+                .values =
+                    {makeDelta(Number{1}),
+                     makeDelta(Number{1234, -3}),
+                     makeDelta(Number{12345, -6}),
+                     makeDelta(Number{123, 1})},
+            },
+        };
+
+        for (auto const& tc : testCases)
+        {
+            testcase("vault computeCoarsestScale: " + tc.name);
+
+            auto const actualScale =
+                ValidVault::computeCoarsestScale(tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            for (auto const& num : tc.values)
+            {
+                // None of these scales are far enough apart that rounding the
+                // values would lose information, so check that the rounded
+                // value matches the original.
+                auto const actualRounded =
+                    roundToAsset(vaultAsset, num.delta, actualScale);
+                BEAST_EXPECTS(
+                    actualRounded == num.delta,
+                    "number " + to_string(num.delta) + " rounded to scale " +
+                        std::to_string(actualScale) + " is " +
+                        to_string(actualRounded));
+            }
+        }
+
+        auto const testCases2 = std::vector<TestCase>{
+            {
+                .name = "False equivalence",
+                .expectedMinScale = -15,
+                .values =
+                    {
+                        makeDelta(Number{1234567890123456789, -18}),
+                        makeDelta(Number{12345, -4}),
+                        makeDelta(Number{1}),
+                    },
+            },
+        };
+
+        // Unlike the first set of test cases, the values in these test could
+        // look equivalent if using the wrong scale.
+        for (auto const& tc : testCases2)
+        {
+            testcase("vault computeCoarsestScale: " + tc.name);
+
+            auto const actualScale =
+                ValidVault::computeCoarsestScale(tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            std::optional<Number> first;
+            Number firstRounded;
+            for (auto const& num : tc.values)
+            {
+                if (!first)
+                {
+                    first = num.delta;
+                    firstRounded =
+                        roundToAsset(vaultAsset, num.delta, actualScale);
+                    continue;
+                }
+                auto const numRounded =
+                    roundToAsset(vaultAsset, num.delta, actualScale);
+                BEAST_EXPECTS(
+                    numRounded != firstRounded,
+                    "at a scale of " + std::to_string(actualScale) + " " +
+                        to_string(num.delta) + " == " + to_string(*first));
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -3930,6 +4122,7 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
+        testVaultComputeCoarsestScale();
     }
 };
 

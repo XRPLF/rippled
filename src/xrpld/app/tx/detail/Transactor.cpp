@@ -235,7 +235,7 @@ Transactor::preflight2(PreflightContext const& ctx)
     // featureBatch being enabled
     XRPL_ASSERT_PARTS(
         !ctx.tx.isFlag(tfInnerBatchTxn) || ctx.rules.enabled(featureBatch),
-        "xrpl::Transactor::preflight2",
+        "ripple::Transactor::preflight2",
         "InnerBatch flag only set if feature enabled");
     // Skip signature check on batch inner transactions
     if (ctx.tx.isFlag(tfInnerBatchTxn) && ctx.rules.enabled(featureBatch))
@@ -1091,7 +1091,15 @@ removeExpiredCredentials(
     for (auto const& index : creds)
     {
         if (auto const sle = view.peek(keylet::credential(index)))
-            credentials::deleteSLE(view, sle, viewJ);
+        {
+            if (auto const ter = credentials::deleteSLE(view, sle, viewJ);
+                !isTesSuccess(ter))
+            {
+                JLOG(viewJ.error()) << "removeExpiredCredentials: failed to "
+                                       "delete expired credential. Err: "
+                                    << transToken(ter);
+            }
+        }
     }
 }
 
