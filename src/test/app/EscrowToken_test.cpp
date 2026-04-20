@@ -41,8 +41,7 @@
 #include <iterator>
 #include <memory>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct EscrowToken_test : public beast::unit_test::suite
 {
@@ -1318,21 +1317,53 @@ struct EscrowToken_test : public beast::unit_test::suite
 
         std::array<TestAccountData, 8> const tests = {{
             // src > dst && src > issuer && dst no trustline
-            {Account("alice2"), Account("bob0"), Account{"gw0"}, false, true},
+            {.src = Account("alice2"),
+             .dst = Account("bob0"),
+             .gw = Account{"gw0"},
+             .hasTrustline = false,
+             .negative = true},
             // src < dst && src < issuer && dst no trustline
-            {Account("carol0"), Account("dan1"), Account{"gw1"}, false, false},
+            {.src = Account("carol0"),
+             .dst = Account("dan1"),
+             .gw = Account{"gw1"},
+             .hasTrustline = false,
+             .negative = false},
             // dst > src && dst > issuer && dst no trustline
-            {Account("dan1"), Account("alice2"), Account{"gw0"}, false, true},
+            {.src = Account("dan1"),
+             .dst = Account("alice2"),
+             .gw = Account{"gw0"},
+             .hasTrustline = false,
+             .negative = true},
             // dst < src && dst < issuer && dst no trustline
-            {Account("bob0"), Account("carol0"), Account{"gw1"}, false, false},
+            {.src = Account("bob0"),
+             .dst = Account("carol0"),
+             .gw = Account{"gw1"},
+             .hasTrustline = false,
+             .negative = false},
             // src > dst && src > issuer && dst has trustline
-            {Account("alice2"), Account("bob0"), Account{"gw0"}, true, true},
+            {.src = Account("alice2"),
+             .dst = Account("bob0"),
+             .gw = Account{"gw0"},
+             .hasTrustline = true,
+             .negative = true},
             // src < dst && src < issuer && dst has trustline
-            {Account("carol0"), Account("dan1"), Account{"gw1"}, true, false},
+            {.src = Account("carol0"),
+             .dst = Account("dan1"),
+             .gw = Account{"gw1"},
+             .hasTrustline = true,
+             .negative = false},
             // dst > src && dst > issuer && dst has trustline
-            {Account("dan1"), Account("alice2"), Account{"gw0"}, true, true},
+            {.src = Account("dan1"),
+             .dst = Account("alice2"),
+             .gw = Account{"gw0"},
+             .hasTrustline = true,
+             .negative = true},
             // dst < src && dst < issuer && dst has trustline
-            {Account("bob0"), Account("carol0"), Account{"gw1"}, true, false},
+            {.src = Account("bob0"),
+             .dst = Account("carol0"),
+             .gw = Account{"gw1"},
+             .hasTrustline = true,
+             .negative = false},
         }};
 
         for (auto const& t : tests)
@@ -1424,13 +1455,13 @@ struct EscrowToken_test : public beast::unit_test::suite
 
         std::array<TestAccountData, 4> const gwDstTests = {{
             // src > dst && src > issuer && dst has trustline
-            {Account("alice2"), Account{"gw0"}, true},
+            {.src = Account("alice2"), .dst = Account{"gw0"}, .hasTrustline = true},
             // src < dst && src < issuer && dst has trustline
-            {Account("carol0"), Account{"gw1"}, true},
+            {.src = Account("carol0"), .dst = Account{"gw1"}, .hasTrustline = true},
             // dst > src && dst > issuer && dst has trustline
-            {Account("dan1"), Account{"gw0"}, true},
+            {.src = Account("dan1"), .dst = Account{"gw0"}, .hasTrustline = true},
             // dst < src && dst < issuer && dst has trustline
-            {Account("bob0"), Account{"gw1"}, true},
+            {.src = Account("bob0"), .dst = Account{"gw1"}, .hasTrustline = true},
         }};
 
         // issuer is destination
@@ -3905,5 +3936,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(EscrowToken, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

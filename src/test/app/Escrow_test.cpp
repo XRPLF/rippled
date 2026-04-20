@@ -32,8 +32,7 @@
 #include <iterator>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Escrow_test : public beast::unit_test::suite
 {
@@ -1643,5 +1642,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Escrow, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

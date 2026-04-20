@@ -43,7 +43,10 @@ private:
 
         async_op(Checker& owner, boost::asio::io_context& io_context, Handler&& handler);
 
-        ~async_op() override;
+        ~async_op() override
+        {
+            checker_.remove(*this);
+        }
 
         void
         stop() override;
@@ -72,7 +75,7 @@ public:
         operation_aborted) and the associated thread and io_context have
         no more work remaining.
     */
-    virtual ~Checker();
+    ~Checker();
 
     /** Stop the service.
         Pending I/O operations will be canceled.
@@ -110,13 +113,6 @@ Checker<Protocol>::async_op<Handler>::async_op(
     Handler&& handler)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     : checker_(owner), socket_(io_context), handler_(std::forward<Handler>(handler))
 {
-}
-
-template <class Protocol>
-template <class Handler>
-Checker<Protocol>::async_op<Handler>::~async_op()
-{
-    checker_.remove(*this);
 }
 
 template <class Protocol>
