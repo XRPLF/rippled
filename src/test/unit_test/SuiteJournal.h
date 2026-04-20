@@ -22,7 +22,7 @@ public:
     }
 
     // For unit testing, always generate logging text.
-    inline bool
+    bool
     active(beast::severities::Severity level) const override
     {
         return true;
@@ -114,7 +114,7 @@ public:
         writeAlways(level, text);
     }
 
-    inline void
+    void
     writeAlways(beast::severities::Severity level, std::string const& text) override
     {
         strm_ << text << std::endl;

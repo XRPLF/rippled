@@ -2,12 +2,11 @@
 
 #include <xrpld/overlay/ReduceRelayCommon.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 
-#include <algorithm>
 #include <chrono>
-#include <functional>
 
 namespace xrpl {
 
@@ -89,7 +88,7 @@ Squelch<clock_type>::expireSquelch(PublicKey const& validator)
     auto const& it = squelched_.find(validator);
     if (it == squelched_.end())
         return true;
-    else if (it->second > now)
+    if (it->second > now)
         return false;
 
     // squelch expired

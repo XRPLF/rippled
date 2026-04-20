@@ -1,16 +1,31 @@
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-#include <functional>
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <stdexcept>
 
 namespace xrpl {

@@ -1,20 +1,26 @@
 #include <xrpl/protocol/STNumber.h>
-// Do not remove. Keep STNumber.h first
+
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Rules.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 

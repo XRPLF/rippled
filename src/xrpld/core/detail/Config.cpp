@@ -1,27 +1,55 @@
 #include <xrpld/core/Config.h>
+
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/json/json_reader.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/rdb/DBInit.h>
+#include <xrpl/rdb/DatabaseCon.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/format/free_funcs.hpp>
+#include <boost/multiprecision/detail/endian.hpp>
 #include <boost/predef.h>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
+#include <limits>
+#include <memory>
+#include <optional>
 #include <regex>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <thread>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #if BOOST_OS_WINDOWS
 #include <sysinfoapi.h>
@@ -43,7 +71,7 @@ getMemorySize()
 #endif
 
 #if BOOST_OS_LINUX
-#include <sys/sysinfo.h>
+#include <sys/sysinfo.h>  // IWYU pragma: keep
 
 namespace xrpl {
 namespace detail {
@@ -64,7 +92,6 @@ getMemorySize()
 
 #if BOOST_OS_MACOS
 #include <sys/sysctl.h>
-#include <sys/types.h>
 
 namespace xrpl {
 namespace detail {
