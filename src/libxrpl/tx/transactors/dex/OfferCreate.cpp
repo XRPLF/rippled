@@ -594,7 +594,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
-    // Note that we we use the value from the sequence or ticket as the
+    // Note that we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
     auto const offerSequence = ctx_.tx.getSeqValue();
 
