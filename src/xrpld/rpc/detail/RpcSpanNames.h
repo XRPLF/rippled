@@ -19,14 +19,50 @@
  *
  *  Span hierarchy (automatic nesting via OTel thread-local context):
  *
- *      HTTP path:
- *        rpc.http_request            ServerHandler::processSession(Session)
- *          rpc.process               ServerHandler::processRequest()
- *            rpc.command.{name}      RPC::callMethod()  [repeats for batch]
+ *  HTTP JSON-RPC path (single request):
  *
- *      WebSocket path:
- *        rpc.ws_message              ServerHandler::processSession(WSSession)
- *          rpc.command.{name}        RPC::callMethod()
+ *    +-------------------------------------------------------+
+ *    | rpc.http_request                                      |
+ *    | ServerHandler::processSession(Session)                |
+ *    |                                                       |
+ *    |  +--------------------------------------------------+ |
+ *    |  | rpc.process                                      | |
+ *    |  | ServerHandler::processRequest()                  | |
+ *    |  |                                                  | |
+ *    |  |  +---------------------------------------------+ | |
+ *    |  |  | rpc.command.{name}                          | | |
+ *    |  |  | RPC::callMethod()                           | | |
+ *    |  |  | attrs: command, version, role, status       | | |
+ *    |  |  +---------------------------------------------+ | |
+ *    |  +--------------------------------------------------+ |
+ *    +-------------------------------------------------------+
+ *
+ *  HTTP batch path (multiple commands per request):
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.http_request                                      |
+ *    |                                                       |
+ *    |  +--------------------------------------------------+ |
+ *    |  | rpc.process                                      | |
+ *    |  |                                                  | |
+ *    |  |  +------------------+  +------------------+      | |
+ *    |  |  | rpc.command.{a}  |  | rpc.command.{b}  | ...  | |
+ *    |  |  +------------------+  +------------------+      | |
+ *    |  +--------------------------------------------------+ |
+ *    +-------------------------------------------------------+
+ *
+ *  WebSocket path:
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.ws_message                                        |
+ *    | ServerHandler::processSession(WSSession)              |
+ *    |                                                       |
+ *    |  +--------------------------------------------------+ |
+ *    |  | rpc.command.{name}                               | |
+ *    |  | RPC::callMethod()                                | |
+ *    |  | attrs: command, version, role, status             | |
+ *    |  +--------------------------------------------------+ |
+ *    +-------------------------------------------------------+
  *
  *  Covered paths:
  *    - HTTP JSON-RPC (single and batch requests)
@@ -37,10 +73,10 @@
  *
  *  Known gaps (not yet instrumented):
  *    - gRPC endpoints (GRPCServer.cpp) — no spans at all
- *    - Early validation errors in processRequest() before rpc.process span
- *      (malformed JSON, auth failures, oversized requests)
- *    - fillHandler() rejections in doCommand() before rpc.command span
- *      (unknown command, too busy, permission denied)
+ *    - Early validation errors in processRequest() before rpc.process
+ *      span (malformed JSON, auth failures, oversized requests)
+ *    - fillHandler() rejections in doCommand() before rpc.command
+ *      span (unknown command, too busy, permission denied)
  *    - WebSocket upgrade failures in onHandoff()
  *    - WebSocket message parse errors in onWSMessage()
  *    - Subscription push notifications (server-initiated, not RPC)
