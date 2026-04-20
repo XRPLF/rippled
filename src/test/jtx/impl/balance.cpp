@@ -23,6 +23,11 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
+#define TEST_EXPECT(cond) env.test.expect(cond, __FILE__, __LINE__)
+#define TEST_EXPECTS(cond, reason)    \
+    ((cond) ? (env.test.pass(), true) \
+            : (env.test.fail((reason), __FILE__, __LINE__), false))
+
 void
 doBalance(
     Env& env,
@@ -36,11 +41,14 @@ doBalance(
         auto const sle = env.le(keylet::account(account));
         if (none)
         {
-            env.test.expect(!sle);
+            TEST_EXPECT(!sle);
         }
-        else if (env.test.expect(sle))
+        else if (TEST_EXPECT(sle))
         {
-            env.test.expect(sle->getFieldAmount(sfBalance) == value);
+            TEST_EXPECTS(
+                sle->getFieldAmount(sfBalance) == value,
+                sle->getFieldAmount(sfBalance).getText() + " / " +
+                    value.getText());
         }
     }
     else
@@ -48,15 +56,15 @@ doBalance(
         auto const sle = env.le(keylet::line(account, issue));
         if (none)
         {
-            env.test.expect(!sle);
+            TEST_EXPECT(!sle);
         }
-        else if (env.test.expect(sle))
+        else if (TEST_EXPECT(sle))
         {
             auto amount = sle->getFieldAmount(sfBalance);
             amount.setIssuer(issue.account);
             if (account > issue.account)
                 amount.negate();
-            env.test.expect(amount == value);
+            TEST_EXPECTS(amount == value, amount.getText());
         }
     }
 }
@@ -72,12 +80,12 @@ doBalance(
     auto const sle = env.le(keylet::mptoken(mptIssue.getMptID(), account));
     if (none)
     {
-        env.test.expect(!sle);
+        TEST_EXPECT(!sle);
     }
-    else if (env.test.expect(sle))
+    else if (TEST_EXPECT(sle))
     {
         STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-        env.test.expect(amount == value);
+        TEST_EXPECT(amount == value);
     }
 }
 
