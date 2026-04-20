@@ -48,7 +48,7 @@ struct WasmRuntimeWrapper
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum WasmTypes { WT_I32, WT_I64, WT_U8V };
+enum WasmTypes { WT_I32, WT_I64 };
 
 struct WasmImportFunc
 {
@@ -142,22 +142,15 @@ WasmImpFunc(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct WasmParamVec
-{
-    std::uint8_t const* d = nullptr;
-    std::int32_t sz = 0;
-};
-
 struct WasmParam
 {
+    // We are not supporting float/double
+
     WasmTypes type = WT_I32;
     union
     {
         std::int32_t i32;
         std::int64_t i64 = 0;
-        float f32;
-        double f64;
-        WasmParamVec u8v;
     } of;
 };
 
@@ -176,24 +169,6 @@ wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
     v.push_back({.type = WT_I64, .of = {.i64 = p}});
     wasmParamsHlp(v, std::forward<Types>(args)...);
 }
-
-// We are not supporting float/double for now
-// Leaving this code here so that it is easier to add later if needed
-// template <class... Types>
-// inline void
-// wasmParamsHlp(std::vector<WasmParam>& v, float p, Types&&... args)
-// {
-//     v.push_back({.type = WT_F32, .of = {.f32 = p}});
-//     wasmParamsHlp(v, std::forward<Types>(args)...);
-// }
-
-// template <class... Types>
-// inline void
-// wasmParamsHlp(std::vector<WasmParam>& v, double p, Types&&... args)
-// {
-//     v.push_back({.type = WT_F64, .of = {.f64 = p}});
-//     wasmParamsHlp(v, std::forward<Types>(args)...);
-// }
 
 inline void
 wasmParamsHlp(std::vector<WasmParam>& v)

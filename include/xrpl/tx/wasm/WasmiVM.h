@@ -125,6 +125,7 @@ struct WasmiResult
     {
     }
 
+    WasmiResult() = delete;
     ~WasmiResult() = default;
     WasmiResult(WasmiResult&& o) = default;
     WasmiResult&
@@ -158,14 +159,17 @@ private:
 public:
     InstanceWrapper();
 
+    InstanceWrapper(InstanceWrapper const&) = delete;
+
     InstanceWrapper(InstanceWrapper&& o);
+
+    InstanceWrapper(StorePtr& s, ModulePtr& m, WasmExternVec const& imports, beast::Journal j);
 
     InstanceWrapper&
     operator=(InstanceWrapper&& o);
 
-    InstanceWrapper(StorePtr& s, ModulePtr& m, WasmExternVec const& imports, beast::Journal j);
-
-    ~InstanceWrapper() = default;
+    InstanceWrapper&
+    operator=(InstanceWrapper const&) = delete;
 
     operator bool() const;
 
