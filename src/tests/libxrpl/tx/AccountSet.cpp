@@ -1,8 +1,12 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
 #include <xrpl/protocol_autogen/transactions/AccountSet.h>
@@ -13,6 +17,7 @@
 #include <xrpl/protocol_autogen/transactions/TrustSet.h>
 
 #include <gtest/gtest.h>
+#include <helpers/Account.h>
 #include <helpers/TxTest.h>
 
 #include <algorithm>

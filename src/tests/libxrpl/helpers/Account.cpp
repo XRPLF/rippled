@@ -1,3 +1,4 @@
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Seed.h>
 
 #include <helpers/Account.h>
