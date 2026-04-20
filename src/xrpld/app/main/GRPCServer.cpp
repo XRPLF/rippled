@@ -128,7 +128,8 @@ GRPCServerImpl::CallData<Request, Response>::clone()
         forward_,
         requiredCondition_,
         loadType_,
-        secureGatewayIPs_);
+        secureGatewayIPs_,
+        name_);
 }
 
 template <class Request, class Response>
