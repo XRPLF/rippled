@@ -65,7 +65,7 @@ public:
     pending(LedgerIndex seq)
     {
         std::lock_guard const lock(mutex_);
-        return map_.find(seq) != map_.end();
+        return map_.contains(seq);
     }
 
     /** Check if a ledger should be dispatched

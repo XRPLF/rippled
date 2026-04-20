@@ -2,12 +2,26 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/detail/Counts.h>
 #include <xrpld/peerfinder/detail/Logic.h>
+#include <xrpld/peerfinder/detail/Store.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+
+#include <boost/system/detail/error_code.hpp>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 namespace PeerFinder {

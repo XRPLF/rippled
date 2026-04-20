@@ -3,10 +3,17 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <string>
 
 namespace xrpl {
 

@@ -1,6 +1,16 @@
 #include <xrpl/conditions/Condition.h>
+
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/conditions/detail/PreimageSha256.h>
+#include <xrpl/conditions/detail/error.h>
 #include <xrpl/conditions/detail/utils.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <system_error>
+#include <utility>
 
 namespace xrpl {
 namespace cryptoconditions {

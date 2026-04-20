@@ -3,6 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/owners.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
@@ -117,7 +118,7 @@ struct MPTCreate
 
 struct MPTInit
 {
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::optional<Account> auditor = std::nullopt;
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
@@ -132,7 +133,7 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::optional<Account> auditor = std::nullopt;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;

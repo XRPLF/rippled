@@ -1,11 +1,32 @@
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/IOUAmount.h>
-#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <boost/container/flat_set.hpp>
+
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdlib>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 

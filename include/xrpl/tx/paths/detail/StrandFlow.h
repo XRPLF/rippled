@@ -327,9 +327,13 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
     for (auto const& step : strand)
     {
         if (std::tie(stepQ, dir) = step->qualityUpperBound(v, dir); stepQ)
+        {
             q = composed_quality(q, *stepQ);
+        }
         else
+        {
             return std::nullopt;
+        }
     }
     return q;
 };
@@ -360,12 +364,18 @@ limitOut(
         if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir); stepQualityFunc)
         {
             if (!qf)
+            {
                 qf = stepQualityFunc;
+            }
             else
+            {
                 qf->combine(*stepQualityFunc);
+            }
         }
         else
+        {
             return remainingOut;
+        }
     }
 
     // QualityFunction is constant
@@ -373,16 +383,25 @@ limitOut(
         return remainingOut;
 
     auto const out = [&]() {
-        if (auto const out = qf->outFromAvgQ(limitQuality); !out)
+        auto const out = qf->outFromAvgQ(limitQuality);
+        if (!out)
             return remainingOut;
-        else if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
+        if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
+        {
             return XRPAmount{*out};
+        }
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
+        {
             return IOUAmount{*out};
+        }
         else if constexpr (std::is_same_v<TOutAmt, MPTAmount>)
+        {
             return MPTAmount{*out};
+        }
         else
+        {
             return STAmount{remainingOut.asset(), out->mantissa(), out->exponent()};
+        }
     }();
     // A tiny difference could be due to the round off
     if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
@@ -432,7 +451,7 @@ public:
             {
                 for (Strand const* strand : next_)
                 {
-                    if (!strand)
+                    if (strand == nullptr)
                     {
                         // should not happen
                         continue;
@@ -627,8 +646,10 @@ flow(
         // Limit only if one strand and limitQuality
         auto const limitRemainingOut = [&]() {
             if (activeStrands.size() == 1 && limitQuality)
+            {
                 if (auto const strand = activeStrands.get(0))
                     return limitOut(sb, *strand, remainingOut, *limitQuality);
+            }
             return remainingOut;
         }();
         auto const adjustedRemOut = limitRemainingOut != remainingOut;
@@ -717,8 +738,10 @@ flow(
                 remainingIn = *sendMax - sum(savedIns);
 
             if (flowDebugInfo)
+            {
                 flowDebugInfo->pushPass(
                     EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
+            }
 
             JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
                             << " out: " << to_string(best->out)

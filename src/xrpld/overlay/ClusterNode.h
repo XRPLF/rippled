@@ -50,7 +50,7 @@ private:
     PublicKey const identity_;
     std::string name_;
     std::uint32_t mLoadFee = 0;
-    NetClock::time_point mReportTime = {};
+    NetClock::time_point mReportTime;
 };
 
 }  // namespace xrpl
