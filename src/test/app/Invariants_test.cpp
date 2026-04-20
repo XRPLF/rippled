@@ -45,8 +45,8 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/apply.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/apply.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
 
 #include <algorithm>
@@ -59,10 +59,6 @@
 #include <optional>
 #include <string>
 #include <utility>
-#include <vector>
-
-#include <initializer_list>
-#include <string>
 #include <vector>
 
 namespace xrpl {
