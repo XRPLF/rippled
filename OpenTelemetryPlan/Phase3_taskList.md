@@ -216,6 +216,42 @@
 
 ---
 
+## Task 3.8: Transaction Span Peer Version Attribute
+
+> **Source**: [External Dashboard Parity](../docs/superpowers/specs/2026-03-30-external-dashboard-parity-design.md) — adds peer version context inspired by the community [xrpl-validator-dashboard](https://github.com/realgrapedrop/xrpl-validator-dashboard).
+>
+> **Upstream**: Phase 2 (RPC span infrastructure must exist).
+> **Downstream**: Phase 10 (validation checks for this attribute).
+
+**Objective**: Add the relaying peer's rippled version to `tx.receive` spans so operators can correlate transaction issues with peer version mismatches during network upgrades.
+
+**What to do**:
+
+- Edit `src/xrpld/overlay/detail/PeerImp.cpp`:
+  - In the `tx.receive` span block (after existing `xrpl.peer.id` setAttribute call):
+    - Add `xrpl.peer.version` (string) — from `this->getVersion()`
+    - Only set if `getVersion()` returns a non-empty string (avoid empty-string attributes)
+
+**New span attribute**:
+
+| Attribute           | Type   | Source               | Example           |
+| ------------------- | ------ | -------------------- | ----------------- |
+| `xrpl.peer.version` | string | `peer->getVersion()` | `"rippled-2.4.0"` |
+
+**Rationale**: Transaction relay is where version mismatches cause subtle serialization or validation bugs. Tracing "this tx came from a v2.3.0 peer" helps diagnose compatibility issues. The community dashboard tracks peer versions externally; this brings version awareness into the trace itself.
+
+**Key modified files**:
+
+- `src/xrpld/overlay/detail/PeerImp.cpp`
+
+**Exit Criteria**:
+
+- [ ] `tx.receive` spans carry `xrpl.peer.version` attribute with a non-empty version string
+- [ ] Attribute is omitted (not set to empty string) when `getVersion()` returns empty
+- [ ] Attribute visible in Jaeger span detail view
+
+---
+
 ## Summary
 
 | Task | Description                         | New Files | Modified Files | Depends On |
@@ -227,8 +263,9 @@
 | 3.5  | HashRouter dedup visibility         | 0         | 1              | 3.3        |
 | 3.6  | Relay context propagation           | 0         | 1-2            | 3.3, 3.5   |
 | 3.7  | Build verification and testing      | 0         | 0              | 3.1-3.6    |
+| 3.8  | TX span peer version attribute      | 0         | 1              | 3.3        |
 
-**Parallel work**: Tasks 3.1 and 3.4 can start in parallel. Task 3.2 depends on 3.1. Tasks 3.3 and 3.5 depend on 3.2. Task 3.6 depends on 3.3 and 3.5.
+**Parallel work**: Tasks 3.1 and 3.4 can start in parallel. Task 3.2 depends on 3.1. Tasks 3.3 and 3.5 depend on 3.2. Task 3.6 depends on 3.3 and 3.5. Task 3.8 depends on 3.3 (span must exist).
 
 **Exit Criteria** (from [06-implementation-phases.md §6.11.3](./06-implementation-phases.md)):
 
