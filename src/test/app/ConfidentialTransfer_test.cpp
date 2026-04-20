@@ -10095,6 +10095,123 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testCiphertextRerandomization(FeatureBitset features)
+    {
+        testcase("test Ciphertext Rerandomization");
+
+        // Attack: substitute the randomness component C1 of an ElGamal
+        // ciphertext (C1, C2) while keeping the message component C2
+        // unchanged. This "rerandomizes" the ciphertext to break
+        // linkability or forge fresh-looking ciphertexts.
+        //
+        // The compact sigma proof binds C1 to the shared randomness used
+        // across all recipients, so any C1 substitution breaks the proof.
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        uint64_t const sendAmount = 10;
+
+        // Helper: replace C1 in a ciphertext with C1 from another
+        // ciphertext, keeping C2 unchanged. Returns a rerandomized
+        // ciphertext (C1', C2).
+        auto substituteC1 = [](Buffer const& target, Buffer const& source) -> Buffer {
+            Buffer result = target;
+            // Copy C1 (first ecGamalEncryptedLength bytes) from source
+            std::memcpy(result.data(), source.data(), ecGamalEncryptedLength);
+            return result;
+        };
+
+        // Variant A: Post-signature C1 substitution.
+        // Replace C1 in the dest ciphertext after signing.
+        // Signature no longer covers the modified ciphertext.
+        {
+            auto const seq = env.seq(bob);
+            auto jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
+            auto jtx = env.jt(jv);
+            BEAST_EXPECT(jtx.stx);
+
+            Serializer s;
+            jtx.stx->add(s);
+            SerialIter sit(s.slice());
+            STObject obj(sit, sfTransaction);
+
+            // Generate a random C1' by encrypting a different amount
+            Buffer const bf2 = generateBlindingFactor();
+            auto const otherCt = mptAlice.encryptAmount(carol, 99, bf2);
+
+            // Replace C1 in the dest ciphertext
+            auto const origDestAmt = obj.getFieldVL(sfDestinationEncryptedAmount);
+            Buffer origBuf(origDestAmt.data(), origDestAmt.size());
+            auto const rerandomized = substituteC1(origBuf, otherCt);
+            obj.setFieldVL(
+                sfDestinationEncryptedAmount, Slice(rerandomized.data(), rerandomized.size()));
+
+            Serializer tampered;
+            obj.add(tampered);
+
+            // Signature verification fails
+            auto const jr = env.rpc("submit", strHex(tampered.slice()));
+            BEAST_EXPECT(jr[jss::result][jss::error] == "invalidTransaction");
+        }
+
+        // Variant B: Re-signed C1 substitution.
+        // Replace C1 in the dest ciphertext with a fresh random point
+        // and re-sign. Sigma proof fails because the shared-randomness
+        // binding no longer holds — C1' wasn't generated with the same r
+        // used in the proof.
+        {
+            ConfidentialSendSetup setup(mptAlice, bob, carol, alice, sendAmount);
+
+            auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(validProof.has_value()))
+                return;
+
+            // Create a ciphertext with different randomness to get C1'
+            Buffer const bf2 = generateBlindingFactor();
+            auto const otherCt = mptAlice.encryptAmount(carol, sendAmount, bf2);
+
+            // Replace C1 in dest ciphertext, keep C2
+            auto const rerandomizedDest = substituteC1(setup.destAmt, otherCt);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup.sendAmount,
+                 .proof = strHex(*validProof),
+                 .senderEncryptedAmt = setup.senderAmt,
+                 .destEncryptedAmt = rerandomizedDest,
+                 .issuerEncryptedAmt = setup.issuerAmt,
+                 .amountCommitment = setup.amountCommitment,
+                 .balanceCommitment = setup.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // ConfidentialMPTConvert
@@ -10196,6 +10313,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testCiphertextMalleability(features);
         testCiphertextNegation(features);
         testCiphertextCombination(features);
+        testCiphertextRerandomization(features);
     }
 
 public:
