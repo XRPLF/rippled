@@ -16,6 +16,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -351,9 +352,13 @@ NoZeroEscrow::visitEntry(
             checkAmount(*locked);
             bool const isBad = outstanding < *locked;
             if (overwriteFixEnabled)
+            {
                 bad_ |= isBad;
+            }
             else
+            {
                 bad_ = isBad;
+            }
         }
     }
 
@@ -633,9 +638,13 @@ NoXRPTrustLines::visitEntry(
         bool const isXrp = after->getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
             after->getFieldAmount(sfHighLimit).asset() == xrpIssue();
         if (overwriteFixEnabled)
+        {
             xrpTrustLine_ |= isXrp;
+        }
         else
+        {
             xrpTrustLine_ = isXrp;
+        }
     }
 }
 
@@ -675,9 +684,13 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
 
         bool const bad = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
         if (overwriteFixEnabled)
+        {
             deepFreezeWithoutFreeze_ |= bad;
+        }
         else
+        {
             deepFreezeWithoutFreeze_ = bad;
+        }
     }
 }
 
