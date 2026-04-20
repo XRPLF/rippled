@@ -4,8 +4,8 @@
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
-#include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 
 #include <boost/filesystem/operations.hpp>
 
