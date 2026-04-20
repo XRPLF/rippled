@@ -53,18 +53,25 @@ exceptionExpected(Env& env, Json::Value const& jv)
 class PermissionedDomains_test : public beast::unit_test::suite
 {
     FeatureBitset withoutFeature_{
-        testable_amendments() - featurePermissionedDomains};
+        testable_amendments() - featurePermissionedDomains -
+        fixPermissionedDomainInvariant};
     FeatureBitset withFeature_{
+        (testable_amendments()  //
+         | featurePermissionedDomains | featureCredentials) -
+        fixPermissionedDomainInvariant};
+
+    FeatureBitset withFix_{
         testable_amendments()  //
-        | featurePermissionedDomains | featureCredentials};
+        | featurePermissionedDomains | featureCredentials |
+        fixPermissionedDomainInvariant};
 
     // Verify that each tx type can execute if the feature is enabled.
     void
-    testEnabled()
+    testEnabled(FeatureBitset features)
     {
         testcase("Enabled");
         Account const alice("alice");
-        Env env(*this, withFeature_);
+        Env env(*this, features);
         env.fund(XRP(1000), alice);
         pdomain::Credentials credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials));
@@ -279,10 +286,10 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
     // Test PermissionedDomainSet
     void
-    testSet()
+    testSet(FeatureBitset features)
     {
         testcase("Set");
-        Env env(*this, withFeature_);
+        Env env(*this, features);
         env.set_parse_failure_expected(true);
 
         int const accNum = 12;
@@ -459,10 +466,10 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
     // Test PermissionedDomainDelete
     void
-    testDelete()
+    testDelete(FeatureBitset features)
     {
         testcase("Delete");
-        Env env(*this, withFeature_);
+        Env env(*this, features);
         Account const alice("alice");
 
         env.fund(XRP(1000), alice);
@@ -516,14 +523,14 @@ class PermissionedDomains_test : public beast::unit_test::suite
     }
 
     void
-    testAccountReserve()
+    testAccountReserve(FeatureBitset features)
     {
         // Verify that the reserve behaves as expected for creating.
         testcase("Account Reserve");
 
         using namespace test::jtx;
 
-        Env env(*this, withFeature_);
+        Env env(*this, features);
         Account const alice("alice");
 
         // Fund alice enough to exist, but not enough to meet
@@ -570,12 +577,16 @@ public:
     void
     run() override
     {
-        testEnabled();
+        testEnabled(withFeature_);
+        testEnabled(withFix_);
         testCredentialsDisabled();
         testDisabled();
-        testSet();
-        testDelete();
-        testAccountReserve();
+        testSet(withFeature_);
+        testSet(withFix_);
+        testDelete(withFeature_);
+        testDelete(withFix_);
+        testAccountReserve(withFeature_);
+        testAccountReserve(withFix_);
     }
 };
 
