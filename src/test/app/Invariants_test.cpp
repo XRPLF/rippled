@@ -23,6 +23,7 @@
 
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/InvariantCheck.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -4227,6 +4228,140 @@ class Invariants_test : public beast::unit_test::suite
             precloseMpt);
     }
 
+    void
+    testVaultComputeCoarsestScale()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        PrettyAsset const vaultAsset = issuer["IOU"];
+
+        struct TestCase
+        {
+            std::string name;
+            std::int32_t expectedMinScale;
+            std::vector<ValidVault::DeltaInfo> values;
+        };
+
+        NumberMantissaScaleGuard const g{MantissaRange::large};
+
+        auto makeDelta =
+            [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+            return {n, scale(n, vaultAsset.raw())};
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {
+                .name = "No values",
+                .expectedMinScale = 0,
+                .values = {},
+            },
+            {
+                .name = "Mixed integer and Number values",
+                .expectedMinScale = -15,
+                .values =
+                    {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
+            },
+            {
+                .name = "Mixed scales",
+                .expectedMinScale = -17,
+                .values =
+                    {makeDelta(Number{1, -2}),
+                     makeDelta(Number{5, -3}),
+                     makeDelta(Number{3, -2})},
+            },
+            {
+                .name = "Equal scales",
+                .expectedMinScale = -16,
+                .values =
+                    {makeDelta(Number{1, -1}),
+                     makeDelta(Number{5, -1}),
+                     makeDelta(Number{1, -1})},
+            },
+            {
+                .name = "Mixed mantissa sizes",
+                .expectedMinScale = -12,
+                .values =
+                    {makeDelta(Number{1}),
+                     makeDelta(Number{1234, -3}),
+                     makeDelta(Number{12345, -6}),
+                     makeDelta(Number{123, 1})},
+            },
+        };
+
+        for (auto const& tc : testCases)
+        {
+            testcase("vault computeCoarsestScale: " + tc.name);
+
+            auto const actualScale =
+                ValidVault::computeCoarsestScale(tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            for (auto const& num : tc.values)
+            {
+                // None of these scales are far enough apart that rounding the
+                // values would lose information, so check that the rounded
+                // value matches the original.
+                auto const actualRounded =
+                    roundToAsset(vaultAsset, num.delta, actualScale);
+                BEAST_EXPECTS(
+                    actualRounded == num.delta,
+                    "number " + to_string(num.delta) + " rounded to scale " +
+                        std::to_string(actualScale) + " is " +
+                        to_string(actualRounded));
+            }
+        }
+
+        auto const testCases2 = std::vector<TestCase>{
+            {
+                .name = "False equivalence",
+                .expectedMinScale = -15,
+                .values =
+                    {
+                        makeDelta(Number{1234567890123456789, -18}),
+                        makeDelta(Number{12345, -4}),
+                        makeDelta(Number{1}),
+                    },
+            },
+        };
+
+        // Unlike the first set of test cases, the values in these test could
+        // look equivalent if using the wrong scale.
+        for (auto const& tc : testCases2)
+        {
+            testcase("vault computeCoarsestScale: " + tc.name);
+
+            auto const actualScale =
+                ValidVault::computeCoarsestScale(tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            std::optional<Number> first;
+            Number firstRounded;
+            for (auto const& num : tc.values)
+            {
+                if (!first)
+                {
+                    first = num.delta;
+                    firstRounded =
+                        roundToAsset(vaultAsset, num.delta, actualScale);
+                    continue;
+                }
+                auto const numRounded =
+                    roundToAsset(vaultAsset, num.delta, actualScale);
+                BEAST_EXPECTS(
+                    numRounded != firstRounded,
+                    "at a scale of " + std::to_string(actualScale) + " " +
+                        to_string(num.delta) + " == " + to_string(*first));
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -4256,6 +4391,7 @@ public:
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
+        testVaultComputeCoarsestScale();
     }
 };
 
