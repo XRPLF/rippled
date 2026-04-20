@@ -7,11 +7,54 @@
 #include <xrpl/protocol/Protocol.h>
 
 #include <openssl/rand.h>
+#include <utility/mpt_utility.h>
+
+#include <secp256k1_mpt.h>
 
 namespace xrpl {
 
 class ConfidentialTransfer_test : public beast::unit_test::suite
 {
+    // Offset where the bulletproof begins in a send proof blob.
+    // Proof layout: [compact_sigma | bulletproof]
+    static constexpr size_t bulletproofOffset = ecSendProofLength - ecDoubleBulletproofLength;
+
+    // Generate a forged aggregated bulletproof (double bulletproof) for
+    // the given values and blinding factors. Used to test that splicing
+    // a bulletproof claiming a different remaining balance is rejected.
+    // secp256k1 convention: returns 1 on success, 0 on failure.
+    static Buffer
+    getForgedBulletproof(
+        std::array<uint64_t, 2> const& values,
+        std::array<Buffer, 2> const& blindingFactors,
+        uint256 const& contextHash)
+    {
+        auto* ctx = mpt_secp256k1_context();
+
+        secp256k1_pubkey H;
+        secp256k1_mpt_get_h_generator(ctx, &H);
+
+        Buffer proof(ecDoubleBulletproofLength);
+        size_t proofLen = ecDoubleBulletproofLength;
+
+        unsigned char blindings[64];
+        std::memcpy(blindings, blindingFactors[0].data(), 32);
+        std::memcpy(blindings + 32, blindingFactors[1].data(), 32);
+
+        if (secp256k1_bulletproof_prove_agg(
+                ctx,
+                proof.data(),
+                &proofLen,
+                values.data(),
+                blindings,
+                2,
+                &H,
+                contextHash.data()) == 0)
+            Throw<std::runtime_error>("Failed to generate forged bulletproof");
+
+        return proof;
+    }
+
     // Get a bad ciphertext with valid structure but cryptographic invalid for
     // testing purposes. For preflight test purposes.
     static Buffer const&
@@ -8851,9 +8894,27 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("test Forged Range Proof");
 
-        // Verify that replacing a valid bulletproof with one claiming
-        // remaining_balance = uint64_max fails because the forged proof
-        // doesn't match the actual Pedersen commitments.
+        // Forge range proof for value exceeding MaxAmount.
+        //
+        // Attack: Bypass the supply cap by constructing a confidential send
+        // with uint64_max as the transfer amount, creating more tokens than
+        // authorized. The range proof upper bound must match MaxAmount exactly.
+        //
+        // Attack variant: Forged range proof transcript.
+        //
+        // Steps:
+        // 1. Construct Enc(uint64_max) — a ciphertext encoding a value
+        //    outside the legitimate range.
+        // 2. Attach a forged/manually modified range proof without changing
+        //    the ciphertext algebraically.
+        // 3. Re-sign and submit the transaction.
+        //
+        // Expected:
+        // - Bulletproof verification fails due to invalid inner-product
+        //   relations or commitment mismatch.
+        // - Fiat-Shamir transcript challenge mismatch detected.
+        // - Validator rejects the transaction.
+        // - Supply invariant remains preserved.
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -8884,20 +8945,23 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
         mptAlice.mergeInbox({.account = carol});
 
-        uint64_t const sendAmount = 10;
-
+        // The attacker (Bob) attempts to send uint64_max tokens — far
+        // exceeding his actual balance of 100 and the entire token supply.
+        uint64_t const badAmount = std::numeric_limits<uint64_t>::max();
         Buffer const blindingFactor = generateBlindingFactor();
 
-        // Step 1: Generate valid ciphertexts encrypting sendAmount
-        auto const senderAmt = mptAlice.encryptAmount(bob, sendAmount, blindingFactor);
-        auto const destAmt = mptAlice.encryptAmount(carol, sendAmount, blindingFactor);
-        auto const issuerAmt = mptAlice.encryptAmount(alice, sendAmount, blindingFactor);
+        // Step 1: Construct Enc(uint64_max) for each recipient.
+        // The ciphertexts are algebraically well-formed ElGamal encryptions
+        // of uint64_max under each recipient's public key.
+        auto const senderAmt = mptAlice.encryptAmount(bob, badAmount, blindingFactor);
+        auto const destAmt = mptAlice.encryptAmount(carol, badAmount, blindingFactor);
+        auto const issuerAmt = mptAlice.encryptAmount(alice, badAmount, blindingFactor);
 
-        // Generate Pedersen commitments for the actual amounts
-        auto const amountBlindingFactor = generateBlindingFactor();
-        auto const amountCommitment =
-            mptAlice.getPedersenCommitment(sendAmount, amountBlindingFactor);
+        // Pedersen commitment PC(uint64_max, r) — commits to the forged
+        // amount using the same blinding factor as the ciphertext.
+        auto const amountCommitment = mptAlice.getPedersenCommitment(badAmount, blindingFactor);
 
+        // The balance commitment is for Bob's actual spending balance (100).
         auto const prevSpending =
             mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
         BEAST_EXPECT(prevSpending.has_value());
@@ -8905,61 +8969,39 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         auto const balanceCommitment =
             mptAlice.getPedersenCommitment(*prevSpending, balanceBlindingFactor);
 
-        auto const version = mptAlice.getMPTokenVersion(bob);
-        auto const ctxHash =
-            getSendContextHash(bob.id(), mptAlice.issuanceID(), env.seq(bob), carol.id(), version);
+        // Step 2: Build a forged proof blob.
+        // We take a legitimately-structured proof (for the real amount 10)
+        // and corrupt the bulletproof portion. This simulates an attacker
+        // who constructs a proof claiming uint64_max is in the valid range.
+        //
+        // Because the compact sigma proof and the bulletproof are bound
+        // together through the Fiat-Shamir transcript (which includes
+        // commitments and ciphertexts), any substitution breaks the
+        // inner-product relations.
+        uint64_t const legitimateAmount = 10;
+        ZkpTestSetup setup(mptAlice, bob, carol, alice, legitimateAmount);
 
-        size_t const nRecipients = 3;
-        Buffer const bobPubKey = *mptAlice.getPubKey(bob);
-        Buffer const carolPubKey = *mptAlice.getPubKey(carol);
-        Buffer const alicePubKey = *mptAlice.getPubKey(alice);
-        std::vector<ConfidentialRecipient> recipients;
-        recipients.push_back({Slice(bobPubKey), senderAmt});
-        recipients.push_back({Slice(carolPubKey), destAmt});
-        recipients.push_back({Slice(alicePubKey), issuerAmt});
-
-        auto const prevEncryptedSpending =
-            mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-        BEAST_EXPECT(prevEncryptedSpending.has_value());
-
-        // Generate a completely valid proof for the actual sendAmount
-        auto const validProof = mptAlice.getConfidentialSendProof(
-            bob,
-            sendAmount,
-            recipients,
-            blindingFactor,
-            nRecipients,
-            ctxHash,
-            {.pedersenCommitment = amountCommitment,
-             .amt = sendAmount,
-             .encryptedAmt = senderAmt,
-             .blindingFactor = amountBlindingFactor},
-            {.pedersenCommitment = balanceCommitment,
-             .amt = *prevSpending,
-             .encryptedAmt = *prevEncryptedSpending,
-             .blindingFactor = balanceBlindingFactor});
-
+        auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
         if (!BEAST_EXPECT(validProof.has_value()))
             return;
 
-        // Step 2: Corrupt the bulletproof portion of the valid proof
-        // Proof structure: [equality proof | amount linkage | balance linkage | bulletproof]
-        // The bulletproof occupies the last ecDoubleBulletproofLength bytes.
-        size_t const bulletproofOffset = ecSendProofLength - ecDoubleBulletproofLength;
-
+        // Corrupt the bulletproof segment (last ecDoubleBulletproofLength
+        // bytes) to simulate a forged range proof for uint64_max.
         Buffer forgedProof = *validProof;
-        // Flip bytes in the bulletproof segment to simulate a forged range proof
-        // that claims a different remaining balance (e.g., uint64_max)
         for (size_t i = bulletproofOffset; i < forgedProof.size(); i += 7)
             forgedProof.data()[i] ^= 0xFF;
 
-        // Step 3: Submit transaction with corrupted bulletproof
-        // Verification fails because the forged bulletproof doesn't match
-        // the balance commitment (which commits to the real balance, not uint64_max)
+        // Step 3: Submit the transaction with forged proof.
+        // The validator must reject this:
+        // - The bulletproof's inner-product check fails because the
+        //   corrupted proof cannot satisfy V = v*G + r*H for uint64_max.
+        // - The Fiat-Shamir challenge computed by the verifier differs
+        //   from what the (corrupted) prover transcript would produce.
+        // - The supply invariant is preserved: no tokens are created.
         mptAlice.send(
             {.account = bob,
              .dest = carol,
-             .amt = sendAmount,
+             .amt = badAmount,
              .proof = strHex(forgedProof),
              .senderEncryptedAmt = senderAmt,
              .destEncryptedAmt = destAmt,
@@ -8967,6 +9009,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .amountCommitment = amountCommitment,
              .balanceCommitment = balanceCommitment,
              .err = tecBAD_PROOF});
+
+        // Verify supply invariant: Bob's balance is unchanged.
+        auto const postSpending =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(postSpending.has_value());
+        BEAST_EXPECT(*postSpending == *prevSpending);
     }
 
     void
@@ -8974,9 +9022,28 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     {
         testcase("test Negative Value Malleability");
 
-        // Verify that claiming a wrapped negative balance (e.g., -10 as uint64)
-        // fails because the verifier derives the commitment independently and
-        // the forged bulletproof won't match.
+        // Attack: Two's complement overflow to forge a negative remaining
+        // balance.
+        //
+        // Scenario: Bob has exactly 10 confidential tokens and sends 10
+        // to Carol. The honest remaining balance is 0. The attacker forges
+        // a bulletproof claiming remaining = (uint64_t)(-10) = 0xFFFFFFFFFFFFFFF6,
+        // which is a valid uint64 but represents a wrapped negative value.
+        //
+        // Why this must fail:
+        //   The verifier never trusts the claimed remaining balance. Instead
+        //   it independently derives:
+        //     PC_remaining = PC_balance - sendAmount * G
+        //                  = PC(10, r_bal) - 10*G
+        //                  = PC(0, r_bal)
+        //
+        //   The forged bulletproof proves {10, 0xFFFFFFFFFFFFFFF6} in range,
+        //   using commitment PC(0xFFFFFFFFFFFFFFF6, r_bal). Since
+        //   PC(0, r_bal) != PC(0xFFFFFFFFFFFFFFF6, r_bal), the bulletproof
+        //   commitment mismatch causes verification to fail.
+        //
+        // If accepted, the attacker would overdraft their balance and
+        // claim an effectively infinite remaining balance.
 
         using namespace test::jtx;
         Env env{*this, features};
@@ -9008,33 +9075,40 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
         mptAlice.mergeInbox({.account = carol});
 
-        // Use struct for common setup
-        ZkpTestSetup setup(mptAlice, bob, carol, alice, 10);
+        uint64_t const sendAmount = 10;
+        // -10 reinterpreted as uint64_t via two's complement wraparound.
+        uint64_t const negativeRemaining = static_cast<uint64_t>(-10);  // 0xFFFFFFFFFFFFFFF6
 
-        // Generate a fully valid proof for the legitimate send (sendAmount == balance,
-        // honest remaining == 0). The equality and linkage proofs in this proof are
-        // valid; only the bulletproof portion will be corrupted.
+        ZkpTestSetup setup(mptAlice, bob, carol, alice, sendAmount);
+
+        auto const ctxHash = getSendContextHash(
+            bob.id(), mptAlice.issuanceID(), env.seq(bob), carol.id(), setup.version);
+
+        // Generate a valid proof for the legitimate send (10 out of 10).
         auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
         if (!BEAST_EXPECT(validProof.has_value()))
             return;
 
-        // Corrupt the bulletproof portion of the valid proof to simulate an
-        // attacker who tries to claim a wrapped negative remaining balance.
-        // The verifier independently derives:
-        //   PC_remaining = PC_balance - 10*G = PC(10) - 10*G = PC(0)
-        // A corrupted bulletproof cannot prove a valid range for PC(0).
-        //
-        // Proof layout: [equality proof | amount linkage | balance linkage | bulletproof]
-        // The bulletproof occupies the last ecDoubleBulletproofLength bytes.
-        size_t const bulletproofOffset = ecSendProofLength - ecDoubleBulletproofLength;
+        // Forge a bulletproof claiming {sendAmount=10, remaining=0xFFFFFFFFFFFFFFF6}.
+        // The forged bulletproof is internally valid for these values, but
+        // the verifier derives PC_remaining = PC(0, r_bal) which doesn't
+        // match the forged PC(0xFFFFFFFFFFFFFFF6, r_bal).
+        auto const forgedBulletproof = getForgedBulletproof(
+            {sendAmount, negativeRemaining},
+            {setup.amountBlindingFactor, setup.balanceBlindingFactor},
+            ctxHash);
 
-        Buffer forgedProof = *validProof;
-        // Flip bytes in the bulletproof segment
-        for (size_t i = bulletproofOffset; i < forgedProof.size(); i += 7)
-            forgedProof.data()[i] ^= 0xFF;
+        // Splice the forged bulletproof into the valid proof.
+        // Proof layout: [compact_sigma | bulletproof]
+        Buffer forgedProof(validProof->size());
+        std::memcpy(forgedProof.data(), validProof->data(), bulletproofOffset);
+        std::memcpy(
+            forgedProof.data() + bulletproofOffset,
+            forgedBulletproof.data(),
+            ecDoubleBulletproofLength);
 
-        // Submit the tampered proof. The system must reject it: the corrupted
-        // bulletproof cannot prove a valid range for the remaining balance.
+        // The validator must reject: the bulletproof proves a wrapped
+        // negative remaining balance, not the honest value (0).
         mptAlice.send(
             {.account = bob,
              .dest = carol,
@@ -9046,6 +9120,12 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
              .amountCommitment = setup.amountCommitment,
              .balanceCommitment = setup.balanceCommitment,
              .err = tecBAD_PROOF});
+
+        // Verify supply invariant: Bob's balance is unchanged.
+        auto const postSpending =
+            mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+        BEAST_EXPECT(postSpending.has_value());
+        BEAST_EXPECT(*postSpending == setup.prevSpending);
     }
 
     void
@@ -9381,10 +9461,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Create a forged proof with scalar responses set to zero
             Buffer forgedProof = *proof;
 
-            // Equality proof structure: (1 + 2*n) points followed by (1 + n) scalars
-            size_t const pointsSize = (1 + 2 * setup.nRecipients) * compressedECPointLength;
-            size_t const scalarsSize = (1 + setup.nRecipients) * ecBlindingFactorLength;
-            std::memset(forgedProof.data() + pointsSize, 0, scalarsSize);
+            // Compact sigma proof: 6 consecutive 32-byte scalars
+            // (e, z_m, z_r, z_b, z_rho, z_sk) = 192 bytes, fixed size.
+            // Zero out all response scalars (z_m through z_sk, bytes 32..191).
+            static constexpr size_t sigmaScalarSize = 32;
+            static constexpr size_t challengeOffset = 0;
+            static constexpr size_t responseOffset = challengeOffset + sigmaScalarSize;
+            static constexpr size_t responseSize = 5 * sigmaScalarSize;  // z_m..z_sk
+            std::memset(forgedProof.data() + responseOffset, 0, responseSize);
 
             mptAlice.send(
                 {.account = bob,
@@ -9476,9 +9560,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x41   //
             };
 
-            // Equality proof structure: (1 + 2*n) points followed by (1 + n) scalars
-            size_t const pointsSize = (1 + 2 * setup.nRecipients) * compressedECPointLength;
-            std::memcpy(forgedProof.data() + pointsSize, curveOrder, 32);
+            // Compact sigma proof: 6 consecutive 32-byte scalars.
+            // Overwrite the first response scalar (z_m at byte 32) with
+            // the curve order, which reduces to 0 mod n.
+            std::memcpy(forgedProof.data() + 32, curveOrder, 32);
 
             mptAlice.send(
                 {.account = bob,
@@ -9514,9 +9599,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 0xBF, 0xD2, 0x5E, 0x8C, 0xD0, 0x36, 0x41, 0x42   //
             };
 
-            // Equality proof structure: (1 + 2*n) points followed by (1 + n) scalars
-            size_t const pointsSize = (1 + 2 * setup.nRecipients) * compressedECPointLength;
-            std::memcpy(forgedProof.data() + pointsSize, overflowScalar, 32);
+            // Compact sigma proof: 6 consecutive 32-byte scalars.
+            // Overwrite the first response scalar (z_m at byte 32) with
+            // curve_order + 1, which reduces to 1 mod n.
+            std::memcpy(forgedProof.data() + 32, overflowScalar, 32);
 
             mptAlice.send(
                 {.account = bob,
