@@ -1,4 +1,5 @@
 #include <xrpld/app/main/GRPCServer.h>
+#include <xrpld/app/main/GrpcSpanNames.h>
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/ConfigSections.h>
@@ -22,6 +23,7 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
@@ -93,7 +95,8 @@ GRPCServerImpl::CallData<Request, Response>::CallData(
     Forward<Request, Response> forward,
     RPC::Condition requiredCondition,
     Resource::Charge loadType,
-    std::vector<boost::asio::ip::address> const& secureGatewayIPs)
+    std::vector<boost::asio::ip::address> const& secureGatewayIPs,
+    std::string_view name)
     : service_(service)
     , cq_(cq)
     , finished_(false)
@@ -105,6 +108,7 @@ GRPCServerImpl::CallData<Request, Response>::CallData(
     , requiredCondition_(requiredCondition)
     , loadType_(std::move(loadType))
     , secureGatewayIPs_(secureGatewayIPs)
+    , name_(name)
 {
     // Bind a listener. When a request is received, "this" will be returned
     // from CompletionQueue::Next
@@ -162,12 +166,18 @@ template <class Request, class Response>
 void
 GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::Coro> coro)
 {
+    using namespace telemetry;
+    auto span =
+        SpanGuard::span(TraceCategory::Rpc, grpc_span::prefix::grpc, grpc_span::op::request);
+    span.setAttribute(grpc_span::attr::method, name_);
+
     try
     {
         auto usage = getUsage();
         bool const isUnlimited = clientIsUnlimited();
         if (!isUnlimited && usage.disconnect(app_.getJournal("gRPCServer")))
         {
+            span.setError("resource_exhausted");
             grpc::Status const status{
                 grpc::StatusCode::RESOURCE_EXHAUSTED, "usage balance exceeds threshold"};
             responder_.FinishWithError(status, this);
@@ -213,6 +223,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             if (conditionMetRes != rpcSUCCESS)
             {
                 RPC::ErrorInfo const errorInfo = RPC::get_error_info(conditionMetRes);
+                span.setError(errorInfo.token.c_str());
                 grpc::Status const status{
                     grpc::StatusCode::FAILED_PRECONDITION, errorInfo.message.c_str()};
                 responder_.FinishWithError(status, this);
@@ -221,12 +232,14 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
             {
                 std::pair<Response, grpc::Status> result = handler_(context);
                 setIsUnlimited(result.first, isUnlimited);
+                span.setOk();
                 responder_.Finish(result.first, result.second, this);
             }
         }
     }
     catch (std::exception const& ex)
     {
+        span.recordException(ex);
         grpc::Status const status{grpc::StatusCode::INTERNAL, ex.what()};
         responder_.FinishWithError(status, this);
     }
@@ -544,7 +557,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedger,
                 RPC::NO_CONDITION,
                 Resource::feeMediumBurdenRPC,
-                secureGatewayIPs_));
+                secureGatewayIPs_,
+                "GetLedger"));
     }
     {
         using cd = CallData<
@@ -561,7 +575,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerData,
                 RPC::NO_CONDITION,
                 Resource::feeMediumBurdenRPC,
-                secureGatewayIPs_));
+                secureGatewayIPs_,
+                "GetLedgerData"));
     }
     {
         using cd = CallData<
@@ -578,7 +593,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerDiff,
                 RPC::NO_CONDITION,
                 Resource::feeMediumBurdenRPC,
-                secureGatewayIPs_));
+                secureGatewayIPs_,
+                "GetLedgerDiff"));
     }
     {
         using cd = CallData<
@@ -595,7 +611,8 @@ GRPCServerImpl::setupListeners()
                 &org::xrpl::rpc::v1::XRPLedgerAPIService::Stub::GetLedgerEntry,
                 RPC::NO_CONDITION,
                 Resource::feeMediumBurdenRPC,
-                secureGatewayIPs_));
+                secureGatewayIPs_,
+                "GetLedgerEntry"));
     }
     return requests;
 }

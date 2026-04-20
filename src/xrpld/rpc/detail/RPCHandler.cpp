@@ -212,6 +212,14 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
     Handler const* handler = nullptr;
     if (auto error = fillHandler(context, handler))
     {
+        std::string const cmdName = context.params.isMember(jss::command)
+            ? context.params[jss::command].asString()
+            : context.params.isMember(jss::method) ? context.params[jss::method].asString()
+                                                   : "unknown";
+        auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
+        span.setAttribute(rpc_span::attr::command, cmdName.c_str());
+        span.setError(get_error_info(error).token.c_str());
+
         inject_error(error, result);
         return error;
     }

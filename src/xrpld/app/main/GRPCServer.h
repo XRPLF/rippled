@@ -13,6 +13,8 @@
 
 #include <grpcpp/grpcpp.h>
 
+#include <string_view>
+
 namespace xrpl {
 
 // Interface that CallData implements
@@ -185,6 +187,9 @@ private:
 
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
+        /// Human-readable name for telemetry spans (e.g. "GetLedger").
+        std::string_view name_;
+
     public:
         ~CallData() override = default;
 
@@ -200,7 +205,8 @@ private:
             Forward<Request, Response> forward,
             RPC::Condition requiredCondition,
             Resource::Charge loadType,
-            std::vector<boost::asio::ip::address> const& secureGatewayIPs);
+            std::vector<boost::asio::ip::address> const& secureGatewayIPs,
+            std::string_view name = "");
 
         CallData(CallData const&) = delete;
 

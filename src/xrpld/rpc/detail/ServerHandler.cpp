@@ -228,13 +228,17 @@ ServerHandler::onHandoff(
         if (!is_ws)
             return statusRequestResponse(request, http::status::unauthorized);
 
+        auto span =
+            SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsUpgrade);
         std::shared_ptr<WSSession> ws;
         try
         {
             ws = session.websocketUpgrade();
+            span.setOk();
         }
         catch (std::exception const& e)
         {
+            span.recordException(e);
             JLOG(m_journal.error()) << "Exception upgrading websocket: " << e.what() << "\n";
             return statusRequestResponse(request, http::status::internal_server_error);
         }
@@ -344,6 +348,10 @@ ServerHandler::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > RPC::Tuning::maxRequestSize || !Json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
+        auto span =
+            SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
+        span.setError("invalid_json");
+
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";

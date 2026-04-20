@@ -64,21 +64,48 @@
  *    |  +--------------------------------------------------+ |
  *    +-------------------------------------------------------+
  *
+ *  WebSocket error paths:
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.ws_message (error: invalid_json)                  |
+ *    | ServerHandler::onWSMessage() — parse failure           |
+ *    +-------------------------------------------------------+
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.ws_upgrade                                        |
+ *    | ServerHandler::onHandoff() — upgrade try/catch         |
+ *    +-------------------------------------------------------+
+ *
+ *  Command dispatch error path:
+ *
+ *    +-------------------------------------------------------+
+ *    | rpc.command.{name} (error: too_busy/unknown/etc)       |
+ *    | RPC::doCommand() — fillHandler() rejection             |
+ *    +-------------------------------------------------------+
+ *
+ *  gRPC path (see GrpcSpanNames.h for constants):
+ *
+ *    +-------------------------------------------------------+
+ *    | grpc.request                                          |
+ *    | CallData::process(coro)                               |
+ *    |   attrs: method, status                               |
+ *    +-------------------------------------------------------+
+ *
  *  Covered paths:
  *    - HTTP JSON-RPC (single and batch requests)
  *    - WebSocket RPC commands
+ *    - WebSocket message parse errors (invalid JSON, oversized)
+ *    - WebSocket upgrade failures (protocol handshake errors)
  *    - Admin CLI (connects via HTTP internally)
+ *    - Command dispatch rejections (unknown cmd, too busy, no perm)
+ *    - gRPC endpoints (GetLedger, GetLedgerData, GetLedgerDiff,
+ *      GetLedgerEntry)
  *    - Command execution: timing, success/failure, exceptions
  *    - Per-command attributes: name, API version, role, status
  *
  *  Known gaps (not yet instrumented):
- *    - gRPC endpoints (GRPCServer.cpp) — no spans at all
  *    - Early validation errors in processRequest() before rpc.process
  *      span (malformed JSON, auth failures, oversized requests)
- *    - fillHandler() rejections in doCommand() before rpc.command
- *      span (unknown command, too busy, permission denied)
- *    - WebSocket upgrade failures in onHandoff()
- *    - WebSocket message parse errors in onWSMessage()
  *    - Subscription push notifications (server-initiated, not RPC)
  */
 
@@ -101,6 +128,7 @@ inline constexpr auto command = join(seg::rpc, makeStr("command"));
 
 namespace op {
 inline constexpr auto wsMessage = makeStr("ws_message");
+inline constexpr auto wsUpgrade = makeStr("ws_upgrade");
 inline constexpr auto httpRequest = makeStr("http_request");
 inline constexpr auto process = makeStr("process");
 }  // namespace op
