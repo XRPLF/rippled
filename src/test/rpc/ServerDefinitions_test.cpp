@@ -455,7 +455,7 @@ public:
     }
 
     void
-    testGetServerDefinitions()
+    testGetServerDefinitionsJson()
     {
         testcase("getServerDefinitionsJson");
 
@@ -487,7 +487,7 @@ public:
     run() override
     {
         testServerDefinitions();
-        testGetServerDefinitions();
+        testGetServerDefinitionsJson();
     }
 };
 
