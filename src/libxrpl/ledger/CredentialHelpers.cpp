@@ -28,17 +28,16 @@ namespace ripple {
 namespace credentials {
 
 bool
-checkExpired(
-    std::shared_ptr<SLE const> const& sleCredential,
-    NetClock::time_point const& closed)
+checkExpired(SLE const& sleCredential, NetClock::time_point const& closed)
 {
-    std::uint32_t const exp = (*sleCredential)[~sfExpiration].value_or(
+    std::uint32_t const exp = sleCredential[~sfExpiration].value_or(
         std::numeric_limits<std::uint32_t>::max());
     std::uint32_t const now = closed.time_since_epoch().count();
     return now > exp;
 }
 
-bool
+[[nodiscard]]
+static Expected<bool, TER>
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
     auto const closeTime = view.info().parentCloseTime;
@@ -50,12 +49,14 @@ removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
         auto const k = keylet::credential(h);
         auto const sleCred = view.peek(k);
 
-        if (sleCred && checkExpired(sleCred, closeTime))
+        if (sleCred && checkExpired(*sleCred, closeTime))
         {
             JLOG(j.trace())
                 << "Credentials are expired. Cred: " << sleCred->getText();
             // delete expired credentials even if the transaction failed
-            deleteSLE(view, sleCred, j);
+            auto const err = deleteSLE(view, sleCred, j);
+            if (view.rules().enabled(fixSecurity3_1_3) && !isTesSuccess(err))
+                return Unexpected(err);
             foundExpired = true;
         }
     }
@@ -217,7 +218,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         // allows expired credentials to be deleted by any transaction.
         if (sleCredential)
         {
-            if (checkExpired(sleCredential, closeTime))
+            if (checkExpired(*sleCredential, closeTime))
             {
                 foundExpired = true;
                 continue;
@@ -343,7 +344,10 @@ verifyValidDomain(
             credentials.push_back(keyletCredential.key);
     }
 
-    bool const foundExpired = credentials::removeExpired(view, credentials, j);
+    auto const foundExpired = credentials::removeExpired(view, credentials, j);
+    if (!foundExpired.has_value())
+        return foundExpired.error();
+
     for (auto const& h : credentials)
     {
         auto sleCredential = view.read(keylet::credential(h));
@@ -354,7 +358,7 @@ verifyValidDomain(
             return tesSUCCESS;
     }
 
-    return foundExpired ? tecEXPIRED : tecNO_PERMISSION;
+    return *foundExpired ? tecEXPIRED : tecNO_PERMISSION;
 }
 
 TER
@@ -374,9 +378,15 @@ verifyDepositPreauth(
 
     bool const credentialsPresent = tx.isFieldPresent(sfCredentialIDs);
 
-    if (credentialsPresent &&
-        credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
-        return tecEXPIRED;
+    if (credentialsPresent)
+    {
+        auto const foundExpired = credentials::removeExpired(
+            view, tx.getFieldV256(sfCredentialIDs), j);
+        if (!foundExpired.has_value())
+            return foundExpired.error();
+        if (*foundExpired)
+            return tecEXPIRED;
+    }
 
     if (sleDst && (sleDst->getFlags() & lsfDepositAuth))
     {
