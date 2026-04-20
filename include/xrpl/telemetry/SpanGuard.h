@@ -44,21 +44,20 @@
 
     1. Basic RPC tracing (factory method with category):
     @code
-        // Define prefix at class level:
-        static constexpr std::string_view spanPrefix_ = "rpc.command";
+        #include <xrpld/rpc/detail/RpcSpanNames.h>
 
-        // At the call site:
+        // At the call site (constants from RpcSpanNames.h):
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, spanPrefix_, "submit");
-        span.setAttribute("xrpl.rpc.command", "submit");
-        span.setAttribute("xrpl.rpc.status", "success");
+            TraceCategory::Rpc, rpc_span::prefix::command, "submit");
+        span.setAttribute(rpc_span::attr::command, "submit");
+        span.setAttribute(rpc_span::attr::status, rpc_span::val::success);
         // span ended automatically on scope exit
     @endcode
 
     2. Error recording:
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, "rpc.command", "submit");
+            TraceCategory::Rpc, rpc_span::prefix::command, "submit");
         try {
             doWork();
             span.setOk();
@@ -71,7 +70,7 @@
     @code
         // Thread A: create span and capture context
         auto span = SpanGuard::span(
-            TraceCategory::Consensus, "consensus", "round");
+            TraceCategory::Consensus, seg::consensus, "round");
         auto ctx = span.captureContext();
 
         // Thread B: create child with captured context
@@ -81,17 +80,17 @@
     4. Conditional check (rarely needed — methods are no-ops on null):
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Rpc, "rpc", "request");
+            TraceCategory::Rpc, rpc_span::prefix::rpc, "request");
         if (span) {
             // expensive attribute computation only when active
-            span.setAttribute("xrpl.rpc.payload_size", computeSize());
+            span.setAttribute(rpc_span::attr::payloadSize, computeSize());
         }
     @endcode
 
     5. Tail-based filtering via discard():
     @code
         auto span = SpanGuard::span(
-            TraceCategory::Transactions, "tx", "process");
+            TraceCategory::Transactions, seg::tx, "process");
         auto result = preflight(tx);
         if (result != tesSUCCESS) {
             span.discard();  // drop span, never exported

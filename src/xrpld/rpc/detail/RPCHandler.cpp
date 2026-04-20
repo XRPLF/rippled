@@ -6,6 +6,7 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
@@ -162,10 +163,13 @@ template <class Object, class Method>
 Status
 callMethod(JsonContext& context, Method method, std::string const& name, Object& result)
 {
-    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc.command", name);
-    span.setAttribute("xrpl.rpc.command", name.c_str());
-    span.setAttribute("xrpl.rpc.version", static_cast<int64_t>(context.apiVersion));
-    span.setAttribute("xrpl.rpc.role", (context.role == Role::ADMIN ? "admin" : "user"));
+    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, name);
+    span.setAttribute(rpc_span::attr::command, name.c_str());
+    span.setAttribute(rpc_span::attr::version, static_cast<int64_t>(context.apiVersion));
+    span.setAttribute(
+        rpc_span::attr::role,
+        context.role == Role::ADMIN ? std::string_view(rpc_span::val::admin)
+                                    : std::string_view(rpc_span::val::user));
 
     static std::atomic<std::uint64_t> requestId{0};
     auto& perfLog = context.app.getPerfLog();
@@ -182,7 +186,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         JLOG(context.j.debug()) << "RPC call " << name << " completed in "
                                 << ((end - start).count() / 1000000000.0) << "seconds";
         perfLog.rpcFinish(name, curId);
-        span.setAttribute("xrpl.rpc.status", "success");
+        span.setAttribute(rpc_span::attr::status, rpc_span::val::success);
         return ret;
     }
     catch (std::exception& e)
@@ -190,7 +194,7 @@ callMethod(JsonContext& context, Method method, std::string const& name, Object&
         perfLog.rpcError(name, curId);
         JLOG(context.j.info()) << "Caught throw: " << e.what();
         span.recordException(e);
-        span.setAttribute("xrpl.rpc.status", "error");
+        span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
 
         if (context.loadType == Resource::feeReferenceRPC)
             context.loadType = Resource::feeExceptionRPC;

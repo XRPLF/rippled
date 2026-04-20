@@ -5,6 +5,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
 #include <xrpld/rpc/json_body.h>
@@ -419,7 +420,7 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     Json::Value const& jv)
 {
-    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "ws_message");
+    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(m_journal))
     {
@@ -504,7 +505,7 @@ ServerHandler::processSession(
         JLOG(m_journal.error()) << "Exception while processing WS: " << ex.what() << "\n"
                                 << "Input JSON: " << Json::Compact{Json::Value{jv}};
         span.recordException(ex);
-        span.setAttribute("xrpl.rpc.status", "error");
+        span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
         // LCOV_EXCL_STOP
     }
 
@@ -564,7 +565,8 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
-    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "http_request");
+    auto span =
+        SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
 
     processRequest(
         session->port(),
@@ -616,7 +618,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    auto span = SpanGuard::span(TraceCategory::Rpc, "rpc", "process");
+    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
     auto rpcJ = app_.getJournal("RPC");
 
     Json::Value jsonOrig;
@@ -894,7 +896,7 @@ ServerHandler::processRequest(
                 << "Internal error : " << ex.what()
                 << " when processing request: " << Json::Compact{Json::Value{params}};
             span.recordException(ex);
-            span.setAttribute("xrpl.rpc.status", "error");
+            span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
             // LCOV_EXCL_STOP
         }
 

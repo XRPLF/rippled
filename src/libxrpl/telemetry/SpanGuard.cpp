@@ -20,9 +20,9 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpl/telemetry/SpanGuard.h>
-
 #include <xrpl/telemetry/DiscardFlag.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/context/runtime_context.h>
@@ -188,7 +188,10 @@ SpanGuard::linkedSpan(std::string_view name) const
 
     return SpanGuard(
         std::make_unique<Impl>(tracer->StartSpan(
-            std::string(name), {}, {{spanCtx, {{"xrpl.link.type", "follows_from"}}}}, opts)));
+            std::string(name),
+            {},
+            {{spanCtx, {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
+            opts)));
 }
 
 SpanGuard
@@ -218,7 +221,8 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
         std::make_unique<Impl>(tracer->StartSpan(
             std::string(name),
             {},
-            {{linkSpan->GetContext(), {{"xrpl.link.type", "follows_from"}}}},
+            {{linkSpan->GetContext(),
+              {{std::string(attr::linkType), std::string(attr_val::followsFrom)}}}},
             opts)));
 }
 

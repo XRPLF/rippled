@@ -17,6 +17,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/telemetry/DiscardFlag.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
@@ -279,8 +280,8 @@ public:
             {resource::SemanticConventions::kServiceName, setup_.serviceName},
             {resource::SemanticConventions::kServiceVersion, setup_.serviceVersion},
             {resource::SemanticConventions::kServiceInstanceId, setup_.serviceInstanceId},
-            {"xrpl.network.id", static_cast<int64_t>(setup_.networkId)},
-            {"xrpl.network.type", setup_.networkType},
+            {std::string(attr::networkId), static_cast<int64_t>(setup_.networkId)},
+            {std::string(attr::networkType), setup_.networkType},
         });
 
         // Configure sampler
