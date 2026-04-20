@@ -395,6 +395,9 @@ MPTEndpointPaymentStep::check(StrandContext const& ctx, std::shared_ptr<const SL
 TER
 MPTEndpointOfferCrossingStep::check(StrandContext const& ctx, std::shared_ptr<const SLE> const&)
 {
+    // The standard checks are all we can do because any remaining checks
+    // require the existence of a MPToken.  Offer crossing does not
+    // require a pre-existing MPToken.
     return tesSUCCESS;
 }
 
