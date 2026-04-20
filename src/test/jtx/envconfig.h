@@ -107,6 +107,52 @@ std::unique_ptr<Config> addGrpcConfig(std::unique_ptr<Config>);
 std::unique_ptr<Config>
 addGrpcConfigWithSecureGateway(std::unique_ptr<Config>, std::string const& secureGateway);
 
+/// @brief add a grpc address, port and TLS certificate/key paths to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server with TLS enabled.
+///
+/// @param cfg config instance to be modified
+/// @param certPath path to SSL certificate file
+/// @param keyPath path to SSL private key file
+std::unique_ptr<Config>
+addGrpcConfigWithTLS(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath);
+
+/// @brief add a grpc address, port and TLS certificate/key/client CA paths to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server with mutual TLS (client certificate verification) enabled.
+///
+/// @param cfg config instance to be modified
+/// @param certPath path to SSL certificate file
+/// @param keyPath path to SSL private key file
+/// @param clientCAPath path to SSL client CA certificate file for mTLS
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndClientCA(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& clientCAPath);
+
+/// @brief add a grpc address, port and TLS with server cert chain to config
+///
+/// This is intended for use with envconfig, for tests that require a grpc
+/// server with TLS enabled and intermediate CA certificates.
+///
+/// @param cfg config instance to be modified
+/// @param certPath path to SSL certificate file
+/// @param keyPath path to SSL private key file
+/// @param certChainPath path to SSL intermediate CA certificate(s) file
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndCertChain(
+    std::unique_ptr<Config>,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& certChainPath);
+
 std::unique_ptr<Config>
 makeConfig(
     std::map<std::string, std::string> extraTxQ = {},
