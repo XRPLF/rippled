@@ -1,5 +1,10 @@
 #include <test/jtx/memo.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/basics/strHex.h>
+
 namespace xrpl {
 namespace test {
 namespace jtx {

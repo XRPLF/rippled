@@ -7,9 +7,18 @@
 #include <xrpl/beast/container/aged_unordered_multimap.h>
 #include <xrpl/beast/container/aged_unordered_multiset.h>
 #include <xrpl/beast/container/aged_unordered_set.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/container/detail/aged_ordered_container.h>
+#include <xrpl/beast/container/detail/aged_unordered_container.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-#include <list>
+#include <chrono>
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 #ifndef BEAST_AGED_UNORDERED_NO_ALLOC_DEFAULTCTOR
