@@ -304,7 +304,8 @@ find_paths(
                 Json::Value p;
                 p["Paths"] = path[jss::paths_computed];
                 STParsedJSONObject po("generic", p);
-                paths = po.object->getFieldPathSet(sfPaths);
+                if (po.object)
+                    paths = po.object->getFieldPathSet(sfPaths);
             }
         }
     }
@@ -324,7 +325,15 @@ find_paths_by_element(
     std::optional<uint256> const& domain)
 {
     return find_paths(
-        env, src, dst, saDstAmount, saSendMax, srcElement->getPathAsset(), srcIssuer, domain);
+        env,
+        src,
+        dst,
+        saDstAmount,
+        saSendMax,
+        srcElement->getPathAsset(),  // NOLINT(bugprone-unchecked-optional-access) callers always
+                                     // pass non-null srcElement
+        srcIssuer,
+        domain);
 }
 
 /******************************************************************************/

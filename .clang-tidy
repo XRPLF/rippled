@@ -66,7 +66,7 @@ Checks: "-*,
   bugprone-terminating-continue,
   bugprone-throw-keyword-missing,
   bugprone-too-small-loop-variable,
-  # bugprone-unchecked-optional-access, # see https://github.com/XRPLF/rippled/pull/6502
+  bugprone-unchecked-optional-access,
   bugprone-undefined-memory-manipulation,
   bugprone-undelegated-constructor,
   bugprone-unhandled-exception-at-new,

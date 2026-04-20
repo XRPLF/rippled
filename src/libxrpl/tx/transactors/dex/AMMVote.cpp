@@ -172,6 +172,8 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
             // Add the entry if the account has more tokens than
             // the least token holder or same tokens and higher fee.
         }
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) slots full means loop ran, minTokens is
+        // set
         else if (lpTokensNew > *minTokens || (lpTokensNew == *minTokens && feeNew > minFee))
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
@@ -180,6 +182,7 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
             den -= *minTokens;
             update(minPos);
         }
+        // NOLINTEND(bugprone-unchecked-optional-access)
         // All slots are full and the account does not hold more LPTokens.
         // Update anyway to refresh the slots.
         else

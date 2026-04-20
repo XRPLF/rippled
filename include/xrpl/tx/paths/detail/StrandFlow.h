@@ -234,8 +234,11 @@ flow(
             }
         }
 
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) cachedIn/Out set after strand is stepped
+        // above
         auto const strandIn = *strand.front()->cachedIn();
         auto const strandOut = *strand.back()->cachedOut();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
 #ifndef NDEBUG
         {

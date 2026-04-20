@@ -814,27 +814,29 @@ public:
     OpenLedger&
     getOpenLedger() override
     {
-        return *openLedger_;
+        return *openLedger_;  // NOLINT(bugprone-unchecked-optional-access) emplaced during
+                              // initialization before any caller
     }
 
     OpenLedger const&
     getOpenLedger() const override
     {
-        return *openLedger_;
+        return *openLedger_;  // NOLINT(bugprone-unchecked-optional-access) emplaced during
+                              // initialization before any caller
     }
 
     Overlay&
     getOverlay() override
     {
         XRPL_ASSERT(overlay_, "xrpl::ApplicationImp::overlay : non-null overlay");
-        return *overlay_;
+        return *overlay_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     TxQ&
     getTxQ() override
     {
         XRPL_ASSERT(txQ_, "xrpl::ApplicationImp::getTxQ : non-null transaction queue");
-        return *txQ_;
+        return *txQ_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     RelationalDatabase&
@@ -843,7 +845,7 @@ public:
         XRPL_ASSERT(
             relationalDatabase_,
             "xrpl::ApplicationImp::getRelationalDatabase : non-null relational database");
-        return *relationalDatabase_;
+        return *relationalDatabase_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     DatabaseCon&
@@ -993,6 +995,7 @@ public:
     {
         XRPL_ASSERT(
             relationalDatabase_, "xrpl::ApplicationImp::doSweep : non-null relational database");
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
         if (!config_->standalone() && !relationalDatabase_->transactionDbHasSpace(*config_))
         {
             signalStop("Out of transaction DB space");
@@ -2079,6 +2082,8 @@ ApplicationImp::loadOldLedger(
 
                 forceValidity(getHashRouter(), txID, Validity::SigGoodOnly);
 
+                // emplaced during initialization before any caller
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 openLedger_->modify([&txID, &s](OpenView& view, beast::Journal j) {
                     view.rawTxInsert(txID, std::move(s), nullptr);
                     return true;
