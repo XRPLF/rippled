@@ -398,6 +398,8 @@ public:
 
     class chronological_t
     {
+        chronological_t() = default;
+
     public:
         // A set iterator (IsMap==false) is always const
         // because the elements of a set are immutable.
@@ -499,8 +501,6 @@ public:
                 reinterpret_cast<uint8_t const*>(&value) -
                 ((std::size_t)std::addressof(((element*)0)->member))));
         }
-
-        chronological_t() = default;
 
         chronological_t(chronological_t const&) = delete;
         chronological_t(chronological_t&&) = delete;

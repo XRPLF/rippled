@@ -196,7 +196,7 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     , handler_(handler)
     , work_(boost::asio::make_work_guard(executor))
     , strand_(boost::asio::make_strand(executor))
-    , remote_address_(std::move(std::move(remote_address)))
+    , remote_address_(std::move(remote_address))
     , journal_(journal)
 {
     read_buf_.commit(

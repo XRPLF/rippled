@@ -83,8 +83,7 @@ public:
     {
         char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
-        stack_.emplace();
-        stack_.top().type = ct;
+        stack_.emplace(Collection{.type = ct});
     }
 
     void
@@ -198,8 +197,6 @@ private:
     // JSON collections are either arrays, or objects.
     struct Collection
     {
-        explicit Collection() = default;
-
         /** What type of collection are we in? */
         Writer::CollectionType type = Writer::CollectionType::array;
 

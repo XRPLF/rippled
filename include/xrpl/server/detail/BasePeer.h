@@ -65,7 +65,7 @@ BasePeer<Handler, Impl>::BasePeer(
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
-    , remote_address_(std::move(std::move(remote_address)))
+    , remote_address_(std::move(remote_address))
     , sink_(
           journal.sink(),
           [] {
