@@ -62,7 +62,7 @@ class STObject : public STBase, public CountedObject<STObject>
 public:
     using iterator = boost::transform_iterator<Transform, STObject::list_type::const_iterator>;
 
-    virtual ~STObject() = default;
+    ~STObject() override = default;
     STObject(STObject const&) = default;
 
     template <typename F>
@@ -436,8 +436,7 @@ private:
     // by value.
     template <
         typename T,
-        typename V = typename std::remove_cv<
-            typename std::remove_reference<decltype(std::declval<T>().value())>::type>::type>
+        typename V = std::remove_cv_t<std::remove_reference_t<decltype(std::declval<T>().value())>>>
     V
     getFieldByValue(SField const& field) const;
 
@@ -579,7 +578,7 @@ class STObject::OptionalProxy : public Proxy<T>
 private:
     using value_type = typename T::value_type;
 
-    using optional_type = std::optional<typename std::decay<value_type>::type>;
+    using optional_type = std::optional<std::decay_t<value_type>>;
 
 public:
     OptionalProxy(OptionalProxy const&) = default;
@@ -1228,7 +1227,7 @@ template <typename T, typename V>
 void
 STObject::setFieldUsingSetValue(SField const& field, V value)
 {
-    static_assert(!std::is_lvalue_reference<V>::value, "");
+    static_assert(!std::is_lvalue_reference_v<V>, "");
 
     STBase* rf = getPField(field, true);
 

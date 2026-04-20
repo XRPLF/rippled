@@ -521,10 +521,9 @@ class Feature_test : public beast::unit_test::suite
         Env env{*this};
 
         auto const& supportedAmendments = xrpl::detail::supportedAmendments();
-        auto obsoleteFeature = std::find_if(
-            std::begin(supportedAmendments), std::end(supportedAmendments), [](auto const& pair) {
-                return pair.second == VoteBehavior::Obsolete;
-            });
+        auto obsoleteFeature = std::ranges::find_if(supportedAmendments, [](auto const& pair) {
+            return pair.second == VoteBehavior::Obsolete;
+        });
 
         if (obsoleteFeature == std::end(supportedAmendments))
         {

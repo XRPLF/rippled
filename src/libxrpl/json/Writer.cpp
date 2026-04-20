@@ -63,7 +63,7 @@ lengthWithoutTrailingZeros(std::string const& s)
 class Writer::Impl
 {
 public:
-    explicit Impl(Output const& output) : output_(output)
+    explicit Impl(Output output) : output_(std::move(output))
     {
     }
     ~Impl() = default;
@@ -83,7 +83,7 @@ public:
     {
         char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
-        stack_.push(Collection());
+        stack_.emplace();
         stack_.top().type = ct;
     }
 

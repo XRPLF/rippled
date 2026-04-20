@@ -347,9 +347,7 @@ public:
     SlabAllocatorSet&
     operator=(SlabAllocatorSet&& other) = delete;
 
-    ~SlabAllocatorSet()
-    {
-    }
+    ~SlabAllocatorSet() = default;
 
     /** Returns a suitably aligned pointer, if one is available.
 

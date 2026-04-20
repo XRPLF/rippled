@@ -81,7 +81,7 @@ public:
     SHAMapInnerNode(SHAMapInnerNode const&) = delete;
     SHAMapInnerNode&
     operator=(SHAMapInnerNode const&) = delete;
-    ~SHAMapInnerNode();
+    ~SHAMapInnerNode() override;
 
     // Needed to support intrusive weak pointers
     void

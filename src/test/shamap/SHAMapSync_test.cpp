@@ -24,8 +24,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 class SHAMapSync_test : public beast::unit_test::suite
 {
@@ -175,5 +174,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

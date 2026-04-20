@@ -42,8 +42,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class WSClientImpl : public WSClient
 {
@@ -335,5 +334,4 @@ makeWSClient(
     return std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

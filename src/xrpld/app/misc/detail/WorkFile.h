@@ -10,9 +10,9 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
-namespace xrpl {
+#include <utility>
 
-namespace detail {
+namespace xrpl::detail {
 
 // Work with files
 class WorkFile : public Work, public std::enable_shared_from_this<WorkFile>
@@ -26,8 +26,8 @@ public:
     using callback_type = std::function<void(error_code const&, response_type const&)>;
 
 public:
-    WorkFile(std::string const& path, boost::asio::io_context& ios, callback_type cb);
-    ~WorkFile();
+    WorkFile(std::string path, boost::asio::io_context& ios, callback_type cb);
+    ~WorkFile() override;
 
     void
     run() override;
@@ -44,8 +44,8 @@ private:
 
 //------------------------------------------------------------------------------
 
-inline WorkFile::WorkFile(std::string const& path, boost::asio::io_context& ios, callback_type cb)
-    : path_(path), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
+inline WorkFile::WorkFile(std::string path, boost::asio::io_context& ios, callback_type cb)
+    : path_(std::move(path)), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
 {
 }
 
@@ -80,6 +80,4 @@ WorkFile::cancel()
     // Nothing to do. Either it finished in run, or it didn't start.
 }
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

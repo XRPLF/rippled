@@ -62,7 +62,7 @@ protected:
     /** @} */
 
 public:
-    virtual ~SHAMapTreeNode() noexcept = default;
+    ~SHAMapTreeNode() noexcept override = default;
 
     // Needed to support weak intrusive pointers
     virtual void

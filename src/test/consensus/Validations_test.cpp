@@ -19,9 +19,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 class Validations_test : public beast::unit_test::suite
 {
     using clock_type = beast::abstract_clock<std::chrono::steady_clock> const;
@@ -1057,6 +1055,4 @@ class Validations_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(Validations, consensus, xrpl);
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

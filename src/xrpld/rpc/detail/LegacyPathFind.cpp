@@ -9,8 +9,7 @@
 
 #include <atomic>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
 {
@@ -48,5 +47,4 @@ LegacyPathFind::~LegacyPathFind()
 
 std::atomic<int> LegacyPathFind::inProgress(0);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

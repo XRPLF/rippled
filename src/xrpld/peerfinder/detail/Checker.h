@@ -10,8 +10,7 @@
 #include <memory>
 #include <mutex>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Tests remote listening sockets to make sure they are connectable. */
 template <class Protocol = boost::asio::ip::tcp>
@@ -44,7 +43,7 @@ private:
 
         async_op(Checker& owner, boost::asio::io_context& io_context, Handler&& handler);
 
-        virtual ~async_op();
+        ~async_op() override;
 
         void
         stop() override;
@@ -198,5 +197,4 @@ Checker<Protocol>::remove(basic_async_op& op)
         cond_.notify_all();
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

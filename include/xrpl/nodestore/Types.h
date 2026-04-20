@@ -4,8 +4,7 @@
 
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 enum {
     // This is only used to pre-allocate the array for
@@ -34,6 +33,4 @@ enum Status {
 /** A batch of NodeObjects to write at once. */
 using Batch = std::vector<std::shared_ptr<NodeObject>>;
 
-}  // namespace NodeStore
-
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

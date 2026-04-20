@@ -25,9 +25,7 @@
 #include <ostream>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 signers(Account const& account, std::uint32_t quorum, std::vector<signer> const& v)
@@ -111,6 +109,4 @@ msig::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

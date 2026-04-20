@@ -24,9 +24,7 @@
 #include <cstdint>
 #include <limits>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class TrustSet_test : public beast::unit_test::suite
 {
@@ -621,5 +619,4 @@ public:
     }
 };
 BEAST_DEFINE_TESTSUITE(TrustSet, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

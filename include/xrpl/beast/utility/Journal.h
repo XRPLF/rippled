@@ -394,7 +394,7 @@ public:
     {
     }
 
-    ~logstream_buf()
+    ~logstream_buf() override
     {
         sync();
     }
@@ -413,11 +413,11 @@ public:
 template <class CharT, class Traits = std::char_traits<CharT>>
 class basic_logstream : public std::basic_ostream<CharT, Traits>
 {
-    typedef CharT char_type;
-    typedef Traits traits_type;
-    typedef typename traits_type::int_type int_type;
-    typedef typename traits_type::pos_type pos_type;
-    typedef typename traits_type::off_type off_type;
+    using char_type = CharT;
+    using traits_type = Traits;
+    using int_type = typename traits_type::int_type;
+    using pos_type = typename traits_type::pos_type;
+    using off_type = typename traits_type::off_type;
 
     detail::logstream_buf<CharT, Traits> buf_;
 

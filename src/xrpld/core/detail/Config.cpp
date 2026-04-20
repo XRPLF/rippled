@@ -93,8 +93,7 @@ getMemorySize()
 #if BOOST_OS_MACOS
 #include <sys/sysctl.h>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 [[nodiscard]] std::uint64_t
 getMemorySize()
@@ -109,8 +108,8 @@ getMemorySize()
     return 0;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail
+
 #endif
 
 namespace xrpl {
@@ -289,10 +288,9 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
         // First, check against 'minimum' RAM requirements per node size:
         auto const& threshold = sizedItems[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
 
-        auto ns = std::find_if(
-            threshold.second.begin(), threshold.second.end(), [this](std::size_t limit) {
-                return (limit == 0) || (ramSize_ < limit);
-            });
+        auto ns = std::ranges::find_if(threshold.second, [this](std::size_t limit) {
+            return (limit == 0) || (ramSize_ < limit);
+        });
 
         XRPL_ASSERT(ns != threshold.second.end(), "xrpl::Config::setupControl : valid node size");
 
