@@ -1,11 +1,17 @@
 #include <xrpl/basics/Expected.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/TER.h>
 
+#include <boost/json/value.hpp>
+#include <boost/version.hpp>
+
+#include <cstddef>
+#include <stdexcept>
+#include <string>
+#include <utility>
+
 #if BOOST_VERSION >= 107500
-#include <boost/json.hpp>  // Not part of boost before version 1.75
-#endif                     // BOOST_VERSION
-#include <array>
+#endif  // BOOST_VERSION
 #include <cstdint>
 
 namespace xrpl {

@@ -1,10 +1,13 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
+
+#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/server/LoadFeeTrack.h>
+
+#include <atomic>
 
 namespace xrpl {
 namespace RPC {

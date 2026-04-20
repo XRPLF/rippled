@@ -93,7 +93,7 @@ private:
         port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0};
     bool plain_{
         port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
-        port_.protocol.count("ws2")};
+        (port_.protocol.count("ws2") != 0u)};
     static constexpr std::chrono::milliseconds INITIAL_ACCEPT_DELAY{50};
     static constexpr std::chrono::milliseconds MAX_ACCEPT_DELAY{2000};
     std::chrono::milliseconds accept_delay_{INITIAL_ACCEPT_DELAY};
@@ -297,8 +297,10 @@ void
 Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
+    {
         return boost::asio::post(
             strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
+    }
     backoff_timer_.cancel();
     error_code ec;
     acceptor_.close(ec);
@@ -432,11 +434,7 @@ Door<Handler>::should_throttle_for_fds()
     auto const& s = *stats;
     auto const free = (s.limit > s.used) ? (s.limit - s.used) : 0ull;
     double const free_ratio = static_cast<double>(free) / static_cast<double>(s.limit);
-    if (free_ratio < FREE_FD_THRESHOLD)
-    {
-        return true;
-    }
-    return false;
+    return free_ratio < FREE_FD_THRESHOLD;
 #endif
 }
 

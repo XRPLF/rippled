@@ -223,8 +223,10 @@ io_list::close(Finisher&& f)
         f_ = std::forward<Finisher>(f);
         lock.unlock();
         for (auto const& p : map)
+        {
             if (auto sp = p.second.lock())
                 sp->close();
+        }
     }
     else
     {

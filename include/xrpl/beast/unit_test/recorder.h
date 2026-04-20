@@ -50,7 +50,7 @@ private:
     virtual void
     on_case_end() override
     {
-        if (m_case.tests.size() > 0)
+        if (!m_case.tests.empty())
             m_suite.insert(std::move(m_case));
     }
 

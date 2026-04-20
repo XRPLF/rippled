@@ -22,11 +22,11 @@ enum {
 
 /** Return codes from Backend operations. */
 enum Status {
-    ok,
-    notFound,
-    dataCorrupt,
-    unknown,
-    backendError,
+    ok = 0,
+    notFound = 1,
+    dataCorrupt = 2,
+    unknown = 3,
+    backendError = 4,
 
     customCode = 100
 };
