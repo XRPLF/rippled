@@ -175,11 +175,15 @@ class Invariants_test : public beast::unit_test::suite
         for (TER const& terExpect : ters)
         {
             terActual = ac.checkInvariants(terActual, fee);
-            BEAST_EXPECT(terExpect == terActual);
+            BEAST_EXPECTS(
+                terExpect == terActual, std::to_string(TERtoInt(terActual)));
             auto const messages = sink.messages().str();
-            BEAST_EXPECT(
-                messages.starts_with("Invariant failed:") ||
-                messages.starts_with("Transaction caused an exception"));
+            if (!isTesSuccess(terActual))
+            {
+                BEAST_EXPECT(
+                    messages.starts_with("Invariant failed:") ||
+                    messages.starts_with("Transaction caused an exception"));
+            }
             // std::cerr << messages << '\n';
             for (auto const& m : expect_logs)
             {
