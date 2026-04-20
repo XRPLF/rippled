@@ -32,9 +32,13 @@ type_name()
     if (std::is_volatile<TR>::value)
         name += " volatile";
     if (std::is_lvalue_reference<T>::value)
+    {
         name += "&";
+    }
     else if (std::is_rvalue_reference<T>::value)
+    {
         name += "&&";
+    }
 
     return name;
 }

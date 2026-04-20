@@ -1,10 +1,20 @@
 #include <xrpld/peerfinder/detail/Bootcache.h>
+
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/detail/Store.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 #include <xrpld/peerfinder/detail/iosformat.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <cstdlib>
+#include <vector>
 
 namespace xrpl {
 namespace PeerFinder {
@@ -134,7 +144,7 @@ Bootcache::on_success(beast::IP::Endpoint const& endpoint)
         ++entry.valence();
         m_map.erase(result.first);
         result = m_map.insert(value_type(endpoint, entry));
-        XRPL_ASSERT(result.second, "ripple:PeerFinder::Bootcache::on_success : endpoint inserted");
+        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::on_success : endpoint inserted");
     }
     Entry const& entry(result.first->right);
     JLOG(m_journal.info()) << beast::leftw(18) << "Bootcache connect " << endpoint << " with "
@@ -158,7 +168,7 @@ Bootcache::on_failure(beast::IP::Endpoint const& endpoint)
         --entry.valence();
         m_map.erase(result.first);
         result = m_map.insert(value_type(endpoint, entry));
-        XRPL_ASSERT(result.second, "ripple:PeerFinder::Bootcache::on_failure : endpoint inserted");
+        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::on_failure : endpoint inserted");
     }
     Entry const& entry(result.first->right);
     auto const n(std::abs(entry.valence()));

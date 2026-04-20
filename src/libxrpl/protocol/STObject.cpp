@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STObject.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -22,7 +24,6 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
@@ -747,6 +748,12 @@ void
 STObject::setFieldH128(SField const& field, uint128 const& v)
 {
     setFieldUsingSetValue<STUInt128>(field, v);
+}
+
+void
+STObject::setFieldH192(SField const& field, uint192 const& v)
+{
+    setFieldUsingSetValue<STUInt192>(field, v);
 }
 
 void

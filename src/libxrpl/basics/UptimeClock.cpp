@@ -9,14 +9,14 @@ namespace xrpl {
 std::atomic<UptimeClock::rep> UptimeClock::now_{0};  // seconds since start
 std::atomic<bool> UptimeClock::stop_{false};         // stop update thread
 
-// On rippled shutdown, cancel and wait for the update thread
+// On xrpld shutdown, cancel and wait for the update thread
 UptimeClock::update_thread::~update_thread()
 {
     if (joinable())
     {
         stop_ = true;
         // This join() may take up to a 1s, but happens only
-        // once at rippled shutdown.
+        // once at xrpld shutdown.
         join();
     }
 }
@@ -40,7 +40,7 @@ UptimeClock::start_clock()
     }};
 }
 
-// This actually measures time since first use, instead of since rippled start.
+// This actually measures time since first use, instead of since xrpld start.
 // However the difference between these two epochs is a small fraction of a
 // second and unimportant.
 
@@ -50,7 +50,7 @@ UptimeClock::now()
     // start the update thread on first use
     static auto const init = start_clock();
 
-    // Return the number of seconds since rippled start
+    // Return the number of seconds since xrpld start
     return time_point{duration{now_}};
 }
 

@@ -1,11 +1,12 @@
+#include <xrpl/json/Writer.h>
+
 #include <xrpl/basics/ToString.h>
 #include <xrpl/json/Output.h>
-#include <xrpl/json/Writer.h>
 
 #include <cstddef>
 #include <map>
 #include <memory>
-#include <set>
+#include <set>  // IWYU pragma: keep
 #include <stack>
 #include <string>
 #include <utility>

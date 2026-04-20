@@ -1,7 +1,11 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/envconfig.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/asio/ip/address.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <string>
 #include <unordered_map>
@@ -43,6 +47,7 @@ class Roles_test : public beast::unit_test::suite
             Env env{*this, envconfig(secure_gateway)};
 
             BEAST_EXPECT(env.rpc("ping")["result"]["role"] == "proxied");
+            BEAST_EXPECT(!env.rpc("ping")["result"].isMember("ip"));
             auto wsRes = makeWSClient(env.app().config())->invoke("ping")["result"];
             BEAST_EXPECT(!wsRes.isMember("unlimited") || !wsRes["unlimited"].asBool());
 

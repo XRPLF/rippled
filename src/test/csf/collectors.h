@@ -134,7 +134,9 @@ struct SimDurationCollector
             init = true;
         }
         else
+        {
             stop = when;
+        }
     }
 };
 

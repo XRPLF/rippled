@@ -155,7 +155,7 @@ ServerImpl<Handler>::ports(std::vector<Port> const& ports)
             list_.push_back(sp);
 
             auto ep = sp->get_endpoint();
-            if (!internalPort.port)
+            if (internalPort.port == 0u)
                 internalPort.port = ep.port();
             eps.emplace(port.name, std::move(ep));
 

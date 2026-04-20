@@ -13,13 +13,13 @@ enum Severity {
     kAll = 0,
 
     kTrace = kAll,
-    kDebug,
-    kInfo,
-    kWarning,
-    kError,
-    kFatal,
+    kDebug = 1,
+    kInfo = 2,
+    kWarning = 3,
+    kError = 4,
+    kFatal = 5,
 
-    kDisabled,
+    kDisabled = 6,
     kNone = kDisabled
 };
 }  // namespace severities
@@ -109,12 +109,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(std::is_default_constructible<Sink>::value == false, "");
-    static_assert(std::is_copy_constructible<Sink>::value == false, "");
-    static_assert(std::is_move_constructible<Sink>::value == false, "");
-    static_assert(std::is_copy_assignable<Sink>::value == false, "");
-    static_assert(std::is_move_assignable<Sink>::value == false, "");
-    static_assert(std::is_nothrow_destructible<Sink>::value == true, "");
+    static_assert(!std::is_default_constructible_v<Sink>, "");
+    static_assert(!std::is_copy_constructible_v<Sink>, "");
+    static_assert(!std::is_move_constructible_v<Sink>, "");
+    static_assert(!std::is_copy_assignable_v<Sink>, "");
+    static_assert(!std::is_move_assignable_v<Sink>, "");
+    static_assert(std::is_nothrow_destructible_v<Sink>, "");
 #endif
 
     /** Returns a Sink which does nothing. */
@@ -165,12 +165,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(std::is_default_constructible<ScopedStream>::value == false, "");
-    static_assert(std::is_copy_constructible<ScopedStream>::value == true, "");
-    static_assert(std::is_move_constructible<ScopedStream>::value == true, "");
-    static_assert(std::is_copy_assignable<ScopedStream>::value == false, "");
-    static_assert(std::is_move_assignable<ScopedStream>::value == false, "");
-    static_assert(std::is_nothrow_destructible<ScopedStream>::value == true, "");
+    static_assert(!std::is_default_constructible_v<ScopedStream>, "");
+    static_assert(std::is_copy_constructible_v<ScopedStream>, "");
+    static_assert(std::is_move_constructible_v<ScopedStream>, "");
+    static_assert(!std::is_copy_assignable_v<ScopedStream>, "");
+    static_assert(!std::is_move_assignable_v<ScopedStream>, "");
+    static_assert(std::is_nothrow_destructible_v<ScopedStream>, "");
 #endif
 
     //--------------------------------------------------------------------------
@@ -247,12 +247,12 @@ public:
     };
 
 #ifndef __INTELLISENSE__
-    static_assert(std::is_default_constructible<Stream>::value == true, "");
-    static_assert(std::is_copy_constructible<Stream>::value == true, "");
-    static_assert(std::is_move_constructible<Stream>::value == true, "");
-    static_assert(std::is_copy_assignable<Stream>::value == false, "");
-    static_assert(std::is_move_assignable<Stream>::value == false, "");
-    static_assert(std::is_nothrow_destructible<Stream>::value == true, "");
+    static_assert(std::is_default_constructible_v<Stream>, "");
+    static_assert(std::is_copy_constructible_v<Stream>, "");
+    static_assert(std::is_move_constructible_v<Stream>, "");
+    static_assert(!std::is_copy_assignable_v<Stream>, "");
+    static_assert(!std::is_move_assignable_v<Stream>, "");
+    static_assert(std::is_nothrow_destructible_v<Stream>, "");
 #endif
 
     //--------------------------------------------------------------------------
@@ -330,12 +330,12 @@ public:
 };
 
 #ifndef __INTELLISENSE__
-static_assert(std::is_default_constructible<Journal>::value == false, "");
-static_assert(std::is_copy_constructible<Journal>::value == true, "");
-static_assert(std::is_move_constructible<Journal>::value == true, "");
-static_assert(std::is_copy_assignable<Journal>::value == true, "");
-static_assert(std::is_move_assignable<Journal>::value == true, "");
-static_assert(std::is_nothrow_destructible<Journal>::value == true, "");
+static_assert(!std::is_default_constructible_v<Journal>, "");
+static_assert(std::is_copy_constructible_v<Journal>, "");
+static_assert(std::is_move_constructible_v<Journal>, "");
+static_assert(std::is_copy_assignable_v<Journal>, "");
+static_assert(std::is_move_assignable_v<Journal>, "");
+static_assert(std::is_nothrow_destructible_v<Journal>, "");
 #endif
 
 //------------------------------------------------------------------------------
