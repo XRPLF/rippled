@@ -14,8 +14,6 @@
 #include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
 
-#include "xrpl/protocol/SystemParameters.h"
-
 #include <array>
 #include <cstddef>
 #include <cstdint>

@@ -54,8 +54,7 @@
 #if BOOST_OS_WINDOWS
 #include <sysinfoapi.h>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 [[nodiscard]] std::uint64_t
 getMemorySize()
@@ -66,15 +65,14 @@ getMemorySize()
     return 0;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail
+
 #endif
 
 #if BOOST_OS_LINUX
 #include <sys/sysinfo.h>  // IWYU pragma: keep
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 [[nodiscard]] std::uint64_t
 getMemorySize()
@@ -85,8 +83,7 @@ getMemorySize()
     return 0;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail
 
 #endif
 
