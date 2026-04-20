@@ -11,10 +11,9 @@ TEST(TelemetryConfig, setup_defaults)
 {
     telemetry::Telemetry::Setup s;
     EXPECT_FALSE(s.enabled);
-    EXPECT_EQ(s.serviceName, "rippled");
+    EXPECT_EQ(s.serviceName, "xrpld");
     EXPECT_TRUE(s.serviceVersion.empty());
     EXPECT_TRUE(s.serviceInstanceId.empty());
-    EXPECT_EQ(s.exporterType, "otlp_http");
     EXPECT_EQ(s.exporterEndpoint, "http://localhost:4318/v1/traces");
     EXPECT_FALSE(s.useTls);
     EXPECT_TRUE(s.tlsCertPath.empty());
@@ -34,13 +33,12 @@ TEST(TelemetryConfig, setup_defaults)
 TEST(TelemetryConfig, parse_empty_section)
 {
     Section section;
-    auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0");
+    auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0", 0);
 
     EXPECT_FALSE(setup.enabled);
-    EXPECT_EQ(setup.serviceName, "rippled");
+    EXPECT_EQ(setup.serviceName, "xrpld");
     EXPECT_EQ(setup.serviceVersion, "2.0.0");
     EXPECT_EQ(setup.serviceInstanceId, "nHUtest123");
-    EXPECT_EQ(setup.exporterType, "otlp_http");
     EXPECT_DOUBLE_EQ(setup.samplingRatio, 1.0);
     EXPECT_TRUE(setup.traceRpc);
     EXPECT_TRUE(setup.traceTransactions);
@@ -69,12 +67,11 @@ TEST(TelemetryConfig, parse_full_section)
     section.set("trace_peer", "1");
     section.set("trace_ledger", "0");
 
-    auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0");
+    auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0", 1);
 
     EXPECT_TRUE(setup.enabled);
     EXPECT_EQ(setup.serviceName, "my-rippled");
     EXPECT_EQ(setup.serviceInstanceId, "custom-id");
-    EXPECT_EQ(setup.exporterType, "otlp_http");
     EXPECT_EQ(setup.exporterEndpoint, "http://collector:4318/v1/traces");
     EXPECT_TRUE(setup.useTls);
     EXPECT_EQ(setup.tlsCertPath, "/etc/ssl/ca.pem");
