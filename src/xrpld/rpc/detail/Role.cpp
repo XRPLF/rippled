@@ -23,6 +23,8 @@
 #include <boost/utility/string_view.hpp>
 
 #include <algorithm>
+#include <iterator>
+#include <string_view>
 
 namespace ripple {
 
@@ -269,30 +271,45 @@ forwardedFor(http_request_type const& request)
             return ((static_cast<unsigned>(c) - 65U) < 26) ? c + 'a' - 'A' : c;
         };
 
-        // Look for the first (case insensitive) "for="
-        static std::string const forStr{"for="};
-        char const* found = std::search(
-            it->value().begin(),
-            it->value().end(),
-            forStr.begin(),
-            forStr.end(),
-            [&ascii_tolower](char c1, char c2) {
-                return ascii_tolower(c1) == ascii_tolower(c2);
-            });
+        // Look for the first (case insensitive) "for=" at a directive
+        // boundary (start of value, or preceded by , ; or OWS).
+        static constexpr std::string_view forStr{"for="};
+        auto const atFieldBoundary = [begin = it->value().begin()](auto p) {
+            return p == begin || p[-1] == ';' || p[-1] == ',' || p[-1] == ' ' ||
+                p[-1] == '\t';
+        };
+        auto found = it->value().begin();
+        while (true)
+        {
+            found = std::search(
+                found,
+                it->value().end(),
+                forStr.begin(),
+                forStr.end(),
+                [&ascii_tolower](char c1, char c2) {
+                    return ascii_tolower(c1) == ascii_tolower(c2);
+                });
 
-        if (found == it->value().end())
-            return {};
+            if (found == it->value().end())
+                return {};
 
-        found += forStr.size();
+            if (atFieldBoundary(found))
+                break;
+
+            ++found;
+        }
+
+        std::advance(found, forStr.size());
 
         // We found a "for=".  Scan for the end of the IP address.
-        std::size_t const pos = [&found, &it]() {
-            std::size_t pos = std::string_view(found, it->value().end() - found)
+        auto const end = it->value().end();
+        std::size_t const pos = [&found, &end]() {
+            std::size_t pos = std::string_view(found, std::distance(found, end))
                                   .find_first_of(",;");
             if (pos != std::string_view::npos)
                 return pos;
 
-            return it->value().size() - forStr.size();
+            return static_cast<std::size_t>(std::distance(found, end));
         }();
 
         return extractIpAddrFromField({found, pos});
