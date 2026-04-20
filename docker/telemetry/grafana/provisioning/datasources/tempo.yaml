@@ -106,3 +106,14 @@ datasources:
             operator: "="
             scope: span
             type: dynamic
+          # Phase 2: Node health filters (Task 2.8)
+          - id: node-amendment-blocked
+            tag: xrpl.node.amendment_blocked
+            operator: "="
+            scope: span
+            type: static
+          - id: node-server-state
+            tag: xrpl.node.server_state
+            operator: "="
+            scope: span
+            type: dynamic

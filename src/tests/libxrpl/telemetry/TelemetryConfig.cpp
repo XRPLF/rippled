@@ -106,3 +106,16 @@ TEST(TelemetryConfig, null_telemetry_factory)
     tel->start();
     tel->stop();
 }
+
+TEST(TelemetryConfig, sampling_ratio_clamped)
+{
+    Section section;
+    section.set("sampling_ratio", "2.5");
+    auto setup = telemetry::setup_Telemetry(section, "nHUtest123", "2.0.0", 0);
+    EXPECT_DOUBLE_EQ(setup.samplingRatio, 1.0);
+
+    Section section2;
+    section2.set("sampling_ratio", "-0.5");
+    auto setup2 = telemetry::setup_Telemetry(section2, "nHUtest123", "2.0.0", 0);
+    EXPECT_DOUBLE_EQ(setup2.samplingRatio, 0.0);
+}

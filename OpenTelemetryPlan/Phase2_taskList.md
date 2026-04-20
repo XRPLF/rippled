@@ -167,13 +167,13 @@ This surfaces all RPCs served during a blocked period — critical for post-inci
 | ---- | ------------------------------------------- | ------------------- | ------------------------------------------------ |
 | 2.1  | W3C Trace Context header extraction         | Deferred → Phase 3  | No consumer in Phase 2; needs cross-node tracing |
 | 2.2  | Per-category span creation                  | Complete (Phase 1c) | Superseded by TraceCategory enum + SpanGuard     |
-| 2.3  | Add shouldTraceLedger() interface method    | Complete            | All 3 implementations present                    |
+| 2.3  | Add shouldTraceLedger() interface method    | Complete (Phase 1c) | Delivered in Phase 1c base branch                |
 | 2.4  | Unit tests for core telemetry               | Complete            | TelemetryConfig + SpanGuardFactory tests         |
 | 2.5  | Enhanced RPC span attributes (HTTP-level)   | Deferred            | Low value; span duration covers timing natively  |
 | 2.6  | Build verification and performance baseline | Complete            | Verified in CI on Phase 1c                       |
 | 2.7  | Grafana Tempo search filters                | Complete            | rpc-command, rpc-status, rpc-role filters        |
 | 2.8  | RPC span attribute enrichment (node health) | Complete            | amendment_blocked + server_state                 |
 
-**Delivered in this branch**: Tasks 2.3, 2.4, 2.6, 2.7, 2.8.
+**Delivered in this branch**: Tasks 2.4, 2.7, 2.8.
 **Deferred with rationale**: Tasks 2.1 (→Phase 3), 2.5 (low priority).
 **Superseded**: Task 2.2 (Phase 1c SpanGuard factory covers this).

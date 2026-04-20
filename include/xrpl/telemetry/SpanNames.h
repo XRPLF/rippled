@@ -100,6 +100,13 @@ namespace attr {
 inline constexpr auto networkId = join(join(seg::xrpl, seg::network), makeStr("id"));
 inline constexpr auto networkType = join(join(seg::xrpl, seg::network), makeStr("type"));
 inline constexpr auto linkType = join(join(seg::xrpl, seg::link), makeStr("type"));
+
+/// Node health attributes (cross-cutting, used by RPC/consensus/tx spans).
+inline constexpr auto xrplNode = join(seg::xrpl, makeStr("node"));
+/// "xrpl.node.amendment_blocked"
+inline constexpr auto nodeAmendmentBlocked = join(xrplNode, makeStr("amendment_blocked"));
+/// "xrpl.node.server_state"
+inline constexpr auto nodeServerState = join(xrplNode, makeStr("server_state"));
 }  // namespace attr
 
 // ===== Shared attribute values =============================================
