@@ -5,8 +5,11 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMTickMath.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
@@ -14,6 +17,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -28,6 +32,7 @@
 #include <bit>
 #include <cstdint>
 #include <exception>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <utility>
@@ -172,6 +177,43 @@ AMMDeposit::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
+    auto const curveType = ctx.tx[~sfCurveType].value_or(std::uint8_t(CtConstantProduct));
+
+    if (curveType == CtConcentratedLiquidity)
+    {
+        if (!ctx.rules.enabled(featureAMMCurves))
+            return temDISABLED;
+
+        // CL deposits only support tfTwoAsset and tfSingleAsset
+        if ((flags & tfDepositSubTx) != tfTwoAsset && (flags & tfDepositSubTx) != tfSingleAsset)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags for CL pool.";
+            return temMALFORMED;
+        }
+
+        auto const tickLower = ctx.tx[~sfTickLower];
+        auto const tickUpper = ctx.tx[~sfTickUpper];
+        if (!tickLower || !tickUpper)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: tick bounds required for CL pool.";
+            return temMALFORMED;
+        }
+        if (*tickLower >= *tickUpper)
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: tickLower must be less than tickUpper.";
+            return temMALFORMED;
+        }
+    }
+    else
+    {
+        // Non-CL pools must not have tick fields
+        if (ctx.tx.isFieldPresent(sfTickLower) || ctx.tx.isFieldPresent(sfTickUpper))
+        {
+            JLOG(ctx.j.debug()) << "AMM Deposit: tick fields not allowed for non-CL pool.";
+            return temMALFORMED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -180,7 +222,9 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
+                                                              : std::uint8_t(CtConstantProduct);
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Deposit: Invalid asset pair.";
@@ -385,7 +429,9 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
     auto const lpTokensDeposit = ctx_.tx[~sfLPTokenOut];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    auto const curveType = ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType)
+                                                               : std::uint8_t(CtConstantProduct);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
@@ -404,6 +450,194 @@ AMMDeposit::applyGuts(Sandbox& sb)
     auto const tfee = (lptAMMBalance == beast::kZero)
         ? ctx_.tx[~sfTradingFee].value_or(0)
         : getTradingFee(ctx_.view(), *ammSle, accountID_);
+
+    // Concentrated Liquidity deposits create positions
+    if (curveType == CtConcentratedLiquidity)
+    {
+        auto const tickLower = ctx_.tx[~sfTickLower];
+        auto const tickUpper = ctx_.tx[~sfTickUpper];
+        auto const subTxTypeCL = ctx_.tx.getFlags() & tfDepositSubTx;
+        auto const isSingleAsset = (subTxTypeCL & tfSingleAsset) != 0u;
+
+        if (!tickLower || !tickUpper)
+            return {temMALFORMED, false};
+        if (*tickLower >= *tickUpper)
+            return {temMALFORMED, false};
+
+        if (isSingleAsset)
+        {
+            if (!amount)
+                return {temMALFORMED, false};
+        }
+        else
+        {
+            if (!amount || !amount2)
+                return {temMALFORMED, false};
+        }
+
+        if (!ammSle->isFieldPresent(sfTickSpacing))
+            return {tecINTERNAL, false};
+
+        auto const tickSpacing = static_cast<std::int32_t>(ammSle->getFieldU16(sfTickSpacing));
+        if (!isValidTick(*tickLower, tickSpacing) || !isValidTick(*tickUpper, tickSpacing))
+            return {temMALFORMED, false};
+
+        auto const currentTick = ammSle->getFieldI32(sfCurrentTick);
+        auto const sqrtPriceCurrent = tickToSqrtPrice(currentTick);
+        auto const sqrtPriceLower = tickToSqrtPrice(*tickLower);
+        auto const sqrtPriceUpper = tickToSqrtPrice(*tickUpper);
+
+        // Determine which pool asset corresponds to Amount/Amount2
+        auto const asset1 = ctx_.tx[sfAsset];
+        auto const asset2 = ctx_.tx[sfAsset2];
+
+        Number liquidity;
+        STAmount depositAmt0;
+        STAmount depositAmt1;
+
+        if (currentTick < *tickLower)
+        {
+            // Only token0 needed
+            if (isSingleAsset && amount->asset() != asset1)
+                return {tecAMM_FAILED, false};
+            Number const amt0{*amount};
+            liquidity = amt0 * sqrtPriceLower * sqrtPriceUpper / (sqrtPriceUpper - sqrtPriceLower);
+            // For out-of-range, back-computation equals user amount
+            depositAmt0 = *amount;
+            depositAmt1 = STAmount{asset2, 0};
+        }
+        else if (currentTick >= *tickUpper)
+        {
+            // Only token1 needed
+            if (isSingleAsset)
+            {
+                if (amount->asset() != asset2)
+                    return {tecAMM_FAILED, false};
+                Number const amt1{*amount};
+                liquidity = amt1 / (sqrtPriceUpper - sqrtPriceLower);
+                depositAmt1 = *amount;
+            }
+            else
+            {
+                Number const amt1{*amount2};
+                liquidity = amt1 / (sqrtPriceUpper - sqrtPriceLower);
+                depositAmt1 = *amount2;
+            }
+            depositAmt0 = STAmount{asset1, 0};
+        }
+        else
+        {
+            // Both tokens needed — single asset not allowed in-range
+            if (isSingleAsset)
+                return {tecAMM_FAILED, false};
+
+            Number const amt0{*amount};
+            Number const amt1{*amount2};
+            auto const l0 =
+                amt0 * sqrtPriceCurrent * sqrtPriceUpper / (sqrtPriceUpper - sqrtPriceCurrent);
+            auto const l1 = amt1 / (sqrtPriceCurrent - sqrtPriceLower);
+            liquidity = std::min(l0, l1);
+            // The binding constraint's amount is fully used; the other
+            // is scaled by the ratio of liquidity values
+            if (l0 <= l1)
+            {
+                depositAmt0 = *amount;
+                auto const frac = l0 / l1;
+                depositAmt1 = getRoundedAsset(sb.rules(), *amount2, frac, IsDeposit::Yes);
+            }
+            else
+            {
+                depositAmt1 = *amount2;
+                auto const frac = l1 / l0;
+                depositAmt0 = getRoundedAsset(sb.rules(), *amount, frac, IsDeposit::Yes);
+            }
+        }
+
+        if (liquidity <= Number{0})
+            return {tecAMM_FAILED, false};
+
+        auto const int64Max = Number(std::numeric_limits<std::int64_t>::max());
+        if (liquidity > int64Max)
+            return {tecAMM_FAILED, false};
+
+        auto const liqU64 = static_cast<std::uint64_t>(static_cast<std::int64_t>(liquidity));
+
+        // Transfer only the actual computed amounts, not user maximums
+        if (depositAmt0 > beast::kZero)
+        {
+            if (auto const ter =
+                    accountSend(sb, accountID_, ammAccountID, depositAmt0, ctx_.journal);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
+        if (depositAmt1 > beast::kZero)
+        {
+            if (auto const ter =
+                    accountSend(sb, accountID_, ammAccountID, depositAmt1, ctx_.journal);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
+
+        auto const posKeylet =
+            keylet::ammPosition(ammSle->key(), accountID_, ctx_.tx.getSeqValue());
+        auto posSle = std::make_shared<SLE>(posKeylet);
+        (*posSle)[sfAccount] = accountID_;
+        (*posSle)[sfAMMID] = ammSle->key();
+        posSle->setFieldI32(sfTickLower, *tickLower);
+        posSle->setFieldI32(sfTickUpper, *tickUpper);
+        posSle->setFieldU64(sfPositionLiquidity, liqU64);
+        posSle->setFieldH256(sfFeeGrowthInsideLast0, uint256{});
+        posSle->setFieldH256(sfFeeGrowthInsideLast1, uint256{});
+        posSle->setFieldAmount(sfTokensOwed0, STAmount{asset1, 0});
+        posSle->setFieldAmount(sfTokensOwed1, STAmount{asset2, 0});
+        sb.insert(posSle);
+
+        auto const page =
+            sb.dirInsert(keylet::ownerDir(accountID_), posKeylet, describeOwnerDir(accountID_));
+        if (!page)
+            return {tecDIR_FULL, false};
+        (*posSle)[sfOwnerNode] = *page;
+        sb.update(posSle);
+
+        // Create or update tick entries for the position boundaries
+        for (auto const tick : {*tickLower, *tickUpper})
+        {
+            auto const tickKeylet = keylet::ammTick(ammSle->key(), tick);
+            auto tickSle = sb.peek(tickKeylet);
+            if (!tickSle)
+            {
+                tickSle = std::make_shared<SLE>(tickKeylet);
+                (*tickSle)[sfAMMID] = ammSle->key();
+                tickSle->setFieldI32(sfTickIndex, tick);
+                tickSle->setFieldU64(sfLiquidityNet, 0);
+                tickSle->setFieldU64(sfLiquidityGross, 0);
+                tickSle->setFieldH256(sfFeeGrowthOutside0, uint256{});
+                tickSle->setFieldH256(sfFeeGrowthOutside1, uint256{});
+                tickSle->setFieldU64(sfOwnerNode, 0);
+                sb.insert(tickSle);
+            }
+            auto gross = tickSle->getFieldU64(sfLiquidityGross);
+            gross += liqU64;
+            tickSle->setFieldU64(sfLiquidityGross, gross);
+            // liquidityNet: +liq at lower tick, -liq at upper tick
+            auto net = static_cast<std::int64_t>(tickSle->getFieldU64(sfLiquidityNet));
+            net += (tick == *tickLower) ? static_cast<std::int64_t>(liqU64)
+                                        : -static_cast<std::int64_t>(liqU64);
+            tickSle->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net));
+            sb.update(tickSle);
+        }
+
+        if (currentTick >= *tickLower && currentTick < *tickUpper)
+        {
+            auto activeLiq = ammSle->getFieldU64(sfActiveLiquidity);
+            activeLiq += liqU64;
+            ammSle->setFieldU64(sfActiveLiquidity, activeLiq);
+        }
+
+        adjustOwnerCount(sb, sb.peek(keylet::account(accountID_)), 1, ctx_.journal);
+        sb.update(ammSle);
+        return {tesSUCCESS, true};
+    }
 
     auto const subTxType = ctx_.tx.getFlags() & tfDepositSubTx;
 

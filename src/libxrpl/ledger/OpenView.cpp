@@ -163,6 +163,13 @@ OpenView::succ(key_type const& key, std::optional<key_type> const& last) const
     return items_.succ(*base_, key, last);
 }
 
+auto
+OpenView::pred(key_type const& key, std::optional<key_type> const& first) const
+    -> std::optional<key_type>
+{
+    return items_.pred(*base_, key, first);
+}
+
 std::shared_ptr<SLE const>
 OpenView::read(Keylet const& k) const
 {

@@ -159,7 +159,8 @@ public:
         STAmount const& lpTokenBalance,
         Asset const& asset1,
         Asset const& asset2,
-        beast::Journal const& journal);
+        beast::Journal const& journal,
+        std::uint8_t curveType = 0);
 
 private:
     std::pair<TER, bool>

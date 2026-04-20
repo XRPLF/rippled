@@ -240,6 +240,37 @@ RawStateTable::succ(ReadView const& base, key_type const& key, std::optional<key
     return next;
 }
 
+auto
+RawStateTable::pred(ReadView const& base, key_type const& key, std::optional<key_type> const& first)
+    const -> std::optional<key_type>
+{
+    std::optional<key_type> prev = key;
+    items_t::const_iterator iter;
+    // Find base predecessor that is
+    // not also deleted in our list
+    do
+    {
+        prev = base.pred(*prev, first);
+        if (!prev)
+            break;
+        iter = items_.find(*prev);
+    } while (iter != items_.end() && iter->second.action == Action::Erase);
+    // Find non-deleted predecessor in our list
+    for (iter = items_.lower_bound(key); iter != items_.begin();)
+    {
+        --iter;
+        if (iter->second.action != Action::Erase)
+        {
+            if (!prev || *prev < iter->first)
+                prev = iter->first;
+            break;
+        }
+    }
+    if (first && prev && *prev <= *first)
+        return std::nullopt;
+    return prev;
+}
+
 void
 RawStateTable::erase(std::shared_ptr<SLE> const& sle)
 {

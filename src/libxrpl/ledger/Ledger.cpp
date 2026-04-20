@@ -401,6 +401,17 @@ Ledger::succ(uint256 const& key, std::optional<uint256> const& last) const
     return item->key();
 }
 
+std::optional<uint256>
+Ledger::pred(uint256 const& key, std::optional<uint256> const& first) const
+{
+    auto item = stateMap_.lowerBound(key);
+    if (item == stateMap_.end())
+        return std::nullopt;
+    if (first && item->key() <= first)
+        return std::nullopt;
+    return item->key();
+}
+
 std::shared_ptr<SLE const>
 Ledger::read(Keylet const& k) const
 {

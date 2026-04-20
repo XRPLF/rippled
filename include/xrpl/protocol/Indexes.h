@@ -251,7 +251,7 @@ nftSells(uint256 const& id) noexcept;
 
 /** AMM entry */
 Keylet
-amm(Asset const& issue1, Asset const& issue2) noexcept;
+amm(Asset const& issue1, Asset const& issue2, std::uint8_t curveType = 0) noexcept;
 
 Keylet
 amm(uint256 const& amm) noexcept;
@@ -342,6 +342,39 @@ permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+/** A concentrated liquidity AMM position */
+Keylet
+ammPosition(uint256 const& ammID, AccountID const& owner, std::uint32_t seq) noexcept;
+
+inline Keylet
+ammPosition(uint256 const& key)
+{
+    return {ltAMM_POSITION, key};
+}
+
+/** A concentrated liquidity AMM tick.
+    Uses structured (non-hashed) keys for ordered SHAMap traversal.
+    High 192 bits: pool scope (from ammID hash).
+    Low 64 bits: encoded tick index (offset binary, big-endian).
+*/
+Keylet
+ammTick(uint256 const& ammID, std::int32_t tickIndex) noexcept;
+
+inline Keylet
+ammTick(uint256 const& key)
+{
+    return {ltAMM_TICK, key};
+}
+
+/** Base key for a CL pool's tick range (low 64 bits zeroed). */
+Keylet
+ammTickBase(uint256 const& ammID) noexcept;
+
+/** End key for a CL pool's tick range (low 64 bits all 1s). */
+Keylet
+ammTickEnd(uint256 const& ammID) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

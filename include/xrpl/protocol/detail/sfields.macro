@@ -25,6 +25,8 @@ TYPED_SFIELD(sfUNLModifyDisabling,       UINT8,     17)
 TYPED_SFIELD(sfHookResult,               UINT8,     18)
 TYPED_SFIELD(sfWasLockingChainSend,      UINT8,     19)
 TYPED_SFIELD(sfWithdrawalPolicy,         UINT8,     20)
+TYPED_SFIELD(sfCurveType,               UINT8,     21)
+TYPED_SFIELD(sfFeeTier,                 UINT8,     22)
 
 // 16-bit integers (common)
 TYPED_SFIELD(sfLedgerEntryType,          UINT16,     1, SField::kSmdNever)
@@ -42,6 +44,8 @@ TYPED_SFIELD(sfHookExecutionIndex,       UINT16,    19)
 TYPED_SFIELD(sfHookApiVersion,           UINT16,    20)
 TYPED_SFIELD(sfLedgerFixType,            UINT16,    21)
 TYPED_SFIELD(sfManagementFeeRate,        UINT16,    22) // 1/10 basis points (bips)
+TYPED_SFIELD(sfTickSpacing,             UINT16,    23)
+TYPED_SFIELD(sfWeight,                  UINT16,    24)
 
 // 32-bit integers (common)
 TYPED_SFIELD(sfNetworkID,                UINT32,     1)
@@ -113,6 +117,9 @@ TYPED_SFIELD(sfInterestRate,             UINT32,    65) // 1/10 basis points (bi
 TYPED_SFIELD(sfLateInterestRate,         UINT32,    66) // 1/10 basis points (bips)
 TYPED_SFIELD(sfCloseInterestRate,        UINT32,    67) // 1/10 basis points (bips)
 TYPED_SFIELD(sfOverpaymentInterestRate,  UINT32,    68) // 1/10 basis points (bips)
+TYPED_SFIELD(sfAmplification,           UINT32,    69)
+TYPED_SFIELD(sfAmplificationTarget,     UINT32,    70)
+TYPED_SFIELD(sfAmplificationTime,       UINT32,    71)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)
@@ -146,6 +153,10 @@ TYPED_SFIELD(sfSubjectNode,              UINT64,    28)
 TYPED_SFIELD(sfLockedAmount,             UINT64,    29, SField::kSmdBaseTen|SField::kSmdDefault)
 TYPED_SFIELD(sfVaultNode,                UINT64,    30)
 TYPED_SFIELD(sfLoanBrokerNode,           UINT64,    31)
+TYPED_SFIELD(sfActiveLiquidity,         UINT64,    32)
+TYPED_SFIELD(sfPositionLiquidity,       UINT64,    33)
+TYPED_SFIELD(sfLiquidityGross,          UINT64,    34)
+TYPED_SFIELD(sfLiquidityNet,           UINT64,    35)
 
 // 128-bit
 TYPED_SFIELD(sfEmailHash,                UINT128,    1)
@@ -205,6 +216,13 @@ TYPED_SFIELD(sfParentBatchID,            UINT256,   36)
 TYPED_SFIELD(sfLoanBrokerID,             UINT256,   37,
     SField::kSmdPseudoAccount | SField::kSmdDefault)
 TYPED_SFIELD(sfLoanID,                   UINT256,   38)
+TYPED_SFIELD(sfSqrtPriceX96,            UINT256,   39)
+TYPED_SFIELD(sfFeeGrowthGlobal0,        UINT256,   40)
+TYPED_SFIELD(sfFeeGrowthGlobal1,        UINT256,   41)
+TYPED_SFIELD(sfFeeGrowthOutside0,       UINT256,   42)
+TYPED_SFIELD(sfFeeGrowthOutside1,       UINT256,   43)
+TYPED_SFIELD(sfFeeGrowthInsideLast0,    UINT256,   44)
+TYPED_SFIELD(sfFeeGrowthInsideLast1,    UINT256,   45)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
@@ -227,6 +245,11 @@ TYPED_SFIELD(sfManagementFeeOutstanding, NUMBER,     17, SField::kSmdNeedsAsset 
 
 // int32
 TYPED_SFIELD(sfLoanScale,                INT32,      1)
+TYPED_SFIELD(sfTickLower,               INT32,      2)
+TYPED_SFIELD(sfTickUpper,               INT32,      3)
+TYPED_SFIELD(sfTickIndex,               INT32,      4)
+TYPED_SFIELD(sfCurrentTick,             INT32,      5)
+
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
@@ -264,6 +287,8 @@ TYPED_SFIELD(sfPrice,                    AMOUNT,    28)
 TYPED_SFIELD(sfSignatureReward,          AMOUNT,    29)
 TYPED_SFIELD(sfMinAccountCreateAmount,   AMOUNT,    30)
 TYPED_SFIELD(sfLPTokenBalance,           AMOUNT,    31)
+TYPED_SFIELD(sfTokensOwed0,             AMOUNT,    32)
+TYPED_SFIELD(sfTokensOwed1,             AMOUNT,    33)
 
 // variable length (common)
 TYPED_SFIELD(sfPublicKey,                VL,         1)

@@ -136,7 +136,28 @@ parseAMM(
     if (!asset2)
         return Unexpected(asset2.error());
 
-    return keylet::amm(*asset, *asset2).key;
+    std::uint8_t ct = 0;
+    if (params.isMember(jss::curve_type))
+        ct = static_cast<std::uint8_t>(params[jss::curve_type].asUInt());
+    return keylet::amm(*asset, *asset2, ct).key;
+}
+
+static Expected<uint256, json::Value>
+parseAMMPosition(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    return parseObjectID(params, fieldName, "hex string");
+}
+
+static Expected<uint256, json::Value>
+parseAMMTick(
+    json::Value const& params,
+    json::StaticString const fieldName,
+    [[maybe_unused]] unsigned const apiVersion)
+{
+    return parseObjectID(params, fieldName, "hex string");
 }
 
 static Expected<uint256, json::Value>

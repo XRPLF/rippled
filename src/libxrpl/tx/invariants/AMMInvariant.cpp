@@ -5,8 +5,10 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Issue.h>
@@ -41,6 +43,7 @@ ValidAMM::visitEntry(
         {
             ammAccount_ = after->getAccountID(sfAccount);
             lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
+            ammSle_ = after;
         }
         // AMM pool changed
         else if (
@@ -150,12 +153,34 @@ ValidAMM::finalizeCreate(
             AuthHandling::IgnoreAuth,
             j);
         // Create invariant:
-        // sqrt(amount * amount2) == LPTokens
+        // sqrt(amount * amount2) == LPTokens (constant product)
+        // For other curves, expected LP supply is curve-defined
         // all balances are greater than zero
         // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceAfter_ set with ammAccount_
         // in visitEntry
+        auto const lptIssue = lptAMMBalanceAfter_->get<Issue>();
+        auto const curveType = getCurveType(*ammSle_);
+
+        STAmount expectedLPT;
+        if (curveType == CtConstantProduct)
+        {
+            expectedLPT = ammLPTokens(amount, amount2, lptIssue);
+        }
+        else if (auto const* curve = getCurve(curveType, view.rules()))
+        {
+            auto const result = curve->initialLPTokens(amount, amount2, lptIssue, ammSle_.get());
+            if (!result)
+            {
+                JLOG(j.error()) << "AMMCreate invariant failed: initialLPTokens error";
+                if (enforce)
+                    return false;
+                return true;
+            }
+            expectedLPT = *result;
+        }
+
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
-            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) != *lptAMMBalanceAfter_)
+            expectedLPT != *lptAMMBalanceAfter_)
         {
             JLOG(j.error()) << "AMMCreate invariant failed: " << amount << " " << amount2 << " "
                             << *lptAMMBalanceAfter_;
@@ -218,10 +243,28 @@ ValidAMM::generalInvariant(
         AuthHandling::IgnoreAuth,
         j);
     // Deposit and Withdrawal invariant:
-    // sqrt(amount * amount2) >= LPTokens
-    // all balances are greater than zero
-    // unless on last withdrawal
-    auto const poolProductMean = root2(amount * amount2);
+    // sqrt(amount * amount2) >= LPTokens (constant product)
+    // For other curves, poolProductMean is curve-defined
+    // all balances are greater than zero unless on last withdrawal
+    auto const curveType = getCurveType(*ammSle_);
+    Number poolProductMean;
+    if (curveType == CtConstantProduct)
+    {
+        poolProductMean = root2(amount * amount2);
+    }
+    else if (auto const* curve = getCurve(curveType, view.rules()))
+    {
+        auto const result = curve->initialLPTokens(
+            amount, amount2, lptAMMBalanceAfter_->get<Issue>(), ammSle_.get());
+        if (result)
+        {
+            poolProductMean = Number{*result};
+        }
+        else
+        {
+            return false;
+        }
+    }
     bool const nonNegativeBalances =
         validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
     bool const strongInvariantCheck = poolProductMean >= *lptAMMBalanceAfter_;

@@ -4,8 +4,10 @@
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
 namespace xrpl {
@@ -40,6 +42,9 @@ private:
     // Initial AMM pool balances
     TAmounts<TIn, TOut> const initialBalances_;
     beast::Journal const j_;
+    std::uint8_t const curveType_{CtConstantProduct};
+    std::optional<STObject> const curveParams_;
+    uint256 const ammID_;
 
 public:
     AMMLiquidity(
@@ -49,7 +54,9 @@ public:
         Asset const& in,
         Asset const& out,
         AMMContext& ammContext,
-        beast::Journal j);
+        beast::Journal j,
+        std::uint8_t curveType = CtConstantProduct,
+        std::optional<STObject> curveParams = std::nullopt);
     ~AMMLiquidity() = default;
     AMMLiquidity(AMMLiquidity const&) = delete;
     AMMLiquidity&
@@ -99,6 +106,24 @@ public:
         return assetOut_;
     }
 
+    [[nodiscard]] std::uint8_t
+    curveType() const
+    {
+        return curveType_;
+    }
+
+    [[nodiscard]] STObject const*
+    curveParams() const
+    {
+        return curveParams_ ? &*curveParams_ : nullptr;
+    }
+
+    [[nodiscard]] uint256 const&
+    ammID() const
+    {
+        return ammID_;
+    }
+
 private:
     /** Fetches current AMM balances.
      */
@@ -113,7 +138,7 @@ private:
      * throws overflow exception.
      */
     [[nodiscard]] TAmounts<TIn, TOut>
-    generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
+    generateFibSeqOffer(ReadView const& view, TAmounts<TIn, TOut> const& balances) const;
 
     /** Generate max offer.
      * If `fixAMMOverflowOffer` is active, the offer is generated as:
@@ -125,7 +150,7 @@ private:
      * takerGets = swapIn(takerPays).
      */
     [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
-    maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
+    maxOffer(ReadView const& view, TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
 };
 
 }  // namespace xrpl

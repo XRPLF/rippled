@@ -110,7 +110,9 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.read(keylet::account(ctx.tx[sfHolder])))
         return terNO_ACCOUNT;
 
-    auto const ammSle = ctx.view.read(keylet::amm(asset, asset2));
+    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
+                                                              : std::uint8_t(CtConstantProduct);
+    auto const ammSle = ctx.view.read(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Clawback: Invalid asset pair.";
@@ -174,7 +176,9 @@ AMMClawback::applyGuts(Sandbox& sb)
     Asset const asset = ctx_.tx[sfAsset];
     Asset const asset2 = ctx_.tx[sfAsset2];
 
-    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    auto const curveType = ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType)
+                                                               : std::uint8_t(CtConstantProduct);
+    auto ammSle = sb.peek(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -259,8 +263,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!isTesSuccess(result))
         return result;  // LCOV_EXCL_LINE
 
-    auto const res =
-        AMMWithdraw::deleteAMMAccountIfEmpty(sb, ammSle, newLPTokenBalance, asset, asset2, j_);
+    auto const res = AMMWithdraw::deleteAMMAccountIfEmpty(
+        sb, ammSle, newLPTokenBalance, asset, asset2, j_, curveType);
     if (!res.second)
         return res.first;  // LCOV_EXCL_LINE
 

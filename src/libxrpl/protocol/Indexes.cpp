@@ -84,6 +84,8 @@ enum class LedgerNameSpace : std::uint16_t {
     Vault = 'V',
     LoanBroker = 'l',  // lower-case L
     Loan = 'L',
+    AmmPosition = 'G',
+    AmmTick = 'J',
 
     // No longer used or supported. Left here to reserve the space to avoid accidental reuse.
     Contract [[deprecated]] = 'c',
@@ -422,13 +424,24 @@ nftSells(uint256 const& id) noexcept
 }
 
 Keylet
-amm(Asset const& asset1, Asset const& asset2) noexcept
+amm(Asset const& asset1, Asset const& asset2, std::uint8_t curveType) noexcept
 {
     auto const& [minA, maxA] = std::minmax(asset1, asset2);
     return std::visit(
-        []<ValidIssueType TIss1, ValidIssueType TIss2>(TIss1 const& issue1, TIss2 const& issue2) {
+        [curveType]<ValidIssueType TIss1, ValidIssueType TIss2>(
+            TIss1 const& issue1, TIss2 const& issue2) {
             if constexpr (std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, Issue>)
             {
+                if (curveType != 0)
+                {
+                    return amm(indexHash(
+                        LedgerNameSpace::Amm,
+                        issue1.account,
+                        issue1.currency,
+                        issue2.account,
+                        issue2.currency,
+                        curveType));
+                }
                 return amm(indexHash(
                     LedgerNameSpace::Amm,
                     issue1.account,
@@ -438,16 +451,37 @@ amm(Asset const& asset1, Asset const& asset2) noexcept
             }
             else if constexpr (std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, MPTIssue>)
             {
+                if (curveType != 0)
+                {
+                    return amm(indexHash(
+                        LedgerNameSpace::Amm,
+                        issue1.account,
+                        issue1.currency,
+                        issue2.getMptID(),
+                        curveType));
+                }
                 return amm(indexHash(
                     LedgerNameSpace::Amm, issue1.account, issue1.currency, issue2.getMptID()));
             }
             else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, Issue>)
             {
+                if (curveType != 0)
+                {
+                    return amm(indexHash(
+                        LedgerNameSpace::Amm,
+                        issue1.getMptID(),
+                        issue2.account,
+                        issue2.currency,
+                        curveType));
+                }
                 return amm(indexHash(
                     LedgerNameSpace::Amm, issue1.getMptID(), issue2.account, issue2.currency));
             }
             else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, MPTIssue>)
             {
+                if (curveType != 0)
+                    return amm(indexHash(
+                        LedgerNameSpace::Amm, issue1.getMptID(), issue2.getMptID(), curveType));
                 return amm(indexHash(LedgerNameSpace::Amm, issue1.getMptID(), issue2.getMptID()));
             }
         },
@@ -575,6 +609,48 @@ Keylet
 permissionedDomain(uint256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
+}
+
+Keylet
+ammPosition(uint256 const& ammID, AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return {ltAMM_POSITION, indexHash(LedgerNameSpace::AmmPosition, ammID, owner, seq)};
+}
+
+static uint256
+ammTickBaseKey(uint256 const& ammID) noexcept
+{
+    // High 192 bits from hash, low 64 bits zeroed
+    auto key = indexHash(LedgerNameSpace::AmmTick, ammID);
+    ((std::uint64_t*)key.end())[-1] = 0;
+    return key;
+}
+
+Keylet
+ammTick(uint256 const& ammID, std::int32_t tickIndex) noexcept
+{
+    // Offset binary: shift tick range so minTick maps to 0
+    static constexpr std::int64_t tickOffset = 887272;  // -minTick
+    auto const encoded =
+        static_cast<std::uint64_t>(static_cast<std::int64_t>(tickIndex) + tickOffset);
+
+    auto key = ammTickBaseKey(ammID);
+    ((std::uint64_t*)key.end())[-1] = boost::endian::native_to_big(encoded);
+    return {ltAMM_TICK, key};
+}
+
+Keylet
+ammTickBase(uint256 const& ammID) noexcept
+{
+    return {ltAMM_TICK, ammTickBaseKey(ammID)};
+}
+
+Keylet
+ammTickEnd(uint256 const& ammID) noexcept
+{
+    auto key = ammTickBaseKey(ammID);
+    ((std::uint64_t*)key.end())[-1] = ~std::uint64_t{0};
+    return {ltAMM_TICK, key};
 }
 
 }  // namespace keylet

@@ -1,4 +1,5 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -7,10 +8,12 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
@@ -27,6 +30,7 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMLiquidity.h>
@@ -103,17 +107,56 @@ private:
         , j_(ctx.j)
         , strandDeliver_(ctx.strandDeliver)
     {
-        if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
-            ammSle && ammSle->getFieldAmount(sfLPTokenBalance) != beast::kZero)
         {
-            ammLiquidity_.emplace(
-                ctx.view,
-                (*ammSle)[sfAccount],
-                getTradingFee(ctx.view, *ammSle, ctx.ammContext.account()),
-                in,
-                out,
-                ctx.ammContext,
-                ctx.j);
+            std::shared_ptr<SLE const> bestAmm;
+            std::optional<Number> bestSpotPrice;
+            for (auto const ct : protocolCurveTypes)
+            {
+                auto const ammSle = ctx.view.read(keylet::amm(in, out, ct));
+                if (!ammSle || ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZero)
+                    continue;
+
+                auto const curveType = getCurveType(*ammSle);
+                auto const* curve = getCurve(curveType, ctx.view.rules());
+                if (curve == nullptr)
+                    continue;
+
+                auto const ammAcct = (*ammSle)[sfAccount];
+                auto const tfee = getTradingFee(ctx.view, *ammSle, ctx.ammContext.account());
+                auto const poolIn = ammAccountHolds(ctx.view, ammAcct, in);
+                auto const poolOut = ammAccountHolds(ctx.view, ammAcct, out);
+                if (poolIn == beast::kZero || poolOut == beast::kZero)
+                    continue;
+
+                auto const sp = curve->spotPrice(poolIn, poolOut, tfee, ammSle.get());
+                if (!sp || *sp <= Number{0})
+                    continue;
+
+                if (!bestAmm || *sp > *bestSpotPrice)
+                {
+                    bestAmm = ammSle;
+                    bestSpotPrice = *sp;
+                }
+            }
+            if (bestAmm)
+            {
+                auto const curveType = bestAmm->isFieldPresent(sfCurveType)
+                    ? bestAmm->getFieldU8(sfCurveType)
+                    : CtConstantProduct;
+                std::optional<STObject> curveParams;
+                if (curveType != CtConstantProduct)
+                    curveParams.emplace(static_cast<STObject const&>(*bestAmm));
+                ammLiquidity_.emplace(
+                    ctx.view,
+                    (*bestAmm)[sfAccount],
+                    getTradingFee(ctx.view, *bestAmm, ctx.ammContext.account()),
+                    in,
+                    out,
+                    ctx.ammContext,
+                    ctx.j,
+                    curveType,
+                    std::move(curveParams));
+            }
         }
     }
 
@@ -244,17 +287,17 @@ private:
     // If clobQuality is available and has a better quality then return nullopt,
     // otherwise if amm liquidity is available return AMM offer adjusted based
     // on clobQuality.
-    std::optional<AMMOffer<TIn, TOut>>
+    [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
     getAMMOffer(ReadView const& view, std::optional<Quality> const& clobQuality) const;
 
     // If seated then it is either order book tip quality or AMMOffer,
     // whichever is a better quality.
-    std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
+    [[nodiscard]] std::optional<std::variant<Quality, AMMOffer<TIn, TOut>>>
     tip(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality,
     // whichever is a better quality. OfferType is AMM
     // if AMM quality is better.
-    std::optional<std::pair<Quality, OfferType>>
+    [[nodiscard]] std::optional<std::pair<Quality, OfferType>>
     tipOfferQuality(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality function,
     // whichever is a better quality.

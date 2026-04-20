@@ -509,14 +509,10 @@ ammLPHolds(
     Asset const& asset2,
     AccountID const& ammAccount,
     AccountID const& lpAccount,
-    beast::Journal const j)
+    beast::Journal const j,
+    std::uint8_t curveType)
 {
-    // This function looks similar to `accountHolds`. However, it only checks if
-    // a LPToken holder has enough balance. On the other hand, `accountHolds`
-    // checks if the underlying assets of LPToken are frozen with the
-    // fixFrozenLPTokenTransfer amendment
-
-    auto const currency = ammLPTCurrency(asset1, asset2);
+    auto const currency = ammLPTCurrency(asset1, asset2, curveType);
     STAmount amount;
 
     auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
@@ -559,7 +555,9 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    return ammLPHolds(view, ammSle[sfAsset], ammSle[sfAsset2], ammSle[sfAccount], lpAccount, j);
+    auto const ct = ammSle.isFieldPresent(sfCurveType) ? ammSle.getFieldU8(sfCurveType)
+                                                       : std::uint8_t(CtConstantProduct);
+    return ammLPHolds(view, ammSle[sfAsset], ammSle[sfAsset2], ammSle[sfAccount], lpAccount, j, ct);
 }
 
 std::uint16_t
@@ -710,9 +708,14 @@ deleteAMMMPTokens(Sandbox& sb, AccountID const& ammAccountID, beast::Journal j)
 }
 
 TER
-deleteAMMAccount(Sandbox& sb, Asset const& asset, Asset const& asset2, beast::Journal j)
+deleteAMMAccount(
+    Sandbox& sb,
+    Asset const& asset,
+    Asset const& asset2,
+    beast::Journal j,
+    std::uint8_t curveType)
 {
-    auto ammSle = sb.peek(keylet::amm(asset, asset2));
+    auto ammSle = sb.peek(keylet::amm(asset, asset2, curveType));
     if (!ammSle)
     {
         // LCOV_EXCL_START

@@ -130,6 +130,19 @@ public:
     [[nodiscard]] virtual std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
 
+    /** Return the key of the previous state item.
+
+        This returns the key of the first state item
+        whose key is less than the specified key. If
+        no such key is present, std::nullopt is returned.
+
+        If `first` is engaged, returns std::nullopt when
+        the key returned would be outside the open
+        interval (first, key).
+    */
+    [[nodiscard]] virtual std::optional<key_type>
+    pred(key_type const& key, std::optional<key_type> const& first = std::nullopt) const = 0;
+
     /** Return the state item associated with a key.
 
         Effects:

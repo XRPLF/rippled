@@ -27,6 +27,7 @@
 #include <date/date.h>
 
 #include <chrono>
+#include <cstdint>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -148,7 +149,12 @@ doAMMInfo(RPC::JsonContext& context)
 
         auto const ammKeylet = [&]() {
             if (asset1 && asset2)
-                return keylet::amm(*asset1, *asset2);
+            {
+                std::uint8_t ct = 0;
+                if (params.isMember(jss::curve_type))
+                    ct = static_cast<std::uint8_t>(params[jss::curve_type].asUInt());
+                return keylet::amm(*asset1, *asset2, ct);
+            }
             XRPL_ASSERT(ammID, "xrpl::doAMMInfo::ammKeylet : ammID is set");
             return keylet::amm(*ammID);
         }();

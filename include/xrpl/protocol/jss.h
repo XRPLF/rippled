@@ -194,6 +194,7 @@ JSS(counters);                    // in/out: retrieve counters
 JSS(credentials);                 // in: deposit_authorized
 JSS(credential_type);             // in: LedgerEntry DepositPreauth
 JSS(ctid);                        // in/out: Tx RPC
+JSS(curve_type);                  // in: amm_info
 JSS(currency_a);                  // out: BookChanges
 JSS(currency_b);                  // out: BookChanges
 JSS(currency);                    // in: paths/PathRequest, STAmount

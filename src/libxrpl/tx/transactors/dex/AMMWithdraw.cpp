@@ -6,7 +6,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMTickMath.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
@@ -171,6 +173,45 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
+    auto const curveType = ctx.tx[~sfCurveType].value_or(std::uint8_t(CtConstantProduct));
+
+    if (curveType == CtConcentratedLiquidity)
+    {
+        if (!ctx.rules.enabled(featureAMMCurves))
+            return temDISABLED;
+
+        // CL withdrawals only support tfWithdrawAll
+        if ((flags & tfWithdrawSubTx) != tfWithdrawAll)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags for CL pool.";
+            return temMALFORMED;
+        }
+
+        // Position ID is required for CL withdrawal
+        if (!ctx.tx.isFieldPresent(sfNFTokenID))
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: position ID required for CL pool.";
+            return temMALFORMED;
+        }
+
+        // CL withdrawal must not have amount/ePrice/lpTokens fields
+        if (amount || amount2 || ePrice || lpTokens)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: amount fields not allowed for CL.";
+            return temMALFORMED;
+        }
+    }
+    else
+    {
+        // Non-CL pools must not have position fields
+        if (ctx.tx.isFieldPresent(sfNFTokenID) || ctx.tx.isFieldPresent(sfPositionLiquidity))
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: position fields not allowed for "
+                                   "non-CL pool.";
+            return temMALFORMED;
+        }
+    }
+
     return tesSUCCESS;
 }
 
@@ -190,7 +231,9 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const accountID = ctx.tx[sfAccount];
 
-    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2]));
+    auto const curveType = ctx.tx.isFieldPresent(sfCurveType) ? ctx.tx.getFieldU8(sfCurveType)
+                                                              : std::uint8_t(CtConstantProduct);
+    auto const ammSle = ctx.view.read(keylet::amm(ctx.tx[sfAsset], ctx.tx[sfAsset2], curveType));
     if (!ammSle)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: Invalid asset pair.";
@@ -211,15 +254,18 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (!expected)
         return expected.error();
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
-    if (lptAMMBalance == beast::kZero)
-        return tecAMM_EMPTY;
-    if (amountBalance <= beast::kZero || amount2Balance <= beast::kZero ||
-        lptAMMBalance < beast::kZero)
+    if (curveType != CtConcentratedLiquidity)
     {
-        // LCOV_EXCL_START
-        JLOG(ctx.j.debug()) << "AMM Withdraw: reserves or tokens balance is zero.";
-        return tecINTERNAL;
-        // LCOV_EXCL_STOP
+        if (lptAMMBalance == beast::kZero)
+            return tecAMM_EMPTY;
+        if (amountBalance <= beast::kZero || amount2Balance <= beast::kZero ||
+            lptAMMBalance < beast::kZero)
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.debug()) << "AMM Withdraw: reserves or tokens balance is zero.";
+            return tecINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     auto const ammAccountID = ammSle->getAccountID(sfAccount);
@@ -270,39 +316,71 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkAmount(amount2, amount2Balance))
         return ter;
 
-    auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
-    auto const lpTokensWithdraw = tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
-
-    if (lpTokens <= beast::kZero)
+    if (curveType == CtConcentratedLiquidity)
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero.";
-        return tecAMM_BALANCE;
+        // Validate position exists and is owned by caller
+        auto const positionID = ctx.tx[sfNFTokenID];
+        auto const posSle = ctx.view.read(keylet::ammPosition(positionID));
+        if (!posSle)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: position not found.";
+            return tecNO_ENTRY;
+        }
+        if ((*posSle)[sfAccount] != accountID)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: not position owner.";
+            return tecNO_PERMISSION;
+        }
+        // Validate partial withdrawal amount
+        if (ctx.tx.isFieldPresent(sfPositionLiquidity))
+        {
+            auto const withdrawLiq = ctx.tx.getFieldU64(sfPositionLiquidity);
+            auto const posLiq = posSle->getFieldU64(sfPositionLiquidity);
+            if (withdrawLiq == 0 || withdrawLiq > posLiq)
+            {
+                JLOG(ctx.j.debug()) << "AMM Withdraw: invalid position liquidity.";
+                return temMALFORMED;
+            }
+        }
     }
-
-    if (lpTokensWithdraw && lpTokensWithdraw->asset() != lpTokens.asset())
+    else
     {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid LPTokens.";
-        return temBAD_AMM_TOKENS;
-    }
+        // LP token validation for non-CL pools
+        auto const lpTokens = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+        auto const lpTokensWithdraw =
+            tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
 
-    if (lpTokensWithdraw && *lpTokensWithdraw > lpTokens)
-    {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
-        return tecAMM_INVALID_TOKENS;
-    }
+        if (lpTokens <= beast::kZero)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: tokens balance is zero.";
+            return tecAMM_BALANCE;
+        }
 
-    if (auto const ePrice = ctx.tx[~sfEPrice]; ePrice && ePrice->asset() != lpTokens.asset())
-    {
-        JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
-        return temBAD_AMM_TOKENS;
-    }
+        if (lpTokensWithdraw && lpTokensWithdraw->asset() != lpTokens.asset())
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid LPTokens.";
+            return temBAD_AMM_TOKENS;
+        }
 
-    if ((ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll)) != 0u)
-    {
-        if (auto const ter = checkAmount(amountBalance, amountBalance))
-            return ter;
-        if (auto const ter = checkAmount(amount2Balance, amount2Balance))
-            return ter;
+        if (lpTokensWithdraw && *lpTokensWithdraw > lpTokens)
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid tokens.";
+            return tecAMM_INVALID_TOKENS;
+        }
+
+        if (auto const ePrice = ctx.tx[~sfEPrice]; ePrice && ePrice->asset() != lpTokens.asset())
+        {
+            JLOG(ctx.j.debug()) << "AMM Withdraw: invalid EPrice.";
+            return temBAD_AMM_TOKENS;
+        }
+
+        if ((ctx.tx.getFlags() & (tfLPToken | tfWithdrawAll)) != 0u)
+        {
+            if (auto const ter = checkAmount(amountBalance, amountBalance))
+                return ter;
+            if (auto const ter = checkAmount(amount2Balance, amount2Balance))
+                return ter;
+        }
     }
 
     return tesSUCCESS;
@@ -314,23 +392,30 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     auto const amount = ctx_.tx[~sfAmount];
     auto const amount2 = ctx_.tx[~sfAmount2];
     auto const ePrice = ctx_.tx[~sfEPrice];
-    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2]));
+    auto const curveType = ctx_.tx.isFieldPresent(sfCurveType) ? ctx_.tx.getFieldU8(sfCurveType)
+                                                               : std::uint8_t(CtConstantProduct);
+    auto ammSle = sb.peek(keylet::amm(ctx_.tx[sfAsset], ctx_.tx[sfAsset2], curveType));
     if (!ammSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
     auto const ammAccountID = (*ammSle)[sfAccount];
     auto const accountSle = sb.read(keylet::account(ammAccountID));
     if (!accountSle)
         return {tecINTERNAL, false};  // LCOV_EXCL_LINE
-    auto const lpTokens = ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
-    auto const lpTokensWithdraw =
-        tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
-
-    // Due to rounding, the LPTokenBalance of the last LP
-    // might not match the LP's trustline balance
-    if (sb.rules().enabled(fixAMMv1_1))
+    // CL pools don't use fungible LP tokens — skip LP token
+    // operations and go straight to position-based withdrawal
+    if (curveType != CtConcentratedLiquidity)
     {
-        if (auto const res = verifyAndAdjustLPTokenBalance(sb, lpTokens, ammSle, accountID_); !res)
-            return {res.error(), false};
+        // Due to rounding, the LPTokenBalance of the last LP
+        // might not match the LP's trustline balance
+        if (sb.rules().enabled(fixAMMv1_1))
+        {
+            auto const lpTokensCheck =
+                ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
+            if (auto const res =
+                    verifyAndAdjustLPTokenBalance(sb, lpTokensCheck, ammSle, accountID_);
+                !res)
+                return {res.error(), false};
+        }
     }
 
     auto const tfee = getTradingFee(ctx_.view(), *ammSle, accountID_);
@@ -346,6 +431,193 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!expected)
         return {expected.error(), false};
     auto const [amountBalance, amount2Balance, lptAMMBalance] = *expected;
+
+    // Concentrated Liquidity withdrawals operate on positions
+    if (curveType == CtConcentratedLiquidity)
+    {
+        auto const positionID = ctx_.tx[sfNFTokenID];
+        auto posSle = sb.peek(keylet::ammPosition(positionID));
+        if (!posSle)
+            return {tecNO_ENTRY, false};
+
+        auto const currentTick = ammSle->getFieldI32(sfCurrentTick);
+        auto const tickLower = posSle->getFieldI32(sfTickLower);
+        auto const tickUpper = posSle->getFieldI32(sfTickUpper);
+        auto const posLiquidity = posSle->getFieldU64(sfPositionLiquidity);
+
+        // Determine withdrawal amount: partial or full
+        auto const isPartial = ctx_.tx.isFieldPresent(sfPositionLiquidity);
+        auto const withdrawLiq =
+            isPartial ? ctx_.tx.getFieldU64(sfPositionLiquidity) : posLiquidity;
+
+        if (withdrawLiq == 0)
+            return {tecAMM_FAILED, false};
+
+        auto const sqrtPriceCurrent = tickToSqrtPrice(currentTick);
+        auto const sqrtPriceLower = tickToSqrtPrice(tickLower);
+        auto const sqrtPriceUpper = tickToSqrtPrice(tickUpper);
+        Number const liq{static_cast<std::int64_t>(withdrawLiq)};
+
+        // Compute withdrawal amounts from position geometry
+        auto const asset1 = ctx_.tx[sfAsset];
+        auto const asset2 = ctx_.tx[sfAsset2];
+        STAmount withdrawAmt0;
+        STAmount withdrawAmt1;
+
+        if (currentTick < tickLower)
+        {
+            // Position is entirely token0
+            auto const frac =
+                liq * (sqrtPriceUpper - sqrtPriceLower) / (sqrtPriceLower * sqrtPriceUpper);
+            if (frac <= Number{0})
+                return {tecAMM_FAILED, false};
+            withdrawAmt0 = getRoundedAsset(
+                sb.rules(), amountBalance, frac / Number{amountBalance}, IsDeposit::No);
+            withdrawAmt1 = STAmount{asset2, 0};
+        }
+        else if (currentTick >= tickUpper)
+        {
+            // Position is entirely token1
+            auto const amt1 = liq * (sqrtPriceUpper - sqrtPriceLower);
+            if (amt1 <= Number{0})
+                return {tecAMM_FAILED, false};
+            withdrawAmt0 = STAmount{asset1, 0};
+            withdrawAmt1 = getRoundedAsset(
+                sb.rules(), amount2Balance, amt1 / Number{amount2Balance}, IsDeposit::No);
+        }
+        else
+        {
+            // Position spans current price — both tokens
+            auto const amt0Num =
+                liq * (sqrtPriceUpper - sqrtPriceCurrent) / (sqrtPriceCurrent * sqrtPriceUpper);
+            auto const amt1Num = liq * (sqrtPriceCurrent - sqrtPriceLower);
+            if (amt0Num <= Number{0} && amt1Num <= Number{0})
+                return {tecAMM_FAILED, false};
+            if (amt0Num > Number{0})
+            {
+                withdrawAmt0 = getRoundedAsset(
+                    sb.rules(), amountBalance, amt0Num / Number{amountBalance}, IsDeposit::No);
+            }
+            else
+            {
+                withdrawAmt0 = STAmount{asset1, 0};
+            }
+            if (amt1Num > Number{0})
+            {
+                withdrawAmt1 = getRoundedAsset(
+                    sb.rules(), amount2Balance, amt1Num / Number{amount2Balance}, IsDeposit::No);
+            }
+            else
+            {
+                withdrawAmt1 = STAmount{asset2, 0};
+            }
+        }
+
+        // Transfer withdrawal amounts from AMM to user
+        if (withdrawAmt0 > beast::kZero)
+        {
+            if (auto const ter = accountSend(
+                    sb,
+                    ammAccountID,
+                    accountID_,
+                    withdrawAmt0,
+                    ctx_.journal,
+                    WaiveTransferFee::Yes);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
+        if (withdrawAmt1 > beast::kZero)
+        {
+            if (auto const ter = accountSend(
+                    sb,
+                    ammAccountID,
+                    accountID_,
+                    withdrawAmt1,
+                    ctx_.journal,
+                    WaiveTransferFee::Yes);
+                !isTesSuccess(ter))
+                return {ter, false};
+        }
+
+        // Update tick entries
+        for (auto const tick : {tickLower, tickUpper})
+        {
+            auto const tickKeylet = keylet::ammTick(ammSle->key(), tick);
+            auto tickSle = sb.peek(tickKeylet);
+            if (!tickSle)
+                continue;
+
+            auto gross = tickSle->getFieldU64(sfLiquidityGross);
+            if (gross >= withdrawLiq)
+            {
+                gross -= withdrawLiq;
+            }
+            else
+            {
+                gross = 0;
+            }
+            tickSle->setFieldU64(sfLiquidityGross, gross);
+
+            auto net = static_cast<std::int64_t>(tickSle->getFieldU64(sfLiquidityNet));
+            net -= (tick == tickLower) ? static_cast<std::int64_t>(withdrawLiq)
+                                       : -static_cast<std::int64_t>(withdrawLiq);
+            tickSle->setFieldU64(sfLiquidityNet, static_cast<std::uint64_t>(net));
+
+            if (gross == 0)
+            {
+                // No positions reference this tick — delete it
+                sb.erase(tickSle);
+            }
+            else
+            {
+                sb.update(tickSle);
+            }
+        }
+
+        // Update active liquidity if current tick is in position range
+        if (currentTick >= tickLower && currentTick < tickUpper)
+        {
+            auto activeLiq = ammSle->getFieldU64(sfActiveLiquidity);
+            if (activeLiq >= withdrawLiq)
+            {
+                activeLiq -= withdrawLiq;
+            }
+            else
+            {
+                activeLiq = 0;
+            }
+            ammSle->setFieldU64(sfActiveLiquidity, activeLiq);
+        }
+
+        if (isPartial)
+        {
+            // Partial withdrawal: reduce position liquidity
+            posSle->setFieldU64(sfPositionLiquidity, posLiquidity - withdrawLiq);
+            sb.update(posSle);
+        }
+        else
+        {
+            // Full withdrawal: delete position and clean up
+            auto const ownerDirKeylet = keylet::ownerDir(accountID_);
+            auto const ownerNode = posSle->getFieldU64(sfOwnerNode);
+            if (!sb.dirRemove(ownerDirKeylet, ownerNode, posSle->key(), true))
+            {
+                JLOG(j_.error()) << "AMM Withdraw: failed to remove position "
+                                    "from owner directory.";
+                return {tecINTERNAL, false};
+            }
+            sb.erase(posSle);
+            adjustOwnerCount(sb, sb.peek(keylet::account(accountID_)), -1, ctx_.journal);
+        }
+
+        sb.update(ammSle);
+        return {tesSUCCESS, true};
+    }
+
+    // Non-CL path: compute LP token state
+    auto const lpTokens = ammLPHolds(ctx_.view(), *ammSle, ctx_.tx[sfAccount], ctx_.journal);
+    auto const lpTokensWithdraw =
+        tokensWithdraw(lpTokens, ctx_.tx[~sfLPTokenIn], ctx_.tx.getFlags());
 
     auto const subTxType = ctx_.tx.getFlags() & tfWithdrawSubTx;
 
@@ -413,7 +685,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
         return {result, false};
 
     auto const res = deleteAMMAccountIfEmpty(
-        sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+        sb, ammSle, newLPTokenBalance, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_, curveType);
     // LCOV_EXCL_START
     if (!res.second)
         return {res.first, false};
@@ -771,13 +1043,14 @@ AMMWithdraw::deleteAMMAccountIfEmpty(
     STAmount const& lpTokenBalance,
     Asset const& asset1,
     Asset const& asset2,
-    beast::Journal const& journal)
+    beast::Journal const& journal,
+    std::uint8_t curveType)
 {
     TER ter;
     bool updateBalance = true;
     if (lpTokenBalance == beast::kZero)
     {
-        ter = deleteAMMAccount(sb, asset1, asset2, journal);
+        ter = deleteAMMAccount(sb, asset1, asset2, journal, curveType);
         if (!isTesSuccess(ter) && ter != tecINCOMPLETE)
             return {ter, false};  // LCOV_EXCL_LINE
 

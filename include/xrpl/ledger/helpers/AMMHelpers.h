@@ -760,7 +760,8 @@ ammLPHolds(
     Asset const& asset2,
     AccountID const& ammAccount,
     AccountID const& lpAccount,
-    beast::Journal const j);
+    beast::Journal const j,
+    std::uint8_t curveType = CtConstantProduct);
 
 STAmount
 ammLPHolds(
@@ -785,7 +786,12 @@ ammAccountHolds(ReadView const& view, AccountID const& ammAccountID, Asset const
  * AMM object and account are deleted. Otherwise tecINCOMPLETE is returned.
  */
 TER
-deleteAMMAccount(Sandbox& view, Asset const& asset, Asset const& asset2, beast::Journal j);
+deleteAMMAccount(
+    Sandbox& view,
+    Asset const& asset,
+    Asset const& asset2,
+    beast::Journal j,
+    std::uint8_t curveType = 0);
 
 /** Initialize Auction and Voting slots and set the trading/discounted fee.
  */

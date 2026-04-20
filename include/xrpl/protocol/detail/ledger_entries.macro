@@ -381,6 +381,48 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
     {sfOwnerNode,            SoeRequired},
     {sfPreviousTxnID,        SoeOptional},
     {sfPreviousTxnLgrSeq,    SoeOptional},
+    {sfCurveType,            SoeDefault},
+    {sfFeeTier,              SoeOptional},
+    {sfTickSpacing,          SoeOptional},
+    {sfCurrentTick,          SoeOptional},
+    {sfActiveLiquidity,      SoeOptional},
+    {sfSqrtPriceX96,         SoeOptional},
+    {sfFeeGrowthGlobal0,     SoeOptional},
+    {sfFeeGrowthGlobal1,     SoeOptional},
+    {sfAmplification,        SoeOptional},
+    {sfAmplificationTime,    SoeOptional},
+}))
+
+/** A concentrated liquidity position within an AMM pool.
+
+    \sa keylet::ammPosition
+ */
+LEDGER_ENTRY(ltAMM_POSITION, 0x007a, AMMPosition, amm_position, ({
+    {sfAccount,              SoeRequired},
+    {sfAMMID,                SoeRequired},
+    {sfTickLower,            SoeRequired},
+    {sfTickUpper,            SoeRequired},
+    {sfPositionLiquidity,    SoeRequired},
+    {sfFeeGrowthInsideLast0, SoeRequired},
+    {sfFeeGrowthInsideLast1, SoeRequired},
+    {sfTokensOwed0,          SoeDefault},
+    {sfTokensOwed1,          SoeDefault},
+    {sfNFTokenID,            SoeOptional},
+    {sfOwnerNode,            SoeRequired},
+}))
+
+/** A tick boundary for concentrated liquidity AMM pools.
+
+    \sa keylet::ammTick
+ */
+LEDGER_ENTRY(ltAMM_TICK, 0x007b, AMMTick, amm_tick, ({
+    {sfAMMID,                SoeRequired},
+    {sfTickIndex,            SoeRequired},
+    {sfLiquidityNet,         SoeRequired},  // stored as UINT64, interpreted as signed
+    {sfLiquidityGross,       SoeRequired},
+    {sfFeeGrowthOutside0,    SoeRequired},
+    {sfFeeGrowthOutside1,    SoeRequired},
+    {sfOwnerNode,            SoeRequired},
 }))
 
 /** A ledger object which tracks MPTokenIssuance

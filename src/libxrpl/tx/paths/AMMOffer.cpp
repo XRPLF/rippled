@@ -5,7 +5,8 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/AMMCurve.h>
+#include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Concepts.h>
@@ -99,7 +100,15 @@ AMMOffer<TIn, TOut>::limitOut(
     // Change the offer size according to the conservation function. The offer
     // quality is increased in this case, but it doesn't matter since there is
     // only one path.
-    return {swapAssetOut(balances_, limit, ammLiquidity_.tradingFee()), limit};
+    return {
+        curveSwapOut(
+            balances_,
+            limit,
+            ammLiquidity_.tradingFee(),
+            ammLiquidity_.curveType(),
+            ammLiquidity_.curveParams(),
+            CurveContext{nullptr, &ammLiquidity_.ammID()}),
+        limit};
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -116,7 +125,15 @@ AMMOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& 
 
         return quality().ceilIn(offerAmount, limit);
     }
-    return {limit, swapAssetIn(balances_, limit, ammLiquidity_.tradingFee())};
+    return {
+        limit,
+        curveSwapIn(
+            balances_,
+            limit,
+            ammLiquidity_.tradingFee(),
+            ammLiquidity_.curveType(),
+            ammLiquidity_.curveParams(),
+            CurveContext{nullptr, &ammLiquidity_.ammID()})};
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -141,20 +158,27 @@ AMMOffer<TIn, TOut>::checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::
         return false;
     }
 
-    Number const product = balances_.in * balances_.out;
+    auto const oldIn = toSTAmount(balances_.in);
+    auto const oldOut = toSTAmount(balances_.out);
     auto const newBalances =
         TAmounts<TIn, TOut>{balances_.in + consumed.in, balances_.out - consumed.out};
-    Number const newProduct = newBalances.in * newBalances.out;
+    auto const newIn = toSTAmount(newBalances.in);
+    auto const newOut = toSTAmount(newBalances.out);
 
-    if (newProduct >= product || withinRelativeDistance(product, newProduct, Number{1, -7}))
-        return true;
+    auto const ct = ammLiquidity_.curveType();
+    if (auto const* curve = getCurve(ct, *getCurrentTransactionRules()))
+    {
+        if (curve->checkInvariant(oldIn, oldOut, newIn, newOut, ammLiquidity_.curveParams()))
+            return true;
 
-    JLOG(j.error()) << "AMMOffer::checkInvariant failed: balances " << to_string(balances_.in)
-                    << " " << to_string(balances_.out) << " new balances "
-                    << to_string(newBalances.in) << " " << to_string(newBalances.out)
-                    << " product/newProduct " << product << " " << newProduct << " diff "
-                    << (product != Number{0} ? to_string((product - newProduct) / product)
-                                             : "undefined");
+        JLOG(j.error()) << "AMMOffer::checkInvariant failed (curve " << static_cast<int>(ct)
+                        << "): balances " << to_string(balances_.in) << " "
+                        << to_string(balances_.out) << " consumed " << to_string(consumed.in) << " "
+                        << to_string(consumed.out);
+        return false;
+    }
+
+    JLOG(j.error()) << "AMMOffer::checkInvariant: unknown curve type " << static_cast<int>(ct);
     return false;
 }
 

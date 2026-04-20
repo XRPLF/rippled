@@ -6,6 +6,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 
+#include <memory>
 #include <optional>
 
 namespace xrpl {
@@ -15,6 +16,7 @@ class ValidAMM
     std::optional<AccountID> ammAccount_;
     std::optional<STAmount> lptAMMBalanceAfter_;
     std::optional<STAmount> lptAMMBalanceBefore_;
+    std::shared_ptr<SLE const> ammSle_;
     bool ammPoolChanged_{false};
 
 public:

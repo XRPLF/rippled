@@ -69,6 +69,12 @@ public:
         return base_.succ(key, last);
     }
 
+    std::optional<key_type>
+    pred(key_type const& key, std::optional<key_type> const& first = std::nullopt) const override
+    {
+        return base_.pred(key, first);
+    }
+
     std::unique_ptr<SlesType::iter_base>
     slesBegin() const override
     {
