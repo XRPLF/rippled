@@ -137,7 +137,8 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         static_cast<std::int64_t>(
             numPaymentEstimate / loanPaymentsPerFeeIncrement));
     XRPL_ASSERT(
-        feeIncrements <= maxFeeIncrements,
+        !view.rules().enabled(fixSecurity3_1_3) ||
+            feeIncrements <= maxFeeIncrements,
         "ripple::LoanPay::calculateBaseFee : number of fee increments is in "
         "range");
 
