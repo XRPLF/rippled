@@ -505,16 +505,20 @@ run(int argc, char** argv)
 
     if (vm.contains("version"))
     {
+        // LCOV_EXCL_START
         std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
+        // LCOV_EXCL_STOP
     }
 
     if (vm.contains("definitions"))
     {
+        // LCOV_EXCL_START
         std::cout << Json::FastWriter().write(getServerDefinitionsJson());
         return 0;
+        // LCOV_EXCL_STOP
     }
 
 #ifndef ENABLE_TESTS
