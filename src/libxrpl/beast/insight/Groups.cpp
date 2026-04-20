@@ -74,7 +74,6 @@ public:
         return m_collector->make_meter(make_name(name));
     }
 
-private:
     GroupImp&
     operator=(GroupImp const&) = delete;
 };

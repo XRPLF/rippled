@@ -45,6 +45,8 @@ public:
     template <class T>
     struct CompT
     {
+        CompT() = delete;
+
         explicit CompT(int)
         {
         }
@@ -60,7 +62,6 @@ public:
         }
 
     private:
-        CompT() = delete;
         std::less<T> m_less;
     };
 
@@ -68,6 +69,8 @@ public:
     class HashT
     {
     public:
+        HashT() = delete;
+
         explicit HashT(int)
         {
         }
@@ -79,7 +82,6 @@ public:
         }
 
     private:
-        HashT() = delete;
         std::hash<T> m_hash;
     };
 
@@ -87,6 +89,8 @@ public:
     struct EqualT
     {
     public:
+        EqualT() = delete;
+
         explicit EqualT(int)
         {
         }
@@ -98,7 +102,6 @@ public:
         }
 
     private:
-        EqualT() = delete;
         std::equal_to<T> m_eq;
     };
 
@@ -157,7 +160,6 @@ public:
         {
         }
 #else
-    private:
         AllocT() = delete;
 #endif
     };

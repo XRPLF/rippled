@@ -55,14 +55,15 @@ public:
     class Sink
     {
     protected:
-        Sink() = delete;
         explicit Sink(Sink const& sink) = default;
         Sink(Severity thresh, bool console);
-        Sink&
-        operator=(Sink const& lhs) = delete;
 
     public:
         virtual ~Sink() = 0;
+
+        Sink() = delete;
+        Sink&
+        operator=(Sink const& lhs) = delete;
 
         /** Returns `true` if text at the passed severity produces output. */
         virtual bool
@@ -371,10 +372,6 @@ class logstream_buf : public std::basic_stringbuf<CharT, Traits>
 {
     beast::Journal::Stream strm_;
 
-    template <class T>
-    void
-    write(T const*) = delete;
-
     void
     write(char const* s)
     {
@@ -406,6 +403,10 @@ public:
         this->str("");
         return 0;
     }
+
+    template <class T>
+    void
+    write(T const*) = delete;
 };
 
 }  // namespace detail

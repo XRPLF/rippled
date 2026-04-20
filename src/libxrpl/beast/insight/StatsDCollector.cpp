@@ -73,10 +73,10 @@ public:
     void
     do_process() override;
 
-private:
     StatsDHookImpl&
     operator=(StatsDHookImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> m_impl;
     HandlerType m_handler;
 };
@@ -100,10 +100,10 @@ public:
     void
     do_process() override;
 
-private:
     StatsDCounterImpl&
     operator=(StatsDCounterImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     CounterImpl::value_type m_value{0};
@@ -158,10 +158,10 @@ public:
     void
     do_process() override;
 
-private:
     StatsDGaugeImpl&
     operator=(StatsDGaugeImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     GaugeImpl::value_type m_last_value{0};
@@ -188,10 +188,10 @@ public:
     void
     do_process() override;
 
-private:
     StatsDMeterImpl&
     operator=(StatsDMeterImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
     MeterImpl::value_type m_value{0};

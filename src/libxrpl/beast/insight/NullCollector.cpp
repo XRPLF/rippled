@@ -24,7 +24,6 @@ class NullHookImpl : public HookImpl
 public:
     explicit NullHookImpl() = default;
 
-private:
     NullHookImpl&
     operator=(NullHookImpl const&) = delete;
 };
@@ -41,7 +40,6 @@ public:
     {
     }
 
-private:
     NullCounterImpl&
     operator=(NullCounterImpl const&) = delete;
 };
@@ -58,7 +56,6 @@ public:
     {
     }
 
-private:
     NullEventImpl&
     operator=(NullEventImpl const&) = delete;
 };
@@ -80,7 +77,6 @@ public:
     {
     }
 
-private:
     NullGaugeImpl&
     operator=(NullGaugeImpl const&) = delete;
 };
@@ -97,7 +93,6 @@ public:
     {
     }
 
-private:
     NullMeterImpl&
     operator=(NullMeterImpl const&) = delete;
 };

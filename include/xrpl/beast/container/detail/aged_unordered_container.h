@@ -671,12 +671,11 @@ public:
                 ((std::size_t)std::addressof(((element*)0)->member))));
         }
 
-    private:
-        chronological_t() = default;
-
         chronological_t(chronological_t const&) = delete;
         chronological_t(chronological_t&&) = delete;
+        chronological_t() = default;
 
+    private:
         friend class aged_unordered_container;
         list_type mutable list;
     } chronological;
