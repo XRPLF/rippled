@@ -1,18 +1,19 @@
+#include <xrpl/protocol/PublicKey.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
 
-#include <boost/multiprecision/fwd.hpp>
 #include <boost/multiprecision/number.hpp>
 
 #include <ed25519.h>
+#include <secp256k1.h>
 
 #include <algorithm>
 #include <cstdint>

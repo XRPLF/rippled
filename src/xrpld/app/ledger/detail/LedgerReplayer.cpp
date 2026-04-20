@@ -1,6 +1,28 @@
 #include <xrpld/app/ledger/LedgerReplayer.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/LedgerReplayTask.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/shamap/SHAMapItem.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <utility>
 
 namespace xrpl {
 
