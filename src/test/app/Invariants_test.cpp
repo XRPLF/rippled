@@ -1291,8 +1291,8 @@ class Invariants_test : public beast::unit_test::Suite
 
         if (numCreds != 0u)
         {
-            // This array is sorted naturally, but if you willing to change this
-            // behavior don't forget to use credentials::makeSorted
+            // This array is sorted naturally, but if you are going to change
+            // this behavior, don't forget to use credentials::makeSorted
             STArray credentials(sfAcceptedCredentials, numCreds);
             for (std::size_t n = 0; n < numCreds; ++n)
             {
