@@ -1871,20 +1871,17 @@ ValidPermissionedDEX::visitEntry(
         else
             regularOffers_ = true;
 
-        // pre-fixSecurity3_1_3: hybrid offer missing domain, missing
-        // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
-        if (after->isFlag(lsfHybrid) &&
-            (!after->isFieldPresent(sfDomainID) ||
-             !after->isFieldPresent(sfAdditionalBooks) ||
-             after->getFieldArray(sfAdditionalBooks).size() > 1))
-            badHybridsOld_ = true;
-
-        // post-fixSecurity3_1_3: same as above but also catches size == 0
-        if (after->isFlag(lsfHybrid) &&
-            (!after->isFieldPresent(sfDomainID) ||
-             !after->isFieldPresent(sfAdditionalBooks) ||
-             after->getFieldArray(sfAdditionalBooks).size() != 1))
-            badHybrids_ = true;
+        if (after->isFlag(lsfHybrid))
+        {
+            if (!after->isFieldPresent(sfDomainID) ||
+                !after->isFieldPresent(sfAdditionalBooks) ||
+                after->getFieldArray(sfAdditionalBooks).size() > 1)
+                badHybridsOld_ = true;
+            if (!after->isFieldPresent(sfDomainID) ||
+                !after->isFieldPresent(sfAdditionalBooks) ||
+                after->getFieldArray(sfAdditionalBooks).size() != 1)
+                badHybrids_ = true;
+        }
     }
 }
 
