@@ -114,6 +114,7 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/asio/error.hpp>
@@ -1311,6 +1312,11 @@ NetworkOPsImp::processTransaction(
     bool bLocal,
     FailHard failType)
 {
+    using namespace telemetry;
+    auto span = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
+    span.setAttribute("xrpl.tx.hash", to_string(transaction->getID()).c_str());
+    span.setAttribute("xrpl.tx.local", bLocal);
+
     auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
 
     // preProcessTransaction can change our pointer
@@ -1319,10 +1325,12 @@ NetworkOPsImp::processTransaction(
 
     if (bLocal)
     {
+        span.setAttribute("xrpl.tx.path", "sync");
         doTransactionSync(transaction, bUnlimited, failType);
     }
     else
     {
+        span.setAttribute("xrpl.tx.path", "async");
         doTransactionAsync(transaction, bUnlimited, failType);
     }
 }

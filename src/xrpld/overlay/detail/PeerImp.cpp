@@ -62,6 +62,7 @@
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1421,6 +1422,12 @@ PeerImp::handleTransaction(
     bool eraseTxQueue,
     bool batch)
 {
+    using namespace telemetry;
+    auto span = SpanGuard::span(TraceCategory::Transactions, "tx", "receive");
+    span.setAttribute("xrpl.peer.id", static_cast<int64_t>(id_));
+    if (auto const version = getVersion(); !version.empty())
+        span.setAttribute("xrpl.peer.version", version.c_str());
+
     XRPL_ASSERT(eraseTxQueue != batch, ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
         return;
@@ -1439,6 +1446,7 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 const txID = stx->getTransactionID();
+        span.setAttribute("xrpl.tx.hash", to_string(txID).c_str());
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
@@ -1472,9 +1480,11 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
         {
+            span.setAttribute("xrpl.tx.suppressed", true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
+                span.setAttribute("xrpl.tx.status", "known_bad");
                 fee_.update(Resource::feeUselessData, "known bad");
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
             }
