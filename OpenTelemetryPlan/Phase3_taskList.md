@@ -97,7 +97,8 @@
     - Inject current trace context into outgoing `TMTransaction::trace_context`
     - Set `xrpl.tx.relay_count` attribute
 
-- Include `TracingInstrumentation.h` and use `XRPL_TRACE_TX` macro
+- Use `SpanGuard::span(TraceCategory::Transactions, "tx", "receive")` factory
+  (Phase 1c replaced macros with the SpanGuard factory pattern)
 
 **Key modified files**:
 

@@ -25,7 +25,7 @@
 
 - Edit `src/xrpld/app/consensus/RCLConsensus.cpp`:
   - In `RCLConsensus::startRound()` (or the Adaptor's startRound):
-    - Create `consensus.round` span using `XRPL_TRACE_CONSENSUS` macro
+    - Create `consensus.round` span using `SpanGuard::span(TraceCategory::Consensus, ...)`
     - Set attributes:
       - `xrpl.consensus.ledger.prev` — previous ledger hash
       - `xrpl.consensus.ledger.seq` — target ledger sequence
