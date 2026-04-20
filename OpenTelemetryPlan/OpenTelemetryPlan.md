@@ -161,7 +161,7 @@ C++ implementation examples are provided for the core telemetry infrastructure a
 - `Telemetry.h` - Core interface for tracer access and span creation
 - `SpanGuard.h` - RAII wrapper for automatic span lifecycle management with `discard()` support
 - `DiscardFlag.h` - Thread-local flag for span discard signaling between SpanGuard and FilteringSpanProcessor
-- `TracingInstrumentation.h` - Macros for conditional instrumentation
+- `SpanGuard.cpp` - Pimpl implementation confining all OTel SDK types
 - Protocol Buffer extensions for trace context propagation
 - Module-specific instrumentation (RPC, Consensus, P2P, JobQueue)
 - Remaining modules (PathFinding, TxQ, Validator, etc.) follow the same patterns

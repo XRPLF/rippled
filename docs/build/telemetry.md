@@ -251,19 +251,19 @@ The Conan package provides a single umbrella target
 
 ### Key files
 
-| File                                           | Purpose                                                      |
-| ---------------------------------------------- | ------------------------------------------------------------ |
-| `include/xrpl/telemetry/Telemetry.h`           | Abstract telemetry interface and `Setup` struct              |
-| `include/xrpl/telemetry/SpanGuard.h`           | RAII span guard with `discard()` for dropping unwanted spans |
-| `include/xrpl/telemetry/DiscardFlag.h`         | Thread-local discard flag (zero-dependency header)           |
-| `src/libxrpl/telemetry/Telemetry.cpp`          | OTel SDK setup, `FilteringSpanProcessor`, provider lifecycle |
-| `src/libxrpl/telemetry/TelemetryConfig.cpp`    | Config parser (`setup_Telemetry()`)                          |
-| `src/libxrpl/telemetry/NullTelemetry.cpp`      | No-op implementation (used when disabled)                    |
-| `src/xrpld/telemetry/TracingInstrumentation.h` | Convenience macros (`XRPL_TRACE_RPC`, etc.)                  |
-| `src/xrpld/rpc/detail/ServerHandler.cpp`       | RPC entry point instrumentation                              |
-| `src/xrpld/rpc/detail/RPCHandler.cpp`          | Per-command instrumentation                                  |
-| `docker/telemetry/docker-compose.yml`          | Observability stack (Collector + Tempo + Grafana)            |
-| `docker/telemetry/otel-collector-config.yaml`  | OTel Collector pipeline configuration                        |
+| File                                          | Purpose                                                      |
+| --------------------------------------------- | ------------------------------------------------------------ |
+| `include/xrpl/telemetry/Telemetry.h`          | Abstract telemetry interface and `Setup` struct              |
+| `include/xrpl/telemetry/SpanGuard.h`          | RAII span guard with `discard()` for dropping unwanted spans |
+| `include/xrpl/telemetry/DiscardFlag.h`        | Thread-local discard flag (zero-dependency header)           |
+| `src/libxrpl/telemetry/Telemetry.cpp`         | OTel SDK setup, `FilteringSpanProcessor`, provider lifecycle |
+| `src/libxrpl/telemetry/TelemetryConfig.cpp`   | Config parser (`setup_Telemetry()`)                          |
+| `src/libxrpl/telemetry/NullTelemetry.cpp`     | No-op implementation (used when disabled)                    |
+| `src/libxrpl/telemetry/SpanGuard.cpp`         | Pimpl implementation for SpanGuard (all OTel types confined) |
+| `src/xrpld/rpc/detail/ServerHandler.cpp`      | RPC entry point instrumentation                              |
+| `src/xrpld/rpc/detail/RPCHandler.cpp`         | Per-command instrumentation                                  |
+| `docker/telemetry/docker-compose.yml`         | Observability stack (Collector + Tempo + Grafana)            |
+| `docker/telemetry/otel-collector-config.yaml` | OTel Collector pipeline configuration                        |
 
 ### Span discard mechanism
 
@@ -290,9 +290,9 @@ if (result != tesSUCCESS)
 
 ### Conditional compilation
 
-All OpenTelemetry SDK headers are guarded behind `#ifdef XRPL_ENABLE_TELEMETRY`.
-The instrumentation macros in `TracingInstrumentation.h` compile to `((void)0)` when
-the define is absent.
+All OpenTelemetry SDK types are hidden behind the pimpl idiom in `SpanGuard.cpp`.
+When `XRPL_ENABLE_TELEMETRY` is not defined, `SpanGuard.h` provides an all-inline
+no-op stub class with zero overhead and zero OTel dependencies.
 At runtime, if `enabled=0` is set in config (or the section is omitted), a
 `NullTelemetry` implementation is used that returns no-op spans.
 This two-layer approach ensures zero overhead when telemetry is not wanted.
