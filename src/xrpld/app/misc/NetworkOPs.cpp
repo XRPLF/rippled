@@ -34,6 +34,7 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/telemetry/TxSpanNames.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
@@ -1313,9 +1314,10 @@ NetworkOPsImp::processTransaction(
     FailHard failType)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
-    span.setAttribute("xrpl.tx.hash", to_string(transaction->getID()).c_str());
-    span.setAttribute("xrpl.tx.local", bLocal);
+    auto span =
+        SpanGuard::span(TraceCategory::Transactions, tx_span::prefix::tx, tx_span::op::process);
+    span.setAttribute(tx_span::attr::hash, to_string(transaction->getID()).c_str());
+    span.setAttribute(tx_span::attr::local, bLocal);
 
     auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
 
@@ -1325,12 +1327,12 @@ NetworkOPsImp::processTransaction(
 
     if (bLocal)
     {
-        span.setAttribute("xrpl.tx.path", "sync");
+        span.setAttribute(tx_span::attr::path, tx_span::val::sync);
         doTransactionSync(transaction, bUnlimited, failType);
     }
     else
     {
-        span.setAttribute("xrpl.tx.path", "async");
+        span.setAttribute(tx_span::attr::path, tx_span::val::async);
         doTransactionAsync(transaction, bUnlimited, failType);
     }
 }
