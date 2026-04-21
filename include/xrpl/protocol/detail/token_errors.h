@@ -36,8 +36,8 @@ public:
         return "TokenCodecError";
     }
     // Return what each enum means in text
-    static std::string
-    message(int c) final
+    std::string
+    message(int c) const final
     {
         switch (static_cast<TokenCodecErrc>(c))
         {

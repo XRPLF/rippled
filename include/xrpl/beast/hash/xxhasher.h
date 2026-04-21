@@ -24,8 +24,8 @@ private:
     static constexpr std::size_t INTERNAL_BUFFER_SIZE = 64;
 
     alignas(64) std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_{};
-    std::span<std::uint8_t> readBuffer_{};
-    std::span<std::uint8_t> writeBuffer_{};
+    std::span<std::uint8_t> readBuffer_;
+    std::span<std::uint8_t> writeBuffer_;
 
     std::optional<XXH64_hash_t> seed_;
     XXH3_state_t* state_ = nullptr;

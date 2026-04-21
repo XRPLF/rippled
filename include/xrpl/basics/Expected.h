@@ -200,7 +200,9 @@ Expected<void, E> : private boost::outcome_v2::result<void, E, detail::throw_pol
 public:
     // The default constructor makes a successful Expected<void, E>.
     // This aligns with std::expected behavior proposed in P0323R10.
-    constexpr Expected() : Base(boost::outcome_v2::success()) = default;
+    constexpr Expected() : Base(boost::outcome_v2::success())
+    {
+    }
 
     template <typename U>
         requires std::convertible_to<U, E> && (!std::is_reference_v<U>)

@@ -700,7 +700,7 @@ Number::normalizeToRange(T minMantissa, T maxMantissa) const
 {
     bool negative = negative_;
     internalrep mantissa = mantissa_;
-    int exponent = exponent_ = 0;
+    int exponent = exponent_;
 
     if constexpr (std::is_unsigned_v<T>)
     {

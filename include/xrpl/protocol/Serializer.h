@@ -21,7 +21,7 @@ class Serializer
 {
 private:
     // DEPRECATED
-    Blob mData{};
+    Blob mData;
 
 public:
     explicit Serializer(int n = 256)
@@ -161,7 +161,7 @@ public:
 
     int
     addFieldID(int type, int name);
-    static int
+    int
     addFieldID(SerializedTypeID type, int name)
     {
         return addFieldID(safe_cast<int>(type), name);
@@ -372,25 +372,25 @@ public:
     base_uint<Bits, Tag>
     getBitString();
 
-    static uint128
+    uint128
     get128()
     {
         return getBitString<128>();
     }
 
-    static uint160
+    uint160
     get160()
     {
         return getBitString<160>();
     }
 
-    static uint192
+    uint192
     get192()
     {
         return getBitString<192>();
     }
 
-    static uint256
+    uint256
     get256()
     {
         return getBitString<256>();

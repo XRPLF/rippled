@@ -34,8 +34,8 @@ class SOElement
     SOETxMPTIssue supportMpt_ = soeMPTNone;
 
 private:
-    static void
-    init(SField const& fieldName)
+    void
+    init(SField const& fieldName) const
     {
         if (!sField_.get().isUseful())
         {

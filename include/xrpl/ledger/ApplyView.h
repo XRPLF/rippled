@@ -295,7 +295,7 @@ public:
               allowable pages.
     */
     /** @{ */
-    static std::optional<std::uint64_t>
+    std::optional<std::uint64_t>
     dirAppend(
         Keylet const& directory,
         Keylet const& key,
