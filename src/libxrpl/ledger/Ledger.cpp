@@ -150,7 +150,7 @@ public:
 
 Ledger::Ledger(
     create_genesis_t,
-    Rules const& rules,
+    Rules rules,
     Fees const& fees,
     std::vector<uint256> const& amendments,
     Family& family)
@@ -158,7 +158,7 @@ Ledger::Ledger(
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , fees_(fees)
-    , rules_(rules)
+    , rules_(std::move(rules))
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = 1;
@@ -185,7 +185,7 @@ Ledger::Ledger(
     {
         auto sle = std::make_shared<SLE>(keylet::fees());
         // Whether featureXRPFees is supported will depend on startup options.
-        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) != amendments.end())
+        if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
         {
             sle->at(sfBaseFeeDrops) = fees.base;
             sle->at(sfReserveBaseDrops) = fees.reserve;
@@ -212,7 +212,7 @@ Ledger::Ledger(
     LedgerHeader const& info,
     bool& loaded,
     bool acquire,
-    Rules const& rules,
+    Rules rules,
     Fees const& fees,
     Family& family,
     beast::Journal j)
@@ -220,7 +220,7 @@ Ledger::Ledger(
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , fees_(fees)
-    , rules_(rules)
+    , rules_(std::move(rules))
     , header_(info)
     , j_(j)
 {
@@ -281,11 +281,11 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     }
 }
 
-Ledger::Ledger(LedgerHeader const& info, Rules const& rules, Family& family)
+Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
     : mImmutable(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
-    , rules_(rules)
+    , rules_(std::move(rules))
     , header_(info)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
@@ -295,14 +295,14 @@ Ledger::Ledger(LedgerHeader const& info, Rules const& rules, Family& family)
 Ledger::Ledger(
     std::uint32_t ledgerSeq,
     NetClock::time_point closeTime,
-    Rules const& rules,
+    Rules rules,
     Fees const& fees,
     Family& family)
     : mImmutable(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , fees_(fees)
-    , rules_(rules)
+    , rules_(std::move(rules))
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = ledgerSeq;

@@ -5,9 +5,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STAmount.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Create an offer. */
 Json::Value
@@ -21,6 +19,4 @@ offer(
 Json::Value
 offer_cancel(Account const& account, std::uint32_t offerSeq);
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

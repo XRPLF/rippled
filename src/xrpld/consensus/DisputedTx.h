@@ -8,6 +8,8 @@
 
 #include <boost/container/flat_map.hpp>
 
+#include <utility>
+
 namespace xrpl {
 
 /** A transaction discovered to be in dispute during consensus.
@@ -38,8 +40,8 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(Tx_t const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
-        : ourVote_(ourVote), tx_(tx), j_(j)
+    DisputedTx(Tx_t tx, bool ourVote, std::size_t numPeers, beast::Journal j)
+        : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
     }

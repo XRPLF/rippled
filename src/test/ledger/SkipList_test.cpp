@@ -11,8 +11,7 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class SkipList_test : public beast::unit_test::suite
 {
@@ -81,5 +80,4 @@ class SkipList_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(SkipList, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

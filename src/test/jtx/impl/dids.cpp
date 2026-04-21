@@ -7,12 +7,8 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
 /** DID operations. */
-namespace did {
+namespace xrpl::test::jtx::did {
 
 Json::Value
 set(jtx::Account const& account)
@@ -42,9 +38,4 @@ del(jtx::Account const& account)
     return jv;
 }
 
-}  // namespace did
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::did

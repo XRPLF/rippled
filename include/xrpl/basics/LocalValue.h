@@ -4,6 +4,7 @@
 
 #include <memory>
 #include <unordered_map>
+#include <utility>
 
 namespace xrpl {
 
@@ -28,7 +29,7 @@ struct LocalValues
         T t_;
 
         Value() = default;
-        explicit Value(T const& t) : t_(t)
+        explicit Value(T t) : t_(std::move(t))
         {
         }
 

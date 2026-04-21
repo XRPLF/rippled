@@ -11,9 +11,7 @@
 
 #include <variant>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 #define TEST_EXPECT(cond) env.test.expect(cond, __FILE__, __LINE__)
 #define TEST_EXPECTS(cond, reason) \
@@ -82,6 +80,4 @@ balance::operator()(Env& env) const
         value_.asset().value());
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

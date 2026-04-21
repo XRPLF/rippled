@@ -71,8 +71,8 @@ class FeatureCollections
         uint256 feature;
 
         Feature() = delete;
-        explicit Feature(std::string const& name_, uint256 const& feature_)
-            : name(name_), feature(feature_)
+        explicit Feature(std::string name_, uint256 const& feature_)
+            : name(std::move(name_)), feature(feature_)
         {
         }
 
@@ -428,6 +428,8 @@ enforceValidFeatureName(auto fn) -> char const*
 // clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
+
+#include <utility>
 
 #undef XRPL_RETIRE_FEATURE
 #pragma pop_macro("XRPL_RETIRE_FEATURE")

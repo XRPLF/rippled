@@ -8,8 +8,7 @@
 
 #include <fstream>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 /**
     Create a directory and remove it when it's done
@@ -161,5 +160,4 @@ public:
     }
 };
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

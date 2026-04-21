@@ -30,8 +30,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace perf {
+namespace xrpl::perf {
 
 PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes const& jobTypes)
 {
@@ -296,11 +295,11 @@ PerfLogImp::report()
 }
 
 PerfLogImp::PerfLogImp(
-    Setup const& setup,
+    Setup setup,
     Application& app,
     beast::Journal journal,
     std::function<void()>&& signalStop)
-    : setup_(setup), app_(app), j_(journal), signalStop_(std::move(signalStop))
+    : setup_(std::move(setup)), app_(app), j_(journal), signalStop_(std::move(signalStop))
 {
     openLog();
 }
@@ -506,5 +505,4 @@ make_PerfLog(
     return std::make_unique<PerfLogImp>(setup, app, journal, std::move(signalStop));
 }
 
-}  // namespace perf
-}  // namespace xrpl
+}  // namespace xrpl::perf

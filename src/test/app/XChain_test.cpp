@@ -2331,15 +2331,15 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         Account const ua{"ua"};  // unfunded account we want to create
 
         BridgeDef xrp_b{
-            doorA,
-            xrpIssue(),
-            Account::master,
-            xrpIssue(),
-            XRP(1),   // reward
-            XRP(20),  // minAccountCreate
-            4,        // quorum
-            signers,
-            Json::nullValue};
+            .doorA = doorA,
+            .issueA = xrpIssue(),
+            .doorB = Account::master,
+            .issueB = xrpIssue(),
+            .reward = XRP(1),             // reward
+            .minAccountCreate = XRP(20),  // minAccountCreate
+            .quorum = 4,                  // quorum
+            .signers = signers,
+            .jvb = Json::nullValue};
 
         xrp_b.initBridge(mcEnv, scEnv);
 
@@ -4529,30 +4529,30 @@ public:
         // create XRP -> XRP bridge
         // ------------------------
         BridgeDef xrp_b{
-            doorXRPLocking,
-            xrpIssue(),
-            Account::master,
-            xrpIssue(),
-            XRP(1),
-            XRP(20),
-            quorum,
-            signers,
-            Json::nullValue};
+            .doorA = doorXRPLocking,
+            .issueA = xrpIssue(),
+            .doorB = Account::master,
+            .issueB = xrpIssue(),
+            .reward = XRP(1),
+            .minAccountCreate = XRP(20),
+            .quorum = quorum,
+            .signers = signers,
+            .jvb = Json::nullValue};
 
         initBridge(xrp_b);
 
         // create USD -> USD bridge
         // ------------------------
         BridgeDef usd_b{
-            doorUSDLocking,
-            usdLocking,
-            doorUSDIssuing,
-            usdIssuing,
-            XRP(1),
-            XRP(20),
-            quorum,
-            signers,
-            Json::nullValue};
+            .doorA = doorUSDLocking,
+            .issueA = usdLocking,
+            .doorB = doorUSDIssuing,
+            .issueB = usdIssuing,
+            .reward = XRP(1),
+            .minAccountCreate = XRP(20),
+            .quorum = quorum,
+            .signers = signers,
+            .jvb = Json::nullValue};
 
         initBridge(usd_b);
 
@@ -4561,79 +4561,262 @@ public:
         // give  time enough for ua[0] to be funded now so it can reserve
         // the claimID
         // -----------------------------------------------------------------
-        ac(0, st, xrp_b, {a[0], ua[0], XRP(777), xrp_b.reward, true});
-        xfer(8, st, xrp_b, {a[0], ua[0], a[2], XRP(3), true});
+        ac(0,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[0], .amt = XRP(777), .reward = xrp_b.reward, .a2b = true});
+        xfer(
+            8,
+            st,
+            xrp_b,
+            {.from = a[0], .to = ua[0], .finaldest = a[2], .amt = XRP(3), .a2b = true});
         runSimulation(st);
 
         // try the same thing in the other direction
         // -----------------------------------------
-        ac(0, st, xrp_b, {a[0], ua[0], XRP(777), xrp_b.reward, false});
-        xfer(8, st, xrp_b, {a[0], ua[0], a[2], XRP(3), false});
+        ac(0,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[0], .amt = XRP(777), .reward = xrp_b.reward, .a2b = false});
+        xfer(
+            8,
+            st,
+            xrp_b,
+            {.from = a[0], .to = ua[0], .finaldest = a[2], .amt = XRP(3), .a2b = false});
         runSimulation(st);
 
         // run multiple XRP transfers
         // --------------------------
-        xfer(0, st, xrp_b, {a[0], a[0], a[1], XRP(6), true, WithClaim::no});
-        xfer(1, st, xrp_b, {a[0], a[0], a[1], XRP(8), false, WithClaim::no});
-        xfer(1, st, xrp_b, {a[1], a[1], a[1], XRP(1), true});
-        xfer(2, st, xrp_b, {a[0], a[0], a[1], XRP(3), false});
-        xfer(2, st, xrp_b, {a[1], a[1], a[1], XRP(5), false});
-        xfer(2, st, xrp_b, {a[0], a[0], a[1], XRP(7), false, WithClaim::no});
-        xfer(2, st, xrp_b, {a[1], a[1], a[1], XRP(9), true});
+        xfer(
+            0,
+            st,
+            xrp_b,
+            {.from = a[0],
+             .to = a[0],
+             .finaldest = a[1],
+             .amt = XRP(6),
+             .a2b = true,
+             .with_claim = WithClaim::no});
+        xfer(
+            1,
+            st,
+            xrp_b,
+            {.from = a[0],
+             .to = a[0],
+             .finaldest = a[1],
+             .amt = XRP(8),
+             .a2b = false,
+             .with_claim = WithClaim::no});
+        xfer(
+            1,
+            st,
+            xrp_b,
+            {.from = a[1], .to = a[1], .finaldest = a[1], .amt = XRP(1), .a2b = true});
+        xfer(
+            2,
+            st,
+            xrp_b,
+            {.from = a[0], .to = a[0], .finaldest = a[1], .amt = XRP(3), .a2b = false});
+        xfer(
+            2,
+            st,
+            xrp_b,
+            {.from = a[1], .to = a[1], .finaldest = a[1], .amt = XRP(5), .a2b = false});
+        xfer(
+            2,
+            st,
+            xrp_b,
+            {.from = a[0],
+             .to = a[0],
+             .finaldest = a[1],
+             .amt = XRP(7),
+             .a2b = false,
+             .with_claim = WithClaim::no});
+        xfer(
+            2,
+            st,
+            xrp_b,
+            {.from = a[1], .to = a[1], .finaldest = a[1], .amt = XRP(9), .a2b = true});
         runSimulation(st);
 
         // run one USD transfer
         // --------------------
-        xfer(0, st, usd_b, {a[0], a[1], a[2], usdLocking(3), true});
+        xfer(
+            0,
+            st,
+            usd_b,
+            {.from = a[0], .to = a[1], .finaldest = a[2], .amt = usdLocking(3), .a2b = true});
         runSimulation(st);
 
         // run multiple USD transfers
         // --------------------------
-        xfer(0, st, usd_b, {a[0], a[0], a[1], usdLocking(6), true});
-        xfer(1, st, usd_b, {a[0], a[0], a[1], usdIssuing(8), false});
-        xfer(1, st, usd_b, {a[1], a[1], a[1], usdLocking(1), true});
-        xfer(2, st, usd_b, {a[0], a[0], a[1], usdIssuing(3), false});
-        xfer(2, st, usd_b, {a[1], a[1], a[1], usdIssuing(5), false});
-        xfer(2, st, usd_b, {a[0], a[0], a[1], usdIssuing(7), false});
-        xfer(2, st, usd_b, {a[1], a[1], a[1], usdLocking(9), true});
+        xfer(
+            0,
+            st,
+            usd_b,
+            {.from = a[0], .to = a[0], .finaldest = a[1], .amt = usdLocking(6), .a2b = true});
+        xfer(
+            1,
+            st,
+            usd_b,
+            {.from = a[0], .to = a[0], .finaldest = a[1], .amt = usdIssuing(8), .a2b = false});
+        xfer(
+            1,
+            st,
+            usd_b,
+            {.from = a[1], .to = a[1], .finaldest = a[1], .amt = usdLocking(1), .a2b = true});
+        xfer(
+            2,
+            st,
+            usd_b,
+            {.from = a[0], .to = a[0], .finaldest = a[1], .amt = usdIssuing(3), .a2b = false});
+        xfer(
+            2,
+            st,
+            usd_b,
+            {.from = a[1], .to = a[1], .finaldest = a[1], .amt = usdIssuing(5), .a2b = false});
+        xfer(
+            2,
+            st,
+            usd_b,
+            {.from = a[0], .to = a[0], .finaldest = a[1], .amt = usdIssuing(7), .a2b = false});
+        xfer(
+            2,
+            st,
+            usd_b,
+            {.from = a[1], .to = a[1], .finaldest = a[1], .amt = usdLocking(9), .a2b = true});
         runSimulation(st);
 
         // run mixed transfers
         // -------------------
-        xfer(0, st, xrp_b, {a[0], a[0], a[0], XRP(1), true});
-        xfer(0, st, usd_b, {a[1], a[3], a[3], usdIssuing(3), false});
-        xfer(0, st, usd_b, {a[3], a[2], a[1], usdIssuing(5), false});
+        xfer(
+            0,
+            st,
+            xrp_b,
+            {.from = a[0], .to = a[0], .finaldest = a[0], .amt = XRP(1), .a2b = true});
+        xfer(
+            0,
+            st,
+            usd_b,
+            {.from = a[1], .to = a[3], .finaldest = a[3], .amt = usdIssuing(3), .a2b = false});
+        xfer(
+            0,
+            st,
+            usd_b,
+            {.from = a[3], .to = a[2], .finaldest = a[1], .amt = usdIssuing(5), .a2b = false});
 
-        xfer(1, st, xrp_b, {a[0], a[0], a[0], XRP(4), false});
-        xfer(1, st, xrp_b, {a[1], a[1], a[0], XRP(8), true});
-        xfer(1, st, usd_b, {a[4], a[1], a[1], usdLocking(7), true});
+        xfer(
+            1,
+            st,
+            xrp_b,
+            {.from = a[0], .to = a[0], .finaldest = a[0], .amt = XRP(4), .a2b = false});
+        xfer(
+            1,
+            st,
+            xrp_b,
+            {.from = a[1], .to = a[1], .finaldest = a[0], .amt = XRP(8), .a2b = true});
+        xfer(
+            1,
+            st,
+            usd_b,
+            {.from = a[4], .to = a[1], .finaldest = a[1], .amt = usdLocking(7), .a2b = true});
 
-        xfer(3, st, xrp_b, {a[1], a[1], a[0], XRP(7), true});
-        xfer(3, st, xrp_b, {a[0], a[4], a[3], XRP(2), false});
-        xfer(3, st, xrp_b, {a[1], a[1], a[0], XRP(9), true});
-        xfer(3, st, usd_b, {a[3], a[1], a[1], usdIssuing(11), false});
+        xfer(
+            3,
+            st,
+            xrp_b,
+            {.from = a[1], .to = a[1], .finaldest = a[0], .amt = XRP(7), .a2b = true});
+        xfer(
+            3,
+            st,
+            xrp_b,
+            {.from = a[0], .to = a[4], .finaldest = a[3], .amt = XRP(2), .a2b = false});
+        xfer(
+            3,
+            st,
+            xrp_b,
+            {.from = a[1], .to = a[1], .finaldest = a[0], .amt = XRP(9), .a2b = true});
+        xfer(
+            3,
+            st,
+            usd_b,
+            {.from = a[3], .to = a[1], .finaldest = a[1], .amt = usdIssuing(11), .a2b = false});
         runSimulation(st);
 
         // run multiple account create to stress attestation batching
         // ----------------------------------------------------------
-        ac(0, st, xrp_b, {a[0], ua[1], XRP(301), xrp_b.reward, true});
-        ac(0, st, xrp_b, {a[1], ua[2], XRP(302), xrp_b.reward, true});
-        ac(1, st, xrp_b, {a[0], ua[3], XRP(303), xrp_b.reward, true});
-        ac(2, st, xrp_b, {a[1], ua[4], XRP(304), xrp_b.reward, true});
-        ac(3, st, xrp_b, {a[0], ua[5], XRP(305), xrp_b.reward, true});
-        ac(4, st, xrp_b, {a[1], ua[6], XRP(306), xrp_b.reward, true});
-        ac(6, st, xrp_b, {a[0], ua[7], XRP(307), xrp_b.reward, true});
-        ac(7, st, xrp_b, {a[2], ua[8], XRP(308), xrp_b.reward, true});
-        ac(9, st, xrp_b, {a[0], ua[9], XRP(309), xrp_b.reward, true});
-        ac(9, st, xrp_b, {a[0], ua[9], XRP(309), xrp_b.reward, true});
-        ac(10, st, xrp_b, {a[0], ua[10], XRP(310), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[0], ua[11], XRP(311), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[3], ua[12], XRP(312), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[4], ua[13], XRP(313), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[3], ua[14], XRP(314), xrp_b.reward, true});
-        ac(12, st, xrp_b, {a[6], ua[15], XRP(315), xrp_b.reward, true});
-        ac(13, st, xrp_b, {a[7], ua[16], XRP(316), xrp_b.reward, true});
-        ac(15, st, xrp_b, {a[3], ua[17], XRP(317), xrp_b.reward, true});
+        ac(0,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[1], .amt = XRP(301), .reward = xrp_b.reward, .a2b = true});
+        ac(0,
+           st,
+           xrp_b,
+           {.from = a[1], .to = ua[2], .amt = XRP(302), .reward = xrp_b.reward, .a2b = true});
+        ac(1,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[3], .amt = XRP(303), .reward = xrp_b.reward, .a2b = true});
+        ac(2,
+           st,
+           xrp_b,
+           {.from = a[1], .to = ua[4], .amt = XRP(304), .reward = xrp_b.reward, .a2b = true});
+        ac(3,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[5], .amt = XRP(305), .reward = xrp_b.reward, .a2b = true});
+        ac(4,
+           st,
+           xrp_b,
+           {.from = a[1], .to = ua[6], .amt = XRP(306), .reward = xrp_b.reward, .a2b = true});
+        ac(6,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[7], .amt = XRP(307), .reward = xrp_b.reward, .a2b = true});
+        ac(7,
+           st,
+           xrp_b,
+           {.from = a[2], .to = ua[8], .amt = XRP(308), .reward = xrp_b.reward, .a2b = true});
+        ac(9,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[9], .amt = XRP(309), .reward = xrp_b.reward, .a2b = true});
+        ac(9,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[9], .amt = XRP(309), .reward = xrp_b.reward, .a2b = true});
+        ac(10,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[10], .amt = XRP(310), .reward = xrp_b.reward, .a2b = true});
+        ac(12,
+           st,
+           xrp_b,
+           {.from = a[0], .to = ua[11], .amt = XRP(311), .reward = xrp_b.reward, .a2b = true});
+        ac(12,
+           st,
+           xrp_b,
+           {.from = a[3], .to = ua[12], .amt = XRP(312), .reward = xrp_b.reward, .a2b = true});
+        ac(12,
+           st,
+           xrp_b,
+           {.from = a[4], .to = ua[13], .amt = XRP(313), .reward = xrp_b.reward, .a2b = true});
+        ac(12,
+           st,
+           xrp_b,
+           {.from = a[3], .to = ua[14], .amt = XRP(314), .reward = xrp_b.reward, .a2b = true});
+        ac(12,
+           st,
+           xrp_b,
+           {.from = a[6], .to = ua[15], .amt = XRP(315), .reward = xrp_b.reward, .a2b = true});
+        ac(13,
+           st,
+           xrp_b,
+           {.from = a[7], .to = ua[16], .amt = XRP(316), .reward = xrp_b.reward, .a2b = true});
+        ac(15,
+           st,
+           xrp_b,
+           {.from = a[3], .to = ua[17], .amt = XRP(317), .reward = xrp_b.reward, .a2b = true});
         runSimulation(st, true);  // balances verification working now.
     }
 

@@ -10,11 +10,7 @@
 
 #include <string_view>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace credentials {
+namespace xrpl::test::jtx::credentials {
 
 Json::Value
 create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType)
@@ -80,9 +76,4 @@ ledgerEntry(jtx::Env& env, std::string const& credIdx)
     return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
-}  // namespace credentials
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::credentials

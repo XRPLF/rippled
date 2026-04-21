@@ -66,12 +66,10 @@ class SlabAllocator
             }
         }
 
-        ~SlabBlock()
-        {
-            // Calling this destructor will release the allocated memory but
-            // will not properly destroy any objects that are constructed in
-            // the block itself.
-        }
+        // Calling this destructor will release the allocated memory but
+        // will not properly destroy any objects that are constructed in
+        // the block itself.
+        ~SlabBlock() = default;
 
         SlabBlock(SlabBlock const& other) = delete;
         SlabBlock&
@@ -176,12 +174,10 @@ public:
     SlabAllocator&
     operator=(SlabAllocator&& other) = delete;
 
-    ~SlabAllocator()
-    {
-        // FIXME: We can't destroy the memory blocks we've allocated, because
-        //        we can't be sure that they are not being used. Cleaning the
-        //        shutdown process up could make this possible.
-    }
+    // FIXME: We can't destroy the memory blocks we've allocated, because
+    //        we can't be sure that they are not being used. Cleaning the
+    //        shutdown process up could make this possible.
+    ~SlabAllocator() = default;
 
     /** Returns the size of the memory block this allocator returns. */
     constexpr std::size_t
@@ -347,9 +343,7 @@ public:
     SlabAllocatorSet&
     operator=(SlabAllocatorSet&& other) = delete;
 
-    ~SlabAllocatorSet()
-    {
-    }
+    ~SlabAllocatorSet() = default;
 
     /** Returns a suitably aligned pointer, if one is available.
 

@@ -8,9 +8,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 offer(
@@ -39,6 +37,4 @@ offer_cancel(Account const& account, std::uint32_t offerSeq)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

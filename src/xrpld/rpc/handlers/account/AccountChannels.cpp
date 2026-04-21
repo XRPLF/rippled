@@ -114,7 +114,7 @@ doAccountChannels(RPC::JsonContext& context)
         AccountID const& accountID;
         std::optional<AccountID> const& raDstAccount;
     };
-    VisitData visitData = {{}, accountID, raDstAccount};
+    VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
     visitData.items.reserve(limit);
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;
