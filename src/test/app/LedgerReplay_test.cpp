@@ -72,14 +72,10 @@ struct LedgerReplay_test : public beast::unit_test::suite
 
         LedgerMaster& ledgerMaster = env.app().getLedgerMaster();
         auto const lastClosed = ledgerMaster.getClosedLedger();
-        auto const lastClosedParent =
-            ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);
+        auto const lastClosedParent = ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);
 
         auto const replayed = buildLedger(
-            LedgerReplay(lastClosedParent, lastClosed),
-            tapNONE,
-            env.app(),
-            env.journal);
+            LedgerReplay(lastClosedParent, lastClosed), tapNONE, env.app(), env.journal);
 
         BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
     }

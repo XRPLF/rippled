@@ -4587,8 +4587,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::msig(bob, {dave, elsa}),
                 ter(tesSUCCESS));
 
-            auto const bobSignerEntry =
-                jt1.jv[sfBatchSigners.jsonName][0u];
+            auto const bobSignerEntry = jt1.jv[sfBatchSigners.jsonName][0u];
 
             env(jt1, ter(tesSUCCESS));
             env.close();

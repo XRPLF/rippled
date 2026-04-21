@@ -436,11 +436,7 @@ STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
     Serializer msg;
     serializeBatch(
-        msg,
-        getAccountID(sfAccount),
-        getSeqValue(),
-        getFlags(),
-        getBatchTransactionIDs());
+        msg, getAccountID(sfAccount), getSeqValue(), getFlags(), getBatchTransactionIDs());
     finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
     return singleSignHelper(batchSigner, msg.slice());
 }
@@ -531,11 +527,7 @@ STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
     auto const batchSignerAccount = batchSigner.getAccountID(sfAccount);
     Serializer dataStart;
     serializeBatch(
-        dataStart,
-        getAccountID(sfAccount),
-        getSeqValue(),
-        getFlags(),
-        getBatchTransactionIDs());
+        dataStart, getAccountID(sfAccount), getSeqValue(), getFlags(), getBatchTransactionIDs());
     dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
         batchSigner,

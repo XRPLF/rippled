@@ -219,8 +219,7 @@ buildLedger(
             {
                 if (tx.second->isFlag(tfInnerBatchTxn))
                     continue;
-                applyTransaction(
-                    app, accum, *tx.second, false, applyFlags, j);
+                applyTransaction(app, accum, *tx.second, false, applyFlags, j);
             }
         });
 }
