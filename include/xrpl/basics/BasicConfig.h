@@ -33,7 +33,7 @@ private:
 
 public:
     /** Create an empty section. */
-    explicit Section(std::string const& name = "");
+    explicit Section(std::string name = "");
 
     /** Returns the name of this section. */
     std::string const&
@@ -275,8 +275,7 @@ public:
     bool
     had_trailing_comments() const
     {
-        return std::any_of(
-            map_.cbegin(), map_.cend(), [](auto s) { return s.second.had_trailing_comments(); });
+        return std::ranges::any_of(map_, [](auto s) { return s.second.had_trailing_comments(); });
     }
 
 protected:

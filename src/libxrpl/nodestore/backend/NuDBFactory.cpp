@@ -44,8 +44,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NuDBBackend : public Backend
 {
@@ -464,5 +463,4 @@ registerNuDBFactory(Manager& manager)
     static NuDBFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

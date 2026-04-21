@@ -7,6 +7,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <utility>
+
 namespace xrpl {
 
 /** State information when preflighting a tx. */
@@ -24,12 +26,12 @@ public:
         ServiceRegistry& registry_,
         STTx const& tx_,
         uint256 parentBatchId_,
-        Rules const& rules_,
+        Rules rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : registry(registry_)
         , tx(tx_)
-        , rules(rules_)
+        , rules(std::move(rules_))
         , flags(flags_)
         , parentBatchId(parentBatchId_)
         , j(j_)
@@ -40,10 +42,10 @@ public:
     PreflightContext(
         ServiceRegistry& registry_,
         STTx const& tx_,
-        Rules const& rules_,
+        Rules rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+        : registry(registry_), tx(tx_), rules(std::move(rules_)), flags(flags_), j(j_)
     {
         XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
     }
@@ -116,13 +118,11 @@ protected:
     AccountID const account_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
+public:
+    virtual ~Transactor() = default;
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;
-
-public:
-    virtual ~Transactor() = default;
-
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
     /** Process the transaction. */
     ApplyResult

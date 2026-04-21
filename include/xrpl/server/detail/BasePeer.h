@@ -11,6 +11,7 @@
 #include <atomic>
 #include <functional>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -64,7 +65,7 @@ BasePeer<Handler, Impl>::BasePeer(
     beast::Journal journal)
     : port_(port)
     , handler_(handler)
-    , remote_address_(remote_address)
+    , remote_address_(std::move(remote_address))
     , sink_(
           journal.sink(),
           [] {

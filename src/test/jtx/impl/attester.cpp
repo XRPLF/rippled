@@ -10,9 +10,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Buffer
 sign_claim_attestation(
@@ -56,6 +54,4 @@ sign_create_account_attestation(
     return sign(pk, sk, makeSlice(toSign));
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

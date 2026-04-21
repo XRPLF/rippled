@@ -44,8 +44,7 @@
 #include <tuple>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Directory_test : public beast::unit_test::suite
 {
@@ -134,7 +133,7 @@ struct Directory_test : public beast::unit_test::suite
 
                 // Ensure that the entries in the page are sorted
                 auto const& v = p->getFieldV256(sfIndexes);
-                BEAST_EXPECT(std::is_sorted(v.begin(), v.end()));
+                BEAST_EXPECT(std::ranges::is_sorted(v));
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
@@ -600,5 +599,4 @@ struct Directory_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_PRIO(Directory, ledger, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

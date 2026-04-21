@@ -3,9 +3,7 @@
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
 
-namespace xrpl {
-
-namespace compression {
+namespace xrpl::compression {
 
 std::size_t constexpr headerBytes = 6;
 std::size_t constexpr headerBytesCompressed = 10;
@@ -93,6 +91,4 @@ compress(
     }
     return 0;
 }
-}  // namespace compression
-
-}  // namespace xrpl
+}  // namespace xrpl::compression

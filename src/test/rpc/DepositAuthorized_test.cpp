@@ -18,8 +18,7 @@
 #include <string_view>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class DepositAuthorized_test : public beast::unit_test::suite
 {
@@ -546,5 +545,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
