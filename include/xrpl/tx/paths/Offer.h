@@ -11,6 +11,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -31,7 +32,7 @@ private:
 public:
     TOffer() = default;
 
-    TOffer(SLE::pointer const& entry, Quality quality);
+    TOffer(SLE::pointer entry, Quality quality);
 
     /** Returns the quality of the offer.
         Conceptually, the quality is the ratio of output to input currency.
@@ -157,8 +158,8 @@ public:
 };
 
 template <StepAmount TIn, StepAmount TOut>
-TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
-    : m_entry(entry), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
+TOffer<TIn, TOut>::TOffer(SLE::pointer entry, Quality quality)
+    : m_entry(std::move(entry)), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
 {
     auto const tp = m_entry->getFieldAmount(sfTakerPays);
     auto const tg = m_entry->getFieldAmount(sfTakerGets);

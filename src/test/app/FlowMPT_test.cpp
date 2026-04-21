@@ -43,8 +43,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct FlowMPT_test : public beast::unit_test::suite
 {
@@ -857,7 +856,8 @@ struct FlowMPT_test : public beast::unit_test::suite
             // available. Consequently, the entire offer is crossed.
             // Note remaining takerGets is 541 rather than 540 due to integral
             // rounding. XRP has a similar result.
-            return TokenData<MPT, MPT>{EUR, USD, EUR(541), USD(450)};
+            return TokenData<MPT, MPT>{
+                .gets = EUR, .pays = USD, .remTakerGets = EUR(541), .remTakerPays = USD(450)};
         };
 
         auto initXRP = [&](Env& env) {
@@ -869,7 +869,11 @@ struct FlowMPT_test : public beast::unit_test::suite
             // available. Consequently, the entire offer is crossed.
             // Note remaining takerGets is 540.000001 rather than 540 due to
             // integral rounding.
-            return TokenData<XRP_t, MPT>{XRP, USD, XRP(540.000001), USD(450)};
+            return TokenData<XRP_t, MPT>{
+                .gets = XRP,
+                .pays = USD,
+                .remTakerGets = XRP(540.000001),
+                .remTakerPays = USD(450)};
         };
 
         auto initIOU = [&](Env& env) {
@@ -881,7 +885,8 @@ struct FlowMPT_test : public beast::unit_test::suite
             // Payment's engine last step is limited by alice's
             // trustline - 606. Therefore, only 6EUR is delivered
             // and the offer is partially crossed.
-            return TokenData<IOU, IOU>{EUR, USD, EUR(594), USD(495)};
+            return TokenData<IOU, IOU>{
+                .gets = EUR, .pays = USD, .remTakerGets = EUR(594), .remTakerPays = USD(495)};
         };
 
         auto initIOU1 = [&](Env& env) {
@@ -893,7 +898,8 @@ struct FlowMPT_test : public beast::unit_test::suite
             // Payment's engine last step is not limited by alice's
             // trustline. Therefore, the entire offer is crossed.
             // This the same result as with MPT.
-            return TokenData<IOU, IOU>{EUR, USD, EUR(540), USD(450)};
+            return TokenData<IOU, IOU>{
+                .gets = EUR, .pays = USD, .remTakerGets = EUR(540), .remTakerPays = USD(450)};
         };
 
         auto test = [&](auto&& initToken) {
@@ -2140,5 +2146,4 @@ struct FlowMPT_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_PRIO(FlowMPT, app, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

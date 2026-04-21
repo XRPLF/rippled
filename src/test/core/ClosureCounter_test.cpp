@@ -10,8 +10,7 @@
 #include <thread>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -320,5 +319,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ClosureCounter, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

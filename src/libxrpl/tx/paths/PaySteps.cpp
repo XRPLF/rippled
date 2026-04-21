@@ -25,6 +25,7 @@
 #include <cstdlib>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <utility>
 #include <vector>
 
@@ -291,7 +292,7 @@ toStrand(
             // even if all that is changing is the Issue.account. Note
             // that MPTIssue can't change the account.
             STPathElement const& lastAsset =
-                *std::find_if(normPath.rbegin(), normPath.rend(), hasAsset);
+                *std::ranges::find_if(std::ranges::reverse_view(normPath), hasAsset);
             if (lastAsset.getPathAsset() != deliver ||
                 (offerCrossing != OfferCrossing::no &&
                  lastAsset.getIssuerID() != deliver.getIssuer()))
@@ -591,7 +592,7 @@ toStrands(
     result.reserve(1 + paths.size());
     // Insert the strand into result if it is not already part of the vector
     auto insert = [&](Strand s) {
-        bool const hasStrand = std::find(result.begin(), result.end(), s) != result.end();
+        bool const hasStrand = std::ranges::find(result, s) != result.end();
 
         if (!hasStrand)
             result.emplace_back(std::move(s));

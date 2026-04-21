@@ -13,9 +13,7 @@
 
 #include <memory>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 namespace validator_data {
 static auto const public_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
@@ -162,5 +160,4 @@ admin = 127.0.0.1
 
 BEAST_DEFINE_TESTSUITE(ServerInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

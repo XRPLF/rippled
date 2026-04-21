@@ -269,7 +269,7 @@ public:
         class Container,
         class = std::enable_if_t<
             detail::is_contiguous_container<Container>::value &&
-            std::is_trivially_copyable<typename Container::value_type>::value>>
+            std::is_trivially_copyable_v<typename Container::value_type>>>
     explicit base_uint(Container const& c)
     {
         XRPL_ASSERT(
@@ -281,7 +281,7 @@ public:
     template <class Container>
     std::enable_if_t<
         detail::is_contiguous_container<Container>::value &&
-            std::is_trivially_copyable<typename Container::value_type>::value,
+            std::is_trivially_copyable_v<typename Container::value_type>,
         base_uint&>
     operator=(Container const& c)
     {

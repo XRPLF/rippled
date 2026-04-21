@@ -8,8 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class WSClient : public AbstractClient
 {
@@ -33,5 +32,4 @@ makeWSClient(
     unsigned rpc_version = 2,
     std::unordered_map<std::string, std::string> const& headers = {});
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

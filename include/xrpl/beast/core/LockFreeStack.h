@@ -13,18 +13,16 @@ class LockFreeStackIterator
 {
 protected:
     using Node = typename Container::Node;
-    using NodePtr = typename std::conditional<IsConst, Node const*, Node*>::type;
+    using NodePtr = std::conditional_t<IsConst, Node const*, Node*>;
 
 public:
     using iterator_category = std::forward_iterator_tag;
     using value_type = typename Container::value_type;
     using difference_type = typename Container::difference_type;
-    using pointer = typename std::
-        conditional<IsConst, typename Container::const_pointer, typename Container::pointer>::type;
-    using reference = typename std::conditional<
-        IsConst,
-        typename Container::const_reference,
-        typename Container::reference>::type;
+    using pointer =
+        std::conditional_t<IsConst, typename Container::const_pointer, typename Container::pointer>;
+    using reference = std::
+        conditional_t<IsConst, typename Container::const_reference, typename Container::reference>;
 
     LockFreeStackIterator() : m_node()
     {

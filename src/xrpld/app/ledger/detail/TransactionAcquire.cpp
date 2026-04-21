@@ -44,7 +44,7 @@ TransactionAcquire::TransactionAcquire(
           app,
           hash,
           TX_ACQUIRE_TIMEOUT,
-          {jtTXN_DATA, "TxAcq", {}},
+          {.jobType = jtTXN_DATA, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
     , mPeerSet(std::move(peerSet))
 {

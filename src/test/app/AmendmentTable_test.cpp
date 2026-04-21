@@ -442,7 +442,7 @@ public:
             BEAST_EXPECT(table->unVeto(unvetoedID));
 
             std::vector<uint256> const desired = table->getDesired();
-            BEAST_EXPECT(std::find(desired.begin(), desired.end(), unvetoedID) != desired.end());
+            BEAST_EXPECT(std::ranges::find(desired, unvetoedID) != desired.end());
         }
 
         // Veto all supported amendments.  Now desired should be empty.
@@ -977,10 +977,9 @@ public:
             // We need a hash_set to pass to trustChanged.
             hash_set<PublicKey> trustedValidators;
             trustedValidators.reserve(validators.size());
-            std::for_each(
-                validators.begin(), validators.end(), [&trustedValidators](auto const& val) {
-                    trustedValidators.insert(val.first);
-                });
+            std::ranges::for_each(validators, [&trustedValidators](auto const& val) {
+                trustedValidators.insert(val.first);
+            });
 
             // Tell the AmendmentTable that the UNL changed.
             table->trustChanged(trustedValidators);
@@ -1174,9 +1173,8 @@ public:
         BEAST_EXPECT(table->needValidatedLedger(1));
 
         std::set<uint256> enabled;
-        std::for_each(unsupported_.begin(), unsupported_.end(), [&enabled](auto const& s) {
-            enabled.insert(amendmentId(s));
-        });
+        std::ranges::for_each(
+            unsupported_, [&enabled](auto const& s) { enabled.insert(amendmentId(s)); });
 
         majorityAmendments_t majority;
         table->doValidatedLedger(1, enabled, majority);
@@ -1184,12 +1182,9 @@ public:
         BEAST_EXPECT(!table->firstUnsupportedExpected());
 
         NetClock::duration t{1000s};
-        std::for_each(
-            unsupportedMajority_.begin(),
-            unsupportedMajority_.end(),
-            [&majority, &t](auto const& s) {
-                majority[amendmentId(s)] = NetClock::time_point{--t};
-            });
+        std::ranges::for_each(unsupportedMajority_, [&majority, &t](auto const& s) {
+            majority[amendmentId(s)] = NetClock::time_point{--t};
+        });
 
         table->doValidatedLedger(1, enabled, majority);
         BEAST_EXPECT(table->hasUnsupportedEnabled());
