@@ -1,4 +1,5 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
+
 #include <xrpl/protocol/Protocol.h>
 
 #include <openssl/rand.h>

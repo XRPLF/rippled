@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
+
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -7,7 +9,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
 namespace xrpl {
 
