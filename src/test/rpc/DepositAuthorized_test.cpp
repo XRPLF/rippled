@@ -8,6 +8,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>

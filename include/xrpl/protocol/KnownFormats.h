@@ -75,9 +75,7 @@ public:
         Derived classes will load the object with all the known formats.
     */
 private:
-    KnownFormats() : name_(beast::type_name<Derived>())
-    {
-    }
+    KnownFormats() = default;
 
 public:
     /** Destroy the known formats object.
@@ -174,15 +172,15 @@ protected:
     }
 
 private:
-    std::string name_;
+    std::string name_{beast::type_name<Derived>()};
 
     // One of the situations where a std::forward_list is useful.  We want to
     // store each Item in a place where its address won't change.  So a node-
     // based container is appropriate.  But we don't need searchability.
-    std::forward_list<Item> formats_;
+    std::forward_list<Item> formats_{};
 
-    boost::container::flat_map<std::string, Item const*> names_;
-    boost::container::flat_map<KeyType, Item const*> types_;
+    boost::container::flat_map<std::string, Item const*> names_{};
+    boost::container::flat_map<KeyType, Item const*> types_{};
     friend Derived;
 };
 

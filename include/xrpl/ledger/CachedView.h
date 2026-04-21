@@ -17,7 +17,7 @@ private:
     DigestAwareReadView const& base_;
     CachedSLEs& cache_;
     std::mutex mutable mutex_;
-    std::unordered_map<key_type, uint256, hardened_hash<>> mutable map_;
+    std::unordered_map<key_type, uint256, hardened_hash<>> mutable map_{};
 
 public:
     CachedViewImpl() = delete;

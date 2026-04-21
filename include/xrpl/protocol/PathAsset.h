@@ -10,7 +10,7 @@ namespace xrpl {
 class PathAsset
 {
 private:
-    std::variant<Currency, MPTID> easset_;
+    std::variant<Currency, MPTID> easset_{};
 
 public:
     PathAsset() = default;

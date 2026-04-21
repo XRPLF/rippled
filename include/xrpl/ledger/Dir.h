@@ -104,7 +104,7 @@ private:
     std::optional<value_type> mutable cache_;
     std::shared_ptr<SLE const> sle_;
     STVector256 const* indexes_ = nullptr;
-    std::vector<uint256>::const_iterator it_;
+    std::vector<uint256>::const_iterator it_{};
 };
 
 }  // namespace xrpl

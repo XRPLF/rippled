@@ -60,7 +60,7 @@ struct PreclaimContext
 public:
     std::reference_wrapper<ServiceRegistry> registry;
     ReadView const& view;
-    TER preflightResult;
+    TER preflightResult{};
     ApplyFlags flags;
     STTx const& tx;
     std::optional<uint256 const> const parentBatchId;

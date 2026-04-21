@@ -101,7 +101,7 @@ private:
         boost::container::pmr::polymorphic_allocator<std::pair<key_type const, sleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
-    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonic_resource_;
+    std::unique_ptr<boost::container::pmr::monotonic_buffer_resource> monotonic_resource_{};
     items_t items_;
 
     XRPAmount dropsDestroyed_{0};

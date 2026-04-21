@@ -28,7 +28,7 @@ private:
 
     using items_t = std::map<key_type, std::pair<Action, std::shared_ptr<SLE>>>;
 
-    items_t items_;
+    items_t items_{};
     XRPAmount dropsDestroyed_{0};
 
 public:

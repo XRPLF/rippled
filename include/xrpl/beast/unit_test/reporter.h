@@ -68,7 +68,7 @@ private:
         std::size_t cases = 0;
         std::size_t total = 0;
         std::size_t failed = 0;
-        std::vector<run_time> top;
+        std::vector<run_time> top{};
         typename clock_type::time_point start = clock_type::now();
 
         void

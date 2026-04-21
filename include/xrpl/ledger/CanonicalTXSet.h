@@ -148,7 +148,7 @@ public:
     }
 
 private:
-    std::map<Key, std::shared_ptr<STTx const>> map_;
+    std::map<Key, std::shared_ptr<STTx const>> map_{};
 
     // Used to salt the accounts so people can't mine for low account numbers
     uint256 salt_;

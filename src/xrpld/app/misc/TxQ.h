@@ -224,14 +224,14 @@ public:
             `rules` change between attempts, `preflight` will be run again
             in `TxQ::MaybeTx::apply`.
         */
-        TER preflightResult;
+        TER preflightResult{};
         /** If the transactor attempted to apply the transaction to the open
             ledger from the queue and *failed*, then this is the transactor
             result from the last attempt. Should never be a `tec`, `tef`,
             `tem`, or `tesSUCCESS`, because those results cause the
             transaction to be removed from the queue.
         */
-        std::optional<TER> lastResult;
+        std::optional<TER> lastResult{};
     };
 
     /// Constructor
@@ -367,7 +367,7 @@ private:
         std::size_t txnsExpected_;
         /// Recent history of transaction counts that
         /// exceed the targetTxnCount_
-        boost::circular_buffer<std::size_t> recentTxnCounts_;
+        boost::circular_buffer<std::size_t> recentTxnCounts_{};
         /// Based on the median fee of the LCL. Used
         /// when fee escalation kicks in.
         FeeLevel64 escalationMultiplier_;
@@ -415,7 +415,7 @@ private:
             // Number of transactions expected per ledger.
             // One more than this value will be accepted
             // before escalation kicks in.
-            std::size_t const txnsExpected;
+            std::size_t const txnsExpected{};
             // Based on the median fee of the LCL. Used
             // when fee escalation kicks in.
             FeeLevel64 const escalationMultiplier;

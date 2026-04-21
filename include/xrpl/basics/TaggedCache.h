@@ -197,7 +197,7 @@ private:
     class KeyOnlyEntry
     {
     public:
-        clock_type::time_point last_access;
+        clock_type::time_point last_access{};
 
         explicit KeyOnlyEntry(clock_type::time_point const& last_access_)
             : last_access(last_access_)
@@ -215,7 +215,7 @@ private:
     {
     public:
         shared_weak_combo_pointer_type ptr;
-        clock_type::time_point last_access;
+        clock_type::time_point last_access{};
 
         ValueEntry(clock_type::time_point const& last_access_, shared_pointer_type const& ptr_)
             : ptr(ptr_), last_access(last_access_)

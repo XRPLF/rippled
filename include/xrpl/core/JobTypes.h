@@ -163,7 +163,7 @@ public:
     }
 
     JobTypeInfo m_unknown;
-    Map m_map;
+    Map m_map{};
 };
 
 }  // namespace xrpl

@@ -17,7 +17,7 @@ class Book final : public CountedObject<Book>
 public:
     Asset in;
     Asset out;
-    std::optional<uint256> domain;
+    std::optional<uint256> domain{};
 
     Book() = default;
 
