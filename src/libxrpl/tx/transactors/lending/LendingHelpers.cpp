@@ -20,9 +20,14 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
 
+#include "xrpl/protocol/AccountID.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
 #include <utility>
 
 namespace xrpl {

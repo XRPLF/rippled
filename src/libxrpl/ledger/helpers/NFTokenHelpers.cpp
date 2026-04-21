@@ -28,6 +28,9 @@
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
 
+#include "xrpl/beast/utility/Journal.h"
+#include "xrpl/protocol/UintTypes.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

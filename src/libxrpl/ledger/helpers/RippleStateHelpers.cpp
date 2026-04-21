@@ -355,7 +355,7 @@ updateTrustLine(
         && ((flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
         // Sender reserve is set.
         && static_cast<bool>(flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-            static_cast<bool>(wrappedAcct->isFlag(lsfDefaultRipple)) &&
+            wrappedAcct->isFlag(lsfDefaultRipple) &&
         ((flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.
@@ -564,7 +564,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account, 
     // If this is a weak or legacy check, or if the account has a line, fail if
     // auth is required and not set on the line
     auto const issuerAccount = AccountRoot(issue.account, view);
-    if (issuerAccount.exists() && ((issuerAccount->isFlag(lsfRequireAuth)) != 0u))
+    if (issuerAccount.exists() &&
+        (static_cast<unsigned int>(issuerAccount->isFlag(lsfRequireAuth)) != 0u))
     {
         if (trustLine)
         {

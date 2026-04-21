@@ -577,7 +577,7 @@ directSendNoFeeIOU(
             && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
             && static_cast<bool>(uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-                static_cast<bool>(AccountRoot(uSenderID, view, j)->isFlag(lsfDefaultRipple)) &&
+                AccountRoot(uSenderID, view, j)->isFlag(lsfDefaultRipple) &&
             ((uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) == 0u) &&
             !sleRippleState->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
             // Sender trust limit is 0.

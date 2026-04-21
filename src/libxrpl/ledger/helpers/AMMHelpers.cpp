@@ -31,6 +31,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include "xrpl/ledger/helpers/AccountRootHelpers.h"
+
 #include <algorithm>
 #include <chrono>
 #include <cstdint>

@@ -22,6 +22,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
 
+#include "xrpl/core/ServiceRegistry.h"
+
 #include <cstdint>
 #include <memory>
 #include <optional>

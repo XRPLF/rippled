@@ -23,6 +23,8 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
+#include "xrpl/basics/Slice.h"
+
 #include <cstdint>
 #include <unordered_set>
 

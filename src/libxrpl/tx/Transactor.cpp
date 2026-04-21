@@ -40,6 +40,8 @@
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 
+#include "xrpl/protocol/Serializer.h"
+
 #include <cstddef>
 #include <cstdint>
 #include <memory>

@@ -11,6 +11,8 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
+#include "xrpl/protocol/LedgerFormats.h"
+
 #include <memory>
 
 namespace xrpl {
