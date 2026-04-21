@@ -329,7 +329,7 @@ onNewAttestations(
         j);
 
     if (!r.has_value())
-        return {std::nullopt, changed};
+        return {.rewardAccounts = std::nullopt, .changed = changed};
 
     return {std::move(r.value()), changed};
 };
@@ -1779,11 +1779,11 @@ XChainClaim::doApply()
             return Unexpected(claimR.error());
 
         return ScopeResult{
-            claimR.value(),
-            (*sleClaimID)[sfAccount],
-            sendingAmount,
-            srcChain,
-            (*sleClaimID)[sfSignatureReward],
+            .rewardAccounts = claimR.value(),
+            .rewardPoolSrc = (*sleClaimID)[sfAccount],
+            .sendingAmount = sendingAmount,
+            .srcChain = srcChain,
+            .signatureReward = (*sleClaimID)[sfSignatureReward],
         };
     }();
 
@@ -1920,7 +1920,9 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sleAccount)[sfBalance]};
+        .account = account_,
+        .preFeeBalance_ = preFeeBalance_,
+        .postFeeBalance = (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -2195,7 +2197,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sle)[sfBalance]};
+        .account = account_, .preFeeBalance_ = preFeeBalance_, .postFeeBalance = (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

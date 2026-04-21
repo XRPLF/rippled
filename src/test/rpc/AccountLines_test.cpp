@@ -34,8 +34,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 class AccountLines_test : public beast::unit_test::suite
 {
@@ -1287,5 +1286,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountLines, rpc, xrpl);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

@@ -8,8 +8,7 @@
 #include <optional>
 #include <random>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LedgerTrie_test : public beast::unit_test::suite
 {
@@ -709,5 +708,4 @@ class LedgerTrie_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerTrie, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

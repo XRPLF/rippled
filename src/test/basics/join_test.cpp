@@ -11,8 +11,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct join_test : beast::unit_test::suite
 {
@@ -81,5 +80,4 @@ struct join_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(join, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

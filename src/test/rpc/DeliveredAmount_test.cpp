@@ -24,8 +24,7 @@
 #include <chrono>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // Helper class to track the expected number `delivered_amount` results.
 class CheckDeliveredAmount
@@ -422,5 +421,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

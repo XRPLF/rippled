@@ -272,7 +272,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     if (!times.empty() && times.size() >= app_.getValidators().quorum())
     {
         // Calculate the sample median
-        std::sort(times.begin(), times.end());
+        std::ranges::sort(times);
         auto const t0 = times[(times.size() - 1) / 2];
         auto const t1 = times[times.size() / 2];
         signTime = t0 + (t1 - t0) / 2;
@@ -983,12 +983,12 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     {
         auto fees2 = app_.getValidations().fees(ledger->header().parentHash, base);
         fees.reserve(fees.size() + fees2.size());
-        std::copy(fees2.begin(), fees2.end(), std::back_inserter(fees));
+        std::ranges::copy(fees2, std::back_inserter(fees));
     }
     std::uint32_t fee = 0;
     if (!fees.empty())
     {
-        std::sort(fees.begin(), fees.end());
+        std::ranges::sort(fees);
         if (auto stream = m_journal.debug())
         {
             std::stringstream s;

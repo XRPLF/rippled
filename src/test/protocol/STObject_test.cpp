@@ -356,7 +356,7 @@ public:
             STObject st(sfGeneric);
             auto const v = ~st[~sf1Outer];
             static_assert(
-                std::is_same<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>::value, "");
+                std::is_same_v<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>, "");
         }
 
         // UDT scalar fields
@@ -431,7 +431,7 @@ public:
             BEAST_EXPECT(cst[sf][0] == 1);
             BEAST_EXPECT(cst[sf][1] == 2);
             static_assert(
-                std::is_same<decltype(cst[sfIndexes]), std::vector<uint256> const&>::value, "");
+                std::is_same_v<decltype(cst[sfIndexes]), std::vector<uint256> const&>, "");
         }
 
         // Default by reference field

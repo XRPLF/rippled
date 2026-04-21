@@ -6,6 +6,7 @@
 #include <xrpl/protocol/AccountID.h>
 
 #include <map>
+#include <utility>
 
 namespace xrpl {
 
@@ -63,8 +64,8 @@ private:
 public:
     struct AdjustmentIOU
     {
-        AdjustmentIOU(STAmount const& d, STAmount const& c, STAmount const& b)
-            : debits(d), credits(c), origBalance(b)
+        AdjustmentIOU(STAmount d, STAmount c, STAmount b)
+            : debits(std::move(d)), credits(std::move(c)), origBalance(std::move(b))
         {
         }
         STAmount debits;

@@ -18,10 +18,8 @@
 #include <functional>
 #include <memory>
 
-namespace xrpl::test::jtx {
-
 /** Directory operations. */
-namespace directory {
+namespace xrpl::test::jtx::directory {
 
 auto
 bumpLastPage(
@@ -138,6 +136,4 @@ adjustOwnerNode(ApplyView& view, uint256 key, std::uint64_t page)
     return false;
 }
 
-}  // namespace directory
-
-}  // namespace xrpl::test::jtx
+}  // namespace xrpl::test::jtx::directory

@@ -188,10 +188,14 @@ TransfersNotFrozen::recordBalanceChanges(
     auto const currency = after->at(sfBalance).get<Issue>().currency;
 
     // Change from low account's perspective, which is trust line default
-    recordBalance({currency, after->at(sfHighLimit).getIssuer()}, {after, balanceChangeSign});
+    recordBalance(
+        {currency, after->at(sfHighLimit).getIssuer()},
+        {.line = after, .balanceChangeSign = balanceChangeSign});
 
     // Change from high account's perspective, which reverses the sign.
-    recordBalance({currency, after->at(sfLowLimit).getIssuer()}, {after, -balanceChangeSign});
+    recordBalance(
+        {currency, after->at(sfLowLimit).getIssuer()},
+        {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
 std::shared_ptr<SLE const>

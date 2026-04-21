@@ -35,15 +35,15 @@ public:
         boost::asio::io_context& io_context,
         JobQueue& jobQueue,
         std::string const& strUrl,
-        std::string const& strUsername,
-        std::string const& strPassword,
+        std::string strUsername,
+        std::string strPassword,
         ServiceRegistry& registry)
         : RPCSub(source)
         , m_io_context(io_context)
         , m_jobQueue(jobQueue)
         , mUrl(strUrl)
-        , mUsername(strUsername)
-        , mPassword(strPassword)
+        , mUsername(std::move(strUsername))
+        , mPassword(std::move(strPassword))
         , j_(registry.getJournal("RPCSub"))
         , logs_(registry.getLogs())
     {
@@ -79,7 +79,7 @@ public:
                         << " ssl= " << (mSSL ? "yes" : "no") << " path='" << mPath << "'";
     }
 
-    ~RPCSubImp() = default;
+    ~RPCSubImp() override = default;
 
     void
     send(Json::Value const& jvObj, bool broadcast) override
@@ -89,7 +89,7 @@ public:
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
 
-        mDeque.push_back(std::make_pair(mSeq++, jvObj));
+        mDeque.emplace_back(mSeq++, jvObj);
 
         if (!mSending)
         {

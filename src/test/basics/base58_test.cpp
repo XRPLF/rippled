@@ -25,8 +25,7 @@
 #include <span>
 #include <sstream>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 namespace {
 
 [[nodiscard]] inline auto
@@ -101,7 +100,7 @@ printAsChar(std::span<std::uint8_t> a, std::span<std::uint8_t> b)
     auto asString = [](std::span<std::uint8_t> s) {
         std::string r;
         r.resize(s.size());
-        std::copy(s.begin(), s.end(), r.begin());
+        std::ranges::copy(s, r.begin());
         return r;
     };
     auto sa = asString(a);
@@ -287,7 +286,7 @@ class base58_test : public beast::unit_test::suite
                         b256Data.data(), b256Data.size(), tmpBuf.data(), tmpBuf.size());
                     BEAST_EXPECT(s.size());
                     b58Result[i] = outBuf.subspan(0, s.size());
-                    std::copy(s.begin(), s.end(), b58Result[i].begin());
+                    std::ranges::copy(s, b58Result[i].begin());
                 }
             }
             if (BEAST_EXPECT(b58Result[0].size() == b58Result[1].size()))
@@ -316,7 +315,7 @@ class base58_test : public beast::unit_test::suite
                     std::string const s = xrpl::b58_ref::detail::decodeBase58(st);
                     BEAST_EXPECT(s.size());
                     b256Result[i] = outBuf.subspan(0, s.size());
-                    std::copy(s.begin(), s.end(), b256Result[i].begin());
+                    std::ranges::copy(s, b256Result[i].begin());
                 }
             }
 
@@ -353,7 +352,7 @@ class base58_test : public beast::unit_test::suite
                         xrpl::b58_ref::encodeBase58Token(tokType, b256Data.data(), b256Data.size());
                     BEAST_EXPECT(s.size());
                     b58Result[i] = outBuf.subspan(0, s.size());
-                    std::copy(s.begin(), s.end(), b58Result[i].begin());
+                    std::ranges::copy(s, b58Result[i].begin());
                 }
             }
             if (BEAST_EXPECT(b58Result[0].size() == b58Result[1].size()))
@@ -382,7 +381,7 @@ class base58_test : public beast::unit_test::suite
                     std::string const s = xrpl::b58_ref::decodeBase58Token(st, tokType);
                     BEAST_EXPECT(s.size());
                     b256Result[i] = outBuf.subspan(0, s.size());
-                    std::copy(s.begin(), s.end(), b256Result[i].begin());
+                    std::ranges::copy(s, b256Result[i].begin());
                 }
             }
 
@@ -435,6 +434,6 @@ class base58_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(base58, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
+
 #endif  // _MSC_VER

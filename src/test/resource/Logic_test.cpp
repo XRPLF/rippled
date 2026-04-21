@@ -21,8 +21,7 @@
 #include <functional>
 #include <string>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 class ResourceManager_test : public beast::unit_test::suite
 {
@@ -292,5 +291,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ResourceManager, resource, xrpl);
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource
