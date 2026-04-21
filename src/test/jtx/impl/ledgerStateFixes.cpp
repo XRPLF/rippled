@@ -6,11 +6,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/transactors/system/LedgerStateFix.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace ledgerStateFix {
+namespace xrpl::test::jtx::ledgerStateFix {
 
 // Fix NFTokenPage links on owner's account.  acct pays fee.
 Json::Value
@@ -24,8 +20,4 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
     return jv;
 }
 
-}  // namespace ledgerStateFix
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::ledgerStateFix

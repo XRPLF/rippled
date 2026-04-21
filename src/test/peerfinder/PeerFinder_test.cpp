@@ -23,8 +23,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 class PeerFinder_test : public beast::unit_test::suite
 {
@@ -530,5 +529,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PeerFinder, peerfinder, xrpl);
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

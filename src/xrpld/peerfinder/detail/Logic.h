@@ -23,8 +23,7 @@
 #include <memory>
 #include <set>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** The Logic for maintaining the list of Slot addresses.
     We keep this in a separate class so it can be instantiated
@@ -629,7 +628,7 @@ public:
                 beast::Journal const journal{sink};
                 JLOG(journal.trace()) << "Logic sending " << list.size()
                                       << ((list.size() == 1) ? " endpoint" : " endpoints");
-                result.push_back(std::make_pair(slot, list));
+                result.emplace_back(slot, list);
             }
 
             m_whenBroadcast = now + Tuning::secondsPerMessage;
@@ -1213,5 +1212,4 @@ Logic<Checker>::onRedirects(
     }
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

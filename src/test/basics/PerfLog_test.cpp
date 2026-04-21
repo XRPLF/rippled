@@ -105,7 +105,7 @@ class PerfLog_test : public beast::unit_test::suite
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
-                withFile == WithFile::no ? "" : logFile(), logInterval()};
+                .perfLog = withFile == WithFile::no ? "" : logFile(), .logInterval = logInterval()};
             return perf::make_PerfLog(setup, app_, j_, [this]() {
                 signalStop();
                 return;
@@ -178,7 +178,7 @@ class PerfLog_test : public beast::unit_test::suite
 
         // Note that the longest durations should be at the front of the
         // vector since they were started first.
-        std::sort(currents.begin(), currents.end(), [](Cur const& lhs, Cur const& rhs) {
+        std::ranges::sort(currents, [](Cur const& lhs, Cur const& rhs) {
             if (lhs.dur != rhs.dur)
                 return (rhs.dur < lhs.dur);
             return (lhs.name < rhs.name);

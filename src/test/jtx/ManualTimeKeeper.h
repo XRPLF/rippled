@@ -4,8 +4,7 @@
 
 #include <atomic>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ManualTimeKeeper : public TimeKeeper
 {
@@ -28,5 +27,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

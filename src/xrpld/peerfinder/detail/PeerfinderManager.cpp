@@ -28,8 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 class ManagerImp : public Manager
 {
@@ -267,5 +266,4 @@ make_Manager(
     return std::make_unique<ManagerImp>(io_context, clock, journal, config, collector);
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

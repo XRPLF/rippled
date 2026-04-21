@@ -80,8 +80,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Loan_test : public beast::unit_test::suite
 {
@@ -182,8 +181,11 @@ protected:
             jtx::PrettyAsset const& asset_,
             Keylet const& brokerKeylet_,
             Keylet const& vaultKeylet_,
-            BrokerParameters const& p)
-            : asset(asset_), brokerID(brokerKeylet_.key), vaultID(vaultKeylet_.key), params(p)
+            BrokerParameters p)
+            : asset(asset_)
+            , brokerID(brokerKeylet_.key)
+            , vaultID(vaultKeylet_.key)
+            , params(std::move(p))
         {
         }
 
@@ -3671,10 +3673,9 @@ protected:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
-        bool const lendingBatchEnabled = !std::any_of(
-            Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
-                return disabled == ttLOAN_BROKER_SET;
-            });
+        bool const lendingBatchEnabled = !std::ranges::any_of(
+            Batch::disabledTxTypes,
+            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -7384,5 +7385,4 @@ BEAST_DEFINE_TESTSUITE(Loan, tx, xrpl);
 BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, xrpl);
 BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

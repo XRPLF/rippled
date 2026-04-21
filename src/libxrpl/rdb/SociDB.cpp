@@ -66,7 +66,7 @@ getSociInit(BasicConfig const& config, std::string const& dbName)
 
 }  // namespace detail
 
-DBConfig::DBConfig(std::string const& dbPath) : connectionString_(dbPath)
+DBConfig::DBConfig(std::string dbPath) : connectionString_(std::move(dbPath))
 {
 }
 

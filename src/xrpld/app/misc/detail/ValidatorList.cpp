@@ -822,10 +822,14 @@ ValidatorList::buildBlobInfos(
 {
     auto const& current = lists.current;
     auto const& remaining = lists.remaining;
-    blobInfos[current.sequence] = {current.rawBlob, current.rawSignature, current.rawManifest};
+    blobInfos[current.sequence] = {
+        .blob = current.rawBlob,
+        .signature = current.rawSignature,
+        .manifest = current.rawManifest};
     for (auto const& [sequence, vl] : remaining)
     {
-        blobInfos[sequence] = {vl.rawBlob, vl.rawSignature, vl.rawManifest};
+        blobInfos[sequence] = {
+            .blob = vl.rawBlob, .signature = vl.rawSignature, .manifest = vl.rawManifest};
     }
 }
 
@@ -1235,7 +1239,7 @@ ValidatorList::applyList(
                 }
                 else
                 {
-                    publisherList.push_back(PublicKey(Slice{ret->data(), ret->size()}));
+                    publisherList.emplace_back(Slice{ret->data(), ret->size()});
                 }
 
                 if (val.isMember(jss::manifest) && val[jss::manifest].isString())
@@ -1244,7 +1248,7 @@ ValidatorList::applyList(
         }
 
         // Standardize the list order by sorting
-        std::sort(publisherList.begin(), publisherList.end());
+        std::sort(publisherList.begin(), publisherList.end());  // NOLINT(modernize-use-ranges)
     }
     // If this publisher has ever sent a more updated version than the one
     // in this file, keep it. This scenario is unlikely, but legal.
@@ -2094,9 +2098,8 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
     if (!negativeUNL_.empty())
     {
         ret.erase(
-            std::remove_if(
-                ret.begin(),
-                ret.end(),
+            std::ranges::remove_if(
+                ret,
                 [&](auto const& v) -> bool {
                     if (auto const masterKey = getTrustedKey(read_lock, v->getSignerPublic());
                         masterKey)
@@ -2105,7 +2108,8 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
                     }
 
                     return false;
-                }),
+                })
+                .begin(),
             ret.end());
     }
 

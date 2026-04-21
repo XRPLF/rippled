@@ -645,7 +645,7 @@ public:
     {
     }
 
-    ~short_read_test()
+    ~short_read_test() override
     {
         work_.reset();
         thread_.join();

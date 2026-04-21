@@ -72,8 +72,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Batch_test : public beast::unit_test::suite
 {
@@ -2658,10 +2657,9 @@ class Batch_test : public beast::unit_test::suite
     {
         testcase("loan");
 
-        bool const lendingBatchEnabled = !std::any_of(
-            Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
-                return disabled == ttLOAN_BROKER_SET;
-            });
+        bool const lendingBatchEnabled = !std::ranges::any_of(
+            Batch::disabledTxTypes,
+            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
 
         using namespace test::jtx;
 
@@ -4424,5 +4422,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Batch, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

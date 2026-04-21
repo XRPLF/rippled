@@ -23,8 +23,7 @@
 #include <tuple>
 #include <type_traits>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 defaultObject_t defaultObject;
 nonPresentObject_t nonPresentObject;
@@ -228,5 +227,4 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
     }
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

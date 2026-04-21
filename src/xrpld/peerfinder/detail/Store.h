@@ -1,15 +1,12 @@
 #pragma once
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Abstract persistence for PeerFinder data. */
 class Store
 {
 public:
-    virtual ~Store()
-    {
-    }
+    virtual ~Store() = default;
 
     // load the bootstrap cache
     using load_callback = std::function<void(beast::IP::Endpoint, int)>;
@@ -28,5 +25,4 @@ public:
     save(std::vector<Entry> const& v) = 0;
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder
