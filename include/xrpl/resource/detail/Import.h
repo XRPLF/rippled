@@ -13,12 +13,12 @@ struct Import
     {
         explicit Item() = default;
 
-        int balance;
+        int balance{};
         Consumer consumer;
     };
 
     // Dummy argument required for zero-copy construction
-    Import(int = 0) : whenExpires()
+    Import(int = 0)
     {
     }
 

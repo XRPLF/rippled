@@ -1,21 +1,53 @@
-#include <xrpld/app/ledger/AccountStateSF.h>
 #include <xrpld/app/ledger/InboundLedger.h>
+
+#include <xrpld/app/ledger/AccountStateSF.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapSyncFilter.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
+#include <xrpl.pb.h>
+
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <mutex>
 #include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -67,14 +99,8 @@ InboundLedger::InboundLedger(
           {jtLEDGER_DATA, "InboundLedger", 5},
           app.getJournal("InboundLedger"))
     , m_clock(clock)
-    , mHaveHeader(false)
-    , mHaveState(false)
-    , mHaveTransactions(false)
-    , mSignaled(false)
-    , mByHash(true)
     , mSeq(seq)
     , mReason(reason)
-    , mReceiveDispatched(false)
     , mPeerSet(std::move(peerSet))
 {
     JLOG(journal_.trace()) << "Acquiring ledger " << hash_;
@@ -127,7 +153,7 @@ InboundLedger::getPeerCount() const
 void
 InboundLedger::update(std::uint32_t seq)
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
 
     // If we didn't know the sequence number, but now do, save it
     if ((seq != 0) && (mSeq == 0))
@@ -140,7 +166,7 @@ InboundLedger::update(std::uint32_t seq)
 bool
 InboundLedger::checkLocal()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
     if (!isDone())
     {
         if (mLedger)
@@ -363,7 +389,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
         mByHash = true;
 
-        std::size_t pc = getPeerCount();
+        std::size_t const pc = getPeerCount();
         JLOG(journal_.debug()) << "No progress(" << pc << ") for ledger " << hash_;
 
         // addPeers triggers if the reason is not HISTORY
@@ -996,7 +1022,7 @@ InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> const& data)
 {
-    std::lock_guard sl(mReceivedDataLock);
+    std::lock_guard const sl(mReceivedDataLock);
 
     if (isDone())
         return false;
@@ -1032,7 +1058,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
 
         SHAMapAddNode san;
 
-        ScopedLockType sl(mtx_);
+        ScopedLockType const sl(mtx_);
 
         try
         {
@@ -1084,7 +1110,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
             return -1;
         }
 
-        ScopedLockType sl(mtx_);
+        ScopedLockType const sl(mtx_);
 
         // Verify node IDs and data are complete
         for (auto const& node : packet.nodes())
@@ -1208,7 +1234,7 @@ InboundLedger::runData()
         data.clear();
 
         {
-            std::lock_guard sl(mReceivedDataLock);
+            std::lock_guard const sl(mReceivedDataLock);
 
             if (mReceivedData.empty())
             {
@@ -1223,7 +1249,7 @@ InboundLedger::runData()
         {
             if (auto peer = entry.first.lock())
             {
-                int count = processData(peer, *(entry.second));
+                int const count = processData(peer, *(entry.second));
                 dataCounts.update(std::move(peer), count);
             }
         }
@@ -1242,7 +1268,7 @@ InboundLedger::getJson(int)
 {
     Json::Value ret(Json::objectValue);
 
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
 
     ret[jss::hash] = to_string(hash_);
 

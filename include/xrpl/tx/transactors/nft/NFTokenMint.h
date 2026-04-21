@@ -1,8 +1,8 @@
 #pragma once
 
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 

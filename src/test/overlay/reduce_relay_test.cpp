@@ -1,24 +1,50 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/Slot.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/Handshake.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/messages.h>
 
-#include <boost/thread.hpp>
+#include <boost/asio/ip/address.hpp>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <cassert>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <iostream>
+#include <iterator>
+#include <memory>
 #include <numeric>
 #include <optional>
+#include <random>
+#include <ratio>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -120,7 +146,7 @@ public:
     uint256 const&
     getClosedLedgerHash() const override
     {
-        static uint256 hash{};
+        static uint256 const hash{};
         return hash;
     }
     bool
@@ -481,7 +507,7 @@ public:
     onMessage(protocol::TMSquelch const& squelch) override
     {
         auto validator = squelch.validatorpubkey();
-        PublicKey key(Slice(validator.data(), validator.size()));
+        PublicKey const key(Slice(validator.data(), validator.size()));
         if (squelch.squelch())
         {
             squelch_.addSquelch(key, std::chrono::seconds{squelch.squelchduration()});
@@ -776,7 +802,7 @@ public:
         squelch.set_squelch(false);
         for (auto& v : validators_)
         {
-            PublicKey key = v;
+            PublicKey const key = v;
             squelch.clear_validatorpubkey();
             squelch.set_validatorpubkey(key.data(), key.size());
             v.for_links({peer}, [&](Link& l, MessageSPtr) {
@@ -886,7 +912,7 @@ protected:
         std::optional<std::uint32_t> duration)
     {
         protocol::TMSquelch squelch;
-        bool res = static_cast<bool>(duration);
+        bool const res = static_cast<bool>(duration);
         squelch.set_squelch(res);
         squelch.set_validatorpubkey(validator.data(), validator.size());
         if (res)
@@ -992,7 +1018,7 @@ protected:
             if (events[EventType::PeerDisconnected].state_ == State::On)
             {
                 auto& event = events[EventType::PeerDisconnected];
-                bool allCounting = network_.allCounting(event.peer_);
+                bool const allCounting = network_.allCounting(event.peer_);
                 network_.overlay().deletePeer(
                     event.peer_, [&](PublicKey const& v, PeerWPtr const& peerPtr) {
                         if (event.isSelected_)
@@ -1004,7 +1030,7 @@ protected:
                 // take place because there is no peers in Squelched state in
                 // any of the slots where the peer is in Selected state
                 // (allCounting is true)
-                bool handled = (!event.isSelected_ && !event.handled_) ||
+                bool const handled = (!event.isSelected_ && !event.handled_) ||
                     (event.isSelected_ && (event.handled_ || allCounting));
                 BEAST_EXPECT(handled);
                 event.state_ = State::Off;
@@ -1047,7 +1073,7 @@ protected:
                         sendSquelch(validator, ptr, {});
                     }
                 });
-                bool handled = (event.handled_ && event.state_ == State::WaitReset) ||
+                bool const handled = (event.handled_ && event.state_ == State::WaitReset) ||
                     (!event.handled_ && !mustHandle);
                 BEAST_EXPECT(handled);
             }
@@ -1055,7 +1081,7 @@ protected:
                 (event.state_ == State::On &&
                  (now - event.time_ > (reduce_relay::IDLED + seconds(2)))))
             {
-                bool handled = event.state_ == State::WaitReset || !event.handled_;
+                bool const handled = event.state_ == State::WaitReset || !event.handled_;
                 BEAST_EXPECT(handled);
                 event.state_ = State::Off;
                 event.isSelected_ = false;
@@ -1270,10 +1296,10 @@ protected:
         doTest("Test Config - squelch enabled (legacy)", log, [&](bool log) {
             Config c;
 
-            std::string toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_enable=1
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == true);
@@ -1282,19 +1308,19 @@ vp_enable=1
         doTest("Test Config - squelch disabled (legacy)", log, [&](bool log) {
             Config c;
 
-            std::string toLoad(R"rippleConfig(
+            std::string toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_enable=0
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
 
             Config c1;
 
-            toLoad = R"rippleConfig(
+            toLoad = R"xrpldConfig(
 [reduce_relay]
-)rippleConfig";
+)xrpldConfig";
 
             c1.loadFromString(toLoad);
             BEAST_EXPECT(c1.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
@@ -1303,10 +1329,10 @@ vp_enable=0
         doTest("Test Config - squelch enabled", log, [&](bool log) {
             Config c;
 
-            std::string toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_enable=1
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == true);
@@ -1315,10 +1341,10 @@ vp_base_squelch_enable=1
         doTest("Test Config - squelch disabled", log, [&](bool log) {
             Config c;
 
-            std::string toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_enable=0
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
@@ -1327,11 +1353,11 @@ vp_base_squelch_enable=0
         doTest("Test Config - legacy and new", log, [&](bool log) {
             Config c;
 
-            std::string toLoad(R"rippleConfig(
+            std::string const toLoad(R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_enable=0
 vp_enable=0
-)rippleConfig");
+)xrpldConfig");
 
             std::string error;
             auto const expectedError =
@@ -1345,7 +1371,7 @@ vp_enable=0
             {
                 c.loadFromString(toLoad);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -1356,29 +1382,29 @@ vp_enable=0
         doTest("Test Config - max selected peers", log, [&](bool log) {
             Config c;
 
-            std::string toLoad(R"rippleConfig(
+            std::string toLoad(R"xrpldConfig(
 [reduce_relay]
-)rippleConfig");
+)xrpldConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS == 5);
 
             Config c1;
 
-            toLoad = R"rippleConfig(
+            toLoad = R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_max_selected_peers=6
-)rippleConfig";
+)xrpldConfig";
 
             c1.loadFromString(toLoad);
             BEAST_EXPECT(c1.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS == 6);
 
             Config c2;
 
-            toLoad = R"rippleConfig(
+            toLoad = R"xrpldConfig(
 [reduce_relay]
 vp_base_squelch_max_selected_peers=2
-)rippleConfig";
+)xrpldConfig";
 
             std::string error;
             auto const expectedError =
@@ -1389,7 +1415,7 @@ vp_base_squelch_max_selected_peers=2
             {
                 c2.loadFromString(toLoad);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -1432,10 +1458,10 @@ vp_base_squelch_max_selected_peers=2
         doTest("Duplicate Message", log, [&](bool log) {
             network_.reset();
             // update message count for the same peer/validator
-            std::int16_t nMessages = 5;
+            std::int16_t const nMessages = 5;
             for (int i = 0; i < nMessages; i++)
             {
-                uint256 key(i);
+                uint256 const key(i);
                 network_.overlay().updateSlotAndSquelch(
                     key, network_.validator(0), 0, [&](PublicKey const&, PeerWPtr, std::uint32_t) {
                     });
@@ -1445,7 +1471,7 @@ vp_base_squelch_max_selected_peers=2
             // hence '-1'.
             BEAST_EXPECT(std::get<1>(peers[0]) == (nMessages - 1));
             // add duplicate
-            uint256 key(nMessages - 1);
+            uint256 const key(nMessages - 1);
             network_.overlay().updateSlotAndSquelch(
                 key, network_.validator(0), 0, [&](PublicKey const&, PeerWPtr, std::uint32_t) {});
             // confirm the same number of messages
@@ -1498,7 +1524,7 @@ vp_base_squelch_max_selected_peers=2
                     {
                         // make unique message hash to make the
                         // slot's internal hash router accept the message
-                        std::uint64_t mid = (m * 1000) + peer;
+                        std::uint64_t const mid = (m * 1000) + peer;
                         uint256 const message{mid};
                         slots.updateSlotAndSquelch(
                             message, validator, peer, protocol::MessageType::mtVALIDATION);
@@ -1568,7 +1594,7 @@ vp_base_squelch_max_selected_peers=2
                 env_.app().config().COMPRESSION = c.COMPRESSION;
             };
             auto handshake = [&](int outboundEnable, int inboundEnable) {
-                beast::IP::Address addr = boost::asio::ip::make_address("172.1.1.100");
+                beast::IP::Address const addr = boost::asio::ip::make_address("172.1.1.100");
 
                 setEnv(outboundEnable);
                 auto request = xrpl::makeRequest(
@@ -1622,7 +1648,7 @@ public:
     void
     run() override
     {
-        bool log = false;
+        bool const log = false;
         testConfig(log);
         testInitialRound(log);
         testPeerUnsquelchedTooSoon(log);
@@ -1649,7 +1675,7 @@ class reduce_relay_simulate_test : public reduce_relay_test
     void
     run() override
     {
-        bool log = false;
+        bool const log = false;
         testRandom(log);
     }
 };

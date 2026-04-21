@@ -1,12 +1,17 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
+
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/format.hpp>
+#include <boost/format/free_funcs.hpp>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -33,7 +38,7 @@ public:
     makeValidatorConfig()
     {
         auto p = std::make_unique<Config>();
-        boost::format toLoad(R"rippleConfig(
+        boost::format toLoad(R"xrpldConfig(
 [validator_token]
 %1%
 
@@ -49,7 +54,7 @@ ip = 0.0.0.0
 port = 50052
 protocol = wss2
 admin = 127.0.0.1
-)rippleConfig");
+)xrpldConfig");
 
         p->loadFromString(boost::str(toLoad % validator_data::token % validator_data::public_key));
 

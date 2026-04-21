@@ -198,8 +198,10 @@ runner::run_if(FwdIter first, FwdIter last, Pred pred)
 {
     bool failed(false);
     for (; first != last; ++first)
+    {
         if (pred(*first))
             failed = run(*first) || failed;
+    }
     return failed;
 }
 
@@ -219,8 +221,10 @@ runner::run_each_if(SequenceContainer const& c, Pred pred)
 {
     bool failed(false);
     for (auto const& s : c)
+    {
         if (pred(s))
             failed = run(s) || failed;
+    }
     return failed;
 }
 
@@ -228,7 +232,7 @@ template <class>
 void
 runner::testcase(std::string const& name)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     // Name may not be empty
     BOOST_ASSERT(default_ || !name.empty());
     // Forgot to call pass or fail
@@ -244,7 +248,7 @@ template <class>
 void
 runner::pass()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     if (default_)
         testcase("");
     on_pass();
@@ -255,7 +259,7 @@ template <class>
 void
 runner::fail(std::string const& reason)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     if (default_)
         testcase("");
     on_fail(reason);
@@ -267,7 +271,7 @@ template <class>
 void
 runner::log(std::string const& s)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     if (default_)
         testcase("");
     on_log(s);

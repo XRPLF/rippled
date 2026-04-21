@@ -1,30 +1,93 @@
+#include <xrpld/overlay/detail/OverlayImpl.h>
+
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
+#include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/overlay/predicates.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/make_Manager.h>
-#include <xrpld/rpc/handlers/GetCounts.h>
+#include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Resolver.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/Wallet.h>
+#include <xrpl/server/Writer.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/dispatch.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/beast/http/empty_body.hpp>
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/lexical_cast/bad_lexical_cast.hpp>
+#include <boost/lexical_cast/try_lexical_convert.hpp>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iomanip>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -36,7 +99,7 @@ enum {
     ServerCounts = (1 << 2),
     Unl = (1 << 3)
 };
-}
+}  // namespace CrawlOptions
 
 //------------------------------------------------------------------------------
 
@@ -126,7 +189,6 @@ OverlayImpl::OverlayImpl(
               collector))
     , m_resolver(resolver)
     , next_id_(1)
-    , timer_count_(0)
     , slots_(app, *this, app.config())
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
@@ -152,7 +214,7 @@ OverlayImpl::onHandoff(
     auto const id = next_id_++;
     auto peerJournal = app_.getJournal("Peer");
     beast::WrappedSink sink(peerJournal.sink(), makePrefix(id));
-    beast::Journal journal(sink);
+    beast::Journal const journal(sink);
 
     Handoff handoff;
     if (processRequest(request, handoff))
@@ -270,7 +332,7 @@ OverlayImpl::onHandoff(
             // As we are not on the strand, run() must be called
             // while holding the lock, otherwise new I/O can be
             // queued after a call to stop().
-            std::lock_guard<decltype(mutex_)> lock(mutex_);
+            std::lock_guard<decltype(mutex_)> const lock(mutex_);
             {
                 auto const result = m_peers.emplace(peer->slot(), peer);
                 XRPL_ASSERT(result.second, "xrpl::OverlayImpl::onHandoff : peer is inserted");
@@ -393,7 +455,7 @@ OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
         app_.getJournal("Peer"),
         *this);
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list_.emplace(p.get(), p);
     p->run();
 }
@@ -405,9 +467,9 @@ void
 OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 {
     beast::WrappedSink sink{journal_.sink(), peer->prefix()};
-    beast::Journal journal{sink};
+    beast::Journal const journal{sink};
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     {
         auto const result = m_peers.emplace(peer->slot(), peer);
@@ -435,7 +497,7 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     auto const iter = m_peers.find(slot);
     XRPL_ASSERT(iter != m_peers.end(), "xrpl::OverlayImpl::remove : valid input");
     m_peers.erase(iter);
@@ -444,7 +506,7 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 void
 OverlayImpl::start()
 {
-    PeerFinder::Config config = PeerFinder::Config::makeConfig(
+    PeerFinder::Config const config = PeerFinder::Config::makeConfig(
         app_.config(),
         serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
@@ -522,7 +584,7 @@ OverlayImpl::start()
             });
     }
     auto const timer = std::make_shared<Timer>(*this);
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list_.emplace(timer.get(), timer);
     timer_ = timer;
     timer->async_wait();
@@ -571,11 +633,11 @@ void
 OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 {
     beast::WrappedSink sink{journal_.sink(), peer->prefix()};
-    beast::Journal journal{sink};
+    beast::Journal const journal{sink};
 
     // Now track this peer
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         auto const result(ids_.emplace(
             std::piecewise_construct, std::make_tuple(peer->id()), std::make_tuple(peer)));
         XRPL_ASSERT(result.second, "xrpl::OverlayImpl::activate : peer ID is inserted");
@@ -591,7 +653,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
 void
 OverlayImpl::onPeerDeactivate(Peer::id_t id)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     ids_.erase(id);
 }
 
@@ -664,12 +726,12 @@ OverlayImpl::reportOutboundTraffic(TrafficCount::category cat, int size)
 }
 /** The number of active peers on the network
     Active peers are only those peers that have completed the handshake
-    and are running the Ripple protocol.
+    and are running the XRPL protocol.
 */
 std::size_t
 OverlayImpl::size() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     return ids_.size();
 }
 
@@ -916,8 +978,8 @@ OverlayImpl::processHealth(http_request_type const& req, Handoff& handoff)
     bool amendment_blocked = false;
     if (info.isMember(jss::amendment_blocked))
         amendment_blocked = true;
-    int number_peers = info[jss::peers].asInt();
-    std::string server_state = info[jss::server_state].asString();
+    int const number_peers = info[jss::peers].asInt();
+    std::string const server_state = info[jss::server_state].asString();
     auto load_factor = info[jss::load_factor_server].asDouble() / info[jss::load_base].asDouble();
 
     enum class HealthState { healthy, warning, critical };
@@ -1028,7 +1090,7 @@ OverlayImpl::getActivePeers(
     std::size_t& enabledInSkip) const
 {
     Overlay::PeerSequence ret;
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     active = ids_.size();
     disabled = enabledInSkip = 0;
@@ -1068,7 +1130,7 @@ OverlayImpl::checkTracking(std::uint32_t index)
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     auto const iter = ids_.find(id);
     if (iter != ids_.end())
         return iter->second.lock();
@@ -1080,7 +1142,7 @@ OverlayImpl::findPeerByShortID(Peer::id_t const& id) const
 std::shared_ptr<Peer>
 OverlayImpl::findPeerByPublicKey(PublicKey const& pubKey)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     // NOTE The purpose of peer is to delay the destruction of PeerImp
     std::shared_ptr<PeerImp> peer;
     for (auto const& e : ids_)
@@ -1141,7 +1203,7 @@ OverlayImpl::relay(protocol::TMValidation& m, uint256 const& uid, PublicKey cons
 std::shared_ptr<Message>
 OverlayImpl::getManifestsMessage()
 {
-    std::lock_guard g(manifestLock_);
+    std::lock_guard const g(manifestLock_);
 
     if (auto seq = app_.getValidatorManifests().sequence(); seq != manifestListSeq_)
     {
@@ -1260,7 +1322,7 @@ OverlayImpl::relay(
 void
 OverlayImpl::remove(Child& child)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list_.erase(&child);
     if (list_.empty())
         cond_.notify_all();
@@ -1279,7 +1341,7 @@ OverlayImpl::stopChildren()
     // won't be called until vector<> children leaves scope.
     std::vector<std::shared_ptr<Child>> children;
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         if (!work_)
             return;
         work_ = std::nullopt;
@@ -1314,7 +1376,7 @@ OverlayImpl::sendEndpoints()
     {
         std::shared_ptr<PeerImp> peer;
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             auto const iter = m_peers.find(e.first);
             if (iter != m_peers.end())
                 peer = iter->second.lock();

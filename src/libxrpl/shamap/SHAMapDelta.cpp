@@ -1,10 +1,23 @@
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
 
 #include <array>
+#include <mutex>
+#include <sstream>
 #include <stack>
+#include <thread>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -241,14 +254,14 @@ SHAMap::walkMap(std::vector<SHAMapMissingNode>& missingNodes, int maxMissing) co
 
     while (!nodeStack.empty())
     {
-        intr_ptr::SharedPtr<SHAMapInnerNode> node = std::move(nodeStack.top());
+        intr_ptr::SharedPtr<SHAMapInnerNode> const node = std::move(nodeStack.top());
         nodeStack.pop();
 
         for (int i = 0; i < 16; ++i)
         {
             if (!node->isEmptyBranch(i))
             {
-                intr_ptr::SharedPtr<SHAMapTreeNode> nextNode = descendNoStore(*node, i);
+                intr_ptr::SharedPtr<SHAMapTreeNode> const nextNode = descendNoStore(*node, i);
 
                 if (nextNode)
                 {
@@ -310,7 +323,8 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                     {
                         while (!nodeStack.empty())
                         {
-                            intr_ptr::SharedPtr<SHAMapInnerNode> node = std::move(nodeStack.top());
+                            intr_ptr::SharedPtr<SHAMapInnerNode> const node =
+                                std::move(nodeStack.top());
                             XRPL_ASSERT(node, "xrpl::SHAMap::walkMapParallel : non-null node");
                             nodeStack.pop();
 
@@ -318,7 +332,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                             {
                                 if (node->isEmptyBranch(i))
                                     continue;
-                                intr_ptr::SharedPtr<SHAMapTreeNode> nextNode =
+                                intr_ptr::SharedPtr<SHAMapTreeNode> const nextNode =
                                     descendNoStore(*node, i);
 
                                 if (nextNode)
@@ -332,7 +346,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                                 }
                                 else
                                 {
-                                    std::lock_guard l{m};
+                                    std::lock_guard const l{m};
                                     missingNodes.emplace_back(type_, node->getChildHash(i));
                                     if (--maxMissing <= 0)
                                         return;
@@ -342,7 +356,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
                     }
                     catch (SHAMapMissingNode const& e)
                     {
-                        std::lock_guard l(m);
+                        std::lock_guard const l(m);
                         exceptions.push_back(e);
                     }
                 },
@@ -352,7 +366,7 @@ SHAMap::walkMapParallel(std::vector<SHAMapMissingNode>& missingNodes, int maxMis
     for (std::thread& worker : workers)
         worker.join();
 
-    std::lock_guard l(m);
+    std::lock_guard const l(m);
     if (exceptions.empty())
         return true;
     std::stringstream ss;

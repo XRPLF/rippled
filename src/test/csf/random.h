@@ -25,7 +25,7 @@ random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G& g)
     for (int i = 0; i < v.size() - 1; ++i)
     {
         // pick a random item weighted by w
-        std::discrete_distribution<> dd(w.begin() + i, w.end());
+        std::discrete_distribution<> dd(w.begin() + i, w.end());  // NOLINT(misc-const-correctness)
         auto idx = dd(g);
         std::swap(v[i], v[idx]);
         std::swap(w[i], w[idx]);
@@ -111,7 +111,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator&)
     {
         return t_;
@@ -140,7 +140,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator& g)
     {
         // use inverse transform of CDF to sample

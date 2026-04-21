@@ -1,15 +1,24 @@
 #include <test/csf.h>
+#include <test/csf/PeerGroup.h>
+#include <test/csf/Sim.h>
+#include <test/csf/collectors.h>
+#include <test/csf/random.h>
+#include <test/csf/submitters.h>
+#include <test/csf/timers.h>
 
-#include <xrpl/beast/unit_test.h>
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
 #include <fstream>
+#include <iomanip>
+#include <ios>
+#include <ostream>
+#include <random>
 #include <sstream>
 #include <string>
-#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -155,9 +164,9 @@ class DistributedValidators_test : public beast::unit_test::suite
         sim.run(1);
 
         // Run for 10 minutes, submitting 100 tx/second
-        std::chrono::nanoseconds simDuration = 10min;
-        std::chrono::nanoseconds quiet = 10s;
-        Rate rate{100, 1000ms};
+        std::chrono::nanoseconds const simDuration = 10min;
+        std::chrono::nanoseconds const quiet = 10s;
+        Rate const rate{100, 1000ms};
 
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler);

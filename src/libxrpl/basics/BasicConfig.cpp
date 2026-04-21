@@ -1,9 +1,9 @@
 #include <xrpl/basics/BasicConfig.h>
+
 #include <xrpl/basics/StringUtilities.h>
 
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 
 #include <ostream>
@@ -126,7 +126,7 @@ BasicConfig::section(std::string const& name)
 Section const&
 BasicConfig::section(std::string const& name) const
 {
-    static Section none("");
+    static Section const none("");
     auto const iter = map_.find(name);
     if (iter == map_.end())
         return none;

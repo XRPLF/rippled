@@ -1,7 +1,12 @@
 #include <test/nodestore/TestBase.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 namespace NodeStore {
@@ -38,7 +43,7 @@ public:
 
         for (int i = 0; i < batch.size(); ++i)
         {
-            EncodedBlob encoded(batch[i]);
+            EncodedBlob const encoded(batch[i]);
 
             DecodedBlob decoded(encoded.getKey(), encoded.getData(), encoded.getSize());
 

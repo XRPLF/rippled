@@ -1,11 +1,12 @@
+#include <xrpl/protocol/BuildInfo.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/git/Git.h>
-#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/git/Git.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
 
-#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/stringize.hpp>  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cstdint>
@@ -160,7 +161,7 @@ getEncodedVersion()
 }
 
 bool
-isRippledVersion(std::uint64_t version)
+isXrpldVersion(std::uint64_t version)
 {
     return (version & implementationVersionIdentifierMask) == implementationVersionIdentifier;
 }
@@ -168,7 +169,7 @@ isRippledVersion(std::uint64_t version)
 bool
 isNewerVersion(std::uint64_t version)
 {
-    if (isRippledVersion(version))
+    if (isXrpldVersion(version))
         return version > getEncodedVersion();
     return false;
 }

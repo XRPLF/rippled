@@ -1,11 +1,28 @@
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <list>
+#include <ostream>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace tests {
@@ -30,7 +47,7 @@ public:
     {
         // add a bunch of random states to a map, then remove them
         // map should be the same
-        SHAMapHash beforeHash = map.getHash();
+        SHAMapHash const beforeHash = map.getHash();
 
         std::list<uint256> items;
 
@@ -74,7 +91,7 @@ public:
         SHAMap source(SHAMapType::FREE, f);
         SHAMap destination(SHAMapType::FREE, f2);
 
-        int items = 10000;
+        int const items = 10000;
         for (int i = 0; i < items; ++i)
         {
             source.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomAS());
@@ -95,10 +112,6 @@ public:
         std::vector<SHAMapMissingNode> missingNodes;
         source.walkMap(missingNodes, 2048);
         BEAST_EXPECT(missingNodes.empty());
-
-        std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
-        std::vector<Blob> gotNodes;
-        std::vector<uint256> hashes;
 
         destination.setSynching();
 

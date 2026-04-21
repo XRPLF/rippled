@@ -1,11 +1,22 @@
 #include <xrpld/rpc/detail/Handler.h>
+
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/handlers/Handlers.h>
-#include <xrpld/rpc/handlers/Version.h>
+#include <xrpld/rpc/handlers/ledger/Ledger.h>
+#include <xrpld/rpc/handlers/server_info/Version.h>
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 
+#include <algorithm>
+#include <cstddef>
 #include <map>
+#include <set>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 namespace RPC {
@@ -75,7 +86,7 @@ Handler const handlerArray[]{
     {"account_nfts", byRef(&doAccountNFTs), Role::USER, NO_CONDITION},
     {"account_objects", byRef(&doAccountObjects), Role::USER, NO_CONDITION},
     {"account_offers", byRef(&doAccountOffers), Role::USER, NO_CONDITION},
-    {"account_tx", byRef(&doAccountTxJson), Role::USER, NO_CONDITION},
+    {"account_tx", byRef(&doAccountTx), Role::USER, NO_CONDITION},
     {"amm_info", byRef(&doAMMInfo), Role::USER, NO_CONDITION},
     {"blacklist", byRef(&doBlackList), Role::ADMIN, NO_CONDITION},
     {"book_changes", byRef(&doBookChanges), Role::USER, NO_CONDITION},

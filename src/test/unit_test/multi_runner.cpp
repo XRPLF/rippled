@@ -1,13 +1,29 @@
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/amount.h>
+#include <xrpl/beast/unit_test/suite_info.h>
 
+#include <boost/container/static_vector.hpp>
+#include <boost/interprocess/creation_tags.hpp>
+#include <boost/interprocess/detail/os_file_functions.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdlib>
+#include <exception>
 #include <iomanip>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <sstream>
+#include <string>
+#include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -154,7 +170,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::tests() const
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     return results_.total;
 }
 
@@ -162,7 +178,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::suites() const
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     return results_.suites;
 }
 
@@ -184,7 +200,7 @@ template <bool IsParent>
 void
 multi_runner_base<IsParent>::inner::add(results const& r)
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     results_.merge(r);
 }
 
@@ -193,7 +209,7 @@ template <class S>
 void
 multi_runner_base<IsParent>::inner::print_results(S& s)
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     results_.print(s);
 }
 
@@ -326,7 +342,7 @@ void
 multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
-    std::lock_guard l{inner_->m_};
+    std::lock_guard const l{inner_->m_};
     message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
     message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }
@@ -386,7 +402,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
                 if (!recvd_size)
                     continue;
                 assert(recvd_size == 1);
-                MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
+                MessageType const mt{*reinterpret_cast<MessageType*>(buf.data())};
 
                 this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
                 if (recvd_size)

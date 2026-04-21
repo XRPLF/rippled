@@ -1,11 +1,33 @@
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/nodestore/Database.h>
-#include <xrpl/protocol/HashPrefix.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
 
+#include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
 
 namespace xrpl {
 namespace NodeStore {
@@ -122,7 +144,7 @@ void
 Database::stop()
 {
     {
-        std::lock_guard lock(readLock_);
+        std::lock_guard const lock(readLock_);
 
         if (!readStopping_.exchange(true, std::memory_order_relaxed))
         {
@@ -158,7 +180,7 @@ Database::asyncFetch(
     std::uint32_t ledgerSeq,
     std::function<void(std::shared_ptr<NodeObject> const&)>&& cb)
 {
-    std::lock_guard lock(readLock_);
+    std::lock_guard const lock(readLock_);
 
     if (!isStopping())
     {
@@ -238,7 +260,7 @@ Database::getCountsJson(Json::Value& obj)
     XRPL_ASSERT(obj.isObject(), "xrpl::NodeStore::Database::getCountsJson : valid input type");
 
     {
-        std::unique_lock<std::mutex> lock(readLock_);
+        std::unique_lock<std::mutex> const lock(readLock_);
         obj["read_queue"] = static_cast<Json::UInt>(read_.size());
     }
 

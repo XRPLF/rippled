@@ -1,19 +1,18 @@
+#include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
+#include <xrpl/beast/utility/PropertyStream.h>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 
 namespace xrpl {
 namespace PeerFinder {
 
-Config::Config()
-    : maxPeers(Tuning::defaultMaxPeers)
-    , outPeers(calcOutPeers())
-    , inPeers(0)
-    , wantIncoming(true)
-    , autoConnect(true)
-    , listeningPort(0)
-    , ipLimit(0)
+Config::Config() : outPeers(calcOutPeers())
+
 {
 }
 
@@ -23,7 +22,7 @@ operator==(Config const& lhs, Config const& rhs)
     return lhs.autoConnect == rhs.autoConnect && lhs.peerPrivate == rhs.peerPrivate &&
         lhs.wantIncoming == rhs.wantIncoming && lhs.inPeers == rhs.inPeers &&
         lhs.maxPeers == rhs.maxPeers && lhs.outPeers == rhs.outPeers &&
-        lhs.features == lhs.features && lhs.ipLimit == rhs.ipLimit &&
+        lhs.features == rhs.features && lhs.ipLimit == rhs.ipLimit &&
         lhs.listeningPort == rhs.listeningPort;
 }
 

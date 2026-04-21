@@ -1,12 +1,20 @@
-#include <test/jtx.h>
 
-#include <xrpld/app/ledger/LedgerMaster.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <functional>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -102,7 +110,7 @@ public:
         }
 
         {
-            std::string ledgerHash(64, 'q');
+            std::string const ledgerHash(64, 'q');
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 
@@ -113,7 +121,7 @@ public:
         }
 
         {
-            std::string ledgerHash(64, '1');
+            std::string const ledgerHash(64, '1');
 
             auto const result = env.rpc("ledger_request", ledgerHash);
 

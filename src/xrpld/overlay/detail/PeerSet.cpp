@@ -1,8 +1,24 @@
-#include <xrpld/app/main/Application.h>
-#include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/PeerSet.h>
 
-#include <xrpl/core/JobQueue.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -152,7 +168,7 @@ public:
     std::set<Peer::id_t> const&
     getPeerIds() const override
     {
-        static std::set<Peer::id_t> emptyPeers;
+        static std::set<Peer::id_t> const emptyPeers;
         JLOG(j_.error()) << "DummyPeerSet getPeerIds should not be called";
         return emptyPeers;
     }

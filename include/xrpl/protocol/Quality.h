@@ -56,8 +56,8 @@ struct TAmounts
         return *this;
     }
 
-    In in;
-    Out out;
+    In in{};
+    Out out{};
 };
 
 using Amounts = TAmounts<STAmount, STAmount>;
@@ -78,7 +78,7 @@ operator!=(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
 
 //------------------------------------------------------------------------------
 
-// Ripple specific constant used for parsing qualities and other things
+// XRPL specific constant used for parsing qualities and other things
 #define QUALITY_ONE 1'000'000'000
 
 /** Represents the logical ratio of output currency to input currency.
@@ -281,7 +281,7 @@ public:
 
         double const minVD = static_cast<double>(minVMantissa);
         double const maxVD =
-            expDiff ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
+            (expDiff != 0) ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
 
         // maxVD and minVD are scaled so they have the same exponents. Dividing
         // cancels out the exponents, so we only need to deal with the (scaled)
@@ -304,8 +304,8 @@ Quality::ceil_TAmounts_helper(
 
     // Use the existing STAmount implementation for now, but consider
     // replacing with code specific to IOUAMount and XRPAmount
-    Amounts stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
-    STAmount stLim(toSTAmount(limit));
+    Amounts const stAmt(toSTAmount(amount.in), toSTAmount(amount.out));
+    STAmount const stLim(toSTAmount(limit));
     Amounts const stRes = ((*this).*ceil_function)(stAmt, stLim, roundUp...);
     return TAmounts<In, Out>(toAmount<In>(stRes.in), toAmount<Out>(stRes.out));
 }

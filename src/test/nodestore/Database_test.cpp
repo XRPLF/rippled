@@ -1,13 +1,30 @@
-#include <test/jtx.h>
 #include <test/jtx/CheckMessageLogs.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/Types.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/rdb/DatabaseCon.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <cstring>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -191,7 +208,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -220,7 +237,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -249,7 +266,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -278,7 +295,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -306,7 +323,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -334,7 +351,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -362,7 +379,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -390,7 +407,7 @@ public:
 
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -445,7 +462,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -468,7 +485,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -491,7 +508,7 @@ public:
             }
             try
             {
-                Env env(
+                Env const env(
                     *this,
                     std::move(p),
                     std::make_unique<CheckMessageLogs>(expected, &found),
@@ -515,7 +532,7 @@ public:
     {
         DummyScheduler scheduler;
 
-        beast::temp_dir node_db;
+        beast::temp_dir const node_db;
         Section srcParams;
         srcParams.set("type", srcBackendType);
         srcParams.set("path", node_db.path());
@@ -538,7 +555,7 @@ public:
                 Manager::instance().make_Database(megabytes(4), scheduler, 2, srcParams, journal_);
 
             // Set up the destination database
-            beast::temp_dir dest_db;
+            beast::temp_dir const dest_db;
             Section destParams;
             destParams.set("type", destBackendType);
             destParams.set("path", dest_db.path());
@@ -572,11 +589,11 @@ public:
     {
         DummyScheduler scheduler;
 
-        std::string s = "NodeStore backend '" + type + "'";
+        std::string const s = "NodeStore backend '" + type + "'";
 
         testcase(s);
 
-        beast::temp_dir node_db;
+        beast::temp_dir const node_db;
         Section nodeParams;
         nodeParams.set("type", type);
         nodeParams.set("path", node_db.path());
@@ -639,7 +656,7 @@ public:
             try
             {
                 nodeParams.set("earliest_seq", "0");
-                std::unique_ptr<Database> db = Manager::instance().make_Database(
+                std::unique_ptr<Database> const db = Manager::instance().make_Database(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)
@@ -662,7 +679,7 @@ public:
             {
                 // Set to default earliest ledger sequence
                 nodeParams.set("earliest_seq", std::to_string(XRP_LEDGER_EARLIEST_SEQ));
-                std::unique_ptr<Database> db2 = Manager::instance().make_Database(
+                std::unique_ptr<Database> const db2 = Manager::instance().make_Database(
                     megabytes(4), scheduler, 2, nodeParams, journal_);
             }
             catch (std::runtime_error const& e)

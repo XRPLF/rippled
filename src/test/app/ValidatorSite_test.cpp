@@ -1,21 +1,34 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/TrustedPublisherServer.h>
+#include <test/jtx/envconfig.h>
 #include <test/unit_test/FileDirGuard.h>
+#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/app/misc/ValidatorSite.h>
 
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
-#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/join.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/asio.hpp>
+#include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/operations.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 
 #include <date/date.h>
 
 #include <chrono>
+#include <fstream>
+#include <memory>
+#include <ostream>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace detail {
@@ -53,11 +66,11 @@ private:
         auto trustedSites = std::make_unique<ValidatorSite>(env.app(), env.journal);
 
         // load should accept empty sites list
-        std::vector<std::string> emptyCfgSites;
+        std::vector<std::string> const emptyCfgSites;
         BEAST_EXPECT(trustedSites->load(emptyCfgSites));
 
         // load should accept valid validator site uris
-        std::vector<std::string> cfgSites(
+        std::vector<std::string> const cfgSites(
             {"http://ripple.com/",
              "http://ripple.com/validators",
              "http://ripple.com:8080/validators",
@@ -65,7 +78,7 @@ private:
              "http://207.261.33.37:8080/validators",
              "https://ripple.com/validators",
              "https://ripple.com:443/validators",
-             "file:///etc/opt/ripple/validators.txt",
+             "file:///etc/opt/xrpld/validators.txt",
              "file:///C:/Lib/validators.txt"
 #if !_MSC_VER
              ,
@@ -145,7 +158,7 @@ private:
         test::StreamSink sink;
         beast::Journal journal{sink};
 
-        std::vector<std::string> emptyCfgKeys;
+        std::vector<std::string> const emptyCfgKeys;
         struct publisher
         {
             publisher(FetchListConfig const& c) : cfg{c}
@@ -181,7 +194,7 @@ private:
                 {{effective2, expires2}},
                 cfg.ssl,
                 cfg.serverVersion);
-            std::string pubHex = strHex(item.server->publisherPublic());
+            std::string const pubHex = strHex(item.server->publisherPublic());
             cfgPublishers.push_back(pubHex);
 
             if (item.cfg.failFetch)
@@ -337,11 +350,12 @@ private:
         };
         {
             // Create a file with a real validator list
-            detail::FileDirGuard good(*this, "test_val", "vl.txt", detail::realValidatorContents());
+            detail::FileDirGuard const good(
+                *this, "test_val", "vl.txt", detail::realValidatorContents());
             // Create a file with arbitrary content
-            detail::FileDirGuard hello(*this, "test_val", "helloworld.txt", "Hello, world!");
+            detail::FileDirGuard const hello(*this, "test_val", "helloworld.txt", "Hello, world!");
             // Create a file with malformed Json
-            detail::FileDirGuard json(
+            detail::FileDirGuard const json(
                 *this, "test_val", "json.txt", R"json({ "version": 2, "extra" : "value" })json");
             auto const goodPath = fullPath(good);
             auto const helloPath = fullPath(hello);
@@ -362,7 +376,7 @@ public:
     {
         testConfigLoad();
 
-        detail::DirGuard good(*this, "test_fetch");
+        detail::DirGuard const good(*this, "test_fetch");
         for (auto ssl : {true, false})
         {
             // fetch single site

@@ -1,3 +1,5 @@
+#include <xrpl/protocol/XChainAttestations.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
@@ -11,7 +13,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 #include <xrpl/protocol/jss.h>
 
@@ -74,7 +75,7 @@ AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase con
 bool
 AttestationBase::verify(STXChainBridge const& bridge) const
 {
-    std::vector<std::uint8_t> msg = message(bridge);
+    std::vector<std::uint8_t> const msg = message(bridge);
     return xrpl::verify(publicKey, makeSlice(msg), signature);
 }
 

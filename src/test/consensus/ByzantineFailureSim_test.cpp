@@ -1,8 +1,18 @@
 #include <test/csf.h>
+#include <test/csf/Peer.h>
+#include <test/csf/PeerGroup.h>
+#include <test/csf/Sim.h>
+#include <test/csf/SimTime.h>
+#include <test/csf/TrustGraph.h>
+#include <test/csf/collectors.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/consensus/ConsensusParms.h>
 
-#include <utility>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <chrono>
+#include <ios>
+#include <iostream>
 
 namespace xrpl {
 namespace test {
@@ -39,7 +49,7 @@ class ByzantineFailureSim_test : public beast::unit_test::suite
         f.trustAndConnect(f + d + e + g, delay);
         g.trustAndConnect(g + a + f, delay);
 
-        PeerGroup network = a + b + c + d + e + f + g;
+        PeerGroup const network = a + b + c + d + e + f + g;
 
         StreamCollector sc{std::cout};
 

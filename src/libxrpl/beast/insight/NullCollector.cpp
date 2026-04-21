@@ -1,3 +1,5 @@
+#include <xrpl/beast/insight/NullCollector.h>
+
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
 #include <xrpl/beast/insight/CounterImpl.h>
@@ -9,7 +11,6 @@
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
 #include <xrpl/beast/insight/MeterImpl.h>
-#include <xrpl/beast/insight/NullCollector.h>
 
 #include <memory>
 #include <string>

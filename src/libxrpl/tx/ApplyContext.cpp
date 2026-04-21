@@ -1,9 +1,27 @@
 #include <xrpl/tx/ApplyContext.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheck.h>
+
+#include <array>
+#include <cstddef>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -98,7 +116,7 @@ ApplyContext::checkInvariantsHelper(
         // short-circuits). While the logic is still correct, the log
         // message won't be. Every failed invariant should write to the log,
         // not just the first one.
-        std::array<bool, sizeof...(Is)> finalizers{
+        std::array<bool, sizeof...(Is)> const finalizers{
             {std::get<Is>(checkers).finalize(tx, result, fee, *view_, journal)...}};
 
         // call each check's finalizer to see that it passes

@@ -55,9 +55,7 @@ private:
         friend bool
         operator<(Entry const& lhs, Entry const& rhs)
         {
-            if (lhs.valence() > rhs.valence())
-                return true;
-            return false;
+            return lhs.valence() > rhs.valence();
         }
 
     private:
@@ -97,7 +95,7 @@ private:
     clock_type::time_point m_whenUpdate;
 
     // Set to true when a database update is needed
-    bool m_needsUpdate;
+    bool m_needsUpdate{false};
 
 public:
     static constexpr int staticValence = 32;

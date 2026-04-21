@@ -74,7 +74,7 @@ private:
     std::vector<Port> ports_;
     std::vector<std::weak_ptr<Door<Handler>>> list_;
     int high_ = 0;
-    std::array<std::size_t, 64> hist_;
+    std::array<std::size_t, 64> hist_{};
 
     io_list ios_;
 
@@ -155,7 +155,7 @@ ServerImpl<Handler>::ports(std::vector<Port> const& ports)
             list_.push_back(sp);
 
             auto ep = sp->get_endpoint();
-            if (!internalPort.port)
+            if (internalPort.port == 0u)
                 internalPort.port = ep.port();
             eps.emplace(port.name, std::move(ep));
 

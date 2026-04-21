@@ -1,12 +1,47 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/noop.h>
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/make_SSLContext.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/Handoff.h>
+
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
+
+#include <xrpl.pb.h>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <set>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -159,10 +194,11 @@ private:
         auto stream_ptr = std::make_unique<stream_type>(
             socket_type(std::forward<boost::asio::io_context&>(env.app().getIOContext())),
             *context_);
-        beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
-        beast::IP::Endpoint remote(
+        beast::IP::Endpoint const local(
+            boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
+        beast::IP::Endpoint const remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
-        PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
         auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
         auto const peer = std::make_shared<PeerTest>(
@@ -224,7 +260,7 @@ private:
     void
     run() override
     {
-        bool log = false;
+        bool const log = false;
         std::set<Peer::id_t> skip = {0, 1, 2, 3, 4};
         testConfig(log);
         // relay to all peers, no hash queue

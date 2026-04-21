@@ -270,14 +270,14 @@ Before running clang-tidy, you must build the project to generate required files
 Then run clang-tidy on your local changes:
 
 ```
-run-clang-tidy -p build src include tests
+run-clang-tidy -p build -allow-no-checks src tests
 ```
 
 This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
 If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix` to the above command:
 
 ```
-run-clang-tidy -p build -fix src include tests
+run-clang-tidy -p build -quiet -fix -allow-no-checks src tests
 ```
 
 ## Contracts and instrumentation
@@ -533,7 +533,7 @@ All releases, including release candidates and betas, are handled
 differently from typical PRs. Most importantly, never use
 the Github UI to merge a release.
 
-Rippled uses a linear workflow model that can be summarized as:
+Xrpld uses a linear workflow model that can be summarized as:
 
 1. In between releases, developers work against the `develop` branch.
 2. Periodically, a maintainer will build and tag a beta version from

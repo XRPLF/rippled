@@ -1,6 +1,13 @@
 #include <test/jtx/deposit.h>
 
+#include <test/jtx/Account.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
+
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {

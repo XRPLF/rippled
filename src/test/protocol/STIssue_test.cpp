@@ -1,7 +1,15 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/amount.h>  // IWYU pragma: keep
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace xrpl {
 namespace test {
@@ -22,7 +30,7 @@ public:
         {
             issue = xrpIssue();
             issue.account = alice;
-            STIssue stissue(sfAsset, Asset{issue});
+            STIssue const stissue(sfAsset, Asset{issue});
             fail("Inconsistent XRP Issue doesn't fail");
         }
         catch (...)
@@ -34,7 +42,7 @@ public:
         {
             issue = USD;
             issue.account = xrpAccount();
-            STIssue stissue(sfAsset, Asset{issue});
+            STIssue const stissue(sfAsset, Asset{issue});
             fail("Inconsistent IOU Issue doesn't fail");
         }
         catch (...)
@@ -51,7 +59,7 @@ public:
             base_uint<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             fail("Inconsistent IOU Issue doesn't fail on serializer");
         }
         catch (...)
@@ -61,7 +69,7 @@ public:
 
         try
         {
-            STIssue stissue(sfAsset, Asset{xrpIssue()});
+            STIssue const stissue(sfAsset, Asset{xrpIssue()});
         }
         catch (...)
         {
@@ -70,7 +78,7 @@ public:
 
         try
         {
-            STIssue stissue(sfAsset, Asset{USD});
+            STIssue const stissue(sfAsset, Asset{USD});
         }
         catch (...)
         {
@@ -85,7 +93,7 @@ public:
             base_uint<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             BEAST_EXPECT(stissue.value() == USD);
         }
         catch (...)
@@ -99,7 +107,7 @@ public:
             base_uint<160> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             BEAST_EXPECT(stissue.value() == xrpCurrency());
         }
         catch (...)

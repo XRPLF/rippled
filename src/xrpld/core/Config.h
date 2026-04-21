@@ -273,10 +273,10 @@ public:
 
     // First, attempt to load the latest ledger directly from disk.
     bool FAST_LOAD = false;
-    // When starting rippled with existing database it do not know it has those
+    // When starting xrpld with existing database it do not know it has those
     // ledgers locally until the server naturally tries to backfill. This makes
     // is difficult to test some functionality (in particular performance
-    // testing sidechains). With this variable the user is able to force rippled
+    // testing sidechains). With this variable the user is able to force xrpld
     // to consider the ledger range to be present. It should be used for testing
     // only.
     std::optional<std::pair<std::uint32_t, std::uint32_t>> FORCED_LEDGER_RANGE_PRESENT;

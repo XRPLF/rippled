@@ -1,7 +1,17 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <string>
 #include <vector>
 
 namespace xrpl {
@@ -304,7 +314,7 @@ public:
             auto s = good;
 
             // Remove all characters from the string in random order:
-            std::hash<std::string> r;
+            std::hash<std::string> const r;
 
             while (!s.empty())
             {
@@ -421,7 +431,7 @@ public:
             KeyType::secp256k1,
             generateSecretKey(KeyType::secp256k1, generateSeed("masterpassphrase")));
 
-        PublicKey pk2(pk1);
+        PublicKey const pk2(pk1);
         BEAST_EXPECT(pk1 == pk2);
         BEAST_EXPECT(pk2 == pk1);
 

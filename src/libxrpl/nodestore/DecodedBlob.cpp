@@ -1,8 +1,14 @@
-#include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/NodeObject.h>
+
 #include <algorithm>
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 namespace NodeStore {

@@ -1,19 +1,76 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/batch.h>
+#include <test/jtx/check.h>
+#include <test/jtx/delegate.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 #include <test/jtx/utility.h>
+#include <test/jtx/vault.h>
 
 #include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/transactors/system/Batch.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -960,7 +1017,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -969,7 +1026,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
@@ -1002,7 +1059,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -1011,7 +1068,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
@@ -1044,7 +1101,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -1053,7 +1110,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
@@ -1086,7 +1143,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -1095,7 +1152,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
@@ -1128,7 +1185,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -1137,7 +1194,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
@@ -1463,7 +1520,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1495,7 +1552,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(9999)), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
@@ -1524,7 +1581,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(trust(alice, USD(1000), tfSetfAuth), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
@@ -1553,7 +1610,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(trust(alice, USD(1000), tfSetfAuth), 0, seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
@@ -1605,7 +1662,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(9999)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tecUNFUNDED_PAYMENT", txIDs[0], batchID},
                 {2, "Payment", "tecUNFUNDED_PAYMENT", txIDs[1], batchID},
@@ -1638,7 +1695,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tecUNFUNDED_PAYMENT", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1670,7 +1727,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
             };
@@ -1701,7 +1758,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[1], batchID},
             };
@@ -1732,7 +1789,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[1], batchID},
             };
@@ -1769,7 +1826,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, dave, XRP(100)), seq + 6));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "OfferCreate", "tecKILLED", txIDs[0], batchID},
                 {2, "OfferCreate", "tecKILLED", txIDs[1], batchID},
@@ -1821,7 +1878,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tecUNFUNDED_PAYMENT", txIDs[0], batchID},
             };
@@ -1852,7 +1909,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(4)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1887,7 +1944,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1921,7 +1978,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1954,7 +2011,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1987,7 +2044,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, dave, XRP(100)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2038,7 +2095,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tecUNFUNDED_PAYMENT", txIDs[1], batchID},
@@ -2073,7 +2130,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2108,7 +2165,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2142,7 +2199,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2175,7 +2232,7 @@ class Batch_test : public beast::unit_test::suite
                     offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2339,7 +2396,7 @@ class Batch_test : public beast::unit_test::suite
         // - has no `Signers` field
         // + has `tfInnerBatchTxn` flag
         {
-            STTx amendTx(ttAMENDMENT, [seq = env.closed()->header().seq + 1](auto& obj) {
+            STTx const amendTx(ttAMENDMENT, [seq = env.closed()->header().seq + 1](auto& obj) {
                 obj.setAccountID(sfAccount, AccountID());
                 obj.setFieldH256(sfAmendment, fixBatchInnerSigs);
                 obj.setFieldU32(sfLedgerSequence, seq);
@@ -2397,7 +2454,7 @@ class Batch_test : public beast::unit_test::suite
             batch::sig(bob));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
             {2, "AccountSet", "tesSUCCESS", txIDs[1], batchID},
@@ -2446,7 +2503,7 @@ class Batch_test : public beast::unit_test::suite
             batch::inner(pay(alice, bob, XRP(1)), seq + 2));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {1, "AccountSet", "tesSUCCESS", txIDs[0], batchID},
             {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2501,7 +2558,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "AccountDelete", "tesSUCCESS", txIDs[1], batchID},
@@ -2544,7 +2601,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "AccountDelete", "tecHAS_OBLIGATIONS", txIDs[1], batchID},
@@ -2585,7 +2642,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
@@ -2626,7 +2683,7 @@ class Batch_test : public beast::unit_test::suite
         // Just use an XRP asset
         PrettyAsset const asset{xrpIssue(), 1'000'000};
 
-        Vault vault{env};
+        Vault const vault{env};
 
         auto const deposit = asset(50'000);
         auto const debtMaximumValue = asset(25'000).value();
@@ -2821,7 +2878,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::sig(bob));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "CheckCreate", "tesSUCCESS", txIDs[0], batchID},
                 {2, "CheckCash", "tesSUCCESS", txIDs[1], batchID},
@@ -2867,7 +2924,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::sig(bob));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "CheckCreate", "tecDST_TAG_NEEDED", txIDs[0], batchID},
                 {2, "CheckCash", "tecNO_ENTRY", txIDs[1], batchID},
@@ -2932,7 +2989,7 @@ class Batch_test : public beast::unit_test::suite
             batch::sig(bob));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {1, "TicketCreate", "tesSUCCESS", txIDs[0], batchID},
             {2, "CheckCreate", "tesSUCCESS", txIDs[1], batchID},
@@ -2992,7 +3049,7 @@ class Batch_test : public beast::unit_test::suite
             batch::sig(alice, bob));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {1, "CheckCreate", "tesSUCCESS", txIDs[0], batchID},
             {2, "CheckCash", "tesSUCCESS", txIDs[1], batchID},
@@ -3026,7 +3083,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
@@ -3044,7 +3101,7 @@ class Batch_test : public beast::unit_test::suite
                 ticket::use(aliceTicketSeq));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3092,7 +3149,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), 0, aliceTicketSeq + 1));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3123,7 +3180,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
@@ -3141,7 +3198,7 @@ class Batch_test : public beast::unit_test::suite
                 ticket::use(aliceTicketSeq));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3202,7 +3259,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3213,7 +3270,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger contains noop txn
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "AccountSet", "tesSUCCESS", noopTxnID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -3246,7 +3303,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3257,7 +3314,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3285,7 +3342,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3296,7 +3353,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3327,7 +3384,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "AccountSet", "tesSUCCESS", noopTxnID, std::nullopt},
                     {1, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {2, "Payment", "tesSUCCESS", txIDs[0], batchID},
@@ -3339,7 +3396,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger contains no transactions
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3365,7 +3422,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
@@ -3387,7 +3444,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3398,7 +3455,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3412,7 +3469,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
@@ -3434,7 +3491,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3445,7 +3502,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3473,7 +3530,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
@@ -3497,7 +3554,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "CheckCreate", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3509,7 +3566,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3520,7 +3577,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
@@ -3546,7 +3603,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "CheckCreate", "tesSUCCESS", objTxnID, std::nullopt},
                     {1, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {2, "CheckCash", "tesSUCCESS", txIDs[0], batchID},
@@ -3567,7 +3624,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
@@ -3591,7 +3648,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "CheckCreate", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3687,7 +3744,7 @@ class Batch_test : public beast::unit_test::suite
         env(payTxn2, ter(terPRE_SEQ));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Payment", "tesSUCCESS", payTxn1ID, std::nullopt},
             {1, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {2, "Payment", "tesSUCCESS", txIDs[0], batchID},
@@ -3698,7 +3755,7 @@ class Batch_test : public beast::unit_test::suite
         env.close();
         {
             // next ledger includes the payment txn
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Payment", "tesSUCCESS", payTxn2ID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
@@ -3910,7 +3967,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3959,7 +4016,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::sig(bob));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -4009,7 +4066,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "AccountSet", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -4029,8 +4086,8 @@ class Batch_test : public beast::unit_test::suite
         // MPTokenIssuanceSet with granular permission
         {
             test::jtx::Env env{*this, features};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(100000), alice, bob);
             env.close();
 
@@ -4071,7 +4128,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(jv2, seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "MPTokenIssuanceSet", "tesSUCCESS", txIDs[0], batchID},
                 {2, "MPTokenIssuanceSet", "tesSUCCESS", txIDs[1], batchID},
@@ -4084,9 +4141,9 @@ class Batch_test : public beast::unit_test::suite
         // with granular permission
         {
             test::jtx::Env env{*this, features};
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -4112,7 +4169,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(jv2, seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "TrustSet", "tesSUCCESS", txIDs[0], batchID},
                 {2, "TrustSet", "tesSUCCESS", txIDs[1], batchID},
@@ -4123,9 +4180,9 @@ class Batch_test : public beast::unit_test::suite
         // inner transaction not authorized by the delegating account.
         {
             test::jtx::Env env{*this, features};
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -4152,11 +4209,15 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(jv2, seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "TrustSet", "tesSUCCESS", txIDs[0], batchID},
+                // jv2 fails with terNO_DELEGATE_PERMISSION.
             };
             validateClosedLedger(env, testCases);
+
+            // verify jv2 is not present in the closed ledger.
+            BEAST_EXPECT(env.rpc("tx", txIDs[1])[jss::result][jss::error] == "txnNotFound");
         }
     }
 

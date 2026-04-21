@@ -11,13 +11,13 @@ namespace xrpl {
 // Forward declarations
 namespace NodeStore {
 class Database;
-}
+}  // namespace NodeStore
 namespace Resource {
 class Manager;
-}
+}  // namespace Resource
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 // This is temporary until we migrate all code to use ServiceRegistry.
 class Application;

@@ -4,15 +4,31 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem.hpp>
-#include <boost/format.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/format.hpp>  // IWYU pragma: keep
+#include <boost/format/free_funcs.hpp>
+#include <boost/lexical_cast/bad_lexical_cast.hpp>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <exception>
 #include <fstream>
+#include <optional>
+#include <ostream>
 #include <regex>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace detail {
@@ -81,7 +97,7 @@ time.apple.com
 time.nist.gov
 pool.ntp.org
 
-# Where to find some other servers speaking the Ripple protocol.
+# Where to find some other servers speaking the XRPL protocol.
 #
 [ips]
 r.ripple.com 51235
@@ -107,7 +123,7 @@ backend=sqlite
 }
 
 /**
-   Write a xrpld config file and remove when done.
+   Write an xrpld config file and remove when done.
  */
 class FileCfgGuard : public xrpl::detail::FileDirGuard
 {
@@ -268,7 +284,7 @@ public:
 
         Config c;
 
-        std::string toLoad(R"xrpldConfig(
+        std::string const toLoad(R"xrpldConfig(
 [server]
 port_rpc
 port_peer
@@ -297,15 +313,15 @@ port_wss_admin
         auto const cwd = current_path();
 
         // Test both config file names.
-        char const* configFiles[] = {Config::configFileName, Config::configLegacyName};
+        std::string_view const configFiles[] = {Config::configFileName, Config::configLegacyName};
 
         // Config file in current directory.
         for (auto const& configFile : configFiles)
         {
             // Use a temporary directory for testing.
-            beast::temp_dir td;
+            beast::temp_dir const td;
             current_path(td.path());
-            path const f = td.file(configFile);
+            path const f = td.file(std::string{configFile});
             std::ofstream o(f.string());
             o << detail::configContents("", "");
             o.close();
@@ -325,13 +341,13 @@ port_wss_admin
         {
             // Point the current working directory to a temporary directory, so
             // we don't pick up an actual config file from the repository root.
-            beast::temp_dir td;
+            beast::temp_dir const td;
             current_path(td.path());
 
             // The XDG config directory is set: the config file must be in a
             // subdirectory named after the system.
             {
-                beast::temp_dir tc;
+                beast::temp_dir const tc;
 
                 // Set the HOME and XDG_CONFIG_HOME environment variables. The
                 // HOME variable is not used when XDG_CONFIG_HOME is set, but
@@ -344,7 +360,7 @@ port_wss_admin
                 // Create the config file in '${XDG_CONFIG_HOME}/[systemName]'.
                 path p = tc.file(systemName());
                 create_directory(p);
-                p = tc.file(systemName() + "/" + configFile);
+                p = tc.file(systemName() + "/" + std::string{configFile});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -365,7 +381,7 @@ port_wss_admin
             // The XDG config directory is not set: the config file must be in a
             // subdirectory named .config followed by the system name.
             {
-                beast::temp_dir tc;
+                beast::temp_dir const tc;
 
                 // Set only the HOME environment variable.
                 char const* h = getenv("HOME");
@@ -380,7 +396,7 @@ port_wss_admin
                 s += "/" + systemName();
                 p = tc.file(s);
                 create_directory(p);
-                p = tc.file(s + "/" + configFile);
+                p = tc.file(s + "/" + std::string{configFile});
                 std::ofstream o(p.string());
                 o << detail::configContents("", "");
                 o.close();
@@ -507,7 +523,7 @@ port_wss_admin
             {
                 c.loadFromString(boost::str(configTemplate % validationSeed % token));
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -528,7 +544,7 @@ port_wss_admin
 main
 )xrpldConfig");
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -541,7 +557,7 @@ main
             c.loadFromString(R"xrpldConfig(
 )xrpldConfig");
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -556,7 +572,7 @@ main
 255
 )xrpldConfig");
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -571,7 +587,7 @@ main
 10000
 )xrpldConfig");
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const& e)
         {
             error = e.what();
         }
@@ -598,7 +614,7 @@ main
                 Config c;
                 c.loadFromString(boost::str(cc % missingPath));
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -617,7 +633,7 @@ main
                 Config c;
                 c.loadFromString(boost::str(cc % invalidFile.string()));
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -626,7 +642,7 @@ main
         {
             // load validators from config into single section
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validators]
 n949f75evCHwgyP4fPVgaHqNHxUVN15PsJEZ3B3HnXPcPjcZAoy7
 n9MD5h24qrQqiyBC8aeqqCWvpiBiYQ3jxSr91uiDvmrkyHRdYLUj
@@ -644,7 +660,7 @@ nHBu9PTL9dn2GuZtdW4U2WzBwffyX9qsQCd9CNU4Z5YG3PQfViM8
         {
             // load validator list sites and keys from config
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -674,7 +690,7 @@ trust-these-validators.gov
         {
             // load validator list sites and keys from config
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -705,7 +721,7 @@ trust-these-validators.gov
             // load should throw if [validator_list_threshold] is greater than
             // the number of [validator_list_keys]
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -725,7 +741,7 @@ trust-these-validators.gov
                 c.loadFromString(toLoad);
                 fail();
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -734,7 +750,7 @@ trust-these-validators.gov
         {
             // load should throw if [validator_list_threshold] is malformed
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -754,7 +770,7 @@ value = 2
                 c.loadFromString(toLoad);
                 fail();
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -763,7 +779,7 @@ value = 2
         {
             // load should throw if [validator_list_threshold] is negative
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -790,7 +806,7 @@ trust-these-validators.gov
             // load should throw if [validator_list_sites] is configured but
             // [validator_list_keys] is not
             Config c;
-            std::string toLoad(R"xrpldConfig(
+            std::string const toLoad(R"xrpldConfig(
 [validator_list_sites]
 xrpl-validators.com
 trust-these-validators.gov
@@ -802,7 +818,7 @@ trust-these-validators.gov
                 c.loadFromString(toLoad);
                 fail();
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -948,7 +964,7 @@ trust-these-validators.gov
                 c.loadFromString(boost::str(cc % vtg.validatorsFile()));
                 fail();
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -958,7 +974,7 @@ trust-these-validators.gov
             // load should throw if [validators], [validator_keys] and
             // [validator_list_keys] are missing from xrpld.cfg and
             // validators file
-            Config c;
+            Config const c;
             boost::format cc("[validators_file]\n%1%\n");
             std::string error;
             detail::ValidatorsTxtGuard const vtg(*this, "test_cfg", "validators.cfg");
@@ -968,13 +984,13 @@ trust-these-validators.gov
                 "[validators], [validator_keys] or [validator_list_keys] "
                 "section: " +
                 vtg.validatorsFile();
-            std::ofstream o(vtg.validatorsFile());
+            std::ofstream const o(vtg.validatorsFile());
             try
             {
                 Config c2;
                 c2.loadFromString(boost::str(cc % vtg.validatorsFile()));
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 error = e.what();
             }
@@ -1141,7 +1157,7 @@ trust-these-validators.gov
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(
+        std::string const toLoad(
             R"(
 [port_rpc])"
             "\x20"
@@ -1182,7 +1198,7 @@ r.ripple.com 51235
         Config cfg;
         /* NOTE: this string includes some explicit
          * space chars in order to verify proper trimming */
-        std::string toLoad(
+        std::string const toLoad(
             R"(
 [port_rpc])"
             "\x20"
@@ -1261,7 +1277,7 @@ r.ripple.com:51235
             bool had_comment;
         };
 
-        std::array<TestCommentData, 13> tests = {
+        std::array<TestCommentData, 13> const tests = {
             {{"password = aaaa\\#bbbb", "password", "aaaa#bbbb", false},
              {"password = aaaa#bbbb", "password", "aaaa", true},
              {"password = aaaa #bbbb", "password", "aaaa", true},
@@ -1419,7 +1435,7 @@ r.ripple.com:51235
             bool shouldPass;
         };
 
-        std::vector<ConfigUnit> units = {
+        std::vector<ConfigUnit> const units = {
             {"seconds", 1, 15 * 60, false},
             {"minutes", 60, 14, false},
             {"minutes", 60, 15, true},
@@ -1451,7 +1467,7 @@ r.ripple.com:51235
                     fail();
                 }
             }
-            catch (std::runtime_error&)
+            catch (std::runtime_error const&)
             {
                 if (!shouldPass)
                 {
@@ -1477,7 +1493,7 @@ r.ripple.com:51235
                 c.loadFromString("[overlay]\nmax_unknown_time=" + value);
                 return c.MAX_UNKNOWN_TIME;
             }
-            catch (std::runtime_error&)
+            catch (std::runtime_error const&)
             {
                 return {};
             }
@@ -1511,7 +1527,7 @@ r.ripple.com:51235
                 c.loadFromString("[overlay]\nmax_diverged_time=" + value);
                 return c.MAX_DIVERGED_TIME;
             }
-            catch (std::runtime_error&)
+            catch (std::runtime_error const&)
             {
                 return {};
             }

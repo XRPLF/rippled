@@ -1,15 +1,19 @@
+#include <xrpl/basics/ResolverAsio.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
-#include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/bind_executor.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
@@ -152,7 +156,7 @@ public:
     void
     asyncHandlersComplete()
     {
-        std::unique_lock<std::mutex> lk{m_mut};
+        std::unique_lock<std::mutex> const lk{m_mut};
         m_asyncHandlersCompleted = true;
         m_cv.notify_all();
     }
@@ -172,7 +176,7 @@ public:
         if (m_stopped.exchange(false))
         {
             {
-                std::lock_guard lk{m_mut};
+                std::lock_guard const lk{m_mut};
                 m_asyncHandlersCompleted = false;
             }
             addReference();
@@ -327,7 +331,7 @@ public:
             return;
 
         std::string const name(m_work.front().names.back());
-        HandlerType handler(m_work.front().handler);
+        HandlerType const handler(m_work.front().handler);
 
         m_work.front().names.pop_back();
 

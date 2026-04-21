@@ -285,6 +285,7 @@ BaseWSPeer<Handler, Impl>::on_write(error_code const& ec)
         return;
     start_timer();
     if (!result.first)
+    {
         impl().ws_.async_write_some(
             static_cast<bool>(result.first),
             result.second,
@@ -292,7 +293,9 @@ BaseWSPeer<Handler, Impl>::on_write(error_code const& ec)
                 strand_,
                 std::bind(
                     &BaseWSPeer::on_write, impl().shared_from_this(), std::placeholders::_1)));
+    }
     else
+    {
         impl().ws_.async_write_some(
             static_cast<bool>(result.first),
             result.second,
@@ -300,6 +303,7 @@ BaseWSPeer<Handler, Impl>::on_write(error_code const& ec)
                 strand_,
                 std::bind(
                     &BaseWSPeer::on_write_fin, impl().shared_from_this(), std::placeholders::_1)));
+    }
 }
 
 template <class Handler, class Impl>
@@ -319,7 +323,9 @@ BaseWSPeer<Handler, Impl>::on_write_fin(error_code const& ec)
                     &BaseWSPeer::on_close, impl().shared_from_this(), std::placeholders::_1)));
     }
     else if (!wq_.empty())
+    {
         on_write({});
+    }
 }
 
 template <class Handler, class Impl>
@@ -392,7 +398,7 @@ BaseWSPeer<Handler, Impl>::cancel_timer()
     {
         timer_.cancel();
     }
-    catch (boost::system::system_error const&)
+    catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
     {
         // ignored
     }
@@ -418,7 +424,7 @@ BaseWSPeer<Handler, Impl>::on_ping_pong(
 {
     if (kind == boost::beast::websocket::frame_type::pong)
     {
-        boost::beast::string_view p(payload_.begin());
+        boost::beast::string_view const p(payload_.begin());
         if (payload == p)
         {
             close_on_timer_ = false;

@@ -1,6 +1,16 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/TER.h>
+
+#include <cstddef>
+#include <tuple>
 
 namespace xrpl {
 namespace test {

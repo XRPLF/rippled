@@ -327,7 +327,7 @@ public:
 
         friend class Livecache;
         lists_type m_lists;
-        Histogram m_hist;
+        Histogram m_hist{};
     } hops;
 
     /** Returns `true` if the cache is empty. */
@@ -409,7 +409,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
                                 << " at hops " << ep.hops;
         return;
     }
-    else if (!result.second && (ep.hops > e.endpoint.hops))
+    if (!result.second && (ep.hops > e.endpoint.hops))
     {
         // Drop duplicates at higher hops
         std::size_t const excess(ep.hops - e.endpoint.hops);

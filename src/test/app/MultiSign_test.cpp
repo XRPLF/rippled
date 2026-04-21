@@ -1,9 +1,49 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/require.h>
+#include <test/jtx/rpc.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -63,7 +103,7 @@ public:
 
         {
             // Attach a signer list to alice.  Should fail.
-            Json::Value signersList = signers(alice, 1, {{bogie, 1}});
+            Json::Value const signersList = signers(alice, 1, {{bogie, 1}});
             env(signersList, ter(tecINSUFFICIENT_RESERVE));
             env.close();
             env.require(owners(alice, 0));
@@ -81,7 +121,7 @@ public:
             env(pay(env.master, alice, fee - drops(1)));
 
             // Replace with the biggest possible signer list.  Should fail.
-            Json::Value bigSigners = signers(
+            Json::Value const bigSigners = signers(
                 alice,
                 1,
                 {{bogie, 1},
@@ -163,25 +203,20 @@ public:
                  {spook, 1}}),
             ter(temBAD_QUORUM));
 
-        // clang-format off
         // Make a signer list that's too big.  Should fail.
         Account const spare("spare", KeyType::secp256k1);
         env(signers(
                 alice,
                 1,
-                std::vector<signer>{{bogie, 1}, {demon, 1}, {ghost, 1},
-                                          {haunt, 1}, {jinni, 1}, {phase, 1},
-                                          {shade, 1}, {spook, 1}, {spare, 1},
-                                          {acc10, 1}, {acc11, 1}, {acc12, 1},
-                                          {acc13, 1}, {acc14, 1}, {acc15, 1},
-                                          {acc16, 1}, {acc17, 1}, {acc18, 1},
-                                          {acc19, 1}, {acc20, 1}, {acc21, 1},
-                                          {acc22, 1}, {acc23, 1}, {acc24, 1},
-                                          {acc25, 1}, {acc26, 1}, {acc27, 1},
-                                          {acc28, 1}, {acc29, 1}, {acc30, 1},
-                                          {acc31, 1}, {acc32, 1}, {acc33, 1}}),
+                std::vector<signer>{
+                    {bogie, 1}, {demon, 1}, {ghost, 1}, {haunt, 1}, {jinni, 1}, {phase, 1},
+                    {shade, 1}, {spook, 1}, {spare, 1}, {acc10, 1}, {acc11, 1}, {acc12, 1},
+                    {acc13, 1}, {acc14, 1}, {acc15, 1}, {acc16, 1}, {acc17, 1}, {acc18, 1},
+                    {acc19, 1}, {acc20, 1}, {acc21, 1}, {acc22, 1}, {acc23, 1}, {acc24, 1},
+                    {acc25, 1}, {acc26, 1}, {acc27, 1}, {acc28, 1}, {acc29, 1}, {acc30, 1},
+                    {acc31, 1}, {acc32, 1}, {acc33, 1},
+                }),
             ter(temMALFORMED));
-        // clang-format on
         env.close();
         env.require(owners(alice, 0));
     }
@@ -1017,7 +1052,7 @@ public:
         auto const baseFee = env.current()->fees().base;
         {
             // Single-sign, but leave an empty SigningPubKey.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx const tx = env.jt(noop(alice), sig(alice));
             STTx local = *(tx.stx);
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
             auto const info = submitSTTx(local);
@@ -1027,7 +1062,7 @@ public:
         }
         {
             // Single-sign, but invalidate the signature.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx const tx = env.jt(noop(alice), sig(alice));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto badSig = local.getFieldVL(sfTxnSignature);
@@ -1041,7 +1076,7 @@ public:
         }
         {
             // Single-sign, but invalidate the sequence number.
-            JTx tx = env.jt(noop(alice), sig(alice));
+            JTx const tx = env.jt(noop(alice), sig(alice));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto seq = local.getFieldU32(sfSequence);
@@ -1054,7 +1089,7 @@ public:
         }
         {
             // Multisign, but leave a nonempty sfSigningPubKey.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             local[sfSigningPubKey] = alice.pk();  // Insert sfSigningPubKey
             auto const info = submitSTTx(local);
@@ -1064,7 +1099,7 @@ public:
         }
         {
             // Both multi- and single-sign with an empty SigningPubKey.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             local.sign(alice.pk(), alice.sk());
             local.setFieldVL(sfSigningPubKey, Blob());  // Empty SigningPubKey
@@ -1075,7 +1110,7 @@ public:
         }
         {
             // Multisign but invalidate one of the signatures.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             // Flip some bits in the signature.
             auto& signer = local.peekFieldArray(sfSigners).back();
@@ -1090,7 +1125,7 @@ public:
         }
         {
             // Multisign with an empty signers array should fail.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie));
             STTx local = *(tx.stx);
             local.peekFieldArray(sfSigners).clear();  // Empty Signers array.
             auto const info = submitSTTx(local);
@@ -1099,7 +1134,7 @@ public:
                 "fails local checks: Invalid Signers array size.");
         }
         {
-            JTx tx = env.jt(
+            JTx const tx = env.jt(
                 noop(alice),
                 fee(2 * baseFee),
 
@@ -1137,7 +1172,7 @@ public:
                     bogie,
                     bogie,
                     bogie));
-            STTx local = *(tx.stx);
+            STTx const local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1145,8 +1180,8 @@ public:
         }
         {
             // The account owner may not multisign for themselves.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(alice));
-            STTx local = *(tx.stx);
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(alice));
+            STTx const local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1154,8 +1189,8 @@ public:
         }
         {
             // No duplicate multisignatures allowed.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie, bogie));
-            STTx local = *(tx.stx);
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie, bogie));
+            STTx const local = *(tx.stx);
             auto const info = submitSTTx(local);
             BEAST_EXPECT(
                 info[jss::result][jss::error_exception] ==
@@ -1163,7 +1198,7 @@ public:
         }
         {
             // Multisignatures must be submitted in sorted order.
-            JTx tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie, demon));
+            JTx const tx = env.jt(noop(alice), fee(2 * baseFee), msig(bogie, demon));
             STTx local = *(tx.stx);
             // Unsort the Signers array.
             auto& signers = local.peekFieldArray(sfSigners);

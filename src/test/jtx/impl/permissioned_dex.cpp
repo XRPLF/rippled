@@ -1,9 +1,17 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/jss.h>
+#include <test/jtx/permissioned_dex.h>
 
-#include <exception>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
+
+#include <xrpl/basics/base_uint.h>
+
+#include <string>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -20,7 +28,7 @@ setupDomain(
     env.fund(XRP(100000), domainOwner);
     env.close();
 
-    pdomain::Credentials credentials{{domainOwner, credType}};
+    pdomain::Credentials const credentials{{domainOwner, credType}};
     env(pdomain::setTx(domainOwner, credentials));
 
     auto const objects = pdomain::getObjects(domainOwner, env);

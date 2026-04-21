@@ -1,11 +1,12 @@
+#include <xrpl/json/Writer.h>
+
 #include <xrpl/basics/ToString.h>
 #include <xrpl/json/Output.h>
-#include <xrpl/json/Writer.h>
 
 #include <cstddef>
 #include <map>
 #include <memory>
-#include <set>
+#include <set>  // IWYU pragma: keep
 #include <stack>
 #include <string>
 #include <utility>
@@ -80,7 +81,7 @@ public:
     void
     start(CollectionType ct)
     {
-        char ch = (ct == array) ? openBracket : openBrace;
+        char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
         stack_.push(Collection());
         stack_.top().type = ct;

@@ -1,14 +1,46 @@
-#include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/misc/detail/Work.h>
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SlabAllocator.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
+#include <boost/asio/error.hpp>
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/impl/serializer.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/detail/generic_category.hpp>
+#include <boost/system/system_error.hpp>
+
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <iterator>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -60,10 +92,9 @@ ValidatorSite::Site::Resource::Resource(std::string uri_) : uri{std::move(uri_)}
 ValidatorSite::Site::Site(std::string uri)
     : loadedResource{std::make_shared<Resource>(std::move(uri))}
     , startingResource{loadedResource}
-    , redirCount{0}
     , refreshInterval{default_refresh_interval}
     , nextRefresh{clock_type::now()}
-    , lastRequestSuccessful{false}
+
 {
 }
 
@@ -110,7 +141,7 @@ ValidatorSite::load(std::vector<std::string> const& siteURIs)
 {
     JLOG(j_.debug()) << "Loading configured validator list sites";
 
-    std::lock_guard lock{sites_mutex_};
+    std::lock_guard const lock{sites_mutex_};
 
     return load(siteURIs, lock);
 }
@@ -147,8 +178,8 @@ ValidatorSite::load(
 void
 ValidatorSite::start()
 {
-    std::lock_guard l0{sites_mutex_};
-    std::lock_guard l1{state_mutex_};
+    std::lock_guard const l0{sites_mutex_};
+    std::lock_guard const l1{state_mutex_};
     if (timer_.expiry() == clock_type::time_point{})
         setTimer(l0, l1);
 }
@@ -216,7 +247,7 @@ ValidatorSite::makeRequest(
     sites_[siteIdx].activeResource = resource;
     std::shared_ptr<detail::Work> sp;
     auto timeoutCancel = [this]() {
-        std::lock_guard lock_state{state_mutex_};
+        std::lock_guard const lock_state{state_mutex_};
         // docs indicate cancel_one() can throw, but this
         // should be reconsidered if it changes to noexcept
         try
@@ -280,7 +311,7 @@ ValidatorSite::makeRequest(
     sp->run();
     // start a timer for the request, which shouldn't take more
     // than requestTimeout_ to complete
-    std::lock_guard lock_state{state_mutex_};
+    std::lock_guard const lock_state{state_mutex_};
     timer_.expires_after(requestTimeout_);
     timer_.async_wait([this, siteIdx](boost::system::error_code const& ec) {
         this->onRequestTimeout(siteIdx, ec);
@@ -294,7 +325,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
         return;
 
     {
-        std::lock_guard lock_site{sites_mutex_};
+        std::lock_guard const lock_site{sites_mutex_};
         // In some circumstances, both this function and the response
         // handler (onSiteFetch or onTextFetch) can get queued and
         // processed. In all observed cases, the response handler
@@ -311,7 +342,7 @@ ValidatorSite::onRequestTimeout(std::size_t siteIdx, error_code const& ec)
                                 "already been processed";
     }
 
-    std::lock_guard lock_state{state_mutex_};
+    std::lock_guard const lock_state{state_mutex_};
     if (auto sp = work_.lock())
         sp->cancel();
 }
@@ -330,7 +361,7 @@ ValidatorSite::onTimer(std::size_t siteIdx, error_code const& ec)
 
     try
     {
-        std::lock_guard lock{sites_mutex_};
+        std::lock_guard const lock{sites_mutex_};
         sites_[siteIdx].nextRefresh = clock_type::now() + sites_[siteIdx].refreshInterval;
         sites_[siteIdx].redirCount = 0;
         // the WorkSSL client ctor can throw if SSL init fails
@@ -579,7 +610,7 @@ ValidatorSite::onSiteFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard lock_state{state_mutex_};
+    std::lock_guard const lock_state{state_mutex_};
     fetching_ = false;
     if (!stopping_)
         setTimer(lock_sites, lock_state);
@@ -592,7 +623,7 @@ ValidatorSite::onTextFetch(
     std::string const& res,
     std::size_t siteIdx)
 {
-    std::lock_guard lock_sites{sites_mutex_};
+    std::lock_guard const lock_sites{sites_mutex_};
     {
         try
         {
@@ -616,7 +647,7 @@ ValidatorSite::onTextFetch(
         sites_[siteIdx].activeResource.reset();
     }
 
-    std::lock_guard lock_state{state_mutex_};
+    std::lock_guard const lock_state{state_mutex_};
     fetching_ = false;
     if (!stopping_)
         setTimer(lock_sites, lock_state);
@@ -632,7 +663,7 @@ ValidatorSite::getJson() const
     Json::Value jrr(Json::objectValue);
     Json::Value& jSites = (jrr[jss::validator_sites] = Json::arrayValue);
     {
-        std::lock_guard lock{sites_mutex_};
+        std::lock_guard const lock{sites_mutex_};
         for (Site const& site : sites_)
         {
             Json::Value& v = jSites.append(Json::objectValue);

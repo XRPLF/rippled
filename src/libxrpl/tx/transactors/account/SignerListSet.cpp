@@ -1,16 +1,34 @@
+#include <xrpl/tx/transactors/account/SignerListSet.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/account/SignerListSet.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/SignerEntries.h>
+#include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -167,7 +185,7 @@ removeSignersFromLedger(
 {
     // We have to examine the current SignerList so we know how much to
     // reduce the OwnerCount.
-    SLE::pointer signers = view.peek(signerListKeylet);
+    SLE::pointer const signers = view.peek(signerListKeylet);
 
     // If the signer list doesn't exist we've already succeeded in deleting it.
     if (!signers)
@@ -299,7 +317,7 @@ SignerListSet::replaceSignerList()
     std::uint32_t const oldOwnerCount{(*sle)[sfOwnerCount]};
 
     constexpr int addedOwnerCount = 1;
-    std::uint32_t flags{lsfOneOwnerCount};
+    std::uint32_t const flags{lsfOneOwnerCount};
 
     XRPAmount const newReserve{view().fees().accountReserve(oldOwnerCount + addedOwnerCount)};
 
@@ -339,7 +357,7 @@ SignerListSet::destroySignerList()
     auto const accountKeylet = keylet::account(account_);
     // Destroying the signer list is only allowed if either the master key
     // is enabled or there is a regular key.
-    SLE::pointer ledgerEntry = view().peek(accountKeylet);
+    SLE::pointer const ledgerEntry = view().peek(accountKeylet);
     if (!ledgerEntry)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 

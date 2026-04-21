@@ -75,10 +75,12 @@ public:
     doValidatedLedger(std::shared_ptr<ReadView const> const& lastValidatedLedger)
     {
         if (needValidatedLedger(lastValidatedLedger->seq()))
+        {
             doValidatedLedger(
                 lastValidatedLedger->seq(),
                 getEnabledAmendments(*lastValidatedLedger),
                 getMajorityAmendments(*lastValidatedLedger));
+        }
     }
 
     /** Called to determine whether the amendment logic needs to process
@@ -143,7 +145,7 @@ public:
         // Inject appropriate pseudo-transactions
         for (auto const& it : actions)
         {
-            STTx amendTx(ttAMENDMENT, [&it, seq = lastClosedLedger->seq() + 1](auto& obj) {
+            STTx const amendTx(ttAMENDMENT, [&it, seq = lastClosedLedger->seq() + 1](auto& obj) {
                 obj.setAccountID(sfAccount, AccountID());
                 obj.setFieldH256(sfAmendment, it.first);
                 obj.setFieldU32(sfLedgerSequence, seq);

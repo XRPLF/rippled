@@ -1,17 +1,43 @@
+#include <xrpl/server/Manifest.h>
+
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STExchange.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DatabaseCon.h>
-#include <xrpl/server/Manifest.h>
 #include <xrpl/server/Wallet.h>
 
 #include <boost/algorithm/string/trim.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <limits>
+#include <mutex>
 #include <numeric>
+#include <optional>
+#include <shared_mutex>
 #include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -279,7 +305,7 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
 std::optional<PublicKey>
 ManifestCache::getSigningKey(PublicKey const& pk) const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -291,7 +317,7 @@ ManifestCache::getSigningKey(PublicKey const& pk) const
 PublicKey
 ManifestCache::getMasterKey(PublicKey const& pk) const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
 
     if (auto const iter = signingToMasterKeys_.find(pk); iter != signingToMasterKeys_.end())
         return iter->second;
@@ -302,7 +328,7 @@ ManifestCache::getMasterKey(PublicKey const& pk) const
 std::optional<std::uint32_t>
 ManifestCache::getSequence(PublicKey const& pk) const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -314,7 +340,7 @@ ManifestCache::getSequence(PublicKey const& pk) const
 std::optional<std::string>
 ManifestCache::getDomain(PublicKey const& pk) const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -326,7 +352,7 @@ ManifestCache::getDomain(PublicKey const& pk) const
 std::optional<std::string>
 ManifestCache::getManifest(PublicKey const& pk) const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end() && !iter->second.revoked())
@@ -338,7 +364,7 @@ ManifestCache::getManifest(PublicKey const& pk) const
 bool
 ManifestCache::revoked(PublicKey const& pk) const
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
     auto const iter = map_.find(pk);
 
     if (iter != map_.end())
@@ -437,12 +463,12 @@ ManifestCache::applyManifest(Manifest m)
     };
 
     {
-        std::shared_lock sl{mutex_};
+        std::shared_lock const sl{mutex_};
         if (auto d = prewriteCheck(map_.find(m.masterKey), /*checkSig*/ true, sl))
             return *d;
     }
 
-    std::unique_lock sl{mutex_};
+    std::unique_lock const sl{mutex_};
     auto const iter = map_.find(m.masterKey);
     // Since we released the previously held read lock, it's possible that the
     // collections have been written to. This means we need to run
@@ -562,7 +588,7 @@ ManifestCache::save(
     std::string const& dbTable,
     std::function<bool(PublicKey const&)> const& isTrusted)
 {
-    std::shared_lock lock{mutex_};
+    std::shared_lock const lock{mutex_};
     auto db = dbCon.checkoutDb();
 
     saveManifests(*db, dbTable, isTrusted, map_, j_);

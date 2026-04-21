@@ -1,13 +1,22 @@
 #include <test/unit_test/utils.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -216,7 +225,7 @@ public:
             auto s = good;
 
             // Remove all characters from the string in random order:
-            std::hash<std::string> r;
+            std::hash<std::string> const r;
 
             while (!s.empty())
             {

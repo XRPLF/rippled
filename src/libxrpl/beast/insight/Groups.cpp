@@ -1,10 +1,11 @@
+#include <xrpl/beast/insight/Groups.h>
+
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
 #include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Group.h>
-#include <xrpl/beast/insight/Groups.h>
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
@@ -98,7 +99,7 @@ public:
     Group::ptr const&
     get(std::string const& name) override
     {
-        std::pair<Items::iterator, bool> result(m_items.emplace(name, Group::ptr()));
+        std::pair<Items::iterator, bool> const result(m_items.emplace(name, Group::ptr()));
         Group::ptr& group(result.first->second);
         if (result.second)
             group = std::make_shared<GroupImp>(name, m_collector);

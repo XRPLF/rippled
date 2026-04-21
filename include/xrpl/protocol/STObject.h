@@ -349,6 +349,8 @@ public:
     void
     setFieldH128(SField const& field, uint128 const&);
     void
+    setFieldH192(SField const& field, uint192 const&);
+    void
     setFieldH256(SField const& field, uint256 const&);
     void
     setFieldI32(SField const& field, std::int32_t);
@@ -671,7 +673,7 @@ public:
     OptionalProxy&
     operator=(std::nullopt_t const&);
     OptionalProxy&
-    operator=(optional_type&& v);
+    operator=(optional_type&& v);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     OptionalProxy&
     operator=(optional_type const& v);
 
@@ -702,7 +704,7 @@ class STObject::FieldErr : public std::runtime_error
 template <class T>
 STObject::Proxy<T>::Proxy(STObject* st, TypedField<T> const* f) : st_(st), f_(f)
 {
-    if (st_->mType)
+    if (st_->mType != nullptr)
     {
         // STObject has associated template
         if (!st_->peekAtPField(*f_))
@@ -766,11 +768,15 @@ STObject::Proxy<T>::assign(U&& u)
         st_->makeFieldAbsent(*f_);
         return;
     }
-    T* t;
+    T* t = nullptr;
     if (style_ == soeINVALID)
+    {
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
+    }
     else
+    {
         t = dynamic_cast<T*>(st_->makeFieldPresent(*f_));
+    }
     XRPL_ASSERT(t, "xrpl::STObject::Proxy::assign : type cast succeeded");
     *t = std::forward<U>(u);
 }
@@ -851,12 +857,18 @@ STObject::OptionalProxy<T>::operator=(std::nullopt_t const&) -> OptionalProxy&
 
 template <class T>
 auto
-STObject::OptionalProxy<T>::operator=(optional_type&& v) -> OptionalProxy&
+STObject::OptionalProxy<T>::operator=(
+    optional_type&& v)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+    -> OptionalProxy&
 {
     if (v)
+    {
         this->assign(std::move(*v));
+    }
     else
+    {
         disengage();
+    }
     return *this;
 }
 
@@ -865,9 +877,13 @@ auto
 STObject::OptionalProxy<T>::operator=(optional_type const& v) -> OptionalProxy&
 {
     if (v)
+    {
         this->assign(*v);
+    }
     else
+    {
         disengage();
+    }
     return *this;
 }
 
@@ -899,9 +915,13 @@ STObject::OptionalProxy<T>::disengage()
     if (this->style_ == soeREQUIRED || this->style_ == soeDEFAULT)
         Throw<STObject::FieldErr>("Template field error '" + this->f_->getName() + "'");
     if (this->style_ == soeINVALID)
+    {
         this->st_->delField(*this->f_);
+    }
     else
+    {
         this->st_->makeFieldAbsent(*this->f_);
+    }
 }
 
 template <class T>
@@ -930,6 +950,7 @@ STObject::Transform::operator()(detail::STVar const& e) const
 
 //------------------------------------------------------------------------------
 
+// NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
 inline STObject::STObject(SerialIter&& sit, SField const& name) : STObject(sit, name)
 {
 }
@@ -1053,9 +1074,11 @@ STObject::at(TypedField<T> const& f) const
 {
     auto const b = peekAtPField(f);
     if (!b)
+    {
         // This is a free object (no constraints)
         // with no template
         Throw<STObject::FieldErr>("Missing field: " + f.getName());
+    }
 
     if (auto const u = dynamic_cast<T const*>(b))
         return u->value();
@@ -1133,9 +1156,13 @@ STObject::setFieldH160(SField const& field, base_uint<160, Tag> const& v)
 
     using Bits = STBitString<160>;
     if (auto cf = dynamic_cast<Bits*>(rf))
+    {
         cf->setValue(v);
+    }
     else
+    {
         Throw<std::runtime_error>("Wrong field type");
+    }
 }
 
 inline bool
@@ -1153,7 +1180,7 @@ STObject::getFieldByValue(SField const& field) const
     if (!rf)
         throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    SerializedTypeID const id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
         return V();  // optional field not present
@@ -1180,10 +1207,13 @@ STObject::getFieldByConstRef(SField const& field, V const& empty) const
     if (!rf)
         throwFieldNotFound(field);
 
-    SerializedTypeID id = rf->getSType();
+    SerializedTypeID const id = rf->getSType();
 
     if (id == STI_NOTPRESENT)
+    {
+        // NOLINTNEXTLINE(bugprone-return-const-ref-from-parameter)
         return empty;  // optional field not present
+    }
 
     T const* cf = dynamic_cast<T const*>(rf);
 

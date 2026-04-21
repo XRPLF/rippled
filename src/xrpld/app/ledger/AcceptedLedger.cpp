@@ -1,6 +1,10 @@
 #include <xrpld/app/ledger/AcceptedLedger.h>
 
+#include <xrpl/ledger/AcceptedLedgerTx.h>
+#include <xrpl/ledger/ReadView.h>
+
 #include <algorithm>
+#include <memory>
 
 namespace xrpl {
 

@@ -1,3 +1,5 @@
+#include <xrpl/beast/insight/StatsDCollector.h>
+
 #include <xrpl/beast/core/List.h>
 #include <xrpl/beast/insight/CounterImpl.h>
 #include <xrpl/beast/insight/EventImpl.h>
@@ -5,7 +7,6 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/MeterImpl.h>
-#include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -13,12 +14,14 @@
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/system/detail/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <chrono>
 #include <cstddef>
@@ -293,14 +296,14 @@ public:
     void
     add(StatsDMetricBase& metric)
     {
-        std::lock_guard _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
         metrics_.push_back(metric);
     }
 
     void
     remove(StatsDMetricBase& metric)
     {
-        std::lock_guard _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
         metrics_.erase(metrics_.iterator_to(metric));
     }
 
@@ -444,7 +447,7 @@ public:
             return;
         }
 
-        std::lock_guard _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
 
         for (auto& m : metrics_)
             m.do_process();

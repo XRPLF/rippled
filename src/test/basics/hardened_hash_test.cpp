@@ -1,9 +1,14 @@
 #include <xrpl/basics/hardened_hash.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iomanip>
+#include <ios>
+#include <ostream>
+#include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -189,13 +194,13 @@ public:
     check_container()
     {
         {
-            C<detail::test_user_type_member<std::string>> c;
+            C<detail::test_user_type_member<std::string>> const c;
         }
 
         pass();
 
         {
-            C<detail::test_user_type_free<std::string>> c;
+            C<detail::test_user_type_free<std::string>> const c;
         }
 
         pass();

@@ -1,20 +1,53 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/server/Manifest.h>
 
+#include <boost/asio/buffer.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -272,7 +305,7 @@ private:
             auto const masterNode1 = randomMasterKey();
             auto const masterNode2 = randomMasterKey();
 
-            std::vector<std::string> cfgMasterKeys(
+            std::vector<std::string> const cfgMasterKeys(
                 {format(masterNode1), format(masterNode2, " Comment")});
             BEAST_EXPECT(trustedKeys->load({}, cfgMasterKeys, emptyCfgPublishers));
             BEAST_EXPECT(trustedKeys->listed(masterNode1));
@@ -362,7 +395,8 @@ private:
 
             // load should reject validator list signing keys with invalid
             // encoding
-            std::vector<PublicKey> keys({randomMasterKey(), randomMasterKey(), randomMasterKey()});
+            std::vector<PublicKey> const keys(
+                {randomMasterKey(), randomMasterKey(), randomMasterKey()});
             badPublishers.clear();
             for (auto const& key : keys)
                 badPublishers.push_back(toBase58(TokenType::NodePublic, key));
@@ -391,7 +425,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            std::vector<PublicKey> keys(
+            std::vector<PublicKey> const keys(
                 {randomMasterKey(), randomMasterKey(), randomMasterKey(), randomMasterKey()});
             std::vector<std::string> cfgPublishers;
             cfgPublishers.reserve(keys.size());
@@ -433,7 +467,7 @@ private:
             auto legitKey1 = randomMasterKey();
             auto legitKey2 = randomMasterKey();
 
-            std::vector<std::string> cfgPublishers = {
+            std::vector<std::string> const cfgPublishers = {
                 strHex(pubRevokedPublic), strHex(legitKey1), strHex(legitKey2)};
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
@@ -471,7 +505,8 @@ private:
             // this one is not revoked (and not in the manifest cache at all.)
             auto legitKey = randomMasterKey();
 
-            std::vector<std::string> cfgPublishers = {strHex(pubRevokedPublic), strHex(legitKey)};
+            std::vector<std::string> const cfgPublishers = {
+                strHex(pubRevokedPublic), strHex(legitKey)};
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers, std::size_t(2)));
 
             BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
@@ -563,8 +598,8 @@ private:
         auto const manifest1 = base64_encode(makeManifestString(
             publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
-        std::vector<std::string> cfgPublisherKeys({strHex(publisherPublic)});
-        std::vector<std::string> emptyCfgKeys;
+        std::vector<std::string> const cfgPublisherKeys({strHex(publisherPublic)});
+        std::vector<std::string> const emptyCfgKeys;
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
@@ -909,8 +944,8 @@ private:
         auto const manifest = base64_encode(makeManifestString(
             publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
-        std::vector<std::string> cfgPublisherKeys({strHex(publisherPublic)});
-        std::vector<std::string> emptyCfgKeys;
+        std::vector<std::string> const cfgPublisherKeys({strHex(publisherPublic)});
+        std::vector<std::string> const emptyCfgKeys;
 
         BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
@@ -1033,7 +1068,7 @@ private:
             app.config().legacy("database_path"),
             env.journal);
 
-        std::vector<std::string> cfgPublishersOuter;
+        std::vector<std::string> const cfgPublishersOuter;
         hash_set<NodeID> activeValidatorsOuter;
 
         std::size_t const maxKeys = 40;
@@ -1101,7 +1136,7 @@ private:
             auto const masterPrivate = randomSecretKey();
             auto const masterPublic = derivePublicKey(KeyType::ed25519, masterPrivate);
 
-            std::vector<std::string> cfgKeys({toBase58(TokenType::NodePublic, masterPublic)});
+            std::vector<std::string> const cfgKeys({toBase58(TokenType::NodePublic, masterPublic)});
 
             BEAST_EXPECT(trustedKeysOuter->load({}, cfgKeys, cfgPublishersOuter));
 
@@ -1201,12 +1236,12 @@ private:
             auto const publisherSecret = randomSecretKey();
             auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
 
-            std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
-            std::vector<std::string> emptyCfgKeys;
+            std::vector<std::string> const cfgPublishers({strHex(publisherPublic)});
+            std::vector<std::string> const emptyCfgKeys;
 
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
-            TrustChanges changes = trustedKeys->updateTrusted(
+            TrustChanges const changes = trustedKeys->updateTrusted(
                 activeValidatorsOuter,
                 env.timeKeeper().now(),
                 env.app().getOPs(),
@@ -1227,18 +1262,18 @@ private:
                 env.journal);
             auto const masterPrivate = randomSecretKey();
             auto const masterPublic = derivePublicKey(KeyType::ed25519, masterPrivate);
-            std::vector<std::string> cfgKeys({toBase58(TokenType::NodePublic, masterPublic)});
+            std::vector<std::string> const cfgKeys({toBase58(TokenType::NodePublic, masterPublic)});
 
             auto const publisher1Secret = randomSecretKey();
             auto const publisher1Public = derivePublicKey(KeyType::ed25519, publisher1Secret);
             auto const publisher2Secret = randomSecretKey();
             auto const publisher2Public = derivePublicKey(KeyType::ed25519, publisher2Secret);
-            std::vector<std::string> cfgPublishers(
+            std::vector<std::string> const cfgPublishers(
                 {strHex(publisher1Public), strHex(publisher2Public)});
 
             BEAST_EXPECT(trustedKeys->load({}, cfgKeys, cfgPublishers, std::size_t(2)));
 
-            TrustChanges changes = trustedKeys->updateTrusted(
+            TrustChanges const changes = trustedKeys->updateTrusted(
                 activeValidatorsOuter,
                 env.timeKeeper().now(),
                 env.app().getOPs(),
@@ -1261,7 +1296,7 @@ private:
                 env.journal,
                 minQuorum);
 
-            std::size_t n = 10;
+            std::size_t const n = 10;
             std::vector<std::string> cfgKeys;
             cfgKeys.reserve(n);
             hash_set<NodeID> expectedTrusted;
@@ -1316,7 +1351,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            std::vector<std::string> emptyCfgKeys;
+            std::vector<std::string> const emptyCfgKeys;
             auto const publisherKeys = randomKeyPair(KeyType::secp256k1);
             auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
             auto const manifest = base64_encode(makeManifestString(
@@ -1326,7 +1361,7 @@ private:
                 pubSigningKeys.second,
                 1));
 
-            std::vector<std::string> cfgPublisherKeys({strHex(publisherKeys.first)});
+            std::vector<std::string> const cfgPublisherKeys({strHex(publisherKeys.first)});
 
             BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublisherKeys));
 
@@ -1415,7 +1450,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
 
-            std::vector<std::string> cfgPublishers;
+            std::vector<std::string> const cfgPublishers;
             hash_set<NodeID> activeValidators;
             hash_set<PublicKey> activeKeys;
 
@@ -1429,7 +1464,7 @@ private:
                 activeValidators.emplace(calcNodeID(valKey));
                 activeKeys.emplace(valKey);
                 BEAST_EXPECT(trustedKeys->load({}, cfgKeys, cfgPublishers));
-                TrustChanges changes = trustedKeys->updateTrusted(
+                TrustChanges const changes = trustedKeys->updateTrusted(
                     activeValidators,
                     env.timeKeeper().now(),
                     env.app().getOPs(),
@@ -1452,7 +1487,7 @@ private:
                 env.journal);
 
             auto const localKey = randomNode();
-            std::vector<std::string> cfgPublishers;
+            std::vector<std::string> const cfgPublishers;
             hash_set<NodeID> activeValidators;
             hash_set<PublicKey> activeKeys;
             std::vector<std::string> cfgKeys{toBase58(TokenType::NodePublic, localKey)};
@@ -1466,7 +1501,7 @@ private:
                 activeKeys.emplace(valKey);
 
                 BEAST_EXPECT(trustedKeys->load(localKey, cfgKeys, cfgPublishers));
-                TrustChanges changes = trustedKeys->updateTrusted(
+                TrustChanges const changes = trustedKeys->updateTrusted(
                     activeValidators,
                     env.timeKeeper().now(),
                     env.app().getOPs(),
@@ -1532,8 +1567,8 @@ private:
                     pubSigningKeys.second,
                     1));
 
-                std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
-                std::vector<std::string> emptyCfgKeys;
+                std::vector<std::string> const cfgPublishers({strHex(publisherPublic)});
+                std::vector<std::string> const emptyCfgKeys;
 
                 // Threshold of 1 will result in a union of all the lists
                 BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers, std::size_t(1)));
@@ -1542,7 +1577,7 @@ private:
                 auto const sequence = 1;
                 using namespace std::chrono_literals;
                 NetClock::time_point const validUntil = env.timeKeeper().now() + 3600s;
-                std::vector<Validator> localKeys{locals[i].first, locals[i].second};
+                std::vector<Validator> const localKeys{locals[i].first, locals[i].second};
                 auto const blob =
                     makeList(localKeys, sequence, validUntil.time_since_epoch().count());
                 auto const sig = signList(blob, pubSigningKeys);
@@ -1558,7 +1593,7 @@ private:
                 addPublishedList(i);
             BEAST_EXPECT(trustedKeys->getListThreshold() == 1);
 
-            TrustChanges changes = trustedKeys->updateTrusted(
+            TrustChanges const changes = trustedKeys->updateTrusted(
                 activeValidators,
                 env.timeKeeper().now(),
                 env.app().getOPs(),
@@ -1624,8 +1659,8 @@ private:
                         pubSigningKeys.second,
                         1));
 
-                    std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
-                    std::vector<std::string> emptyCfgKeys;
+                    std::vector<std::string> const cfgPublishers({strHex(publisherPublic)});
+                    std::vector<std::string> const emptyCfgKeys;
 
                     BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
@@ -1655,7 +1690,7 @@ private:
                     {
                         validUntil2 = validUntil;
                     }
-                    std::vector<Validator> localKeys{locals[i].first, locals[i].second};
+                    std::vector<Validator> const localKeys{locals[i].first, locals[i].second};
                     auto const blob =
                         makeList(localKeys, sequence, validUntil.time_since_epoch().count());
                     auto const sig = signList(blob, pubSigningKeys);
@@ -1797,7 +1832,7 @@ private:
             BEAST_EXPECT(trustedKeys->expires() == std::nullopt);
 
             // Config listed keys have maximum expiry
-            PublicKey localCfgListed = randomNode();
+            PublicKey const localCfgListed = randomNode();
             trustedKeys->load({}, {toStr(localCfgListed)}, {});
             BEAST_EXPECT(
                 trustedKeys->expires() &&
@@ -1841,8 +1876,8 @@ private:
                     pubSigningKeys.second,
                     1));
 
-                std::vector<std::string> cfgPublishers({strHex(publisherPublic)});
-                std::vector<std::string> emptyCfgKeys;
+                std::vector<std::string> const cfgPublishers({strHex(publisherPublic)});
+                std::vector<std::string> const emptyCfgKeys;
 
                 BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers));
 
@@ -1874,7 +1909,7 @@ private:
             // Configure two publishers and prepare 2 lists
             PreparedList prep1 = addPublishedList();
             env.timeKeeper().set(env.timeKeeper().now() + 200s);
-            PreparedList prep2 = addPublishedList();
+            PreparedList const prep2 = addPublishedList();
 
             // Initially, no list has been published, so no known expiration
             BEAST_EXPECT(trustedKeys->expires() == std::nullopt);
@@ -1955,7 +1990,7 @@ private:
                 env.journal,
                 minimumQuorum);
 
-            std::vector<std::string> cfgPublishers;
+            std::vector<std::string> const cfgPublishers;
             std::vector<std::string> cfgKeys;
             hash_set<NodeID> activeValidators;
             cfgKeys.reserve(vlSize);
@@ -1995,10 +2030,10 @@ private:
          */
 
         {
-            hash_set<NodeID> activeValidators;
+            hash_set<NodeID> const activeValidators;
             //== Combinations ==
-            std::array<std::uint32_t, 4> unlSizes = {34, 35, 39, 60};
-            std::array<std::uint32_t, 4> nUnlPercent = {0, 20, 30, 50};
+            std::array<std::uint32_t, 4> const unlSizes = {34, 35, 39, 60};
+            std::array<std::uint32_t, 4> const nUnlPercent = {0, 20, 30, 50};
             for (auto us : unlSizes)
             {
                 for (auto np : nUnlPercent)
@@ -2007,7 +2042,7 @@ private:
                     BEAST_EXPECT(validators);
                     if (validators)
                     {
-                        std::uint32_t nUnlSize = us * np / 100;
+                        std::uint32_t const nUnlSize = us * np / 100;
                         auto unl = validators->getTrustedMasterKeys();
                         hash_set<PublicKey> nUnl;
                         auto it = unl.begin();
@@ -2082,12 +2117,12 @@ private:
                     // 18
                     auto nUnl = validators->getNegativeUNL();
                     BEAST_EXPECT(nUnl.size() == 12);
-                    std::size_t ss = 33;
+                    std::size_t const ss = 33;
                     std::vector<uint8_t> data(ss, 0);
                     data[0] = 0xED;
                     for (int i = 0; i < 6; ++i)
                     {
-                        Slice s(data.data(), ss);
+                        Slice const s(data.data(), ss);
                         data[1]++;
                         nUnl.emplace(s);
                     }
@@ -2167,7 +2202,7 @@ private:
         BEAST_EXPECT(global != sha512Half(signature, blobVector, version));
 
         {
-            std::map<std::size_t, ValidatorBlobInfo> blobMap{{99, blobVector[0]}};
+            std::map<std::size_t, ValidatorBlobInfo> const blobMap{{99, blobVector[0]}};
             BEAST_EXPECT(global == sha512Half(manifest, blobMap, version));
             BEAST_EXPECT(global != sha512Half(blob, blobMap, version));
         }
@@ -3698,7 +3733,7 @@ private:
             for (auto const& p : publishers)
                 BEAST_EXPECT(trustedKeys->trustedPublisher(p.pubKey));
 
-            TrustChanges changes = trustedKeys->updateTrusted(
+            TrustChanges const changes = trustedKeys->updateTrusted(
                 activeValidators,
                 env.timeKeeper().now(),
                 env.app().getOPs(),
@@ -3736,7 +3771,7 @@ private:
             for (auto const& p : publishers)
                 BEAST_EXPECT(trustedKeys->trustedPublisher(p.pubKey));
 
-            TrustChanges changes = trustedKeys->updateTrusted(
+            TrustChanges const changes = trustedKeys->updateTrusted(
                 activeValidators,
                 env.timeKeeper().now(),
                 env.app().getOPs(),

@@ -1,8 +1,18 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
+
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 
+#include <array>
 #include <chrono>
+#include <condition_variable>
+#include <memory>
 #include <mutex>
 
 namespace xrpl {
@@ -34,7 +44,7 @@ public:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::lock_guard const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }

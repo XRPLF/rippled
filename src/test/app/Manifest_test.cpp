@@ -1,20 +1,41 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/unit_test/utils.h>
 
 #include <xrpld/app/misc/ValidatorList.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/protocol/STExchange.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/rdb/DBInit.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Manifest.h>
 #include <xrpl/server/Wallet.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/utility/in_place_factory.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cstdint>
+#include <exception>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -249,8 +270,9 @@ public:
             {
                 // save should store all trusted master keys to db
                 std::vector<std::string> s1;
-                std::vector<std::string> keys;
+                std::vector<std::string> const keys;
                 s1.reserve(inManifests.size());
+
                 for (auto const& man : inManifests)
                     s1.push_back(toBase58(TokenType::NodePublic, man->masterKey));
                 unl->load({}, s1, keys);
@@ -602,12 +624,12 @@ public:
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // invalid manifest (domain too long)
-                        std::string s(254, 'a');
+                        std::string const s(254, 'a');
                         auto const st = buildManifestObject(++sequence, s + ".example.com");
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }
                     {  // invalid manifest (domain component too long)
-                        std::string s(72, 'a');
+                        std::string const s(72, 'a');
                         auto const st = buildManifestObject(++sequence, s + ".example.com");
                         BEAST_EXPECT(!deserializeManifest(toString(st)));
                     }

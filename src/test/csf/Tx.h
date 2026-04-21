@@ -100,7 +100,8 @@ public:
     {
     }
 
-    TxSet(MutableTxSet&& m) : txs_{std::move(m.txs_)}, id_{calcID(txs_)}
+    TxSet(MutableTxSet&& m)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        : txs_{m.txs_}, id_{calcID(txs_)}
     {
     }
 
@@ -161,7 +162,7 @@ private:
     TxSetType txs_;
 
     //! The unique ID of this tx set
-    ID id_;
+    ID id_{};
 };
 
 //------------------------------------------------------------------------------
@@ -182,9 +183,13 @@ operator<<(std::ostream& o, boost::container::flat_set<T> const& ts)
     for (auto const& t : ts)
     {
         if (do_comma)
+        {
             o << ", ";
+        }
         else
+        {
             do_comma = true;
+        }
         o << t;
     }
     o << " }";

@@ -1,26 +1,41 @@
-#include <test/jtx.h>
 #include <test/jtx/CaptureLogs.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/rfc2616.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
+#include <xrpl/server/WSSession.h>
+#include <xrpl/server/detail/ServerImpl.h>
 
-#include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/streambuf.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
-#include <boost/utility/in_place_factory.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <chrono>
+#include <exception>
+#include <memory>
 #include <optional>
+#include <ostream>
 #include <stdexcept>
+#include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -282,7 +297,7 @@ public:
         TestSink sink{*this};
         TestThread thread;
         sink.threshold(beast::severities::Severity::kAll);
-        beast::Journal journal{sink};
+        beast::Journal const journal{sink};
         TestHandler handler;
         auto s = make_Server(handler, thread.get_io_context(), journal);
         std::vector<Port> serverPort(1);
@@ -377,7 +392,7 @@ public:
         std::string messages;
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -388,7 +403,7 @@ public:
         BEAST_EXPECT(messages.find("Missing 'ip' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -400,7 +415,7 @@ public:
         BEAST_EXPECT(messages.find("Missing 'port' in [port_rpc]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -414,7 +429,7 @@ public:
             messages.find("Invalid value '0' for key 'port' in [port_rpc]") == std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg)["server"].set("port", "0");
@@ -426,7 +441,7 @@ public:
             messages.find("Invalid value '0' for key 'port' in [server]") != std::string::npos);
 
         except([&] {
-            Env env{
+            Env const env{
                 *this,
                 envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -442,7 +457,7 @@ public:
         except([&]  // this creates a standard test config without the server
                     // section
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();
@@ -471,7 +486,7 @@ public:
         except([&]  // this creates a standard test config without some of the
                     // port sections
                {
-                   Env env{
+                   Env const env{
                        *this,
                        envconfig([](std::unique_ptr<Config> cfg) {
                            cfg = std::make_unique<Config>();

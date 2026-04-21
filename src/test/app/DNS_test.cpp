@@ -1,11 +1,20 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+
+#include <xrpld/app/misc/detail/Work.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <condition_variable>
+#include <map>
 #include <memory>
+#include <mutex>
+#include <string>
 
 namespace xrpl {
 namespace test {
@@ -62,7 +71,7 @@ public:
     {
         using boost::asio::ip::tcp;
         tcp::resolver resolver(env_.app().getIOContext());
-        std::string port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
+        std::string const port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
         auto results = resolver.resolve(pUrl_.domain, port);
         auto it = results.begin();
         auto end = results.end();

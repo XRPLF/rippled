@@ -258,7 +258,9 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
             return {};
     }
     else if (!m->ParseFromZeroCopyStream(&stream))
+    {
         return {};
+    }
 
     return m;
 }
@@ -349,7 +351,7 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
         return result;
     }
 
-    bool success;
+    bool success = false;
 
     switch (header->message_type)
     {

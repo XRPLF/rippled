@@ -1,38 +1,74 @@
+#include <xrpld/rpc/ServerHandler.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
-#include <xrpld/rpc/json_body.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/Server.h>
+#include <xrpl/server/Session.h>
 #include <xrpl/server/SimpleWriter.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/fields.hpp>
+#include <boost/beast/http/status.hpp>
 #include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/beast/websocket/impl/rfc6455.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
+#include <cctype>
+#include <chrono>
+#include <exception>
+#include <map>
 #include <memory>
-#include <stdexcept>
+#include <mutex>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -78,12 +114,12 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
         return false;
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
-    std::string strUserPass = base64_decode(strUserPass64);
-    std::string::size_type nColon = strUserPass.find(':');
+    std::string const strUserPass = base64_decode(strUserPass64);
+    std::string::size_type const nColon = strUserPass.find(':');
     if (nColon == std::string::npos)
         return false;
-    std::string strUser = strUserPass.substr(0, nColon);
-    std::string strPassword = strUserPass.substr(nColon + 1);
+    std::string const strUser = strUserPass.substr(0, nColon);
+    std::string const strPassword = strUserPass.substr(nColon + 1);
     return strUser == port.user && strPassword == port.password;
 }
 
@@ -158,7 +194,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
     auto const& port = session.port();
 
     auto const c = [this, &port]() {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return ++count_[port];
     }();
 
@@ -282,7 +318,7 @@ ServerHandler::onRequest(Session& session)
         return;
     }
 
-    std::shared_ptr<Session> detachedSession = session.detach();
+    std::shared_ptr<Session> const detachedSession = session.detach();
     auto const postResult = m_jobQueue.postCoro(
         jtCLIENT_RPC, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
@@ -343,14 +379,14 @@ ServerHandler::onWSMessage(
 void
 ServerHandler::onClose(Session& session, boost::system::error_code const&)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     --count_[session.port()];
 }
 
 void
 ServerHandler::onStopped(Server&)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     stopped_ = true;
     condition_.notify_one();
 }
@@ -732,7 +768,7 @@ ServerHandler::processRequest(
             continue;
         }
 
-        std::string strMethod = method.asString();
+        std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
             usage.charge(Resource::feeMalformedRPC);

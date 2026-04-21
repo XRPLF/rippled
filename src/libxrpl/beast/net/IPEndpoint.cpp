@@ -1,9 +1,9 @@
-#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+
+#include <xrpl/beast/net/IPAddress.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/address_v4.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <cctype>
@@ -120,8 +120,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
             addrStr += i;
 
             // don't exceed a reasonable length...
-            if (addrStr.size() == INET6_ADDRSTRLEN ||
-                ((readTo != 0) && readTo == ':' && addrStr.size() > 15))
+            if (addrStr.size() == INET6_ADDRSTRLEN || (readTo == ':' && addrStr.size() > 15))
             {
                 is.setstate(std::ios_base::failbit);
                 return is;

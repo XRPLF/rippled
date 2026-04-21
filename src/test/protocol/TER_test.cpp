@@ -1,6 +1,8 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/TER.h>
 
+#include <cstddef>
+#include <string>
 #include <tuple>
 #include <type_traits>
 
@@ -13,7 +15,7 @@ struct TER_test : public beast::unit_test::suite
     {
         for (auto i = -400; i < 400; ++i)
         {
-            TER t = TER::fromInt(i);
+            TER const t = TER::fromInt(i);
             auto inRange = isTelLocal(t) || isTemMalformed(t) || isTefFailure(t) || isTerRetry(t) ||
                 isTesSuccess(t) || isTecClaim(t);
 
@@ -75,7 +77,7 @@ struct TER_test : public beast::unit_test::suite
     std::enable_if_t<I1 != 0>
     testIterate(Tup const& tup, beast::unit_test::suite& s)
     {
-        Func<I1, I2> func;
+        Func<I1, I2> const func;
         func(tup, s);
         testIterate<I1 - 1, I2, Func>(tup, s);
     }
@@ -89,7 +91,7 @@ struct TER_test : public beast::unit_test::suite
     std::enable_if_t<I1 == 0 && I2 != 0>
     testIterate(Tup const& tup, beast::unit_test::suite& s)
     {
-        Func<I1, I2> func;
+        Func<I1, I2> const func;
         func(tup, s);
         testIterate<std::tuple_size<Tup>::value - 1, I2 - 1, Func>(tup, s);
     }
@@ -103,7 +105,7 @@ struct TER_test : public beast::unit_test::suite
     std::enable_if_t<I1 == 0 && I2 == 0>
     testIterate(Tup const& tup, beast::unit_test::suite& s)
     {
-        Func<I1, I2> func;
+        Func<I1, I2> const func;
         func(tup, s);
     }
 

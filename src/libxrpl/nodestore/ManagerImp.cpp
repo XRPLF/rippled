@@ -1,7 +1,25 @@
-#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpl/nodestore/detail/ManagerImp.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/detail/DatabaseNodeImp.h>
+
 #include <boost/algorithm/string/predicate.hpp>
+
+#include <algorithm>
+#include <cstddef>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -80,14 +98,14 @@ ManagerImp::make_Database(
 void
 ManagerImp::insert(Factory& factory)
 {
-    std::lock_guard _(mutex_);
+    std::lock_guard const _(mutex_);
     list_.push_back(&factory);
 }
 
 void
 ManagerImp::erase(Factory& factory)
 {
-    std::lock_guard _(mutex_);
+    std::lock_guard const _(mutex_);
     auto const iter = std::find_if(
         list_.begin(), list_.end(), [&factory](Factory* other) { return other == &factory; });
     XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
@@ -97,7 +115,7 @@ ManagerImp::erase(Factory& factory)
 Factory*
 ManagerImp::find(std::string const& name)
 {
-    std::lock_guard _(mutex_);
+    std::lock_guard const _(mutex_);
     auto const iter = std::find_if(list_.begin(), list_.end(), [&name](Factory* other) {
         return boost::iequals(name, other->getName());
     });

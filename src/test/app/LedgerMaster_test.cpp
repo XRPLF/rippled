@@ -1,7 +1,22 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/noop.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+
+#include <cstdint>
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -51,14 +66,14 @@ class LedgerMaster_test : public beast::unit_test::suite
 
         // test invalid range
         {
-            std::uint32_t ledgerSeq = -1;
-            std::uint32_t txnIndex = 0;
+            std::uint32_t const ledgerSeq = -1;
+            std::uint32_t const txnIndex = 0;
             auto result = env.app().getLedgerMaster().txnIdFromIndex(ledgerSeq, txnIndex);
             BEAST_EXPECT(!result);
         }
         // test not in ledger
         {
-            uint32_t txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
+            uint32_t const txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
             auto result = env.app().getLedgerMaster().txnIdFromIndex(0, txnIndex);
             BEAST_EXPECT(!result);
         }
@@ -69,13 +84,13 @@ class LedgerMaster_test : public beast::unit_test::suite
         }
         // ended without result
         {
-            uint32_t txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
+            uint32_t const txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
             auto result = env.app().getLedgerMaster().txnIdFromIndex(endLegSeq + 1, txnIndex);
             BEAST_EXPECT(!result);
         }
         // success (first tx)
         {
-            uint32_t txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
+            uint32_t const txnIndex = metas[0]->getFieldU32(sfTransactionIndex);
             auto result = env.app().getLedgerMaster().txnIdFromIndex(startLegSeq, txnIndex);
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -86,7 +101,7 @@ class LedgerMaster_test : public beast::unit_test::suite
         }
         // success (second tx)
         {
-            uint32_t txnIndex = metas[1]->getFieldU32(sfTransactionIndex);
+            uint32_t const txnIndex = metas[1]->getFieldU32(sfTransactionIndex);
             auto result = env.app().getLedgerMaster().txnIdFromIndex(startLegSeq + 1, txnIndex);
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)

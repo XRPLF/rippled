@@ -42,8 +42,10 @@ read_varint(void const* buf, std::size_t buflen, std::size_t& t)
     std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(buf);
     std::size_t n = 0;
     while (p[n] & 0x80)
+    {
         if (++n >= buflen)
             return 0;
+    }
     if (++n > buflen)
         return 0;
     // Special case for 0
@@ -82,6 +84,7 @@ template <class = void>
 std::size_t
 write_varint(void* p0, std::size_t v)
 {
+    // NOLINTNEXTLINE(misc-const-correctness)
     std::uint8_t* p = reinterpret_cast<std::uint8_t*>(p0);
     do
     {

@@ -1,18 +1,59 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
 #include <test/jtx/TestHelpers.h>
-#include <test/jtx/TestSuite.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/last_ledger_sequence.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/require.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/st.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -261,9 +302,7 @@ public:
         env(noop(alice), fee(baseFee * 2.0), queued);
 
         // Queue is full now.
-        // clang-format off
         checkMetrics(*this, env, 6, 6, 4, 3, txFeeLevelByAccount(env, daria) + 1);
-        // clang-format on
         // Try to add another transaction with the default (low) fee,
         // it should fail because the queue is full.
         env(noop(charlie), ter(telCAN_NOT_QUEUE_FULL));
@@ -274,18 +313,22 @@ public:
         env(noop(charlie), fee(baseFee * 10), queued);
 
         // Queue is still full, of course, but the min fee has gone up
-        // clang-format off
         checkMetrics(*this, env, 6, 6, 4, 3, txFeeLevelByAccount(env, elmo) + 1);
-        // clang-format on
 
         // Close out the ledger, the transactions are accepted, the
         // queue is cleared, then the localTxs are retried. At this
         // point, daria's transaction that was dropped from the queue
         // is put back in. Neat.
         env.close();
-        // clang-format off
-        checkMetrics(*this, env, 2, 8, 5, 4, baseFeeLevel.fee(), calcMedFeeLevel(FeeLevel64{baseFeeLevel.fee() * largeFeeMultiplier}));
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            2,
+            8,
+            5,
+            4,
+            baseFeeLevel.fee(),
+            calcMedFeeLevel(FeeLevel64{baseFeeLevel.fee() * largeFeeMultiplier}));
 
         env.close();
         checkMetrics(*this, env, 0, 10, 2, 5);
@@ -498,7 +541,7 @@ public:
 
         // We haven't yet shown that ticket-based transactions can be added
         // to the queue in any order.  We should do that...
-        std::uint32_t tkt250 = tkt1 + 249;
+        std::uint32_t const tkt250 = tkt1 + 249;
         env(noop(alice), ticket::use(tkt250 - 0), fee(baseFee * 3.0), queued);
         env(noop(alice), ticket::use(tkt1 + 14), fee(baseFee * 2.9), queued);
         env(noop(alice), ticket::use(tkt250 - 1), fee(baseFee * 2.8), queued);
@@ -750,15 +793,13 @@ public:
 
         env.close();
         // alice's transaction is still hanging around
-        // clang-format off
-        checkMetrics(*this, env, 1, 8, 5, 4, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this, env, 1, 8, 5, 4, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
 
         constexpr auto anotherLargeFeeMultiplier = 800;
         auto const anotherLargeFee = baseFee * anotherLargeFeeMultiplier;
         // Keep alice's transaction waiting.
-        // clang-format off
         env(noop(bob), fee(anotherLargeFee), queued);
         env(noop(charlie), fee(anotherLargeFee), queued);
         env(noop(daria), fee(anotherLargeFee), queued);
@@ -766,24 +807,36 @@ public:
         env(noop(edgar), fee(anotherLargeFee), queued);
         env(noop(felicia), fee(anotherLargeFee - 1), queued);
         env(noop(felicia), fee(anotherLargeFee - 1), seq(env.seq(felicia) + 1), queued);
-        checkMetrics(*this, env, 8, 8, 5, 4, baseFeeLevel.fee() + 1, baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            8,
+            8,
+            5,
+            4,
+            baseFeeLevel.fee() + 1,
+            baseFeeLevel.fee() * largeFeeMultiplier);
 
         env.close();
         // alice's transaction expired without getting
         // into the ledger, so her transaction is gone,
         // though one of felicia's is still in the queue.
-        // clang-format off
-        checkMetrics(*this, env, 1, 10, 6, 5, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this, env, 1, 10, 6, 5, baseFeeLevel.fee(), baseFeeLevel.fee() * largeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
         BEAST_EXPECT(env.seq(felicia) == 7);
 
         env.close();
         // And now the queue is empty
-        // clang-format off
-        checkMetrics(*this, env, 0, 12, 1, 6, baseFeeLevel.fee(), baseFeeLevel.fee() * anotherLargeFeeMultiplier);
-        // clang-format on
+        checkMetrics(
+            *this,
+            env,
+            0,
+            12,
+            1,
+            6,
+            baseFeeLevel.fee(),
+            baseFeeLevel.fee() * anotherLargeFeeMultiplier);
         BEAST_EXPECT(env.seq(alice) == 3);
         BEAST_EXPECT(env.seq(felicia) == 8);
     }
@@ -857,9 +910,7 @@ public:
             feeCarol = (feeCarol + 1) * 125 / 100;
             ++seqCarol;
         }
-        // clang-format off
         checkMetrics(*this, env, 6, 6, 4, 3, (baseFeeLevel.fee() * aliceFeeMultiplier) + 1);
-        // clang-format on
 
         // Carol submits high enough to beat Bob's average fee which kicks
         // out Bob's queued transaction.  However Bob's transaction stays
@@ -1505,14 +1556,12 @@ public:
 
             env.close();
             // If not for the maximum, the per ledger would be 11.
-            // clang-format off
             checkMetrics(*this, env, 0, 10, 0, 5, baseFeeLevel.fee(), calcMedFeeLevel(medFeeLevel));
-            // clang-format on
         }
 
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "200"},
@@ -1533,7 +1582,7 @@ public:
         }
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "200"},
@@ -1554,7 +1603,7 @@ public:
         }
         try
         {
-            Env env(
+            Env const env(
                 *this,
                 makeConfig(
                     {{"minimum_txn_in_ledger", "2"},
@@ -3379,6 +3428,7 @@ public:
             BEAST_EXPECT(jv[jss::status] == "success");
         }
 
+        // NOLINTNEXTLINE(misc-const-correctness)
         Account a{"a"}, b{"b"}, c{"c"}, d{"d"}, e{"e"}, f{"f"}, g{"g"}, h{"h"}, i{"i"};
 
         // Fund the first few accounts at non escalated fee
@@ -3520,7 +3570,8 @@ public:
             }
 
             auto const den = (metrics.txPerLedger * metrics.txPerLedger);
-            FeeLevel64 feeLevel = (metrics.medFeeLevel * totalFactor + FeeLevel64{den - 1}) / den;
+            FeeLevel64 const feeLevel =
+                (metrics.medFeeLevel * totalFactor + FeeLevel64{den - 1}) / den;
 
             auto result = toDrops(feeLevel, env.current()->fees().base).drops();
 

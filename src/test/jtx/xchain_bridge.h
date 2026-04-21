@@ -170,7 +170,7 @@ struct XChainBridgeObjects
     std::vector<signer> const alt_signers;
     std::vector<Account> const payee;
     std::vector<Account> const payees;
-    std::uint32_t const quorum;
+    std::uint32_t const quorum{UT_XCHAIN_DEFAULT_QUORUM};
 
     STAmount const reward;                 // 1 xrp
     STAmount const split_reward_quorum;    // 250,000 drops
@@ -224,7 +224,7 @@ struct XChainBridgeObjects
         Account const& acc,
         Json::Value const& bridge = Json::nullValue,
         STAmount const& _reward = XRP(1),
-        std::optional<STAmount> const& minAccountCreate = std::nullopt)
+        std::optional<STAmount> const& minAccountCreate = std::nullopt) const
     {
         return bridge_create(
             acc, bridge == Json::nullValue ? jvb : bridge, _reward, minAccountCreate);

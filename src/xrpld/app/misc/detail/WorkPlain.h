@@ -35,7 +35,7 @@ private:
 
 //------------------------------------------------------------------------------
 
-WorkPlain::WorkPlain(
+inline WorkPlain::WorkPlain(
     std::string const& host,
     std::string const& path,
     std::string const& port,
@@ -47,11 +47,14 @@ WorkPlain::WorkPlain(
 {
 }
 
-void
+inline void
 WorkPlain::onConnect(error_code const& ec)
 {
     if (ec)
-        return fail(ec);
+    {
+        fail(ec);
+        return;
+    }
 
     onStart();
 }

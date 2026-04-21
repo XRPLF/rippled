@@ -1,7 +1,8 @@
+#include <xrpl/protocol/NFTokenID.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/NFTokenID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
@@ -70,7 +71,7 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
             // field changing, but no NFTs within that page changing. In this
             // case, there will be no previous NFTs and we need to skip.
             // However, there will always be NFTs listed in the final fields,
-            // as rippled outputs all fields in final fields even if they were
+            // as xrpld outputs all fields in final fields even if they were
             // not changed.
             STObject const& previousFields =
                 node.peekAtField(sfPreviousFields).downcast<STObject>();
@@ -159,7 +160,7 @@ insertNFTokenID(
     }
     else if (type == ttNFTOKEN_CANCEL_OFFER)
     {
-        std::vector<uint256> result = getNFTokenIDFromDeletedOffer(transactionMeta);
+        std::vector<uint256> const result = getNFTokenIDFromDeletedOffer(transactionMeta);
 
         response[jss::nftoken_ids] = Json::Value(Json::arrayValue);
         for (auto const& nftID : result)

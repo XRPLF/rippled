@@ -2,6 +2,7 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
@@ -27,7 +28,7 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    std::size_t maxPeers;
+    std::size_t maxPeers{Tuning::defaultMaxPeers};
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
@@ -39,25 +40,25 @@ struct Config
         Inbound connections are only maintained if wantIncoming
         is `true`.
     */
-    std::size_t inPeers;
+    std::size_t inPeers{0};
 
     /** `true` if we want our IP address kept private. */
     bool peerPrivate = true;
 
     /** `true` if we want to accept incoming connections. */
-    bool wantIncoming;
+    bool wantIncoming{true};
 
     /** `true` if we want to establish connections automatically */
-    bool autoConnect;
+    bool autoConnect{true};
 
     /** The listening port number. */
-    std::uint16_t listeningPort;
+    std::uint16_t listeningPort{0};
 
     /** The set of features we advertise. */
     std::string features;
 
     /** Limit how many incoming connections we allow per IP */
-    int ipLimit;
+    int ipLimit{0};
 
     //--------------------------------------------------------------------------
 

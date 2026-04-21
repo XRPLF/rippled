@@ -20,7 +20,7 @@ struct PeerReservation final
 {
 public:
     PublicKey nodeId;
-    std::string description{};
+    std::string description = {};  // NOLINT(readability-redundant-member-init)
 
     auto
     toJson() const -> Json::Value;
@@ -67,8 +67,8 @@ public:
     bool
     contains(PublicKey const& nodeId)
     {
-        std::lock_guard lock(this->mutex_);
-        return table_.find({nodeId}) != table_.end();
+        std::lock_guard const lock(this->mutex_);
+        return table_.contains({.nodeId = nodeId, .description = {}});
     }
 
     // Because `ApplicationImp` has two-phase initialization, so must we.
@@ -92,7 +92,7 @@ public:
 private:
     beast::Journal mutable journal_;
     std::mutex mutable mutex_;
-    DatabaseCon* connection_;
+    DatabaseCon* connection_{};
     std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table_;
 };
 

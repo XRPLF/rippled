@@ -1,22 +1,69 @@
+#include <xrpld/app/rdb/backend/detail/Node.h>
+
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/rdb/backend/detail/Node.h>
+#include <xrpld/core/Config.h>
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/core/StartUpType.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/range/adaptor/transformed.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/format/free_funcs.hpp>
+#include <boost/optional/optional.hpp>
+#include <boost/system/detail/error_code.hpp>
 
-#include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/blob.h>
+#include <soci/into.h>
+#include <soci/soci-backend.h>
+#include <soci/statement.h>
+#include <soci/transaction.h>
+#include <soci/use.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
 
 namespace xrpl {
 namespace detail {
@@ -105,7 +152,7 @@ makeLedgerDBs(
 std::optional<LedgerIndex>
 getMinLedgerSeq(soci::session& session, TableType type)
 {
-    std::string query = "SELECT MIN(LedgerSeq) FROM " + to_string(type) + ";";
+    std::string const query = "SELECT MIN(LedgerSeq) FROM " + to_string(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -115,7 +162,7 @@ getMinLedgerSeq(soci::session& session, TableType type)
 std::optional<LedgerIndex>
 getMaxLedgerSeq(soci::session& session, TableType type)
 {
-    std::string query = "SELECT MAX(LedgerSeq) FROM " + to_string(type) + ";";
+    std::string const query = "SELECT MAX(LedgerSeq) FROM " + to_string(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -330,7 +377,7 @@ saveValidatedLedger(
         }
 
         {
-            static std::string addLedger(
+            static std::string const addLedger(
                 R"sql(INSERT OR REPLACE INTO Ledgers
                 (LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,
                 CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash)
@@ -576,7 +623,7 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
-    std::string sql = boost::str(
+    std::string const sql = boost::str(
         boost::format(
             "SELECT LedgerSeq, Status, RawTxn "
             "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
@@ -749,7 +796,7 @@ getAccountTxs(
 {
     RelationalDatabase::AccountTxs ret;
 
-    std::string sql = transactionsSQL(
+    std::string const sql = transactionsSQL(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
@@ -873,7 +920,7 @@ getAccountTxsB(
 {
     std::vector<RelationalDatabase::txnMetaLedgerType> ret;
 
-    std::string sql = transactionsSQL(
+    std::string const sql = transactionsSQL(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
@@ -1222,7 +1269,7 @@ getTransaction(
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};
 
-        std::uint32_t inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
+        std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
 
         auto txMeta = std::make_shared<TxMeta>(id, inLedger, rawMeta);
 
@@ -1242,7 +1289,8 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
-    boost::filesystem::space_info space = boost::filesystem::space(config.legacy("database_path"));
+    boost::filesystem::space_info const space =
+        boost::filesystem::space(config.legacy("database_path"));
 
     if (space.available < megabytes(512))
     {
@@ -1252,8 +1300,8 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 
     if (config.useTxTables())
     {
-        DatabaseCon::Setup dbSetup = setup_DatabaseCon(config);
-        boost::filesystem::path dbPath = dbSetup.dataDir / TxDBName;
+        DatabaseCon::Setup const dbSetup = setup_DatabaseCon(config);
+        boost::filesystem::path const dbPath = dbSetup.dataDir / TxDBName;
         boost::system::error_code ec;
         std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
         if (ec)
@@ -1274,8 +1322,8 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
         }();
         std::uint32_t pageCount = 0;
         session << "PRAGMA page_count;", soci::into(pageCount);
-        std::uint32_t freePages = maxPages - pageCount;
-        std::uint64_t freeSpace = safe_cast<std::uint64_t>(freePages) * pageSize;
+        std::uint32_t const freePages = maxPages - pageCount;
+        std::uint64_t const freeSpace = safe_cast<std::uint64_t>(freePages) * pageSize;
         JLOG(j.info()) << "Transaction DB pathname: " << dbPath.string()
                        << "; file size: " << dbSize.value_or(-1) << " bytes"
                        << "; SQLite page size: " << pageSize << " bytes"
@@ -1287,7 +1335,7 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
         if (freeSpace < megabytes(512))
         {
             JLOG(j.fatal()) << "Free SQLite space for transaction db is less than "
-                               "512MB. To fix this, rippled must be executed with the "
+                               "512MB. To fix this, xrpld must be executed with the "
                                "vacuum parameter before restarting. "
                                "Note that this activity can take multiple days, "
                                "depending on database size.";

@@ -1,4 +1,5 @@
 #include <xrpl/protocol/InnerObjectFormats.h>
+
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 
@@ -164,7 +165,7 @@ InnerObjectFormats::InnerObjectFormats()
 InnerObjectFormats const&
 InnerObjectFormats::getInstance()
 {
-    static InnerObjectFormats instance;
+    static InnerObjectFormats const instance;
     return instance;
 }
 
