@@ -24,6 +24,7 @@
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 
 #include <algorithm>
+#include <bit>
 #include <cstdint>
 
 namespace xrpl {
