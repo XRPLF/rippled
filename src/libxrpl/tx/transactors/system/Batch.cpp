@@ -406,6 +406,10 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
         if (auto const counterparty = rb.at(~sfCounterparty);
             counterparty && counterparty != outerAccount)
             requiredSigners.insert(*counterparty);
+
+        if (auto const sponsor = rb.at(~sfSponsor);
+            sponsor && rb.isFieldPresent(sfSponsorSignature) && sponsor != outerAccount)
+            requiredSigners.insert(*sponsor);
     }
 
     // Validation Batch Signers

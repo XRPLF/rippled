@@ -5597,25 +5597,69 @@ public:
         // Inner transaction
         //
         {
-            // test inner transaction with co-signing sponsor
+            // test invalid inner transaction with co-signing sponsor
+            Account const signerAccount("signer");
             Env env{*this, testable_amendments()};
-            env.fund(XRP(1000), alice, bob, sponsor);
+            env.fund(XRP(1000), alice, bob, sponsor, signerAccount);
             env.close();
 
-            auto jt = env.jtnofill(
-                noop(alice),
-                sponsor::as(sponsor, spfSponsorReserve | spfSponsorFee),
-                sig(sfSponsorSignature, sponsor));
+            env(signers(sponsor, 1, {signer(signerAccount, 1)}));
+            env.close();
 
-            auto const seq = env.seq(alice);
-            // should fail because inner transaction cannot include SponsorSignature
-            env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
-                batch::inner(jt.jv, seq + 1),
-                batch::inner(ticket::create(alice, 1), seq + 2),
-                ter(temBAD_SIGNATURE));
+            {
+                auto jt = env.jtnofill(
+                    noop(alice),
+                    sponsor::as(sponsor, spfSponsorReserve | spfSponsorFee),
+                    sig(sfSponsorSignature, sponsor));
+                jt.jv.removeMember(sfTxnSignature.jsonName);
+
+                auto const seq = env.seq(alice);
+                // should fail because inner transaction cannot include SponsorSignature with
+                // TxnSignature
+                BEAST_EXPECT(jt.jv[sfSponsorSignature.jsonName].isMember(sfTxnSignature.jsonName));
+                env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                    batch::inner(jt.jv, seq + 1),
+                    batch::inner(ticket::create(alice, 1), seq + 2),
+                    ter(temBAD_SIGNATURE));
+            }
+
+            {
+                auto jt = env.jtnofill(
+                    noop(alice),
+                    sponsor::as(sponsor, spfSponsorReserve | spfSponsorFee),
+                    msig(sfSponsorSignature, sponsor, signerAccount));
+                jt.jv.removeMember(sfTxnSignature.jsonName);
+
+                auto const seq = env.seq(alice);
+                // should fail because inner transaction cannot include SponsorSignature with
+                // Signers
+                BEAST_EXPECT(jt.jv[sfSponsorSignature.jsonName].isMember(sfSigners.jsonName));
+                env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                    batch::inner(jt.jv, seq + 1),
+                    batch::inner(ticket::create(alice, 1), seq + 2),
+                    ter(temBAD_SIGNER));
+            }
+
+            {
+                auto jt = env.jtnofill(
+                    noop(alice),
+                    sponsor::as(sponsor, spfSponsorReserve | spfSponsorFee),
+                    sig(sfSponsorSignature, sponsor));
+                jt.jv.removeMember(sfTxnSignature.jsonName);
+                jt.jv[sfSponsorSignature.jsonName].removeMember(sfTxnSignature.jsonName);
+                jt.jv[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] = "";
+
+                auto const seq = env.seq(alice);
+                // should fail BatchSigners does have signer for SponsorSignature
+                env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                    batch::inner(jt.jv, seq + 1),
+                    batch::inner(ticket::create(alice, 1), seq + 2),
+                    ter(temBAD_SIGNER));
+            }
         }
+
         {
-            // test outer transaction with prefunded sponsor
+            // test inner transaction with prefunded sponsor
             Env env{*this, testable_amendments()};
             env.fund(XRP(1000), alice, bob);
             env.fund(XRP(1001), sponsor);
@@ -5654,6 +5698,39 @@ public:
             BEAST_EXPECT(sponsorshipSle);
             BEAST_EXPECT(sponsorshipSle->at(sfFeeAmount) == XRP(100));
             BEAST_EXPECT(sponsorshipSle->at(sfReserveCount) == 99);
+        }
+
+        {
+            // test inner transaction with co-signing sponsor
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(1000), alice, bob, sponsor);
+            env.close();
+
+            auto jt = env.jtnofill(
+                ticket::create(alice, 1),
+                sponsor::as(sponsor, spfSponsorReserve | spfSponsorFee),
+                sig(sfSponsorSignature, sponsor));
+            // remove txn signature since it is filled by env.jtnofill()
+            jt.jv.removeMember(sfTxnSignature.jsonName);
+            jt.jv[sfSponsorSignature.jsonName].removeMember(sfTxnSignature.jsonName);
+            jt.jv[sfSponsorSignature.jsonName][sfSigningPubKey.jsonName] = "";
+
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, XRP(1), tfAllOrNothing),
+                batch::inner(noop(alice), seq + 1),
+                batch::inner(jt.jv, seq + 2),
+                batch::sig(sponsor),
+                ter(tesSUCCESS));
+            env.close();
+
+            // affect sponsor reserve
+            BEAST_EXPECT(ownerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoredOwnerCount(env, alice) == 1);
+            BEAST_EXPECT(sponsoringOwnerCount(env, sponsor) == 1);
+
+            // fee is paid by outer transaction originator (alice)
+            BEAST_EXPECT(env.balance(alice) == XRP(999));
+            BEAST_EXPECT(env.balance(sponsor) == XRP(1000));
         }
     }
 
