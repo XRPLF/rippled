@@ -18,7 +18,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 #include <algorithm>
 #include <cstddef>
