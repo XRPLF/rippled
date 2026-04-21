@@ -191,7 +191,8 @@ def main():
         return 0
 
     result = subprocess.run(
-        [run_clang_tidy, "-quiet", "-p", str(build_dir), "-fix"] + tidy_files
+        [run_clang_tidy, "-quiet", "-p", str(build_dir), "-fix", "-allow-no-checks"]
+        + tidy_files
     )
     return result.returncode
 
