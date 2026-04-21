@@ -39,7 +39,7 @@ setData(
     if (memory.s == 0u)
         return HfErrorToInt(HostFunctionError::NO_MEM_EXPORTED);
     // LCOV_EXCL_STOP
-    if ((int64_t)dst + dstSize > memory.s)
+    if (std::cmp_greater((int64_t)dst + dstSize, memory.s))
         return HfErrorToInt(HostFunctionError::POINTER_OUT_OF_BOUNDS);
     if (srcSize > dstSize)
         return HfErrorToInt(HostFunctionError::BUFFER_TOO_SMALL);
@@ -123,7 +123,7 @@ getDataSField(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
 
 template <class IW>
 static Expected<Slice, HostFunctionError>
-getDataSlice(IW* runtime, wasm_val_vec_t const* params, int32_t& i, bool isUpdate = false)
+getDataSlice(IW* runtime, wasm_val_vec_t const* params, int32_t& i)
 {
     int64_t const ptr = params->data[i].of.i32;
     int64_t const size = params->data[i + 1].of.i32;
@@ -134,7 +134,7 @@ getDataSlice(IW* runtime, wasm_val_vec_t const* params, int32_t& i, bool isUpdat
     if (!size)
         return Slice();
 
-    if (size > (isUpdate ? maxWasmDataLength : maxWasmParamLength))
+    if (size > maxWasmDataLength)
         return Unexpected(HostFunctionError::DATA_FIELD_TOO_LARGE);
 
     auto const memory = runtime ? runtime->getMem() : wmem();
@@ -781,7 +781,7 @@ updateData_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
     auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
     int index = 0;
 
-    auto const bytes = getDataSlice(runtime, params, index, true);
+    auto const bytes = getDataSlice(runtime, params, index);
     if (!bytes)
     {
         return hfResult(results, bytes.error());
@@ -1442,7 +1442,7 @@ trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
     }
 
-    if (std::cmp_greater(len, maxWasmParamLength))
+    if (std::cmp_greater(len, maxWasmDataLength))
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1488,7 +1488,7 @@ traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
     }
 
-    if (std::cmp_greater(len, maxWasmParamLength))
+    if (std::cmp_greater(len, maxWasmDataLength))
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1522,7 +1522,7 @@ traceAccount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* resul
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
     }
 
-    if (std::cmp_greater(len, maxWasmParamLength))
+    if (std::cmp_greater(len, maxWasmDataLength))
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1557,7 +1557,7 @@ traceFloat_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
     }
 
-    if (std::cmp_greater(len, maxWasmParamLength))
+    if (std::cmp_greater(len, maxWasmDataLength))
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }
@@ -1592,7 +1592,7 @@ traceAmount_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* result
         return hfResult(results, HostFunctionError::INVALID_PARAMS);
     }
 
-    if (std::cmp_greater(len, maxWasmParamLength))
+    if (std::cmp_greater(len, maxWasmDataLength))
     {
         return hfResult(results, HostFunctionError::DATA_FIELD_TOO_LARGE);
     }

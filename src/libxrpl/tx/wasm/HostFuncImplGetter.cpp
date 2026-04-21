@@ -127,8 +127,8 @@ locateField(STObject const& obj, Slice const& locator)
     if (locator.empty() || ((locator.size() & 3) != 0u))  // must be multiple of 4
         return Unexpected(HostFunctionError::LOCATOR_MALFORMED);
 
-    static_assert(maxWasmParamLength % sizeof(int32_t) == 0);
-    int32_t locBuf[maxWasmParamLength / sizeof(int32_t)];
+    static_assert(maxWasmDataLength % sizeof(int32_t) == 0);
+    int32_t locBuf[maxWasmDataLength / sizeof(int32_t)];
     int32_t const* locPtr = &locBuf[0];
     int32_t const locSize = locator.size() / sizeof(int32_t);
 

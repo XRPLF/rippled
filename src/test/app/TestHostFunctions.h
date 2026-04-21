@@ -552,7 +552,6 @@ public:
 struct TestHostFunctionsSink : public TestHostFunctions
 {
     test::StreamSink sink_;
-    void const* rt_ = nullptr;
 
 public:
     explicit TestHostFunctionsSink(test::jtx::Env& env, int cd = 0)
