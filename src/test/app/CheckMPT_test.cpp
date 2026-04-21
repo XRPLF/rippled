@@ -46,6 +46,7 @@
 #include <ostream>
 #include <stdexcept>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -1379,10 +1380,14 @@ class CheckMPT_test : public beast::unit_test::suite
             AccountOwns(
                 beast::unit_test::suite& s,
                 Env& e,
-                Account const& a,
+                Account a,
                 bool isIssuer_,
                 bool requireAuth_ = false)
-                : suite(s), env(e), acct(a), isIssuer(isIssuer_), requireAuth(requireAuth_)
+                : suite(s)
+                , env(e)
+                , acct(std::move(a))
+                , isIssuer(isIssuer_)
+                , requireAuth(requireAuth_)
             {
             }
 

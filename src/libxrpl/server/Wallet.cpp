@@ -198,7 +198,7 @@ getPeerReservationTable(soci::session& session, beast::Journal j)
             JLOG(j.warn()) << "load: not a public key: " << valPubKey;
             continue;
         }
-        table.insert(PeerReservation{*optNodeId, *valDesc});
+        table.insert(PeerReservation{.nodeId = *optNodeId, .description = *valDesc});
     }
 
     return table;

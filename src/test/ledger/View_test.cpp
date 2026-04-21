@@ -49,8 +49,7 @@
 #include <type_traits>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class View_test : public beast::unit_test::suite
 {
@@ -1084,5 +1083,4 @@ class GetAmendments_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(View, ledger, xrpl);
 BEAST_DEFINE_TESTSUITE(GetAmendments, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

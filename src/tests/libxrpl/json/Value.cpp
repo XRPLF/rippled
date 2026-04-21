@@ -12,6 +12,7 @@
 #include <cstring>
 #include <exception>
 #include <limits>
+#include <numbers>
 #include <regex>
 #include <sstream>
 #include <string>
@@ -1104,7 +1105,7 @@ TEST(json_value, access_members)
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
 
-    val = 3.14159;
+    val = std::numbers::pi;
     EXPECT_EQ(val.type(), Json::realValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));

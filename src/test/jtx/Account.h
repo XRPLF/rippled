@@ -8,9 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class IOU;
 
@@ -143,6 +141,4 @@ operator<=>(Account const& lhs, Account const& rhs) noexcept
     return lhs.id() <=> rhs.id();
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

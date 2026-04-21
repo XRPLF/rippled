@@ -12,9 +12,9 @@ namespace xrpl {
 
 template <class Src, class Dest>
 concept SafeToCast = (std::is_integral_v<Src> && std::is_integral_v<Dest>) &&
-    (std::is_signed<Src>::value || std::is_unsigned<Dest>::value) &&
-    (std::is_signed<Src>::value != std::is_signed<Dest>::value ? sizeof(Dest) > sizeof(Src)
-                                                               : sizeof(Dest) >= sizeof(Src));
+    (std::is_signed_v<Src> || std::is_unsigned_v<Dest>) &&
+    (std::is_signed_v<Src> != std::is_signed_v<Dest> ? sizeof(Dest) > sizeof(Src)
+                                                     : sizeof(Dest) >= sizeof(Src));
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>

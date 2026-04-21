@@ -6,8 +6,7 @@
 #include <cstdint>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LedgerTiming_test : public beast::unit_test::suite
 {
@@ -116,5 +115,4 @@ class LedgerTiming_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

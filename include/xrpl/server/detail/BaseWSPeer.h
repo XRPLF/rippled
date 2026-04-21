@@ -15,6 +15,7 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/logic/tribool.hpp>
 
+#include <algorithm>
 #include <functional>
 #include <list>
 
@@ -352,7 +353,7 @@ BaseWSPeer<Handler, Impl>::on_read(error_code const& ec)
     auto const& data = rb_.data();
     std::vector<boost::asio::const_buffer> b;
     b.reserve(std::distance(data.begin(), data.end()));
-    std::copy(data.begin(), data.end(), std::back_inserter(b));
+    std::ranges::copy(data, std::back_inserter(b));
     this->handler_.onWSMessage(impl().shared_from_this(), b);
     rb_.consume(rb_.size());
 }

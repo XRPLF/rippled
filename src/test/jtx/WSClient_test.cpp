@@ -7,8 +7,7 @@
 
 #include <chrono>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class WSClient_test : public beast::unit_test::suite
 {
@@ -33,5 +32,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(WSClient, jtx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

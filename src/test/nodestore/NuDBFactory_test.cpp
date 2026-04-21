@@ -19,8 +19,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NuDBFactory_test : public TestBase
 {
@@ -447,5 +446,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NuDBFactory, xrpl_core, xrpl);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

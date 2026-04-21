@@ -46,8 +46,7 @@
 #include <atomic>
 #include <memory>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class RocksDBEnv : public rocksdb::EnvWrapper
 {
@@ -490,7 +489,6 @@ registerRocksDBFactory(Manager& manager)
     static RocksDBFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore
 
 #endif
