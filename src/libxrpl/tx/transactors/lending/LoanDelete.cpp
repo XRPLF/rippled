@@ -11,9 +11,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
 
-#include "xrpl/basics/Number.h"
-#include "xrpl/protocol/STAmount.h"
-
 namespace xrpl {
 
 bool
