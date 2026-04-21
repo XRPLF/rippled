@@ -150,7 +150,7 @@ CheckCash::preclaim(PreclaimContext const& ctx)
             // once the check is cashed, since the check's reserve will no
             // longer be required.  So, if we're dealing in XRP, we add one
             // reserve's worth to the available funds.
-            if (value.native())
+            if (value.native() && !sleCheck->isFieldPresent(sfSponsor))
                 availableFunds += XRPAmount{ctx.view.fees().increment};
 
             if (value > availableFunds)
