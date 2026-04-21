@@ -12,10 +12,9 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 //! A single transaction
 class Tx
@@ -96,11 +95,12 @@ public:
     };
 
     TxSet() = default;
-    TxSet(TxSetType const& s) : txs_{s}, id_{calcID(txs_)}
+    TxSet(TxSetType s) : txs_{std::move(s)}, id_{calcID(txs_)}
     {
     }
 
-    TxSet(MutableTxSet&& m) : txs_{std::move(m.txs_)}, id_{calcID(txs_)}
+    TxSet(MutableTxSet&& m)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
+        : txs_{m.txs_}, id_{calcID(txs_)}
     {
     }
 
@@ -161,7 +161,7 @@ private:
     TxSetType txs_;
 
     //! The unique ID of this tx set
-    ID id_;
+    ID id_{};
 };
 
 //------------------------------------------------------------------------------
@@ -182,9 +182,13 @@ operator<<(std::ostream& o, boost::container::flat_set<T> const& ts)
     for (auto const& t : ts)
     {
         if (do_comma)
+        {
             o << ", ";
+        }
         else
+        {
             do_comma = true;
+        }
         o << t;
     }
     o << " }";
@@ -207,6 +211,4 @@ hash_append(Hasher& h, Tx const& tx)
     hash_append(h, tx.id());
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

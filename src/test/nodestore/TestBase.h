@@ -13,8 +13,7 @@
 
 #include <iomanip>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Binary function that satisfies the strict-weak-ordering requirement.
 
@@ -75,9 +74,10 @@ public:
                         return hotTRANSACTION_NODE;
                     case 3:
                         return hotUNKNOWN;
+                    default:
+                        // will never happen, but make static analysis tool happy.
+                        return hotUNKNOWN;
                 }
-                // will never happen, but make static analysis tool happy.
-                return hotUNKNOWN;
             }();
 
             uint256 hash;
@@ -118,7 +118,7 @@ public:
     }
 
     // Store a batch in a backend
-    void
+    static void
     storeBatch(Backend& backend, Batch const& batch)
     {
         for (int i = 0; i < batch.size(); ++i)
@@ -187,7 +187,7 @@ public:
 
         for (int i = 0; i < batch.size(); ++i)
         {
-            std::shared_ptr<NodeObject> object = db.fetchNodeObject(batch[i]->getHash(), 0);
+            std::shared_ptr<NodeObject> const object = db.fetchNodeObject(batch[i]->getHash(), 0);
 
             if (object != nullptr)
                 pCopy->push_back(object);
@@ -195,5 +195,4 @@ public:
     }
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

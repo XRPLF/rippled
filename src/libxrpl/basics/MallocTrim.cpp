@@ -1,19 +1,25 @@
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/MallocTrim.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 
 #include <boost/predef.h>
 
-#include <chrono>
-#include <cstdint>
-#include <cstdio>
-#include <fstream>
-#include <sstream>
+#include <string_view>
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 #include <sys/resource.h>
 
 #include <malloc.h>
 #include <unistd.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <fstream>
+#include <ios>
+#include <sstream>
+#include <string>
 
 // Require RUSAGE_THREAD for thread-scoped page fault tracking
 #ifndef RUSAGE_THREAD
@@ -51,7 +57,7 @@ parseStatmRSSkB(std::string const& statm)
     // /proc/self/statm format: size resident shared text lib data dt
     // We want the second field (resident) which is in pages
     std::istringstream iss(statm);
-    long size, resident;
+    long size = 0, resident = 0;
     if (!(iss >> size >> resident))
         return -1;
 

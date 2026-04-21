@@ -1,12 +1,21 @@
-#include <test/jtx.h>
 
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/Serializer.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <exception>
 #include <memory>
-#include <type_traits>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 

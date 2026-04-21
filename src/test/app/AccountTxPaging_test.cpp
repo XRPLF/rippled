@@ -1,7 +1,13 @@
-#include <test/jtx.h>
-#include <test/rpc/GRPCTestClientBase.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdlib>
@@ -10,7 +16,7 @@ namespace xrpl {
 
 class AccountTxPaging_test : public beast::unit_test::suite
 {
-    bool
+    static bool
     checkTransaction(Json::Value const& tx, int sequence, int ledger)
     {
         return (
@@ -18,7 +24,7 @@ class AccountTxPaging_test : public beast::unit_test::suite
             tx[jss::tx][jss::ledger_index].asInt() == ledger);
     }
 
-    auto
+    static auto
     next(
         test::jtx::Env& env,
         test::jtx::Account const& account,
@@ -47,9 +53,9 @@ class AccountTxPaging_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env(*this);
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
 
         env.fund(XRP(10000), A1, A2, A3);
         env.close();

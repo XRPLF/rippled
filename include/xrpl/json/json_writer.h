@@ -15,9 +15,7 @@ class Value;
 class WriterBase
 {
 public:
-    virtual ~WriterBase()
-    {
-    }
+    virtual ~WriterBase() = default;
     virtual std::string
     write(Value const& root) = 0;
 };
@@ -34,9 +32,7 @@ class FastWriter : public WriterBase
 {
 public:
     FastWriter() = default;
-    virtual ~FastWriter()
-    {
-    }
+    ~FastWriter() override = default;
 
 public:  // overridden from Writer
     std::string
@@ -71,9 +67,7 @@ class StyledWriter : public WriterBase
 {
 public:
     StyledWriter();
-    virtual ~StyledWriter()
-    {
-    }
+    ~StyledWriter() override = default;
 
 public:  // overridden from Writer
     /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
@@ -106,9 +100,9 @@ private:
     ChildValues childValues_;
     std::string document_;
     std::string indentString_;
-    int rightMargin_;
-    int indentSize_;
-    bool addChildValues_;
+    int rightMargin_{74};
+    int indentSize_{3};
+    bool addChildValues_{};
 };
 
 /** \brief Writes a Value in <a HREF="http://www.json.org">JSON</a> format in a
@@ -136,9 +130,7 @@ class StyledStreamWriter
 {
 public:
     StyledStreamWriter(std::string indentation = "\t");
-    ~StyledStreamWriter()
-    {
-    }
+    ~StyledStreamWriter() = default;
 
 public:
     /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
@@ -171,11 +163,11 @@ private:
     using ChildValues = std::vector<std::string>;
 
     ChildValues childValues_;
-    std::ostream* document_;
+    std::ostream* document_{nullptr};
     std::string indentString_;
-    int rightMargin_;
+    int rightMargin_{74};
     std::string indentation_;
-    bool addChildValues_;
+    bool addChildValues_{};
 };
 
 std::string

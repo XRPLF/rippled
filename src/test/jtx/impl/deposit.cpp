@@ -1,12 +1,15 @@
 #include <test/jtx/deposit.h>
 
+#include <test/jtx/Account.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
+#include <vector>
 
-namespace deposit {
+namespace xrpl::test::jtx::deposit {
 
 // Add DepositPreauth.
 Json::Value
@@ -66,8 +69,4 @@ unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials>
     return jv;
 }
 
-}  // namespace deposit
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::deposit

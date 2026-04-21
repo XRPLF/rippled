@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/server/InfoSub.h>
 
 #include <boost/asio/io_context.hpp>
@@ -29,6 +30,6 @@ make_RPCSub(
     std::string const& strUrl,
     std::string const& strUsername,
     std::string const& strPassword,
-    Logs& logs);
+    ServiceRegistry& registry);
 
 }  // namespace xrpl

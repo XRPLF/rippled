@@ -1,7 +1,8 @@
+#include <xrpl/protocol/NFTokenOfferID.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/NFTokenOfferID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
@@ -24,12 +25,12 @@ canHaveNFTokenOfferID(
         return false;
 
     TxType const tt = serializedTx->getTxnType();
-    if (!(tt == ttNFTOKEN_MINT && serializedTx->isFieldPresent(sfAmount)) &&
+    if ((tt != ttNFTOKEN_MINT || !serializedTx->isFieldPresent(sfAmount)) &&
         tt != ttNFTOKEN_CREATE_OFFER)
         return false;
 
     // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
+    if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 
     return true;

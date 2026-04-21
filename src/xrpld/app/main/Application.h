@@ -16,18 +16,9 @@
 
 namespace xrpl {
 
-namespace unl {
-class Manager;
-}
-namespace Resource {
-class Manager;
-}
-namespace NodeStore {
-class Database;
-}  // namespace NodeStore
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 // VFALCO TODO Fix forward declares required for header dependency loops
 class AmendmentTable;
@@ -66,7 +57,7 @@ class NetworkOPs;
 class OpenLedger;
 class OrderBookDB;
 class Overlay;
-class PathRequests;
+class PathRequestManager;
 class PendingSaves;
 class PublicKey;
 class ServerHandler;
@@ -157,6 +148,10 @@ public:
      * than the last ledger it persisted. */
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
+
+    /** Returns the number of io_context (I/O worker) threads used by the application. */
+    virtual size_t
+    getNumberOfThreads() const = 0;
 };
 
 std::unique_ptr<Application>

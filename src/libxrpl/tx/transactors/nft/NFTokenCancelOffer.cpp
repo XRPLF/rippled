@@ -1,0 +1,104 @@
+#include <xrpl/tx/transactors/nft/NFTokenCancelOffer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+
+namespace xrpl {
+
+NotTEC
+NFTokenCancelOffer::preflight(PreflightContext const& ctx)
+{
+    {
+        auto const& ids = ctx.tx[sfNFTokenOffers];
+        if (ids.empty())
+        {
+            return ctx.rules.enabled(fixErrorCodes) ? temARRAY_EMPTY : temMALFORMED;
+        }
+        if (ids.size() > maxTokenOfferCancelCount)
+        {
+            return ctx.rules.enabled(fixErrorCodes) ? temARRAY_TOO_LARGE : temMALFORMED;
+        }
+    }
+
+    // In order to prevent unnecessarily overlarge transactions, we
+    // disallow duplicates in the list of offers to cancel.
+    STVector256 ids = ctx.tx.getFieldV256(sfNFTokenOffers);
+    std::ranges::sort(ids);
+    if (std::ranges::adjacent_find(ids) != ids.end())
+        return ctx.rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
+
+    return tesSUCCESS;
+}
+
+TER
+NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
+{
+    auto const account = ctx.tx[sfAccount];
+
+    auto const& ids = ctx.tx[sfNFTokenOffers];
+
+    auto ret = std::ranges::find_if(ids, [&ctx, &account](uint256 const& id) {
+        auto const offer = ctx.view.read(keylet::child(id));
+
+        // If id is not in the ledger we assume the offer was consumed
+        // before we got here.
+        if (!offer)
+            return false;
+
+        // If id is in the ledger but is not an NFTokenOffer, then
+        // they have no permission.
+        if (offer->getType() != ltNFTOKEN_OFFER)
+            return true;
+
+        // Anyone can cancel, if expired
+        if (hasExpired(ctx.view, (*offer)[~sfExpiration]))
+            return false;
+
+        // The owner can always cancel
+        if ((*offer)[sfOwner] == account)
+            return false;
+
+        // The recipient can always cancel
+        if (auto const dest = (*offer)[~sfDestination]; dest == account)
+            return false;
+
+        return true;
+    });
+
+    if (ret != ids.end())
+        return tecNO_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
+NFTokenCancelOffer::doApply()
+{
+    for (auto const& id : ctx_.tx[sfNFTokenOffers])
+    {
+        if (auto offer = view().peek(keylet::nftoffer(id));
+            offer && !nft::deleteTokenOffer(view(), offer))
+        {
+            // LCOV_EXCL_START
+            JLOG(j_.fatal()) << "Unable to delete token offer " << id << " (ledger " << view().seq()
+                             << ")";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+}  // namespace xrpl

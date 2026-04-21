@@ -4,8 +4,7 @@
 
 #include <chrono>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 enum class FetchType { synchronous, async };
 
@@ -16,7 +15,7 @@ struct FetchReport
     {
     }
 
-    std::chrono::milliseconds elapsed;
+    std::chrono::milliseconds elapsed{};
     FetchType const fetchType;
     bool wasFound = false;
 };
@@ -64,5 +63,4 @@ public:
     onBatchWrite(BatchWriteReport const& report) = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

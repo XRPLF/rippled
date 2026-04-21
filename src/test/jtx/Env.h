@@ -11,17 +11,17 @@
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -31,6 +31,7 @@
 #include <xrpl/protocol/STTx.h>
 
 #include <functional>
+#include <future>
 #include <source_location>
 #include <string>
 #include <tuple>
@@ -39,9 +40,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Wrapper that captures std::source_location when implicitly constructed.
     This solves the problem of combining std::source_location with variadic
@@ -84,9 +83,13 @@ testable_amendments()
         {
             (void)vote;
             if (auto const f = getRegisteredFeature(s))
+            {
                 feats.push_back(*f);
+            }
             else
+            {
                 Throw<std::runtime_error>("Unknown feature: " + s + "  in allAmendments.");
+            }
         }
         return FeatureBitset(feats);
     }();
@@ -127,12 +130,12 @@ public:
     /// Used by parseResult() and postConditions()
     struct ParsedResult
     {
-        std::optional<TER> ter{};
+        std::optional<TER> ter;
         // RPC errors tend to return either a "code" and a "message" (sometimes
         // with an "error" that corresponds to the "code"), or with an "error"
         // and an "exception". However, this structure allows all possible
         // combinations.
-        std::optional<error_code_i> rpcCode{};
+        std::optional<error_code_i> rpcCode;
         std::string rpcMessage;
         std::string rpcError;
         std::string rpcException;
@@ -188,7 +191,7 @@ public:
         beast::severities::Severity thresh = beast::severities::kError)
         : test(suite_)
         , bundle_(suite_, std::move(config), std::move(logs), thresh)
-        , journal{bundle_.app->journal("Env")}
+        , journal{bundle_.app->getJournal("Env")}
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
@@ -255,6 +258,7 @@ public:
     virtual ~Env() = default;
 
     Application&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     app()
     {
         return *bundle_.app;
@@ -267,6 +271,7 @@ public:
     }
 
     ManualTimeKeeper&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     timeKeeper()
     {
         return *bundle_.timeKeeper;
@@ -278,6 +283,7 @@ public:
               close or by callers.
     */
     NetClock::time_point
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     now()
     {
         return timeKeeper().now();
@@ -285,6 +291,7 @@ public:
 
     /** Returns the connected client. */
     AbstractClient&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     client()
     {
         return *bundle_.client;
@@ -327,7 +334,7 @@ public:
     std::shared_ptr<OpenView const>
     current() const
     {
-        return app().openLedger().current();
+        return app().getOpenLedger().current();
     }
 
     /** Returns the last closed ledger.
@@ -391,6 +398,48 @@ public:
     {
         // VFALCO Is this the correct time?
         return close(std::chrono::seconds(5));
+    }
+
+    /** Close and advance the ledger, then synchronize with the server's
+        io_context to ensure all async operations initiated by the close have
+        been started.
+
+        This function performs the same ledger close as close(), but additionally
+        ensures that all tasks posted to the server's io_context (such as
+        WebSocket subscription message sends) have been initiated before returning.
+
+        What it guarantees:
+        - All async operations posted before syncClose() have been STARTED
+        - For WebSocket sends: async_write_some() has been called
+        - The actual I/O completion may still be pending (async)
+
+        What it does NOT guarantee:
+        - Async operations have COMPLETED
+        - WebSocket messages have been received by clients
+        - However, for localhost connections, the remaining latency is typically
+          microseconds, making tests reliable
+
+        Use this instead of close() when:
+        - Test code immediately checks for subscription messages
+        - Race conditions between test and worker threads must be avoided
+        - Deterministic test behavior is required
+
+        @param timeout Maximum time to wait for the barrier task to execute
+        @return true if close succeeded and barrier executed within timeout,
+                false otherwise
+    */
+    [[nodiscard]] bool
+    syncClose(std::chrono::steady_clock::duration timeout = std::chrono::seconds{1})
+    {
+        XRPL_ASSERT(
+            app().getNumberOfThreads() == 1,
+            "syncClose() is only useful on an application with a single thread");
+        auto const result = close();
+        auto serverBarrier = std::make_shared<std::promise<void>>();
+        auto future = serverBarrier->get_future();
+        boost::asio::post(app().getIOContext(), [serverBarrier]() { serverBarrier->set_value(); });
+        auto const status = future.wait_for(timeout);
+        return result && status == std::future_status::ready;
     }
 
     /** Turn on JSON tracing.
@@ -468,12 +517,6 @@ public:
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
     balance(Account const& account, Asset const& asset) const;
-
-    PrettyAmount
-    balance(Account const& account, Issue const& issue) const;
-
-    PrettyAmount
-    balance(Account const& account, MPTIssue const& mptIssue) const;
 
     /** Returns the IOU limit on an account.
         Returns 0 if the trust line does not exist.
@@ -736,7 +779,7 @@ public:
     trust(STAmount const& amount, Account const& to0, Account const& to1, Accounts const&... toN)
     {
         trust(amount, to0);
-        trust(amount, to1, toN...);
+        trust(amount, to1, toN...);  // NOLINT(readability-suspicious-call-argument)
     }
     /** @} */
 
@@ -840,6 +883,4 @@ Env::rpc(std::string const& cmd, Args&&... args)
     return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

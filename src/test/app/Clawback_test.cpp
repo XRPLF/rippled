@@ -1,7 +1,28 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <cstdint>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -52,7 +73,7 @@ class Clawback_test : public beast::unit_test::suite
         // Also, asfAllowTrustLineClawback cannot be cleared.
         {
             Env env(*this, features);
-            Account alice{"alice"};
+            Account const alice{"alice"};
 
             env.fund(XRP(1000), alice);
             env.close();
@@ -77,7 +98,7 @@ class Clawback_test : public beast::unit_test::suite
         // asfNoFreeze has been set
         {
             Env env(*this, features);
-            Account alice{"alice"};
+            Account const alice{"alice"};
 
             env.fund(XRP(1000), alice);
             env.close();
@@ -103,8 +124,8 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features);
 
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             env.fund(XRP(1000), alice, bob);
             env.close();
@@ -146,7 +167,7 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features - featureClawback);
 
-            Account alice{"alice"};
+            Account const alice{"alice"};
 
             env.fund(XRP(1000), alice);
             env.close();
@@ -183,8 +204,8 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features - featureClawback);
 
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             env.fund(XRP(1000), alice, bob);
             env.close();
@@ -228,8 +249,8 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features);
 
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             env.fund(XRP(1000), alice, bob);
             env.close();
@@ -310,8 +331,8 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features);
 
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             // bob's account is not funded and does not exist
             env.fund(XRP(1000), alice);
@@ -332,9 +353,9 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features);
 
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account cindy{"cindy"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const cindy{"cindy"};
 
             env.fund(XRP(1000), alice, bob, cindy);
             env.close();
@@ -375,8 +396,8 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features);
 
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             env.fund(XRP(1000), alice, bob);
             env.close();
@@ -445,8 +466,8 @@ class Clawback_test : public beast::unit_test::suite
         // Test that alice is able to successfully clawback tokens from bob
         Env env(*this, features);
 
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(1000), alice, bob);
         env.close();
@@ -496,9 +517,9 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features);
 
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account cindy{"cindy"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const cindy{"cindy"};
 
             env.fund(XRP(1000), alice, bob, cindy);
             env.close();
@@ -554,9 +575,9 @@ class Clawback_test : public beast::unit_test::suite
         {
             Env env(*this, features);
 
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account cindy{"cindy"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const cindy{"cindy"};
 
             env.fund(XRP(1000), alice, bob, cindy);
             env.close();
@@ -624,8 +645,8 @@ class Clawback_test : public beast::unit_test::suite
         // perspective is allowed to clawback
         Env env(*this, features);
 
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(1000), alice, bob);
         env.close();
@@ -711,8 +732,8 @@ class Clawback_test : public beast::unit_test::suite
         // If clawback results the trustline to be default,
         // trustline should be automatically deleted
         Env env(*this, features);
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(1000), alice, bob);
         env.close();
@@ -761,8 +782,8 @@ class Clawback_test : public beast::unit_test::suite
         // Claws back from frozen trustline
         // and the trustline should remain frozen
         Env env(*this, features);
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(1000), alice, bob);
         env.close();
@@ -807,8 +828,8 @@ class Clawback_test : public beast::unit_test::suite
         // When alice tries to claw back an amount that is greater
         // than what bob holds, only the max available balance is clawed
         Env env(*this, features);
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(1000), alice, bob);
         env.close();
@@ -859,8 +880,8 @@ class Clawback_test : public beast::unit_test::suite
 
         // Tests clawback with tickets
         Env env(*this, features);
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(1000), alice, bob);
         env.close();

@@ -1,8 +1,9 @@
+#include <xrpl/protocol/Feature.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/container_hash/hash.hpp>
@@ -70,8 +71,8 @@ class FeatureCollections
         uint256 feature;
 
         Feature() = delete;
-        explicit Feature(std::string const& name_, uint256 const& feature_)
-            : name(name_), feature(feature_)
+        explicit Feature(std::string name_, uint256 const& feature_)
+            : name(std::move(name_)), feature(feature_)
         {
         }
 
@@ -209,7 +210,7 @@ FeatureCollections::getRegisteredFeature(std::string const& name) const
     XRPL_ASSERT(
         readOnly.load(), "xrpl::FeatureCollections::getRegisteredFeature : startup completed");
     Feature const* feature = getByName(name);
-    if (feature)
+    if (feature != nullptr)
         return feature->feature;
     return std::nullopt;
 }
@@ -229,7 +230,7 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
         support == Supported::yes || vote == VoteBehavior::DefaultNo,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
-    if (!i)
+    if (i == nullptr)
     {
         check(features.size() < detail::numFeatures, "More features defined than allocated.");
 
@@ -250,18 +251,22 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
             supported.emplace(name, vote);
 
             if (vote == VoteBehavior::DefaultYes)
+            {
                 ++upVotes;
+            }
             else
+            {
                 ++downVotes;
+            }
         }
         check(upVotes + downVotes == supported.size(), "Feature counting logic broke");
         check(supported.size() <= features.size(), "More supported features than defined features");
         check(features.size() == all.size(), "The 'all' features list is populated incorrectly");
         return f;
     }
-    else
-        // Each feature should only be registered once
-        LogicError("Duplicate feature registration");
+
+    // Each feature should only be registered once
+    LogicError("Duplicate feature registration");
 }
 
 /** Tell FeatureCollections when registration is complete. */
@@ -279,7 +284,7 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
         readOnly.load(), "xrpl::FeatureCollections::featureToBitsetIndex : startup completed");
 
     Feature const* feature = getByFeature(f);
-    if (!feature)
+    if (feature == nullptr)
         LogicError("Invalid Feature ID");
 
     return getIndex(*feature);
@@ -299,10 +304,10 @@ FeatureCollections::featureToName(uint256 const& f) const
 {
     XRPL_ASSERT(readOnly.load(), "xrpl::FeatureCollections::featureToName : startup completed");
     Feature const* feature = getByFeature(f);
-    return feature ? feature->name : to_string(f);
+    return (feature != nullptr) ? feature->name : to_string(f);
 }
 
-static FeatureCollections featureCollections;
+FeatureCollections featureCollections;
 
 }  // namespace
 
@@ -395,10 +400,20 @@ featureToName(uint256 const& f)
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
+consteval auto
+enforceValidFeatureName(auto fn) -> char const*
+{
+    static_assert(validFeatureName(fn), "Invalid feature name");
+    static_assert(validFeatureNameSize(fn), "Invalid feature name size");
+    return fn();
+}
+
 #define XRPL_FEATURE(name, supported, vote) \
-    uint256 const feature##name = registerFeature(#name, supported, vote);
+    uint256 const feature##name =           \
+        registerFeature(enforceValidFeatureName([] { return #name; }), supported, vote);
 #define XRPL_FIX(name, supported, vote) \
-    uint256 const fix##name = registerFeature("fix" #name, supported, vote);
+    uint256 const fix##name =           \
+        registerFeature(enforceValidFeatureName([] { return "fix" #name; }), supported, vote);
 
 // clang-format off
 #define XRPL_RETIRE_FEATURE(name)                                       \
@@ -413,6 +428,8 @@ featureToName(uint256 const& f)
 // clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
+
+#include <utility>
 
 #undef XRPL_RETIRE_FEATURE
 #pragma pop_macro("XRPL_RETIRE_FEATURE")

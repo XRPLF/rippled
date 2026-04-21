@@ -1,5 +1,26 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/ledger/OpenView.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <boost/container/pmr/monotonic_buffer_resource.hpp>
+
+#include <cstddef>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -70,12 +91,12 @@ OpenView::OpenView(OpenView const& rhs)
 OpenView::OpenView(
     open_ledger_t,
     ReadView const* base,
-    Rules const& rules,
+    Rules rules,
     std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-          initialBufferSize)}
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
-    , rules_(rules)
+    , rules_(std::move(rules))
     , header_(base->header())
     , base_(base)
     , hold_(std::move(hold))
@@ -88,8 +109,8 @@ OpenView::OpenView(
 }
 
 OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
-    : monotonic_resource_{std::make_unique<boost::container::pmr::monotonic_buffer_resource>(
-          initialBufferSize)}
+    : monotonic_resource_{
+          std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
     , rules_(base->rules())
     , header_(base->header())
@@ -185,7 +206,7 @@ OpenView::txsEnd() const -> std::unique_ptr<txs_type::iter_base>
 bool
 OpenView::txExists(key_type const& key) const
 {
-    return txs_.find(key) != txs_.end();
+    return txs_.contains(key);
 }
 
 auto
@@ -198,9 +219,13 @@ OpenView::txRead(key_type const& key) const -> tx_type
     auto stx = std::make_shared<STTx const>(SerialIter{item.txn->slice()});
     decltype(tx_type::second) sto;
     if (item.meta)
+    {
         sto = std::make_shared<STObject const>(SerialIter{item.meta->slice()}, sfMetadata);
+    }
     else
+    {
         sto = nullptr;
+    }
     return {std::move(stx), std::move(sto)};
 }
 
@@ -243,7 +268,7 @@ OpenView::rawTxInsert(
     auto const result = txs_.emplace(
         std::piecewise_construct, std::forward_as_tuple(key), std::forward_as_tuple(txn, metaData));
     if (!result.second)
-        LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
+        Throw<std::logic_error>("rawTxInsert: duplicate TX id: " + to_string(key));
 }
 
 }  // namespace xrpl

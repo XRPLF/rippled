@@ -121,6 +121,7 @@ enum TEMcodes : TERUnderlyingType {
     temARRAY_TOO_LARGE,
     temBAD_TRANSFER_FEE,
     temINVALID_INNER_BATCH,
+    temBAD_MPT,
     temBAD_FIELD_LENGTH,
     temDUPLICATE,
     temMUTUALLY_EXCLUSIVE,
@@ -211,6 +212,7 @@ enum TERcodes : TERUnderlyingType {
     terADDRESS_COLLISION,       // Failed to allocate AccountID when trying to
                                 // create a pseudo-account
     terNO_DELEGATE_PERMISSION,  // Delegate does not have permission
+    terLOCKED,                  // MPT is locked
 };
 
 //------------------------------------------------------------------------------
@@ -345,10 +347,6 @@ enum TECcodes : TERUnderlyingType {
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
     tecPRECISION_LOSS = 197,
-    // DEPRECATED: This error code tecNO_DELEGATE_PERMISSION is reserved for
-    // backward compatibility with historical data on non-prod networks, can be
-    // reclaimed after those networks reset.
-    tecNO_DELEGATE_PERMISSION = 198,
 };
 
 //------------------------------------------------------------------------------
@@ -490,8 +488,7 @@ public:
 template <typename L, typename R>
 constexpr auto
 operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) == TERtoInt(rhs);
@@ -500,8 +497,7 @@ operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) != TERtoInt(rhs);
@@ -510,8 +506,7 @@ operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) < TERtoInt(rhs);
@@ -520,8 +515,7 @@ operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) <= TERtoInt(rhs);
@@ -530,8 +524,7 @@ operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) > TERtoInt(rhs);
@@ -540,8 +533,7 @@ operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) >= TERtoInt(rhs);

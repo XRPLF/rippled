@@ -1,7 +1,22 @@
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
-namespace xrpl {
-namespace detail {
+#include <xrpld/app/misc/detail/WorkBase.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/stream_base.hpp>
+#include <boost/format/free_funcs.hpp>
+
+#include <functional>
+#include <stdexcept>
+#include <string>
+
+namespace xrpl::detail {
 
 WorkSSL::WorkSSL(
     std::string const& host,
@@ -32,7 +47,10 @@ WorkSSL::onConnect(error_code const& ec)
 {
     auto err = ec ? ec : context_.postConnectVerify(stream_, host_);
     if (err)
-        return fail(err);
+    {
+        fail(err);
+        return;
+    }
 
     stream_.async_handshake(
         boost::asio::ssl::stream_base::client,
@@ -44,11 +62,12 @@ void
 WorkSSL::onHandshake(error_code const& ec)
 {
     if (ec)
-        return fail(ec);
+    {
+        fail(ec);
+        return;
+    }
 
     onStart();
 }
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

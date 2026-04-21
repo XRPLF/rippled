@@ -1,7 +1,10 @@
 #pragma once
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/Credit.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -10,8 +13,7 @@
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/AMM/AMMContext.h>
-#include <xrpl/tx/transactors/AMM/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -25,7 +27,7 @@ namespace xrpl {
 template <class TInAmt, class TOutAmt>
 struct StrandResult
 {
-    bool success;                                  ///< Strand succeeded
+    bool success = false;                          ///< Strand succeeded
     TInAmt in = beast::zero;                       ///< Currency amount in
     TOutAmt out = beast::zero;                     ///< Currency amount out
     std::optional<PaymentSandbox> sandbox;         ///< Resulting Sandbox state
@@ -59,7 +61,7 @@ struct StrandResult
     }
 
     StrandResult(Strand const& strand, boost::container::flat_set<uint256> ofrsToRm_)
-        : success(false), ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
+        : ofrsToRm(std::move(ofrsToRm_)), ofrsUsed(offersUsed(strand))
     {
     }
 };
@@ -244,7 +246,7 @@ flow(
             EitherAmount stepIn(*strand[0]->cachedIn());
             for (auto i = 0; i < s; ++i)
             {
-                bool valid;
+                bool valid = false;
                 std::tie(valid, stepIn) = strand[i]->validFwd(checkSB, checkAfView, stepIn);
                 if (!valid)
                 {
@@ -325,9 +327,13 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
     for (auto const& step : strand)
     {
         if (std::tie(stepQ, dir) = step->qualityUpperBound(v, dir); stepQ)
+        {
             q = composed_quality(q, *stepQ);
+        }
         else
+        {
             return std::nullopt;
+        }
     }
     return q;
 };
@@ -358,12 +364,18 @@ limitOut(
         if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir); stepQualityFunc)
         {
             if (!qf)
+            {
                 qf = stepQualityFunc;
+            }
             else
+            {
                 qf->combine(*stepQualityFunc);
+            }
         }
         else
+        {
             return remainingOut;
+        }
     }
 
     // QualityFunction is constant
@@ -371,14 +383,25 @@ limitOut(
         return remainingOut;
 
     auto const out = [&]() {
-        if (auto const out = qf->outFromAvgQ(limitQuality); !out)
+        auto const out = qf->outFromAvgQ(limitQuality);
+        if (!out)
             return remainingOut;
-        else if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
+        if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
+        {
             return XRPAmount{*out};
+        }
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
+        {
             return IOUAmount{*out};
+        }
+        else if constexpr (std::is_same_v<TOutAmt, MPTAmount>)
+        {
+            return MPTAmount{*out};
+        }
         else
-            return STAmount{remainingOut.issue(), out->mantissa(), out->exponent()};
+        {
+            return STAmount{remainingOut.asset(), out->mantissa(), out->exponent()};
+        }
     }();
     // A tiny difference could be due to the round off
     if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
@@ -428,7 +451,7 @@ public:
             {
                 for (Strand const* strand : next_)
                 {
-                    if (!strand)
+                    if (strand == nullptr)
                     {
                         // should not happen
                         continue;
@@ -445,14 +468,14 @@ public:
                             // an unusual corner case.
                             continue;
                         }
-                        strandQualities.push_back({*qual, strand});
+                        strandQualities.emplace_back(*qual, strand);
                     }
                 }
                 // must stable sort for deterministic order across different c++
                 // standard library implementations
-                std::stable_sort(
-                    strandQualities.begin(),
-                    strandQualities.end(),
+                std::ranges::stable_sort(
+                    strandQualities,
+
                     [](auto const& lhs, auto const& rhs) {
                         // higher qualities first
                         return std::get<Quality>(lhs) > std::get<Quality>(rhs);
@@ -532,7 +555,7 @@ public:
    @return Actual amount in and out from the strands, errors, and payment
    sandbox
 */
-template <class TInAmt, class TOutAmt>
+template <StepAmount TInAmt, StepAmount TOutAmt>
 FlowResult<TInAmt, TOutAmt>
 flow(
     PaymentSandbox const& baseView,
@@ -569,7 +592,7 @@ flow(
 
     std::size_t const maxTries = 1000;
     std::size_t curTry = 0;
-    std::uint32_t maxOffersToConsider = 1500;
+    std::uint32_t const maxOffersToConsider = 1500;
     std::uint32_t offersConsidered = 0;
 
     // There is a bug in gcc that incorrectly warns about using uninitialized
@@ -623,8 +646,10 @@ flow(
         // Limit only if one strand and limitQuality
         auto const limitRemainingOut = [&]() {
             if (activeStrands.size() == 1 && limitQuality)
+            {
                 if (auto const strand = activeStrands.get(0))
                     return limitOut(sb, *strand, remainingOut, *limitQuality);
+            }
             return remainingOut;
         }();
         auto const adjustedRemOut = limitRemainingOut != remainingOut;
@@ -713,8 +738,10 @@ flow(
                 remainingIn = *sendMax - sum(savedIns);
 
             if (flowDebugInfo)
+            {
                 flowDebugInfo->pushPass(
                     EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
+            }
 
             JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
                             << " out: " << to_string(best->out)
@@ -769,7 +796,7 @@ flow(
         {
             // Rounding in the payment engine is causing this assert to
             // sometimes fire with "dust" amounts. This is causing issues when
-            // running debug builds of rippled. While this issue still needs to
+            // running debug builds of xrpld. While this issue still needs to
             // be resolved, the assert is causing more harm than good at this
             // point.
             // UNREACHABLE("xrpl::flow : rounding error");

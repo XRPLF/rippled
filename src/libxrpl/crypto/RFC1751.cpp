@@ -1,5 +1,6 @@
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/RFC1751.h>
+
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
@@ -198,10 +199,10 @@ char const* RFC1751::s_dictionary[2048] = {
 unsigned long
 RFC1751::extract(char const* s, int start, int length)
 {
-    unsigned char cl;
-    unsigned char cc;
-    unsigned char cr;
-    unsigned long x;
+    unsigned char cl = 0;
+    unsigned char cc = 0;
+    unsigned char cr = 0;
+    unsigned long x = 0;
 
     XRPL_ASSERT(length <= 11, "xrpl::RFC1751::extract : maximum length");
     XRPL_ASSERT(start >= 0, "xrpl::RFC1751::extract : minimum start");
@@ -210,8 +211,8 @@ RFC1751::extract(char const* s, int start, int length)
 
     int const shiftR = 24 - (length + (start % 8));
     cl = s[start / 8];  // get components
-    cc = (shiftR < 16) ? s[start / 8 + 1] : 0;
-    cr = (shiftR < 8) ? s[start / 8 + 2] : 0;
+    cc = (shiftR < 16) ? s[(start / 8) + 1] : 0;
+    cr = (shiftR < 8) ? s[(start / 8) + 2] : 0;
 
     x = ((long)(cl << 8 | cc) << 8 | cr);  // Put bits together
     x = x >> shiftR;                       // Right justify number
@@ -226,7 +227,7 @@ void
 RFC1751::btoe(std::string& strHuman, std::string const& strData)
 {
     char caBuffer[9]; /* add in room for the parity 2 bits*/
-    int p, i;
+    int p = 0, i = 0;
 
     memcpy(caBuffer, strData.c_str(), 8);
 
@@ -245,11 +246,11 @@ RFC1751::btoe(std::string& strHuman, std::string const& strData)
 void
 RFC1751::insert(char* s, int x, int start, int length)
 {
-    unsigned char cl;
-    unsigned char cc;
-    unsigned char cr;
-    unsigned long y;
-    int shift;
+    unsigned char cl = 0;
+    unsigned char cc = 0;
+    unsigned char cr = 0;
+    unsigned long y = 0;
+    int shift = 0;
 
     XRPL_ASSERT(length <= 11, "xrpl::RFC1751::insert : maximum length");
     XRPL_ASSERT(start >= 0, "xrpl::RFC1751::insert : minimum start");
@@ -265,13 +266,13 @@ RFC1751::insert(char* s, int x, int start, int length)
     if (shift + length > 16)
     {
         s[start / 8] |= cl;
-        s[start / 8 + 1] |= cc;
-        s[start / 8 + 2] |= cr;
+        s[(start / 8) + 1] |= cc;
+        s[(start / 8) + 2] |= cr;
     }
     else if (shift + length > 8)
     {
         s[start / 8] |= cc;
-        s[start / 8 + 1] |= cr;
+        s[(start / 8) + 1] |= cr;
     }
     else
     {
@@ -284,14 +285,22 @@ RFC1751::standard(std::string& strWord)
 {
     for (auto& letter : strWord)
     {
-        if (islower(static_cast<unsigned char>(letter)))
+        if (islower(static_cast<unsigned char>(letter)) != 0)
+        {
             letter = toupper(static_cast<unsigned char>(letter));
+        }
         else if (letter == '1')
+        {
             letter = 'L';
+        }
         else if (letter == '0')
+        {
             letter = 'O';
+        }
         else if (letter == '5')
+        {
             letter = 'S';
+        }
     }
 }
 
@@ -304,10 +313,10 @@ RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
     while (iResult < 0 && iMin != iMax)
     {
         // Have a range to search.
-        int iMid = iMin + (iMax - iMin) / 2;
-        int iDir = strWord.compare(s_dictionary[iMid]);
+        int const iMid = iMin + ((iMax - iMin) / 2);
+        int const iDir = strWord.compare(s_dictionary[iMid]);
 
-        if (!iDir)
+        if (iDir == 0)
         {
             iResult = iMid;  // Found it.
         }
@@ -336,12 +345,12 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
     if (6 != vsHuman.size())
         return -1;
 
-    int i, p = 0;
+    int i = 0, p = 0;
     char b[9] = {0};
 
     for (auto& strWord : vsHuman)
     {
-        int l = strWord.length();
+        int const l = strWord.length();
 
         if (l > 4 || l < 1)
             return -1;

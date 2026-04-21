@@ -1,8 +1,31 @@
-#include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 
+#include <xrpld/app/consensus/RCLValidations.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -52,7 +75,7 @@ NegativeUNLVote::doVoting(
         {
             auto nid = calcNodeID(k);
             negUnlNodeIDs.emplace(nid);
-            if (!nidToKeyMap.count(nid))
+            if (!nidToKeyMap.contains(nid))
             {
                 nidToKeyMap.emplace(nid, k);
             }
@@ -90,7 +113,7 @@ NegativeUNLVote::addTx(
     NegativeUNLModify modify,
     std::shared_ptr<SHAMap> const& initialSet)
 {
-    STTx negUnlTx(ttUNL_MODIFY, [&](auto& obj) {
+    STTx const negUnlTx(ttUNL_MODIFY, [&](auto& obj) {
         obj.setFieldU8(sfUNLModifyDisabling, modify == ToDisable ? 1 : 0);
         obj.setFieldU32(sfLedgerSequence, seq);
         obj.setFieldVL(sfUNLModifyValidator, vp.slice());
@@ -118,7 +141,7 @@ NegativeUNLVote::choose(uint256 const& randomPadData, std::vector<NodeID> const&
 {
     XRPL_ASSERT(!candidates.empty(), "xrpl::NegativeUNLVote::choose : non-empty input");
     static_assert(NodeID::bytes <= uint256::bytes);
-    NodeID randomPad = NodeID::fromVoid(randomPadData.data());
+    NodeID const randomPad = NodeID::fromVoid(randomPadData.data());
     NodeID txNodeID = candidates[0];
     for (int j = 1; j < candidates.size(); ++j)
     {
@@ -175,7 +198,7 @@ NegativeUNLVote::buildScoreTable(
         for (auto const& v :
              validations.getTrustedForLedger(ledgerAncestors[numAncestors - 1 - i], seq - 2 - i))
         {
-            if (scoreTable.count(v->getNodeID()))
+            if (scoreTable.contains(v->getNodeID()))
                 ++scoreTable[v->getNodeID()];
         }
     }
@@ -195,24 +218,20 @@ NegativeUNLVote::buildScoreTable(
                          << " The reliability measurement could be wrong.";
         return {};
     }
-    else if (
-        myValidationCount > negativeUNLMinLocalValsToVote &&
+    if (myValidationCount > negativeUNLMinLocalValsToVote &&
         myValidationCount <= FLAG_LEDGER_INTERVAL)
     {
         return scoreTable;
     }
-    else
-    {
-        // cannot happen because validations.getTrustedForLedger does not
-        // return multiple validations of the same ledger from a validator.
-        JLOG(j_.error()) << "N-UNL: ledger " << seq << ". Local node issued " << myValidationCount
-                         << " validations in last " << FLAG_LEDGER_INTERVAL
-                         << " ledgers. Too many!";
-        return {};
-    }
+
+    // cannot happen because validations.getTrustedForLedger does not
+    // return multiple validations of the same ledger from a validator.
+    JLOG(j_.error()) << "N-UNL: ledger " << seq << ". Local node issued " << myValidationCount
+                     << " validations in last " << FLAG_LEDGER_INTERVAL << " ledgers. Too many!";
+    return {};
 }
 
-NegativeUNLVote::Candidates const
+NegativeUNLVote::Candidates
 NegativeUNLVote::findAllCandidates(
     hash_set<NodeID> const& unl,
     hash_set<NodeID> const& negUnl,
@@ -225,7 +244,7 @@ NegativeUNLVote::findAllCandidates(
         std::size_t negativeListed = 0;
         for (auto const& n : unl)
         {
-            if (negUnl.count(n))
+            if (negUnl.contains(n))
                 ++negativeListed;
         }
         bool const result = negativeListed < maxNegativeListed;
@@ -246,8 +265,8 @@ NegativeUNLVote::findAllCandidates(
         //  (2) has less than negativeUNLLowWaterMark validations,
         //  (3) is not in negUnl, and
         //  (4) is not a new validator.
-        if (canAdd && score < negativeUNLLowWaterMark && !negUnl.count(nodeId) &&
-            !newValidators_.count(nodeId))
+        if (canAdd && score < negativeUNLLowWaterMark && !negUnl.contains(nodeId) &&
+            !newValidators_.contains(nodeId))
         {
             JLOG(j_.trace()) << "N-UNL: toDisable candidate " << nodeId;
             candidates.toDisableCandidates.push_back(nodeId);
@@ -256,7 +275,7 @@ NegativeUNLVote::findAllCandidates(
         // Find toReEnable Candidates: check if
         //  (1) has more than negativeUNLHighWaterMark validations,
         //  (2) is in negUnl
-        if (score > negativeUNLHighWaterMark && negUnl.count(nodeId))
+        if (score > negativeUNLHighWaterMark && negUnl.contains(nodeId))
         {
             JLOG(j_.trace()) << "N-UNL: toReEnable candidate " << nodeId;
             candidates.toReEnableCandidates.push_back(nodeId);
@@ -277,7 +296,7 @@ NegativeUNLVote::findAllCandidates(
     {
         for (auto const& n : negUnl)
         {
-            if (!unl.count(n))
+            if (!unl.contains(n))
             {
                 candidates.toReEnableCandidates.push_back(n);
             }
@@ -289,10 +308,10 @@ NegativeUNLVote::findAllCandidates(
 void
 NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     for (auto const& n : nowTrusted)
     {
-        if (newValidators_.find(n) == newValidators_.end())
+        if (!newValidators_.contains(n))
         {
             JLOG(j_.trace()) << "N-UNL: add a new validator " << n << " at ledger seq=" << seq;
             newValidators_[n] = seq;
@@ -303,7 +322,7 @@ NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrust
 void
 NegativeUNLVote::purgeNewValidators(LedgerIndex seq)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     auto i = newValidators_.begin();
     while (i != newValidators_.end())
     {

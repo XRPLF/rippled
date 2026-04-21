@@ -1,14 +1,16 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ClosureCounter.h>
 
 #include <atomic>
-#include <chrono>
+#include <optional>
 #include <thread>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -17,7 +19,7 @@ class ClosureCounter_test : public beast::unit_test::suite
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
     test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j{env_.app().journal("ClosureCounter_test")};
+    beast::Journal j{env_.app().getJournal("ClosureCounter_test")};
 
     void
     testConstruction()
@@ -36,9 +38,9 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             // wrapped() should be callable with no arguments.
-            (*wrapped)();
+            (*wrapped)();  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(evidence == 1);
-            (*wrapped)();
+            (*wrapped)();  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(evidence == 2);
 
             // Destroying the contents of wrapped should decrement voidCounter.
@@ -60,9 +62,9 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             // wrapped() should be callable with one integer argument.
-            (*wrapped)(5);
+            (*wrapped)(5);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(evidence == 5);
-            (*wrapped)(11);
+            (*wrapped)(11);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(evidence == 11);
 
             // Destroying the contents of wrapped should decrement setCounter.
@@ -82,8 +84,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             // wrapped() should be callable with two integers.
-            BEAST_EXPECT((*wrapped)(5, 2) == 7);
-            BEAST_EXPECT((*wrapped)(2, -8) == -6);
+            BEAST_EXPECT((*wrapped)(5, 2) == 7);    // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT((*wrapped)(2, -8) == -6);  // NOLINT(bugprone-unchecked-optional-access)
 
             // Destroying the contents of wrapped should decrement sumCounter.
             wrapped = std::nullopt;
@@ -154,7 +156,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             TrackedString const strValue("value");
-            TrackedString const result = (*wrapped)(strValue);
+            TrackedString const result =
+                (*wrapped)(strValue);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 2);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "value!");
@@ -171,7 +174,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             TrackedString const strConstLValue("const lvalue");
-            TrackedString const result = (*wrapped)(strConstLValue);
+            TrackedString const result =
+                (*wrapped)(strConstLValue);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 1);
             // BEAST_EXPECT (result.moves == ?); // moves VS == 1, gcc == 0
             BEAST_EXPECT(result.str == "const lvalue!");
@@ -188,7 +192,8 @@ class ClosureCounter_test : public beast::unit_test::suite
             BEAST_EXPECT(wrapped);
 
             TrackedString strLValue("lvalue");
-            TrackedString const result = (*wrapped)(strLValue);
+            TrackedString const result =
+                (*wrapped)(strLValue);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 1);
             BEAST_EXPECT(result.moves == 0);
             BEAST_EXPECT(result.str == "lvalue!");
@@ -204,20 +209,21 @@ class ClosureCounter_test : public beast::unit_test::suite
                 // leaving scope.  So, without intervention, they would
                 // do a copy for the return (June 2017).  An explicit
                 // std::move() was required.
-                return std::move(in += "!");
+                in += "!";
+                return std::move(in);
             });
 
             BEAST_EXPECT(strCounter.count() == 1);
             BEAST_EXPECT(wrapped);
 
-            // Make the string big enough to (probably) avoid the small string
-            // optimization.
+            // Make the string big enough to (probably) avoid the small string optimization.
             TrackedString strRValue("rvalue abcdefghijklmnopqrstuvwxyz");
-            TrackedString const result = (*wrapped)(std::move(strRValue));
+            TrackedString const result =
+                (*wrapped)(std::move(strRValue));  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(result.copies == 0);
             BEAST_EXPECT(result.moves == 1);
             BEAST_EXPECT(result.str == "rvalue abcdefghijklmnopqrstuvwxyz!");
-            BEAST_EXPECT(strRValue.str.size() == 0);
+            BEAST_EXPECT(strRValue.str.empty());  // NOLINT(bugprone-use-after-move)
         }
     }
 
@@ -295,7 +301,7 @@ class ClosureCounter_test : public beast::unit_test::suite
         BEAST_EXPECT(voidCounter.count() == 0);
 
         // Wait for the thread to exit.
-        while (threadExited == false)
+        while (!threadExited)
             ;
         localThread.join();
     }
@@ -313,5 +319,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ClosureCounter, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

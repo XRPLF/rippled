@@ -1,12 +1,21 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/did.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 
-#include <algorithm>
-
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct DID_test : public beast::unit_test::suite
 {
@@ -190,7 +199,7 @@ struct DID_test : public beast::unit_test::suite
         Account const edna{"edna"};
         Account const francis{"francis"};
         Account const george{"george"};
-        env.fund(XRP(5000), alice, bob, charlie, dave, edna, francis);
+        env.fund(XRP(5000), alice, bob, charlie, dave, edna, francis, george);
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, bob) == 0);
@@ -357,6 +366,7 @@ struct DID_test : public beast::unit_test::suite
         testSetInvalid(all);
         testSetInvalid(all - fixErrorCodes);
         testDeleteInvalid(all);
+        testSetValidInitial(all);
         testSetModify(all);
 
         testEnabled(all - emptyDID);
@@ -364,11 +374,11 @@ struct DID_test : public beast::unit_test::suite
         testSetInvalid(all - emptyDID);
         testSetInvalid(all - emptyDID - fixErrorCodes);
         testDeleteInvalid(all - emptyDID);
+        testSetValidInitial(all - emptyDID);
         testSetModify(all - emptyDID);
     }
 };
 
 BEAST_DEFINE_TESTSUITE(DID, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

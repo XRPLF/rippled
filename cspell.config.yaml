@@ -44,6 +44,10 @@ suggestWords:
 words:
   - abempty
   - AMMID
+  - AMMMPT
+  - AMMMPToken
+  - AMMMPTokens
+  - AMMXRP
   - amt
   - amts
   - asnode
@@ -96,9 +100,11 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - enabled
   - endmacro
   - exceptioned
   - Falco
+  - fcontext
   - finalizers
   - firewalled
   - fmtdur
@@ -111,6 +117,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hwaddress
   - hwrap
   - ifndef
   - inequation
@@ -146,6 +153,8 @@ words:
   - ltype
   - mcmodel
   - MEMORYSTATUSEX
+  - MPTAMM
+  - MPTDEX
   - Merkle
   - Metafuncton
   - misprediction
@@ -155,6 +164,7 @@ words:
   - mptid
   - mptissuance
   - mptissuanceid
+  - mptissue
   - mptoken
   - mptokenid
   - mptokenissuance
@@ -204,6 +214,7 @@ words:
   - ptrs
   - pushd
   - pyenv
+  - pyparsing
   - qalloc
   - queuable
   - Raphson
@@ -229,6 +240,7 @@ words:
   - seqit
   - sf
   - SFIELD
+  - sfields
   - shamap
   - shamapitem
   - sidechain
@@ -293,6 +305,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wasmi
   - wextra
   - wptr
   - writeme

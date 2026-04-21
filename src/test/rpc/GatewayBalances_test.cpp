@@ -1,12 +1,21 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/trust.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class GatewayBalances_test : public beast::unit_test::suite
 {
@@ -181,7 +190,7 @@ public:
         auto USD = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(USD.issue(), STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(USD, STAmount::cMaxValue, STAmount::cMaxOffset);
 
         // Create a hotwallet
         Account const hw{"hw"};
@@ -224,6 +233,45 @@ public:
     }
 
     void
+    testGWBWithMPT()
+    {
+        testcase("Gateway Balances with MPT Escrow");
+        using namespace std::chrono_literals;
+        using namespace jtx;
+
+        // Ensure MPT is enabled
+        FeatureBitset const features = testable_amendments() | featureMPTokensV1;
+        Env env(*this, features);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // Create MPT issuance (Alice) with Escrow capability
+        MPTTester mpt(env, alice, {.holders = {bob}, .fund = false});
+        mpt.create({.flags = tfMPTCanEscrow});
+
+        // Authorize Bob and fund him
+        mpt.authorize({.account = bob, .holderCount = 1});
+        mpt.pay(alice, bob, 1000);
+
+        // Bob creates an escrow of MPT to Alice.
+        auto const MPT = mpt["MPT"];
+        env(escrow::create(bob, alice, MPT(100)), escrow::finish_time(env.now() + 10s));
+        env.close();
+
+        // Query gateway_balances for Bob.
+        auto wsc = makeWSClient(env.app().config());
+        Json::Value qry;
+        qry[jss::account] = bob.human();
+
+        auto jv = wsc->invoke("gateway_balances", qry);
+        expect(jv[jss::status] == "success");
+    }
+
+    void
     run() override
     {
         using namespace jtx;
@@ -233,12 +281,11 @@ public:
             testGWB(feature);
             testGWBApiVersions(feature);
         }
-
+        testGWBWithMPT();
         testGWBOverflow();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

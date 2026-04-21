@@ -1,12 +1,37 @@
-#include <test/jtx.h>
 
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/flags.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <tuple>
 
 namespace xrpl {
 
 class NFTokenAuth_test : public beast::unit_test::suite
 {
-    auto
+    static auto
     mintAndOfferNFT(
         test::jtx::Env& env,
         test::jtx::Account const& account,
@@ -33,9 +58,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -86,9 +111,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -110,7 +135,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
@@ -132,9 +157,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -173,7 +198,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that offer can't be accepted even with balance
@@ -190,9 +215,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -265,9 +290,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -293,7 +318,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             env(token::acceptSellOffer(A1, sellIdx), ter(tecNO_AUTH));
@@ -307,10 +332,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -373,10 +398,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -412,7 +437,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
@@ -433,10 +458,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -507,10 +532,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account minter{"minter"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const minter{"minter"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, minter, A1, A2);

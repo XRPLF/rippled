@@ -146,23 +146,23 @@ public:
         explicit Metrics() = default;
 
         /// Number of transactions in the queue
-        std::size_t txCount;
+        std::size_t txCount{};
         /// Max transactions currently allowed in queue
         std::optional<std::size_t> txQMaxSize;
         /// Number of transactions currently in the open ledger
-        std::size_t txInLedger;
+        std::size_t txInLedger{};
         /// Number of transactions expected per ledger
-        std::size_t txPerLedger;
+        std::size_t txPerLedger{};
         /// Reference transaction fee level
-        FeeLevel64 referenceFeeLevel;
+        FeeLevel64 referenceFeeLevel{};
         /// Minimum fee level for a transaction to be considered for
         /// the open ledger or the queue
-        FeeLevel64 minProcessingFeeLevel;
+        FeeLevel64 minProcessingFeeLevel{};
         /// Median fee level of the last ledger
-        FeeLevel64 medFeeLevel;
+        FeeLevel64 medFeeLevel{};
         /// Minimum fee level to get into the current open ledger,
         /// bypassing the queue
-        FeeLevel64 openLedgerFeeLevel;
+        FeeLevel64 openLedgerFeeLevel{};
     };
 
     /**
@@ -382,11 +382,12 @@ private:
             , targetTxnCount_(
                   setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
                                                              : setup.targetTxnInLedger)
-            , maximumTxnCount_(
-                  setup.maximumTxnInLedger ? *setup.maximumTxnInLedger < targetTxnCount_
-                          ? targetTxnCount_
-                          : *setup.maximumTxnInLedger
-                                           : std::optional<std::size_t>(std::nullopt))
+            , maximumTxnCount_([&]() -> std::optional<std::size_t> {
+                if (!setup.maximumTxnInLedger)
+                    return std::nullopt;
+                return *setup.maximumTxnInLedger < targetTxnCount_ ? targetTxnCount_
+                                                                   : *setup.maximumTxnInLedger;
+            }())
             , txnsExpected_(minimumTxnCount_)
             , recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
@@ -398,9 +399,9 @@ private:
             Updates fee metrics based on the transactions in the ReadView
             for use in fee escalation calculations.
 
-            @param app Rippled Application object.
+            @param app Xrpld Application object.
             @param view View of the LCL that was just closed or received.
-            @param timeLeap Indicates that rippled is under load so fees
+            @param timeLeap Indicates that xrpld is under load so fees
             should grow faster.
             @param setup Customization params.
         */
@@ -424,7 +425,7 @@ private:
         Snapshot
         getSnapshot() const
         {
-            return {txnsExpected_, escalationMultiplier_};
+            return {.txnsExpected = txnsExpected_, .escalationMultiplier = escalationMultiplier_};
         }
 
         /** Use the number of transactions in the current open ledger
@@ -511,7 +512,7 @@ private:
             their `retriesRemaining` forced down as part of the
             penalty.
         */
-        int retriesRemaining;
+        int retriesRemaining{retriesAllowed};
         /// Flags provided to `apply`. If the transaction is later
         /// attempted with different flags, it will need to be
         /// `preflight`ed again.
@@ -672,7 +673,7 @@ private:
         bool
         empty() const
         {
-            return !getTxnCount();
+            return getTxnCount() == 0u;
         }
 
         /// Find the entry in transactions that precedes seqProx, if one does.
@@ -693,12 +694,12 @@ private:
     };
 
     // Helper function returns requiredFeeLevel.
-    FeeLevel64
+    static FeeLevel64
     getRequiredFeeLevel(
         OpenView& view,
         ApplyFlags flags,
         FeeMetrics::Snapshot const& metricsSnapshot,
-        std::lock_guard<std::mutex> const& lock) const;
+        std::lock_guard<std::mutex> const& lock);
 
     // Helper function for TxQ::apply.  If a transaction's fee is high enough,
     // attempt to directly apply that transaction to the ledger.

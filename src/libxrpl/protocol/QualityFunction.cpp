@@ -1,8 +1,9 @@
+#include <xrpl/protocol/QualityFunction.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/QualityFunction.h>
 
 #include <optional>
 #include <stdexcept>
@@ -31,7 +32,7 @@ QualityFunction::outFromAvgQ(Quality const& quality)
 {
     if (m_ != 0 && quality.rate() != beast::zero)
     {
-        saveNumberRoundMode rm(Number::setround(Number::rounding_mode::upward));
+        saveNumberRoundMode const rm(Number::setround(Number::rounding_mode::upward));
         auto const out = (1 / quality.rate() - b_) / m_;
         if (out <= 0)
             return std::nullopt;

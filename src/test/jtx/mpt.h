@@ -2,14 +2,14 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/owners.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class MPTTester;
 
@@ -95,7 +95,7 @@ struct MPTCreate
 
 struct MPTInit
 {
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
@@ -109,10 +109,11 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;
@@ -166,11 +167,11 @@ class MPTTester
     bool close_;
 
 public:
-    MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
+    MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
     MPTTester(
         Env& env,
-        Account const& issuer,
+        Account issuer,
         MPTID const& id,
         std::vector<Account> const& holders = {},
         bool close = true);
@@ -272,6 +273,12 @@ public:
 
     operator Asset() const;
 
+    friend BookSpec
+    operator~(MPTTester const& mpt)
+    {
+        return ~static_cast<MPT>(mpt);
+    }
+
 private:
     using SLEP = SLE::const_pointer;
     bool
@@ -291,7 +298,7 @@ private:
             env_.require(owners(issuer_, *arg.ownerCount));
         if (arg.holderCount)
         {
-            for (auto it : holders_)
+            for (auto const& it : holders_)
                 env_.require(owners(it.second, *arg.holderCount));
         }
         return err;
@@ -304,6 +311,4 @@ private:
     getFlags(std::optional<Account> const& holder) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

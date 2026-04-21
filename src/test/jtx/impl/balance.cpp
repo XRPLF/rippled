@@ -1,8 +1,17 @@
 #include <test/jtx/balance.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <test/jtx/Env.h>
+
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+
+#include <variant>
+
+namespace xrpl::test::jtx {
 
 #define TEST_EXPECT(cond) env.test.expect(cond, __FILE__, __LINE__)
 #define TEST_EXPECTS(cond, reason) \
@@ -35,8 +44,8 @@ doBalance(Env& env, AccountID const& account, bool none, STAmount const& value, 
         else if (TEST_EXPECT(sle))
         {
             auto amount = sle->getFieldAmount(sfBalance);
-            amount.setIssuer(issue.account);
-            if (account > issue.account)
+            amount.get<Issue>().account = value.getIssuer();
+            if (account > value.getIssuer())
                 amount.negate();
             TEST_EXPECTS(amount == value, amount.getText());
         }
@@ -66,11 +75,9 @@ doBalance(
 void
 balance::operator()(Env& env) const
 {
-    return std::visit(
+    std::visit(
         [&](auto const& issue) { doBalance(env, account_.id(), none_, value_, issue); },
         value_.asset().value());
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

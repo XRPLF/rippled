@@ -27,7 +27,7 @@ struct ApplyResult
 inline bool
 isTecClaimHardFail(TER ter, ApplyFlags flags)
 {
-    return isTecClaim(ter) && !(flags & tapRETRY);
+    return isTecClaim(ter) && ((flags & tapRETRY) == 0u);
 }
 
 /** Class describing the consequences to the account
@@ -213,7 +213,7 @@ public:
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)
-        , likelyToClaimFee(ter == tesSUCCESS || isTecClaimHardFail(ter, flags))
+        , likelyToClaimFee(isTesSuccess(ter) || isTecClaimHardFail(ter, flags))
     {
     }
 

@@ -1,8 +1,21 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 
-namespace xrpl {
-namespace detail {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+
+namespace xrpl::detail {
 
 class RawStateTable::sles_iter_impl : public ReadView::sles_type::iter_base
 {
@@ -22,7 +35,7 @@ public:
         items_t::const_iterator end1,
         ReadView::sles_type::iterator iter0,
         ReadView::sles_type::iterator end0)
-        : iter0_(iter0), end0_(end0), iter1_(iter1), end1_(end1)
+        : iter0_(std::move(iter0)), end0_(std::move(end0)), iter1_(iter1), end1_(end1)
     {
         if (iter0_ != end0_)
             sle0_ = *iter0_;
@@ -94,9 +107,13 @@ public:
     dereference() const override
     {
         if (!sle1_)
+        {
             return sle0_;
-        else if (!sle0_)
+        }
+        if (!sle0_)
+        {
             return sle1_;
+        }
         if (sle1_->key() <= sle0_->key())
             return sle1_;
         return sle0_;
@@ -108,9 +125,13 @@ private:
     {
         ++iter0_;
         if (iter0_ == end0_)
+        {
             sle0_ = nullptr;
+        }
         else
+        {
             sle0_ = *iter0_;
+        }
     }
 
     void
@@ -118,9 +139,13 @@ private:
     {
         ++iter1_;
         if (iter1_ == end1_)
+        {
             sle1_ = nullptr;
+        }
         else
+        {
             sle1_ = iter1_->second.sle;
+        }
     }
 
     void
@@ -229,7 +254,7 @@ RawStateTable::erase(std::shared_ptr<SLE> const& sle)
     switch (item.action)
     {
         case Action::erase:
-            LogicError("RawStateTable::erase: already erased");
+            Throw<std::logic_error>("RawStateTable::erase: already erased");
             break;
         case Action::insert:
             items_.erase(result.first);
@@ -258,10 +283,10 @@ RawStateTable::insert(std::shared_ptr<SLE> const& sle)
             item.sle = sle;
             break;
         case Action::insert:
-            LogicError("RawStateTable::insert: already inserted");
+            Throw<std::logic_error>("RawStateTable::insert: already inserted");
             break;
         case Action::replace:
-            LogicError("RawStateTable::insert: already exists");
+            Throw<std::logic_error>("RawStateTable::insert: already exists");
             break;
     }
 }
@@ -279,7 +304,7 @@ RawStateTable::replace(std::shared_ptr<SLE> const& sle)
     switch (item.action)
     {
         case Action::erase:
-            LogicError("RawStateTable::replace: was erased");
+            Throw<std::logic_error>("RawStateTable::replace: was erased");
             break;
         case Action::insert:
         case Action::replace:
@@ -331,5 +356,4 @@ RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
         items_.upper_bound(key), items_.end(), base.sles.upper_bound(key), base.sles.end());
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

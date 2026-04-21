@@ -363,24 +363,25 @@ uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
 
 template <class... keyletParams>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct keyletDesc
 {
     std::function<Keylet(keyletParams...)> function;
     Json::StaticString expectedLEName;
-    bool includeInTests;
+    bool includeInTests{};
 };
 
 // This list should include all of the keylet functions that take a single
 // AccountID parameter.
 std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
-    {{&keylet::account, jss::AccountRoot, false},
-     {&keylet::ownerDir, jss::DirectoryNode, true},
-     {&keylet::signers, jss::SignerList, true},
+    {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
+     {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
+     {.function = &keylet::signers, .expectedLEName = jss::SignerList, .includeInTests = true},
      // It's normally impossible to create an item at nftpage_min, but
      // test it anyway, since the invariant checks for it.
-     {&keylet::nftpage_min, jss::NFTokenPage, true},
-     {&keylet::nftpage_max, jss::NFTokenPage, true},
-     {&keylet::did, jss::DID, true}}};
+     {.function = &keylet::nftpage_min, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
+     {.function = &keylet::nftpage_max, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
+     {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
 
 MPTID
 makeMptID(std::uint32_t sequence, AccountID const& account);

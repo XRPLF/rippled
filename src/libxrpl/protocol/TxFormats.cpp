@@ -1,16 +1,18 @@
+#include <xrpl/protocol/TxFormats.h>
+
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
-#include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/jss.h>  // IWYU pragma: keep
 
-#include <initializer_list>
+#include <vector>
 
 namespace xrpl {
 
-TxFormats::TxFormats()
+std::vector<SOElement> const&
+TxFormats::getCommonFields()
 {
-    // Fields shared by all txFormats:
-    static std::initializer_list<SOElement> const commonFields{
+    static auto const commonFields = std::vector<SOElement>{
         {sfTransactionType, soeREQUIRED},
         {sfFlags, soeOPTIONAL},
         {sfSourceTag, soeOPTIONAL},
@@ -29,7 +31,11 @@ TxFormats::TxFormats()
         {sfNetworkID, soeOPTIONAL},
         {sfDelegate, soeOPTIONAL},
     };
+    return commonFields;
+}
 
+TxFormats::TxFormats()
+{
 #pragma push_macro("UNWRAP")
 #undef UNWRAP
 #pragma push_macro("TRANSACTION")
@@ -37,7 +43,7 @@ TxFormats::TxFormats()
 
 #define UNWRAP(...) __VA_ARGS__
 #define TRANSACTION(tag, value, name, delegable, amendment, privileges, fields) \
-    add(jss::name, tag, UNWRAP fields, commonFields);
+    add(jss::name, tag, UNWRAP fields, getCommonFields());
 
 #include <xrpl/protocol/detail/transactions.macro>
 

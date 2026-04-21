@@ -1,9 +1,32 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/ledgerStateFix.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/token.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+#include <xrpl/protocol/nft.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <vector>
 
 namespace xrpl {
 
@@ -62,7 +85,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
             //   0, 3, 2, 5, 4, 7...
             // in sets of 16 NFTs we can get each page to be fully
             // populated.
-            std::uint32_t const intTaxon = (i / 16) + (i & 0b10000 ? 2 : 0);
+            std::uint32_t const intTaxon = (i / 16) + (((i & 0b10000) != 0u) ? 2 : 0);
             uint32_t const extTaxon = internalTaxon(owner, intTaxon);
             nfts.push_back(token::getNextID(env, owner, extTaxon, tfTransferable));
             env(token::mint(owner, extTaxon), txflags(tfTransferable));
@@ -71,7 +94,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         // Sort the NFTs so they are listed in storage order, not
         // creation order.
-        std::sort(nfts.begin(), nfts.end());
+        std::ranges::sort(nfts);
 
         // Verify that the owner does indeed have exactly three pages
         // of NFTs with 32 entries in each page.

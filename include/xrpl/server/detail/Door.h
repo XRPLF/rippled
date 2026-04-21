@@ -33,6 +33,7 @@
 #include <memory>
 #include <optional>
 #include <sstream>
+#include <utility>
 
 namespace xrpl {
 
@@ -88,8 +89,12 @@ private:
     boost::asio::io_context& ioc_;
     acceptor_type acceptor_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    bool ssl_;
-    bool plain_;
+    bool ssl_{
+        port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 ||
+        port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0};
+    bool plain_{
+        port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
+        (port_.protocol.count("ws2") != 0u)};
     static constexpr std::chrono::milliseconds INITIAL_ACCEPT_DELAY{50};
     static constexpr std::chrono::milliseconds MAX_ACCEPT_DELAY{2000};
     std::chrono::milliseconds accept_delay_{INITIAL_ACCEPT_DELAY};
@@ -159,7 +164,7 @@ Door<Handler>::Detector::Detector(
     , ioc_(ioc)
     , stream_(std::move(stream))
     , socket_(stream_.socket())
-    , remote_address_(remote_address)
+    , remote_address_(std::move(remote_address))
     , strand_(boost::asio::make_strand(ioc_))
     , j_(j)
 {
@@ -274,12 +279,6 @@ Door<Handler>::Door(
     , ioc_(io_context)
     , acceptor_(io_context)
     , strand_(boost::asio::make_strand(io_context))
-    , ssl_(
-          port_.protocol.count("https") > 0 || port_.protocol.count("wss") > 0 ||
-          port_.protocol.count("wss2") > 0 || port_.protocol.count("peer") > 0)
-    , plain_(
-          port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
-          port_.protocol.count("ws2"))
     , backoff_timer_(io_context)
 {
     reOpen();
@@ -299,8 +298,10 @@ void
 Door<Handler>::close()
 {
     if (!strand_.running_in_this_thread())
+    {
         return boost::asio::post(
             strand_, std::bind(&Door<Handler>::close, this->shared_from_this()));
+    }
     backoff_timer_.cancel();
     error_code ec;
     acceptor_.close(ec);
@@ -397,7 +398,7 @@ Door<Handler>::query_fd_stats() const
     return std::nullopt;
 #else
     FDStats s;
-    struct rlimit rl;
+    struct rlimit rl{};
     if (getrlimit(RLIMIT_NOFILE, &rl) != 0 || rl.rlim_cur == RLIM_INFINITY)
         return std::nullopt;
     s.limit = static_cast<std::uint64_t>(rl.rlim_cur);
@@ -434,11 +435,7 @@ Door<Handler>::should_throttle_for_fds()
     auto const& s = *stats;
     auto const free = (s.limit > s.used) ? (s.limit - s.used) : 0ull;
     double const free_ratio = static_cast<double>(free) / static_cast<double>(s.limit);
-    if (free_ratio < FREE_FD_THRESHOLD)
-    {
-        return true;
-    }
-    return false;
+    return free_ratio < FREE_FD_THRESHOLD;
 #endif
 }
 

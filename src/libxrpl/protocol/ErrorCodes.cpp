@@ -1,6 +1,7 @@
+#include <xrpl/protocol/ErrorCodes.h>
+
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <array>
@@ -205,9 +206,7 @@ make_error(error_code_i code, std::string const& message)
 bool
 contains_error(Json::Value const& json)
 {
-    if (json.isObject() && json.isMember(jss::error))
-        return true;
-    return false;
+    return json.isObject() && json.isMember(jss::error);
 }
 
 int

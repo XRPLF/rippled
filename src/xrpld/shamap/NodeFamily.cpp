@@ -1,20 +1,34 @@
+#include <xrpld/shamap/NodeFamily.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/app/main/Tuning.h>
-#include <xrpld/shamap/NodeFamily.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/TreeNodeCache.h>
+
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <mutex>
 
 namespace xrpl {
 
 NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     : app_(app)
     , db_(app.getNodeStore())
-    , j_(app.journal("NodeFamily"))
+    , j_(app.getJournal("NodeFamily"))
     , fbCache_(
           std::make_shared<FullBelowCache>(
               "Node family full below cache",
               stopwatch(),
-              app.journal("NodeFamilyFulLBelowCache"),
+              app.getJournal("NodeFamilyFulLBelowCache"),
               cm.collector(),
               fullBelowTargetSize,
               fullBelowExpiration))
@@ -39,7 +53,7 @@ void
 NodeFamily::reset()
 {
     {
-        std::lock_guard lock(maxSeqMutex_);
+        std::lock_guard const lock(maxSeqMutex_);
         maxSeq_ = 0;
     }
 

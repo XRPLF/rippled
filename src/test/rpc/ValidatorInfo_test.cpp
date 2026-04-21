@@ -1,17 +1,19 @@
 // Copyright (c) 2020 Dev Null Productions
 
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 
+#include <memory>
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ValidatorInfo_test : public beast::unit_test::suite
 {
@@ -46,27 +48,15 @@ public:
 
         using namespace jtx;
         std::vector<std::string> const tokenBlob = {
-            "    "
-            "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT"
-            "\n",
-            " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFua"
-            "WZl "
-            "    \n",
-            "\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZD"
-            "eE"
-            "\n",
-            "\t "
-            "hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG"
-            "\t  "
-            "\t\n",
-            "bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2"
-            "\n",
-            "hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1"
-            "\n",
-            "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj"
-            "\n",
-            "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ=="
-            "\n"};
+            "    eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT\n",
+            " \tQzODdjMDYyNTkwNzk3MmY0ZTcxOTAyMzFmYWE5Mzc0NTdmYTlkYWY2IiwibWFuaWZl     \n",
+            "\tc3QiOiJKQUFBQUFGeEllMUZ0d21pbXZHdEgyaUNjTUpxQzlnVkZLaWxHZncxL3ZDeE\n",
+            "\t hYWExwbGMyR25NaEFrRTFhZ3FYeEJ3RHdEYklENk9NU1l1TTBGREFscEFnTms4U0tG\t  \t\n",
+            "bjdNTzJmZGtjd1JRSWhBT25ndTlzQUtxWFlvdUorbDJWMFcrc0FPa1ZCK1pSUzZQU2\n",
+            "hsSkFmVXNYZkFpQnNWSkdlc2FhZE9KYy9hQVpva1MxdnltR21WcmxIUEtXWDNZeXd1\n",
+            "NmluOEhBU1FLUHVnQkQ2N2tNYVJGR3ZtcEFUSGxHS0pkdkRGbFdQWXk1QXFEZWRGdj\n",
+            "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n",
+        };
 
         std::string const master_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
         std::string const ephemeral_key = "n9KsDYGKhABVc4wK5u3MnVhgPinyJimyKGpr9VJYuBaY8EnJXR2x";
@@ -101,5 +91,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(ValidatorInfo, rpc, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,10 +1,29 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/Transaction.h>
 
-#include <xrpl/basics/TaggedCache.ipp>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -15,7 +34,7 @@ TransactionMaster::TransactionMaster(Application& app)
           65536,
           std::chrono::minutes{30},
           stopwatch(),
-          mApp.journal("TaggedCache"))
+          mApp.getJournal("TaggedCache"))
 {
 }
 
@@ -110,7 +129,7 @@ TransactionMaster::fetch(
     }
     else
     {
-        if (uCommitLedger)
+        if (uCommitLedger != 0u)
             iTx->setStatus(COMMITTED, uCommitLedger);
 
         txn = iTx->getSTransaction();

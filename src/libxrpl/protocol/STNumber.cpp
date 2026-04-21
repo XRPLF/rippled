@@ -1,20 +1,26 @@
 #include <xrpl/protocol/STNumber.h>
-// Do not remove. Keep STNumber.h first
+
 #include <xrpl/basics/Number.h>
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Rules.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <boost/lexical_cast.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 #include <ostream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 
@@ -177,10 +183,10 @@ partsFromString(std::string const& number)
     //   6 = exponent sign
     //   7 = exponent number
 
-    bool negative = (match[1].matched && (match[1] == "-"));
+    bool const negative = (match[1].matched && (match[1] == "-"));
 
-    std::uint64_t mantissa;
-    int exponent;
+    std::uint64_t mantissa = 0;
+    int exponent = 0;
 
     if (!match[4].matched)  // integer only
     {
@@ -198,12 +204,16 @@ partsFromString(std::string const& number)
     {
         // we have an exponent
         if (match[6].matched && (match[6] == "-"))
+        {
             exponent -= boost::lexical_cast<int>(std::string(match[7]));
+        }
         else
+        {
             exponent += boost::lexical_cast<int>(std::string(match[7]));
+        }
     }
 
-    return {mantissa, exponent, negative};
+    return {.mantissa = mantissa, .exponent = exponent, .negative = negative};
 }
 
 STNumber
@@ -237,6 +247,7 @@ numberFromJson(SField const& field, Json::Value const& value)
         // Number mantissas are much bigger than the allowable parsed values, so
         // it can't be out of range.
         static_assert(
+            // NOLINTNEXTLINE(misc-redundant-expression)
             std::numeric_limits<std::uint64_t>::max() >=
             std::numeric_limits<decltype(parts.mantissa)>::max());
     }

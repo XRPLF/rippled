@@ -16,8 +16,11 @@ namespace xrpl {
 /** A secret key. */
 class SecretKey
 {
+public:
+    static constexpr std::size_t size_ = 32;
+
 private:
-    std::uint8_t buf_[32];
+    std::uint8_t buf_[size_]{};
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -27,9 +30,14 @@ public:
     SecretKey&
     operator=(SecretKey const&) = default;
 
+    bool
+    operator==(SecretKey const&) = delete;
+    bool
+    operator!=(SecretKey const&) = delete;
+
     ~SecretKey();
 
-    SecretKey(std::array<std::uint8_t, 32> const& data);
+    SecretKey(std::array<std::uint8_t, size_> const& data);
     SecretKey(Slice const& slice);
 
     std::uint8_t const*
@@ -77,17 +85,11 @@ public:
     }
 };
 
-inline bool
-operator==(SecretKey const& lhs, SecretKey const& rhs)
-{
-    return lhs.size() == rhs.size() && std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
-}
+bool
+operator==(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
-inline bool
-operator!=(SecretKey const& lhs, SecretKey const& rhs)
-{
-    return !(lhs == rhs);
-}
+bool
+operator!=(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
 //------------------------------------------------------------------------------
 
@@ -116,7 +118,7 @@ derivePublicKey(KeyType type, SecretKey const& sk);
 
 /** Generate a key pair deterministically.
 
-    This algorithm is specific to Ripple:
+    This algorithm is specific to the XRPL:
 
     For secp256k1 key pairs, the seed is converted
     to a Generator and used to compute the key pair

@@ -1,16 +1,16 @@
+#include <xrpl/protocol/STValidation.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
@@ -38,22 +38,22 @@ STValidation::validationFormat()
     // guarantee the initialization order.
     // clang-format off
     static SOTemplate const format{
-        {sfFlags,               soeREQUIRED},
-        {sfLedgerHash,          soeREQUIRED},
-        {sfLedgerSequence,      soeREQUIRED},
-        {sfCloseTime,           soeOPTIONAL},
-        {sfLoadFee,             soeOPTIONAL},
-        {sfAmendments,          soeOPTIONAL},
-        {sfBaseFee,             soeOPTIONAL},
-        {sfReserveBase,         soeOPTIONAL},
-        {sfReserveIncrement,    soeOPTIONAL},
-        {sfSigningTime,         soeREQUIRED},
-        {sfSigningPubKey,       soeREQUIRED},
-        {sfSignature,           soeREQUIRED},
-        {sfConsensusHash,       soeOPTIONAL},
-        {sfCookie,              soeDEFAULT},
-        {sfValidatedHash,       soeOPTIONAL},
-        {sfServerVersion,       soeOPTIONAL},
+        {sfFlags,                 soeREQUIRED},
+        {sfLedgerHash,            soeREQUIRED},
+        {sfLedgerSequence,        soeREQUIRED},
+        {sfCloseTime,             soeOPTIONAL},
+        {sfLoadFee,               soeOPTIONAL},
+        {sfAmendments,            soeOPTIONAL},
+        {sfBaseFee,               soeOPTIONAL},
+        {sfReserveBase,           soeOPTIONAL},
+        {sfReserveIncrement,      soeOPTIONAL},
+        {sfSigningTime,           soeREQUIRED},
+        {sfSigningPubKey,         soeREQUIRED},
+        {sfSignature,             soeREQUIRED},
+        {sfConsensusHash,         soeOPTIONAL},
+        {sfCookie,                soeDEFAULT},
+        {sfValidatedHash,         soeOPTIONAL},
+        {sfServerVersion,         soeOPTIONAL},
         // featureXRPFees
         {sfBaseFeeDrops,          soeOPTIONAL},
         {sfReserveBaseDrops,      soeOPTIONAL},
@@ -107,7 +107,7 @@ STValidation::isValid() const noexcept
             getSignerPublic(),
             getSigningHash(),
             makeSlice(getFieldVL(sfSignature)),
-            getFlags() & vfFullyCanonicalSig);
+            (getFlags() & vfFullyCanonicalSig) != 0u);
     }
 
     return valid_.value();

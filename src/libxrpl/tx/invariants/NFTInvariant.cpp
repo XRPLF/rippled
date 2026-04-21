@@ -1,12 +1,27 @@
 #include <xrpl/tx/invariants/NFTInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
-#include <xrpl/tx/transactors/NFT/NFTokenUtils.h>
+
+#include <cstddef>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -120,7 +135,7 @@ ValidNFTokenPage::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (badLink_)
     {
@@ -196,7 +211,7 @@ NFTokenCountTracking::finalize(
     TER const result,
     XRPAmount const,
     ReadView const& view,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (!hasPrivilege(tx, changeNFTCounts))
     {
@@ -219,14 +234,14 @@ NFTokenCountTracking::finalize(
 
     if (tx.getTxnType() == ttNFTOKEN_MINT)
     {
-        if (result == tesSUCCESS && beforeMintedTotal >= afterMintedTotal)
+        if (isTesSuccess(result) && beforeMintedTotal >= afterMintedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: successful minting didn't increase "
                                "the number of minted tokens.";
             return false;
         }
 
-        if (result != tesSUCCESS && beforeMintedTotal != afterMintedTotal)
+        if (!isTesSuccess(result) && beforeMintedTotal != afterMintedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: failed minting changed the "
                                "number of minted tokens.";
@@ -243,7 +258,7 @@ NFTokenCountTracking::finalize(
 
     if (tx.getTxnType() == ttNFTOKEN_BURN)
     {
-        if (result == tesSUCCESS)
+        if (isTesSuccess(result))
         {
             if (beforeBurnedTotal >= afterBurnedTotal)
             {
@@ -253,7 +268,7 @@ NFTokenCountTracking::finalize(
             }
         }
 
-        if (result != tesSUCCESS && beforeBurnedTotal != afterBurnedTotal)
+        if (!isTesSuccess(result) && beforeBurnedTotal != afterBurnedTotal)
         {
             JLOG(j.fatal()) << "Invariant failed: failed burning changed the "
                                "number of burned tokens.";

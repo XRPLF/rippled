@@ -1,8 +1,10 @@
+#include <xrpl/resource/Consumer.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/Charge.h>
-#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
@@ -10,8 +12,7 @@
 #include <ostream>
 #include <string>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 Consumer::Consumer(Logic& logic, Entry& entry) : m_logic(&logic), m_entry(&entry)
 {
@@ -23,7 +24,7 @@ Consumer::Consumer() : m_logic(nullptr), m_entry(nullptr)
 
 Consumer::Consumer(Consumer const& other) : m_logic(other.m_logic), m_entry(nullptr)
 {
-    if (m_logic && other.m_entry)
+    if ((m_logic != nullptr) && (other.m_entry != nullptr))
     {
         m_entry = other.m_entry;
         m_logic->acquire(*m_entry);
@@ -32,22 +33,25 @@ Consumer::Consumer(Consumer const& other) : m_logic(other.m_logic), m_entry(null
 
 Consumer::~Consumer()
 {
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->release(*m_entry);
 }
 
 Consumer&
 Consumer::operator=(Consumer const& other)
 {
+    if (this == &other)
+        return *this;
+
     // remove old ref
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->release(*m_entry);
 
     m_logic = other.m_logic;
     m_entry = other.m_entry;
 
     // add new ref
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->acquire(*m_entry);
 
     return *this;
@@ -65,7 +69,7 @@ Consumer::to_string() const
 bool
 Consumer::isUnlimited() const
 {
-    if (m_entry)
+    if (m_entry != nullptr)
         return m_entry->isUnlimited();
 
     return false;
@@ -75,7 +79,7 @@ Disposition
 Consumer::disposition() const
 {
     Disposition d = ok;
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         d = m_logic->charge(*m_entry, Charge(0));
 
     return d;
@@ -86,7 +90,7 @@ Consumer::charge(Charge const& what, std::string const& context)
 {
     Disposition d = ok;
 
-    if (m_logic && m_entry && !m_entry->isUnlimited())
+    if ((m_logic != nullptr) && (m_entry != nullptr) && !m_entry->isUnlimited())
         d = m_logic->charge(*m_entry, what, context);
 
     return d;
@@ -138,5 +142,4 @@ operator<<(std::ostream& os, Consumer const& v)
     return os;
 }
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource
