@@ -2,6 +2,7 @@
 
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 namespace beast {
 
@@ -131,7 +132,7 @@ private:
     friend class aged_container_iterator;
 
     template <class OtherIterator>
-    aged_container_iterator(OtherIterator const& iter) : m_iter(iter)
+    aged_container_iterator(OtherIterator iter) : m_iter(std::move(iter))
     {
     }
 

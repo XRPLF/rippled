@@ -12,9 +12,7 @@
 
 #include <functional>
 
-namespace xrpl {
-
-namespace LedgerEntryHelpers {
+namespace xrpl::LedgerEntryHelpers {
 
 inline Unexpected<Json::Value>
 missingFieldError(Json::StaticString const field, std::optional<std::string> err = std::nullopt)
@@ -283,6 +281,4 @@ parseBridgeFields(Json::Value const& params)
         *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
-}  // namespace LedgerEntryHelpers
-
-}  // namespace xrpl
+}  // namespace xrpl::LedgerEntryHelpers

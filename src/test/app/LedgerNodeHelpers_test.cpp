@@ -1,4 +1,3 @@
-
 #include <xrpld/app/ledger/detail/LedgerNodeHelpers.h>
 
 #include <xrpl/basics/IntrusivePointer.h>
@@ -13,12 +12,13 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
+#include <xrpl.pb.h>
+
 #include <bit>
 #include <cstdint>
 #include <string>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 class LedgerNodeHelpers_test : public beast::unit_test::suite
 {
@@ -357,5 +357,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerNodeHelpers, app, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

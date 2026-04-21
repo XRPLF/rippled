@@ -53,8 +53,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::suite
@@ -1651,6 +1650,7 @@ struct PayChan_test : public beast::unit_test::suite
                              Account const& acc,
                              std::shared_ptr<SLE const> const& chan) -> bool {
             xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            // NOLINTNEXTLINE(modernize-use-ranges)
             return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();
         };
 
@@ -1981,5 +1981,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(PayChan, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

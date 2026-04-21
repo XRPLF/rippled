@@ -44,8 +44,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // Helper function that returns the reserve on an account based on
 // the passed in number of owners.
@@ -1409,5 +1408,4 @@ struct DepositPreauth_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(DepositAuth, app, xrpl);
 BEAST_DEFINE_TESTSUITE(DepositPreauth, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

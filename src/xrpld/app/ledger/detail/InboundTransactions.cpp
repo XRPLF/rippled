@@ -174,7 +174,7 @@ public:
                 return;
             }
 
-            data.emplace_back(std::make_pair(*nodeID, std::move(*treeNode)));
+            data.emplace_back(*nodeID, std::move(*treeNode));
         }
 
         if (!ta->takeNodes(data, peer).isUseful())

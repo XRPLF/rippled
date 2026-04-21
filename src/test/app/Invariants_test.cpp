@@ -34,6 +34,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
@@ -46,6 +47,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
 #include <array>
@@ -59,8 +61,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Invariants_test : public beast::unit_test::suite
 {
@@ -1663,23 +1664,24 @@ class Invariants_test : public beast::unit_test::suite
         };
         auto const mods = std::to_array<Mod>({
             {
-                "pseudo-account has 0 pseudo-account fields set",
-                [this](SLE::pointer& sle) {
-                    BEAST_EXPECT(sle->at(~sfVaultID));
-                    sle->at(~sfVaultID) = std::nullopt;
-                },
+                .expectedFailure = "pseudo-account has 0 pseudo-account fields set",
+                .func =
+                    [this](SLE::pointer& sle) {
+                        BEAST_EXPECT(sle->at(~sfVaultID));
+                        sle->at(~sfVaultID) = std::nullopt;
+                    },
             },
             {
-                "pseudo-account sequence changed",
-                [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
+                .expectedFailure = "pseudo-account sequence changed",
+                .func = [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
             },
             {
-                "pseudo-account flags are not set",
-                [](SLE::pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
+                .expectedFailure = "pseudo-account flags are not set",
+                .func = [](SLE::pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
             },
             {
-                "pseudo-account has a regular key",
-                [](SLE::pointer& sle) { sle->at(sfRegularKey) = Account("regular").id(); },
+                .expectedFailure = "pseudo-account has a regular key",
+                .func = [](SLE::pointer& sle) { sle->at(sfRegularKey) = Account("regular").id(); },
             },
         });
 
@@ -1774,8 +1776,10 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
+        bool const fixS313Enabled = features[fixSecurity3_1_3];
 
-        testcase << "PermissionedDEX" + std::string(fixPDEnabled ? " fix" : "");
+        testcase << "PermissionedDEX" + std::string(fixPDEnabled ? " fixPD" : "") +
+                std::string(fixS313Enabled ? " fixS313" : "");
 
         doInvariantCheck(
             Env(*this, features),
@@ -1861,6 +1865,45 @@ class Invariants_test : public beast::unit_test::suite
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+        }
+
+        // empty sfAdditionalBooks (size 0)
+        {
+            Env env1(*this, features);
+
+            Account const A1{"A1"};
+            Account const A2{"A2"};
+            env1.fund(XRP(1000), A1, A2);
+            env1.close();
+
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
+            env1.close();
+
+            doInvariantCheck(
+                std::move(env1),
+                A1,
+                A2,
+                fixS313Enabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
+                               : std::vector<std::string>{},
+                [&pd1](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    Keylet const offerKey = keylet::offer(A2.id(), 10);
+                    auto sleOffer = std::make_shared<SLE>(offerKey);
+                    sleOffer->setAccountID(sfAccount, A2);
+                    sleOffer->setFieldAmount(sfTakerPays, A1["USD"](10));
+                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                    sleOffer->setFlag(lsfHybrid);
+                    sleOffer->setFieldH256(sfDomainID, pd1);
+
+                    STArray const bookArr;  // empty array, size 0
+                    sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
+                    ac.view().insert(sleOffer);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttOFFER_CREATE, [&](STObject&) {}},
+                fixS313Enabled
+                    ? std::initializer_list<TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
+                    : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
         }
 
         // hybrid offer missing sfAdditionalBooks
@@ -2469,9 +2512,9 @@ class Invariants_test : public beast::unit_test::suite
                 .sharesTotal = adjustment,
                 .vaultAssets = adjustment,
                 .accountAssets =  //
-                AccountAmount{id, -adjustment},
+                AccountAmount{.account = id, .amount = -adjustment},
                 .accountShares =  //
-                AccountAmount{id, adjustment}};
+                AccountAmount{.account = id, .amount = adjustment}};
             fn(sample);
             return sample;
         };
@@ -4040,6 +4083,128 @@ class Invariants_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testVaultComputeCoarsestScale()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        PrettyAsset const vaultAsset = issuer["IOU"];
+
+        struct TestCase
+        {
+            std::string name;
+            std::int32_t expectedMinScale;
+            std::vector<ValidVault::DeltaInfo> values;
+        };
+
+        NumberMantissaScaleGuard const g{MantissaRange::large};
+
+        auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+            return {.delta = n, .scale = scale(n, vaultAsset.raw())};
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {
+                .name = "No values",
+                .expectedMinScale = 0,
+                .values = {},
+            },
+            {
+                .name = "Mixed integer and Number values",
+                .expectedMinScale = -15,
+                .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
+            },
+            {
+                .name = "Mixed scales",
+                .expectedMinScale = -17,
+                .values =
+                    {makeDelta(Number{1, -2}), makeDelta(Number{5, -3}), makeDelta(Number{3, -2})},
+            },
+            {
+                .name = "Equal scales",
+                .expectedMinScale = -16,
+                .values =
+                    {makeDelta(Number{1, -1}), makeDelta(Number{5, -1}), makeDelta(Number{1, -1})},
+            },
+            {
+                .name = "Mixed mantissa sizes",
+                .expectedMinScale = -12,
+                .values =
+                    {makeDelta(Number{1}),
+                     makeDelta(Number{1234, -3}),
+                     makeDelta(Number{12345, -6}),
+                     makeDelta(Number{123, 1})},
+            },
+        };
+
+        for (auto const& tc : testCases)
+        {
+            testcase("vault computeCoarsestScale: " + tc.name);
+
+            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            for (auto const& num : tc.values)
+            {
+                // None of these scales are far enough apart that rounding the
+                // values would lose information, so check that the rounded
+                // value matches the original.
+                auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                BEAST_EXPECTS(
+                    actualRounded == num.delta,
+                    "number " + to_string(num.delta) + " rounded to scale " +
+                        std::to_string(actualScale) + " is " + to_string(actualRounded));
+            }
+        }
+
+        auto const testCases2 = std::vector<TestCase>{
+            {
+                .name = "False equivalence",
+                .expectedMinScale = -15,
+                .values =
+                    {
+                        makeDelta(Number{1234567890123456789, -18}),
+                        makeDelta(Number{12345, -4}),
+                        makeDelta(Number{1}),
+                    },
+            },
+        };
+
+        // Unlike the first set of test cases, the values in these test could
+        // look equivalent if using the wrong scale.
+        for (auto const& tc : testCases2)
+        {
+            testcase("vault computeCoarsestScale: " + tc.name);
+
+            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            std::optional<Number> first;
+            Number firstRounded;
+            for (auto const& num : tc.values)
+            {
+                if (!first)
+                {
+                    first = num.delta;
+                    firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    continue;
+                }
+                auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                BEAST_EXPECTS(
+                    numRounded != firstRounded,
+                    "at a scale of " + std::to_string(actualScale) + " " + to_string(num.delta) +
+                        " == " + to_string(*first));
+            }
+        }
+    }
+
 public:
     void
     run() override
@@ -4061,15 +4226,19 @@ public:
         testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
         testPermissionedDEX(defaultAmendments() | fixPermissionedDomainInvariant);
         testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
+        testPermissionedDEX(
+            (defaultAmendments() | fixPermissionedDomainInvariant) - fixSecurity3_1_3);
+        testPermissionedDEX(
+            defaultAmendments() - fixPermissionedDomainInvariant - fixSecurity3_1_3);
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
         testMPT();
+        testVaultComputeCoarsestScale();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(Invariants, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

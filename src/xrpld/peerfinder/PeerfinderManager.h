@@ -11,8 +11,7 @@
 
 #include <string_view>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
@@ -102,7 +101,7 @@ struct Endpoint
 {
     Endpoint() = default;
 
-    Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_);
+    Endpoint(beast::IP::Endpoint ep, std::uint32_t hops_);
 
     std::uint32_t hops = 0;
     beast::IP::Endpoint address;
@@ -168,7 +167,7 @@ public:
         There may be some listener calls made before the
         destructor returns.
     */
-    virtual ~Manager() = default;
+    ~Manager() override = default;
 
     /** Set the configuration for the manager.
         The new settings will be applied asynchronously.
@@ -285,5 +284,4 @@ public:
     once_per_second() = 0;
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

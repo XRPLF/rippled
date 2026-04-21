@@ -155,7 +155,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : m_event(ev), m_journal(journal), m_probe(interval, ios)
+            : m_event(std::move(ev)), m_journal(journal), m_probe(interval, ios)
         {
         }
 
@@ -391,7 +391,9 @@ public:
 
         , nodeFamily_(*this, *m_collectorManager)
 
-        , m_orderBookDB(make_OrderBookDB(*this, {config_->PATH_SEARCH_MAX, config_->standalone()}))
+        , m_orderBookDB(make_OrderBookDB(
+              *this,
+              {.pathSearchMax = config_->PATH_SEARCH_MAX, .standalone = config_->standalone()}))
 
         , m_pathRequestManager(
               std::make_unique<PathRequestManager>(
@@ -610,7 +612,7 @@ public:
         return *m_networkOPs;
     }
 
-    virtual ServerHandler&
+    ServerHandler&
     getServerHandler() override
     {
         XRPL_ASSERT(
@@ -1134,7 +1136,7 @@ public:
         return maxDisallowedLedger_;
     }
 
-    virtual std::optional<uint256> const&
+    std::optional<uint256> const&
     getTrapTxID() const override
     {
         return trapTxID_;
@@ -1492,16 +1494,16 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
         RPC::JsonContext context{
-            {getJournal("RPCHandler"),
-             *this,
-             loadType,
-             getOPs(),
-             getLedgerMaster(),
-             c,
-             Role::ADMIN,
-             {},
-             {},
-             RPC::apiMaximumSupportedVersion},
+            {.j = getJournal("RPCHandler"),
+             .app = *this,
+             .loadType = loadType,
+             .netOps = getOPs(),
+             .ledgerMaster = getLedgerMaster(),
+             .consumer = c,
+             .role = Role::ADMIN,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiMaximumSupportedVersion},
             jvCommand};
 
         Json::Value jvResult;

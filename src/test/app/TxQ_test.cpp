@@ -55,9 +55,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class TxQPosNegFlows_test : public beast::unit_test::suite
 {
@@ -4695,5 +4693,4 @@ class TxQMetaInfo_test : public TxQPosNegFlows_test
 BEAST_DEFINE_TESTSUITE_PRIO(TxQPosNegFlows, app, xrpl, 1);
 BEAST_DEFINE_TESTSUITE_PRIO(TxQMetaInfo, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

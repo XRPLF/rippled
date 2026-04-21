@@ -7,8 +7,7 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 struct defaultObject_t
 {
@@ -158,5 +157,4 @@ operator!=(STVar const& lhs, STVar const& rhs)
     return !(lhs == rhs);
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

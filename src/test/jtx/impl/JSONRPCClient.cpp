@@ -31,8 +31,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class JSONRPCClient : public AbstractClient
 {
@@ -48,7 +47,7 @@ class JSONRPCClient : public AbstractClient
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if (pp.protocol.count("http") == 0)
+            if (not pp.protocol.contains("http"))
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
@@ -89,12 +88,6 @@ public:
         : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpc_version)
     {
         stream_.connect(ep_);
-    }
-
-    ~JSONRPCClient() override
-    {
-        // stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-        // stream_.close();
     }
 
     /*
@@ -165,5 +158,4 @@ makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
     return std::make_unique<JSONRPCClient>(cfg, rpc_version);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

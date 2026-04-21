@@ -24,7 +24,7 @@ struct TestJSONTxt
 static TestJSONTxt const testArray[] = {
 
     // Valid SignerEntry
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -46,10 +46,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     false},
+     .expectFail = false},
 
     // SignerEntry missing Account
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -70,10 +70,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry missing SignerWeight
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -94,10 +94,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry with unexpected Amount
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -120,10 +120,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry with no Account and unexpected Amount
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -145,7 +145,7 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
 };
 

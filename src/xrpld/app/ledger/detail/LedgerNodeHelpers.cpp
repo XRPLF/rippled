@@ -9,6 +9,8 @@
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <xrpl.pb.h>
+
 #include <exception>
 #include <optional>
 #include <string_view>

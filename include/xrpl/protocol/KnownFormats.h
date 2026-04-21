@@ -38,7 +38,7 @@ public:
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
+                std::is_enum_v<KeyType> || std::is_integral_v<KeyType>,
                 "KnownFormats KeyType must be integral or enum.");
         }
 

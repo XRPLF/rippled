@@ -105,8 +105,9 @@ parseProtocolVersions(boost::beast::string_view const& value)
     }
 
     // We guarantee that the returned list is sorted and contains no duplicates:
-    std::sort(result.begin(), result.end());
-    result.erase(std::unique(result.begin(), result.end()), result.end());
+    std::ranges::sort(result);
+    auto const uniq = std::ranges::unique(result);
+    result.erase(uniq.begin(), uniq.end());
 
     return result;
 }
@@ -124,12 +125,8 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     std::function<void(ProtocolVersion const&)> const pickVersion =
         [&result](ProtocolVersion const& v) { result = v; };
 
-    std::set_intersection(
-        std::begin(versions),
-        std::end(versions),
-        std::begin(supportedProtocolList),
-        std::end(supportedProtocolList),
-        boost::make_function_output_iterator(pickVersion));
+    std::ranges::set_intersection(
+        versions, supportedProtocolList, boost::make_function_output_iterator(pickVersion));
 
     return result;
 }
@@ -163,8 +160,7 @@ supportedProtocolVersions()
 bool
 isProtocolSupported(ProtocolVersion const& v)
 {
-    return std::end(supportedProtocolList) !=
-        std::find(std::begin(supportedProtocolList), std::end(supportedProtocolList), v);
+    return std::end(supportedProtocolList) != std::ranges::find(supportedProtocolList, v);
 }
 
 }  // namespace xrpl
