@@ -2,8 +2,6 @@
 
 #include <xrpl/beast/utility/Journal.h>
 
-#include <utility>
-
 namespace beast {
 
 /** Wraps a Journal::Sink to prefix its output with a string. */
@@ -19,8 +17,8 @@ private:
     std::string prefix_;
 
 public:
-    explicit WrappedSink(beast::Journal::Sink& sink, std::string prefix = "")
-        : Sink(sink), sink_(sink), prefix_(std::move(prefix))
+    explicit WrappedSink(beast::Journal::Sink& sink, std::string const& prefix = "")
+        : Sink(sink), sink_(sink), prefix_(prefix)
     {
     }
 

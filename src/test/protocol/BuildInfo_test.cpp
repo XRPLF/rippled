@@ -1,4 +1,4 @@
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/BuildInfo.h>
 
 namespace xrpl {
@@ -53,13 +53,13 @@ public:
     }
 
     void
-    testIsXrpldVersion()
+    testIsRippledVersion()
     {
-        testcase("IsXrpldVersion");
+        testcase("IsRippledVersion");
         auto vFF = 0xFFFF'FFFF'FFFF'FFFFLLU;
-        BEAST_EXPECT(!BuildInfo::isXrpldVersion(vFF));
-        auto vXrpld = 0x183B'0000'0000'0000LLU;
-        BEAST_EXPECT(BuildInfo::isXrpldVersion(vXrpld));
+        BEAST_EXPECT(!BuildInfo::isRippledVersion(vFF));
+        auto vRippled = 0x183B'0000'0000'0000LLU;
+        BEAST_EXPECT(BuildInfo::isRippledVersion(vRippled));
     }
 
     void
@@ -83,7 +83,7 @@ public:
     run() override
     {
         testEncodeSoftwareVersion();
-        testIsXrpldVersion();
+        testIsRippledVersion();
         testIsNewerVersion();
     }
 };

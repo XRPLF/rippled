@@ -33,7 +33,7 @@ public:
     {
         mData.resize(size);
 
-        if (size != 0u)
+        if (size)
         {
             XRPL_ASSERT(data, "xrpl::Serializer::Serializer(void const*) : non-null input");
             std::memcpy(mData.data(), data, size);

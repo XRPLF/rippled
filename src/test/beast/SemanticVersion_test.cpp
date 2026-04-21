@@ -1,7 +1,5 @@
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/beast/unit_test/suite.h>
-
-#include <string>
+#include <xrpl/beast/unit_test.h>
 
 namespace beast {
 

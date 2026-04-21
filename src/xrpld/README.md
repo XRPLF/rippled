@@ -1,4 +1,4 @@
-# XRPL Source Guidelines
+# Ripple Source Guidelines
 
 Each folder contains a single module following the newest style:
 

@@ -1,24 +1,9 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/envconfig.h>
-#include <test/jtx/last_ledger_sequence.h>
-#include <test/jtx/noop.h>
-#include <test/jtx/seq.h>
-#include <test/jtx/ter.h>
-
-#include <xrpld/core/Config.h>
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/protocol/TER.h>
 
-#include <memory>
-#include <vector>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 struct Transaction_ordering_test : public beast::unit_test::suite
 {
@@ -149,4 +134,5 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Transaction_ordering, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

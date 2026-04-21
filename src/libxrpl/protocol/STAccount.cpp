@@ -1,5 +1,3 @@
-#include <xrpl/protocol/STAccount.h>
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
@@ -7,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 

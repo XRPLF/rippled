@@ -1,23 +1,11 @@
-#include <xrpl/tx/paths/RippleCalc.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STPathSet.h>
-#include <xrpl/protocol/TER.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/tx/paths/detail/FlowDebugInfo.h>
 
-#include <exception>
-#include <optional>
-
-namespace xrpl::path {
+namespace xrpl {
+namespace path {
 
 RippleCalc::Output
 RippleCalc::rippleCalculate(
@@ -66,7 +54,7 @@ RippleCalc::rippleCalculate(
 
         auto const sendMax = [&]() -> std::optional<STAmount> {
             if (saMaxAmountReq >= beast::zero ||
-                !equalTokens(saMaxAmountReq.asset(), saDstAmountReq.asset()) ||
+                saMaxAmountReq.getCurrency() != saDstAmountReq.getCurrency() ||
                 saMaxAmountReq.getIssuer() != uSrcAccountID)
             {
                 return saMaxAmountReq;
@@ -112,4 +100,5 @@ RippleCalc::rippleCalculate(
     return flowOut;
 }
 
-}  // namespace xrpl::path
+}  // namespace path
+}  // namespace xrpl

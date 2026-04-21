@@ -1,22 +1,8 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/TxMeta.h>
-#include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/jss.h>
+namespace xrpl {
 
-#include <memory>
-#include <optional>
-
-namespace xrpl::RPC {
+namespace RPC {
 
 bool
 canHaveMPTokenIssuanceID(
@@ -37,7 +23,7 @@ canHaveMPTokenIssuanceID(
     return true;
 }
 
-std::optional<MPTID>
+std::optional<uint192>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
@@ -62,9 +48,10 @@ insertMPTokenIssuanceID(
     if (!canHaveMPTokenIssuanceID(transaction, transactionMeta))
         return;
 
-    std::optional<MPTID> result = getIDFromCreatedIssuance(transactionMeta);
+    std::optional<uint192> result = getIDFromCreatedIssuance(transactionMeta);
     if (result)
         response[jss::mpt_issuance_id] = to_string(result.value());
 }
 
-}  // namespace xrpl::RPC
+}  // namespace RPC
+}  // namespace xrpl

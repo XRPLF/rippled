@@ -5,7 +5,8 @@
 #include <memory>
 #include <string>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 /** A collector front-end that manages a group of metrics. */
 class Group : public Collector
@@ -18,4 +19,5 @@ public:
     name() const = 0;
 };
 
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

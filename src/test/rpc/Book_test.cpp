@@ -1,39 +1,17 @@
-#include <test/jtx/Env.h>
+#include <test/jtx.h>
 #include <test/jtx/WSClient.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/domain.h>
-#include <test/jtx/envconfig.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/permissioned_dex.h>
-#include <test/jtx/rate.h>
-#include <test/jtx/require.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
 
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <chrono>
-#include <memory>
-#include <optional>
-#include <string>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class Book_test : public beast::unit_test::suite
 {
@@ -962,7 +940,7 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == 1);
         auto const jrOffer = jrr[jss::offers][0u];
         BEAST_EXPECT(jrOffer[sfAccount.fieldName] == alice.human());
-        BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD));
+        BEAST_EXPECT(jrOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD.issue()));
         BEAST_EXPECT(jrOffer[sfBookNode.fieldName] == "0");
         BEAST_EXPECT(jrOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrOffer[sfLedgerEntryType.fieldName] == jss::Offer);
@@ -1006,7 +984,7 @@ public:
         BEAST_EXPECT(jrr[jss::offers].size() == 2);
         auto const jrNextOffer = jrr[jss::offers][1u];
         BEAST_EXPECT(jrNextOffer[sfAccount.fieldName] == bob.human());
-        BEAST_EXPECT(jrNextOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD));
+        BEAST_EXPECT(jrNextOffer[sfBookDirectory.fieldName] == getBookDir(env, XRP, USD.issue()));
         BEAST_EXPECT(jrNextOffer[sfBookNode.fieldName] == "0");
         BEAST_EXPECT(jrNextOffer[jss::Flags] == 0);
         BEAST_EXPECT(jrNextOffer[sfLedgerEntryType.fieldName] == jss::Offer);
@@ -1847,4 +1825,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(Book, rpc, xrpl, 1);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

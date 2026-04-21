@@ -3,7 +3,6 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 
@@ -17,7 +16,7 @@ class QualityFunction;
  * methods for use in generic BookStep methods. AMMOffer amounts
  * are changed indirectly in BookStep limiting steps.
  */
-template <StepAmount TIn, StepAmount TOut>
+template <typename TIn, typename TOut>
 class AMMOffer
 {
 private:
@@ -53,11 +52,8 @@ public:
         return quality_;
     }
 
-    Asset const&
-    assetIn() const;
-
-    Asset const&
-    assetOut() const;
+    Issue const&
+    issueIn() const;
 
     AccountID const&
     owner() const;
@@ -103,8 +99,7 @@ public:
     static TER
     send(Args&&... args)
     {
-        return accountSend(
-            std::forward<Args>(args)..., WaiveTransferFee::Yes, AllowMPTOverflow::Yes);
+        return accountSend(std::forward<Args>(args)..., WaiveTransferFee::Yes);
     }
 
     bool

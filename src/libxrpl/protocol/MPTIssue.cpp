@@ -1,27 +1,19 @@
-#include <xrpl/protocol/MPTIssue.h>
-
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_errors.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
 #include <cstdint>
-#include <ostream>
 #include <stdexcept>
 #include <string>
 
 namespace xrpl {
 
 MPTIssue::MPTIssue(MPTID const& issuanceID) : mptID_(issuanceID)
-{
-}
-
-MPTIssue::MPTIssue(std::uint32_t sequence, AccountID const& account)
-    : MPTIssue(xrpl::makeMptID(sequence, account))
 {
 }
 
@@ -92,13 +84,6 @@ mptIssueFromJson(Json::Value const& v)
     }
 
     return MPTIssue{id};
-}
-
-std::ostream&
-operator<<(std::ostream& os, MPTIssue const& x)
-{
-    os << to_string(x);
-    return os;
 }
 
 }  // namespace xrpl

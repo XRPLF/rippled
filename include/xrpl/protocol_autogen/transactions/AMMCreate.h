@@ -21,7 +21,7 @@ class AMMCreateBuilder;
  * Type: ttAMM_CREATE (35)
  * Delegable: Delegation::delegable
  * Amendment: featureAMM
- * Privileges: createPseudoAcct | mayCreateMPT
+ * Privileges: createPseudoAcct
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMCreateBuilder to construct new transactions.
@@ -49,7 +49,6 @@ public:
 
     /**
      * @brief Get sfAmount (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -61,7 +60,6 @@ public:
 
     /**
      * @brief Get sfAmount2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -131,7 +129,6 @@ public:
 
     /**
      * @brief Set sfAmount (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMCreateBuilder&
@@ -143,7 +140,6 @@ public:
 
     /**
      * @brief Set sfAmount2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMCreateBuilder&

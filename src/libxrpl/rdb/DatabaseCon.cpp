@@ -1,18 +1,13 @@
-#include <xrpl/rdb/DatabaseCon.h>
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <chrono>
-#include <cstdint>
+#include <boost/algorithm/string.hpp>
+#include <boost/format.hpp>
+
 #include <memory>
-#include <mutex>
-#include <stdexcept>
-#include <string>
-#include <thread>
 #include <unordered_map>
-#include <vector>
 
 namespace xrpl {
 

@@ -1,15 +1,9 @@
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/json/json_value.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/protocol/XRPAmount.h>
 
-#include <cstdint>
-#include <limits>
-#include <type_traits>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class units_test : public beast::unit_test::suite
 {
@@ -341,4 +335,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(units, basics, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

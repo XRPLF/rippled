@@ -101,7 +101,10 @@ struct match_peer
     bool
     operator()(std::shared_ptr<Peer> const& peer) const
     {
-        return (matchPeer != nullptr) && (peer.get() == matchPeer);
+        if (matchPeer && (peer.get() == matchPeer))
+            return true;
+
+        return false;
     }
 };
 
@@ -143,7 +146,10 @@ struct peer_in_set
     bool
     operator()(std::shared_ptr<Peer> const& peer) const
     {
-        return peerSet.contains(peer->id());
+        if (peerSet.count(peer->id()) == 0)
+            return false;
+
+        return true;
     }
 };
 

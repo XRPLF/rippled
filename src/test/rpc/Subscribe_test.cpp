@@ -1,60 +1,22 @@
-#include <test/jtx/Env.h>
+#include <test/jtx.h>
 #include <test/jtx/WSClient.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>  // IWYU pragma: keep
-#include <test/jtx/paths.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/permissioned_dex.h>
-#include <test/jtx/sendmax.h>
-#include <test/jtx/seq.h>
-#include <test/jtx/sig.h>
-#include <test/jtx/tags.h>
-#include <test/jtx/token.h>
-#include <test/jtx/txflags.h>
 
 #include <xrpld/app/main/LoadManager.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/strHex.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/STValidation.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <algorithm>
-#include <array>
-#include <chrono>
-#include <cstddef>
-#include <cstdint>
-#include <initializer_list>
-#include <iterator>
-#include <memory>
-#include <optional>
-#include <string>
 #include <tuple>
-#include <utility>
-#include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class Subscribe_test : public beast::unit_test::suite
 {
@@ -821,9 +783,9 @@ public:
         using namespace jtx;
         using IdxHashVec = std::vector<std::tuple<int, std::string, bool, int>>;
 
-        Account const alice("alice");
+        Account alice("alice");
         Account const bob("bob");
-        Account const carol("carol");
+        Account carol("carol");
         Account const david("david");
         ///////////////////////////////////////////////////////////////////
 
@@ -1369,8 +1331,8 @@ public:
                         return nftID;
                     });
                 // Sort both array to prepare for comparison
-                std::ranges::sort(metaIDs);
-                std::ranges::sort(actualNftIDs);
+                std::sort(metaIDs.begin(), metaIDs.end());
+                std::sort(actualNftIDs.begin(), actualNftIDs.end());
 
                 // Make sure the expect number of NFTs is correct
                 BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
@@ -1531,4 +1493,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Subscribe, rpc, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

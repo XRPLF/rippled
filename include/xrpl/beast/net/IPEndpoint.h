@@ -8,7 +8,8 @@
 #include <optional>
 #include <string>
 
-namespace beast::IP {
+namespace beast {
+namespace IP {
 
 using Port = std::uint16_t;
 
@@ -20,7 +21,7 @@ public:
     Endpoint();
 
     /** Create an endpoint from the address and optional port. */
-    explicit Endpoint(Address addr, Port port = 0);
+    explicit Endpoint(Address const& addr, Port port = 0);
 
     /** Create an Endpoint from a string.
         If the port is omitted, the endpoint will have a zero port.
@@ -68,12 +69,12 @@ public:
     {
         return m_addr.is_v6();
     }
-    AddressV4
+    AddressV4 const
     to_v4() const
     {
         return m_addr.to_v4();
     }
-    AddressV6
+    AddressV6 const
     to_v6() const
     {
         return m_addr.to_v6();
@@ -183,7 +184,8 @@ operator<<(OutputStream& os, Endpoint const& endpoint)
 std::istream&
 operator>>(std::istream& is, Endpoint& endpoint);
 
-}  // namespace beast::IP
+}  // namespace IP
+}  // namespace beast
 
 //------------------------------------------------------------------------------
 

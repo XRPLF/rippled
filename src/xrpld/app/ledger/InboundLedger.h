@@ -36,7 +36,7 @@ public:
         clock_type&,
         std::unique_ptr<PeerSet> peerSet);
 
-    ~InboundLedger() override;
+    ~InboundLedger();
 
     // Called when another attempt is made to fetch this same ledger
     void

@@ -5,48 +5,28 @@
 #include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/SlabAllocator.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/unit_test/suite_info.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
 #include <xrpl/protocol/BuildInfo.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/server/Vacuum.h>
 
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/process/v1/args.hpp>
-#include <boost/process/v1/child.hpp>  // IWYU pragma: keep
+#include <boost/process/v1/child.hpp>
 #include <boost/process/v1/exe.hpp>
-#include <boost/program_options/options_description.hpp>
-#include <boost/program_options/positional_options.hpp>
-#include <boost/program_options/value_semantic.hpp>
-#include <boost/program_options/variables_map.hpp>
-
-#include <algorithm>
-#include <atomic>
-#include <cstdint>
-#include <exception>
-#include <iostream>
-#include <memory>
-#include <ostream>
-#include <string>
-#include <vector>
 
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
+#include <boost/algorithm/string.hpp>
+#include <boost/program_options.hpp>
 
 #include <google/protobuf/stubs/common.h>
 
 #include <cstdlib>
+#include <fstream>
 #include <stdexcept>
 #include <utility>
 
@@ -69,7 +49,7 @@
 #endif
 
 #ifdef ENABLE_VOIDSTAR
-#include <antithesis_instrumentation.h>
+#include "antithesis_instrumentation.h"
 #endif
 
 namespace po = boost::program_options;
@@ -208,7 +188,7 @@ public:
         std::vector<std::string> v;
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
         selectors_.reserve(v.size());
-        std::ranges::for_each(v, [this](std::string s) {
+        std::for_each(v.begin(), v.end(), [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
                 selectors_.emplace_back(beast::unit_test::selector::automatch, s);
@@ -490,8 +470,8 @@ run(int argc, char** argv)
     }
     catch (std::exception const& ex)
     {
-        std::cerr << "xrpld: " << ex.what() << std::endl;
-        std::cerr << "Try 'xrpld --help' for a list of options." << std::endl;
+        std::cerr << "rippled: " << ex.what() << std::endl;
+        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
         return 1;
     }
 
@@ -503,7 +483,7 @@ run(int argc, char** argv)
 
     if (vm.contains("version"))
     {
-        std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
+        std::cout << "rippled version " << BuildInfo::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
@@ -512,8 +492,8 @@ run(int argc, char** argv)
 #ifndef ENABLE_TESTS
     if (vm.count("unittest") || vm.count("unittest-child"))
     {
-        std::cerr << "xrpld: Tests disabled in this build." << std::endl;
-        std::cerr << "Try 'xrpld --help' for a list of options." << std::endl;
+        std::cerr << "rippled: Tests disabled in this build." << std::endl;
+        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
         return 1;
     }
 #else
@@ -549,7 +529,7 @@ run(int argc, char** argv)
     if (vm.contains("unittest-jobs"))
     {
         // unittest jobs only makes sense with `unittest`
-        std::cerr << "xrpld: '--unittest-jobs' specified without "
+        std::cerr << "rippled: '--unittest-jobs' specified without "
                      "'--unittest'.\n";
         std::cerr << "To run the unit tests the '--unittest' option must "
                      "be present.\n";
@@ -813,7 +793,7 @@ run(int argc, char** argv)
     }
 
     // We have an RPC command to process:
-    beast::setCurrentThreadName("xrpld: rpc");
+    beast::setCurrentThreadName("rippled: rpc");
     return RPCCall::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP

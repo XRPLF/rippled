@@ -4,7 +4,10 @@
 
 #include <date/date.h>
 
-namespace xrpl::test::jtx::oracle {
+namespace xrpl {
+namespace test {
+namespace jtx {
+namespace oracle {
 
 using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
 using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
@@ -55,7 +58,7 @@ struct UpdateArg
 {
     std::optional<AccountID> owner = std::nullopt;
     std::optional<AnyValue> documentID = std::nullopt;
-    DataSeries series = {};  // NOLINT(readability-redundant-member-init)
+    DataSeries series = {};
     std::optional<AnyValue> assetClass = std::nullopt;
     std::optional<AnyValue> provider = std::nullopt;
     std::optional<AnyValue> uri = "URI";
@@ -78,7 +81,7 @@ struct RemoveArg
     std::optional<ter> const& err = std::nullopt;
 };
 
-// Simulate testStartTime as 10'000s from XRPL epoch time to make
+// Simulate testStartTime as 10'000s from Ripple epoch time to make
 // LastUpdateTime validation to work and to make unit-test consistent.
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime
@@ -174,4 +177,7 @@ public:
     }
 };
 
-}  // namespace xrpl::test::jtx::oracle
+}  // namespace oracle
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

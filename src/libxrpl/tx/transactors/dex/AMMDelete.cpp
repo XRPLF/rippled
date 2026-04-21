@@ -1,27 +1,16 @@
-#include <xrpl/tx/transactors/dex/AMMDelete.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/Transactor.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/dex/AMMDelete.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
 bool
 AMMDelete::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
-    return ctx.rules.enabled(featureMPTokensV2) ||
-        (!ctx.tx[sfAsset].holds<MPTIssue>() && !ctx.tx[sfAsset2].holds<MPTIssue>());
+    return ammEnabled(ctx.rules);
 }
 
 NotTEC
@@ -54,7 +43,8 @@ AMMDelete::doApply()
     // as we go on processing transactions.
     Sandbox sb(&ctx_.view());
 
-    auto const ter = deleteAMMAccount(sb, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], j_);
+    auto const ter =
+        deleteAMMAccount(sb, ctx_.tx[sfAsset].get<Issue>(), ctx_.tx[sfAsset2].get<Issue>(), j_);
     if (isTesSuccess(ter) || ter == tecINCOMPLETE)
         sb.apply(ctx_.rawView());
 

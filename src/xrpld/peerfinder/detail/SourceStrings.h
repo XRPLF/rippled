@@ -4,7 +4,8 @@
 
 #include <memory>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** Provides addresses from a static set of strings. */
 class SourceStrings : public Source
@@ -18,4 +19,5 @@ public:
     New(std::string const& name, Strings const& strings);
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

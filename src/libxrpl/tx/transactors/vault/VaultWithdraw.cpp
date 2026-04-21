@@ -1,24 +1,15 @@
-#include <xrpl/tx/transactors/vault/VaultWithdraw.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <stdexcept>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/vault/VaultWithdraw.h>
 
 namespace xrpl {
 
@@ -52,10 +43,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    auto const amount = ctx.tx[sfAmount];
+    auto const assets = ctx.tx[sfAmount];
     auto const vaultAsset = vault->at(sfAsset);
     auto const vaultShare = vault->at(sfShareMPTID);
-    if (amount.asset() != vaultAsset && amount.asset() != vaultShare)
+    if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
         return tecWRONG_ASSET;
 
     auto const& vaultAccount = vault->at(sfAccount);
@@ -76,53 +67,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         // LCOV_EXCL_STOP
     }
 
-    if (ctx.view.rules().enabled(fixSecurity3_1_3) && amount.asset() == vaultShare)
-    {
-        // Post-fixSecurity3_1_3: if the user specified shares, convert
-        // to the equivalent asset amount before checking withdrawal
-        // limits. Pre-amendment the limit check was skipped for
-        // share-denominated withdrawals.
-        auto const sleIssuance = ctx.view.read(keylet::mptIssuance(vaultShare));
-        if (!sleIssuance)
-        {
-            // LCOV_EXCL_START
-            JLOG(ctx.j.error()) << "VaultWithdraw: missing issuance of vault shares.";
-            return tefINTERNAL;
-            // LCOV_EXCL_STOP
-        }
-
-        try
-        {
-            auto const maybeAssets = sharesToAssetsWithdraw(vault, sleIssuance, amount);
-            if (!maybeAssets)
-                return tefINTERNAL;  // LCOV_EXCL_LINE
-
-            if (auto const ret = canWithdraw(
-                    ctx.view,
-                    account,
-                    dstAcct,
-                    *maybeAssets,
-                    ctx.tx.isFieldPresent(sfDestinationTag)))
-                return ret;
-        }
-        catch (std::overflow_error const&)
-        {
-            // It's easy to hit this exception from Number with large enough Scale
-            // so we avoid spamming the log and only use debug here.
-            JLOG(ctx.j.debug())  //
-                << "VaultWithdraw: overflow error with"
-                << " scale=" << (int)vault->at(sfScale)  //
-                << ", assetsTotal=" << vault->at(sfAssetsTotal)
-                << ", sharesTotal=" << sleIssuance->at(sfOutstandingAmount)
-                << ", amount=" << amount.value();
-            return tecPATH_DRY;
-        }
-    }
-    else
-    {
-        if (auto const ret = canWithdraw(ctx.view, ctx.tx))
-            return ret;
-    }
+    if (auto const ret = canWithdraw(ctx.view, ctx.tx))
+        return ret;
 
     // If sending to Account (i.e. not a transfer), we will also create (only
     // if authorized) a trust line or MPToken as needed, in doApply().
@@ -137,7 +83,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Cannot return shares to the vault, if the underlying asset was frozen for
     // the submitter
-    if (auto const ret = checkFrozen(ctx.view, account, Asset{vaultShare}))
+    if (auto const ret = checkFrozen(ctx.view, account, vaultShare))
         return ret;
 
     return tesSUCCESS;

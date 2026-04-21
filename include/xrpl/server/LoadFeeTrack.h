@@ -60,8 +60,8 @@ public:
         return clusterTxnLoadFee_;
     }
 
-    static std::uint32_t
-    getLoadBase()
+    std::uint32_t
+    getLoadBase() const
     {
         return lftNormalFee;
     }

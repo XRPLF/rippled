@@ -1,19 +1,22 @@
 #include <xrpl/beast/unit_test/suite.h>
 // DO NOT REMOVE
+#include <test/jtx.h>
 #include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/mpt.h>
 
-#include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/protocol/Units.h>
+#include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
+#include <xrpl/tx/transactors/lending/LoanSet.h>
+#include <xrpl/tx/transactors/system/Batch.h>
 
-#include <cstdint>
 #include <string>
 #include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class LendingHelpers_test : public beast::unit_test::suite
 {
@@ -262,7 +265,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const expectedOverpaymentManagementFee = Number{10};   // 10% of 100
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
-        auto const components = xrpl::detail::computeOverpaymentComponents(
+        auto const components = detail::computeOverpaymentComponents(
             IOU,
             loanScale,
             overpayment,
@@ -1208,4 +1211,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LendingHelpers, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

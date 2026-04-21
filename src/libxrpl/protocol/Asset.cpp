@@ -1,16 +1,12 @@
-#include <xrpl/protocol/Asset.h>
-
-#include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <ostream>
 #include <stdexcept>
 #include <string>
 #include <variant>
@@ -64,13 +60,6 @@ assetFromJson(Json::Value const& v)
     if (v.isMember(jss::currency))
         return issueFromJson(v);
     return mptIssueFromJson(v);
-}
-
-std::ostream&
-operator<<(std::ostream& os, Asset const& x)
-{
-    std::visit([&]<ValidIssueType TIss>(TIss const& issue) { os << issue; }, x.value());
-    return os;
 }
 
 }  // namespace xrpl

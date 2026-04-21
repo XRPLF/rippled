@@ -251,7 +251,7 @@ private:
         }
     };
 
-    using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
+    typedef typename std::conditional<IsKeyCache, KeyOnlyEntry, ValueEntry>::type Entry;
 
     using KeyOnlyCacheType = hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
 

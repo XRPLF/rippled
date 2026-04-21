@@ -11,7 +11,9 @@
 #include <ostream>
 #include <tuple>
 
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 
 //  A collector is any class that implements
 //
@@ -132,9 +134,7 @@ struct SimDurationCollector
             init = true;
         }
         else
-        {
             stop = when;
-        }
     }
 };
 
@@ -631,7 +631,7 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-            closeJumps.emplace_back(Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
+            closeJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
     }
 
     void
@@ -639,11 +639,10 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-        {
-            fullyValidatedJumps.emplace_back(
-                Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
-        }
+            fullyValidatedJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
     }
 };
 
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

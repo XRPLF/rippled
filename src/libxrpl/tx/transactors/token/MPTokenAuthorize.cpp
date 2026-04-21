@@ -1,18 +1,11 @@
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
-
-#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <cstdint>
-#include <memory>
+#include <xrpl/protocol/st.h>
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 namespace xrpl {
 
@@ -135,6 +128,32 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     // can only be created if the Vault amendment is enabled.
     if (isPseudoAccount(ctx.view, *holderID, {&sfVaultID, &sfLoanBrokerID}))
         return tecNO_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
+MPTokenAuthorize::createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t const flags)
+{
+    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+
+    auto const ownerNode =
+        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+
+    if (!ownerNode)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    auto mptoken = std::make_shared<SLE>(mptokenKey);
+    (*mptoken)[sfAccount] = account;
+    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+    (*mptoken)[sfFlags] = flags;
+    (*mptoken)[sfOwnerNode] = *ownerNode;
+
+    view.insert(mptoken);
 
     return tesSUCCESS;
 }

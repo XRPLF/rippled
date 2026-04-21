@@ -1,6 +1,8 @@
 #include <xrpl/beast/insight/Collector.h>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 Collector::~Collector() = default;
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

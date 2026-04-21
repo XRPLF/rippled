@@ -3,27 +3,37 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <stdexcept>
-#include <utility>
 
 namespace xrpl {
 
-template <StepAmount TIn, StepAmount TOut>
-class TOffer
+template <class TIn, class TOut>
+class TOfferBase
+{
+protected:
+    Issue issIn_;
+    Issue issOut_;
+};
+
+template <>
+class TOfferBase<STAmount, STAmount>
+{
+public:
+    explicit TOfferBase() = default;
+};
+
+template <class TIn = STAmount, class TOut = STAmount>
+class TOffer : private TOfferBase<TIn, TOut>
 {
 private:
     SLE::pointer m_entry;
     Quality m_quality{};
     AccountID m_account;
-    Asset assetIn_;
-    Asset assetOut_;
 
     TAmounts<TIn, TOut> m_amounts{};
     void
@@ -32,7 +42,7 @@ private:
 public:
     TOffer() = default;
 
-    TOffer(SLE::pointer entry, Quality quality);
+    TOffer(SLE::pointer const& entry, Quality quality);
 
     /** Returns the quality of the offer.
         Conceptually, the quality is the ratio of output to input currency.
@@ -103,10 +113,10 @@ public:
         return m_entry->key();
     }
 
-    Asset const&
-    assetIn() const;
-    Asset const&
-    assetOut() const;
+    Issue const&
+    issueIn() const;
+    Issue const&
+    issueOut() const;
 
     TAmounts<TIn, TOut>
     limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
@@ -121,8 +131,8 @@ public:
     bool
     isFunded() const
     {
-        // Offer owner is issuer; they have unlimited funds if IOU
-        return m_account == assetOut_.getIssuer() && assetOut_.holds<Issue>();
+        // Offer owner is issuer; they have unlimited funds
+        return m_account == issueOut().account;
     }
 
     static std::pair<std::uint32_t, std::uint32_t>
@@ -157,42 +167,43 @@ public:
     }
 };
 
-template <StepAmount TIn, StepAmount TOut>
-TOffer<TIn, TOut>::TOffer(SLE::pointer entry, Quality quality)
-    : m_entry(std::move(entry)), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
+using Offer = TOffer<>;
+
+template <class TIn, class TOut>
+TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
+    : m_entry(entry), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
 {
     auto const tp = m_entry->getFieldAmount(sfTakerPays);
     auto const tg = m_entry->getFieldAmount(sfTakerGets);
     m_amounts.in = toAmount<TIn>(tp);
     m_amounts.out = toAmount<TOut>(tg);
-    assetIn_ = tp.asset();
-    assetOut_ = tg.asset();
+    this->issIn_ = tp.issue();
+    this->issOut_ = tg.issue();
 }
 
-template <StepAmount TIn, StepAmount TOut>
+template <>
+inline TOffer<STAmount, STAmount>::TOffer(SLE::pointer const& entry, Quality quality)
+    : m_entry(entry)
+    , m_quality(quality)
+    , m_account(m_entry->getAccountID(sfAccount))
+    , m_amounts(m_entry->getFieldAmount(sfTakerPays), m_entry->getFieldAmount(sfTakerGets))
+{
+}
+
+template <class TIn, class TOut>
 void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
-    if constexpr (std::is_same_v<TIn, XRPAmount>)
-    {
-        m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
-    }
-    else
-    {
-        m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, assetIn_));
-    }
-
-    if constexpr (std::is_same_v<TOut, XRPAmount>)
-    {
-        m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
-    }
-    else
-    {
-        m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, assetOut_));
-    }
+    // LCOV_EXCL_START
+#ifdef _MSC_VER
+    UNREACHABLE("xrpl::TOffer::setFieldAmounts : must be specialized");
+#else
+    static_assert(sizeof(TOut) == -1, "Must be specialized");
+#endif
+    // LCOV_EXCL_STOP
 }
 
-template <StepAmount TIn, StepAmount TOut>
+template <class TIn, class TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp)
     const
@@ -202,46 +213,90 @@ TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& 
     return quality().ceil_out_strict(offerAmount, limit, roundUp);
 }
 
-template <StepAmount TIn, StepAmount TOut>
+template <class TIn, class TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp)
     const
 {
     if (auto const& rules = getCurrentTransactionRules();
         rules && rules->enabled(fixReducedOffersV2))
-    {
         // It turns out that the ceil_in implementation has some slop in
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
         // an amendment.
         return quality().ceil_in_strict(offerAmount, limit, roundUp);
-    }
     return m_quality.ceil_in(offerAmount, limit);
 }
 
-template <StepAmount TIn, StepAmount TOut>
+template <class TIn, class TOut>
 template <typename... Args>
 TER
 TOffer<TIn, TOut>::send(Args&&... args)
 {
-    return accountSend(std::forward<Args>(args)..., WaiveTransferFee::No, AllowMPTOverflow::Yes);
+    return accountSend(std::forward<Args>(args)...);
 }
 
-template <StepAmount TIn, StepAmount TOut>
-Asset const&
-TOffer<TIn, TOut>::assetIn() const
+template <>
+inline void
+TOffer<STAmount, STAmount>::setFieldAmounts()
 {
-    return assetIn_;
+    m_entry->setFieldAmount(sfTakerPays, m_amounts.in);
+    m_entry->setFieldAmount(sfTakerGets, m_amounts.out);
 }
 
-template <StepAmount TIn, StepAmount TOut>
-Asset const&
-TOffer<TIn, TOut>::assetOut() const
+template <>
+inline void
+TOffer<IOUAmount, IOUAmount>::setFieldAmounts()
 {
-    return assetOut_;
+    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, issIn_));
+    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, issOut_));
 }
 
-template <StepAmount TIn, StepAmount TOut>
+template <>
+inline void
+TOffer<IOUAmount, XRPAmount>::setFieldAmounts()
+{
+    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, issIn_));
+    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
+}
+
+template <>
+inline void
+TOffer<XRPAmount, IOUAmount>::setFieldAmounts()
+{
+    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
+    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, issOut_));
+}
+
+template <class TIn, class TOut>
+Issue const&
+TOffer<TIn, TOut>::issueIn() const
+{
+    return this->issIn_;
+}
+
+template <>
+inline Issue const&
+TOffer<STAmount, STAmount>::issueIn() const
+{
+    return m_amounts.in.issue();
+}
+
+template <class TIn, class TOut>
+Issue const&
+TOffer<TIn, TOut>::issueOut() const
+{
+    return this->issOut_;
+}
+
+template <>
+inline Issue const&
+TOffer<STAmount, STAmount>::issueOut() const
+{
+    return m_amounts.out.issue();
+}
+
+template <class TIn, class TOut>
 inline std::ostream&
 operator<<(std::ostream& os, TOffer<TIn, TOut> const& offer)
 {

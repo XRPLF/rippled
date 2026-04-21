@@ -4,7 +4,8 @@
 
 #include <memory>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 /** A metric for measuring an integral value.
 
@@ -22,7 +23,9 @@ public:
     /** Create a null metric.
         A null metric reports no information.
     */
-    Counter() = default;
+    Counter()
+    {
+    }
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
@@ -88,4 +91,5 @@ private:
     std::shared_ptr<CounterImpl> m_impl;
 };
 
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

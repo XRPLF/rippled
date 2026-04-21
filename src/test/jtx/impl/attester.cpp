@@ -1,16 +1,13 @@
 #include <test/jtx/attester.h>
 
-#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-#include <cstdint>
-#include <optional>
-
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 Buffer
 sign_claim_attestation(
@@ -54,4 +51,6 @@ sign_create_account_attestation(
     return sign(pk, sk, makeSlice(toSign));
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

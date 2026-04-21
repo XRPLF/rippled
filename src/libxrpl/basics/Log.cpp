@@ -1,5 +1,4 @@
 #include <xrpl/basics/Log.h>
-
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -20,8 +19,8 @@
 
 namespace xrpl {
 
-Logs::Sink::Sink(std::string partition, beast::severities::Severity thresh, Logs& logs)
-    : beast::Journal::Sink(thresh, false), logs_(logs), partition_(std::move(partition))
+Logs::Sink::Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs)
+    : beast::Journal::Sink(thresh, false), logs_(logs), partition_(partition)
 {
 }
 

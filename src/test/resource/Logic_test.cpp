@@ -1,27 +1,18 @@
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/insight/NullCollector.h>
-#include <xrpl/beast/net/IPAddressV4.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/resource/Charge.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/resource/Consumer.h>
-#include <xrpl/resource/Disposition.h>
-#include <xrpl/resource/Gossip.h>
+#include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
-#include <xrpl/resource/detail/Tuning.h>
 
 #include <boost/utility/base_from_member.hpp>
 
-#include <chrono>
-#include <cstdint>
 #include <functional>
-#include <string>
 
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 class ResourceManager_test : public beast::unit_test::suite
 {
@@ -291,4 +282,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ResourceManager, resource, xrpl);
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

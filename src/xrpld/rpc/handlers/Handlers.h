@@ -1,6 +1,6 @@
 #pragma once
 
-#include <xrpld/rpc/handlers/ledger/Ledger.h>
+#include <xrpld/rpc/handlers/LedgerHandler.h>
 
 namespace xrpl {
 
@@ -19,7 +19,7 @@ doAccountObjects(RPC::JsonContext&);
 Json::Value
 doAccountOffers(RPC::JsonContext&);
 Json::Value
-doAccountTx(RPC::JsonContext&);
+doAccountTxJson(RPC::JsonContext&);
 Json::Value
 doAMMInfo(RPC::JsonContext&);
 Json::Value

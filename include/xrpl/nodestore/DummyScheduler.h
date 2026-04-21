@@ -2,14 +2,15 @@
 
 #include <xrpl/nodestore/Scheduler.h>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+namespace NodeStore {
 
 /** Simple NodeStore Scheduler that just performs the tasks synchronously. */
 class DummyScheduler : public Scheduler
 {
 public:
     DummyScheduler() = default;
-    ~DummyScheduler() override = default;
+    ~DummyScheduler() = default;
     void
     scheduleTask(Task& task) override;
     void
@@ -18,4 +19,5 @@ public:
     onBatchWrite(BatchWriteReport const& report) override;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

@@ -1,52 +1,26 @@
-#include <xrpl/tx/transactors/dex/AMMBid.h>
-
-#include <xrpl/basics/Expected.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/AMMCore.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <optional>
-#include <set>
-#include <utility>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/dex/AMMBid.h>
+#include <xrpl/tx/transactors/dex/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
 bool
 AMMBid::checkExtraFeatures(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return false;
-
-    if (!ctx.rules.enabled(featureMPTokensV2) &&
-        (ctx.tx[sfAsset].holds<MPTIssue>() || ctx.tx[sfAsset2].holds<MPTIssue>()))
-        return false;
-
-    return true;
+    return ammEnabled(ctx.rules);
 }
 
 NotTEC
 AMMBid::preflight(PreflightContext const& ctx)
 {
-    if (auto const res = invalidAMMAssetPair(ctx.tx[sfAsset], ctx.tx[sfAsset2]))
+    if (auto const res =
+            invalidAMMAssetPair(ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
         JLOG(ctx.j.debug()) << "AMM Bid: Invalid asset pair.";
         return res;
@@ -136,7 +110,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
 
     if (bidMin)
     {
-        if (bidMin->asset() != lpTokens.asset())
+        if (bidMin->issue() != lpTokens.issue())
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
             return temBAD_AMM_TOKENS;
@@ -151,7 +125,7 @@ AMMBid::preclaim(PreclaimContext const& ctx)
     auto const bidMax = ctx.tx[~sfBidMax];
     if (bidMax)
     {
-        if (bidMax->asset() != lpTokens.asset())
+        if (bidMax->issue() != lpTokens.issue())
         {
             JLOG(ctx.j.debug()) << "AMM Bid: Invalid LPToken.";
             return temBAD_AMM_TOKENS;
@@ -226,7 +200,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         {
             auctionSlot.makeFieldAbsent(sfDiscountedFee);
         }
-        auctionSlot.setFieldAmount(sfPrice, toSTAmount(lpTokens.asset(), minPrice));
+        auctionSlot.setFieldAmount(sfPrice, toSTAmount(lpTokens.issue(), minPrice));
         if (ctx_.tx.isFieldPresent(sfAuthAccounts))
         {
             auctionSlot.setFieldArray(sfAuthAccounts, ctx_.tx.getFieldArray(sfAuthAccounts));
@@ -237,7 +211,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         }
         // Burn the remaining bid amount
         auto const saBurn =
-            adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.asset(), burn), IsDeposit::No);
+            adjustLPTokens(lptAMMBalance, toSTAmount(lptAMMBalance.issue(), burn), IsDeposit::No);
         if (saBurn >= lptAMMBalance)
         {
             // This error case should never occur.
@@ -247,7 +221,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             return tecINTERNAL;
             // LCOV_EXCL_STOP
         }
-        auto res = redeemIOU(sb, account_, saBurn, lpTokens.get<Issue>(), ctx_.journal);
+        auto res = redeemIOU(sb, account_, saBurn, lpTokens.issue(), ctx_.journal);
         if (!isTesSuccess(res))
         {
             JLOG(ctx_.journal.debug()) << "AMM Bid: failed to redeem.";
@@ -347,7 +321,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             sb,
             account_,
             auctionSlot[sfAccount],
-            toSTAmount(lpTokens.asset(), refund),
+            toSTAmount(lpTokens.issue(), refund),
             ctx_.journal);
         if (!isTesSuccess(res))
         {

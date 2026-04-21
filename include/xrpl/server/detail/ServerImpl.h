@@ -81,7 +81,7 @@ private:
 public:
     ServerImpl(Handler& handler, boost::asio::io_context& io_context, beast::Journal journal);
 
-    ~ServerImpl() override;
+    ~ServerImpl();
 
     beast::Journal
     journal() override
@@ -155,7 +155,7 @@ ServerImpl<Handler>::ports(std::vector<Port> const& ports)
             list_.push_back(sp);
 
             auto ep = sp->get_endpoint();
-            if (internalPort.port == 0u)
+            if (!internalPort.port)
                 internalPort.port = ep.port();
             eps.emplace(port.name, std::move(ep));
 

@@ -1,0 +1,111 @@
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/handlers/Handlers.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/jss.h>
+
+#include <optional>
+#include <string>
+#include <utility>
+
+namespace xrpl {
+
+Json::Value
+doPeerReservationsAdd(RPC::JsonContext& context)
+{
+    auto const& params = context.params;
+
+    if (!params.isMember(jss::public_key))
+        return RPC::missing_field_error(jss::public_key);
+
+    // Returning JSON from every function ruins any attempt to encapsulate
+    // the pattern of "get field F as type T, and diagnose an error if it is
+    // missing or malformed":
+    // - It is costly to copy whole JSON objects around just to check whether an
+    //   error code is present.
+    // - It is not as easy to read when cluttered by code to pack and unpack the
+    //   JSON object.
+    // - It is not as easy to write when you have to include all the packing and
+    //   unpacking code.
+    // Exceptions would be easier to use, but have a terrible cost for control
+    // flow. An error monad is purpose-built for this situation; it is
+    // essentially an optional (the "maybe monad" in Haskell) with a non-unit
+    // type for the failure case to capture more information.
+    if (!params[jss::public_key].isString())
+        return RPC::expected_field_error(jss::public_key, "a string");
+
+    // Same for the pattern of "if field F is present, make sure it has type T
+    // and get it".
+    std::string desc;
+    if (params.isMember(jss::description))
+    {
+        if (!params[jss::description].isString())
+            return RPC::expected_field_error(jss::description, "a string");
+        desc = params[jss::description].asString();
+    }
+
+    // channel_verify takes a key in both base58 and hex.
+    // @nikb prefers that we take only base58.
+    std::optional<PublicKey> optPk =
+        parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString());
+    if (!optPk)
+        return rpcError(rpcPUBLIC_MALFORMED);
+    PublicKey const& nodeId = *optPk;
+
+    auto const previous =
+        context.app.getPeerReservations().insert_or_assign(PeerReservation{nodeId, desc});
+
+    Json::Value result{Json::objectValue};
+    if (previous)
+    {
+        result[jss::previous] = previous->toJson();
+    }
+    return result;
+}
+
+Json::Value
+doPeerReservationsDel(RPC::JsonContext& context)
+{
+    auto const& params = context.params;
+
+    // We repeat much of the parameter parsing from `doPeerReservationsAdd`.
+    if (!params.isMember(jss::public_key))
+        return RPC::missing_field_error(jss::public_key);
+    if (!params[jss::public_key].isString())
+        return RPC::expected_field_error(jss::public_key, "a string");
+
+    std::optional<PublicKey> optPk =
+        parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString());
+    if (!optPk)
+        return rpcError(rpcPUBLIC_MALFORMED);
+    PublicKey const& nodeId = *optPk;
+
+    auto const previous = context.app.getPeerReservations().erase(nodeId);
+
+    Json::Value result{Json::objectValue};
+    if (previous)
+    {
+        result[jss::previous] = previous->toJson();
+    }
+    return result;
+}
+
+Json::Value
+doPeerReservationsList(RPC::JsonContext& context)
+{
+    auto const& reservations = context.app.getPeerReservations().list();
+    // Enumerate the reservations in context.app.getPeerReservations()
+    // as a Json::Value.
+    Json::Value result{Json::objectValue};
+    Json::Value& jaReservations = result[jss::reservations] = Json::arrayValue;
+    for (auto const& reservation : reservations)
+    {
+        jaReservations.append(reservation.toJson());
+    }
+    return result;
+}
+
+}  // namespace xrpl

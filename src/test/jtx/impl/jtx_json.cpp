@@ -1,17 +1,12 @@
 #include <test/jtx/jtx_json.h>
-
-#include <test/jtx/Env.h>
-#include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
-#include <xrpl/json/json_value.h>
 
-#include <string>
-#include <utility>
-
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 json::json(std::string const& s)
 {
@@ -35,4 +30,6 @@ json::operator()(Env&, JTx& jt) const
         jv[iter.key().asString()] = *iter;
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

@@ -2,7 +2,8 @@
 
 #include <xrpl/beast/insight/Collector.h>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 /** A Collector which does not collect metrics. */
 class NullCollector : public Collector
@@ -14,4 +15,5 @@ public:
     New();
 };
 
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

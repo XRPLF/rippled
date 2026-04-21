@@ -1,38 +1,18 @@
-
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/acctdelete.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/directory.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/noop.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
-#include <test/jtx/txflags.h>
+#include <test/jtx.h>
 
 #include <xrpl/basics/strHex.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstdint>
-#include <memory>
 #include <string_view>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 struct Credentials_test : public beast::unit_test::suite
 {
@@ -491,7 +471,7 @@ struct Credentials_test : public beast::unit_test::suite
             {
                 testcase("Credentials fail, expiration in the past.");
                 auto jv = credentials::create(subject, issuer, credType);
-                // current time in XRPL epoch - 1s
+                // current time in ripple epoch - 1s
                 uint32_t const t =
                     env.current()->header().parentCloseTime.time_since_epoch().count() - 1;
                 jv[sfExpiration.jsonName] = t;
@@ -832,7 +812,7 @@ struct Credentials_test : public beast::unit_test::suite
                 testcase("CredentialsDelete fail, time not expired yet.");
 
                 auto jv = credentials::create(subject, issuer, credType);
-                // current time in XRPL epoch + 1000s
+                // current time in ripple epoch + 1000s
                 uint32_t const t =
                     env.current()->header().parentCloseTime.time_since_epoch().count() + 1000;
                 jv[sfExpiration.jsonName] = t;
@@ -1048,4 +1028,5 @@ struct Credentials_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Credentials, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

@@ -21,7 +21,7 @@ namespace unit {
 struct dropTag;
 /** "fee levels" are used by the transaction queue to compare the relative
     cost of transactions that require different levels of effort to process.
-    See also: src/xrpld/app/misc/FeeEscalation.md#fee-level */
+    See also: src/ripple/app/misc/FeeEscalation.md#fee-level */
 struct feelevelTag;
 /** unitless values are plain scalars wrapped in a ValueUnit. They are
     used for calculations in this header. */
@@ -267,9 +267,7 @@ public:
     constexpr int
     signum() const noexcept
     {
-        if (value_ < 0)
-            return -1;
-        return value_ ? 1 : 0;
+        return (value_ < 0) ? -1 : (value_ ? 1 : 0);
     }
 
     /** Returns the number of drops */

@@ -3,6 +3,7 @@
 #include <gtest/gtest.h>
 
 #include <stdexcept>
+#include <string>
 
 using namespace xrpl;
 

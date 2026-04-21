@@ -1,6 +1,7 @@
 #include <xrpl/beast/net/IPAddressV4.h>
 
-namespace beast::IP {
+namespace beast {
+namespace IP {
 
 bool
 is_private(AddressV4 const& addr)
@@ -24,4 +25,5 @@ get_class(AddressV4 const& addr)
     return table[(addr.to_uint() & 0xE0000000) >> 29];
 }
 
-}  // namespace beast::IP
+}  // namespace IP
+}  // namespace beast

@@ -5,7 +5,9 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/STAmount.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Modify a trust line. */
 Json::Value
@@ -21,4 +23,6 @@ claw(
     STAmount const& amount,
     std::optional<Account> const& mptHolder = std::nullopt);
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

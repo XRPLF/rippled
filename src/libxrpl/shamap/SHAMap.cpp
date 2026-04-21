@@ -1,42 +1,12 @@
-#include <xrpl/shamap/SHAMap.h>
-
-#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
-#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/SHAMapHash.h>
-#include <xrpl/basics/Slice.h>
-#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
-#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/protocol/Serializer.h>
-#include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapAccountStateLeafNode.h>
-#include <xrpl/shamap/SHAMapInnerNode.h>
-#include <xrpl/shamap/SHAMapItem.h>
-#include <xrpl/shamap/SHAMapLeafNode.h>
-#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
-#include <xrpl/shamap/SHAMapTreeNode.h>
 #include <xrpl/shamap/SHAMapTxLeafNode.h>
 #include <xrpl/shamap/SHAMapTxPlusMetaLeafNode.h>
-
-#include <boost/smart_ptr/intrusive_ptr.hpp>
-
-#include <cstdint>
-#include <exception>
-#include <functional>
-#include <memory>
-#include <stack>
-#include <stdexcept>
-#include <string>
-#include <tuple>
-#include <type_traits>
-#include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -140,7 +110,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
     while (inNode->isInner())
     {
         if (stack != nullptr)
-            stack->emplace(inNode, nodeID);
+            stack->push({inNode, nodeID});
 
         auto const inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(inNode);
         auto const branch = selectBranch(nodeID, id);
@@ -152,7 +122,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
     }
 
     if (stack != nullptr)
-        stack->emplace(inNode, nodeID);
+        stack->push({inNode, nodeID});
     return safe_downcast<SHAMapLeafNode*>(inNode.get());
 }
 
@@ -449,11 +419,11 @@ SHAMap::belowHelper(
     auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
     if (stack.empty())
     {
-        stack.emplace(inner, SHAMapNodeID{});
+        stack.push({inner, SHAMapNodeID{}});
     }
     else
     {
-        stack.emplace(inner, stack.top().second.getChildNodeID(branch));
+        stack.push({inner, stack.top().second.getChildNodeID(branch)});
     }
     for (int i = init; cmp(i);)
     {
@@ -468,7 +438,7 @@ SHAMap::belowHelper(
                 return n.get();
             }
             inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
-            stack.emplace(inner, stack.top().second.getChildNodeID(branch));
+            stack.push({inner, stack.top().second.getChildNodeID(branch)});
             i = init;  // descend and reset loop
         }
         else
@@ -813,7 +783,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
         while ((b1 = selectBranch(nodeID, tag)) == (b2 = selectBranch(nodeID, otherItem->key())))
         {
-            stack.emplace(node, nodeID);
+            stack.push({node, nodeID});
 
             // we need a new inner node, since both go on same branch at this
             // level
@@ -1115,7 +1085,7 @@ SHAMap::dump(bool hash) const
     JLOG(journal_.info()) << " MAP Contains";
 
     std::stack<std::pair<SHAMapTreeNode*, SHAMapNodeID>> stack;
-    stack.emplace(root_.get(), SHAMapNodeID());
+    stack.push({root_.get(), SHAMapNodeID()});
 
     do
     {
@@ -1141,7 +1111,7 @@ SHAMap::dump(bool hash) const
                         XRPL_ASSERT(
                             child->getHash() == inner->getChildHash(i),
                             "xrpl::SHAMap::dump : child hash do match");
-                        stack.emplace(child, nodeID.getChildNodeID(i));
+                        stack.push({child, nodeID.getChildNodeID(i)});
                     }
                 }
             }

@@ -1,34 +1,16 @@
 #include <test/jtx/Oracle.h>
 
-#include <test/jtx/Env.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/seq.h>
-#include <test/jtx/ter.h>
-
-#include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/basics/strHex.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/lexical_cast/try_lexical_convert.hpp>
-#include <boost/regex.hpp>  // IWYU pragma: keep
-#include <boost/regex/v5/regex_replace.hpp>
+#include <boost/regex.hpp>
 
-#include <algorithm>
-#include <cassert>
-#include <chrono>
-#include <cstdint>
-#include <optional>
-#include <string>
-#include <variant>
+#include <vector>
 
-namespace xrpl::test::jtx::oracle {
+namespace xrpl {
+namespace test {
+namespace jtx {
+namespace oracle {
 
 Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
 {
@@ -36,7 +18,7 @@ Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
     // {close-maxLastUpdateTimeDelta, close+maxLastUpdateTimeDelta}.
     // To make the validation work and to make the clock consistent
     // for tests running at different time, simulate Unix time starting
-    // on testStartTime since XRPL epoch.
+    // on testStartTime since Ripple epoch.
     auto const now = env_.timeKeeper().now();
     if (now.time_since_epoch().count() == 0 || arg.close)
         env_.close(now + testStartTime - epoch_offset);
@@ -134,7 +116,7 @@ Oracle::expectPrice(DataSeries const& series) const
             return false;
         for (auto const& data : series)
         {
-            if (std::ranges::find_if(leSeries, [&](STObject const& o) -> bool {
+            if (std::find_if(leSeries.begin(), leSeries.end(), [&](STObject const& o) -> bool {
                     auto const& baseAsset = o.getFieldCurrency(sfBaseAsset);
                     auto const& quoteAsset = o.getFieldCurrency(sfQuoteAsset);
                     auto const& price = o.getFieldU64(sfAssetPrice);
@@ -419,4 +401,7 @@ validDocumentID(AnyValue const& v)
     }
 }
 
-}  // namespace xrpl::test::jtx::oracle
+}  // namespace oracle
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

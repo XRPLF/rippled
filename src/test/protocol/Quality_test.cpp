@@ -1,12 +1,6 @@
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Issue.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/UintTypes.h>
 
-#include <cstdint>
 #include <type_traits>
 
 namespace xrpl {
@@ -22,17 +16,17 @@ public:
 
     template <class Integer>
     static STAmount
-    amount(Integer integer, std::enable_if_t<std::is_signed_v<Integer>>* = 0)
+    amount(Integer integer, std::enable_if_t<std::is_signed<Integer>::value>* = 0)
     {
-        static_assert(std::is_integral_v<Integer>, "");
+        static_assert(std::is_integral<Integer>::value, "");
         return STAmount(integer, false);
     }
 
     template <class Integer>
     static STAmount
-    amount(Integer integer, std::enable_if_t<!std::is_signed_v<Integer>>* = 0)
+    amount(Integer integer, std::enable_if_t<!std::is_signed<Integer>::value>* = 0)
     {
-        static_assert(std::is_integral_v<Integer>, "");
+        static_assert(std::is_integral<Integer>::value, "");
         if (integer < 0)
             return STAmount(-integer, true);
         return STAmount(integer, false);

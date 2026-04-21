@@ -233,7 +233,7 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
 template <
     class T,
     class Buffers,
-    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
+    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
@@ -258,9 +258,7 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
             return {};
     }
     else if (!m->ParseFromZeroCopyStream(&stream))
-    {
         return {};
-    }
 
     return m;
 }
@@ -269,7 +267,7 @@ template <
     class T,
     class Buffers,
     class Handler,
-    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
+    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 {

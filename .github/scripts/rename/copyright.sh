@@ -31,7 +31,7 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
-pushd "${DIRECTORY}"
+pushd ${DIRECTORY}
 
 # Prevent sed and echo from removing newlines and tabs in string literals by
 # temporarily replacing them with placeholders. This only affects one file.
@@ -76,11 +76,11 @@ fi
 if ! grep -q 'Dev Null' src/test/rpc/ValidatorInfo_test.cpp; then
   echo -e "// Copyright (c) 2020 Dev Null Productions\n\n$(cat src/test/rpc/ValidatorInfo_test.cpp)" > src/test/rpc/ValidatorInfo_test.cpp
 fi
-if ! grep -q 'Dev Null' src/xrpld/rpc/handlers/server_info/Manifest.cpp; then
-  echo -e "// Copyright (c) 2019 Dev Null Productions\n\n$(cat src/xrpld/rpc/handlers/server_info/Manifest.cpp)" > src/xrpld/rpc/handlers/server_info/Manifest.cpp
+if ! grep -q 'Dev Null' src/xrpld/rpc/handlers/DoManifest.cpp; then
+  echo -e "// Copyright (c) 2019 Dev Null Productions\n\n$(cat src/xrpld/rpc/handlers/DoManifest.cpp)" > src/xrpld/rpc/handlers/DoManifest.cpp
 fi
-if ! grep -q 'Dev Null' src/xrpld/rpc/handlers/admin/status/ValidatorInfo.cpp; then
-  echo -e "// Copyright (c) 2019 Dev Null Productions\n\n$(cat src/xrpld/rpc/handlers/admin/status/ValidatorInfo.cpp)" > src/xrpld/rpc/handlers/admin/status/ValidatorInfo.cpp
+if ! grep -q 'Dev Null' src/xrpld/rpc/handlers/ValidatorInfo.cpp; then
+  echo -e "// Copyright (c) 2019 Dev Null Productions\n\n$(cat src/xrpld/rpc/handlers/ValidatorInfo.cpp)" > src/xrpld/rpc/handlers/ValidatorInfo.cpp
 fi
 if ! grep -q 'Bougalis' include/xrpl/basics/SlabAllocator.h; then
   echo -e "// Copyright (c) 2022, Nikolaos D. Bougalis <nikb@bougalis.net>\n\n$(cat include/xrpl/basics/SlabAllocator.h)" > include/xrpl/basics/SlabAllocator.h # cspell: ignore Nikolaos Bougalis nikb

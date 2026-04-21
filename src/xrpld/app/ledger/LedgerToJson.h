@@ -19,7 +19,7 @@ struct LedgerFill
         std::vector<TxQ::TxDetails> q = {})
         : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
     {
-        if (context != nullptr)
+        if (context)
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
     }
 

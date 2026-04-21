@@ -6,7 +6,9 @@
 #include <regex>
 #include <sstream>
 
-namespace xrpl::RPC {
+namespace xrpl {
+
+namespace RPC {
 
 // CTID stands for Concise Transaction ID.
 //
@@ -106,4 +108,5 @@ decodeCTID(T const ctid) noexcept
     return std::make_tuple(ledgerSeq, txnIndex, networkID);
 }
 
-}  // namespace xrpl::RPC
+}  // namespace RPC
+}  // namespace xrpl

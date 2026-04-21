@@ -1,19 +1,13 @@
+#include <test/jtx.h>
 
-#include <test/jtx/permissioned_dex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/jss.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/permissioned_domains.h>
+#include <exception>
 
-#include <xrpl/basics/base_uint.h>
-
-#include <string>
-#include <vector>
-
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 uint256
 setupDomain(
@@ -67,4 +61,6 @@ PermissionedDEX::PermissionedDEX(Env& env)
     }
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

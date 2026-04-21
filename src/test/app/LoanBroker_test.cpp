@@ -1,63 +1,10 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/JTx.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/seq.h>
-#include <test/jtx/sig.h>
-#include <test/jtx/tag.h>
-#include <test/jtx/tags.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
-#include <test/jtx/vault.h>
-#include <test/unit_test/SuiteJournal.h>
-
-#include <xrpl/basics/Number.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OpenView.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/Units.h>
-#include <xrpl/protocol/jss.h>
-#include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverDeposit.h>
 
-#include <array>
-#include <cstdint>
-#include <functional>
-#include <optional>
-#include <string_view>
-#include <tuple>
-#include <vector>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class LoanBroker_test : public beast::unit_test::suite
 {
@@ -548,9 +495,9 @@ class LoanBroker_test : public beast::unit_test::suite
 
         Account const issuer{"issuer"};
         // For simplicity, alice will be the sole actor for the vault & brokers.
-        Account const alice{"alice"};
+        Account alice{"alice"};
         // Evan will attempt to be naughty
-        Account const evan{"evan"};
+        Account evan{"evan"};
         // Bystander doesn't have anything to do with the SAV or Broker, or any
         // of the relevant tokens
         Account const bystander{"bystander"};
@@ -1343,7 +1290,7 @@ class LoanBroker_test : public beast::unit_test::suite
         auto const broker = env.le(brokerKeylet);
         if (!BEAST_EXPECT(broker))
             return;
-        Account const brokerPseudo("pseudo", broker->at(sfAccount));
+        Account brokerPseudo("pseudo", broker->at(sfAccount));
 
         // Can't unauthorize LoanBroker pseudo-account
         asset.authorize(
@@ -1580,9 +1527,9 @@ class LoanBroker_test : public beast::unit_test::suite
     testRIPD4274IOU()
     {
         using namespace jtx;
-        Account const issuer("broker");
-        Account const broker("issuer");
-        Account const dest("destination");
+        Account issuer("broker");
+        Account broker("issuer");
+        Account dest("destination");
         auto const token = issuer["IOU"];
 
         enum TrustState {
@@ -1707,9 +1654,9 @@ class LoanBroker_test : public beast::unit_test::suite
     testRIPD4274MPT()
     {
         using namespace jtx;
-        Account const issuer("broker");
-        Account const broker("issuer");
-        Account const dest("destination");
+        Account issuer("broker");
+        Account broker("issuer");
+        Account dest("destination");
 
         enum MPTState {
             RequireAuth,
@@ -1851,4 +1798,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LoanBroker, tx, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

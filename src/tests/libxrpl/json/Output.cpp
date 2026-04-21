@@ -1,5 +1,4 @@
 #include <xrpl/json/Output.h>
-
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_writer.h>
 

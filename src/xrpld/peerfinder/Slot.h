@@ -5,7 +5,8 @@
 
 #include <optional>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** Properties and state associated with a peer to peer overlay connection. */
 class Slot
@@ -57,4 +58,5 @@ public:
     public_key() const = 0;
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

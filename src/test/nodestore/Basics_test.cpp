@@ -1,14 +1,10 @@
 #include <test/nodestore/TestBase.h>
 
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 
-#include <cstdint>
-#include <memory>
-
-namespace xrpl::NodeStore {
+namespace xrpl {
+namespace NodeStore {
 
 // Tests predictable batches, and NodeObject blob encoding
 //
@@ -70,4 +66,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, xrpl);
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

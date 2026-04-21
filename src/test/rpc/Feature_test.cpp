@@ -1,24 +1,9 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
-
-#include <xrpld/core/Config.h>
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/AmendmentTable.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
-
-#include <algorithm>
-#include <cstddef>
-#include <iterator>
-#include <map>
-#include <memory>
 
 namespace xrpl {
 
@@ -520,10 +505,11 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto const& supportedAmendments = xrpl::detail::supportedAmendments();
-        auto obsoleteFeature = std::ranges::find_if(supportedAmendments, [](auto const& pair) {
-            return pair.second == VoteBehavior::Obsolete;
-        });
+        auto const& supportedAmendments = detail::supportedAmendments();
+        auto obsoleteFeature = std::find_if(
+            std::begin(supportedAmendments), std::end(supportedAmendments), [](auto const& pair) {
+                return pair.second == VoteBehavior::Obsolete;
+            });
 
         if (obsoleteFeature == std::end(supportedAmendments))
         {

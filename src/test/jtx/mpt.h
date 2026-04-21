@@ -2,14 +2,14 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/owners.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 class MPTTester;
 
@@ -95,7 +95,7 @@ struct MPTCreate
 
 struct MPTInit
 {
-    Holders holders = {};  // NOLINT(readability-redundant-member-init)
+    Holders holders = {};
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
@@ -109,11 +109,10 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    Holders holders = {};  // NOLINT(readability-redundant-member-init)
+    Holders holders = {};
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;
@@ -167,11 +166,11 @@ class MPTTester
     bool close_;
 
 public:
-    MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
+    MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
     MPTTester(
         Env& env,
-        Account issuer,
+        Account const& issuer,
         MPTID const& id,
         std::vector<Account> const& holders = {},
         bool close = true);
@@ -273,12 +272,6 @@ public:
 
     operator Asset() const;
 
-    friend BookSpec
-    operator~(MPTTester const& mpt)
-    {
-        return ~static_cast<MPT>(mpt);
-    }
-
 private:
     using SLEP = SLE::const_pointer;
     bool
@@ -311,4 +304,6 @@ private:
     getFlags(std::optional<Account> const& holder) const;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

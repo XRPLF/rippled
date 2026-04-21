@@ -15,9 +15,13 @@
 #include <set>
 #include <string>
 
-namespace boost::asio::ssl {
+namespace boost {
+namespace asio {
+namespace ssl {
 class context;
-}  // namespace boost::asio::ssl
+}  // namespace ssl
+}  // namespace asio
+}  // namespace boost
 
 namespace xrpl {
 

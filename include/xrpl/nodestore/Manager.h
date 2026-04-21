@@ -3,7 +3,9 @@
 #include <xrpl/nodestore/DatabaseRotating.h>
 #include <xrpl/nodestore/Factory.h>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+
+namespace NodeStore {
 
 /** Singleton for managing NodeStore factories and back ends. */
 class Manager
@@ -79,4 +81,5 @@ public:
         beast::Journal journal) = 0;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

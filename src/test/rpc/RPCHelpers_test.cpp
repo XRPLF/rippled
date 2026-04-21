@@ -1,13 +1,10 @@
-#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class RPCHelpers_test : public beast::unit_test::suite
 {
@@ -75,4 +72,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCHelpers, rpc, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

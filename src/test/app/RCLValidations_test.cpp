@@ -1,25 +1,13 @@
-
-#include <test/jtx/Env.h>
+#include <test/jtx.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/consensus/LedgerTrie.h>
-#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STValidation.h>
-#include <xrpl/protocol/SecretKey.h>
 
-#include <memory>
-#include <vector>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class RCLValidations_test : public beast::unit_test::suite
 {
@@ -324,4 +312,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RCLValidations, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

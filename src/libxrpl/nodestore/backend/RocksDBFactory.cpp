@@ -1,36 +1,4 @@
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/nodestore/Backend.h>
-#include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/nodestore/Scheduler.h>
-#include <xrpl/nodestore/Types.h>
-
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
-#include <rocksdb/advanced_options.h>
-#include <rocksdb/cache.h>
-#include <rocksdb/compression_type.h>
-#include <rocksdb/convenience.h>
-#include <rocksdb/db.h>
-#include <rocksdb/env.h>
-#include <rocksdb/filter_policy.h>
-#include <rocksdb/iterator.h>
-#include <rocksdb/options.h>
-#include <rocksdb/slice.h>
-#include <rocksdb/table.h>
-#include <rocksdb/write_batch.h>
-
-#include <bit>
-#include <cstddef>
-#include <functional>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
+#include <xrpl/basics/rocksdb.h>
 
 #if XRPL_ROCKSDB_AVAILABLE
 #include <xrpl/basics/ByteUtilities.h>
@@ -46,7 +14,8 @@
 #include <atomic>
 #include <memory>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+namespace NodeStore {
 
 class RocksDBEnv : public rocksdb::EnvWrapper
 {
@@ -489,6 +458,7 @@ registerRocksDBFactory(Manager& manager)
     static RocksDBFactory const instance{manager};
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl
 
 #endif

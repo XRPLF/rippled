@@ -6,7 +6,8 @@
 
 #include <xrpl/beast/unit_test/suite_list.h>
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 namespace detail {
 
@@ -41,4 +42,5 @@ global_suites()
     return detail::global_suites();
 }
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast

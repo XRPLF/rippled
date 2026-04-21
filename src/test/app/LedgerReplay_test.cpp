@@ -1,15 +1,7 @@
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
+#include <test/jtx.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/seq.h>
-#include <test/jtx/sig.h>
-#include <test/jtx/tags.h>
 
 #include <xrpld/app/ledger/BuildLedger.h>
-#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayTask.h>
@@ -17,53 +9,16 @@
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
-#include <xrpld/core/Config.h>
-#include <xrpld/overlay/Message.h>
-#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
-#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpld/overlay/detail/PeerImp.h>
 
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/net/IPAddress.h>
-#include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/RippleLedgerHash.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/resource/Charge.h>
-#include <xrpl/server/Handoff.h>
-#include <xrpl/shamap/SHAMapItem.h>
 
-#include <boost/asio/ip/address.hpp>
-
-#include <google/protobuf/message.h>
-
-#include <xrpl.pb.h>
-
-#include <algorithm>
-#include <cassert>
 #include <chrono>
-#include <cstddef>
-#include <cstdint>
-#include <cstdlib>
-#include <functional>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <optional>
-#include <set>
-#include <string>
 #include <thread>
-#include <unordered_set>
-#include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 struct LedgerReplay_test : public beast::unit_test::suite
 {
@@ -113,9 +68,9 @@ public:
         : ledgerSource(ledgerSource), ledgerSink(ledgerSink), bhvr(bhvr)
     {
     }
-    ~MagicInboundLedgers() override = default;
+    virtual ~MagicInboundLedgers() = default;
 
-    std::shared_ptr<Ledger const>
+    virtual std::shared_ptr<Ledger const>
     acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason) override
     {
         if (bhvr == InboundLedgersBehavior::DropAll)
@@ -129,18 +84,18 @@ public:
         return {};
     }
 
-    void
+    virtual void
     acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
     }
 
-    std::shared_ptr<InboundLedger>
+    virtual std::shared_ptr<InboundLedger>
     find(LedgerHash const& hash) override
     {
         return {};
     }
 
-    bool
+    virtual bool
     gotLedgerData(
         LedgerHash const& ledgerHash,
         std::shared_ptr<Peer>,
@@ -149,59 +104,59 @@ public:
         return false;
     }
 
-    void
+    virtual void
     gotStaleData(std::shared_ptr<protocol::TMLedgerData> packet) override
     {
     }
 
-    void
+    virtual void
     logFailure(uint256 const& h, std::uint32_t seq) override
     {
     }
 
-    bool
+    virtual bool
     isFailure(uint256 const& h) override
     {
         return false;
     }
 
-    void
+    virtual void
     clearFailures() override
     {
     }
 
-    Json::Value
+    virtual Json::Value
     getInfo() override
     {
         return {};
     }
 
-    std::size_t
+    virtual std::size_t
     fetchRate() override
     {
         return 0;
     }
 
-    void
+    virtual void
     onLedgerFetched() override
     {
     }
 
-    void
+    virtual void
     gotFetchPack() override
     {
     }
-    void
+    virtual void
     sweep() override
     {
     }
 
-    void
+    virtual void
     stop() override
     {
     }
 
-    size_t
+    virtual size_t
     cacheSize() override
     {
         return 0;
@@ -698,7 +653,7 @@ public:
     findTask(uint256 const& hash, int totalReplay)
     {
         std::unique_lock<std::mutex> const lock(replayer.mtx_);
-        auto i = std::ranges::find_if(replayer.tasks_, [&](auto const& t) {
+        auto i = std::find_if(replayer.tasks_.begin(), replayer.tasks_.end(), [&](auto const& t) {
             return t->parameter_.finishHash_ == hash && t->parameter_.totalLedgers_ == totalReplay;
         });
         if (i == replayer.tasks_.end())
@@ -903,7 +858,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     testProofPath()
     {
         testcase("ProofPath");
-        LedgerServer server(*this, {.initLedgers = 1});
+        LedgerServer server(*this, {1});
         auto const l = server.ledgerMaster.getClosedLedger();
 
         {
@@ -961,7 +916,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
     testReplayDelta()
     {
         testcase("ReplayDelta");
-        LedgerServer server(*this, {.initLedgers = 1});
+        LedgerServer server(*this, {1});
         auto const l = server.ledgerMaster.getClosedLedger();
 
         {
@@ -1068,20 +1023,20 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         {
             Config c;
-            std::string const toLoad(R"xrpldConfig(
+            std::string const toLoad(R"rippleConfig(
 [ledger_replay]
 1
-)xrpldConfig");
+)rippleConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.LEDGER_REPLAY == true);
         }
 
         {
             Config c;
-            std::string const toLoad = (R"xrpldConfig(
+            std::string const toLoad = (R"rippleConfig(
 [ledger_replay]
 0
-)xrpldConfig");
+)rippleConfig");
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.LEDGER_REPLAY == false);
         }
@@ -1124,7 +1079,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         auto ilBhvr = InboundLedgersBehavior::DropAll;
         auto peerFeature = PeerFeature::None;
 
-        NetworkOfTwo net(*this, {.initLedgers = totalReplay + 1}, psBhvr, ilBhvr, peerFeature);
+        NetworkOfTwo net(*this, {totalReplay + 1}, psBhvr, ilBhvr, peerFeature);
 
         auto l = net.server.ledgerMaster.getClosedLedger();
         uint256 const finalHash = l->header().hash;
@@ -1159,7 +1114,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         testcase("all the ledgers from InboundLedgers");
         NetworkOfTwo net(
             *this,
-            {.initLedgers = totalReplay + 1},
+            {totalReplay + 1},
             PeerSetBehavior::DropAll,
             InboundLedgersBehavior::Good,
             PeerFeature::None);
@@ -1215,7 +1170,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
 
         NetworkOfTwo net(
             *this,
-            {.initLedgers = totalReplay + 1},
+            {totalReplay + 1},
             peerSetBehavior,
             InboundLedgersBehavior::DropAll,
             PeerFeature::LedgerReplayEnabled);
@@ -1248,7 +1203,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         int const totalReplay = 3;
         NetworkOfTwo net(
             *this,
-            {.initLedgers = totalReplay + 1},
+            {totalReplay + 1},
             PeerSetBehavior::DropAll,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
@@ -1273,7 +1228,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         int const totalReplay = 3;
         NetworkOfTwo net(
             *this,
-            {.initLedgers = totalReplay + 1 + 1},
+            {totalReplay + 1 + 1},
             PeerSetBehavior::DropAll,
             InboundLedgersBehavior::DropAll,
             PeerFeature::LedgerReplayEnabled);
@@ -1306,7 +1261,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         int const totalReplay = 3;
         NetworkOfTwo net(
             *this,
-            {.initLedgers = totalReplay + 1},
+            {totalReplay + 1},
             PeerSetBehavior::DropLedgerDeltaReply,
             InboundLedgersBehavior::DropAll,
             PeerFeature::LedgerReplayEnabled);
@@ -1339,7 +1294,7 @@ struct LedgerReplayer_test : public beast::unit_test::suite
         int const totalReplay = 5;
         NetworkOfTwo net(
             *this,
-            {.initLedgers = (totalReplay * 3) + 1},
+            {(totalReplay * 3) + 1},
             PeerSetBehavior::Good,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
@@ -1437,7 +1392,7 @@ struct LedgerReplayerTimeout_test : public beast::unit_test::suite
         int const totalReplay = 3;
         NetworkOfTwo net(
             *this,
-            {.initLedgers = totalReplay + 1},
+            {totalReplay + 1},
             PeerSetBehavior::DropAll,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
@@ -1463,7 +1418,7 @@ struct LedgerReplayerTimeout_test : public beast::unit_test::suite
         int const totalReplay = 3;
         NetworkOfTwo net(
             *this,
-            {.initLedgers = totalReplay + 1},
+            {totalReplay + 1},
             PeerSetBehavior::DropAll,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
@@ -1502,7 +1457,7 @@ struct LedgerReplayerLong_test : public beast::unit_test::suite
         int const rounds = 4;
         NetworkOfTwo net(
             *this,
-            {.initLedgers = (totalReplay * rounds) + 1},
+            {(totalReplay * rounds) + 1},
             PeerSetBehavior::Good,
             InboundLedgersBehavior::Good,
             PeerFeature::LedgerReplayEnabled);
@@ -1550,4 +1505,5 @@ BEAST_DEFINE_TESTSUITE_PRIO(LedgerReplayer, app, xrpl, 1);
 BEAST_DEFINE_TESTSUITE(LedgerReplayerTimeout, app, xrpl);
 BEAST_DEFINE_TESTSUITE_MANUAL(LedgerReplayerLong, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

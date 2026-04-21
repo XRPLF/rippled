@@ -189,7 +189,7 @@ forEachItem(
     AccountID const& id,
     std::function<void(std::shared_ptr<SLE const> const&)> const& f)
 {
-    forEachItem(view, keylet::ownerDir(id), f);
+    return forEachItem(view, keylet::ownerDir(id), f);
 }
 
 /** Iterate all items after an item in an owner directory.

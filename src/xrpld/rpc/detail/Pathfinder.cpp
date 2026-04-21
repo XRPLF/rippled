@@ -1,46 +1,16 @@
-#include <xrpld/rpc/detail/Pathfinder.h>
-
 #include <xrpld/app/main/Application.h>
-#include <xrpld/rpc/detail/AssetCache.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
-#include <xrpld/rpc/detail/TrustLine.h>
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/join.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/json/to_string.h>  // IWYU pragma: keep
-#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/PathAsset.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STPathSet.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <exception>
-#include <functional>
-#include <map>
-#include <memory>
-#include <optional>
-#include <string>
-#include <vector>
+#include <tuple>
 
 /*
 
@@ -96,16 +66,12 @@ compareAccountCandidate(
     AccountCandidate const& first,
     AccountCandidate const& second)
 {
-    // Primary sort key: priority descending
-    if (first.priority != second.priority)
-        return first.priority > second.priority;
+    if (first.priority < second.priority)
+        return false;
 
-    // Secondary sort key: account descending
-    if (first.account != second.account)
-        return first.account > second.account;
+    if (first.account > second.account)
+        return true;
 
-    // Tertiary sort key (tie-breaker): (priority ^ seq) ascending
-    // Note: The primary and secondary keys are equal here.
     return (first.priority ^ seq) < (second.priority ^ seq);
 }
 
@@ -168,38 +134,15 @@ pathTypeToString(Pathfinder::PathType const& type)
 STAmount
 smallestUsefulAmount(STAmount const& amount, int maxPaths)
 {
-    return divide(amount, STAmount(maxPaths + 2), amount.asset());
+    return divide(amount, STAmount(maxPaths + 2), amount.issue());
 }
-
-STAmount
-amountFromPathAsset(
-    PathAsset const& pathAsset,
-    std::optional<AccountID> const& srcIssuer,
-    AccountID const& srcAccount)
-{
-    return pathAsset.visit(
-        [&](Currency const& currency) {
-            auto const& account = srcIssuer.value_or(isXRP(currency) ? xrpAccount() : srcAccount);
-            return STAmount(Issue{currency, account}, 1u, 0, true);
-        },
-        [](MPTID const& mpt) { return STAmount(mpt, 1u, 0, true); });
-}
-
-Asset
-assetFromPathAsset(PathAsset const& pathAsset, AccountID const& account)
-{
-    return pathAsset.visit(
-        [&](Currency const& currency) { return Asset{Issue{currency, account}}; },
-        [](MPTID const& mpt) { return Asset{mpt}; });
-}
-
 }  // namespace
 
 Pathfinder::Pathfinder(
-    std::shared_ptr<AssetCache> const& cache,
+    std::shared_ptr<RippleLineCache> const& cache,
     AccountID const& uSrcAccount,
     AccountID const& uDstAccount,
-    PathAsset const& uSrcPathAsset,
+    Currency const& uSrcCurrency,
     std::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
     std::optional<STAmount> const& srcAmount,
@@ -209,18 +152,24 @@ Pathfinder::Pathfinder(
     , mDstAccount(uDstAccount)
     , mEffectiveDst(isXRP(saDstAmount.getIssuer()) ? uDstAccount : saDstAmount.getIssuer())
     , mDstAmount(saDstAmount)
-    , mSrcPathAsset(uSrcPathAsset)
+    , mSrcCurrency(uSrcCurrency)
     , mSrcIssuer(uSrcIssuer)
-    , mSrcAmount(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
+    , mSrcAmount(srcAmount.value_or(STAmount(
+          Issue{
+              uSrcCurrency,
+              uSrcIssuer.value_or(isXRP(uSrcCurrency) ? xrpAccount() : uSrcAccount)},
+          1u,
+          0,
+          true)))
     , convert_all_(convertAllCheck(mDstAmount))
     , mDomain(domain)
     , mLedger(cache->getLedger())
-    , mAssetCache(cache)
+    , mRLCache(cache)
     , app_(app)
     , j_(app.getJournal("Pathfinder"))
 {
     XRPL_ASSERT(
-        !uSrcIssuer || uSrcPathAsset.isXRP() == isXRP(uSrcIssuer.value()),
+        !uSrcIssuer || isXRP(uSrcCurrency) == isXRP(uSrcIssuer.value()),
         "xrpl::Pathfinder::Pathfinder : valid inputs");
 }
 
@@ -240,7 +189,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     }
 
     if (mSrcAccount == mDstAccount && mDstAccount == mEffectiveDst &&
-        mSrcPathAsset == mDstAmount.asset())
+        mSrcCurrency == mDstAmount.getCurrency())
     {
         // No need to send to same account with same currency.
         JLOG(j_.debug()) << "Tried to send to same issuer";
@@ -248,24 +197,24 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
         return false;
     }
 
-    if (mSrcAccount == mEffectiveDst && mSrcPathAsset == mDstAmount.asset())
+    if (mSrcAccount == mEffectiveDst && mSrcCurrency == mDstAmount.getCurrency())
     {
         // Default path might work, but any path would loop
         return true;
     }
 
     m_loadEvent = app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "FindPath");
-    auto currencyIsXRP = isXRP(mSrcPathAsset);
+    auto currencyIsXRP = isXRP(mSrcCurrency);
 
     bool const useIssuerAccount = mSrcIssuer && !currencyIsXRP && !isXRP(*mSrcIssuer);
     auto& account = useIssuerAccount ? *mSrcIssuer : mSrcAccount;
     auto issuer = currencyIsXRP ? AccountID() : account;
-    mSource = STPathElement(account, mSrcPathAsset, issuer);
+    mSource = STPathElement(account, mSrcCurrency, issuer);
     auto issuerString = mSrcIssuer ? to_string(*mSrcIssuer) : std::string("none");
     JLOG(j_.trace()) << "findPaths>"
                      << " mSrcAccount=" << mSrcAccount << " mDstAccount=" << mDstAccount
                      << " mDstAmount=" << mDstAmount.getFullText()
-                     << " mSrcPathAsset=" << mSrcPathAsset << " mSrcIssuer=" << issuerString;
+                     << " mSrcCurrency=" << mSrcCurrency << " mSrcIssuer=" << issuerString;
 
     if (!mLedger)
     {
@@ -273,8 +222,8 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
         return false;
     }
 
-    bool const bSrcXrp = isXRP(mSrcPathAsset);
-    bool const bDstXrp = isXRP(mDstAmount.asset());
+    bool const bSrcXrp = isXRP(mSrcCurrency);
+    bool const bDstXrp = isXRP(mDstAmount.getCurrency());
 
     if (!mLedger->exists(keylet::account(mSrcAccount)))
     {
@@ -329,7 +278,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
         JLOG(j_.debug()) << "non-XRP to XRP payment";
         paymentType = pt_nonXRP_to_XRP;
     }
-    else if (mSrcPathAsset == mDstAmount.asset())
+    else if (mSrcCurrency == mDstAmount.getCurrency())
     {
         // non-XRP -> non-XRP - Same currency
         JLOG(j_.debug()) << "non-XRP to non-XRP - same currency";
@@ -564,8 +513,10 @@ Pathfinder::rankPaths(
     //    width of path
     //    length of path
     // A better PathRank is lower, best are sorted to the beginning.
-    std::ranges::sort(
-        rankedPaths, [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b) {
+    std::sort(
+        rankedPaths.begin(),
+        rankedPaths.end(),
+        [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b) {
             // 1) Higher quality (lower cost) is better
             if (!convert_all_ && a.quality != b.quality)
                 return a.quality < b.quality;
@@ -599,7 +550,7 @@ Pathfinder::getBestPaths(
 
     XRPL_ASSERT(
         fullLiquidityPath.empty(), "xrpl::Pathfinder::getBestPaths : first empty path result");
-    bool const issuerIsSender = isXRP(mSrcPathAsset) || (srcIssuer == mSrcAccount);
+    bool const issuerIsSender = isXRP(mSrcCurrency) || (srcIssuer == mSrcAccount);
 
     std::vector<PathRank> extraPathRanks;
     rankPaths(maxPaths, extraPaths, extraPathRanks, continueCallback);
@@ -721,27 +672,27 @@ Pathfinder::getBestPaths(
 }
 
 bool
-Pathfinder::issueMatchesOrigin(Asset const& asset)
+Pathfinder::issueMatchesOrigin(Issue const& issue)
 {
-    bool const matchingAsset = (asset == mSrcPathAsset);
-    bool const matchingAccount = isXRP(asset) || (mSrcIssuer && asset.getIssuer() == mSrcIssuer) ||
-        asset.getIssuer() == mSrcAccount;
+    bool const matchingCurrency = (issue.currency == mSrcCurrency);
+    bool const matchingAccount = isXRP(issue.currency) ||
+        (mSrcIssuer && issue.account == mSrcIssuer) || issue.account == mSrcAccount;
 
-    return matchingAsset && matchingAccount;
+    return matchingCurrency && matchingAccount;
 }
 
 int
 Pathfinder::getPathsOut(
-    PathAsset const& pathAsset,
+    Currency const& currency,
     AccountID const& account,
     LineDirection direction,
-    bool isDstAsset,
+    bool isDstCurrency,
     AccountID const& dstAccount,
     std::function<bool(void)> const& continueCallback)
 {
-    Asset const asset = assetFromPathAsset(pathAsset, account);
+    Issue const issue(currency, account);
 
-    auto [it, inserted] = mPathsOutCountMap.emplace(asset, 0);
+    auto [it, inserted] = mPathsOutCountMap.emplace(issue, 0);
 
     // If it was already present, return the stored number of paths
     if (!inserted)
@@ -752,87 +703,48 @@ Pathfinder::getPathsOut(
     if (!sleAccount)
         return 0;
 
-    auto const aFlags = sleAccount->getFieldU32(sfFlags);
-    bool const bAuthRequired = [&]() {
-        if (pathAsset.holds<Currency>())
-            return (aFlags & lsfRequireAuth) != 0;
-        return !isTesSuccess(requireAuth(*mLedger, asset.get<MPTIssue>(), account));
-    }();
-    bool const bFrozen = [&]() {
-        if (pathAsset.holds<Currency>())
-            return (aFlags & lsfGlobalFreeze) != 0;
-        return isGlobalFrozen(*mLedger, asset.get<MPTIssue>());
-    }();
+    int const aFlags = sleAccount->getFieldU32(sfFlags);
+    bool const bAuthRequired = (aFlags & lsfRequireAuth) != 0;
+    bool const bFrozen = ((aFlags & lsfGlobalFreeze) != 0);
 
     int count = 0;
 
     if (!bFrozen)
     {
-        count = app_.getOrderBookDB().getBookSize(asset, mDomain);
+        count = app_.getOrderBookDB().getBookSize(issue, mDomain);
 
-        asset.visit(
-            [&](Issue const&) {
-                if (auto const lines = mAssetCache->getRippleLines(account, direction))
+        if (auto const lines = mRLCache->getRippleLines(account, direction))
+        {
+            for (auto const& rspEntry : *lines)
+            {
+                if (currency != rspEntry.getLimit().getCurrency())
                 {
-                    for (auto const& rspEntry : *lines)
-                    {
-                        if (pathAsset.get<Currency>() != rspEntry.getLimit().get<Issue>().currency)
-                        {
-                        }
-                        else if (
-                            rspEntry.getBalance() <= beast::zero &&
-                            (!rspEntry.getLimitPeer() ||
-                             -rspEntry.getBalance() >= rspEntry.getLimitPeer() ||
-                             (bAuthRequired && !rspEntry.getAuth())))
-                        {
-                        }
-                        else if (isDstAsset && dstAccount == rspEntry.getAccountIDPeer())
-                        {
-                            count += 10000;  // count a path to the destination extra
-                        }
-                        else if (rspEntry.getNoRipplePeer())
-                        {
-                            // This probably isn't a useful path out
-                        }
-                        else if (rspEntry.getFreezePeer())
-                        {
-                            // Not a useful path out
-                        }
-                        else
-                        {
-                            ++count;
-                        }
-                    }
                 }
-            },
-            [&](MPTIssue const&) {
-                if (auto const mpts = mAssetCache->getMPTs(account))
+                else if (
+                    rspEntry.getBalance() <= beast::zero &&
+                    (!rspEntry.getLimitPeer() ||
+                     -rspEntry.getBalance() >= rspEntry.getLimitPeer() ||
+                     (bAuthRequired && !rspEntry.getAuth())))
                 {
-                    for (auto const& mpt : *mpts)
-                    {
-                        if (pathAsset.get<MPTID>() != mpt.getMptID())
-                        {
-                        }
-                        else if (mpt.isZeroBalance() || mpt.isMaxedOut())
-                        {
-                        }
-                        else if (bAuthRequired)
-                        {
-                        }
-                        else if (isDstAsset && dstAccount == getMPTIssuer(mpt))
-                        {
-                            count += 10000;
-                        }
-                        else if (isIndividualFrozen(*mLedger, account, MPTIssue{mpt.getMptID()}))
-                        {
-                        }
-                        else
-                        {
-                            ++count;
-                        }
-                    }
                 }
-            });
+                else if (isDstCurrency && dstAccount == rspEntry.getAccountIDPeer())
+                {
+                    count += 10000;  // count a path to the destination extra
+                }
+                else if (rspEntry.getNoRipplePeer())
+                {
+                    // This probably isn't a useful path out
+                }
+                else if (rspEntry.getFreezePeer())
+                {
+                    // Not a useful path out
+                }
+                else
+                {
+                    ++count;
+                }
+            }
+        }
     }
     it->second = count;
     return count;
@@ -960,7 +872,7 @@ Pathfinder::isNoRippleOut(STPath const& currentPath)
     auto const& fromAccount =
         (currentPath.size() == 1) ? mSrcAccount : (currentPath.end() - 2)->getAccountID();
     auto const& toAccount = endElement.getAccountID();
-    return endElement.hasCurrency() && isNoRipple(fromAccount, toAccount, endElement.getCurrency());
+    return isNoRipple(fromAccount, toAccount, endElement.getCurrency());
 }
 
 void
@@ -984,10 +896,10 @@ Pathfinder::addLink(
     std::function<bool(void)> const& continueCallback)
 {
     auto const& pathEnd = currentPath.empty() ? mSource : currentPath.back();
-    auto const& uEndPathAsset = pathEnd.getPathAsset();
+    auto const& uEndCurrency = pathEnd.getCurrency();
     auto const& uEndIssuer = pathEnd.getIssuerID();
     auto const& uEndAccount = pathEnd.getAccountID();
-    bool const bOnXRP = isXRP(uEndPathAsset);
+    bool const bOnXRP = uEndCurrency.isZero();
 
     // Does pathfinding really need to get this to
     // a gateway (the issuer of the destination amount)
@@ -1018,38 +930,25 @@ Pathfinder::addLink(
             if (sleEnd)
             {
                 bool const bRequireAuth((sleEnd->getFieldU32(sfFlags) & lsfRequireAuth) != 0u);
-                bool const bIsEndAsset(uEndPathAsset == mDstAmount.asset());
+                bool const bIsEndCurrency(uEndCurrency == mDstAmount.getCurrency());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly((addFlags & afAC_LAST) != 0u);
 
-                AccountCandidates candidates;
+                if (auto const lines = mRLCache->getRippleLines(
+                        uEndAccount,
+                        bIsNoRippleOut ? LineDirection::incoming : LineDirection::outgoing))
+                {
+                    auto& rippleLines = *lines;
 
-                auto forAssets = [&]<typename AssetType>(AssetType const& assets) {
-                    candidates.reserve(assets.size());
+                    AccountCandidates candidates;
+                    candidates.reserve(rippleLines.size());
 
-                    static bool constexpr isLine =
-                        std::is_same_v<AssetType, std::vector<PathFindTrustLine>>;
-                    static bool constexpr isMPT =
-                        std::is_same_v<AssetType, std::vector<PathFindMPT>>;
-
-                    for (auto const& asset : assets)
+                    for (auto const& rs : rippleLines)
                     {
                         if (continueCallback && !continueCallback())
                             return;
-                        auto const& acct = [&]() constexpr {
-                            if constexpr (isLine)
-                                return asset.getAccountIDPeer();
-                            // Unlike trustline, MPT is not bidirectional
-                            if constexpr (isMPT)
-                                return getMPTIssuer(asset);
-                        }();
-                        auto const direction = [&]() constexpr -> LineDirection {
-                            if constexpr (isLine)
-                                return asset.getDirectionPeer();
-                            // incoming for MPT since MPT doesn't support
-                            // rippling (see LineDirection comments)
-                            return LineDirection::incoming;
-                        }();
+                        auto const& acct = rs.getAccountIDPeer();
+                        LineDirection const direction = rs.getDirectionPeer();
 
                         if (hasEffectiveDestination && (acct == mDstAccount))
                         {
@@ -1064,46 +963,25 @@ Pathfinder::addLink(
                             continue;
                         }
 
-                        auto const correctAsset = [&]() {
-                            if constexpr (isLine)
-                            {
-                                return uEndPathAsset.get<Currency>() ==
-                                    asset.getLimit().template get<Issue>().currency;
-                            }
-                            if constexpr (isMPT)
-                            {
-                                return uEndPathAsset.get<MPTID>() == asset.getMptID();
-                            }
-                        }();
-                        auto checkAsset = [&]() {
-                            if constexpr (isLine)
-                            {
-                                return (
-                                    (asset.getBalance() <= beast::zero &&
-                                     (!asset.getLimitPeer() ||
-                                      -asset.getBalance() >= asset.getLimitPeer() ||
-                                      (bRequireAuth && !asset.getAuth()))) ||
-                                    (bIsNoRippleOut && asset.getNoRipple()));
-                            }
-                            if constexpr (isMPT)
-                            {
-                                return asset.isZeroBalance() || asset.isMaxedOut() ||
-                                    requireAuth(*mLedger, MPTIssue{asset}, acct);
-                            }
-                        };
-
-                        if (correctAsset && !currentPath.hasSeen(acct, uEndPathAsset, acct))
+                        if ((uEndCurrency == rs.getLimit().getCurrency()) &&
+                            !currentPath.hasSeen(acct, uEndCurrency, acct))
                         {
                             // path is for correct currency and has not been
                             // seen
-                            if (checkAsset())
+                            if (rs.getBalance() <= beast::zero &&
+                                (!rs.getLimitPeer() || -rs.getBalance() >= rs.getLimitPeer() ||
+                                 (bRequireAuth && !rs.getAuth())))
+                            {
+                                // path has no credit
+                            }
+                            else if (bIsNoRippleOut && rs.getNoRipple())
                             {
                                 // Can't leave on this path
                             }
                             else if (bToDestination)
                             {
                                 // destination is always worth trying
-                                if (uEndPathAsset == mDstAmount.asset())
+                                if (uEndCurrency == mDstAmount.getCurrency())
                                 {
                                     // this is a complete path
                                     if (!currentPath.empty())
@@ -1127,10 +1005,10 @@ Pathfinder::addLink(
                             {
                                 // save this candidate
                                 int const out = getPathsOut(
-                                    uEndPathAsset,
+                                    uEndCurrency,
                                     acct,
                                     direction,
-                                    bIsEndAsset,
+                                    bIsEndCurrency,
                                     mEffectiveDst,
                                     continueCallback);
                                 if (out != 0)
@@ -1138,56 +1016,40 @@ Pathfinder::addLink(
                             }
                         }
                     }
-                };
 
-                uEndPathAsset.visit(
-                    [&](Currency const&) {
-                        if (auto const lines = mAssetCache->getRippleLines(
-                                uEndAccount,
-                                bIsNoRippleOut ? LineDirection::incoming : LineDirection::outgoing))
+                    if (!candidates.empty())
+                    {
+                        std::sort(
+                            candidates.begin(),
+                            candidates.end(),
+                            std::bind(
+                                compareAccountCandidate,
+                                mLedger->seq(),
+                                std::placeholders::_1,
+                                std::placeholders::_2));
+
+                        int count = candidates.size();
+                        // allow more paths from source
+                        if ((count > 10) && (uEndAccount != mSrcAccount))
                         {
-                            forAssets(*lines);
+                            count = 10;
                         }
-                    },
-                    [&](MPTID const&) {
-                        if (auto const mpts = mAssetCache->getMPTs(uEndAccount))
+                        else if (count > 50)
                         {
-                            forAssets(*mpts);
+                            count = 50;
                         }
-                    });
 
-                if (!candidates.empty())
-                {
-                    std::ranges::sort(
-                        candidates,
-
-                        std::bind(
-                            compareAccountCandidate,
-                            mLedger->seq(),
-                            std::placeholders::_1,
-                            std::placeholders::_2));
-
-                    int count = candidates.size();
-                    // allow more paths from source
-                    if ((count > 10) && (uEndAccount != mSrcAccount))
-                    {
-                        count = 10;
-                    }
-                    else if (count > 50)
-                    {
-                        count = 50;
-                    }
-
-                    auto it = candidates.begin();
-                    while (count-- != 0)
-                    {
-                        if (continueCallback && !continueCallback())
-                            return;
-                        // Add accounts to incompletePaths
-                        STPathElement const pathElement(
-                            STPathElement::typeAccount, it->account, uEndPathAsset, it->account);
-                        incompletePaths.assembleAdd(currentPath, pathElement);
-                        ++it;
+                        auto it = candidates.begin();
+                        while (count-- != 0)
+                        {
+                            if (continueCallback && !continueCallback())
+                                return;
+                            // Add accounts to incompletePaths
+                            STPathElement const pathElement(
+                                STPathElement::typeAccount, it->account, uEndCurrency, it->account);
+                            incompletePaths.assembleAdd(currentPath, pathElement);
+                            ++it;
+                        }
                     }
                 }
             }
@@ -1203,9 +1065,7 @@ Pathfinder::addLink(
         if ((addFlags & afOB_XRP) != 0u)
         {
             // to XRP only
-            if (!bOnXRP &&
-                app_.getOrderBookDB().isBookToXRP(
-                    assetFromPathAsset(uEndPathAsset, uEndIssuer), mDomain))
+            if (!bOnXRP && app_.getOrderBookDB().isBookToXRP({uEndCurrency, uEndIssuer}, mDomain))
             {
                 STPathElement const pathElement(
                     STPathElement::typeCurrency, xrpAccount(), xrpCurrency(), xrpAccount());
@@ -1215,28 +1075,28 @@ Pathfinder::addLink(
         else
         {
             bool const bDestOnly = (addFlags & afOB_LAST) != 0;
-            auto books = app_.getOrderBookDB().getBooksByTakerPays(
-                assetFromPathAsset(uEndPathAsset, uEndIssuer), mDomain);
+            auto books =
+                app_.getOrderBookDB().getBooksByTakerPays({uEndCurrency, uEndIssuer}, mDomain);
             JLOG(j_.trace()) << books.size() << " books found from this currency/issuer";
 
             for (auto const& book : books)
             {
                 if (continueCallback && !continueCallback())
                     return;
-                if (!currentPath.hasSeen(xrpAccount(), book.out, book.out.getIssuer()) &&
+                if (!currentPath.hasSeen(xrpAccount(), book.out.currency, book.out.account) &&
                     !issueMatchesOrigin(book.out) &&
-                    (!bDestOnly || equalTokens(book.out, mDstAmount.asset())))
+                    (!bDestOnly || (book.out.currency == mDstAmount.getCurrency())))
                 {
                     STPath newPath(currentPath);
 
-                    if (isXRP(book.out))
+                    if (book.out.currency.isZero())
                     {  // to XRP
 
                         // add the order book itself
                         newPath.emplace_back(
                             STPathElement::typeCurrency, xrpAccount(), xrpCurrency(), xrpAccount());
 
-                        if (isXRP(mDstAmount.asset()))
+                        if (mDstAmount.getCurrency().isZero())
                         {
                             // destination is XRP, add account and path is
                             // complete
@@ -1250,10 +1110,8 @@ Pathfinder::addLink(
                         }
                     }
                     else if (!currentPath.hasSeen(
-                                 book.out.getIssuer(), book.out, book.out.getIssuer()))
+                                 book.out.account, book.out.currency, book.out.account))
                     {
-                        auto const assetType = book.out.holds<Issue>() ? STPathElement::typeCurrency
-                                                                       : STPathElement::typeMPT;
                         // Don't want the book if we've already seen the issuer
                         // book -> account -> book
                         if ((newPath.size() >= 2) && (newPath.back().isAccount()) &&
@@ -1261,29 +1119,29 @@ Pathfinder::addLink(
                         {
                             // replace the redundant account with the order book
                             newPath[newPath.size() - 1] = STPathElement(
-                                assetType | STPathElement::typeIssuer,
+                                STPathElement::typeCurrency | STPathElement::typeIssuer,
                                 xrpAccount(),
-                                book.out,
-                                book.out.getIssuer());
+                                book.out.currency,
+                                book.out.account);
                         }
                         else
                         {
                             // add the order book
                             newPath.emplace_back(
-                                assetType | STPathElement::typeIssuer,
+                                STPathElement::typeCurrency | STPathElement::typeIssuer,
                                 xrpAccount(),
-                                book.out,
-                                book.out.getIssuer());
+                                book.out.currency,
+                                book.out.account);
                         }
 
-                        if (hasEffectiveDestination && book.out.getIssuer() == mDstAccount &&
-                            equalTokens(book.out, mDstAmount.asset()))
+                        if (hasEffectiveDestination && book.out.account == mDstAccount &&
+                            book.out.currency == mDstAmount.getCurrency())
                         {
                             // We skipped a required issuer
                         }
                         else if (
-                            book.out.getIssuer() == mEffectiveDst &&
-                            equalTokens(book.out, mDstAmount.asset()))
+                            book.out.account == mEffectiveDst &&
+                            book.out.currency == mDstAmount.getCurrency())
                         {  // with the destination account, this path is
                            // complete
                             JLOG(j_.trace()) << "complete path found ba: "
@@ -1297,9 +1155,9 @@ Pathfinder::addLink(
                                 newPath,
                                 STPathElement(
                                     STPathElement::typeAccount,
-                                    book.out.getIssuer(),
-                                    book.out,
-                                    book.out.getIssuer()));
+                                    book.out.account,
+                                    book.out.currency,
+                                    book.out.account));
                         }
                     }
                 }

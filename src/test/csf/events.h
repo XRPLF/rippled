@@ -7,7 +7,9 @@
 
 #include <chrono>
 
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 
 // Events are emitted by peers at a variety of points during the simulation.
 // Each event is emitted by a particular peer at a particular time. Collectors
@@ -124,4 +126,6 @@ struct FullyValidateLedger
     Ledger prior;
 };
 
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

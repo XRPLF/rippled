@@ -1,37 +1,21 @@
-#include <xrpl/tx/transactors/account/AccountDelete.h>
-
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/tx/transactors/account/AccountDelete.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
 #include <xrpl/tx/transactors/did/DIDDelete.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
-
-#include <cstdint>
-#include <memory>
-#include <utility>
 
 namespace xrpl {
 
@@ -308,7 +292,7 @@ AccountDelete::preclaim(PreclaimContext const& ctx)
     if (!cdirFirst(ctx.view, ownerDirKeylet.key, sleDirNode, uDirEntry, dirEntry))
         return tesSUCCESS;
 
-    std::uint32_t deletableDirEntryCount{0};
+    std::int32_t deletableDirEntryCount{0};
     do
     {
         // Make sure any directory node types that we find are the kind

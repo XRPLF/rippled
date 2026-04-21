@@ -1,48 +1,25 @@
 #include <test/jtx/Env.h>
-
-#include <test/jtx/Account.h>
 #include <test/jtx/JSONRPCClient.h>
-#include <test/jtx/JTx.h>
-#include <test/jtx/ManualTimeKeeper.h>
-#include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
-#include <test/jtx/tags.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/utility.h>
-#include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/main/Application.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCCall.h>
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
-#include <xrpl/basics/strHex.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/NetworkIDService.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/net/HTTPClient.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -50,22 +27,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <cassert>
-#include <chrono>
-#include <cstdint>
-#include <iostream>
 #include <memory>
-#include <optional>
-#include <ostream>
 #include <source_location>
-#include <stdexcept>
-#include <string>
-#include <thread>
-#include <unordered_map>
-#include <utility>
-#include <vector>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 //------------------------------------------------------------------------------
 
@@ -207,47 +174,54 @@ Env::balance(Account const& account) const
 }
 
 PrettyAmount
+Env::balance(Account const& account, Issue const& issue) const
+{
+    if (isXRP(issue.currency))
+        return balance(account);
+    auto const sle = le(keylet::line(account.id(), issue));
+    if (!sle)
+        return {STAmount(issue, 0), account.name()};
+    auto amount = sle->getFieldAmount(sfBalance);
+    amount.setIssuer(issue.account);
+    if (account.id() > issue.account)
+        amount.negate();
+    return {amount, lookup(issue.account).name()};
+}
+
+PrettyAmount
+Env::balance(Account const& account, MPTIssue const& mptIssue) const
+{
+    MPTID const id = mptIssue.getMptID();
+    if (!id)
+        return {STAmount(mptIssue, 0), account.name()};
+
+    AccountID const issuer = mptIssue.getIssuer();
+    if (account.id() == issuer)
+    {
+        // Issuer balance
+        auto const sle = le(keylet::mptIssuance(id));
+        if (!sle)
+            return {STAmount(mptIssue, 0), account.name()};
+
+        // Make it negative
+        STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
+        return {amount, lookup(issuer).name()};
+    }
+
+    // Holder balance
+    auto const sle = le(keylet::mptoken(id, account));
+    if (!sle)
+        return {STAmount(mptIssue, 0), account.name()};
+
+    STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+    return {amount, lookup(issuer).name()};
+}
+
+PrettyAmount
+// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 Env::balance(Account const& account, Asset const& asset) const
 {
-    return asset.visit(
-        [&](Issue const& issue) -> PrettyAmount {
-            if (isXRP(issue.currency))
-                return balance(account);
-            auto const sle = le(keylet::line(account.id(), issue));
-            if (!sle)
-                return {STAmount(issue, 0), account.name()};
-            auto amount = sle->getFieldAmount(sfBalance);
-            amount.get<Issue>().account = issue.account;
-            if (account.id() > issue.account)
-                amount.negate();
-            return {amount, lookup(issue.account).name()};
-        },
-        [&](MPTIssue const& mptIssue) -> PrettyAmount {
-            MPTID const& id = mptIssue.getMptID();
-            if (!id)
-                return {STAmount(mptIssue, 0), account.name()};
-
-            AccountID const& issuer = mptIssue.getIssuer();
-            if (account.id() == issuer)
-            {
-                // Issuer balance
-                auto const sle = le(keylet::mptIssuance(id));
-                if (!sle)
-                    return {STAmount(mptIssue, 0), account.name()};
-
-                // Make it negative
-                STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount), 0, true};
-                return {amount, lookup(issuer).name()};
-            }
-
-            // Holder balance
-            auto const sle = le(keylet::mptoken(id, account));
-            if (!sle)
-                return {STAmount(mptIssue, 0), account.name()};
-
-            STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
-            return {amount, lookup(issuer).name()};
-        });
+    return std::visit([&](auto const& issue) { return balance(account, issue); }, asset.value());
 }
 
 PrettyAmount
@@ -326,8 +300,6 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
 void
 Env::trust(STAmount const& amount, Account const& account)
 {
-    if (!amount.holds<Issue>())
-        Throw<std::runtime_error>("Env::trust: amount doesn't hold Issue");
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
@@ -694,4 +666,6 @@ Env::disableFeature(uint256 const feature)
     app().config().features.erase(feature);
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

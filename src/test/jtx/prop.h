@@ -4,7 +4,9 @@
 
 #include <memory>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Set a property on a JTx. */
 template <class Prop>
@@ -24,4 +26,6 @@ struct prop
     }
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

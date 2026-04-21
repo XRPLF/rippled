@@ -1,18 +1,13 @@
 #include <test/jtx/trust.h>
 
-#include <test/jtx/Account.h>
-
 #include <xrpl/basics/contract.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstdint>
-#include <optional>
 #include <stdexcept>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 Json::Value
 trust(Account const& account, STAmount const& amount, std::uint32_t flags)
@@ -61,4 +56,6 @@ claw(Account const& account, STAmount const& amount, std::optional<Account> cons
     return jv;
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

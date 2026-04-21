@@ -1,14 +1,13 @@
 #include <test/jtx/check.h>
 
-#include <test/jtx/Account.h>
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl::test::jtx::check {
+namespace xrpl {
+namespace test {
+namespace jtx {
+
+namespace check {
 
 // Cash a check requiring that a specific amount be delivered.
 Json::Value
@@ -45,4 +44,8 @@ cancel(jtx::Account const& dest, uint256 const& checkId)
     return jv;
 }
 
-}  // namespace xrpl::test::jtx::check
+}  // namespace check
+
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

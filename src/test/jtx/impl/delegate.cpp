@@ -1,17 +1,12 @@
 #include <test/jtx/delegate.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include <string>
-#include <vector>
+namespace xrpl {
+namespace test {
+namespace jtx {
 
-namespace xrpl::test::jtx::delegate {
+namespace delegate {
 
 Json::Value
 set(jtx::Account const& account,
@@ -47,4 +42,7 @@ entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize)
     return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
-}  // namespace xrpl::test::jtx::delegate
+}  // namespace delegate
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

@@ -10,7 +10,9 @@
 
 #include <condition_variable>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+
+namespace NodeStore {
 
 /** Persistency layer for NodeObject
 
@@ -272,4 +274,5 @@ private:
     threadEntry();
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

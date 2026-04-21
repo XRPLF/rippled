@@ -21,7 +21,7 @@ namespace xrpl {
     Public keys are used in the public-key cryptography
     system used to verify signatures attached to messages.
 
-    The format of the public key is XRPL specific,
+    The format of the public key is Ripple specific,
     information needed to determine the cryptosystem
     parameters used is stored inside the key.
 
@@ -69,8 +69,8 @@ public:
         return buf_;
     }
 
-    static std::size_t
-    size() noexcept
+    std::size_t
+    size() const noexcept
     {
         return size_;
     }

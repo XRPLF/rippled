@@ -1,36 +1,25 @@
 #include <xrpld/perflog/detail/PerfLogImp.h>
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/Job.h>
 #include <xrpl/core/JobTypes.h>
-#include <xrpl/core/PerfLog.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
-#include <xrpl/protocol/jss.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/system/detail/error_code.hpp>
-
-#include <chrono>
+#include <atomic>
 #include <cstdint>
 #include <cstdlib>
-#include <functional>
-#include <ios>
-#include <memory>
+#include <iterator>
 #include <mutex>
-#include <ostream>
-#include <set>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 #include <utility>
-#include <vector>
 
-namespace xrpl::perf {
+namespace xrpl {
+namespace perf {
 
 PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes const& jobTypes)
 {
@@ -295,11 +284,11 @@ PerfLogImp::report()
 }
 
 PerfLogImp::PerfLogImp(
-    Setup setup,
+    Setup const& setup,
     Application& app,
     beast::Journal journal,
     std::function<void()>&& signalStop)
-    : setup_(std::move(setup)), app_(app), j_(journal), signalStop_(std::move(signalStop))
+    : setup_(setup), app_(app), j_(journal), signalStop_(std::move(signalStop))
 {
     openLog();
 }
@@ -505,4 +494,5 @@ make_PerfLog(
     return std::make_unique<PerfLogImp>(setup, app, journal, std::move(signalStop));
 }
 
-}  // namespace xrpl::perf
+}  // namespace perf
+}  // namespace xrpl

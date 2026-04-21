@@ -18,7 +18,8 @@
 #include <string>
 #include <utility>
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 namespace detail {
 
@@ -85,7 +86,7 @@ public:
     reporter&
     operator=(reporter const&) = delete;
 
-    ~reporter() override;
+    ~reporter();
 
     explicit reporter(std::ostream& os = std::cout);
 
@@ -93,42 +94,42 @@ private:
     static std::string
     fmtdur(typename clock_type::duration const& d);
 
-    void
+    virtual void
     on_suite_begin(suite_info const& info) override;
 
-    void
+    virtual void
     on_suite_end() override;
 
-    void
+    virtual void
     on_case_begin(std::string const& name) override;
 
-    void
+    virtual void
     on_case_end() override;
 
-    void
+    virtual void
     on_pass() override;
 
-    void
+    virtual void
     on_fail(std::string const& reason) override;
 
-    void
+    virtual void
     on_log(std::string const& s) override;
 };
 
 //------------------------------------------------------------------------------
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::suite_results::add(case_results const& r)
+reporter<_>::suite_results::add(case_results const& r)
 {
     ++cases;
     total += r.total;
     failed += r.failed;
 }
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::results::add(suite_results const& r)
+reporter<_>::results::add(suite_results const& r)
 {
     ++suites;
     total += r.total;
@@ -159,13 +160,13 @@ reporter<Unused>::results::add(suite_results const& r)
 
 //------------------------------------------------------------------------------
 
-template <class Unused>
-reporter<Unused>::reporter(std::ostream& os) : os_(os)
+template <class _>
+reporter<_>::reporter(std::ostream& os) : os_(os)
 {
 }
 
-template <class Unused>
-reporter<Unused>::~reporter()
+template <class _>
+reporter<_>::~reporter()
 {
     if (results_.top.size() > 0)
     {
@@ -179,9 +180,9 @@ reporter<Unused>::~reporter()
         << amount{results_.failed, "failure"} << std::endl;
 }
 
-template <class Unused>
+template <class _>
 std::string
-reporter<Unused>::fmtdur(typename clock_type::duration const& d)
+reporter<_>::fmtdur(typename clock_type::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
@@ -192,46 +193,46 @@ reporter<Unused>::fmtdur(typename clock_type::duration const& d)
     return ss.str();
 }
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::on_suite_begin(suite_info const& info)
+reporter<_>::on_suite_begin(suite_info const& info)
 {
     suite_results_ = suite_results{info.full_name()};
 }
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::on_suite_end()
+reporter<_>::on_suite_end()
 {
     results_.add(suite_results_);
 }
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::on_case_begin(std::string const& name)
+reporter<_>::on_case_begin(std::string const& name)
 {
     case_results_ = case_results(name);
     os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
         << std::endl;
 }
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::on_case_end()
+reporter<_>::on_case_end()
 {
     suite_results_.add(case_results_);
 }
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::on_pass()
+reporter<_>::on_pass()
 {
     ++case_results_.total;
 }
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::on_fail(std::string const& reason)
+reporter<_>::on_fail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
@@ -239,9 +240,9 @@ reporter<Unused>::on_fail(std::string const& reason)
         << std::endl;
 }
 
-template <class Unused>
+template <class _>
 void
-reporter<Unused>::on_log(std::string const& s)
+reporter<_>::on_log(std::string const& s)
 {
     os_ << s;
 }
@@ -250,4 +251,5 @@ reporter<Unused>::on_log(std::string const& s)
 
 using reporter = detail::reporter<>;
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast

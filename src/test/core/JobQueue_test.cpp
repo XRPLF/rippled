@@ -1,13 +1,10 @@
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/core/Job.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/core/JobQueue.h>
 
-#include <atomic>
-#include <memory>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 //------------------------------------------------------------------------------
 
@@ -141,4 +138,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JobQueue, core, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

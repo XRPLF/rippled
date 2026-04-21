@@ -4,8 +4,6 @@
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/core/JobTypeInfo.h>
 
-#include <utility>
-
 namespace xrpl {
 
 struct JobTypeData
@@ -35,9 +33,9 @@ public:
 
     JobTypeData(
         JobTypeInfo const& info_,
-        beast::insight::Collector::ptr collector,
+        beast::insight::Collector::ptr const& collector,
         Logs& logs) noexcept
-        : m_load(logs.journal("LoadMonitor")), m_collector(std::move(collector)), info(info_)
+        : m_load(logs.journal("LoadMonitor")), m_collector(collector), info(info_)
 
     {
         m_load.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());

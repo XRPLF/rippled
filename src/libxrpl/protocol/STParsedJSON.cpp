@@ -1,18 +1,13 @@
-#include <xrpl/protocol/STParsedJSON.h>
-
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
@@ -24,6 +19,7 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STXChainBridge.h>
@@ -31,7 +27,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/STVar.h>
-#include <xrpl/protocol/jss.h>
 
 #include <charconv>
 #include <cstdint>
@@ -50,7 +45,7 @@ namespace xrpl {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
-constexpr std::enable_if_t<std::is_unsigned_v<U> && std::is_signed_v<S>, U>
+constexpr std::enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
 to_unsigned(S value)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
@@ -59,7 +54,7 @@ to_unsigned(S value)
 }
 
 template <typename U1, typename U2>
-constexpr std::enable_if_t<std::is_unsigned_v<U1> && std::is_unsigned_v<U2>, U1>
+constexpr std::enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
 to_unsigned(U2 value)
 {
     if (std::numeric_limits<U1>::max() < value)
@@ -741,7 +736,7 @@ parseLeaf(
                         std::string const element_name(json_name + "." + ss.str());
 
                         // each element in this path has some combination of
-                        // account, asset, or issuer
+                        // account, currency, or issuer
 
                         Json::Value pathEl = value[i][j];
 
@@ -751,22 +746,14 @@ parseLeaf(
                             return ret;
                         }
 
-                        if (pathEl.isMember(jss::currency) && pathEl.isMember(jss::mpt_issuance_id))
-                        {
-                            error = RPC::make_error(rpcINVALID_PARAMS, "Invalid Asset.");
-                            return ret;
-                        }
-
-                        bool const isMPT = pathEl.isMember(jss::mpt_issuance_id);
-                        auto const assetName = isMPT ? jss::mpt_issuance_id : jss::currency;
-                        Json::Value const& account = pathEl[jss::account];
-                        Json::Value const& asset = pathEl[assetName];
-                        Json::Value const& issuer = pathEl[jss::issuer];
-                        bool hasAsset = false;
+                        Json::Value const& account = pathEl["account"];
+                        Json::Value const& currency = pathEl["currency"];
+                        Json::Value const& issuer = pathEl["issuer"];
+                        bool hasCurrency = false;
                         AccountID uAccount, uIssuer;
-                        PathAsset uAsset;
+                        Currency uCurrency;
 
-                        if (!account && !asset && !issuer)
+                        if (!account && !currency && !issuer)
                         {
                             error = invalid_data(element_name);
                             return ret;
@@ -777,7 +764,7 @@ parseLeaf(
                             // human account id
                             if (!account.isString())
                             {
-                                error = string_expected(element_name, jss::account.c_str());
+                                error = string_expected(element_name, "account");
                                 return ret;
                             }
 
@@ -788,51 +775,31 @@ parseLeaf(
                                 auto const a = parseBase58<AccountID>(account.asString());
                                 if (!a)
                                 {
-                                    error = invalid_data(element_name, jss::account.c_str());
+                                    error = invalid_data(element_name, "account");
                                     return ret;
                                 }
                                 uAccount = *a;
                             }
                         }
 
-                        if (asset)
+                        if (currency)
                         {
-                            // human asset
-                            if (!asset.isString())
+                            // human currency
+                            if (!currency.isString())
                             {
-                                error = string_expected(element_name, assetName.c_str());
+                                error = string_expected(element_name, "currency");
                                 return ret;
                             }
 
-                            hasAsset = true;
+                            hasCurrency = true;
 
-                            if (isMPT)
+                            if (!uCurrency.parseHex(currency.asString()))
                             {
-                                MPTID u;
-                                if (!u.parseHex(asset.asString()))
+                                if (!to_currency(uCurrency, currency.asString()))
                                 {
-                                    error = invalid_data(element_name, assetName.c_str());
+                                    error = invalid_data(element_name, "currency");
                                     return ret;
                                 }
-                                if (getMPTIssuer(u) == beast::zero)
-                                {
-                                    error = invalid_data(element_name, jss::account.c_str());
-                                    return ret;
-                                }
-                                uAsset = u;
-                            }
-                            else
-                            {
-                                Currency currency;
-                                if (!currency.parseHex(asset.asString()))
-                                {
-                                    if (!to_currency(currency, asset.asString()))
-                                    {
-                                        error = invalid_data(element_name, assetName.c_str());
-                                        return ret;
-                                    }
-                                }
-                                uAsset = currency;
                             }
                         }
 
@@ -841,7 +808,7 @@ parseLeaf(
                             // human account id
                             if (!issuer.isString())
                             {
-                                error = string_expected(element_name, jss::issuer.c_str());
+                                error = string_expected(element_name, "issuer");
                                 return ret;
                             }
 
@@ -850,20 +817,14 @@ parseLeaf(
                                 auto const a = parseBase58<AccountID>(issuer.asString());
                                 if (!a)
                                 {
-                                    error = invalid_data(element_name, jss::issuer.c_str());
+                                    error = invalid_data(element_name, "issuer");
                                     return ret;
                                 }
                                 uIssuer = *a;
                             }
-
-                            if (isMPT && uIssuer != getMPTIssuer(uAsset.get<MPTID>()))
-                            {
-                                error = invalid_data(element_name, jss::issuer.c_str());
-                                return ret;
-                            }
                         }
 
-                        p.emplace_back(uAccount, uAsset, uIssuer, hasAsset);
+                        p.emplace_back(uAccount, uCurrency, uIssuer, hasCurrency);
                     }
 
                     tail.push_back(p);

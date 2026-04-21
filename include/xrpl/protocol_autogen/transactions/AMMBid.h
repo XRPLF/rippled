@@ -49,7 +49,6 @@ public:
 
     /**
      * @brief Get sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -61,7 +60,6 @@ public:
 
     /**
      * @brief Get sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -194,7 +192,6 @@ public:
 
     /**
      * @brief Set sfAsset (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&
@@ -206,7 +203,6 @@ public:
 
     /**
      * @brief Set sfAsset2 (soeREQUIRED)
-     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMBidBuilder&

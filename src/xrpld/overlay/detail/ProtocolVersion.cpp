@@ -3,19 +3,11 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
 
-#include <boost/beast/core/string_type.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
-#include <boost/regex/v5/regbase.hpp>
-#include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_match.hpp>
+#include <boost/regex.hpp>
 
 #include <algorithm>
-#include <cstdint>
 #include <functional>
-#include <iterator>
-#include <optional>
-#include <string>
-#include <vector>
 
 namespace xrpl {
 
@@ -104,9 +96,8 @@ parseProtocolVersions(boost::beast::string_view const& value)
     }
 
     // We guarantee that the returned list is sorted and contains no duplicates:
-    std::ranges::sort(result);
-    auto const uniq = std::ranges::unique(result);
-    result.erase(uniq.begin(), uniq.end());
+    std::sort(result.begin(), result.end());
+    result.erase(std::unique(result.begin(), result.end()), result.end());
 
     return result;
 }
@@ -124,8 +115,12 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     std::function<void(ProtocolVersion const&)> const pickVersion =
         [&result](ProtocolVersion const& v) { result = v; };
 
-    std::ranges::set_intersection(
-        versions, supportedProtocolList, boost::make_function_output_iterator(pickVersion));
+    std::set_intersection(
+        std::begin(versions),
+        std::end(versions),
+        std::begin(supportedProtocolList),
+        std::end(supportedProtocolList),
+        boost::make_function_output_iterator(pickVersion));
 
     return result;
 }
@@ -159,7 +154,8 @@ supportedProtocolVersions()
 bool
 isProtocolSupported(ProtocolVersion const& v)
 {
-    return std::end(supportedProtocolList) != std::ranges::find(supportedProtocolList, v);
+    return std::end(supportedProtocolList) !=
+        std::find(std::begin(supportedProtocolList), std::end(supportedProtocolList), v);
 }
 
 }  // namespace xrpl

@@ -1,19 +1,14 @@
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
+#include <test/jtx.h>
 #include <test/jtx/Oracle.h>
-#include <test/jtx/amount.h>
 
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+
 #include <xrpl/protocol/jss.h>
 
-#include <cstdlib>
-#include <optional>
-#include <string>
-#include <vector>
-
-namespace xrpl::test::jtx::oracle {
+namespace xrpl {
+namespace test {
+namespace jtx {
+namespace oracle {
 
 class GetAggregatePrice_test : public beast::unit_test::suite
 {
@@ -322,4 +317,7 @@ public:
 
 BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, xrpl);
 
-}  // namespace xrpl::test::jtx::oracle
+}  // namespace oracle
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

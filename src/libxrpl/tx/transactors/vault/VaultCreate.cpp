@@ -1,8 +1,3 @@
-#include <xrpl/tx/transactors/vault/VaultCreate.h>
-
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
@@ -11,20 +6,16 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
-
-#include <cstdint>
-#include <memory>
-#include <optional>
+#include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 namespace xrpl {
 
@@ -190,10 +181,8 @@ VaultCreate::doApply()
             .sequence = 1,
             .flags = mptFlags,
             .assetScale = scale,
-            .transferFee = std::nullopt,
             .metadata = tx[~sfMPTokenMetadata],
             .domainId = tx[~sfDomainID],
-            .mutableFlags = std::nullopt,
         });
     if (!maybeShare)
         return maybeShare.error();  // LCOV_EXCL_LINE

@@ -30,10 +30,10 @@ enum class SkipEntry : bool { No = false, Yes };
 /** Determines whether the given expiration time has passed.
 
     In the XRP Ledger, expiration times are defined as the number of whole
-    seconds after the "XRPL epoch" which, for historical reasons, is set
+    seconds after the "Ripple Epoch" which, for historical reasons, is set
     to January 1, 2000 (00:00 UTC).
 
-    This is like the way the Unix epoch works, except the XRPL epoch is
+    This is like the way the Unix epoch works, except the Ripple Epoch is
     precisely 946,684,800 seconds after the Unix Epoch.
 
     See https://xrpl.org/basic-data-types.html#specifying-time
@@ -63,8 +63,8 @@ isVaultPseudoAccountFrozen(
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Asset const& asset,
-    Asset const& asset2);
+    Issue const& asset,
+    Issue const& asset2);
 
 // Return the list of enabled amendments
 [[nodiscard]] std::set<uint256>

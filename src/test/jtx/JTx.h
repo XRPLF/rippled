@@ -12,7 +12,9 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 class Env;
 
@@ -150,4 +152,6 @@ private:
     prop_list props_;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

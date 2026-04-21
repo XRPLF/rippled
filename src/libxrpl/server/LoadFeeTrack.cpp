@@ -1,15 +1,11 @@
-#include <xrpl/server/LoadFeeTrack.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/server/LoadFeeTrack.h>
 
 #include <algorithm>
 #include <cstdint>
-#include <mutex>
-#include <stdexcept>
 
 namespace xrpl {
 

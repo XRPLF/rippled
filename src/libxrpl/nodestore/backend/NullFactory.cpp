@@ -1,28 +1,17 @@
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/nodestore/Scheduler.h>
-#include <xrpl/nodestore/Types.h>
 
-#include <cstddef>
-#include <functional>
 #include <memory>
-#include <string>
-#include <utility>
-#include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+namespace NodeStore {
 
 class NullBackend : public Backend
 {
 public:
     NullBackend() = default;
 
-    ~NullBackend() override = default;
+    ~NullBackend() = default;
 
     std::string
     getName() override
@@ -131,4 +120,5 @@ registerNullFactory(Manager& manager)
     static NullFactory const instance{manager};
 }
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

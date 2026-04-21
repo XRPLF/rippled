@@ -1,38 +1,17 @@
-#include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
+#include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
-#include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/LedgerHeader.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/filesystem/path.hpp>
-
-#include <atomic>
-#include <cstdint>
-#include <limits>
-#include <map>
-#include <memory>
-#include <optional>
-#include <string>
-#include <utility>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class SHAMapStore_test : public beast::unit_test::suite
 {
@@ -178,10 +157,10 @@ public:
         auto ledgerTmp = env.rpc("ledger", "0");
         BEAST_EXPECT(bad(ledgerTmp));
 
-        ledgers.emplace(1, env.rpc("ledger", "1"));
+        ledgers.emplace(std::make_pair(1, env.rpc("ledger", "1")));
         BEAST_EXPECT(goodLedger(env, ledgers[1], "1"));
 
-        ledgers.emplace(2, env.rpc("ledger", "2"));
+        ledgers.emplace(std::make_pair(2, env.rpc("ledger", "2")));
         BEAST_EXPECT(goodLedger(env, ledgers[2], "2"));
 
         ledgerTmp = env.rpc("ledger", "current");
@@ -208,7 +187,7 @@ public:
 
         for (auto i = 3; i < deleteInterval + lastRotated; ++i)
         {
-            ledgers.emplace(i, env.rpc("ledger", std::to_string(i)));
+            ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
             BEAST_EXPECT(
                 goodLedger(env, ledgers[i], std::to_string(i), true) &&
                 !getHash(ledgers[i]).empty());
@@ -245,7 +224,7 @@ public:
             ledgerTmp = env.rpc("ledger", "current");
             BEAST_EXPECT(goodLedger(env, ledgerTmp, std::to_string(i + 3)));
 
-            ledgers.emplace(i, env.rpc("ledger", std::to_string(i)));
+            ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
             BEAST_EXPECT(
                 store.getLastRotated() == lastRotated || i == lastRotated + deleteInterval - 2);
             BEAST_EXPECT(
@@ -597,4 +576,5 @@ public:
 // VFALCO This test fails because of thread asynchronous issues
 BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

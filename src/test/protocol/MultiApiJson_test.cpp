@@ -1,16 +1,14 @@
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/MultiApiJson.h>
 
-#include <array>
-#include <iterator>
+#include <cstdint>
 #include <limits>
 #include <optional>
 #include <type_traits>
 #include <utility>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 namespace {
 
@@ -919,4 +917,5 @@ struct MultiApiJson_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

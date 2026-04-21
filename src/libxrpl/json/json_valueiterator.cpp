@@ -155,7 +155,9 @@ ValueIterator::ValueIterator(ValueConstIterator const& other) : ValueIteratorBas
 {
 }
 
-ValueIterator::ValueIterator(ValueIterator const& other) = default;
+ValueIterator::ValueIterator(ValueIterator const& other) : ValueIteratorBase(other)
+{
+}
 
 ValueIterator&
 ValueIterator::operator=(SelfType const& other)

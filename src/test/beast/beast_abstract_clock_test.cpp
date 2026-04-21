@@ -2,10 +2,9 @@
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/clock/manual_clock.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 
-#include <chrono>
-#include <ostream>
+#include <sstream>
 #include <string>
 #include <thread>
 

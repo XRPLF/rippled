@@ -1,28 +1,9 @@
 #include <xrpl/tx/transactors/lending/LoanManage.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
+//
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/Units.h>
-#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
-
-#include <algorithm>
-#include <cstdint>
 
 namespace xrpl {
 
@@ -405,29 +386,21 @@ LoanManage::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultAsset = vaultSle->at(sfAsset);
 
-    auto const result = [&]() -> TER {
-        // Valid flag combinations are checked in preflight. No flags is valid -
-        // just a noop.
-        if (tx.isFlag(tfLoanDefault))
-            return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
-        if (tx.isFlag(tfLoanImpair))
-            return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-        if (tx.isFlag(tfLoanUnimpair))
-            return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
-        // Noop, as described above.
-        return tesSUCCESS;
-    }();
+    // Valid flag combinations are checked in preflight. No flags is valid -
+    // just a noop.
+    if (tx.isFlag(tfLoanDefault))
+        return defaultLoan(view, loanSle, brokerSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanImpair))
+        return impairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    if (tx.isFlag(tfLoanUnimpair))
+        return unimpairLoan(view, loanSle, vaultSle, vaultAsset, j_);
+    // Noop, as described above.
 
-    // Pre-amendment, associateAsset was only called on the noop (no flags)
-    // path. Post-amendment, we call associateAsset on all successful paths.
-    if (view.rules().enabled(fixSecurity3_1_3) && isTesSuccess(result))
-    {
-        associateAsset(*loanSle, vaultAsset);
-        associateAsset(*brokerSle, vaultAsset);
-        associateAsset(*vaultSle, vaultAsset);
-    }
+    associateAsset(*loanSle, vaultAsset);
+    associateAsset(*brokerSle, vaultAsset);
+    associateAsset(*vaultSle, vaultAsset);
 
-    return result;
+    return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------

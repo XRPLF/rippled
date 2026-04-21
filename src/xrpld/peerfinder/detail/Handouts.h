@@ -6,9 +6,8 @@
 #include <xrpl/beast/container/aged_set.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <utility>
-
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 namespace detail {
 
@@ -79,7 +78,7 @@ class RedirectHandouts
 {
 public:
     template <class = void>
-    explicit RedirectHandouts(SlotImp::ptr slot);
+    explicit RedirectHandouts(SlotImp::ptr const& slot);
 
     template <class = void>
     bool
@@ -115,7 +114,7 @@ private:
 };
 
 template <class>
-RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
+RedirectHandouts::RedirectHandouts(SlotImp::ptr const& slot) : slot_(slot)
 {
     list_.reserve(Tuning::redirectEndpointCount);
 }
@@ -163,7 +162,7 @@ class SlotHandouts
 {
 public:
     template <class = void>
-    explicit SlotHandouts(SlotImp::ptr slot);
+    explicit SlotHandouts(SlotImp::ptr const& slot);
 
     template <class = void>
     bool
@@ -199,7 +198,7 @@ private:
 };
 
 template <class>
-SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
+SlotHandouts::SlotHandouts(SlotImp::ptr const& slot) : slot_(slot)
 {
     list_.reserve(Tuning::numberOfEndpoints);
 }
@@ -330,4 +329,5 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
     return true;
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

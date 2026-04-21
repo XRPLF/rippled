@@ -132,7 +132,6 @@ if(coverage)
 endif()
 
 include(XrplCore)
-include(XrplProtocolAutogen)
 include(XrplInstall)
 include(XrplValidatorKeys)
 

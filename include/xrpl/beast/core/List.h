@@ -16,7 +16,7 @@ struct CopyConst
 {
     explicit CopyConst() = default;
 
-    using type = std::remove_const_t<U>;
+    using type = typename std::remove_const<U>::type;
 };
 
 template <typename T, typename U>
@@ -35,11 +35,9 @@ struct CopyConst<T const, U>
 template <typename T, typename Tag>
 class ListNode
 {
-    ListNode() = default;
-
+private:
     using value_type = T;
 
-    friend T;
     friend class List<T, Tag>;
 
     template <typename>

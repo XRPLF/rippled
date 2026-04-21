@@ -99,7 +99,7 @@ private:
     Derived classes have their instances counted automatically. This is used
     for reporting purposes.
 
-    @ingroup basics
+    @ingroup ripple_basics
 */
 template <class Object>
 class CountedObject
@@ -112,6 +112,7 @@ private:
         return c;
     }
 
+public:
     CountedObject() noexcept
     {
         getCounter().increment();
@@ -125,13 +126,10 @@ private:
     CountedObject&
     operator=(CountedObject const&) noexcept = default;
 
-public:
     ~CountedObject() noexcept
     {
         getCounter().decrement();
     }
-
-    friend Object;
 };
 
 }  // namespace xrpl

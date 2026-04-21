@@ -1,6 +1,7 @@
 #pragma once
 
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 /** The disposition of a consumer after applying a load charge. */
 enum Disposition {
@@ -16,4 +17,5 @@ enum Disposition {
     drop
 };
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

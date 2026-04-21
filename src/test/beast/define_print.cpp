@@ -5,15 +5,13 @@
 #include <xrpl/beast/unit_test/amount.h>
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/unit_test/suite_info.h>
 
-#include <cstddef>
-#include <ostream>
 #include <string>
 
 // Include this .cpp in your project to gain access to the printing suite
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 /** A suite that prints the list of globally defined suites. */
 class print_test : public suite
@@ -44,4 +42,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL(print, beast, beast);
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast

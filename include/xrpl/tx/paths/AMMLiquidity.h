@@ -3,14 +3,14 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
+#include <xrpl/tx/transactors/dex/AMMHelpers.h>
+#include <xrpl/tx/transactors/dex/AMMUtils.h>
 
 namespace xrpl {
 
-template <StepAmount TIn, StepAmount TOut>
+template <typename TIn, typename TOut>
 class AMMOffer;
 
 /** AMMLiquidity class provides AMM offers to BookStep class.
@@ -35,8 +35,8 @@ private:
     AMMContext& ammContext_;
     AccountID const ammAccountID_;
     std::uint32_t const tradingFee_;
-    Asset const assetIn_;
-    Asset const assetOut_;
+    Issue const issueIn_;
+    Issue const issueOut_;
     // Initial AMM pool balances
     TAmounts<TIn, TOut> const initialBalances_;
     beast::Journal const j_;
@@ -46,8 +46,8 @@ public:
         ReadView const& view,
         AccountID const& ammAccountID,
         std::uint32_t tradingFee,
-        Asset const& in,
-        Asset const& out,
+        Issue const& in,
+        Issue const& out,
         AMMContext& ammContext,
         beast::Journal j);
     ~AMMLiquidity() = default;
@@ -87,16 +87,16 @@ public:
         return ammContext_;
     }
 
-    Asset const&
-    assetIn() const
+    Issue const&
+    issueIn() const
     {
-        return assetIn_;
+        return issueIn_;
     }
 
-    Asset const&
-    assetOut() const
+    Issue const&
+    issueOut() const
     {
-        return assetOut_;
+        return issueOut_;
     }
 
 private:

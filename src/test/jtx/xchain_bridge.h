@@ -8,7 +8,9 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 using JValueVec = std::vector<Json::Value>;
 
@@ -222,11 +224,13 @@ struct XChainBridgeObjects
         Account const& acc,
         Json::Value const& bridge = Json::nullValue,
         STAmount const& _reward = XRP(1),
-        std::optional<STAmount> const& minAccountCreate = std::nullopt) const
+        std::optional<STAmount> const& minAccountCreate = std::nullopt)
     {
         return bridge_create(
             acc, bridge == Json::nullValue ? jvb : bridge, _reward, minAccountCreate);
     }
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

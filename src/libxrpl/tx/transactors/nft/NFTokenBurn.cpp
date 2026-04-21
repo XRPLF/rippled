@@ -1,14 +1,8 @@
-#include <xrpl/tx/transactors/nft/NFTokenBurn.h>
-
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/nft.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <cstddef>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/nft/NFTokenBurn.h>
+#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 

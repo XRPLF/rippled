@@ -1,22 +1,10 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
-#include <test/jtx/delivermin.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/paths.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/sendmax.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/txflags.h>
-
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class DeliverMin_test : public beast::unit_test::suite
 {
@@ -140,4 +128,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DeliverMin, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

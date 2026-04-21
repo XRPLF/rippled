@@ -69,7 +69,7 @@ template <class T>
 struct is_uniquely_represented
     : public std::integral_constant<
           bool,
-          std::is_integral_v<T> || std::is_enum_v<T> || std::is_pointer_v<T>>
+          std::is_integral<T>::value || std::is_enum<T>::value || std::is_pointer<T>::value>
 {
     explicit is_uniquely_represented() = default;
 };
@@ -203,14 +203,13 @@ template <class Hasher, class T>
 inline std::enable_if_t<is_contiguously_hashable<T, Hasher>::value>
 hash_append(Hasher& h, T const& t) noexcept
 {
-    // NOLINTNEXTLINE(bugprone-sizeof-expression)
-    h(static_cast<void const*>(std::addressof(t)), sizeof(t));
+    h(std::addressof(t), sizeof(t));
 }
 
 template <class Hasher, class T>
 inline std::enable_if_t<
     !is_contiguously_hashable<T, Hasher>::value &&
-    (std::is_integral_v<T> || std::is_pointer_v<T> || std::is_enum_v<T>)>
+    (std::is_integral<T>::value || std::is_pointer<T>::value || std::is_enum<T>::value)>
 hash_append(Hasher& h, T t) noexcept
 {
     detail::reverse_bytes(t);
@@ -218,7 +217,7 @@ hash_append(Hasher& h, T t) noexcept
 }
 
 template <class Hasher, class T>
-inline std::enable_if_t<std::is_floating_point_v<T>>
+inline std::enable_if_t<std::is_floating_point<T>::value>
 hash_append(Hasher& h, T t) noexcept
 {
     if (t == 0)

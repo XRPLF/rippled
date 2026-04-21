@@ -1,20 +1,11 @@
-#include <xrpl/tx/transactors/delegate/DelegateSet.h>
-
 #include <xrpl/basics/Log.h>
-#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <cstdint>
-#include <memory>
-#include <unordered_set>
+#include <xrpl/protocol/st.h>
+#include <xrpl/tx/transactors/delegate/DelegateSet.h>
 
 namespace xrpl {
 

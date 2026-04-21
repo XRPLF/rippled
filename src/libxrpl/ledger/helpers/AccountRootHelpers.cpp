@@ -1,33 +1,13 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-
-#include <xrpl/basics/Expected.h>
+//
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
 
 #include <algorithm>
-#include <cstdint>
 #include <limits>
-#include <memory>
-#include <optional>
-#include <set>
-#include <stdexcept>
-#include <vector>
 
 namespace xrpl {
 
@@ -100,7 +80,7 @@ xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj,
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
-    auto const balance = view.balanceHookIOU(id, xrpAccount(), fullBalance);
+    auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
 
     STAmount const amount = (balance < reserve) ? STAmount{0} : balance - reserve;
 
@@ -173,7 +153,7 @@ getPseudoAccountFields()
         if (!ar)
         {
             // LCOV_EXCL_START
-            Throw<std::logic_error>(
+            LogicError(
                 "xrpl::getPseudoAccountFields : unable to find account root "
                 "ledger format");
             // LCOV_EXCL_STOP

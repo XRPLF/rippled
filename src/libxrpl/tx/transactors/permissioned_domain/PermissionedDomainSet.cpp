@@ -1,21 +1,11 @@
 #include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
-
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
+//
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <memory>
-#include <utility>
+#include <xrpl/protocol/TxFlags.h>
 
 namespace xrpl {
 

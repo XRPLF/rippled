@@ -1,50 +1,19 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/directory.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/noop.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>  // IWYU pragma: keep
-#include <test/jtx/pay.h>
-#include <test/jtx/tags.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/trust.h>
-
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
-#include <cstddef>
-#include <cstdint>
 #include <limits>
-#include <memory>
-#include <optional>
-#include <string>
-#include <tuple>
-#include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 struct Directory_test : public beast::unit_test::suite
 {
@@ -133,7 +102,7 @@ struct Directory_test : public beast::unit_test::suite
 
                 // Ensure that the entries in the page are sorted
                 auto const& v = p->getFieldV256(sfIndexes);
-                BEAST_EXPECT(std::ranges::is_sorted(v));
+                BEAST_EXPECT(std::is_sorted(v.begin(), v.end()));
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
@@ -154,7 +123,7 @@ struct Directory_test : public beast::unit_test::suite
 
         // Now check the orderbook: it should be in the order we placed
         // the offers.
-        auto book = BookDirs(*env.current(), Book({xrpIssue(), USD, std::nullopt}));
+        auto book = BookDirs(*env.current(), Book({xrpIssue(), USD.issue(), std::nullopt}));
         int count = 1;
 
         for (auto const& offer : book)
@@ -314,7 +283,7 @@ struct Directory_test : public beast::unit_test::suite
         // should have no entries and be empty:
         {
             Sandbox const sb(env.closed().get(), tapNONE);
-            uint256 const bookBase = getBookBase({xrpIssue(), USD, std::nullopt});
+            uint256 const bookBase = getBookBase({xrpIssue(), USD.issue(), std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
             BEAST_EXPECT(!sb.succ(bookBase, getQualityNext(bookBase)));
@@ -506,7 +475,7 @@ struct Directory_test : public beast::unit_test::suite
     testDirectoryFull()
     {
         using namespace test::jtx;
-        Account const alice("alice");
+        Account alice("alice");
 
         auto const testCase = [&, this](FeatureBitset features, auto setup) {
             using namespace test::jtx;
@@ -599,4 +568,5 @@ struct Directory_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_PRIO(Directory, ledger, xrpl, 1);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

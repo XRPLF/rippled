@@ -9,7 +9,8 @@
 #include <string>
 #include <utility>
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 class runner;
 
@@ -109,4 +110,5 @@ make_suite_info(
         });
 }
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast

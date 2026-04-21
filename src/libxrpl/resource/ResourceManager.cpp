@@ -1,5 +1,3 @@
-#include <xrpl/resource/ResourceManager.h>
-
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/insight/Collector.h>
@@ -10,6 +8,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Gossip.h>
+#include <xrpl/resource/ResourceManager.h>
 #include <xrpl/resource/detail/Logic.h>
 
 #include <boost/asio/ip/address.hpp>
@@ -23,7 +22,8 @@
 #include <string_view>
 #include <thread>
 
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 class ManagerImp : public Manager
 {
@@ -164,4 +164,5 @@ make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal jou
     return std::make_unique<ManagerImp>(collector, journal);
 }
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

@@ -1,53 +1,70 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
-#include <test/jtx/check.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/invoice_id.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/quality.h>
-#include <test/jtx/rate.h>
-#include <test/jtx/regkey.h>
-#include <test/jtx/sendmax.h>
-#include <test/jtx/sig.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <string>
-#include <vector>
-
 namespace xrpl {
+namespace test {
+namespace jtx {
+
+/** Set Expiration on a JTx. */
+class expiration
+{
+private:
+    std::uint32_t const expiry_;
+
+public:
+    explicit expiration(NetClock::time_point const& expiry)
+        : expiry_{expiry.time_since_epoch().count()}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfExpiration.jsonName] = expiry_;
+    }
+};
+
+/** Set SourceTag on a JTx. */
+class source_tag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit source_tag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfSourceTag.jsonName] = tag_;
+    }
+};
+
+/** Set DestinationTag on a JTx. */
+class dest_tag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit dest_tag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfDestinationTag.jsonName] = tag_;
+    }
+};
+
+}  // namespace jtx
+}  // namespace test
 
 class Check_test : public beast::unit_test::suite
 {
@@ -387,16 +404,10 @@ class Check_test : public beast::unit_test::suite
             env(check::create(alice, bob, USF(50)), ter(tecFROZEN));
             env.close();
 
-            env(check::create(gwF, bob, USF(50)), ter(tecFROZEN));
-            env.close();
-
             env(fclear(gwF, asfGlobalFreeze));
             env.close();
 
             env(check::create(alice, bob, USF(50)));
-            env.close();
-
-            env(check::create(gwF, bob, USF(50)));
             env.close();
         }
         {
@@ -1053,8 +1064,8 @@ class Check_test : public beast::unit_test::suite
                                      double pct,
                                      double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.balance(alice, USD).value()};
-            STAmount const bobStart{env.balance(bob, USD).value()};
+            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
+            STAmount const bobStart{env.balance(bob, USD.issue()).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1078,8 +1089,8 @@ class Check_test : public beast::unit_test::suite
                                        double pct,
                                        double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.balance(alice, USD).value()};
-            STAmount const bobStart{env.balance(bob, USD).value()};
+            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
+            STAmount const bobStart{env.balance(bob, USD.issue()).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1142,7 +1153,7 @@ class Check_test : public beast::unit_test::suite
                                   double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of a gateway.
-            STAmount const aliceStart{env.balance(alice, USD).value()};
+            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1175,7 +1186,7 @@ class Check_test : public beast::unit_test::suite
                                     double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of the issuer.
-            STAmount const aliceStart{env.balance(alice, USD).value()};
+            STAmount const aliceStart{env.balance(alice, USD.issue()).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1286,14 +1297,6 @@ class Check_test : public beast::unit_test::suite
         env(check::create(alice, bob, USD(4)));
         env.close();
 
-        uint256 const chkIdFroz4ToIssuer{getCheckIndex(alice, env.seq(alice))};
-        env(check::create(alice, gw, USD(4)));
-        env.close();
-
-        uint256 const chkIdFroz4Issuer{getCheckIndex(gw, env.seq(gw))};
-        env(check::create(gw, alice, USD(4)));
-        env.close();
-
         uint256 const chkIdNoDest1{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, USD(1)));
         env.close();
@@ -1360,7 +1363,7 @@ class Check_test : public beast::unit_test::suite
             {
                 IOU const wrongCurrency{gw["EUR"]};
                 STAmount badAmount{amount};
-                badAmount.setIssue(wrongCurrency);
+                badAmount.setIssue(wrongCurrency.issue());
                 env(check::cash(bob, chkId, badAmount), ter(temMALFORMED));
                 env.close();
             }
@@ -1369,7 +1372,7 @@ class Check_test : public beast::unit_test::suite
             {
                 IOU const wrongIssuer{alice["USD"]};
                 STAmount badAmount{amount};
-                badAmount.setIssue(wrongIssuer);
+                badAmount.setIssue(wrongIssuer.issue());
                 env(check::cash(bob, chkId, badAmount), ter(temMALFORMED));
                 env.close();
             }
@@ -1416,17 +1419,6 @@ class Check_test : public beast::unit_test::suite
             env(check::cash(bob, chkIdFroz1, check::DeliverMin(USD(0.5))), ter(tecPATH_PARTIAL));
             env.close();
 
-            env(check::cash(gw, chkIdFroz4ToIssuer, USD(1)), ter(tecPATH_PARTIAL));
-            env.close();
-            env(check::cash(gw, chkIdFroz4ToIssuer, check::DeliverMin(USD(0.5))),
-                ter(tecPATH_PARTIAL));
-            env.close();
-
-            env(check::cash(alice, chkIdFroz4Issuer, USD(1)), ter(tecFROZEN));
-            env.close();
-            env(check::cash(alice, chkIdFroz4Issuer, check::DeliverMin(USD(0.5))), ter(tecFROZEN));
-            env.close();
-
             env(fclear(gw, asfGlobalFreeze));
             env.close();
 
@@ -1435,9 +1427,6 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env.require(balance(alice, USD(19)));
             env.require(balance(bob, USD(1)));
-
-            env(check::cash(gw, chkIdFroz4ToIssuer, USD(1)));
-            env.close();
 
             // Freeze individual trustlines.
             env(trust(gw, alice["USD"](0), tfSetFreeze));
@@ -1452,7 +1441,7 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env(check::cash(bob, chkIdFroz2, USD(2)));
             env.close();
-            env.require(balance(alice, USD(16)));
+            env.require(balance(alice, USD(17)));
             env.require(balance(bob, USD(3)));
 
             // Freeze bob's trustline.  bob can't cash the check.
@@ -1468,7 +1457,7 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env(check::cash(bob, chkIdFroz3, check::DeliverMin(USD(1))));
             verifyDeliveredAmount(env, USD(3));
-            env.require(balance(alice, USD(13)));
+            env.require(balance(alice, USD(14)));
             env.require(balance(bob, USD(6)));
 
             // Set bob's freeze bit in the other direction.  Check
@@ -1485,7 +1474,7 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env(check::cash(bob, chkIdFroz4, USD(4)));
             env.close();
-            env.require(balance(alice, USD(9)));
+            env.require(balance(alice, USD(10)));
             env.require(balance(bob, USD(10)));
         }
         {
@@ -1502,7 +1491,7 @@ class Check_test : public beast::unit_test::suite
             // bob can cash a check with a destination tag.
             env(check::cash(bob, chkIdHasDest2, USD(2)));
             env.close();
-            env.require(balance(alice, USD(7)));
+            env.require(balance(alice, USD(8)));
             env.require(balance(bob, USD(12)));
 
             // Clear the RequireDest flag on bob's account so he can
@@ -1511,7 +1500,7 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env(check::cash(bob, chkIdNoDest1, USD(1)));
             env.close();
-            env.require(balance(alice, USD(6)));
+            env.require(balance(alice, USD(7)));
             env.require(balance(bob, USD(13)));
         }
     }
@@ -1881,8 +1870,8 @@ class Check_test : public beast::unit_test::suite
             }
         };
 
-        AccountOwns alice{.suite = *this, .env = env, .acct = "alice", .owners = 0};
-        AccountOwns bob{.suite = *this, .env = env, .acct = "bob", .owners = 0};
+        AccountOwns alice{*this, env, "alice", 0};
+        AccountOwns bob{*this, env, "bob", 0};
 
         // Fund with noripple so the accounts do not have any flags set.
         env.fund(XRP(5000), noripple(alice, bob));
@@ -1891,7 +1880,7 @@ class Check_test : public beast::unit_test::suite
         // Automatic trust line creation should fail if the check destination
         // can't afford the reserve for the trust line.
         {
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
 
             // Fund gw1 with noripple (even though that's atypical for a
             // gateway) so it does not have any flags set.  We'll set flags
@@ -1971,7 +1960,7 @@ class Check_test : public beast::unit_test::suite
                     if (!BEAST_EXPECT(!offerAmount.native() && !checkAmount.native()))
                         return;
 
-                    BEAST_EXPECT(offerAmount.getIssuer() == checkAmount.getIssuer());
+                    BEAST_EXPECT(offerAmount.issue().account == checkAmount.issue().account);
                     BEAST_EXPECT(offerAmount.negative() == checkAmount.negative());
                     BEAST_EXPECT(offerAmount.mantissa() == checkAmount.mantissa());
                     BEAST_EXPECT(offerAmount.exponent() == checkAmount.exponent());
@@ -2011,7 +2000,7 @@ class Check_test : public beast::unit_test::suite
         {
             // No account root flags on any participant.
             // Automatic trust line from issuer to destination.
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
 
             BEAST_EXPECT((*env.le(gw1))[sfFlags] == 0);
             BEAST_EXPECT((*env.le(alice))[sfFlags] == 0);
@@ -2064,7 +2053,7 @@ class Check_test : public beast::unit_test::suite
             // Transfer of assets using offers does not require rippling.
             // So bob's offer is successfully crossed which creates the
             // trust line.
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             IOU const OF1 = gw1["OF1"];
             env(offer(alice, XRP(97), OF1(97)));
             env.close();
@@ -2113,7 +2102,7 @@ class Check_test : public beast::unit_test::suite
         {
             // gw1 enables rippling.
             // Automatic trust line from issuer to non-issuer should still work.
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfDefaultRipple));
             env.close();
 
@@ -2161,7 +2150,7 @@ class Check_test : public beast::unit_test::suite
             // to non-issuer should work.
 
             // Use offers to automatically create the trust line.
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             IOU const OF2 = gw1["OF2"];
             env(offer(alice, XRP(95), OF2(95)));
             env.close();
@@ -2202,7 +2191,7 @@ class Check_test : public beast::unit_test::suite
             // change any outcomes.
             //
             // Automatic trust line from issuer to non-issuer should still work.
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfDepositAuth));
             env(fset(alice, asfDepositAuth));
             env(fset(bob, asfDepositAuth));
@@ -2252,7 +2241,7 @@ class Check_test : public beast::unit_test::suite
             // automatic trust line creation.
 
             // Use offers to automatically create the trust line.
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             IOU const OF3 = gw1["OF3"];
             env(offer(alice, XRP(93), OF3(93)));
             env.close();
@@ -2289,7 +2278,7 @@ class Check_test : public beast::unit_test::suite
         {
             // Set lsfGlobalFreeze on gw1.  That should stop any automatic
             // trust lines from being created.
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             env(fset(gw1, asfGlobalFreeze));
             env.close();
 
@@ -2331,7 +2320,7 @@ class Check_test : public beast::unit_test::suite
             // no automatic trust line creation between non-issuers.
 
             // Use offers to automatically create the trust line.
-            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
+            AccountOwns const gw1{*this, env, "gw1", 0};
             IOU const OF4 = gw1["OF4"];
             env(offer(alice, XRP(91), OF4(91)), ter(tecFROZEN));
             env.close();
@@ -2370,7 +2359,7 @@ class Check_test : public beast::unit_test::suite
         // flag on an account that already has trust lines.  So we'll fund
         // a new gateway and use that.
         {
-            AccountOwns gw2{.suite = *this, .env = env, .acct = "gw2", .owners = 0};
+            AccountOwns gw2{*this, env, "gw2", 0};
             env.fund(XRP(5000), gw2);
             env.close();
 
@@ -2434,7 +2423,7 @@ class Check_test : public beast::unit_test::suite
             // no automatic trust line creation between non-issuers.
 
             // Use offers to automatically create the trust line.
-            AccountOwns const gw2{.suite = *this, .env = env, .acct = "gw2", .owners = 0};
+            AccountOwns const gw2{*this, env, "gw2", 0};
             IOU const OF5 = gw2["OF5"];
             env(offer(alice, XRP(91), OF5(91)), ter(tecUNFUNDED_OFFER));
             env.close();

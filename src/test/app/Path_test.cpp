@@ -1,62 +1,30 @@
+#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
-#include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/jtx_json.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>  // IWYU pragma: keep
-#include <test/jtx/paths.h>
-#include <test/jtx/pay.h>
 #include <test/jtx/permissioned_dex.h>
-#include <test/jtx/rate.h>
-#include <test/jtx/sendmax.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
 
-#include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCHandler.h>
-#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/core/Job.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_reader.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/protocol/STPathSet.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/resource/Charge.h>
-#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 
 #include <chrono>
 #include <condition_variable>
-#include <cstdint>
-#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <tuple>
-#include <utility>
+#include <thread>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 //------------------------------------------------------------------------------
 
@@ -155,16 +123,16 @@ public:
         Resource::Consumer c;
 
         RPC::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = RPC::apiVersionIfUnspecified},
+            {env.journal,
+             app,
+             loadType,
+             app.getOPs(),
+             app.getLedgerMaster(),
+             c,
+             Role::USER,
+             {},
+             {},
+             RPC::apiVersionIfUnspecified},
             {},
             {}};
 
@@ -266,16 +234,16 @@ public:
         Resource::Consumer c;
 
         RPC::JsonContext context{
-            {.j = env.journal,
-             .app = app,
-             .loadType = loadType,
-             .netOps = app.getOPs(),
-             .ledgerMaster = app.getLedgerMaster(),
-             .consumer = c,
-             .role = Role::USER,
-             .coro = {},
-             .infoSub = {},
-             .apiVersion = RPC::apiVersionIfUnspecified},
+            {env.journal,
+             app,
+             loadType,
+             app.getOPs(),
+             app.getLedgerMaster(),
+             c,
+             Role::USER,
+             {},
+             {},
+             RPC::apiVersionIfUnspecified},
             {},
             {}};
         Json::Value result;
@@ -880,7 +848,7 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
+        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
@@ -922,14 +890,15 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
+        auto const jv_l = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
-        BEAST_EXPECT(env.le(keylet::line(Account("bob").id(), Account("alice")["USD"])) == nullptr);
+        BEAST_EXPECT(
+            env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue())) == nullptr);
     }
 
     void
@@ -972,13 +941,14 @@ public:
             })",
             jv);
 
-        auto const jv_l = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"]))
+        auto const jv_l = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue()))
                               ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
-        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), Account("bob")["USD"])) == nullptr);
+        BEAST_EXPECT(
+            env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue())) == nullptr);
     }
 
     void
@@ -1912,4 +1882,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Path, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

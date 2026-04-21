@@ -2,28 +2,15 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Counts.h>
 #include <xrpld/peerfinder/detail/Logic.h>
-#include <xrpld/peerfinder/detail/Store.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 
-#include <boost/system/detail/error_code.hpp>
-
-#include <chrono>
-#include <cstddef>
-#include <cstdint>
-#include <optional>
-#include <stdexcept>
-#include <string>
-#include <vector>
-
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 class PeerFinder_test : public beast::unit_test::suite
 {
@@ -482,32 +469,32 @@ public:
                 pass();
             }
         };
-        run(R"xrpldConfig(
+        run(R"rippleConfig(
 [peers_in_max]
 100
-)xrpldConfig");
-        run(R"xrpldConfig(
+)rippleConfig");
+        run(R"rippleConfig(
 [peers_out_max]
 100
-)xrpldConfig");
-        run(R"xrpldConfig(
+)rippleConfig");
+        run(R"rippleConfig(
 [peers_in_max]
 100
 [peers_out_max]
 5
-)xrpldConfig");
-        run(R"xrpldConfig(
+)rippleConfig");
+        run(R"rippleConfig(
 [peers_in_max]
 1001
 [peers_out_max]
 10
-)xrpldConfig");
-        run(R"xrpldConfig(
+)rippleConfig");
+        run(R"rippleConfig(
 [peers_in_max]
 10
 [peers_out_max]
 1001
-)xrpldConfig");
+)rippleConfig");
     }
 
     void
@@ -529,4 +516,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PeerFinder, peerfinder, xrpl);
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

@@ -42,13 +42,13 @@ private:
 public:
     using value_type = STAmount;
 
-    constexpr static int cMinOffset = -96;
-    constexpr static int cMaxOffset = 80;
+    static int const cMinOffset = -96;
+    static int const cMaxOffset = 80;
 
     // Maximum native value supported by the code
     constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
     static_assert(isPowerOfTen(cMinValue));
-    constexpr static std::uint64_t cMaxValue = (cMinValue * 10) - 1;
+    constexpr static std::uint64_t cMaxValue = cMinValue * 10 - 1;
     static_assert(cMaxValue == 9'999'999'999'999'999ull);
     constexpr static std::uint64_t cMaxNative = 9'000'000'000'000'000'000ull;
 
@@ -164,9 +164,12 @@ public:
     constexpr TIss const&
     get() const;
 
-    template <ValidIssueType TIss>
-    TIss&
-    get();
+    Issue const&
+    issue() const;
+
+    // These three are deprecated
+    Currency const&
+    getCurrency() const;
 
     AccountID const&
     getIssuer() const;
@@ -221,6 +224,9 @@ public:
     // Zero while copying currency and issuer.
     void
     clear(Asset const& asset);
+
+    void
+    setIssuer(AccountID const& uIssuer);
 
     /** Set the Issue for this amount. */
     void
@@ -359,13 +365,9 @@ inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
     : mAsset(issue), mOffset(amount.exponent()), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
-    {
         mValue = unsafe_cast<std::uint64_t>(-amount.mantissa());
-    }
     else
-    {
         mValue = unsafe_cast<std::uint64_t>(amount.mantissa());
-    }
 
     canonicalize();
 }
@@ -374,13 +376,9 @@ inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
     : mAsset(mptIssue), mOffset(0), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
-    {
         mValue = unsafe_cast<std::uint64_t>(-amount.value());
-    }
     else
-    {
         mValue = unsafe_cast<std::uint64_t>(amount.value());
-    }
 
     canonicalize();
 }
@@ -409,7 +407,7 @@ amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource);
 inline STAmount const&
 toSTAmount(STAmount const& a)
 {
-    return a;  // NOLINT(bugprone-return-const-ref-from-parameter)
+    return a;
 }
 
 //------------------------------------------------------------------------------
@@ -468,11 +466,16 @@ STAmount::get() const
     return mAsset.get<TIss>();
 }
 
-template <ValidIssueType TIss>
-TIss&
-STAmount::get()
+inline Issue const&
+STAmount::issue() const
 {
-    return mAsset.get<TIss>();
+    return get<Issue>();
+}
+
+inline Currency const&
+STAmount::getCurrency() const
+{
+    return mAsset.get<Issue>().currency;
 }
 
 inline AccountID const&
@@ -484,9 +487,7 @@ STAmount::getIssuer() const
 inline int
 STAmount::signum() const noexcept
 {
-    if (mValue == 0u)
-        return 0;
-    return mIsNegative ? -1 : 1;
+    return mValue ? (mIsNegative ? -1 : 1) : 0;
 }
 
 inline STAmount
@@ -504,13 +505,11 @@ operator bool() const noexcept
 inline STAmount::
 operator Number() const
 {
-    return asset().visit(
-        [&](Issue const& issue) -> Number {
-            if (issue.native())
-                return xrp();
-            return iou();
-        },
-        [&](MPTIssue const&) -> Number { return mpt(); });
+    if (native())
+        return xrp();
+    if (mAsset.holds<MPTIssue>())
+        return mpt();
+    return iou();
 }
 
 inline STAmount&
@@ -567,6 +566,12 @@ STAmount::clear(Asset const& asset)
 {
     setIssue(asset);
     clear();
+}
+
+inline void
+STAmount::setIssuer(AccountID const& uIssuer)
+{
+    mAsset.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&
@@ -733,21 +738,6 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
-
-/** Get the scale of a Number for a given asset.
- *
- * "scale" is similar to "exponent", but from the perspective of STAmount, which has different rules
- * and mantissa ranges for determining the exponent than Number.
- *
- * @param number The Number to get the scale of.
- * @param asset The asset to use for determining the scale.
- * @return The scale of this Number for the given asset.
- */
-inline int
-scale(Number const& number, Asset const& asset)
-{
-    return STAmount{asset, number}.exponent();
-}
 
 }  // namespace xrpl
 

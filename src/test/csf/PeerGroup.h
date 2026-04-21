@@ -6,7 +6,9 @@
 #include <algorithm>
 #include <vector>
 
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 
 /** A group of simulation Peers
 
@@ -33,11 +35,11 @@ public:
     }
     PeerGroup(std::vector<Peer*>&& peers) : peers_{std::move(peers)}
     {
-        std::ranges::sort(peers_);
+        std::sort(peers_.begin(), peers_.end());
     }
     PeerGroup(std::vector<Peer*> const& peers) : peers_{peers}
     {
-        std::ranges::sort(peers_);
+        std::sort(peers_.begin(), peers_.end());
     }
 
     PeerGroup(std::set<Peer*> const& peers) : peers_{peers.begin(), peers.end()}
@@ -77,14 +79,15 @@ public:
     bool
     contains(Peer const* p)
     {
-        return std::ranges::find(peers_, p) != peers_.end();
+        return std::find(peers_.begin(), peers_.end(), p) != peers_.end();
     }
 
     bool
     contains(PeerID id)
     {
-        return std::ranges::find_if(peers_, [id](Peer const* p) { return p->id == id; }) !=
-            peers_.end();
+        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) {
+                   return p->id == id;
+               }) != peers_.end();
     }
 
     std::size_t
@@ -212,7 +215,12 @@ public:
     operator+(PeerGroup const& a, PeerGroup const& b)
     {
         PeerGroup res;
-        std::ranges::set_union(a.peers_, b.peers_, std::back_inserter(res.peers_));
+        std::set_union(
+            a.peers_.begin(),
+            a.peers_.end(),
+            b.peers_.begin(),
+            b.peers_.end(),
+            std::back_inserter(res.peers_));
         return res;
     }
 
@@ -222,7 +230,12 @@ public:
     {
         PeerGroup res;
 
-        std::ranges::set_difference(a.peers_, b.peers_, std::back_inserter(res.peers_));
+        std::set_difference(
+            a.peers_.begin(),
+            a.peers_.end(),
+            b.peers_.begin(),
+            b.peers_.end(),
+            std::back_inserter(res.peers_));
 
         return res;
     }
@@ -333,4 +346,6 @@ randomRankedConnect(
     }
 }
 
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

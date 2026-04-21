@@ -4,7 +4,9 @@
 
 #include <optional>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Set the regular signature on a JTx.
     @note For multisign, use msig.
@@ -54,4 +56,6 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

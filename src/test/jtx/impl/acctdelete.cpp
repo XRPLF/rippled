@@ -1,16 +1,11 @@
+#include <test/jtx/Env.h>
 #include <test/jtx/acctdelete.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstdint>
-
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
 Json::Value
@@ -43,4 +38,6 @@ incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
     env.test.BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

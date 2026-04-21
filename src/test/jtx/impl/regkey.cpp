@@ -1,13 +1,10 @@
 #include <test/jtx/regkey.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/tags.h>
-
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 Json::Value
 regkey(Account const& account, disabled_t)
@@ -28,4 +25,6 @@ regkey(Account const& account, Account const& signer)
     return jv;
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl
