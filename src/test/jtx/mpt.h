@@ -9,9 +9,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class MPTTester;
 
@@ -169,11 +167,11 @@ class MPTTester
     bool close_;
 
 public:
-    MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
+    MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
     MPTTester(
         Env& env,
-        Account const& issuer,
+        Account issuer,
         MPTID const& id,
         std::vector<Account> const& holders = {},
         bool close = true);
@@ -313,6 +311,4 @@ private:
     getFlags(std::optional<Account> const& holder) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

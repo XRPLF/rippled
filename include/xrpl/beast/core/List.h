@@ -16,7 +16,7 @@ struct CopyConst
 {
     explicit CopyConst() = default;
 
-    using type = typename std::remove_const<U>::type;
+    using type = std::remove_const_t<U>;
 };
 
 template <typename T, typename U>

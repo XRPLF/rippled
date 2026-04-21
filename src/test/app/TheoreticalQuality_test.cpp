@@ -44,8 +44,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct RippleCalcTestParams
 {
@@ -544,5 +543,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(TheoreticalQuality, app, xrpl, 3);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

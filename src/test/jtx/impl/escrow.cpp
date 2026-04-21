@@ -14,12 +14,8 @@
 
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
 /** Escrow operations. */
-namespace escrow {
+namespace xrpl::test::jtx::escrow {
 
 Json::Value
 create(AccountID const& account, AccountID const& to, STAmount const& amount)
@@ -66,9 +62,4 @@ rate(Env& env, Account const& account, std::uint32_t const& seq)
     return Rate{0};
 }
 
-}  // namespace escrow
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::escrow

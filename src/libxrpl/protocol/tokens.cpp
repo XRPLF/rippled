@@ -282,7 +282,7 @@ decodeBase58(std::string const& s)
         --remain;
     }
     // Skip leading zeroes in b256.
-    auto iter = std::find_if(b256.begin(), b256.end(), [](unsigned char c) { return c != 0; });
+    auto iter = std::ranges::find_if(b256, [](unsigned char c) { return c != 0; });
     std::string result;
     result.reserve(zeroes + (b256.end() - iter));
     result.assign(zeroes, 0x00);

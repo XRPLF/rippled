@@ -53,8 +53,7 @@
 #include <optional>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Tests of AMM MPT that use offers.
@@ -3659,5 +3658,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AMMExtendedMPT, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

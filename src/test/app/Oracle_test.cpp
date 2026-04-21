@@ -31,10 +31,7 @@
 #include <cstdint>
 #include <optional>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+namespace xrpl::test::jtx::oracle {
 
 struct Oracle_test : public beast::unit_test::suite
 {
@@ -821,10 +818,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Oracle, app, xrpl);
 
-}  // namespace oracle
-
-}  // namespace jtx
-
-}  // namespace test
-
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

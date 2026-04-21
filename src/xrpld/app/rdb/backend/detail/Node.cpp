@@ -65,8 +65,7 @@
 #include <variant>
 #include <vector>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 /**
  * @brief to_string Returns the name of a table according to its TableType.
@@ -138,15 +137,16 @@ makeLedgerDBs(
             {
                 if (pk == 1)
                 {
-                    return {std::move(lgr), std::move(tx), false};
+                    return {
+                        .ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = false};
                 }
             }
         }
 
-        return {std::move(lgr), std::move(tx), true};
+        return {.ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = true};
     }
 
-    return {std::move(lgr), {}, true};
+    return {.ledgerDb = std::move(lgr), .transactionDb = {}, .valid = true};
 }
 
 std::optional<LedgerIndex>
@@ -1139,7 +1139,8 @@ accountTxPage(
             else if (numberOfResults == 0)
             {
                 newmarker = {
-                    rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)), txnSeq.value_or(0)};
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
                 break;
             }
 
@@ -1346,5 +1347,4 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     return true;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

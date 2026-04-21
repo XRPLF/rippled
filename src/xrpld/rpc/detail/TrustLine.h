@@ -32,6 +32,10 @@ enum class LineDirection : bool { incoming = false, outgoing = true };
 */
 class TrustLineBase
 {
+public:
+    TrustLineBase&
+    operator=(TrustLineBase const&) = delete;
+
 protected:
     // This class should not be instantiated directly. Use one of the derived
     // classes.
@@ -39,8 +43,6 @@ protected:
 
     ~TrustLineBase() = default;
     TrustLineBase(TrustLineBase const&) = default;
-    TrustLineBase&
-    operator=(TrustLineBase const&) = delete;
     TrustLineBase(TrustLineBase&&) = default;
 
 public:

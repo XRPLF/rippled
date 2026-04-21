@@ -4,9 +4,7 @@
 #include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 sig::operator()(Env&, JTx& jt) const
@@ -36,6 +34,4 @@ sig::operator()(Env&, JTx& jt) const
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

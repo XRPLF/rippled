@@ -57,8 +57,7 @@
 #include <tuple>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LoanBroker_test : public beast::unit_test::suite
 {
@@ -1850,5 +1849,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LoanBroker, tx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

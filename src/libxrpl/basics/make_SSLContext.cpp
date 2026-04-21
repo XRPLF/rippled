@@ -27,8 +27,8 @@
 #include <string>
 
 namespace xrpl {
-namespace openssl {
-namespace detail {
+
+namespace openssl::detail {
 
 /** The default strength of self-signed RSA certificates.
 
@@ -346,8 +346,7 @@ get_context(std::string cipherList)
     return c;
 }
 
-}  // namespace detail
-}  // namespace openssl
+}  // namespace openssl::detail
 
 //------------------------------------------------------------------------------
 std::shared_ptr<boost::asio::ssl::context>
