@@ -522,7 +522,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temREDUNDANT: Batch: duplicate signer found
+        // temBAD_SIGNER: Batch: duplicate signer (caught by ascending order check)
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 2, 2);
@@ -530,7 +530,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::sig(bob, bob),
-                ter(temREDUNDANT));
+                ter(temBAD_SIGNER));
             env.close();
         }
 
@@ -4460,6 +4460,41 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testUnsortedBatchSigners(FeatureBitset features)
+    {
+        testcase("unsorted batch signers");
+
+        using namespace test::jtx;
+
+        Env env{*this, features};
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        auto const bobSeq = env.seq(bob);
+        auto const carolSeq = env.seq(carol);
+        auto const batchFee = batch::calcBatchFee(env, 2, 2);
+
+        auto jt = env.jt(
+            batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::inner(pay(bob, alice, XRP(10)), bobSeq),
+            batch::inner(pay(carol, alice, XRP(5)), carolSeq),
+            batch::sig(bob, carol));
+
+        auto const s0 = jt.jv[sfBatchSigners.jsonName][0u];
+        auto const s1 = jt.jv[sfBatchSigners.jsonName][1u];
+        jt.jv[sfBatchSigners.jsonName][0u] = s1;
+        jt.jv[sfBatchSigners.jsonName][1u] = s0;
+
+        env(jt.jv, ter(temBAD_SIGNER));
+        env.close();
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -4494,6 +4529,7 @@ class Batch_test : public beast::unit_test::suite
         testValidateRPCResponse(features);
         testBatchCalculateBaseFee(features);
         testStandaloneInnerBatchFlag(features);
+        testUnsortedBatchSigners(features);
     }
 
 public:

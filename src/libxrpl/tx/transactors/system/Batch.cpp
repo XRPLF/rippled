@@ -408,7 +408,6 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
     }
 
     // Validation Batch Signers
-    std::unordered_set<AccountID> batchSigners;
     if (ctx.tx.isFieldPresent(sfBatchSigners))
     {
         STArray const& signers = ctx.tx.getFieldArray(sfBatchSigners);
@@ -421,11 +420,8 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
             return temARRAY_TOO_LARGE;
         }
 
-        // Add batch signers to the set to ensure all signer accounts are
-        // unique. Meanwhile, remove signer accounts from the set of inner
-        // transaction accounts (`requiredSigners`). By the end of the loop,
-        // `requiredSigners` should be empty, indicating that all inner
-        // accounts are matched with signers.
+        // Batch signers must be in strictly ascending order by AccountID.
+        AccountID lastBatchSigner(beast::zero);
         for (auto const& signer : signers)
         {
             AccountID const signerAccount = signer.getAccountID(sfAccount);
@@ -436,12 +432,20 @@ Batch::preflightSigValidated(PreflightContext const& ctx)
                 return temBAD_SIGNER;
             }
 
-            if (!batchSigners.insert(signerAccount).second)
+            if (lastBatchSigner == signerAccount)
             {
                 JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                     << "duplicate signer found: " << signerAccount;
-                return temREDUNDANT;
+                return temBAD_SIGNER;
             }
+
+            if (lastBatchSigner > signerAccount)
+            {
+                JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
+                                    << "unsorted signers array: " << signerAccount;
+                return temBAD_SIGNER;
+            }
+            lastBatchSigner = signerAccount;
 
             // Check that the batch signer is in the required signers set.
             // Remove it if it does, as it can be crossed off the list.
