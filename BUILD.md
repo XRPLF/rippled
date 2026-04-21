@@ -607,6 +607,45 @@ For example, if you want to build Debug:
 1. For conan install, pass `--settings build_type=Debug`
 2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
 
+### libiconv linker errors on macOS
+
+If you encounter linker errors while building `libiconv` on macOS, such as:
+
+```
+ld: multiple errors: archive member '/' not a mach-o file in '../lib/.libs/libiconv.a'
+clang: error: linker command failed with exit code 1
+```
+
+This is typically caused by GNU binutils tools (from Homebrew) taking precedence
+over the macOS native toolchain. The GNU `ar` command creates archive files that
+are incompatible with the macOS linker.
+
+To resolve this issue, ensure the macOS native tools are used:
+
+```bash
+export AR=/usr/bin/ar
+export RANLIB=/usr/bin/ranlib
+export NM=/usr/bin/nm
+export CC=clang
+export CXX=clang++
+
+# Make sure /usr/bin is before Homebrew's binutils in PATH
+export PATH="/usr/bin:/usr/sbin:$PATH"
+
+# Remove the broken libiconv build from Conan's cache
+conan remove 'libiconv/*' --confirm
+
+# Re-run conan install
+conan install .. --output-folder . --build missing --settings build_type=Release
+```
+
+Alternatively, you can avoid building `libiconv` from source by using pre-built
+binaries:
+
+```bash
+conan install .. --output-folder . --build 'missing' --build '!libiconv' --settings build_type=Release
+```
+
 ## Add a Dependency
 
 If you want to experiment with a new package, follow these steps:
