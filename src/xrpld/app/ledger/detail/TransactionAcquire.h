@@ -21,7 +21,7 @@ public:
 
     SHAMapAddNode
     takeNodes(
-        std::vector<std::pair<SHAMapNodeID, intr_ptr::SharedPtr<SHAMapTreeNode>>>& data,
+        std::vector<std::pair<SHAMapNodeID, intr_ptr::SharedPtr<SHAMapTreeNode>>> data,
         std::shared_ptr<Peer> const& peer);
 
     void
