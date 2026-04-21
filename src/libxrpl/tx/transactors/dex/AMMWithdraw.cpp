@@ -1101,14 +1101,11 @@ AMMWithdraw::singleWithdrawEPrice(
         // t = T*(T + A*E*(f - 2))/(T*f - A*E)
         Number const ae = amountBalance * ePrice;
         auto const f = getFee(tfee);
-        // Bug #40: guard against division by zero when ePrice == lptAMMBalance*f/amountBalance
         auto const denom = lptAMMBalance * f - ae;
-        if (denom == beast::zero)
-        {
-            if (!view.rules().enabled(fixAMMv1_3))
-                return {tecAMM_FAILED, STAmount{}};
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
-        }
+        // fixSecurity3_1_3: guard against division by zero
+        // when ePrice == lptAMMBalance*f/amountBalance
+        if (view.rules().enabled(fixSecurity3_1_3) && denom == beast::zero)
+            return {tecAMM_FAILED, STAmount{}};
         auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
         auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
         auto const tokensAdj =
@@ -1143,13 +1140,11 @@ AMMWithdraw::singleWithdrawEPrice(
 
         return {tecAMM_FAILED, STAmount{}};
     }
-    // LCOV_EXCL_START
     catch (std::exception const& e)
     {
         JLOG(j_.error()) << "AMMWithdraw::singleWithdrawEPrice exception " << e.what();
     }
     return {tecINTERNAL, STAmount{}};
-    // LCOV_EXCL_STOP
 }
 
 WithdrawAll
