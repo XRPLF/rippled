@@ -7,19 +7,20 @@
 #include <type_traits>
 
 namespace xrpl {
-namespace test {
-namespace jtx {
+class STPath;
+
+namespace test::jtx {
 
 /** Set Paths, SendMax on a JTx. */
 class paths
 {
 private:
-    Issue in_;
+    Asset in_;
     int depth_;
     unsigned int limit_;
 
 public:
-    paths(Issue const& in, int depth = 7, unsigned int limit = 4)
+    paths(Asset const& in, int depth = 7, unsigned int limit = 4)
         : in_(in), depth_(depth), limit_(limit)
     {
     }
@@ -45,6 +46,8 @@ public:
     template <class T, class... Args>
     explicit path(T const& t, Args const&... args);
 
+    path(STPath const& p);
+
     void
     operator()(Env&, JTx& jt) const;
 
@@ -59,7 +62,7 @@ private:
     append_one(AccountID const& account);
 
     template <class T>
-    std::enable_if_t<std::is_constructible<Account, T>::value>
+    std::enable_if_t<std::is_constructible_v<Account, T>>
     append_one(T const& t)
     {
         append_one(Account{t});
@@ -91,6 +94,6 @@ path::append(T const& t, Args const&... args)
         append(args...);
 }
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl

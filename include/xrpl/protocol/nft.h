@@ -9,8 +9,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace xrpl {
-namespace nft {
+namespace xrpl::nft {
 
 // Separate taxons from regular integers.
 struct TaxonTag
@@ -102,5 +101,4 @@ getIssuer(uint256 const& id)
     return AccountID::fromVoid(id.data() + 4);
 }
 
-}  // namespace nft
-}  // namespace xrpl
+}  // namespace xrpl::nft

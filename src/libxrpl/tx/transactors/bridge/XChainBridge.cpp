@@ -1,31 +1,51 @@
+#include <xrpl/tx/transactors/bridge/XChainBridge.h>
+
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/transactors/bridge/XChainBridge.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <tuple>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -308,7 +328,7 @@ onNewAttestations(
         j);
 
     if (!r.has_value())
-        return {std::nullopt, changed};
+        return {.rewardAccounts = std::nullopt, .changed = changed};
 
     return {std::move(r.value()), changed};
 };
@@ -642,7 +662,7 @@ finalizeClaimHelper(
                 saveNumberRoundMode const _{Number::setround(round_mode)};
 
                 STAmount const den{rewardAccounts.size()};
-                return divide(rewardPool, den, rewardPool.issue());
+                return divide(rewardPool, den, rewardPool.asset());
             }();
             STAmount distributed = rewardPool.zeroed();
             for (auto const& rewardAccount : rewardAccounts)
@@ -1167,7 +1187,7 @@ attestationPreflight(PreflightContext const& ctx)
     if (att->sendingAmount.signum() <= 0)
         return temXCHAIN_BAD_PROOF;
     auto const expectedIssue = bridgeSpec.issue(STXChainBridge::srcChain(att->wasLockingChainSend));
-    if (att->sendingAmount.issue() != expectedIssue)
+    if (att->sendingAmount.asset() != expectedIssue)
         return temXCHAIN_BAD_PROOF;
 
     return tesSUCCESS;
@@ -1578,8 +1598,8 @@ XChainClaim::preflight(PreflightContext const& ctx)
     auto const amount = ctx.tx[sfAmount];
 
     if (amount.signum() <= 0 ||
-        (amount.issue() != bridgeSpec.lockingChainIssue() &&
-         amount.issue() != bridgeSpec.issuingChainIssue()))
+        (amount.asset() != bridgeSpec.lockingChainIssue() &&
+         amount.asset() != bridgeSpec.issuingChainIssue()))
     {
         return temBAD_AMOUNT;
     }
@@ -1628,12 +1648,12 @@ XChainClaim::preclaim(PreclaimContext const& ctx)
 
         if (isLockingChain)
         {
-            if (bridgeSpec.lockingChainIssue() != thisChainAmount.issue())
+            if (bridgeSpec.lockingChainIssue() != thisChainAmount.asset())
                 return tecXCHAIN_BAD_TRANSFER_ISSUE;
         }
         else
         {
-            if (bridgeSpec.issuingChainIssue() != thisChainAmount.issue())
+            if (bridgeSpec.issuingChainIssue() != thisChainAmount.asset())
                 return tecXCHAIN_BAD_TRANSFER_ISSUE;
         }
     }
@@ -1758,11 +1778,11 @@ XChainClaim::doApply()
             return Unexpected(claimR.error());
 
         return ScopeResult{
-            claimR.value(),
-            (*sleClaimID)[sfAccount],
-            sendingAmount,
-            srcChain,
-            (*sleClaimID)[sfSignatureReward],
+            .rewardAccounts = claimR.value(),
+            .rewardPoolSrc = (*sleClaimID)[sfAccount],
+            .sendingAmount = sendingAmount,
+            .srcChain = srcChain,
+            .signatureReward = (*sleClaimID)[sfSignatureReward],
         };
     }();
 
@@ -1820,8 +1840,8 @@ XChainCommit::preflight(PreflightContext const& ctx)
     if (amount.signum() <= 0 || !isLegalNet(amount))
         return temBAD_AMOUNT;
 
-    if (amount.issue() != bridgeSpec.lockingChainIssue() &&
-        amount.issue() != bridgeSpec.issuingChainIssue())
+    if (amount.asset() != bridgeSpec.lockingChainIssue() &&
+        amount.asset() != bridgeSpec.issuingChainIssue())
         return temBAD_ISSUER;
 
     return tesSUCCESS;
@@ -1866,12 +1886,12 @@ XChainCommit::preclaim(PreclaimContext const& ctx)
 
     if (isLockingChain)
     {
-        if (bridgeSpec.lockingChainIssue() != ctx.tx[sfAmount].issue())
+        if (bridgeSpec.lockingChainIssue() != ctx.tx[sfAmount].asset())
             return tecXCHAIN_BAD_TRANSFER_ISSUE;
     }
     else
     {
-        if (bridgeSpec.issuingChainIssue() != ctx.tx[sfAmount].issue())
+        if (bridgeSpec.issuingChainIssue() != ctx.tx[sfAmount].asset())
             return tecXCHAIN_BAD_TRANSFER_ISSUE;
     }
 
@@ -1899,7 +1919,9 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sleAccount)[sfBalance]};
+        .account = account_,
+        .preFeeBalance_ = preFeeBalance_,
+        .postFeeBalance = (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -2083,7 +2105,7 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
     if (reward.signum() < 0 || !reward.native())
         return temBAD_AMOUNT;
 
-    if (reward.issue() != amount.issue())
+    if (reward.asset() != amount.asset())
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -2115,7 +2137,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     if (amount < *minCreateAmount)
         return tecXCHAIN_INSUFF_CREATE_AMOUNT;
 
-    if (minCreateAmount->issue() != amount.issue())
+    if (minCreateAmount->asset() != amount.asset())
         return tecXCHAIN_BAD_TRANSFER_ISSUE;
 
     AccountID const thisDoor = (*sleBridge)[sfAccount];
@@ -2143,7 +2165,7 @@ XChainCreateAccountCommit::preclaim(PreclaimContext const& ctx)
     }
     STXChainBridge::ChainType const dstChain = STXChainBridge::otherChain(srcChain);
 
-    if (bridgeSpec.issue(srcChain) != ctx.tx[sfAmount].issue())
+    if (bridgeSpec.issue(srcChain) != ctx.tx[sfAmount].asset())
         return tecXCHAIN_BAD_TRANSFER_ISSUE;
 
     if (!isXRP(bridgeSpec.issue(dstChain)))
@@ -2174,7 +2196,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sle)[sfBalance]};
+        .account = account_, .preFeeBalance_ = preFeeBalance_, .postFeeBalance = (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,

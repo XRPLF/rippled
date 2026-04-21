@@ -38,7 +38,7 @@ public:
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
+                std::is_enum_v<KeyType> || std::is_integral_v<KeyType>,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
@@ -74,10 +74,12 @@ public:
 
         Derived classes will load the object with all the known formats.
     */
+private:
     KnownFormats() : name_(beast::type_name<Derived>())
     {
     }
 
+public:
     /** Destroy the known formats object.
 
         The defined formats are deleted.
@@ -181,6 +183,7 @@ private:
 
     boost::container::flat_map<std::string, Item const*> names_;
     boost::container::flat_map<KeyType, Item const*> types_;
+    friend Derived;
 };
 
 }  // namespace xrpl

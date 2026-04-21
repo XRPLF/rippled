@@ -1,7 +1,8 @@
+#include <xrpl/protocol/UintTypes.h>
+
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -77,7 +78,7 @@ to_currency(Currency& currency, std::string const& code)
 
         currency = beast::zero;
 
-        std::copy(code.begin(), code.end(), currency.begin() + detail::isoCodeOffset);
+        std::ranges::copy(code, currency.begin() + detail::isoCodeOffset);
 
         return true;
     }
