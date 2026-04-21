@@ -256,7 +256,7 @@ SignerListSet::validateQuorumAndSignerEntries(
 
     // Make sure there are no duplicate signers.
     XRPL_ASSERT(
-        std::ranges::is_sorted(signers),
+        std::is_sorted(signers.begin(), signers.end()),  // NOLINT(modernize-use-ranges)
         "xrpl::SignerListSet::validateQuorumAndSignerEntries : sorted "
         "signers");
     if (std::ranges::adjacent_find(signers) != signers.end())
