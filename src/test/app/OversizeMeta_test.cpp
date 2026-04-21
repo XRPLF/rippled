@@ -12,8 +12,7 @@
 #include <cstddef>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // Make sure "plump" order books don't have problems
 class PlumpBook_test : public beast::unit_test::suite
@@ -179,5 +178,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, xrpl, 50);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

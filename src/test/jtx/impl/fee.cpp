@@ -7,9 +7,7 @@
 
 #include <cassert>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 fee::operator()(Env& env, JTx& jt) const
@@ -28,6 +26,4 @@ fee::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

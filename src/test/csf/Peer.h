@@ -20,9 +20,7 @@
 
 #include <algorithm>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 namespace bc = boost::container;
 
@@ -493,7 +491,7 @@ struct Peer
     Result
     onClose(Ledger const& prevLedger, NetClock::time_point closeTime, ConsensusMode mode)
     {
-        issue(CloseLedger{prevLedger, openTxs});
+        issue(CloseLedger{.prevLedger = prevLedger, .txs = openTxs});
 
         return Result(
             TxSet{openTxs},
@@ -533,15 +531,14 @@ struct Peer
                 prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
             ledgers[newLedger.id()] = newLedger;
 
-            issue(AcceptLedger{newLedger, lastClosedLedger});
+            issue(AcceptLedger{.ledger = newLedger, .prior = lastClosedLedger});
             prevProposers = result.proposers;
             prevRoundTime = result.roundTime.read();
             lastClosedLedger = newLedger;
 
-            auto const it = std::remove_if(openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
-                return acceptedTxs.exists(tx.id());
-            });
-            openTxs.erase(it, openTxs.end());
+            auto const removed = std::ranges::remove_if(
+                openTxs, [&](Tx const& tx) { return acceptedTxs.exists(tx.id()); });
+            openTxs.erase(removed.begin(), removed.end());
 
             // Only send validation if the new ledger is compatible with our
             // fully validated ledger
@@ -595,7 +592,7 @@ struct Peer
         if (netLgr != ledgerID)
         {
             JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
-            issue(WrongPrevLedger{ledgerID, netLgr});
+            issue(WrongPrevLedger{.wrong = ledgerID, .right = netLgr});
         }
 
         return netLgr;
@@ -668,7 +665,7 @@ struct Peer
         quorum = static_cast<std::size_t>(std::ceil(numTrustedPeers * 0.8));
         if (count >= quorum && ledger.isAncestor(fullyValidatedLedger))
         {
-            issue(FullyValidateLedger{ledger, fullyValidatedLedger});
+            issue(FullyValidateLedger{.ledger = ledger, .prior = fullyValidatedLedger});
             fullyValidatedLedger = ledger;
         }
     }
@@ -757,7 +754,7 @@ struct Peer
         // TODO: This always suppresses relay of peer positions already seen
         // Should it allow forwarding if for a recent ledger ?
         auto& dest = peerPositions[p.prevLedger()];
-        if (std::find(dest.begin(), dest.end(), p) != dest.end())
+        if (std::ranges::find(dest, p) != dest.end())
             return false;
 
         dest.push_back(p);
@@ -878,7 +875,7 @@ struct Peer
         if (bestLCL == Ledger::ID{0})
             bestLCL = lastClosedLedger.id();
 
-        issue(StartRound{bestLCL, lastClosedLedger});
+        issue(StartRound{.bestLedger = bestLCL, .prevLedger = lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
         hash_set<PeerID> const nowUntrusted;
@@ -948,6 +945,4 @@ struct Peer
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

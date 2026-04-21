@@ -13,8 +13,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ValidatorInfo_test : public beast::unit_test::suite
 {
@@ -92,5 +91,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(ValidatorInfo, rpc, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -12,13 +12,10 @@
 #include <concepts>
 #include <cstdint>
 #include <optional>
-
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
 
 /** Batch operations */
-namespace batch {
+namespace xrpl::test::jtx::batch {
 
 /** Calculate Batch Fee. */
 XRPAmount
@@ -38,10 +35,10 @@ private:
 
 public:
     inner(
-        Json::Value const& txn,
+        Json::Value txn,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)
-        : txn_(txn), seq_(sequence), ticket_(ticket)
+        : txn_(std::move(txn)), seq_(sequence), ticket_(ticket)
     {
         txn_[jss::SigningPubKey] = "";
         txn_[jss::Sequence] = seq_;
@@ -108,16 +105,16 @@ public:
     Account master;
     std::vector<Reg> signers;
 
-    msig(Account const& masterAccount, std::vector<Reg> signers_)
-        : master(masterAccount), signers(std::move(signers_))
+    msig(Account masterAccount, std::vector<Reg> signers_)
+        : master(std::move(masterAccount)), signers(std::move(signers_))
     {
         sortSigners(signers);
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit msig(Account const& masterAccount, AccountType&& a0, Accounts&&... aN)
-        : master(masterAccount)
+    explicit msig(Account masterAccount, AccountType&& a0, Accounts&&... aN)
+        : master(std::move(masterAccount))
         , signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {
         sortSigners(signers);
@@ -127,9 +124,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace batch
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::batch

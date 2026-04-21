@@ -23,8 +23,7 @@
 #include <string_view>
 #include <thread>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 class ManagerImp : public Manager
 {
@@ -165,5 +164,4 @@ make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal jou
     return std::make_unique<ManagerImp>(collector, journal);
 }
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

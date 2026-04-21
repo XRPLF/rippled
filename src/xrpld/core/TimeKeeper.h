@@ -22,7 +22,7 @@ private:
     }
 
 public:
-    virtual ~TimeKeeper() = default;
+    ~TimeKeeper() override = default;
 
     /** Returns the current time, using the server's clock.
 

@@ -11,9 +11,7 @@
 #include <numeric>
 #include <string>
 
-namespace xrpl {
-
-namespace metrics {
+namespace xrpl::metrics {
 
 void
 TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
@@ -131,6 +129,4 @@ TxMetrics::json() const
     return ret;
 }
 
-}  // namespace metrics
-
-}  // namespace xrpl
+}  // namespace xrpl::metrics

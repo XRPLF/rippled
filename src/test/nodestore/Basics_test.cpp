@@ -8,8 +8,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 // Tests predictable batches, and NodeObject blob encoding
 //
@@ -71,5 +70,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NodeStoreBasic, nodestore, xrpl);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

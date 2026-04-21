@@ -17,8 +17,7 @@
 #include <cstring>
 #include <string>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 template <class BufferFactory>
 std::pair<void const*, std::size_t>
@@ -313,5 +312,4 @@ filter_inner(void* in, std::size_t in_size)
     }
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

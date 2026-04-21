@@ -17,8 +17,7 @@
 #include <exception>
 #include <optional>
 
-namespace xrpl {
-namespace path {
+namespace xrpl::path {
 
 RippleCalc::Output
 RippleCalc::rippleCalculate(
@@ -113,5 +112,4 @@ RippleCalc::rippleCalculate(
     return flowOut;
 }
 
-}  // namespace path
-}  // namespace xrpl
+}  // namespace xrpl::path

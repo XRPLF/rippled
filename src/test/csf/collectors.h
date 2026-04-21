@@ -11,9 +11,7 @@
 #include <ostream>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 //  A collector is any class that implements
 //
@@ -633,7 +631,7 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-            closeJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
+            closeJumps.emplace_back(Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
     }
 
     void
@@ -641,10 +639,11 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-            fullyValidatedJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
+        {
+            fullyValidatedJumps.emplace_back(
+                Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
+        }
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf
