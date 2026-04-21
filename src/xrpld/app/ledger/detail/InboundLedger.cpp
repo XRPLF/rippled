@@ -96,7 +96,7 @@ InboundLedger::InboundLedger(
           app,
           hash,
           ledgerAcquireTimeout,
-          {jtLEDGER_DATA, "InboundLedger", 5},
+          {.jobType = jtLEDGER_DATA, .jobName = "InboundLedger", .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , m_clock(clock)
     , mSeq(seq)
@@ -554,7 +554,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
                 auto packet = std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
                 auto const& peerIds = mPeerSet->getPeerIds();
-                std::for_each(peerIds.begin(), peerIds.end(), [this, &packet](auto id) {
+                std::ranges::for_each(peerIds, [this, &packet](auto id) {
                     if (auto p = app_.getOverlay().findPeerByShortID(id))
                     {
                         mByHash = false;
@@ -756,14 +756,13 @@ InboundLedger::filterNodes(
 {
     // Sort nodes so that the ones we haven't recently
     // requested come before the ones we have.
-    auto dup = std::stable_partition(nodes.begin(), nodes.end(), [this](auto const& item) {
-        return mRecentNodes.count(item.second) == 0;
-    });
+    auto dup = std::ranges::stable_partition(
+        nodes, [this](auto const& item) { return mRecentNodes.count(item.second) == 0; });
 
     // If everything is a duplicate we don't want to send
     // any query at all except on a timeout where we need
     // to query everyone:
-    if (dup == nodes.begin())
+    if (dup.begin() == nodes.begin())
     {
         JLOG(journal_.trace()) << "filterNodes: all duplicates";
 
@@ -777,7 +776,7 @@ InboundLedger::filterNodes(
     {
         JLOG(journal_.trace()) << "filterNodes: pruning duplicates";
 
-        nodes.erase(dup, nodes.end());
+        nodes.erase(dup.begin(), dup.end());
     }
 
     std::size_t const limit = (reason == TriggerReason::reply) ? reqNodesReply : reqNodes;
@@ -989,7 +988,7 @@ InboundLedger::getNeededHashes()
 
     if (!mHaveHeader)
     {
-        ret.push_back(std::make_pair(protocol::TMGetObjectByHash::otLEDGER, hash_));
+        ret.emplace_back(protocol::TMGetObjectByHash::otLEDGER, hash_);
         return ret;
     }
 
@@ -998,7 +997,7 @@ InboundLedger::getNeededHashes()
         AccountStateSF filter(mLedger->stateMap().family().db(), app_.getLedgerMaster());
         for (auto const& h : neededStateHashes(4, &filter))
         {
-            ret.push_back(std::make_pair(protocol::TMGetObjectByHash::otSTATE_NODE, h));
+            ret.emplace_back(protocol::TMGetObjectByHash::otSTATE_NODE, h);
         }
     }
 
@@ -1007,7 +1006,7 @@ InboundLedger::getNeededHashes()
         TransactionStateSF filter(mLedger->txMap().family().db(), app_.getLedgerMaster());
         for (auto const& h : neededTxHashes(4, &filter))
         {
-            ret.push_back(std::make_pair(protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
+            ret.emplace_back(protocol::TMGetObjectByHash::otTRANSACTION_NODE, h);
         }
     }
 

@@ -12,9 +12,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 trust(Account const& account, STAmount const& amount, std::uint32_t flags)
@@ -63,6 +61,4 @@ claw(Account const& account, STAmount const& amount, std::optional<Account> cons
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

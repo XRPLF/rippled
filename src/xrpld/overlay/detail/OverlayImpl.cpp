@@ -165,7 +165,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
 
 OverlayImpl::OverlayImpl(
     Application& app,
-    Setup const& setup,
+    Setup setup,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
@@ -176,7 +176,7 @@ OverlayImpl::OverlayImpl(
     , io_context_(io_context)
     , work_(std::in_place, boost::asio::make_work_guard(io_context_))
     , strand_(boost::asio::make_strand(io_context_))
-    , setup_(setup)
+    , setup_(std::move(setup))
     , journal_(app_.getJournal("Overlay"))
     , serverHandler_(serverHandler)
     , m_resourceManager(resourceManager)
@@ -255,7 +255,7 @@ OverlayImpl::onHandoff(
 
     {
         auto const types = beast::rfc2616::split_commas(request["Connect-As"]);
-        if (std::find_if(types.begin(), types.end(), [](std::string const& s) {
+        if (std::ranges::find_if(types, [](std::string const& s) {
                 return boost::iequals(s, "peer");
             }) == types.end())
         {
@@ -524,16 +524,16 @@ OverlayImpl::start()
     if (bootstrapIps.empty())
     {
         // Pool of servers operated by Ripple Labs Inc. - https://ripple.com
-        bootstrapIps.push_back("r.ripple.com 51235");
+        bootstrapIps.emplace_back("r.ripple.com 51235");
 
         // Pool of servers operated by ISRDC - https://isrdc.in
-        bootstrapIps.push_back("sahyadri.isrdc.in 51235");
+        bootstrapIps.emplace_back("sahyadri.isrdc.in 51235");
 
         // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
-        bootstrapIps.push_back("hubs.xrpkuwait.com 51235");
+        bootstrapIps.emplace_back("hubs.xrpkuwait.com 51235");
 
         // Pool of servers operated by XRPL Commons - https://xrpl-commons.org
-        bootstrapIps.push_back("hub.xrpl-commons.org 51235");
+        bootstrapIps.emplace_back("hub.xrpl-commons.org 51235");
     }
 
     m_resolver.resolve(

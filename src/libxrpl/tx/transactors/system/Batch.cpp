@@ -279,10 +279,8 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID;
         }
 
-        if (std::any_of(
-                disabledTxTypes.begin(), disabledTxTypes.end(), [txType](auto const& disabled) {
-                    return txType == disabled;
-                }))
+        if (std::ranges::any_of(
+                disabledTxTypes, [txType](auto const& disabled) { return txType == disabled; }))
         {
             return temINVALID_INNER_BATCH;
         }

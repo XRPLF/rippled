@@ -24,8 +24,7 @@
 #include <optional>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 class AMMClawback_test : public beast::unit_test::suite
 {
     void
@@ -2533,5 +2532,4 @@ class AMMClawback_test : public beast::unit_test::suite
     }
 };
 BEAST_DEFINE_TESTSUITE(AMMClawback, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

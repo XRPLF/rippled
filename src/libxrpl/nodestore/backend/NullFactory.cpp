@@ -15,15 +15,14 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NullBackend : public Backend
 {
 public:
     NullBackend() = default;
 
-    ~NullBackend() = default;
+    ~NullBackend() override = default;
 
     std::string
     getName() override
@@ -132,5 +131,4 @@ registerNullFactory(Manager& manager)
     static NullFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

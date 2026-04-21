@@ -16,8 +16,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 /*
   GetLedgerIndex and GetCloseTime are lambdas that allow the close time and
@@ -179,5 +178,4 @@ insertDeliveredAmount(
     }
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

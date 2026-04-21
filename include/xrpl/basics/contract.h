@@ -49,8 +49,7 @@ template <class E, class... Args>
 Throw(Args&&... args)
 {
     static_assert(
-        std::is_convertible<E*, std::exception*>::value,
-        "Exception must derive from std::exception.");
+        std::is_convertible_v<E*, std::exception*>, "Exception must derive from std::exception.");
 
     E e(std::forward<Args>(args)...);
     LogThrow(std::string("Throwing exception of type " + beast::type_name<E>() + ": ") + e.what());

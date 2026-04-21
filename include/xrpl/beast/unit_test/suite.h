@@ -14,8 +14,7 @@
 #include <sstream>
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 namespace detail {
 
@@ -75,7 +74,7 @@ private:
         {
         }
 
-        ~log_buf()
+        ~log_buf() override
         {
             sync();
         }
@@ -573,8 +572,7 @@ suite::run(runner& r)
     ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
 #endif
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test
 
 //------------------------------------------------------------------------------
 
