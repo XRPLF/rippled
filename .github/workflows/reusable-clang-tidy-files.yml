@@ -90,8 +90,21 @@ jobs:
           path: clang-tidy-output.txt
           retention-days: 30
 
+      - name: Generate git diff
+        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
+        run: |
+          git diff | tee clang-tidy-git-diff.txt
+
+      - name: Upload clang-tidy diff output
+        if: ${{ github.event.repository.visibility == 'public' && steps.run_clang_tidy.outcome != 'success' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: clang-tidy-git-diff
+          path: clang-tidy-git-diff.txt
+          retention-days: 30
+
       - name: Create an issue
-        if: steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure
+        if: ${{ steps.run_clang_tidy.outcome != 'success' && inputs.create_issue_on_failure }}
         id: create_issue
         shell: bash
         env:
@@ -156,7 +169,7 @@ jobs:
           rm -f create_issue.log issue.md clang-tidy-output.txt
 
       - name: Fail the workflow if clang-tidy failed
-        if: steps.run_clang_tidy.outcome != 'success'
+        if: ${{ steps.run_clang_tidy.outcome != 'success' }}
         run: |
           echo "Clang-tidy check failed!"
           exit 1
