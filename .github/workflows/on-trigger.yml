@@ -21,6 +21,8 @@ on:
       - ".github/workflows/reusable-build-test-config.yml"
       - ".github/workflows/reusable-build-test.yml"
       - ".github/workflows/reusable-clang-tidy.yml"
+      - ".github/workflows/reusable-clang-tidy-files.yml"
+      - ".github/workflows/reusable-package.yml"
       - ".github/workflows/reusable-strategy-matrix.yml"
       - ".github/workflows/reusable-test.yml"
       - ".github/workflows/reusable-upload-recipe.yml"
@@ -36,7 +38,6 @@ on:
       - "conanfile.py"
       - "conan.lock"
       - "package/**"
-      - ".github/workflows/reusable-package.yml"
 
   # Run at 06:32 UTC on every day of the week from Monday through Friday. This
   # will force all dependencies to be rebuilt, which is useful to verify that

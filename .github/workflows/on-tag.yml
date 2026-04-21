@@ -54,7 +54,6 @@ jobs:
         uses: ./.github/actions/generate-version
 
   generate-packaging-matrix:
-    if: ${{ github.repository == 'XRPLF/rippled' }}
     uses: ./.github/workflows/reusable-strategy-matrix.yml
     with:
       mode: packaging
