@@ -22,6 +22,7 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
 #include <xrpld/telemetry/TxSpanNames.h>
+#include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SHAMapHash.h>
@@ -1423,21 +1424,12 @@ PeerImp::handleTransaction(
     bool eraseTxQueue,
     bool batch)
 {
-    using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Transactions, tx_span::prefix::tx, tx_span::op::receive);
-    span.setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
-    if (auto const version = getVersion(); !version.empty())
-        span.setAttribute(tx_span::attr::peerVersion, version.c_str());
-
     XRPL_ASSERT(eraseTxQueue != batch, ("xrpl::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
         return;
 
     if (app_.getOPs().isNeedNetworkLedger())
     {
-        // If we've never been in synch, there's nothing we can do
-        // with a transaction
         JLOG(p_journal_.debug()) << "Ignoring incoming transaction: Need network ledger";
         return;
     }
@@ -1448,7 +1440,13 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 const txID = stx->getTransactionID();
+
+        using namespace telemetry;
+        auto span = txReceiveSpan(txID, *m);
         span.setAttribute(tx_span::attr::hash, to_string(txID).c_str());
+        span.setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+        if (auto const version = getVersion(); !version.empty())
+            span.setAttribute(tx_span::attr::peerVersion, version.c_str());
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
