@@ -18,6 +18,10 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
 
+#include "xrpl/protocol/Rules.h"
+#include "xrpl/protocol/STLedgerEntry.h"
+#include "xrpl/protocol/STTx.h"
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
