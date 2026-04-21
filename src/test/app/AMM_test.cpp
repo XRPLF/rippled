@@ -7121,7 +7121,7 @@ private:
                 std::nullopt,
                 500);
             env.close();
-            auto const ammSle = env.current()->read(keylet::amm(XRP(0).issue(), USD(0).issue()));
+            auto const ammSle = env.current()->read(keylet::amm(amm[0], amm[1]));
             if (!ammSle || !ammSle->isFieldPresent(sfAuctionSlot))
                 return false;
             auto const& slot = safe_downcast<STObject const&>(ammSle->peekAtField(sfAuctionSlot));
