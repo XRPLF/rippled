@@ -570,7 +570,12 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq));
 
             Serializer msg;
-            serializeBatch(msg, tfAllOrNothing, jt.stx->getBatchTransactionIDs());
+            serializeBatch(
+                msg,
+                jt.stx->getAccountID(sfAccount),
+                jt.stx->getSeqValue(),
+                tfAllOrNothing,
+                jt.stx->getBatchTransactionIDs());
             finishMultiSigningData(bob.id(), msg);
             auto const sig = xrpl::sign(bob.pk(), bob.sk(), msg.slice());
             jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName][sfAccount.jsonName] =
@@ -4460,6 +4465,154 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testOuterBinding(FeatureBitset features)
+    {
+        testcase("outer binding");
+
+        using namespace test::jtx;
+
+        // Signatures captured from one outer account cannot be replayed
+        // under a different outer account.
+        {
+            Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            auto const eve = Account("eve");
+            env.fund(XRP(10000), alice, bob, carol, eve);
+            env.close();
+
+            auto const preCarol = env.balance(carol);
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee1 = batch::calcBatchFee(env, 2, 2);
+            auto jt1 = env.jt(
+                batch::outer(alice, aliceSeq, batchFee1, tfOnlyOne),
+                batch::inner(pay(bob, alice, XRP(100)), bobSeq),
+                batch::inner(pay(carol, alice, XRP(50)), carolSeq),
+                batch::sig(bob, carol));
+
+            auto const capturedSigners = jt1.jv[sfBatchSigners.jsonName];
+
+            env(jt1, ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+            BEAST_EXPECT(env.seq(carol) == carolSeq);
+
+            auto const batchFee2 = batch::calcBatchFee(env, 2, 2);
+            auto jt2 = env.jtnofill(
+                batch::outer(eve, env.seq(eve), batchFee2, tfOnlyOne),
+                batch::inner(pay(bob, alice, XRP(100)), bobSeq),
+                batch::inner(pay(carol, alice, XRP(50)), carolSeq));
+
+            jt2.jv[sfBatchSigners.jsonName] = capturedSigners;
+            env(jt2.jv, ter(temBAD_SIGNATURE));
+            env.close();
+
+            BEAST_EXPECT(env.seq(carol) == carolSeq);
+            BEAST_EXPECT(env.balance(carol) == preCarol);
+        }
+
+        // Signatures are bound to the outer sequence; replaying them
+        // at a higher sequence must fail.
+        {
+            Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            env.fund(XRP(10000), alice, bob, carol);
+            env.close();
+
+            auto const preCarol = env.balance(carol);
+            auto const bobSeq = env.seq(bob);
+            auto const carolSeq = env.seq(carol);
+
+            auto const aliceSeq1 = env.seq(alice);
+            auto const batchFee1 = batch::calcBatchFee(env, 2, 2);
+            auto jt1 = env.jt(
+                batch::outer(alice, aliceSeq1, batchFee1, tfOnlyOne),
+                batch::inner(pay(bob, alice, XRP(500)), bobSeq),
+                batch::inner(pay(carol, alice, XRP(500)), carolSeq),
+                batch::sig(bob, carol));
+
+            auto const capturedSigners = jt1.jv[sfBatchSigners.jsonName];
+
+            env(jt1, ter(tesSUCCESS));
+            env.close();
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+            BEAST_EXPECT(env.seq(carol) == carolSeq);
+
+            auto const batchFee2 = batch::calcBatchFee(env, 2, 2);
+            auto jt2 = env.jtnofill(
+                batch::outer(alice, env.seq(alice), batchFee2, tfOnlyOne),
+                batch::inner(pay(bob, alice, XRP(500)), bobSeq),
+                batch::inner(pay(carol, alice, XRP(500)), carolSeq));
+
+            jt2.jv[sfBatchSigners.jsonName] = capturedSigners;
+            env(jt2.jv, ter(temBAD_SIGNATURE));
+            env.close();
+
+            BEAST_EXPECT(env.balance(carol) == preCarol);
+            BEAST_EXPECT(env.seq(carol) == carolSeq);
+        }
+
+        // Multi-signed batch signer entries are bound to their account;
+        // reusing inner signatures under a different batch signer must fail.
+        {
+            Env env{*this, features};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            auto const dave = Account("dave");
+            auto const elsa = Account("elsa");
+            env.fund(XRP(10000), alice, bob, carol, dave, elsa);
+            env.close();
+
+            env(signers(bob, 2, {{dave, 1}, {elsa, 1}}));
+            env.close();
+            env(signers(carol, 2, {{dave, 1}, {elsa, 1}}));
+            env.close();
+
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 3, 2);
+            auto jt1 = env.jt(
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {dave, elsa}),
+                ter(tesSUCCESS));
+
+            auto const bobSignerEntry =
+                jt1.jv[sfBatchSigners.jsonName][0u];
+
+            env(jt1, ter(tesSUCCESS));
+            env.close();
+
+            auto const seq2 = env.seq(alice);
+            auto const batchFee2 = batch::calcBatchFee(env, 3, 2);
+            auto jt2 = env.jtnofill(
+                batch::outer(alice, seq2, batchFee2, tfAllOrNothing),
+                batch::inner(pay(alice, carol, XRP(10)), seq2 + 1),
+                batch::inner(pay(carol, alice, XRP(5)), env.seq(carol)));
+
+            Json::Value carolSigner;
+            carolSigner[sfBatchSigner.jsonName][jss::Account] = carol.human();
+            carolSigner[sfBatchSigner.jsonName][jss::SigningPubKey] = "";
+            carolSigner[sfBatchSigner.jsonName][sfSigners.jsonName] =
+                bobSignerEntry[sfBatchSigner.jsonName][sfSigners.jsonName];
+
+            jt2.jv[sfBatchSigners.jsonName][0u] = carolSigner;
+            env(jt2.jv, ter(temBAD_SIGNATURE));
+            env.close();
+        }
+    }
+
+    void
     testUnsortedBatchSigners(FeatureBitset features)
     {
         testcase("unsorted batch signers");
@@ -4529,6 +4682,7 @@ class Batch_test : public beast::unit_test::suite
         testValidateRPCResponse(features);
         testBatchCalculateBaseFee(features);
         testStandaloneInnerBatchFlag(features);
+        testOuterBinding(features);
         testUnsortedBatchSigners(features);
     }
 

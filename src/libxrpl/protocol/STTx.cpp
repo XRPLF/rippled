@@ -435,7 +435,12 @@ Expected<void, std::string>
 STTx::checkBatchSingleSign(STObject const& batchSigner) const
 {
     Serializer msg;
-    serializeBatch(msg, getFlags(), getBatchTransactionIDs());
+    serializeBatch(
+        msg,
+        getAccountID(sfAccount),
+        getSeqValue(),
+        getFlags(),
+        getBatchTransactionIDs());
     finishMultiSigningData(batchSigner.getAccountID(sfAccount), msg);
     return singleSignHelper(batchSigner, msg.slice());
 }
@@ -523,11 +528,18 @@ STTx::checkBatchMultiSign(STObject const& batchSigner, Rules const& rules) const
     // We can ease the computational load inside the loop a bit by
     // pre-constructing part of the data that we hash.  Fill a Serializer
     // with the stuff that stays constant from signature to signature.
+    auto const batchSignerAccount = batchSigner.getAccountID(sfAccount);
     Serializer dataStart;
-    serializeBatch(dataStart, getFlags(), getBatchTransactionIDs());
+    serializeBatch(
+        dataStart,
+        getAccountID(sfAccount),
+        getSeqValue(),
+        getFlags(),
+        getBatchTransactionIDs());
+    dataStart.addBitString(batchSignerAccount);
     return multiSignHelper(
         batchSigner,
-        std::nullopt,
+        std::optional<AccountID>(batchSignerAccount),
         [&dataStart](AccountID const& accountID) -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
