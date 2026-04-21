@@ -277,7 +277,8 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
     auto const totalFeeLevel =
         mulDiv(multiplier, sumNlast.second - sumNcurrent.second, target * target);
 
-    return {totalFeeLevel.has_value(), totalFeeLevel.value_or(FeeLevel64{})};
+    return {
+        totalFeeLevel.has_value(), *totalFeeLevel};  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 LedgerHash TxQ::MaybeTx::parentHashComp{};

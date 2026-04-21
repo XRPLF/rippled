@@ -22,6 +22,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -322,14 +323,18 @@ find_paths_by_element(
     std::optional<AccountID> const& srcIssuer,
     std::optional<uint256> const& domain)
 {
+    // srcElement is optional but is expected to always be present
+    XRPL_ASSERT(
+        srcElement.has_value(), "xrpl::test::jtx::find_paths_by_element::srcElement : nullptr");
+
     return find_paths(
         env,
         src,
         dst,
         saDstAmount,
         saSendMax,
-        srcElement->getPathAsset(),  // NOLINT(bugprone-unchecked-optional-access) callers always
-                                     // pass non-null srcElement
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        srcElement->getPathAsset(),
         srcIssuer,
         domain);
 }
