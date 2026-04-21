@@ -35,6 +35,7 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/telemetry/TxSpanNames.h>
+#include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/ToString.h>
@@ -1314,8 +1315,7 @@ NetworkOPsImp::processTransaction(
     FailHard failType)
 {
     using namespace telemetry;
-    auto span =
-        SpanGuard::span(TraceCategory::Transactions, tx_span::prefix::tx, tx_span::op::process);
+    auto span = txProcessSpan(transaction->getID());
     span.setAttribute(tx_span::attr::hash, to_string(transaction->getID()).c_str());
     span.setAttribute(tx_span::attr::local, bLocal);
 

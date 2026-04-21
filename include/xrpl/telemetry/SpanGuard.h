@@ -237,6 +237,46 @@ public:
     [[nodiscard]] static SpanGuard
     linkedSpan(std::string_view name, SpanContext const& linkCtx);
 
+    // --- Transaction span with hash-derived trace ID -------------------
+
+    /** Create a span whose trace_id is derived from a transaction hash.
+        trace_id = hashData[0:16], span_id = random. All nodes handling
+        the same transaction independently produce spans under the same
+        trace, enabling cross-node correlation without context propagation.
+        @param prefix    Span name prefix (e.g. "tx").
+        @param name      Span name suffix (e.g. "receive").
+        @param hashData  Pointer to at least 16 bytes of hash data.
+        @param hashSize  Size of the hash buffer (must be >= 16).
+    */
+    static SpanGuard
+    txSpan(
+        std::string_view prefix,
+        std::string_view name,
+        std::uint8_t const* hashData,
+        std::size_t hashSize);
+
+    /** Create a span with hash-derived trace_id and a remote parent.
+        trace_id = hashData[0:16], parent span_id from protobuf context
+        propagation. Produces a child span of the sender's span while
+        sharing the deterministic trace_id.
+        @param prefix          Span name prefix.
+        @param name            Span name suffix.
+        @param hashData        Pointer to at least 16 bytes of hash data.
+        @param hashSize        Size of the hash buffer (must be >= 16).
+        @param parentSpanId    Pointer to 8 bytes of parent span ID.
+        @param parentSpanSize  Size of parent span ID buffer (must be 8).
+        @param traceFlags      Trace flags from remote context.
+    */
+    static SpanGuard
+    txSpan(
+        std::string_view prefix,
+        std::string_view name,
+        std::uint8_t const* hashData,
+        std::size_t hashSize,
+        std::uint8_t const* parentSpanId,
+        std::size_t parentSpanSize,
+        std::uint8_t traceFlags);
+
     // --- Context capture -----------------------------------------------
 
     /** Snapshot the current thread's OTel context for cross-thread use.
@@ -346,6 +386,24 @@ public:
     }
     [[nodiscard]] static SpanGuard
     linkedSpan(std::string_view, SpanContext const&)
+    {
+        return {};
+    }
+
+    [[nodiscard]] static SpanGuard
+    txSpan(std::string_view, std::string_view, std::uint8_t const*, std::size_t)
+    {
+        return {};
+    }
+    [[nodiscard]] static SpanGuard
+    txSpan(
+        std::string_view,
+        std::string_view,
+        std::uint8_t const*,
+        std::size_t,
+        std::uint8_t const*,
+        std::size_t,
+        std::uint8_t)
     {
         return {};
     }
