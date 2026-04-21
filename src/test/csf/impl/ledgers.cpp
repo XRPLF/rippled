@@ -13,9 +13,7 @@
 #include <set>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 Ledger::Instance const Ledger::genesis;
 
@@ -166,6 +164,4 @@ LedgerOracle::branches(std::set<Ledger> const& ledgers)
     // The size of tips is the number of branches
     return tips.size();
 }
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

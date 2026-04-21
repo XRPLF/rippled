@@ -175,7 +175,7 @@ STArray::isDefault() const
 void
 STArray::sort(bool (*compare)(STObject const&, STObject const&))
 {
-    std::sort(v_.begin(), v_.end(), compare);
+    std::ranges::sort(v_, compare);
 }
 
 }  // namespace xrpl
