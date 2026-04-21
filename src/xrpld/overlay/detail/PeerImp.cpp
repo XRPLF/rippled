@@ -3465,11 +3465,8 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
              ++i)
         {
             auto const shaMapNodeId{deserializeSHAMapNodeID(m->nodeids(i))};
-            if (!shaMapNodeId.has_value())
-            {
-                JLOG(p_journal_.error()) << "processLedgerRequest: Invalid SHAMap node ID";
-                return;
-            }
+            XRPL_ASSERT(
+                shaMapNodeId.has_value(), "xrpl::PeerImp::processLedgerRequest : valid node ID");
 
             data.clear();
             data.reserve(Tuning::softMaxReplyNodes);
