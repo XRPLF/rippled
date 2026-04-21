@@ -356,7 +356,7 @@ TrustSet::doApply()
     bool const isSponsoredAndPreFunded = txSponsorSle && !isSponsorReserveCoSigning(ctx_.tx);
     // If PreFunded Sponsor, it must be checked whether sufficient
     // ReserveCount exists.
-    bool const freeTrustLine = uOwnerCount < 2 && !isSponsoredAndPreFunded;
+    bool const freeTrustLine = uOwnerCount < 2 && !txSponsorSle;
 
     std::uint32_t const uQualityIn(bQualityIn ? ctx_.tx.getFieldU32(sfQualityIn) : 0);
     std::uint32_t uQualityOut(bQualityOut ? ctx_.tx.getFieldU32(sfQualityOut) : 0);
@@ -622,10 +622,9 @@ TrustSet::doApply()
             terResult = trustDelete(view(), sleRippleState, uLowAccountID, uHighAccountID, viewJ);
         }
         // Reserve is not scaled by load.
-        else if (
-            auto const ret =
-                checkInsufficientReserve(view(), ctx_.tx, sle, preFeeBalance_, txSponsorSle, 0);
-            !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
+        else if (auto const ret = checkInsufficientReserve(
+                     view(), ctx_.tx, sle, preFeeBalance_, txSponsorSle, 0);
+                 !freeTrustLine && bReserveIncrease && !isTesSuccess(ret))
         {
             JLOG(j_.trace()) << "Delay transaction: Insufficent reserve to "
                                 "add trust line.";
@@ -653,15 +652,14 @@ TrustSet::doApply()
         JLOG(j_.trace()) << "Redundant: Setting non-existent ripple line to defaults.";
         return tecNO_LINE_REDUNDANT;
     }
-    else if (
-        auto const ret = checkInsufficientReserve(
-            ctx_.view(),
-            ctx_.tx,
-            sle,
-            preFeeBalance_,
-            txSponsorSle,
-            1);
-        !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
+    else if (auto const ret = checkInsufficientReserve(
+                 ctx_.view(),
+                 ctx_.tx,
+                 sle,
+                 preFeeBalance_,
+                 txSponsorSle,
+                 1);
+             !freeTrustLine && !isTesSuccess(ret))  // Reserve is not scaled by load.
     {
         JLOG(j_.trace()) << "Delay transaction: Line does not exist. "
                             "Insufficent reserve to create line.";
