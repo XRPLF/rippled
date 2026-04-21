@@ -267,7 +267,8 @@ Permission::checkGranularSandbox(
     STTx const& tx,
     std::unordered_set<GranularPermissionType> const& heldPermissions) const
 {
-    // Build union of flags and templates across all held permissions.
+    // Build union of flags upfront to enable an early exit. Fields are not stored and
+    // grouped in advance to avoid heap allocation.
     std::uint32_t unionFlags = 0;
     for (auto const& gp : heldPermissions)
     {
@@ -287,17 +288,12 @@ Permission::checkGranularSandbox(
         if (field.getSType() == STI_NOTPRESENT)
             continue;
 
-        bool fieldAllowed = false;
-        for (auto const& gp : heldPermissions)
-        {
-            auto const it = granularTemplates_.find(gp);
-            if (it != granularTemplates_.end() && it->second.getIndex(field.getFName()) != -1)
-            {
-                fieldAllowed = true;
-                break;
-            }
-        }
-        if (!fieldAllowed)
+        if (!std::ranges::any_of(heldPermissions, [&](auto const& gp) {
+                auto const it = granularTemplates_.find(gp);
+                return it != granularTemplates_.end() &&
+                    it->second.getIndex(field.getFName()) != -1;
+            }))
+
             return false;
     }
 
