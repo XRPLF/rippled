@@ -148,7 +148,7 @@ ValidPermissionedDomain::finalize(
                                        "deleted by SponsorshipTransfer";
                     return false;
                 }
-                return true;
+                return check(sleStatus_[0], j);
             }
             default: {
                 if (!sleStatus_.empty())
