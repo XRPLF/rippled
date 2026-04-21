@@ -1121,9 +1121,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
-    // Enforce Network bar for batch txn
-    if (iTrans->isFlag(tfInnerBatchTxn) &&
-        m_ledgerMaster.getValidatedRules().enabled(featureBatchV1_1))
+    if (iTrans->isFlag(tfInnerBatchTxn))
     {
         JLOG(m_journal.error()) << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
         return;
@@ -1189,7 +1187,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     // under no circumstances will we ever accept an inner txn within a batch
     // txn from the network.
     auto const sttx = *transaction->getSTransaction();
-    if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatchV1_1))
+    if (sttx.isFlag(tfInnerBatchTxn))
     {
         transaction->setStatus(INVALID);
         transaction->setResult(temINVALID_FLAG);
