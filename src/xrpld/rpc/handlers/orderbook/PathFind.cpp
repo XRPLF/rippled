@@ -1,6 +1,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/PathFindSpanNames.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
 #include <xrpl/json/json_value.h>
@@ -9,12 +10,16 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 namespace xrpl {
 
 Json::Value
 doPathFind(RPC::JsonContext& context)
 {
+    using namespace telemetry;
+    auto span = SpanGuard::span(
+        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::request);
     if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError(rpcNOT_SUPPORTED);
 

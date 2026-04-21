@@ -3,6 +3,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/AccountAssets.h>
+#include <xrpld/rpc/detail/PathFindSpanNames.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
@@ -34,6 +35,8 @@
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
 #include <algorithm>
@@ -711,6 +714,11 @@ PathRequest::doUpdate(
     std::function<bool(void)> const& continueCallback)
 {
     using namespace std::chrono;
+    using namespace telemetry;
+    auto span = SpanGuard::span(
+        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::compute);
+    span.setAttribute(pathfind_span::attr::fast, fast);
+
     JLOG(m_journal.debug()) << iIdentifier << " update " << (fast ? "fast" : "normal");
 
     {

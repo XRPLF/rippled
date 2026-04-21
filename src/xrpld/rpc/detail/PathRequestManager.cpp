@@ -2,6 +2,7 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/detail/PathFindSpanNames.h>
 #include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathRequest.h>
 
@@ -15,6 +16,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/server/InfoSub.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -59,6 +61,11 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 void
 PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
+    using namespace telemetry;
+    auto span = SpanGuard::span(
+        TraceCategory::Rpc, pathfind_span::prefix::pathfind, pathfind_span::op::updateAll);
+    span.setAttribute(pathfind_span::attr::ledgerIndex, static_cast<int64_t>(inLedger->seq()));
+
     auto event = app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
