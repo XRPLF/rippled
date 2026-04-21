@@ -4,10 +4,7 @@
 
 #include <date/date.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+namespace xrpl::test::jtx::oracle {
 
 using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
 using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
@@ -177,7 +174,4 @@ public:
     }
 };
 
-}  // namespace oracle
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

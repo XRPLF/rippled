@@ -16,8 +16,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TER.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class CrossingLimitsMPT_test : public beast::unit_test::suite
 {
@@ -440,5 +439,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimitsMPT, tx, xrpl, 10);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

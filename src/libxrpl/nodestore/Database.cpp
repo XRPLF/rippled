@@ -29,8 +29,7 @@
 #include <thread>
 #include <utility>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 Database::Database(
     Scheduler& scheduler,
@@ -276,5 +275,4 @@ Database::getCountsJson(Json::Value& obj)
     obj[jss::node_reads_duration_us] = std::to_string(fetchDurationUs_);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

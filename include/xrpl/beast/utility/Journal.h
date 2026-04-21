@@ -55,14 +55,15 @@ public:
     class Sink
     {
     protected:
-        Sink() = delete;
         explicit Sink(Sink const& sink) = default;
         Sink(Severity thresh, bool console);
-        Sink&
-        operator=(Sink const& lhs) = delete;
 
     public:
         virtual ~Sink() = 0;
+
+        Sink() = delete;
+        Sink&
+        operator=(Sink const& lhs) = delete;
 
         /** Returns `true` if text at the passed severity produces output. */
         virtual bool
@@ -371,10 +372,6 @@ class logstream_buf : public std::basic_stringbuf<CharT, Traits>
 {
     beast::Journal::Stream strm_;
 
-    template <class T>
-    void
-    write(T const*) = delete;
-
     void
     write(char const* s)
     {
@@ -394,7 +391,7 @@ public:
     {
     }
 
-    ~logstream_buf()
+    ~logstream_buf() override
     {
         sync();
     }
@@ -406,6 +403,10 @@ public:
         this->str("");
         return 0;
     }
+
+    template <class T>
+    void
+    write(T const*) = delete;
 };
 
 }  // namespace detail
@@ -413,11 +414,11 @@ public:
 template <class CharT, class Traits = std::char_traits<CharT>>
 class basic_logstream : public std::basic_ostream<CharT, Traits>
 {
-    typedef CharT char_type;
-    typedef Traits traits_type;
-    typedef typename traits_type::int_type int_type;
-    typedef typename traits_type::pos_type pos_type;
-    typedef typename traits_type::off_type off_type;
+    using char_type = CharT;
+    using traits_type = Traits;
+    using int_type = typename traits_type::int_type;
+    using pos_type = typename traits_type::pos_type;
+    using off_type = typename traits_type::off_type;
 
     detail::logstream_buf<CharT, Traits> buf_;
 

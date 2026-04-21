@@ -32,20 +32,19 @@
 #include <optional>
 #include <type_traits>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct PayStrandMPT_test : public beast::unit_test::suite
 {
     static jtx::DirectStepInfo
     makeEndpointStep(jtx::Account const& src, jtx::Account const& dst, jtx::IOU const& iou)
     {
-        return jtx::DirectStepInfo{src, dst, iou.currency};
+        return jtx::DirectStepInfo{.src = src, .dst = dst, .currency = iou.currency};
     }
     static jtx::MPTEndpointStepInfo
     makeEndpointStep(jtx::Account const& src, jtx::Account const& dst, jtx::MPT const& mpt)
     {
-        return jtx::MPTEndpointStepInfo{src, dst, mpt.mpt()};
+        return jtx::MPTEndpointStepInfo{.src = src, .dst = dst, .mptid = mpt.mpt()};
     }
 
     void
@@ -650,5 +649,4 @@ struct PayStrandMPT_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PayStrandMPT, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

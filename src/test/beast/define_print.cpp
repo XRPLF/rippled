@@ -13,8 +13,7 @@
 
 // Include this .cpp in your project to gain access to the printing suite
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** A suite that prints the list of globally defined suites. */
 class print_test : public suite
@@ -45,5 +44,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL(print, beast, beast);
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

@@ -49,8 +49,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ValidatorList_test : public beast::unit_test::suite
 {
@@ -125,9 +124,9 @@ private:
         auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
         auto const signingKeys = randomKeyPair(KeyType::secp256k1);
         return {
-            masterPublic,
-            signingKeys.first,
-            base64_encode(makeManifestString(
+            .masterPublic = masterPublic,
+            .signingPublic = signingKeys.first,
+            .manifest = base64_encode(makeManifestString(
                 masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
     }
 
@@ -1899,11 +1898,11 @@ private:
                 auto const sig2 = signList(blob2, pubSigningKeys);
 
                 return PreparedList{
-                    publisherPublic,
-                    manifest,
-                    {{blob1, sig1, {}}, {blob2, sig2, {}}},
-                    version,
-                    {expiration1, expiration2}};
+                    .publisherPublic = publisherPublic,
+                    .manifest = manifest,
+                    .blobs = {{blob1, sig1, {}}, {blob2, sig2, {}}},
+                    .version = version,
+                    .expirations = {expiration1, expiration2}};
             };
 
             // Configure two publishers and prepare 2 lists
@@ -3950,5 +3949,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ValidatorList, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

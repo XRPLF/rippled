@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <ostream>
+#include <utility>
 
 namespace xrpl {
 
@@ -29,7 +30,7 @@ struct TAmounts
     {
     }
 
-    TAmounts(In const& in_, Out const& out_) : in(in_), out(out_)
+    TAmounts(In in_, Out out_) : in(std::move(in_)), out(std::move(out_))
     {
     }
 

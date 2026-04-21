@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-Section::Section(std::string const& name) : name_(name)
+Section::Section(std::string name) : name_(std::move(name))
 {
 }
 

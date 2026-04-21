@@ -6,17 +6,18 @@
 
 #include <mutex>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
 Workers::Workers(
     Callback& callback,
     perf::PerfLog* perfLog,
-    std::string const& threadNames,
+    std::string threadNames,
     int numberOfThreads)
     : m_callback(callback)
     , perfLog_(perfLog)
-    , m_threadNames(threadNames)
+    , m_threadNames(std::move(threadNames))
     , m_semaphore(0)
     , m_activeCount(0)
     , m_pauseCount(0)
@@ -140,8 +141,8 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker(Workers& workers, std::string const& threadName, int const instance)
-    : m_workers{workers}, threadName_{threadName}, instance_{instance}
+Workers::Worker::Worker(Workers& workers, std::string threadName, int const instance)
+    : m_workers{workers}, threadName_{std::move(threadName)}, instance_{instance}
 
 {
     thread_ = std::thread{&Workers::Worker::run, this};

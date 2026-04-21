@@ -171,7 +171,7 @@ class NetworkOPsImp final : public NetworkOPs
         TER result;
 
         TransactionStatus(std::shared_ptr<Transaction> t, bool a, bool l, FailHard f)
-            : transaction(t), admin(a), local(l), failType(f)
+            : transaction(std::move(t)), admin(a), local(l), failType(f)
         {
             XRPL_ASSERT(
                 local || failType == FailHard::no,
@@ -258,7 +258,11 @@ class NetworkOPsImp final : public NetworkOPs
         getCounterData() const
         {
             std::lock_guard const lock(mutex_);
-            return {counters_, mode_, start_, initialSyncUs_};
+            return {
+                .counters = counters_,
+                .mode = mode_,
+                .start = start_,
+                .initialSyncUs = initialSyncUs_};
         }
     };
 
@@ -1334,7 +1338,7 @@ NetworkOPsImp::doTransactionAsync(
     if (transaction->getApplying())
         return;
 
-    mTransactions.push_back(TransactionStatus(transaction, bUnlimited, false, failType));
+    mTransactions.emplace_back(transaction, bUnlimited, false, failType);
     transaction->setApplying();
 
     if (mDispatchState == DispatchState::none)
@@ -1356,7 +1360,7 @@ NetworkOPsImp::doTransactionSync(
 
     if (!transaction->getApplying())
     {
-        mTransactions.push_back(TransactionStatus(transaction, bUnlimited, true, failType));
+        mTransactions.emplace_back(transaction, bUnlimited, true, failType);
         transaction->setApplying();
     }
 
@@ -1453,9 +1457,8 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 
     doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {
         XRPL_ASSERT(lock.owns_lock(), "xrpl::NetworkOPsImp::processTransactionSet has lock");
-        return std::any_of(mTransactions.begin(), mTransactions.end(), [](auto const& t) {
-            return t.transaction->getApplying();
-        });
+        return std::ranges::any_of(
+            mTransactions, [](auto const& t) { return t.transaction->getApplying(); });
     });
 }
 
@@ -2940,7 +2943,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     // This array must be sorted in increasing order.
     static constexpr std::array<std::string_view, 7> protocols{
         "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
-    static_assert(std::is_sorted(std::begin(protocols), std::end(protocols)));
+    static_assert(std::ranges::is_sorted(protocols));
     {
         Json::Value ports{Json::arrayValue};
         for (auto const& port : registry_.get().getServerHandler().setup().ports)
@@ -2951,6 +2954,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                   port.admin_user.empty() && port.admin_password.empty()))
                 continue;
             std::vector<std::string> proto;
+            // NOLINTNEXTLINE(modernize-use-ranges)
             std::set_intersection(
                 std::begin(port.protocol),
                 std::end(port.protocol),
@@ -3429,7 +3433,7 @@ NetworkOPsImp::pubAccountTransaction(
                         if (auto isSptr = info.sinkWptr_.lock(); isSptr)
                         {
                             accountHistoryNotify.emplace_back(
-                                SubAccountHistoryInfo{isSptr, info.index_});
+                                SubAccountHistoryInfo{.sink_ = isSptr, .index_ = info.index_});
                             ++it;
                         }
                         else
@@ -3758,7 +3762,11 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     case Sqlite: {
                         auto& db = registry_.get().getRelationalDatabase();
                         RelationalDatabase::AccountTxPageOptions const options{
-                            accountId, {minLedger, maxLedger}, marker, 0, true};
+                            .account = accountId,
+                            .ledgerRange = {.min = minLedger, .max = maxLedger},
+                            .marker = marker,
+                            .limit = 0,
+                            .bAdmin = true};
                         return db.newestAccountTxPage(options);
                     }
                     // LCOV_EXCL_START
@@ -3982,7 +3990,8 @@ NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& acco
     }
 
     std::lock_guard const sl(mSubLock);
-    SubAccountHistoryInfoWeak ahi{isrListener, std::make_shared<SubAccountHistoryIndex>(accountId)};
+    SubAccountHistoryInfoWeak ahi{
+        .sinkWptr_ = isrListener, .index_ = std::make_shared<SubAccountHistoryIndex>(accountId)};
     auto simIterator = mSubAccountHistory.find(accountId);
     if (simIterator == mSubAccountHistory.end())
     {

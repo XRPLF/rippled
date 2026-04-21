@@ -7,10 +7,10 @@
 #include <xrpl/beast/unit_test/detail/const_container.h>
 
 #include <string>
+#include <utility>
 #include <vector>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Holds a set of test condition outcomes in a testcase. */
 class case_results
@@ -23,7 +23,7 @@ public:
         {
         }
 
-        test(bool pass_, std::string const& reason_) : pass(pass_), reason(reason_)
+        test(bool pass_, std::string reason_) : pass(pass_), reason(std::move(reason_))
         {
         }
 
@@ -38,9 +38,7 @@ private:
         std::size_t failed_{0};
 
     public:
-        tests_t()
-        {
-        }
+        tests_t() = default;
 
         /** Returns the total number of test conditions. */
         std::size_t
@@ -86,7 +84,7 @@ private:
     std::string name_;
 
 public:
-    explicit case_results(std::string const& name = "") : name_(name)
+    explicit case_results(std::string name = "") : name_(std::move(name))
     {
     }
 
@@ -115,7 +113,7 @@ private:
     std::size_t failed_ = 0;
 
 public:
-    explicit suite_results(std::string const& name = "") : name_(name)
+    explicit suite_results(std::string name = "") : name_(std::move(name))
     {
     }
 
@@ -172,9 +170,7 @@ private:
     std::size_t failed_{0};
 
 public:
-    results()
-    {
-    }
+    results() = default;
 
     /** Returns the total number of test cases. */
     std::size_t
@@ -219,5 +215,4 @@ public:
     /** @} */
 };
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

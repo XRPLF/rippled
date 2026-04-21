@@ -15,8 +15,7 @@
 
 #include <mutex>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 class Logic
 {
@@ -555,5 +554,4 @@ public:
     }
 };
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

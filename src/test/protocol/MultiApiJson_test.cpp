@@ -10,8 +10,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 namespace {
 
@@ -920,5 +919,4 @@ struct MultiApiJson_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

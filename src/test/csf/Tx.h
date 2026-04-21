@@ -12,10 +12,9 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 //! A single transaction
 class Tx
@@ -96,7 +95,7 @@ public:
     };
 
     TxSet() = default;
-    TxSet(TxSetType const& s) : txs_{s}, id_{calcID(txs_)}
+    TxSet(TxSetType s) : txs_{std::move(s)}, id_{calcID(txs_)}
     {
     }
 
@@ -212,6 +211,4 @@ hash_append(Hasher& h, Tx const& tx)
     hash_append(h, tx.id());
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf
