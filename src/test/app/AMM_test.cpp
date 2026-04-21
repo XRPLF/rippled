@@ -2242,7 +2242,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 auto const err =
-                    env.enabled(fixSecurity3_1_3) ? ter(tecAMM_FAILED) : ter(tecINTERNAL);
+                    env.enabled(fixCleanup_320) ? ter(tecAMM_FAILED) : ter(tecINTERNAL);
                 ammAlice.withdraw(
                     WithdrawArg{
                         .account = alice,
@@ -2253,7 +2253,7 @@ private:
             {{USD(100), EUR(100)}},
             1000,
             std::nullopt,
-            {all | fixSecurity3_1_3, all});
+            {all | fixCleanup_320, all});
     }
 
     void

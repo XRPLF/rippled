@@ -1102,9 +1102,9 @@ AMMWithdraw::singleWithdrawEPrice(
         Number const ae = amountBalance * ePrice;
         auto const f = getFee(tfee);
         auto const denom = lptAMMBalance * f - ae;
-        // fixSecurity3_1_3: guard against division by zero
+        // fixCleanup_320: guard against division by zero
         // when ePrice == lptAMMBalance*f/amountBalance
-        if (view.rules().enabled(fixSecurity3_1_3) && denom == beast::zero)
+        if (view.rules().enabled(fixCleanup_320) && denom == beast::zero)
             return {tecAMM_FAILED, STAmount{}};
         auto tokNoRoundCb = [&] { return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) / denom; };
         auto tokProdCb = [&] { return (lptAMMBalance + ae * (f - 2)) / denom; };
