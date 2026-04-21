@@ -13,7 +13,7 @@ from collections import defaultdict
 from pathlib import Path
 
 HEADER_EXTENSIONS = {".h", ".hpp", ".hxx", ".hh"}
-SOURCE_EXTENSIONS = {".cpp", ".c", ".cxx", ".cc"}
+SOURCE_EXTENSIONS = {".cpp"}
 INCLUDE_RE = re.compile(r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]")
 
 
