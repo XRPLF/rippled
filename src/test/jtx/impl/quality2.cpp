@@ -8,9 +8,7 @@
 #include <cassert>
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 qualityInPercent::qualityInPercent(double percent)
     // NOLINTNEXTLINE(cppcoreguidelines-use-default-member-init)
@@ -56,6 +54,4 @@ qualityOutPercent::operator()(Env&, JTx& jt) const
     insertQualityIntoJtx(sfQualityOut, qOut_, jt);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

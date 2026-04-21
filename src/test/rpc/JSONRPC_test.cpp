@@ -36,9 +36,7 @@
 #include <stdexcept>
 #include <tuple>
 
-namespace xrpl {
-
-namespace RPC {
+namespace xrpl::RPC {
 
 struct TxnTestData
 {
@@ -2849,5 +2847,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JSONRPC, rpc, xrpl);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

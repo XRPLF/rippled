@@ -28,11 +28,7 @@
 #include <ostream>
 #include <utility>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace batch {
+namespace xrpl::test::jtx::batch {
 
 XRPAmount
 calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns)
@@ -138,8 +134,4 @@ msig::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace batch
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::batch

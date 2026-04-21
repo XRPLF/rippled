@@ -13,12 +13,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
+#include <algorithm>
 #include <source_location>
+#include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Generic helper class for helper classes that set a field on a JTx.
 
@@ -40,7 +40,7 @@ protected:
     SV value_;
 
 public:
-    explicit JTxField(SF const& sfield, SV const& value) : sfield_(sfield), value_(value)
+    explicit JTxField(SF const& sfield, SV value) : sfield_(sfield), value_(std::move(value))
     {
     }
 
@@ -68,7 +68,7 @@ protected:
     SV value_;
 
 public:
-    explicit JTxField(SF const& sfield, SV const& value) : sfield_(sfield), value_(value)
+    explicit JTxField(SF const& sfield, SV value) : sfield_(sfield), value_(std::move(value))
     {
     }
 
@@ -367,7 +367,7 @@ void
 stpath_append_one(STPath& st, Account const& account);
 
 template <class T>
-std::enable_if_t<std::is_constructible<Account, T>::value>
+std::enable_if_t<std::is_constructible_v<Account, T>>
 stpath_append_one(STPath& st, T const& t)
 {
     stpath_append_one(st, Account{t});
@@ -424,7 +424,7 @@ same(STPathSet const& st1, Args const&... args)
 
     for (auto const& p : st2)
     {
-        if (std::find(st1.begin(), st1.end(), p) == st1.end())
+        if (std::ranges::find(st1, p) == st1.end())
             return false;
     }
     return true;
@@ -1035,6 +1035,4 @@ testHelper3TokensMix(TTester&& tester)
     tester(detail::issueHelperIOU, detail::issueHelperIOU, detail::issueHelperMPT);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -35,7 +35,11 @@ ValidPermissionedDomain::visitEntry(
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
-        SleStatus ss{credentials.size(), false, !sorted.empty(), isDel};
+        SleStatus ss{
+            .credentialsSize_ = credentials.size(),
+            .isSorted_ = false,
+            .isUnique_ = !sorted.empty(),
+            .isDelete_ = isDel};
 
         // If array have duplicates then all the other checks are invalid
         if (ss.isUnique_)

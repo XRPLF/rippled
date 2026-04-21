@@ -43,9 +43,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class tx_reduce_relay_test : public beast::unit_test::suite
 {
@@ -143,7 +141,7 @@ private:
         {
             sid_++;
         }
-        ~PeerTest() = default;
+        ~PeerTest() override = default;
 
         void
         run() override
@@ -299,5 +297,4 @@ private:
 };
 
 BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

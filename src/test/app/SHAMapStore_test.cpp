@@ -36,8 +36,7 @@
 #include <thread>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class SHAMapStore_test : public beast::unit_test::suite
 {
@@ -181,10 +180,10 @@ public:
         auto ledgerTmp = env.rpc("ledger", "0");
         BEAST_EXPECT(bad(ledgerTmp));
 
-        ledgers.emplace(std::make_pair(1, env.rpc("ledger", "1")));
+        ledgers.emplace(1, env.rpc("ledger", "1"));
         BEAST_EXPECT(goodLedger(env, ledgers[1], "1"));
 
-        ledgers.emplace(std::make_pair(2, env.rpc("ledger", "2")));
+        ledgers.emplace(2, env.rpc("ledger", "2"));
         BEAST_EXPECT(goodLedger(env, ledgers[2], "2"));
 
         ledgerTmp = env.rpc("ledger", "current");
@@ -211,7 +210,7 @@ public:
 
         for (auto i = 3; i < deleteInterval + lastRotated; ++i)
         {
-            ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
+            ledgers.emplace(i, env.rpc("ledger", std::to_string(i)));
             BEAST_EXPECT(
                 goodLedger(env, ledgers[i], std::to_string(i), true) &&
                 !getHash(ledgers[i]).empty());
@@ -251,7 +250,7 @@ public:
             ledgerTmp = env.rpc("ledger", "current");
             BEAST_EXPECT(goodLedger(env, ledgerTmp, std::to_string(i + 3)));
 
-            ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
+            ledgers.emplace(i, env.rpc("ledger", std::to_string(i)));
             BEAST_EXPECT(
                 store.getLastRotated() == lastRotated || i == lastRotated + deleteInterval - 2);
             BEAST_EXPECT(
@@ -629,7 +628,7 @@ public:
         auto& store = env.app().getSHAMapStore();
         store.rendezvous();
         LedgerIndex lastRotated = store.getLastRotated();
-        BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
+        BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
         BEAST_EXPECTS(lastRotated == 3, to_string(lastRotated));
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
@@ -785,5 +784,4 @@ public:
 // VFALCO This test fails because of thread asynchronous issues
 BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

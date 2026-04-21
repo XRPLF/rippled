@@ -24,8 +24,7 @@
 #include <initializer_list>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ReducedOffer_test : public beast::unit_test::suite
 {
@@ -685,5 +684,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(ReducedOffer, app, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

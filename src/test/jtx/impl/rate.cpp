@@ -9,9 +9,7 @@
 #include <cstdint>
 #include <stdexcept>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 rate(Account const& account, double multiplier)
@@ -25,6 +23,4 @@ rate(Account const& account, double multiplier)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -9,9 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Simulated discrete-event scheduler.
 
@@ -429,6 +427,4 @@ Scheduler::step_for(std::chrono::duration<Period, Rep> const& amount)
     return step_until(now() + amount);
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

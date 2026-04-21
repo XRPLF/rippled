@@ -26,8 +26,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 namespace {
 
@@ -493,5 +492,4 @@ getOrAcquireLedger(RPC::JsonContext const& context)
         RPC::make_error(rpcNOT_READY, "findCreate failed to return an inbound ledger"));
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

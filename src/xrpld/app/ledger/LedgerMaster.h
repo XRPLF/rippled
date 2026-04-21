@@ -38,7 +38,7 @@ public:
         beast::insight::Collector::ptr const& collector,
         beast::Journal journal);
 
-    virtual ~LedgerMaster() = default;
+    ~LedgerMaster() override = default;
 
     LedgerIndex
     getCurrentLedgerIndex();

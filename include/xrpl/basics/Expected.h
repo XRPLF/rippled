@@ -61,7 +61,7 @@ template <class E>
 class Unexpected
 {
 public:
-    static_assert(!std::is_same<E, void>::value, "E must not be void");
+    static_assert(!std::is_same_v<E, void>, "E must not be void");
 
     Unexpected() = delete;
 
