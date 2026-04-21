@@ -1,11 +1,14 @@
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/quality.h>
 
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cassert>
+#include <cstdint>
+
+namespace xrpl::test::jtx {
 
 qualityInPercent::qualityInPercent(double percent)
     // NOLINTNEXTLINE(cppcoreguidelines-use-default-member-init)
@@ -51,6 +54,4 @@ qualityOutPercent::operator()(Env&, JTx& jt) const
     insertQualityIntoJtx(sfQualityOut, qOut_, jt);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

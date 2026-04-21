@@ -1,13 +1,22 @@
-#include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 
+#include <test/jtx/Account.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/UintTypes.h>
 
+#include <cassert>
+#include <cstdint>
 #include <iomanip>
+#include <ios>
+#include <ostream>
+#include <sstream>
+#include <string>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 PrettyAmount::
 operator AnyAmount() const
@@ -109,6 +118,4 @@ operator<<(std::ostream& os, MPT const& mpt)
 
 any_t const any{};
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

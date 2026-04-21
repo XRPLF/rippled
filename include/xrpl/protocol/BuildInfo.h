@@ -3,11 +3,9 @@
 #include <cstdint>
 #include <string>
 
-namespace xrpl {
-
 /** Versioning information for this build. */
 // VFALCO The namespace is deprecated
-namespace BuildInfo {
+namespace xrpl::BuildInfo {
 
 /** Server version.
     Follows the Semantic Versioning Specification:
@@ -76,6 +74,4 @@ isXrpldVersion(std::uint64_t version);
 bool
 isNewerVersion(std::uint64_t version);
 
-}  // namespace BuildInfo
-
-}  // namespace xrpl
+}  // namespace xrpl::BuildInfo

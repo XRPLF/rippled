@@ -1,17 +1,54 @@
-#include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/main/Application.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/st.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <boost/function/function_base.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <limits>
+#include <memory>
+#include <mutex>
 #include <numeric>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -77,7 +114,7 @@ TxQ::FeeMetrics::update(
     std::for_each(txBegin, txEnd, [&](auto const& tx) {
         feeLevels.push_back(getFeeLevelPaid(view, *tx.first));
     });
-    std::sort(feeLevels.begin(), feeLevels.end());
+    std::ranges::sort(feeLevels);
     XRPL_ASSERT(size == feeLevels.size(), "xrpl::TxQ::FeeMetrics::update : fee levels size");
 
     JLOG((timeLeap ? j_.warn() : j_.debug()))
@@ -103,7 +140,7 @@ TxQ::FeeMetrics::update(
     {
         recentTxnCounts_.push_back(mulDiv(size, 100 + setup.normalConsensusIncreasePercent, 100)
                                        .value_or(xrpl::muldiv_max));
-        auto const iter = std::max_element(recentTxnCounts_.begin(), recentTxnCounts_.end());
+        auto const iter = std::ranges::max_element(recentTxnCounts_);
         BOOST_ASSERT(iter != recentTxnCounts_.end());
         auto const next = [&] {
             // Grow quickly: If the max_element is >= the
@@ -1726,10 +1763,10 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
     std::uint32_t const accountSeq = acctInfo ? acctInfo->at(sfSequence) : 0;
     std::uint32_t const availableSeq = nextQueuableSeqImpl(acctInfo.sle(), lock).value();
     return {
-        mulDiv(fee, baseFee, baseLevel)
-            .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
-        accountSeq,
-        availableSeq};
+        .fee = mulDiv(fee, baseFee, baseLevel)
+                   .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
+        .accountSeq = accountSeq,
+        .availableSeq = availableSeq};
 }
 
 std::vector<TxQ::TxDetails>

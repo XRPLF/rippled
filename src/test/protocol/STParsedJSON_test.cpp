@@ -1,11 +1,27 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -403,8 +419,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& h128 = obj.object->getFieldH128(sfEmailHash);
             BEAST_EXPECT(h128.size() == 16);
-            bool const allZero =
-                std::all_of(h128.begin(), h128.end(), [](auto b) { return b == 0; });
+            bool const allZero = std::ranges::all_of(h128, [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -499,8 +514,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& h160 = obj.object->getFieldH160(sfTakerPaysCurrency);
             BEAST_EXPECT(h160.size() == 20);
-            bool const allZero =
-                std::all_of(h160.begin(), h160.end(), [](auto b) { return b == 0; });
+            bool const allZero = std::ranges::all_of(h160, [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -588,8 +602,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& h192 = obj.object->getFieldH192(sfMPTokenIssuanceID);
             BEAST_EXPECT(h192.size() == 24);
-            bool const allZero =
-                std::all_of(h192.begin(), h192.end(), [](auto b) { return b == 0; });
+            bool const allZero = std::ranges::all_of(h192, [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -690,8 +703,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& h256 = obj.object->getFieldH256(sfLedgerHash);
             BEAST_EXPECT(h256.size() == 32);
-            bool const allZero =
-                std::all_of(h256.begin(), h256.end(), [](auto b) { return b == 0; });
+            bool const allZero = std::ranges::all_of(h256, [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -2130,10 +2142,10 @@ class STParsedJSON_test : public beast::unit_test::suite
                 STParsedJSONObject const parsed("test", faultyJson);
                 BEAST_EXPECT(!parsed.object);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
                 std::string const what(e.what());
-                unexpected(what.find("First level children of `Template`") != 0);
+                unexpected(!what.starts_with("First level children of `Template`"));
             }
         }
     }

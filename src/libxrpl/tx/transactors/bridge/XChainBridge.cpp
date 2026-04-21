@@ -1,31 +1,51 @@
+#include <xrpl/tx/transactors/bridge/XChainBridge.h>
+
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STXChainBridge.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
-#include <xrpl/tx/transactors/bridge/XChainBridge.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <tuple>
 #include <unordered_map>
-#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -306,7 +326,7 @@ onNewAttestations(
         j);
 
     if (!r.has_value())
-        return {std::nullopt, changed};
+        return {.rewardAccounts = std::nullopt, .changed = changed};
 
     return {std::move(r.value()), changed};
 };
@@ -1702,11 +1722,11 @@ XChainClaim::doApply()
         // `finalizeClaimHelper`. Since `finalizeClaimHelper` can create child
         // views, it's important that the sle's lifetime doesn't overlap.
 
-        AccountRoot const acctRoot(account, psb);
+        AccountRoot const account_(account, psb);
         auto const sleBridge = peekBridge(psb, bridgeSpec);
         auto const sleClaimID = psb.peek(claimIDKeylet);
 
-        if (!(sleBridge && sleClaimID && acctRoot))
+        if (!(sleBridge && sleClaimID && account_))
             return Unexpected(tecINTERNAL);
 
         AccountID const thisDoor = (*sleBridge)[sfAccount];
@@ -1754,11 +1774,11 @@ XChainClaim::doApply()
             return Unexpected(claimR.error());
 
         return ScopeResult{
-            claimR.value(),
-            (*sleClaimID)[sfAccount],
-            sendingAmount,
-            srcChain,
-            (*sleClaimID)[sfSignatureReward],
+            .rewardAccounts = claimR.value(),
+            .rewardPoolSrc = (*sleClaimID)[sfAccount],
+            .sendingAmount = sendingAmount,
+            .srcChain = srcChain,
+            .signatureReward = (*sleClaimID)[sfSignatureReward],
         };
     }();
 
@@ -1879,12 +1899,10 @@ XChainCommit::doApply()
 {
     PaymentSandbox psb(&ctx_.view());
 
-    auto const account = ctx_.tx[sfAccount];
     auto const amount = ctx_.tx[sfAmount];
     auto const bridgeSpec = ctx_.tx[sfXChainBridge];
 
-    AccountRoot const acctRoot(account, psb);
-    if (!acctRoot)
+    if (!account_)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = readBridge(psb, bridgeSpec);
@@ -1895,11 +1913,13 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        accountID_, preFeeBalance_, (*acctRoot)[sfBalance]};
+        .account = accountID_,
+        .preFeeBalance_ = preFeeBalance_,
+        .postFeeBalance = (*account_)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
-        account,
+        accountID_,
         dst,
         /*dstTag*/ std::nullopt,
         /*claimOwner*/ std::nullopt,
@@ -2157,8 +2177,8 @@ XChainCreateAccountCommit::doApply()
     STAmount const reward = ctx_.tx[sfSignatureReward];
     STXChainBridge const bridge = ctx_.tx[sfXChainBridge];
 
-    AccountRoot const acctRoot(account, psb);
-    if (!acctRoot)
+    AccountRoot const account_(account, psb);
+    if (!account_)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleBridge = peekBridge(psb, bridge);
@@ -2169,11 +2189,13 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        accountID_, preFeeBalance_, (*acctRoot)[sfBalance]};
+        .account = accountID_,
+        .preFeeBalance_ = preFeeBalance_,
+        .postFeeBalance = (*account_)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,
-        account,
+        accountID_,
         dst,
         /*dstTag*/ std::nullopt,
         /*claimOwner*/ std::nullopt,

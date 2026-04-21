@@ -1,9 +1,15 @@
 #include <xrpld/rpc/Status.h>
 
-#include <sstream>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace RPC {
+#include <sstream>
+#include <string>
+
+namespace xrpl::RPC {
 
 std::string
 Status::codeString() const
@@ -79,5 +85,4 @@ Status::toString() const
     return "";
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

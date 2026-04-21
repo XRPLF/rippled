@@ -5,8 +5,7 @@
 #include <xrpl/ledger/detail/ApplyStateTable.h>
 #include <xrpl/protocol/XRPAmount.h>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 class ApplyViewBase : public ApplyView, public RawView
 {
@@ -102,5 +101,4 @@ protected:
     detail::ApplyStateTable items_;
 };
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

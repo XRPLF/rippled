@@ -1,13 +1,18 @@
+#include <xrpl/protocol/STParsedJSON.h>
+
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
@@ -19,7 +24,6 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STXChainBridge.h>
@@ -27,6 +31,7 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/STVar.h>
+#include <xrpl/protocol/jss.h>
 
 #include <charconv>
 #include <cstdint>
@@ -45,7 +50,7 @@ namespace xrpl {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
-constexpr std::enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
+constexpr std::enable_if_t<std::is_unsigned_v<U> && std::is_signed_v<S>, U>
 to_unsigned(S value)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
@@ -54,7 +59,7 @@ to_unsigned(S value)
 }
 
 template <typename U1, typename U2>
-constexpr std::enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
+constexpr std::enable_if_t<std::is_unsigned_v<U1> && std::is_unsigned_v<U2>, U1>
 to_unsigned(U2 value)
 {
     if (std::numeric_limits<U1>::max() < value)
