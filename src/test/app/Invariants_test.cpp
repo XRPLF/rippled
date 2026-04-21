@@ -181,7 +181,8 @@ class Invariants_test : public beast::unit_test::suite
         BEAST_EXPECT(precheck(A1, A2, ac));
 
         auto transactor = makeTransactor(ac);
-        BEAST_EXPECT(transactor);
+        if (!BEAST_EXPECT(transactor))
+            return;
 
         // invoke check twice to cover tec and tef cases
         if (!BEAST_EXPECT(ters.size() == 2))
