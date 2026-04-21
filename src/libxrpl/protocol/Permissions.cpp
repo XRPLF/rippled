@@ -164,7 +164,7 @@ Permission::getInstance()
 }
 
 std::optional<std::string>
-Permission::getPermissionName(std::uint32_t const value) const
+Permission::getPermissionName(std::uint32_t value) const
 {
     auto const permissionValue = static_cast<GranularPermissionType>(value);
     if (auto const granular = getGranularName(permissionValue))
@@ -189,7 +189,7 @@ Permission::getGranularValue(std::string const& name) const
 }
 
 std::optional<std::string>
-Permission::getGranularName(GranularPermissionType const& value) const
+Permission::getGranularName(GranularPermissionType value) const
 {
     auto const it = granularNameMap_.find(value);
     if (it != granularNameMap_.end())
@@ -199,7 +199,7 @@ Permission::getGranularName(GranularPermissionType const& value) const
 }
 
 std::optional<TxType>
-Permission::getGranularTxType(GranularPermissionType const& gpType) const
+Permission::getGranularTxType(GranularPermissionType gpType) const
 {
     auto const it = granularTxTypeMap_.find(gpType);
     if (it != granularTxTypeMap_.end())
@@ -256,7 +256,7 @@ Permission::txToPermissionType(TxType const type)
 }
 
 TxType
-Permission::permissionToTxType(uint32_t const value)
+Permission::permissionToTxType(uint32_t value)
 {
     XRPL_ASSERT(value > 0, "xrpl::Permission::permissionToTxType : value is greater than 0");
     return static_cast<TxType>(value - 1);
