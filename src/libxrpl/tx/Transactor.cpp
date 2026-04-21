@@ -182,7 +182,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 
         // If the transaction is not delegable and does not have granular permissions, fail earlier
         // with temMALFORMED. This is to prevent transactions that are not delegable at all from
-        // being processed further in the checkPermissions function.
+        // being processed further in the invokeCheckPermission function.
         if (!perm.isDelegable(Permission::txToPermissionType(txType), ctx.rules) &&
             !perm.hasGranularPermissions(txType))
             return temMALFORMED;
@@ -297,7 +297,7 @@ Transactor::preflightSigValidated(PreflightContext const& ctx)
 }
 
 NotTEC
-Transactor::checkPermissionImpl(
+Transactor::checkPermission(
     ReadView const& view,
     STTx const& tx,
     std::unordered_set<GranularPermissionType>& heldGranularPermissions)

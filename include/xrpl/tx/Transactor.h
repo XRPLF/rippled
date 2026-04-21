@@ -209,7 +209,7 @@ public:
     /**
      * This function can be overridden to introduce additional semantic constraints beyond the
      * granular template validation for granular permissions. It is called by the base
-     * checkPermission method only after the transaction has successfully passed
+     * invokeCheckPermission method only after the transaction has successfully passed
      * checkGranularSandbox.
      */
     static NotTEC
@@ -236,10 +236,10 @@ public:
      */
     template <class T>
     static NotTEC
-    checkPermission(ReadView const& view, STTx const& tx)
+    invokeCheckPermission(ReadView const& view, STTx const& tx)
     {
         std::unordered_set<GranularPermissionType> heldGranularPermissions;
-        if (NotTEC const result = checkPermissionImpl(view, tx, heldGranularPermissions);
+        if (NotTEC const result = checkPermission(view, tx, heldGranularPermissions);
             !isTesSuccess(result) || heldGranularPermissions.empty())
         {
             return result;
@@ -334,7 +334,7 @@ protected:
 
 private:
     static NotTEC
-    checkPermissionImpl(
+    checkPermission(
         ReadView const& view,
         STTx const& tx,
         std::unordered_set<GranularPermissionType>& heldGranularPermissions);

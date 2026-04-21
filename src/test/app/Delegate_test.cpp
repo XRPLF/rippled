@@ -2235,7 +2235,7 @@ class Delegate_test : public beast::unit_test::suite
         }
 
         // AccountSet is notDelegable at tx level but has granular permissions,
-        // so sfDelegate passes preflight and is rejected at checkPermissions with
+        // so sfDelegate passes preflight and is rejected at invokeCheckPermission with
         // terNO_DELEGATE_PERMISSION.
         {
             env(fset(alice, asfDefaultRipple), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
