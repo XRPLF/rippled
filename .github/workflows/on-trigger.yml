@@ -113,20 +113,19 @@ jobs:
         id: version
         uses: ./.github/actions/generate-version
 
-  package-deb:
-    needs: [build-test, generate-version]
-    uses: ./.github/workflows/reusable-package.yml
+  generate-packaging-matrix:
+    uses: ./.github/workflows/reusable-strategy-matrix.yml
     with:
-      pkg_type: deb
-      artifact_name: xrpld-ubuntu-jammy-gcc-12-amd64-release
-      version: ${{ needs.generate-version.outputs.version }}
-      container_image: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12@sha256:14e463a9a88060b5a1e579204525c4a6f23afdd0255446f8e4f5415ae0cedac6
+      mode: packaging
 
-  package-rpm:
-    needs: [build-test, generate-version]
+  package:
+    needs: [build-test, generate-version, generate-packaging-matrix]
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-packaging-matrix.outputs.matrix) }}
     uses: ./.github/workflows/reusable-package.yml
     with:
-      pkg_type: rpm
-      artifact_name: xrpld-rhel-9-gcc-12-amd64-release
+      pkg_type: ${{ matrix.pkg_type }}
+      artifact_name: ${{ matrix.artifact_name }}
       version: ${{ needs.generate-version.outputs.version }}
-      container_image: ghcr.io/xrplf/ci/rhel-9:gcc-12@sha256:196f97b62b8352da1b7cfa91c59d442cc4940eae89a05b547408f62cbddcb8b3
+      container_image: ${{ matrix.container_image }}

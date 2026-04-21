@@ -34,6 +34,7 @@ if(RPMBUILD_EXECUTABLE)
             ${CMAKE_SOURCE_DIR}/package/build_pkg.sh rpm ${CMAKE_SOURCE_DIR}
             ${CMAKE_BINARY_DIR}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        DEPENDS xrpld
         COMMENT "Building RPM package"
         VERBATIM
     )
@@ -49,6 +50,7 @@ if(DPKG_BUILDPACKAGE_EXECUTABLE)
             ${CMAKE_SOURCE_DIR}/package/build_pkg.sh deb ${CMAKE_SOURCE_DIR}
             ${CMAKE_BINARY_DIR} ${xrpld_version} ${pkg_release}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
+        DEPENDS xrpld
         COMMENT "Building Debian package"
         VERBATIM
     )

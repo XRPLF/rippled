@@ -62,8 +62,8 @@ jobs:
           PKG_RELEASE: ${{ inputs.pkg_release }}
         run: |
           mkdir -p "${BUILD_DIR}/package/rpm"
-          sed -e "s/@xrpld_version@/${PKG_VERSION}/" \
-              -e "s/@pkg_release@/${PKG_RELEASE}/" \
+          sed -e "s|@xrpld_version@|${PKG_VERSION}|" \
+              -e "s|@pkg_release@|${PKG_RELEASE}|" \
             package/rpm/xrpld.spec.in > "${BUILD_DIR}/package/rpm/xrpld.spec"
 
       - name: Build package
