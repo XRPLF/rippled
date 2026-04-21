@@ -205,8 +205,8 @@ class Invariants_test : public beast::unit_test::suite
             {
                 BEAST_EXPECTS(
                     messages.starts_with("Invariant failed:") ||
-                    messages.starts_with("Transaction caused an
-                    exception"), messages);
+                        messages.starts_with("Transaction caused an exception"),
+                    messages);
             }
             // std::cerr << messages << '\n';
             for (auto const& m : expect_logs)
