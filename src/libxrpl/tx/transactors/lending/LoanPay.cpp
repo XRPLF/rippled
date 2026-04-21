@@ -686,7 +686,7 @@ LoanPay::doApply()
             UNREACHABLE("xrpl::LoanPay::doApply : all zeroes");
             return 0;
         }
-        auto const [minItr, maxItr] = std::minmax_element(exponents.begin(), exponents.end());
+        auto const [minItr, maxItr] = std::ranges::minmax_element(exponents);
         auto const min = *minItr;
         auto const max = *maxItr;
         JLOG(j_.trace()) << "Min scale: " << min << ", max scale: " << max;
