@@ -183,9 +183,13 @@ operator<<(std::ostream& o, boost::container::flat_set<T> const& ts)
     for (auto const& t : ts)
     {
         if (do_comma)
+        {
             o << ", ";
+        }
         else
+        {
             do_comma = true;
+        }
         o << t;
     }
     o << " }";

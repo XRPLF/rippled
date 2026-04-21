@@ -31,8 +31,8 @@ public:
 
         // to be updated
         std::uint32_t finishSeq_ = 0;
-        std::vector<uint256> skipList_ = {};  // including the finishHash
-        uint256 startHash_ = {};
+        std::vector<uint256> skipList_;  // including the finishHash
+        uint256 startHash_;
         std::uint32_t startSeq_ = 0;
         bool full_ = false;
 
@@ -146,7 +146,7 @@ private:
     TaskParameter parameter_;
     uint32_t maxTimeouts_;
     std::shared_ptr<SkipListAcquire> skipListAcquirer_;
-    std::shared_ptr<Ledger const> parent_ = {};
+    std::shared_ptr<Ledger const> parent_;
     uint32_t deltaToBuild_ = 0;  // should not build until have parent
     std::vector<std::shared_ptr<LedgerDeltaAcquire>> deltas_;
 

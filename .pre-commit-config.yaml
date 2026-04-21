@@ -17,7 +17,6 @@ repos:
         args: [--maxkb=400, --enforce-all]
       - id: trailing-whitespace
       - id: end-of-file-fixer
-      - id: mixed-line-ending
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
@@ -38,6 +37,7 @@ repos:
     rev: c2bc67fe8f8f549cc489e00ba8b45aa18ee713b1 # frozen: v3.8.1
     hooks:
       - id: prettier
+        args: [--end-of-line=auto]
 
   - repo: https://github.com/psf/black-pre-commit-mirror
     rev: ea488cebbfd88a5f50b8bd95d5c829d0bb76feb8 # frozen: 26.1.0

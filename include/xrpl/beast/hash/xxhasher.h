@@ -64,7 +64,7 @@ private:
     void
     flushToState(void const* data, std::size_t len)
     {
-        if (!state_)
+        if (state_ == nullptr)
         {
             state_ = allocState();
             if (seed_.has_value())
@@ -78,7 +78,7 @@ private:
         }
         XXH3_64bits_update(state_, readBuffer_.data(), readBuffer_.size());
         resetBuffers();
-        if (data && len)
+        if ((data != nullptr) && (len != 0u))
         {
             XXH3_64bits_update(state_, data, len);
         }
@@ -87,22 +87,18 @@ private:
     result_type
     retrieveHash()
     {
-        if (state_)
+        if (state_ != nullptr)
         {
             flushToState(nullptr, 0);
             return XXH3_64bits_digest(state_);
         }
-        else
+
+        if (seed_.has_value())
         {
-            if (seed_.has_value())
-            {
-                return XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), *seed_);
-            }
-            else
-            {
-                return XXH3_64bits(readBuffer_.data(), readBuffer_.size());
-            }
+            return XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), *seed_);
         }
+
+        return XXH3_64bits(readBuffer_.data(), readBuffer_.size());
     }
 
 public:
@@ -119,7 +115,7 @@ public:
 
     ~xxhasher() noexcept
     {
-        if (state_)
+        if (state_ != nullptr)
         {
             XXH3_freeState(state_);
         }

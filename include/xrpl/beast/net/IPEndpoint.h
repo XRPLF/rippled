@@ -69,12 +69,12 @@ public:
     {
         return m_addr.is_v6();
     }
-    AddressV4 const
+    AddressV4
     to_v4() const
     {
         return m_addr.to_v4();
     }
-    AddressV6 const
+    AddressV6
     to_v6() const
     {
         return m_addr.to_v6();

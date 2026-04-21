@@ -1,5 +1,19 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 namespace detail {
@@ -241,7 +255,7 @@ RawStateTable::erase(std::shared_ptr<SLE> const& sle)
     switch (item.action)
     {
         case Action::erase:
-            LogicError("RawStateTable::erase: already erased");
+            Throw<std::logic_error>("RawStateTable::erase: already erased");
             break;
         case Action::insert:
             items_.erase(result.first);
@@ -270,10 +284,10 @@ RawStateTable::insert(std::shared_ptr<SLE> const& sle)
             item.sle = sle;
             break;
         case Action::insert:
-            LogicError("RawStateTable::insert: already inserted");
+            Throw<std::logic_error>("RawStateTable::insert: already inserted");
             break;
         case Action::replace:
-            LogicError("RawStateTable::insert: already exists");
+            Throw<std::logic_error>("RawStateTable::insert: already exists");
             break;
     }
 }
@@ -291,7 +305,7 @@ RawStateTable::replace(std::shared_ptr<SLE> const& sle)
     switch (item.action)
     {
         case Action::erase:
-            LogicError("RawStateTable::replace: was erased");
+            Throw<std::logic_error>("RawStateTable::replace: was erased");
             break;
         case Action::insert:
         case Action::replace:

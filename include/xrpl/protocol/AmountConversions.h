@@ -148,11 +148,17 @@ toAmount(Asset const& asset, Number const& n, Number::rounding_mode mode = Numbe
         Number::setround(mode);
 
     if constexpr (std::is_same_v<IOUAmount, T>)
+    {
         return IOUAmount(n);
+    }
     else if constexpr (std::is_same_v<XRPAmount, T>)
+    {
         return XRPAmount(static_cast<std::int64_t>(n));
+    }
     else if constexpr (std::is_same_v<MPTAmount, T>)
+    {
         return MPTAmount(static_cast<std::int64_t>(n));
+    }
     else if constexpr (std::is_same_v<STAmount, T>)
     {
         if (isXRP(asset))
@@ -171,11 +177,17 @@ T
 toMaxAmount(Asset const& asset)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
+    {
         return IOUAmount(STAmount::cMaxValue, STAmount::cMaxOffset);
+    }
     else if constexpr (std::is_same_v<XRPAmount, T>)
+    {
         return XRPAmount(static_cast<std::int64_t>(STAmount::cMaxNativeN));
+    }
     else if constexpr (std::is_same_v<MPTAmount, T>)
+    {
         return MPTAmount(maxMPTokenAmount);
+    }
     else if constexpr (std::is_same_v<STAmount, T>)
     {
         return asset.visit(
@@ -204,13 +216,21 @@ Asset
 getAsset(T const& amt)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
+    {
         return noIssue();
+    }
     else if constexpr (std::is_same_v<XRPAmount, T>)
+    {
         return xrpIssue();
+    }
     else if constexpr (std::is_same_v<MPTAmount, T>)
+    {
         return noMPT();
+    }
     else if constexpr (std::is_same_v<STAmount, T>)
+    {
         return amt.asset();
+    }
     else
     {
         constexpr bool alwaysFalse = !std::is_same_v<T, T>;
@@ -223,13 +243,21 @@ constexpr T
 get(STAmount const& a)
 {
     if constexpr (std::is_same_v<IOUAmount, T>)
+    {
         return a.iou();
+    }
     else if constexpr (std::is_same_v<XRPAmount, T>)
+    {
         return a.xrp();
+    }
     else if constexpr (std::is_same_v<MPTAmount, T>)
+    {
         return a.mpt();
+    }
     else if constexpr (std::is_same_v<STAmount, T>)
+    {
         return a;
+    }
     else
     {
         constexpr bool alwaysFalse = !std::is_same_v<T, T>;

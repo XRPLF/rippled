@@ -1,26 +1,65 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/vault.h>
+#include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/apply.h>
+#include <xrpl/tx/invariants/VaultInvariant.h>
 
-#include <boost/algorithm/string/predicate.hpp>
+#include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <initializer_list>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace test {
@@ -1737,8 +1776,10 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         bool const fixPDEnabled = features[fixPermissionedDomainInvariant];
+        bool const fixS313Enabled = features[fixSecurity3_1_3];
 
-        testcase << "PermissionedDEX" + std::string(fixPDEnabled ? " fix" : "");
+        testcase << "PermissionedDEX" + std::string(fixPDEnabled ? " fixPD" : "") +
+                std::string(fixS313Enabled ? " fixS313" : "");
 
         doInvariantCheck(
             Env(*this, features),
@@ -1824,6 +1865,45 @@ class Invariants_test : public beast::unit_test::suite
                 XRPAmount{},
                 STTx{ttOFFER_CREATE, [&](STObject&) {}},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+        }
+
+        // empty sfAdditionalBooks (size 0)
+        {
+            Env env1(*this, features);
+
+            Account const A1{"A1"};
+            Account const A2{"A2"};
+            env1.fund(XRP(1000), A1, A2);
+            env1.close();
+
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
+            env1.close();
+
+            doInvariantCheck(
+                std::move(env1),
+                A1,
+                A2,
+                fixS313Enabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
+                               : std::vector<std::string>{},
+                [&pd1](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    Keylet const offerKey = keylet::offer(A2.id(), 10);
+                    auto sleOffer = std::make_shared<SLE>(offerKey);
+                    sleOffer->setAccountID(sfAccount, A2);
+                    sleOffer->setFieldAmount(sfTakerPays, A1["USD"](10));
+                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                    sleOffer->setFlag(lsfHybrid);
+                    sleOffer->setFieldH256(sfDomainID, pd1);
+
+                    STArray const bookArr;  // empty array, size 0
+                    sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
+                    ac.view().insert(sleOffer);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttOFFER_CREATE, [&](STObject&) {}},
+                fixS313Enabled
+                    ? std::initializer_list<TER>{tecINVARIANT_FAILED, tecINVARIANT_FAILED}
+                    : std::initializer_list<TER>{tesSUCCESS, tesSUCCESS});
         }
 
         // hybrid offer missing sfAdditionalBooks
@@ -4004,6 +4084,128 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
+    testVaultComputeCoarsestScale()
+    {
+        using namespace jtx;
+
+        Account const issuer{"issuer"};
+        PrettyAsset const vaultAsset = issuer["IOU"];
+
+        struct TestCase
+        {
+            std::string name;
+            std::int32_t expectedMinScale;
+            std::vector<ValidVault::DeltaInfo> values;
+        };
+
+        NumberMantissaScaleGuard const g{MantissaRange::large};
+
+        auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
+            return {n, scale(n, vaultAsset.raw())};
+        };
+
+        auto const testCases = std::vector<TestCase>{
+            {
+                .name = "No values",
+                .expectedMinScale = 0,
+                .values = {},
+            },
+            {
+                .name = "Mixed integer and Number values",
+                .expectedMinScale = -15,
+                .values = {makeDelta(1), makeDelta(-1), makeDelta(Number{10, -1})},
+            },
+            {
+                .name = "Mixed scales",
+                .expectedMinScale = -17,
+                .values =
+                    {makeDelta(Number{1, -2}), makeDelta(Number{5, -3}), makeDelta(Number{3, -2})},
+            },
+            {
+                .name = "Equal scales",
+                .expectedMinScale = -16,
+                .values =
+                    {makeDelta(Number{1, -1}), makeDelta(Number{5, -1}), makeDelta(Number{1, -1})},
+            },
+            {
+                .name = "Mixed mantissa sizes",
+                .expectedMinScale = -12,
+                .values =
+                    {makeDelta(Number{1}),
+                     makeDelta(Number{1234, -3}),
+                     makeDelta(Number{12345, -6}),
+                     makeDelta(Number{123, 1})},
+            },
+        };
+
+        for (auto const& tc : testCases)
+        {
+            testcase("vault computeCoarsestScale: " + tc.name);
+
+            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            for (auto const& num : tc.values)
+            {
+                // None of these scales are far enough apart that rounding the
+                // values would lose information, so check that the rounded
+                // value matches the original.
+                auto const actualRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                BEAST_EXPECTS(
+                    actualRounded == num.delta,
+                    "number " + to_string(num.delta) + " rounded to scale " +
+                        std::to_string(actualScale) + " is " + to_string(actualRounded));
+            }
+        }
+
+        auto const testCases2 = std::vector<TestCase>{
+            {
+                .name = "False equivalence",
+                .expectedMinScale = -15,
+                .values =
+                    {
+                        makeDelta(Number{1234567890123456789, -18}),
+                        makeDelta(Number{12345, -4}),
+                        makeDelta(Number{1}),
+                    },
+            },
+        };
+
+        // Unlike the first set of test cases, the values in these test could
+        // look equivalent if using the wrong scale.
+        for (auto const& tc : testCases2)
+        {
+            testcase("vault computeCoarsestScale: " + tc.name);
+
+            auto const actualScale = ValidVault::computeCoarsestScale(tc.values);
+
+            BEAST_EXPECTS(
+                actualScale == tc.expectedMinScale,
+                "expected: " + std::to_string(tc.expectedMinScale) +
+                    ", actual: " + std::to_string(actualScale));
+            std::optional<Number> first;
+            Number firstRounded;
+            for (auto const& num : tc.values)
+            {
+                if (!first)
+                {
+                    first = num.delta;
+                    firstRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                    continue;
+                }
+                auto const numRounded = roundToAsset(vaultAsset, num.delta, actualScale);
+                BEAST_EXPECTS(
+                    numRounded != firstRounded,
+                    "at a scale of " + std::to_string(actualScale) + " " + to_string(num.delta) +
+                        " == " + to_string(*first));
+            }
+        }
+    }
+
+    void
     testConfidentialMPTTransfer()
     {
         using namespace test::jtx;
@@ -4213,12 +4415,17 @@ public:
         testPermissionedDomainInvariants(defaultAmendments() - fixPermissionedDomainInvariant);
         testPermissionedDEX(defaultAmendments() | fixPermissionedDomainInvariant);
         testPermissionedDEX(defaultAmendments() - fixPermissionedDomainInvariant);
+        testPermissionedDEX(
+            (defaultAmendments() | fixPermissionedDomainInvariant) - fixSecurity3_1_3);
+        testPermissionedDEX(
+            defaultAmendments() - fixPermissionedDomainInvariant - fixSecurity3_1_3);
         testNoModifiedUnmodifiableFields();
         testValidPseudoAccounts();
         testValidLoanBroker();
         testVault();
         testConfidentialMPTTransfer();
         testMPT();
+        testVaultComputeCoarsestScale();
     }
 };
 
