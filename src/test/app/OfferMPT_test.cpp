@@ -4703,6 +4703,101 @@ public:
     }
 
     void
+    testAutoCreateReserve(FeatureBitset features)
+    {
+        // When an offer on the book is partially crossed, the payment engine
+        // auto-creates a new ledger object (MPToken or IOU trustline) for the
+        // offer owner to hold the incoming asset.  This happens inside
+        // BookStep::forEachOffer (MPT: checkCreateMPT) and BookStep::consumeOffer
+        // (IOU: directSendNoFeeIOU -> trustCreate) without a reserve sufficiency
+        // check.  The offer owner can therefore end up with more objects than
+        // their XRP balance can reserve for, consistent with IOU behavior.
+
+        testcase("Auto-Create Object Without Reserve Check During Partial Crossing");
+
+        using namespace jtx;
+
+        auto const gw = Account{"gateway"};
+        auto const alice = Account{"alice"};
+        auto const carol = Account{"carol"};
+        auto const bob = Account{"bob"};
+
+        auto test = [&](auto&& getToken, auto&& execTx) {
+            // MPT/IOU: carol's existing offer buys MPT/IOU by selling XRP.
+            // carol has no MPToken/Trustline for this issuance.  When alice partially crosses
+            // carol's offer, an MPToken/Trustline is auto-created for carol without checking
+            // that she can afford the extra reserve slot.
+            Env env{*this, features};
+
+            auto const f = env.current()->fees().base;
+            auto const r = reserve(env, 0);
+            auto const inc = reserve(env, 1) - r;
+
+            env.fund(XRP(10'000), gw, alice, bob);
+
+            // getToken:
+            //  - Create MPT with CanTransfer + CanTrade; authorize alice as holder.
+            //  - Create IOU trustline
+            auto const Token = getToken(env);
+
+            // carol: reserve(0) + 1 increment + fee covers placing one offer.
+            // After the offer tx she has exactly reserve(1) + XRP(30).
+            // XRP(30) < inc (50 XRP), so receiving a second object will put her
+            // below reserve(2).
+            if (BEAST_EXPECT(inc > XRP(30)))
+                env.fund(r + inc + f + XRP(30), carol);
+
+            // carol's offer goes on the book (no counterpart yet).
+            // TakerPays=Token(30): carol will receive Token when crossed.
+            // TakerGets=XRP(30):  carol will give XRP when crossed.
+            env(offer(carol, Token(30), XRP(30)));
+            env.require(owners(carol, 1));
+
+            // Execute offer create or cross-currency payment
+            // alice partially crosses carol's offer.
+            // alice sends Token(15) to carol and receives XRP(15).
+            // Token:
+            // - MPT: checkCreateMPT auto-creates an MPToken for carol (no reserve check).
+            // - IOU: directSendNoFeeIOU auto-creates an Trustline for carol (no reserve check).
+            execTx(env, Token);
+
+            // Carol now owns 2 objects (remaining offer + new MPToken) even
+            // though her XRP balance is only reserve(1) + XRP(15), which is
+            // below reserve(2) = reserve(1) + inc.
+            auto const carolBalance = r + inc + XRP(15);
+            env.require(owners(carol, 2), balance(carol, Token(15)), balance(carol, carolBalance));
+            BEAST_EXPECT(carolBalance < r + 2 * inc);  // below reserve(2)
+        };
+        std::function<PrettyAsset(Env&)> const getIOU = [&](Env& env) -> PrettyAsset {
+            env.trust(gw["USD"](1'000), alice);
+            env(pay(gw, alice, gw["USD"](100)));
+            return gw["USD"];
+        };
+        std::function<PrettyAsset(Env&)> const getMPT = [&](Env& env) -> PrettyAsset {
+            MPT const MPT1 = MPTTester({.env = env, .issuer = gw, .holders = {alice}, .pay = 100});
+            return MPT1;
+        };
+        for (auto&& getToken : {getIOU, getMPT})
+        {
+            test(getToken, [&](Env& env, PrettyAsset const& Token) {
+                // alice partially crosses carol's offer.
+                // alice sends Token(15) to carol and receives XRP(15).
+                // Token is MPT: checkCreateMPT auto-creates an MPToken for carol (no reserve
+                // check). Token is IOU: directSendNoFeeIOU auto-creates a trustline for carol (no
+                // reserve check).
+                env(offer(alice, XRP(15), Token(15)));
+            });
+            test(getToken, [&](Env& env, PrettyAsset const& Token) {
+                // Similar to above but with cross-currency payment.
+                env(pay(alice, bob, XRP(15)),
+                    sendmax(Token(15)),
+                    path(~XRP),
+                    txflags(tfNoRippleDirect | tfPartialPayment));
+            });
+        }
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         testCanceledOffer(features);
@@ -4758,6 +4853,7 @@ public:
         testRmSmallIncreasedQOffersMPT(features);
         testFillOrKill(features);
         testTickSize(features);
+        testAutoCreateReserve(features);
     }
 
     void
