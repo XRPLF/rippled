@@ -396,6 +396,28 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 ---
 
+## Task 3.10: TxQ Instrumentation
+
+**Status**: COMPLETE
+
+**Objective**: Trace the transaction queue lifecycle — enqueue decisions, direct apply, batch clear, ledger-close accept loop, per-tx apply, and cleanup.
+
+**Spans added**:
+
+- `txq.enqueue` — wraps `TxQ::apply()` with tx_hash attribute
+- `txq.apply_direct` — wraps `TxQ::tryDirectApply()` fast-path
+- `txq.batch_clear` — wraps `TxQ::tryClearAccountQueueUpThruTx()`
+- `txq.accept` — wraps `TxQ::accept()` ledger-close dequeue with queue_size attr
+- `txq.accept_tx` — per-tx span inside accept loop with tx_hash, ter_code,
+  retries_remaining attributes
+- `txq.cleanup` — wraps `TxQ::processClosedLedger()` with ledger_seq attribute
+
+**New file**: `src/xrpld/telemetry/TxQSpanNames.h`
+
+**Modified file**: `src/xrpld/app/misc/detail/TxQ.cpp`
+
+---
+
 ## Summary
 
 | Task | Description                         | New Files | Modified Files | Depends On |
@@ -409,8 +431,9 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 | 3.7  | Build verification and testing      | 0         | 0              | 3.1-3.6    |
 | 3.8  | TX span peer version attribute      | 0         | 1              | 3.3        |
 | 3.9  | Deterministic transaction trace ID  | 0-1       | 3              | 3.2, 3.3   |
+| 3.10 | TxQ instrumentation (6 spans)       | 1         | 1              | 3.4        |
 
-**Parallel work**: Tasks 3.1 and 3.4 can start in parallel. Task 3.2 depends on 3.1. Tasks 3.3 and 3.5 depend on 3.2. Task 3.6 depends on 3.3 and 3.5. Task 3.8 depends on 3.3 (span must exist). Task 3.9 depends on 3.2 and 3.3.
+**Parallel work**: Tasks 3.1 and 3.4 can start in parallel. Task 3.2 depends on 3.1. Tasks 3.3 and 3.5 depend on 3.2. Task 3.6 depends on 3.3 and 3.5. Task 3.8 depends on 3.3 (span must exist). Task 3.9 depends on 3.2 and 3.3. Task 3.10 depends on 3.4 (tx.process span must exist).
 
 **Exit Criteria** (from [06-implementation-phases.md §6.11.3](./06-implementation-phases.md)):
 
