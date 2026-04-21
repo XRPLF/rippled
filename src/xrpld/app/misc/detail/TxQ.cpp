@@ -1,4 +1,5 @@
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/telemetry/TxQSpanNames.h>
 
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
@@ -29,6 +30,8 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/st.h>
+#include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 
@@ -528,6 +531,10 @@ TxQ::tryClearAccountQueueUpThruTx(
     FeeMetrics::Snapshot const& metricsSnapshot,
     beast::Journal j)
 {
+    using namespace telemetry;
+    auto span = SpanGuard::span(
+        TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::batchClear);
+
     SeqProxy const tSeqProx{tx.getSeqProxy()};
     XRPL_ASSERT(
         beginTxIter != accountIter->second.transactions.end(),
@@ -730,6 +737,11 @@ TxQ::apply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    using namespace telemetry;
+    auto span =
+        SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::enqueue);
+    span.setAttribute(txq_span::attr::txHash, to_string(tx->getTransactionID()).c_str());
+
     NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
     // See if the transaction is valid, properly formed,
@@ -1332,6 +1344,11 @@ TxQ::apply(
 void
 TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 {
+    using namespace telemetry;
+    auto span =
+        SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::cleanup);
+    span.setAttribute(txq_span::attr::ledgerSeq, static_cast<int64_t>(view.header().seq));
+
     std::lock_guard const lock(mutex_);
 
     feeMetrics_.update(app, view, timeLeap, setup_);
@@ -1403,6 +1420,11 @@ TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 bool
 TxQ::accept(Application& app, OpenView& view)
 {
+    using namespace telemetry;
+    auto span =
+        SpanGuard::span(TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::accept);
+    span.setAttribute(txq_span::attr::queueSize, static_cast<int64_t>(byFee_.size()));
+
     /* Move transactions from the queue from largest fee level to smallest.
        As we add more transactions, the required fee level will increase.
        Stop when the transaction fee level gets lower than the required fee
@@ -1440,7 +1462,15 @@ TxQ::accept(Application& app, OpenView& view)
             JLOG(j_.trace()) << "Applying queued transaction " << candidateIter->txID
                              << " to open ledger.";
 
+            auto txSpan = SpanGuard::span(
+                TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::acceptTx);
+            txSpan.setAttribute(txq_span::attr::txHash, to_string(candidateIter->txID).c_str());
+            txSpan.setAttribute(
+                txq_span::attr::retriesRemaining,
+                static_cast<int64_t>(candidateIter->retriesRemaining));
+
             auto const [txnResult, didApply, _metadata] = candidateIter->apply(app, view, j_);
+            txSpan.setAttribute(txq_span::attr::terCode, transToken(txnResult).c_str());
 
             if (didApply)
             {
@@ -1650,6 +1680,10 @@ TxQ::tryDirectApply(
     ApplyFlags flags,
     beast::Journal j)
 {
+    using namespace telemetry;
+    auto span = SpanGuard::span(
+        TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
+
     auto const account = (*tx)[sfAccount];
     auto const sleAccount = view.read(keylet::account(account));
 
