@@ -21,7 +21,7 @@ class AMMDeleteBuilder;
  * Type: ttAMM_DELETE (40)
  * Delegable: Delegation::delegable
  * Amendment: featureAMM
- * Privileges: mustDeleteAcct
+ * Privileges: mustDeleteAcct | mayDeleteMPT
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use AMMDeleteBuilder to construct new transactions.
@@ -49,6 +49,7 @@ public:
 
     /**
      * @brief Get sfAsset (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -60,6 +61,7 @@ public:
 
     /**
      * @brief Get sfAsset2 (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return The field value.
      */
     [[nodiscard]]
@@ -116,6 +118,7 @@ public:
 
     /**
      * @brief Set sfAsset (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMDeleteBuilder&
@@ -127,6 +130,7 @@ public:
 
     /**
      * @brief Set sfAsset2 (soeREQUIRED)
+     * @note This field supports MPT (Multi-Purpose Token) amounts.
      * @return Reference to this builder for method chaining.
      */
     AMMDeleteBuilder&

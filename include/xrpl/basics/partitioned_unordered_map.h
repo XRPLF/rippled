@@ -231,7 +231,8 @@ public:
     {
         // Set partitions to the number of hardware threads if the parameter
         // is either empty or set to 0.
-        partitions_ = partitions && *partitions ? *partitions : std::thread::hardware_concurrency();
+        partitions_ =
+            partitions && (*partitions != 0u) ? *partitions : std::thread::hardware_concurrency();
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,

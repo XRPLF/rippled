@@ -21,9 +21,9 @@
 
 #include <memory>
 #include <thread>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublisherServer>
 {
@@ -54,7 +54,7 @@ class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublis
 
     // Load a signed certificate into the ssl context, and configure
     // the context for use with a server.
-    inline void
+    void
     load_server_certificate()
     {
         sslCtx_.set_password_callback(
@@ -75,7 +75,7 @@ class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublis
 
     struct BlobInfo
     {
-        BlobInfo(std::string b, std::string s) : blob(b), signature(s)
+        BlobInfo(std::string b, std::string s) : blob(std::move(b)), signature(std::move(s))
         {
         }
 
@@ -122,9 +122,10 @@ public:
         auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
         auto const signingKeys = randomKeyPair(KeyType::secp256k1);
         return {
-            masterPublic,
-            signingKeys.first,
-            makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
+            .masterPublic = masterPublic,
+            .signingPublic = signingKeys.first,
+            .manifest =
+                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
     }
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
@@ -295,7 +296,7 @@ public:
         openssl genrsa -out ca.key 2048
         openssl req -new -x509 -nodes -days 10000 -key ca.key -out ca.crt \
             -subj "/C=US/ST=CA/L=Los
-     Angeles/O=rippled-unit-tests/CN=example.com" # generate private cert
+     Angeles/O=xrpld-unit-tests/CN=example.com" # generate private cert
         openssl genrsa -out server.key 2048
         # Generate certificate signing request
         # since our unit tests can run in either ipv4 or ipv6 mode,
@@ -318,7 +319,7 @@ public:
         openssl req -new -key server.key -out server.csr \
             -config extras.cnf \
             -subj "/C=US/ST=California/L=San
-     Francisco/O=rippled-unit-tests/CN=127.0.0.1" \
+     Francisco/O=xrpld-unit-tests/CN=127.0.0.1" \
 
         # Create public certificate by signing with our CA
         openssl x509 -req -days 10000 -in server.csr -CA ca.crt -CAkey ca.key
@@ -452,7 +453,7 @@ private:
         bool ssl;
 
         lambda(int id_, TrustedPublisherServer& self_, socket_type&& sock_, bool ssl_)
-            : id(id_), self(self_), sock(std::move(sock_)), work(sock_.get_executor()), ssl(ssl_)
+            : id(id_), self(self_), sock(std::move(sock_)), work(sock.get_executor()), ssl(ssl_)
         {
         }
 
@@ -507,9 +508,13 @@ private:
             try
             {
                 if (ssl)
+                {
                     http::read(*ssl_stream, sb, req, ec);
+                }
                 else
+                {
                     http::read(sock, sb, req, ec);
+                }
 
                 if (ec)
                     break;
@@ -525,16 +530,22 @@ private:
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
                     if (path == "/validators2/bad")
+                    {
                         res.body() = "{ 'bad': \"2']";
+                    }
                     else if (path == "/validators2/missing")
+                    {
                         res.body() = "{\"version\": 2}";
+                    }
                     else
                     {
                         int refresh = 5;
                         constexpr char const* refreshPrefix = "/validators2/refresh/";
                         if (boost::starts_with(path, refreshPrefix))
+                        {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(refreshPrefix)));
+                        }
                         res.body() = getList2_(refresh);
                     }
                 }
@@ -543,16 +554,22 @@ private:
                     res.result(http::status::ok);
                     res.insert("Content-Type", "application/json");
                     if (path == "/validators/bad")
+                    {
                         res.body() = "{ 'bad': \"1']";
+                    }
                     else if (path == "/validators/missing")
+                    {
                         res.body() = "{\"version\": 1}";
+                    }
                     else
                     {
                         int refresh = 5;
                         constexpr char const* refreshPrefix = "/validators/refresh/";
                         if (boost::starts_with(path, refreshPrefix))
+                        {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(refreshPrefix)));
+                        }
                         res.body() = getList_(refresh);
                     }
                 }
@@ -570,8 +587,10 @@ private:
                     {
                         std::stringstream body;
                         for (auto i = 0; i < 1024; ++i)
+                        {
                             body << static_cast<char>(rand_int<short>(32, 126)),
                                 res.body() = body.str();
+                        }
                     }
                 }
                 else if (boost::starts_with(path, "/sleep/"))
@@ -582,13 +601,21 @@ private:
                 else if (boost::starts_with(path, "/redirect"))
                 {
                     if (boost::ends_with(path, "/301"))
+                    {
                         res.result(http::status::moved_permanently);
+                    }
                     else if (boost::ends_with(path, "/302"))
+                    {
                         res.result(http::status::found);
+                    }
                     else if (boost::ends_with(path, "/307"))
+                    {
                         res.result(http::status::temporary_redirect);
+                    }
                     else if (boost::ends_with(path, "/308"))
+                    {
                         res.result(http::status::permanent_redirect);
+                    }
 
                     std::stringstream location;
                     if (boost::starts_with(path, "/redirect_to/"))
@@ -630,9 +657,13 @@ private:
             }
 
             if (ssl)
+            {
                 write(*ssl_stream, res, ec);
+            }
             else
+            {
                 write(sock, res, ec);
+            }
 
             if (ec || req.need_eof())
                 break;
@@ -662,5 +693,4 @@ make_TrustedPublisherServer(
     return r;
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

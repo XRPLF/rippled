@@ -1,15 +1,37 @@
-#include <test/jtx.h>
+#include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/utility.h>
+#include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
@@ -18,16 +40,27 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <limits>
 #include <optional>
+#include <string>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -44,11 +77,11 @@ class Vault_test : public beast::unit_test::suite
     testSequences()
     {
         using namespace test::jtx;
-        Account issuer{"issuer"};
-        Account owner{"owner"};
-        Account depositor{"depositor"};
-        Account charlie{"charlie"};  // authorized 3rd party
-        Account dave{"dave"};
+        Account const issuer{"issuer"};
+        Account const owner{"owner"};
+        Account const depositor{"depositor"};
+        Account const charlie{"charlie"};  // authorized 3rd party
+        Account const dave{"dave"};
 
         auto const testSequence = [&, this](
                                       std::string const& prefix,
@@ -1330,10 +1363,10 @@ class Vault_test : public beast::unit_test::suite
                         return defXRP;
                     return a + XRP(1000);
                 }
-                auto defIOU = STAmount{a.issue(), 30000};
+                auto defIOU = STAmount{a.asset(), 30000};
                 if (a <= defIOU)
                     return defIOU;
-                return a + STAmount{a.issue(), 1000};
+                return a + STAmount{a.asset(), 1000};
             };
             auto const toFund1 = toFund(asset1);
             auto const toFund2 = toFund(asset2);
@@ -1550,9 +1583,9 @@ class Vault_test : public beast::unit_test::suite
                                 MPTTester& mptt)> test,
                             CaseArgs args = {}) {
             Env env{*this, testable_amendments() | featureSingleAssetVault};
-            Account issuer{"issuer"};
-            Account owner{"owner"};
-            Account depositor{"depositor"};
+            Account const issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const depositor{"depositor"};
             env.fund(XRP(args.initialXRP), issuer, owner, depositor);
             env.close();
             Vault vault{env};
@@ -2174,8 +2207,8 @@ class Vault_test : public beast::unit_test::suite
             testcase("MPT shares to a vault");
 
             Env env{*this, testable_amendments() | featureSingleAssetVault};
-            Account owner{"owner"};
-            Account issuer{"issuer"};
+            Account const owner{"owner"};
+            Account const issuer{"issuer"};
             env.fund(XRP(1000000), owner, issuer);
             env.close();
             Vault const vault{env};
@@ -2242,6 +2275,43 @@ class Vault_test : public beast::unit_test::suite
             // Delete vault with zero balance
             env(vault.del({.owner = owner, .id = keylet.key}));
         });
+
+        {
+            testcase("MPT OutstandingAmount > MaximumAmount");
+
+            Env env{*this, testable_amendments() | featureSingleAssetVault};
+            Account const alice{"alice"};
+            Account const issuer{"issuer"};
+            env.fund(XRP(1'000), alice, issuer);
+            env.close();
+            Vault const vault{env};
+
+            MPTTester const BTC({.env = env, .issuer = issuer, .holders = {alice}, .maxAmt = 100});
+
+            auto [tx, k] = vault.create({.owner = issuer, .asset = BTC});
+            env(tx);
+            env.close();
+
+            tx = vault.deposit({.depositor = issuer, .id = k.key, .amount = BTC(110)});
+            // accountHolds is the first check and the issuer has only BTC(100)
+            // available
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+
+            // OutstandingAmount == MaximumAmount
+            env(pay(issuer, alice, BTC(100)));
+            env.close();
+
+            tx = vault.deposit({.depositor = issuer, .id = k.key, .amount = BTC(100)});
+            // the issuer has BTC(0) available
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env.close();
+
+            tx = vault.deposit({.depositor = alice, .id = k.key, .amount = BTC(100)});
+            // alice transfers BTC(100), OutstandingAmount is 100
+            env(tx);
+            env.close();
+        }
     }
 
     void
@@ -4800,8 +4870,8 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        Account owner{"alice"};
-        Account depositor{"bob"};
+        Account const owner{"alice"};
+        Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
         env.fund(XRP(10000), issuer, owner, depositor);
@@ -5300,7 +5370,7 @@ class Vault_test : public beast::unit_test::suite
         };
 
         Account owner{"alice"};
-        Account depositor{"bob"};
+        Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
         env.fund(XRP(10000), issuer, owner, depositor);

@@ -1,8 +1,11 @@
-#include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -10,9 +13,12 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <cmath>
 #include <map>
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
@@ -56,7 +62,7 @@ walletPropose(Json::Value const& params)
 {
     std::optional<KeyType> keyType;
     std::optional<Seed> seed;
-    bool rippleLibSeed = false;
+    bool libSeed = false;
 
     if (params.isMember(jss::key_type))
     {
@@ -71,22 +77,22 @@ walletPropose(Json::Value const& params)
             return rpcError(rpcINVALID_PARAMS);
     }
 
-    // ripple-lib encodes seed used to generate an Ed25519 wallet in a
+    // XrplLib encodes seed used to generate an Ed25519 wallet in a
     // non-standard way. While we never encode seeds that way, we try
     // to detect such keys to avoid user confusion.
     {
         if (params.isMember(jss::passphrase))
         {
-            seed = RPC::parseRippleLibSeed(params[jss::passphrase]);
+            seed = RPC::parseXrplLibSeed(params[jss::passphrase]);
         }
         else if (params.isMember(jss::seed))
         {
-            seed = RPC::parseRippleLibSeed(params[jss::seed]);
+            seed = RPC::parseXrplLibSeed(params[jss::seed]);
         }
 
         if (seed)
         {
-            rippleLibSeed = true;
+            libSeed = true;
 
             // If the user *explicitly* requests a key type other than
             // Ed25519 we return an error.
@@ -137,7 +143,7 @@ walletPropose(Json::Value const& params)
     // If a passphrase was specified, and it was hashed and used as a seed
     // run a quick entropy check and add an appropriate warning, because
     // "brain wallets" can be easily attacked.
-    if (!rippleLibSeed && params.isMember(jss::passphrase))
+    if (!libSeed && params.isMember(jss::passphrase))
     {
         auto const passphrase = params[jss::passphrase].asString();
 

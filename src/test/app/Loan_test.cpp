@@ -1,19 +1,85 @@
 #include <xrpl/beast/unit_test/suite.h>
 //
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/jtx_json.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+#include <test/jtx/utility.h>
+#include <test/jtx/vault.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/xor_shift_engine.h>
-#include <xrpl/ledger/helpers/LendingHelpers.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
+#include <algorithm>
+#include <array>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <functional>
+#include <limits>
+#include <map>
+#include <optional>
+#include <ostream>
+#include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Loan_test : public beast::unit_test::suite
 {
@@ -114,8 +180,11 @@ protected:
             jtx::PrettyAsset const& asset_,
             Keylet const& brokerKeylet_,
             Keylet const& vaultKeylet_,
-            BrokerParameters const& p)
-            : asset(asset_), brokerID(brokerKeylet_.key), vaultID(vaultKeylet_.key), params(p)
+            BrokerParameters p)
+            : asset(asset_)
+            , brokerID(brokerKeylet_.key)
+            , vaultID(vaultKeylet_.key)
+            , params(std::move(p))
         {
         }
 
@@ -886,7 +955,7 @@ protected:
 
         auto const borrowerInitialBalance = env.balance(borrower, broker.asset).number();
         auto const initialState = state;
-        detail::PaymentComponents totalPaid{
+        xrpl::detail::PaymentComponents totalPaid{
             .trackedValueDelta = 0, .trackedPrincipalDelta = 0, .trackedManagementFeeDelta = 0};
         Number totalInterestPaid = 0;
         Number totalFeesPaid = 0;
@@ -921,7 +990,7 @@ protected:
         {
             validateBorrowerBalance();
             // Compute the expected principal amount
-            auto const paymentComponents = detail::computePaymentComponents(
+            auto const paymentComponents = xrpl::detail::computePaymentComponents(
                 broker.asset.raw(),
                 state.loanScale,
                 state.totalValue,
@@ -934,7 +1003,7 @@ protected:
 
             BEAST_EXPECT(
                 paymentComponents.trackedValueDelta <= roundedPeriodicPayment ||
-                (paymentComponents.specialCase == detail::PaymentSpecialCase::final &&
+                (paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final &&
                  paymentComponents.trackedValueDelta >= roundedPeriodicPayment));
             BEAST_EXPECT(
                 paymentComponents.trackedValueDelta ==
@@ -946,11 +1015,11 @@ protected:
                 periodicRate,
                 state.paymentRemaining - 1,
                 broker.params.managementFeeRate);
-            detail::LoanStateDeltas const deltas = currentTrueState - nextTrueState;
+            xrpl::detail::LoanStateDeltas const deltas = currentTrueState - nextTrueState;
             BEAST_EXPECT(
                 deltas.total() == deltas.principal + deltas.interest + deltas.managementFee);
             BEAST_EXPECT(
-                paymentComponents.specialCase == detail::PaymentSpecialCase::final ||
+                paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final ||
                 deltas.total() == state.periodicPayment ||
                 (state.loanScale - (deltas.total() - state.periodicPayment).exponent()) > 14);
 
@@ -963,9 +1032,9 @@ protected:
                     << paymentComponents.trackedPrincipalDelta << ", "
                     << paymentComponents.trackedInterestPart() << ", "
                     << paymentComponents.trackedManagementFeeDelta << ", " << [&]() -> char const* {
-                    if (paymentComponents.specialCase == detail::PaymentSpecialCase::final)
+                    if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::final)
                         return "final";
-                    if (paymentComponents.specialCase == detail::PaymentSpecialCase::extra)
+                    if (paymentComponents.specialCase == ::xrpl::detail::PaymentSpecialCase::extra)
                         return "extra";
                     return "none";
                 }() << std::endl;
@@ -984,7 +1053,7 @@ protected:
                 // IOUs, the difference should be dust.
                 Number const diff = totalDue - totalDueAmount;
                 BEAST_EXPECT(
-                    paymentComponents.specialCase == detail::PaymentSpecialCase::final ||
+                    paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final ||
                     diff == beast::zero ||
                     (diff > beast::zero &&
                      ((broker.asset.integral() && (static_cast<Number>(diff) < 3)) ||
@@ -994,7 +1063,7 @@ protected:
                     paymentComponents.trackedPrincipalDelta >= beast::zero &&
                     paymentComponents.trackedPrincipalDelta <= state.principalOutstanding);
                 BEAST_EXPECT(
-                    paymentComponents.specialCase != detail::PaymentSpecialCase::final ||
+                    paymentComponents.specialCase != xrpl::detail::PaymentSpecialCase::final ||
                     paymentComponents.trackedPrincipalDelta == state.principalOutstanding);
             }
 
@@ -1054,7 +1123,7 @@ protected:
 
             --state.paymentRemaining;
             state.previousPaymentDate = state.nextPaymentDate;
-            if (paymentComponents.specialCase == detail::PaymentSpecialCase::final)
+            if (paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final)
             {
                 state.paymentRemaining = 0;
                 state.nextPaymentDate = 0;
@@ -2496,7 +2565,7 @@ protected:
                         Number::upward));
 
                 auto const initialState = state;
-                detail::PaymentComponents totalPaid{
+                xrpl::detail::PaymentComponents totalPaid{
                     .trackedValueDelta = 0,
                     .trackedPrincipalDelta = 0,
                     .trackedManagementFeeDelta = 0};
@@ -2512,7 +2581,7 @@ protected:
                 while (state.paymentRemaining > 0)
                 {
                     // Compute the expected principal amount
-                    auto const paymentComponents = detail::computePaymentComponents(
+                    auto const paymentComponents = xrpl::detail::computePaymentComponents(
                         broker.asset.raw(),
                         state.loanScale,
                         state.totalValue,
@@ -2524,7 +2593,7 @@ protected:
                         broker.params.managementFeeRate);
 
                     BEAST_EXPECTS(
-                        paymentComponents.specialCase == detail::PaymentSpecialCase::final ||
+                        paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final ||
                             paymentComponents.trackedValueDelta <= roundedPeriodicPayment,
                         "Delta: " + to_string(paymentComponents.trackedValueDelta) +
                             ", periodic payment: " + to_string(roundedPeriodicPayment));
@@ -2534,7 +2603,7 @@ protected:
                         periodicRate,
                         state.paymentRemaining - 1,
                         broker.params.managementFeeRate);
-                    detail::LoanStateDeltas const deltas = currentTrueState - nextTrueState;
+                    xrpl::detail::LoanStateDeltas const deltas = currentTrueState - nextTrueState;
 
                     testcase << currencyLabel << " Payment components: " << state.paymentRemaining
                              << ", " << deltas.interest << ", " << deltas.principal << ", "
@@ -2543,9 +2612,11 @@ protected:
                              << paymentComponents.trackedInterestPart() << ", "
                              << paymentComponents.trackedManagementFeeDelta << ", "
                              << [&]() -> char const* {
-                        if (paymentComponents.specialCase == detail::PaymentSpecialCase::final)
+                        if (paymentComponents.specialCase ==
+                            ::xrpl::detail::PaymentSpecialCase::final)
                             return "final";
-                        if (paymentComponents.specialCase == detail::PaymentSpecialCase::extra)
+                        if (paymentComponents.specialCase ==
+                            ::xrpl::detail::PaymentSpecialCase::extra)
                             return "extra";
                         return "none";
                     }();
@@ -2561,7 +2632,7 @@ protected:
                     // IOUs, the difference should be after the 8th digit.
                     Number const diff = totalDue - totalDueAmount;
                     BEAST_EXPECT(
-                        paymentComponents.specialCase == detail::PaymentSpecialCase::final ||
+                        paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final ||
                         diff == beast::zero ||
                         (diff > beast::zero &&
                          ((broker.asset.integral() && (static_cast<Number>(diff) < 3)) ||
@@ -2573,7 +2644,7 @@ protected:
                             paymentComponents.trackedInterestPart() +
                             paymentComponents.trackedManagementFeeDelta);
                     BEAST_EXPECT(
-                        paymentComponents.specialCase == detail::PaymentSpecialCase::final ||
+                        paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final ||
                         paymentComponents.trackedValueDelta <= roundedPeriodicPayment);
 
                     BEAST_EXPECT(
@@ -2588,10 +2659,10 @@ protected:
                         paymentComponents.trackedPrincipalDelta >= beast::zero &&
                         paymentComponents.trackedPrincipalDelta <= state.principalOutstanding);
                     BEAST_EXPECT(
-                        paymentComponents.specialCase != detail::PaymentSpecialCase::final ||
+                        paymentComponents.specialCase != xrpl::detail::PaymentSpecialCase::final ||
                         paymentComponents.trackedPrincipalDelta == state.principalOutstanding);
                     BEAST_EXPECT(
-                        paymentComponents.specialCase == detail::PaymentSpecialCase::final ||
+                        paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final ||
                         (state.periodicPayment.exponent() -
                          (deltas.principal + deltas.interest + deltas.managementFee -
                           state.periodicPayment)
@@ -2629,7 +2700,7 @@ protected:
 
                     --state.paymentRemaining;
                     state.previousPaymentDate = state.nextPaymentDate;
-                    if (paymentComponents.specialCase == detail::PaymentSpecialCase::final)
+                    if (paymentComponents.specialCase == xrpl::detail::PaymentSpecialCase::final)
                     {
                         state.paymentRemaining = 0;
                         state.nextPaymentDate = 0;
@@ -2677,7 +2748,7 @@ protected:
                 env(manage(lender, loanKeylet.key, tfLoanDefault), ter(tecNO_PERMISSION));
             });
 
-#if LOANTODO
+#if LOAN_TODO
         // TODO
 
         /*
@@ -3601,10 +3672,9 @@ protected:
         // From FIND-001
         testcase << "Batch Bypass Counterparty";
 
-        bool const lendingBatchEnabled = !std::any_of(
-            Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
-                return disabled == ttLOAN_BROKER_SET;
-            });
+        bool const lendingBatchEnabled = !std::ranges::any_of(
+            Batch::disabledTxTypes,
+            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
 
         using namespace jtx;
         using namespace std::chrono_literals;
@@ -5244,13 +5314,13 @@ protected:
     }
 
     void
-    testCoverDepositWithdrawNonTransferableMPT()
+    testCoverDepositWithdrawNonTransferableMPT(FeatureBitset feature)
     {
         testcase("CoverDeposit and CoverWithdraw reject MPT without CanTransfer");
         using namespace jtx;
         using namespace loanBroker;
 
-        Env env(*this, all);
+        Env env(*this, feature);
 
         Account const issuer{"issuer"};
         Account const alice{"alice"};
@@ -5292,7 +5362,8 @@ protected:
         env.close();
 
         // Standard Payment path should forbid third-party transfers.
-        env(pay(alice, pseudoAccount, asset(1)), ter(tecNO_AUTH));
+        auto const err = feature[featureMPTokensV2] ? tecNO_PERMISSION : tecNO_AUTH;
+        env(pay(alice, pseudoAccount, asset(1)), ter(err));
         env.close();
 
         // Cover cannot be transferred to broker account
@@ -5341,7 +5412,7 @@ protected:
         }
     }
 
-#if LOANTODO
+#if LOAN_TODO
     void
     testLoanPayLateFullPaymentBypassesPenalties()
     {
@@ -5656,7 +5727,7 @@ protected:
         // Compute a regular periodic due and pay it early (before next due).
         auto state = getCurrentState(env, broker, loanKeylet);
         Number const periodicRate = loanPeriodicRate(state.interestRate, state.paymentInterval);
-        auto const components = detail::computePaymentComponents(
+        auto const components = xrpl::detail::computePaymentComponents(
             asset.raw(),
             state.loanScale,
             state.totalValue,
@@ -5689,7 +5760,7 @@ protected:
         // Accrued + prepayment-penalty interest based on current periodic
         // schedule
         auto const fullPaymentInterest = computeFullPaymentInterest(
-            detail::loanPrincipalFromPeriodicPayment(
+            xrpl::detail::loanPrincipalFromPeriodicPayment(
                 after.periodicPayment, periodicRate2, after.paymentRemaining),
             periodicRate2,
             env.current()->parentCloseTime(),
@@ -5722,7 +5793,7 @@ protected:
         // window by clamping prevPaymentDate to 'now' for the full-pay path.
         auto const prevClamped = std::min(after.previousPaymentDate, nowSecs);
         auto const fullPaymentInterestClamped = computeFullPaymentInterest(
-            detail::loanPrincipalFromPeriodicPayment(
+            xrpl::detail::loanPrincipalFromPeriodicPayment(
                 after.periodicPayment, periodicRate2, after.paymentRemaining),
             periodicRate2,
             env.current()->parentCloseTime(),
@@ -6996,17 +7067,150 @@ protected:
         BEAST_EXPECT(afterSecondCoverAvailable == 0);
     }
 
+    // Tests that vault withdrawals work correctly when the vault has unrealized
+    // loss from an impaired loan, ensuring the invariant check properly
+    // accounts for the loss.
+    void
+    testWithdrawReflectsUnrealizedLoss()
+    {
+        using namespace jtx;
+        using namespace loan;
+        using namespace std::chrono_literals;
+
+        testcase("Vault withdraw reflects sfLossUnrealized");
+
+        // Test constants
+        static constexpr std::int64_t INITIAL_FUNDING = 1'000'000;
+        static constexpr std::int64_t LENDER_INITIAL_IOU = 5'000'000;
+        static constexpr std::int64_t DEPOSITOR_INITIAL_IOU = 1'000'000;
+        static constexpr std::int64_t BORROWER_INITIAL_IOU = 100'000;
+        static constexpr std::int64_t DEPOSIT_AMOUNT = 5'000;
+        static constexpr std::int64_t PRINCIPAL_AMOUNT = 99;
+        static constexpr std::uint64_t EXPECTED_SHARES_PER_DEPOSITOR = 5'000'000'000;
+        static constexpr std::uint32_t PAYMENT_INTERVAL = 600;
+        static constexpr std::uint32_t PAYMENT_TOTAL = 2;
+
+        Env env(*this, all);
+
+        // Setup accounts
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const depositorA{"lpA"};
+        Account const depositorB{"lpB"};
+        Account const borrower{"borrowerA"};
+
+        env.fund(XRP(INITIAL_FUNDING), issuer, lender, depositorA, depositorB, borrower);
+        env.close();
+
+        // Setup trust lines
+        PrettyAsset const iouAsset = issuer[iouCurrency];
+        env(trust(lender, iouAsset(10'000'000)));
+        env(trust(depositorA, iouAsset(10'000'000)));
+        env(trust(depositorB, iouAsset(10'000'000)));
+        env(trust(borrower, iouAsset(10'000'000)));
+        env.close();
+
+        // Fund accounts with IOUs
+        env(pay(issuer, lender, iouAsset(LENDER_INITIAL_IOU)));
+        env(pay(issuer, depositorA, iouAsset(DEPOSITOR_INITIAL_IOU)));
+        env(pay(issuer, depositorB, iouAsset(DEPOSITOR_INITIAL_IOU)));
+        env(pay(issuer, borrower, iouAsset(BORROWER_INITIAL_IOU)));
+        env.close();
+
+        // Create vault and broker, then add deposits from two depositors
+        auto const broker = createVaultAndBroker(env, iouAsset, lender);
+        Vault v{env};
+
+        env(v.deposit({
+                .depositor = depositorA,
+                .id = broker.vaultKeylet().key,
+                .amount = iouAsset(DEPOSIT_AMOUNT),
+            }),
+            ter(tesSUCCESS));
+        env(v.deposit({
+                .depositor = depositorB,
+                .id = broker.vaultKeylet().key,
+                .amount = iouAsset(DEPOSIT_AMOUNT),
+            }),
+            ter(tesSUCCESS));
+        env.close();
+
+        // Create a loan
+        auto const sleBroker = env.le(keylet::loanbroker(broker.brokerID));
+        if (!BEAST_EXPECT(sleBroker))
+            return;
+
+        auto const loanKeylet = keylet::loan(broker.brokerID, sleBroker->at(sfLoanSequence));
+
+        env(set(borrower, broker.brokerID, PRINCIPAL_AMOUNT),
+            sig(sfCounterpartySignature, lender),
+            paymentTotal(PAYMENT_TOTAL),
+            paymentInterval(PAYMENT_INTERVAL),
+            fee(env.current()->fees().base * 2),
+            ter(tesSUCCESS));
+        env.close();
+
+        // Impair the loan to create unrealized loss
+        env(manage(lender, loanKeylet.key, tfLoanImpair), ter(tesSUCCESS));
+        env.close();
+
+        // Verify unrealized loss is recorded in the vault
+        auto const vaultAfterImpair = env.le(broker.vaultKeylet());
+        if (!BEAST_EXPECT(vaultAfterImpair))
+            return;
+
+        BEAST_EXPECT(
+            vaultAfterImpair->at(sfLossUnrealized) == broker.asset(PRINCIPAL_AMOUNT).value());
+
+        // Helper to get share balance for a depositor
+        auto const shareAsset = vaultAfterImpair->at(sfShareMPTID);
+        auto const getShareBalance = [&](Account const& depositor) -> std::uint64_t {
+            auto const token = env.le(keylet::mptoken(shareAsset, depositor.id()));
+            return token ? token->getFieldU64(sfMPTAmount) : 0;
+        };
+
+        // Verify both depositors have equal shares
+        auto const sharesLpA = getShareBalance(depositorA);
+        auto const sharesLpB = getShareBalance(depositorB);
+        BEAST_EXPECT(sharesLpA == EXPECTED_SHARES_PER_DEPOSITOR);
+        BEAST_EXPECT(sharesLpB == EXPECTED_SHARES_PER_DEPOSITOR);
+        BEAST_EXPECT(sharesLpA == sharesLpB);
+
+        // Helper to attempt withdrawal
+        auto const attemptWithdrawShares = [&](Account const& depositor,
+                                               std::uint64_t shareAmount,
+                                               TER expected) {
+            STAmount const shareAmt{MPTIssue{shareAsset}, Number(shareAmount)};
+            env(v.withdraw(
+                    {.depositor = depositor, .id = broker.vaultKeylet().key, .amount = shareAmt}),
+                ter(expected));
+            env.close();
+        };
+
+        // Regression test: Both depositors should successfully withdraw despite
+        // unrealized loss. Previously failed with invariant violation:
+        // "withdrawal must change vault and destination balance by equal
+        // amount". This was caused by sharesToAssetsWithdraw rounding down,
+        // creating a mismatch where vaultDeltaAssets * -1 != destinationDelta
+        // when unrealized loss exists.
+        attemptWithdrawShares(depositorA, sharesLpA, tesSUCCESS);
+        attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
+    }
+
 public:
     void
     run() override
     {
-#if LOANTODO
+#if LOAN_TODO
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        testWithdrawReflectsUnrealizedLoss();
         testInvalidLoanSet();
 
-        testCoverDepositWithdrawNonTransferableMPT();
+        auto const all = jtx::testable_amendments();
+        testCoverDepositWithdrawNonTransferableMPT(all);
+        testCoverDepositWithdrawNonTransferableMPT(all - featureMPTokensV2);
         testPoC_UnsignedUnderflowOnFullPayAfterEarlyPeriodic();
 
         testDisabled();
@@ -7180,5 +7384,4 @@ BEAST_DEFINE_TESTSUITE(Loan, tx, xrpl);
 BEAST_DEFINE_TESTSUITE_MANUAL(LoanBatch, tx, xrpl);
 BEAST_DEFINE_TESTSUITE_MANUAL(LoanArbitrary, tx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

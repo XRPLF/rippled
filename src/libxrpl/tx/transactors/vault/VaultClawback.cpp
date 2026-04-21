@@ -1,18 +1,32 @@
+#include <xrpl/tx/transactors/vault/VaultClawback.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/vault/VaultClawback.h>
+#include <xrpl/tx/Transactor.h>
 
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <stdexcept>
 #include <utility>
 
 namespace xrpl {
@@ -163,44 +177,43 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecNO_PERMISSION;
         }
 
-        return std::visit(
-            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-                if constexpr (std::is_same_v<TIss, MPTIssue>)
-                {
-                    auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
-                    if (mptIssue == nullptr)
-                        return tecOBJECT_NOT_FOUND;
+        return vaultAsset.visit(
+            [&](MPTIssue const& issue) -> TER {
+                auto const mptIssue = ctx.view.read(keylet::mptIssuance(issue.getMptID()));
+                if (mptIssue == nullptr)
+                    return tecOBJECT_NOT_FOUND;
 
-                    std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-                    if (!(issueFlags & lsfMPTCanClawback))
-                    {
-                        JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
-                                               "MPT vault asset.";
-                        return tecNO_PERMISSION;
-                    }
-                }
-                else if constexpr (std::is_same_v<TIss, Issue>)
+                std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
+                if ((issueFlags & lsfMPTCanClawback) == 0u)
                 {
-                    auto const issuerSle = ctx.view.read(keylet::account(account));
-                    if (!issuerSle)
-                    {
-                        // LCOV_EXCL_START
-                        JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
-                        return tefINTERNAL;
-                        // LCOV_EXCL_STOP
-                    }
-
-                    std::uint32_t const issuerFlags = issuerSle->getFieldU32(sfFlags);
-                    if (!(issuerFlags & lsfAllowTrustLineClawback) || (issuerFlags & lsfNoFreeze))
-                    {
-                        JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
-                                               "IOU vault asset.";
-                        return tecNO_PERMISSION;
-                    }
+                    JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
+                                           "MPT vault asset.";
+                    return tecNO_PERMISSION;
                 }
+
                 return tesSUCCESS;
             },
-            vaultAsset.value());
+            [&](Issue const&) -> TER {
+                auto const issuerSle = ctx.view.read(keylet::account(account));
+                if (!issuerSle)
+                {
+                    // LCOV_EXCL_START
+                    JLOG(ctx.j.error()) << "VaultClawback: missing submitter account.";
+                    return tefINTERNAL;
+                    // LCOV_EXCL_STOP
+                }
+
+                std::uint32_t const issuerFlags = issuerSle->getFieldU32(sfFlags);
+                if (((issuerFlags & lsfAllowTrustLineClawback) == 0u) ||
+                    ((issuerFlags & lsfNoFreeze) != 0u))
+                {
+                    JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback "
+                                           "IOU vault asset.";
+                    return tecNO_PERMISSION;
+                }
+
+                return tesSUCCESS;
+            });
     }
 
     // Invalid asset

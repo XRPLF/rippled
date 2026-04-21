@@ -1,10 +1,26 @@
+#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -83,7 +99,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
         // The two offers being brokered must be for the same asset:
-        if ((*bo)[sfAmount].issue() != (*so)[sfAmount].issue())
+        if ((*bo)[sfAmount].asset() != (*so)[sfAmount].asset())
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
         // The two offers may not form a loop.  A broker may not sell the
@@ -116,7 +132,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // cut, if any).
         if (auto const brokerFee = ctx.tx[~sfNFTokenBrokerFee])
         {
-            if (brokerFee->issue() != (*bo)[sfAmount].issue())
+            if (brokerFee->asset() != (*bo)[sfAmount].asset())
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
 
             if (brokerFee >= (*bo)[sfAmount])
@@ -289,7 +305,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
             (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
             nftMinter != amount.getIssuer() &&
-            !ctx.view.read(keylet::line(nftMinter, amount.issue())))
+            !ctx.view.read(keylet::line(nftMinter, amount.get<Issue>())))
             return tecNO_LINE;
 
         // Check that the issuer is allowed to receive IOUs.

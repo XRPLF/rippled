@@ -1,12 +1,17 @@
 #include <xrpld/overlay/detail/TxMetrics.h>
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstdint>
+#include <mutex>
 #include <numeric>
+#include <string>
 
-namespace xrpl {
-
-namespace metrics {
+namespace xrpl::metrics {
 
 void
 TxMetrics::addMetrics(protocol::MessageType type, std::uint32_t val)
@@ -124,6 +129,4 @@ TxMetrics::json() const
     return ret;
 }
 
-}  // namespace metrics
-
-}  // namespace xrpl
+}  // namespace xrpl::metrics

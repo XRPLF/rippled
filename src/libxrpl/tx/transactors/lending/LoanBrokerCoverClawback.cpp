@@ -1,8 +1,32 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverClawback.h>
-//
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <optional>
+#include <variant>
 
 namespace xrpl {
 
@@ -123,7 +147,7 @@ determineAsset(
     {
         // We want the asset to match the vault asset, so use the account as the
         // issuer
-        return Issue{amount.getCurrency(), account};
+        return Issue{amount.get<Issue>().currency, account};
     }
 
     return Unexpected(tecWRONG_ASSET);

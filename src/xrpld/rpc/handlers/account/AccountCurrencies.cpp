@@ -2,10 +2,19 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/TrustLine.h>
 
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
+#include <memory>
+#include <set>
+#include <string>
 
 namespace xrpl {
 
@@ -55,9 +64,9 @@ doAccountCurrencies(RPC::JsonContext& context)
         STAmount const& saBalance = rspEntry.getBalance();
 
         if (saBalance < rspEntry.getLimit())
-            receive.insert(saBalance.getCurrency());
+            receive.insert(saBalance.get<Issue>().currency);
         if ((-saBalance) < rspEntry.getLimitPeer())
-            send.insert(saBalance.getCurrency());
+            send.insert(saBalance.get<Issue>().currency);
     }
 
     send.erase(badCurrency());
