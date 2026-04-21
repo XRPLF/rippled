@@ -6,6 +6,7 @@
 #include <xrpl/ledger/CanonicalTXSet.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/apply.h>
 
 namespace xrpl {
@@ -215,7 +216,12 @@ buildLedger(
         j,
         [&](OpenView& accum, std::shared_ptr<Ledger> const& built) {
             for (auto& tx : replayData.orderedTxns())
-                applyTransaction(app, accum, *tx.second, false, applyFlags, j);
+            {
+                if (tx.second->isFlag(tfInnerBatchTxn))
+                    continue;
+                applyTransaction(
+                    app, accum, *tx.second, false, applyFlags, j);
+            }
         });
 }
 

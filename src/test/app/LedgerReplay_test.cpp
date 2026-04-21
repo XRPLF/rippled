@@ -23,7 +23,7 @@ namespace test {
 struct LedgerReplay_test : public beast::unit_test::suite
 {
     void
-    run() override
+    testReplayLedger()
     {
         testcase("Replay ledger");
 
@@ -45,6 +45,50 @@ struct LedgerReplay_test : public beast::unit_test::suite
             LedgerReplay(lastClosedParent, lastClosed), tapNONE, env.app(), env.journal);
 
         BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
+    }
+
+    void
+    testReplayBatchLedger()
+    {
+        testcase("Replay ledger with batch transactions");
+
+        using namespace jtx;
+
+        Env env(*this, testable_amendments());
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        env.fund(XRP(100000), alice, bob);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+            batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+            batch::sig(alice),
+            ter(tesSUCCESS));
+        env.close();
+
+        LedgerMaster& ledgerMaster = env.app().getLedgerMaster();
+        auto const lastClosed = ledgerMaster.getClosedLedger();
+        auto const lastClosedParent =
+            ledgerMaster.getLedgerByHash(lastClosed->header().parentHash);
+
+        auto const replayed = buildLedger(
+            LedgerReplay(lastClosedParent, lastClosed),
+            tapNONE,
+            env.app(),
+            env.journal);
+
+        BEAST_EXPECT(replayed->header().hash == lastClosed->header().hash);
+    }
+
+    void
+    run() override
+    {
+        testReplayLedger();
+        testReplayBatchLedger();
     }
 };
 
