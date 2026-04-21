@@ -437,6 +437,12 @@ Payment::doApply()
                 return tefINTERNAL;  // LCOV_EXCL_LINE
             auto const currentSponsoringAccountCount =
                 sponsor->getFieldU32(sfSponsoringAccountCount);
+            if (currentSponsoringAccountCount == std::numeric_limits<std::uint32_t>::max())
+            {
+                JLOG(j_.fatal()) << "Sponsoring account count overflow for account "
+                                 << to_string(account_);
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+            }
             sponsor->setFieldU32(sfSponsoringAccountCount, currentSponsoringAccountCount + 1);
 
             addSponsorToLedgerEntry(sleDst, sponsor);
