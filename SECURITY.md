@@ -6,7 +6,7 @@ For more details on operating an XRP Ledger server securely, please visit https:
 
 ## Supported Versions
 
-Software constantly evolves. In order to focus resources, we only generally only accept vulnerability reports that affect recent and current versions of the software. We always accept reports for issues present in the **master**, **release** or **develop** branches, and with proposed, [open pull requests](https://github.com/ripple/rippled/pulls).
+Software constantly evolves. In order to focus resources, we generally only accept vulnerability reports that affect recent and current versions of the software. We always accept reports for issues present in the **master**, **release** or **develop** branches, and with proposed, [open pull requests](https://github.com/XRPLF/rippled/pulls).
 
 ## Identifying and Reporting Vulnerabilities
 
@@ -59,11 +59,11 @@ While we commit to responding with 24 hours of your initial report with our tria
 
 ## Bug Bounty Program
 
-[Ripple](https://ripple.com) is generously sponsoring a bug bounty program for vulnerabilities in [`rippled`](https://github.com/XRPLF/rippled) (and other related projects, like [`xrpl.js`](https://github.com/XRPLF/xrpl.js), [`xrpl-py`](https://github.com/XRPLF/xrpl-py), [`xrpl4j`](https://github.com/XRPLF/xrpl4j)).
+[Ripple](https://ripple.com) is generously sponsoring a bug bounty program for vulnerabilities in [`xrpld`](https://github.com/XRPLF/rippled) (and other related projects, like [`xrpl.js`](https://github.com/XRPLF/xrpl.js), [`xrpl-py`](https://github.com/XRPLF/xrpl-py), [`xrpl4j`](https://github.com/XRPLF/xrpl4j)).
 
 This program allows us to recognize and reward individuals or groups that identify and report bugs. In summary, in order to qualify for a bounty, the bug must be:
 
-1. **In scope**. Only bugs in software under the scope of the program qualify. Currently, that means `rippled`, `xrpl.js`, `xrpl-py`, `xrpl4j`.
+1. **In scope**. Only bugs in software under the scope of the program qualify. Currently, that means `xrpld`, `xrpl.js`, `xrpl-py`, `xrpl4j`.
 2. **Relevant**. A security issue, posing a danger to user funds, privacy, or the operation of the XRP Ledger.
 3. **Original and previously unknown**. Bugs that are already known and discussed in public do not qualify. Previously reported bugs, even if publicly unknown, are not eligible.
 4. **Specific**. We welcome general security advice or recommendations, but we cannot pay bounties for that.

@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STInteger.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -6,7 +8,6 @@
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -15,7 +16,6 @@
 #include <cstdint>
 #include <iterator>
 #include <string>
-#include <system_error>
 
 namespace xrpl {
 

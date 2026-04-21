@@ -1,5 +1,9 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
+#include <limits>
 
 namespace xrpl {
 

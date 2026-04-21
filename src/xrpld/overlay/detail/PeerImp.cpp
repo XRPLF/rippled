@@ -1,3 +1,6 @@
+#include <xrpld/overlay/detail/PeerImp.h>
+
+#include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
@@ -5,31 +8,96 @@
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/consensus/Validations.h>
 #include <xrpld/overlay/Cluster.h>
-#include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/ClusterNode.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/ReduceRelayCommon.h>
+#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/overlay/detail/ProtocolMessage.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/ToString.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Disposition.h>
+#include <xrpl/resource/Fees.h>
+#include <xrpl/resource/Gossip.h>
+#include <xrpl/server/Handoff.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/completion_condition.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/core/ostream.hpp>
+#include <boost/beast/core/stream_traits.hpp>
+
+#include <google/protobuf/message.h>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <map>
 #include <memory>
 #include <mutex>
 #include <numeric>
+#include <optional>
+#include <shared_mutex>
 #include <sstream>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 using namespace std::chrono_literals;
 
@@ -77,7 +145,7 @@ PeerImp::PeerImp(
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(true)
-    , protocol_(protocol)
+    , protocol_(std::move(protocol))
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
@@ -85,7 +153,7 @@ PeerImp::PeerImp(
     , creationTime_(clock_type::now())
     , squelch_(app_.getJournal("Squelch"))
     , usage_(consumer)
-    , fee_{Resource::feeTrivialPeer, ""}
+    , fee_{.fee = Resource::feeTrivialPeer, .context = ""}
     , slot_(slot)
     , request_(std::move(request))
     , headers_(request_)
@@ -297,9 +365,8 @@ PeerImp::sendTxQueue()
     if (!txQueue_.empty())
     {
         protocol::TMHaveTransactions ht;
-        std::for_each(txQueue_.begin(), txQueue_.end(), [&](auto const& hash) {
-            ht.add_hashes(hash.data(), hash.size());
-        });
+        std::ranges::for_each(
+            txQueue_, [&](auto const& hash) { ht.add_hashes(hash.data(), hash.size()); });
         JLOG(p_journal_.trace()) << "sendTxQueue " << txQueue_.size();
         txQueue_.clear();
         send(std::make_shared<Message>(ht, protocol::mtHAVE_TRANSACTIONS));
@@ -514,7 +581,7 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
         if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
             (tracking_.load() == Tracking::converged))
             return true;
-        if (std::find(recentLedgers_.begin(), recentLedgers_.end(), hash) != recentLedgers_.end())
+        if (std::ranges::find(recentLedgers_, hash) != recentLedgers_.end())
             return true;
     }
     return false;
@@ -533,7 +600,7 @@ bool
 PeerImp::hasTxSet(uint256 const& hash) const
 {
     std::lock_guard const sl(recentLock_);
-    return std::find(recentTxSets_.begin(), recentTxSets_.end(), hash) != recentTxSets_.end();
+    return std::ranges::find(recentTxSets_, hash) != recentTxSets_.end();
 }
 
 void
@@ -1119,7 +1186,7 @@ PeerImp::onMessageBegin(
 {
     auto const name = protocolMessageName(type);
     load_event_ = app_.getJobQueue().makeLoadEvent(jtPEER, name);
-    fee_ = {Resource::feeTrivialPeer, name};
+    fee_ = {.fee = Resource::feeTrivialPeer, .context = name};
 
     auto const category =
         TrafficCount::categorize(*m, static_cast<protocol::MessageType>(type), true);
@@ -2116,7 +2183,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
     {
         std::lock_guard const sl(recentLock_);
 
-        if (std::find(recentTxSets_.begin(), recentTxSets_.end(), hash) != recentTxSets_.end())
+        if (std::ranges::find(recentTxSets_, hash) != recentTxSets_.end())
         {
             fee_.update(Resource::feeUselessData, "duplicate (tsHAVE)");
             return;
@@ -2781,7 +2848,7 @@ PeerImp::addLedger(uint256 const& hash, std::lock_guard<std::mutex> const& locke
     // locked by the caller.
     (void)lockedRecentLock;
 
-    if (std::find(recentLedgers_.begin(), recentLedgers_.end(), hash) != recentLedgers_.end())
+    if (std::ranges::find(recentLedgers_, hash) != recentLedgers_.end())
         return;
 
     recentLedgers_.push_back(hash);
