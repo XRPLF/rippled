@@ -111,11 +111,13 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     NumberRoundModeGuard mg(
         tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
 
-    std::int64_t const maxFeeIncrements{
-        Number{loanMaximumPaymentsPerTransaction} /
-        loanPaymentsPerFeeIncrement};
+    static_assert(
+        loanMaximumPaymentsPerTransaction % loanPaymentsPerFeeIncrement == 0);
+    std::int64_t constexpr maxFeeIncrements =
+        loanMaximumPaymentsPerTransaction / loanPaymentsPerFeeIncrement;
+
     if (view.rules().enabled(fixSecurity3_1_3) &&
-        amount >= regularPayment * maxFeeIncrements)
+        amount >= regularPayment * loanMaximumPaymentsPerTransaction)
     {
         // The payment handler will never process more than
         // loanMaximumPaymentsPerTransaction payments (including overpayments),

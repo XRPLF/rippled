@@ -5128,15 +5128,18 @@ protected:
     }
 
     void
-    testDosLoanPay()
+    testDosLoanPay(FeatureBitset features)
     {
+        bool const feeCapped = features[fixSecurity3_1_3];
+
         // From FIND-005
-        testcase << "DoS LoanPay";
+        testcase << "DoS LoanPay: fee calculation "
+                 << (feeCapped ? "capped" : "uncapped");
 
         using namespace jtx;
         using namespace std::chrono_literals;
         using namespace Lending;
-        Env env(*this, all);
+        Env env(*this, features);
 
         Account const issuer{"issuer"};
         Account const lender{"lender"};
@@ -5144,6 +5147,9 @@ protected:
 
         env.fund(XRP(1'000'000), issuer, lender, borrower);
         env.close();
+
+        BEAST_EXPECT(
+            feeCapped == env.current()->rules().enabled(fixSecurity3_1_3));
 
         PrettyAsset const iouAsset = issuer[iouCurrency];
         env(trust(lender, iouAsset(100'000'000)));
@@ -5157,57 +5163,128 @@ protected:
         using namespace loan;
 
         auto const loanSetFee = fee(env.current()->fees().base * 2);
-        Number const principalRequest{1, 3};
+        Number const principalRequest{3959'37, -2};
         auto const baseFee = env.current()->fees().base;
 
-        auto createJson = env.json(
+        auto const createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             fee(loanSetFee),
-            json(sfCounterpartySignature, Json::objectValue));
+            seq(none),
+            json(sfCounterpartySignature, Json::objectValue),
+            closePaymentFee(0),
+            gracePeriod(60),
+            interestRate(TenthBips32(20930)),
+            lateInterestRate(TenthBips32(77049)),
+            latePaymentFee(0),
+            loanServiceFee(0),
+            overpaymentFee(TenthBips32(7)),
+            overpaymentInterestRate(TenthBips32(66653)),
+            paymentInterval(60),
+            paymentTotal(3239184));
 
-        createJson["ClosePaymentFee"] = "0";
-        createJson["GracePeriod"] = 60;
-        createJson["InterestRate"] = 20930;
-        createJson["LateInterestRate"] = 77049;
-        createJson["LatePaymentFee"] = "0";
-        createJson["LoanServiceFee"] = "0";
-        createJson["OverpaymentFee"] = 7;
-        createJson["OverpaymentInterestRate"] = 66653;
-        createJson["PaymentInterval"] = 60;
-        createJson["PaymentTotal"] = 3239184;
-        createJson["PrincipalRequested"] = "3959.37";
-
+        // There are enough payments due on this loan that it only needs to be
+        // created once, and can be paid on multiple times. Just don't create a
+        // gazillion test cases.
         auto const brokerStateBefore =
             env.le(keylet::loanbroker(broker.brokerID));
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
-        createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
-        env(createJson, ter(tesSUCCESS));
+        env(env.jt(createJson), sig(sfCounterpartySignature, lender));
         env.close();
 
-        auto const stateBefore = getCurrentState(env, broker, keylet);
-        BEAST_EXPECT(stateBefore.paymentRemaining == 3239184);
-        BEAST_EXPECT(
-            stateBefore.paymentRemaining > loanMaximumPaymentsPerTransaction);
+        auto const roundedPayment = [&]() {
+            auto const stateBefore = getCurrentState(env, broker, keylet);
+            BEAST_EXPECT(stateBefore.paymentRemaining == 3239184);
 
-        auto loanPayTx = env.json(
-            pay(borrower, keylet.key, STAmount{broker.asset, Number{}}));
-        Number const amount{395937, -2};
-        loanPayTx["Amount"]["value"] = to_string(amount);
-        XRPAmount const payFee{
-            baseFee *
-            std::int64_t(
-                amount / stateBefore.periodicPayment /
+            return roundToAsset(
+                iouAsset,
+                stateBefore.periodicPayment,
+                stateBefore.loanScale,
+                Number::upward);
+        }();
+
+        auto test = [&](int const payFactor,
+                        int const feeFactor,
+                        TER const expectedTer = tesSUCCESS) {
+            auto const stateBefore = getCurrentState(env, broker, keylet);
+            BEAST_EXPECT(stateBefore.paymentRemaining <= 3239184);
+            BEAST_EXPECT(
+                stateBefore.paymentRemaining >
+                loanMaximumPaymentsPerTransaction);
+
+            Number const amount = roundedPayment * payFactor;
+            auto loanPayTx = env.json(
+                pay(borrower, keylet.key, STAmount{broker.asset, amount}));
+            XRPAmount const payFee{baseFee * feeFactor};
+            env(loanPayTx, ter(expectedTer), fee(payFee));
+            env.close();
+            auto const expectedChange = isTesSuccess(expectedTer)
+                ? std::min(loanMaximumPaymentsPerTransaction, payFactor)
+                : 0;
+
+            auto const stateAfter = getCurrentState(env, broker, keylet);
+            BEAST_EXPECT(
+                stateAfter.paymentRemaining ==
+                stateBefore.paymentRemaining - expectedChange);
+        };
+
+        std::int64_t constexpr maxFeeIncrements =
+            loanMaximumPaymentsPerTransaction / loanPaymentsPerFeeIncrement;
+
+        TER const failWithoutFix =
+            feeCapped ? (TER)tesSUCCESS : (TER)telINSUF_FEE_P;
+
+        // * Amount well above threshold -> capped fee
+        // The original test case - way over the limit - more fee is always ok
+        test(1819878, 363976);
+        // The capped fee is only sufficient if the amendment is enabled.
+        test(1819878, maxFeeIncrements, failWithoutFix);
+
+        // * Amount exactly at threshold -> capped fee
+        test(loanMaximumPaymentsPerTransaction, maxFeeIncrements);
+        // More fee is always ok
+        test(loanMaximumPaymentsPerTransaction, maxFeeIncrements + 10);
+
+        // * Amount below threshold -> normal calculation
+        test(1, 1);
+        test(loanPaymentsPerFeeIncrement * 2, 2);
+        test(0, 0, temBAD_AMOUNT);
+        test(0, 1, temBAD_AMOUNT);
+        // Fee difference rounds evenly
+        test(
+            loanMaximumPaymentsPerTransaction - 10,
+            (loanMaximumPaymentsPerTransaction - 10) /
+                    loanPaymentsPerFeeIncrement -
+                1,
+            telINSUF_FEE_P);
+        test(
+            loanMaximumPaymentsPerTransaction - 10,
+            (loanMaximumPaymentsPerTransaction - 10) /
+                loanPaymentsPerFeeIncrement);
+        // More fee is always ok
+        test(
+            loanMaximumPaymentsPerTransaction - 10,
+            (loanMaximumPaymentsPerTransaction - 10) /
                     loanPaymentsPerFeeIncrement +
-                1)};
-        env(loanPayTx, ter(tesSUCCESS), fee(payFee));
-        env.close();
-
-        auto const stateAfter = getCurrentState(env, broker, keylet);
-        BEAST_EXPECT(
-            stateAfter.paymentRemaining ==
-            stateBefore.paymentRemaining - loanMaximumPaymentsPerTransaction);
+                3);
+        // Fee rounds up
+        for (int under = 1; under < loanPaymentsPerFeeIncrement; ++under)
+        {
+            test(
+                loanMaximumPaymentsPerTransaction - under,
+                maxFeeIncrements - 1,
+                telINSUF_FEE_P);
+            test(loanMaximumPaymentsPerTransaction - under, maxFeeIncrements);
+        }
+        // Only when you get one less fee increment can you pay less
+        test(
+            loanMaximumPaymentsPerTransaction - loanPaymentsPerFeeIncrement,
+            maxFeeIncrements - 1);
+        // And again, more fee is always ok.
+        test(
+            loanMaximumPaymentsPerTransaction - loanPaymentsPerFeeIncrement,
+            maxFeeIncrements);
     }
 
     void
@@ -7974,7 +8051,8 @@ public:
         testLoanPayDebtDecreaseInvariant();
         testWrongMaxDebtBehavior();
         testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
-        testDosLoanPay();
+        testDosLoanPay(all | fixSecurity3_1_3);
+        testDosLoanPay(all - fixSecurity3_1_3);
         testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
         testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
         testLoanNextPaymentDueDateOverflow();
