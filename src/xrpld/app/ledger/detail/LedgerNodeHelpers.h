@@ -55,10 +55,10 @@ getTreeNode(std::string_view data);
  * - For leaf nodes: Validates that the node ID is consistent with the leaf's key.
  *
  * When the new `id` or `depth` field is set in the message:
- * - For inner nodes: Deserializes the node ID from the `id` field. Note that root nodes are also
- *   inner nodes.
+ * - For inner nodes: Deserializes the node ID from the `id` field.
  * - For leaf nodes: Reconstructs the node ID using both the depth from the `depth` field and the
  *   key from the leaf node's item.
+ * Note that root nodes may be inner nodes or leaf nodes.
  *
  * @param ledger_node The validated protocol message containing the ledger node data.
  * @param treeNode The deserialized tree node (inner or leaf node).

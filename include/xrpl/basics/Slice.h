@@ -234,7 +234,7 @@ makeSlice(std::basic_string<char, Traits, Alloc> const& s)
 
 template <class Traits>
 Slice
-makeSlice(std::basic_string_view<char, Traits>& s)
+makeSlice(std::basic_string_view<char, Traits> s)
 {
     return Slice(s.data(), s.size());
 }
