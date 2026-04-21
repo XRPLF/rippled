@@ -615,7 +615,7 @@ public:
         auto& store = env.app().getSHAMapStore();
         store.rendezvous();
         LedgerIndex lastRotated = store.getLastRotated();
-        BEAST_EXPECTS(maxSeq == 3, to_string(maxSeq));
+        BEAST_EXPECTS(maxSeq == 3, std::to_string(maxSeq));
         BEAST_EXPECTS(lm.getCompleteLedgers() == "2-3", lm.getCompleteLedgers());
         BEAST_EXPECTS(lastRotated == 3, to_string(lastRotated));
         BEAST_EXPECT(lm.missingFromCompleteLedgerRange(minSeq, maxSeq) == 0);
