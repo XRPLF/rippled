@@ -38,9 +38,8 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 
     // can not set tmfMPTCannotMutateCanConfidentialAmount without featureConfidentialTransfer
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
-    if (mutableFlags && (*mutableFlags & tmfMPTCannotMutateCanConfidentialAmount) &&
-        !ctx.rules.enabled(featureConfidentialTransfer))
-        return false;
+    if (mutableFlags && (*mutableFlags & tmfMPTCannotMutateCanConfidentialAmount) != 0)
+        return ctx.rules.enabled(featureConfidentialTransfer);
 
     return true;
 }

@@ -1,13 +1,16 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTMergeInbox.h>
 
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <utility>
 
 namespace xrpl {
 

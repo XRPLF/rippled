@@ -1,14 +1,21 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -86,9 +93,11 @@ verifySendProofs(
 
     std::optional<ConfidentialRecipient> auditor;
     if (hasAuditor)
+    {
         auditor.emplace(
             ConfidentialRecipient{
                 (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
+    }
 
     auto const contextHash = getSendContextHash(
         ctx.tx[sfAccount],

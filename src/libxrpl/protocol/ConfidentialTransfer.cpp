@@ -1,11 +1,29 @@
 #include <xrpl/protocol/ConfidentialTransfer.h>
 
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/detail/secp256k1.h>
 
 #include <openssl/rand.h>
 #include <utility/mpt_utility.h>
 
+#include <secp256k1.h>
 #include <secp256k1_mpt.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <optional>
+#include <stdexcept>
+#include <vector>
 
 namespace xrpl {
 
