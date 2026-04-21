@@ -1966,8 +1966,7 @@ class Invariants_test : public beast::unit_test::suite
             {{"hybrid offer is malformed"}},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
-                auto slePd = std::make_shared<SLE>(pdKeylet);
-                createPermissionedDomain(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, A1, A2);
 
                 Keylet const offerKey = keylet::offer(A2.id(), 10);
                 auto sleOffer = std::make_shared<SLE>(offerKey);
