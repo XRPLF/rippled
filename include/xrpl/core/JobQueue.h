@@ -128,7 +128,7 @@ public:
         beast::Journal journal,
         Logs& logs,
         perf::PerfLog& perfLog);
-    ~JobQueue();
+    ~JobQueue() override;
 
     /** Adds a job to the JobQueue.
 
@@ -141,8 +141,7 @@ public:
     */
     template <
         typename JobHandler,
-        typename =
-            std::enable_if_t<std::is_same<decltype(std::declval<JobHandler&&>()()), void>::value>>
+        typename = std::enable_if_t<std::is_same_v<decltype(std::declval<JobHandler&&>()()), void>>>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
     {

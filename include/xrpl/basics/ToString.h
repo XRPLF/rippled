@@ -12,7 +12,7 @@ namespace xrpl {
  */
 
 template <class T>
-typename std::enable_if<std::is_arithmetic<T>::value, std::string>::type
+std::enable_if_t<std::is_arithmetic_v<T>, std::string>
 to_string(T t)
 {
     return std::to_string(t);

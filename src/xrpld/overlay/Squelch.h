@@ -8,9 +8,7 @@
 
 #include <chrono>
 
-namespace xrpl {
-
-namespace reduce_relay {
+namespace xrpl::reduce_relay {
 
 /** Maintains squelching of relaying messages from validators */
 template <typename clock_type>
@@ -97,6 +95,4 @@ Squelch<clock_type>::expireSquelch(PublicKey const& validator)
     return true;
 }
 
-}  // namespace reduce_relay
-
-}  // namespace xrpl
+}  // namespace xrpl::reduce_relay

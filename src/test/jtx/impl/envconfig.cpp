@@ -10,8 +10,7 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 std::atomic<bool> envUseIPv4{false};
 
@@ -209,5 +208,4 @@ makeConfig(
 }
 
 }  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

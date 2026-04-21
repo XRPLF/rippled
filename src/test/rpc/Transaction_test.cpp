@@ -660,7 +660,7 @@ class Transaction_test : public beast::unit_test::suite
                 // Change the first upper case letter to lower case.
                 std::string mixedCase = ctid;
                 {
-                    auto const iter = std::find_if(mixedCase.begin(), mixedCase.end(), isUpper);
+                    auto const iter = std::ranges::find_if(mixedCase, isUpper);
                     *iter = std::tolower(*iter);
                 }
                 BEAST_EXPECT(ctid != mixedCase);

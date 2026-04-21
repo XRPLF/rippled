@@ -16,9 +16,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-
-namespace RPC {
+namespace xrpl::RPC {
 
 class LedgerRequest_test : public beast::unit_test::suite
 {
@@ -360,5 +358,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerRequest, rpc, xrpl);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

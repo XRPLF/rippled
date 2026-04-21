@@ -213,7 +213,7 @@ partsFromString(std::string const& number)
         }
     }
 
-    return {mantissa, exponent, negative};
+    return {.mantissa = mantissa, .exponent = exponent, .negative = negative};
 }
 
 STNumber

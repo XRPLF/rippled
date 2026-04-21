@@ -8,9 +8,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 using JValueVec = std::vector<Json::Value>;
 
@@ -231,6 +229,4 @@ struct XChainBridgeObjects
     }
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

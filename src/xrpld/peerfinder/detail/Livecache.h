@@ -13,9 +13,9 @@
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <algorithm>
+#include <utility>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 template <class>
 class Livecache;
@@ -30,7 +30,7 @@ public:
 protected:
     struct Element : boost::intrusive::list_base_hook<>
     {
-        Element(Endpoint const& endpoint_) : endpoint(endpoint_)
+        Element(Endpoint endpoint_) : endpoint(std::move(endpoint_))
         {
         }
 
@@ -465,7 +465,7 @@ Livecache<Allocator>::hops_t::shuffle()
     {
         std::vector<std::reference_wrapper<Element>> v;
         v.reserve(list.size());
-        std::copy(list.begin(), list.end(), std::back_inserter(v));
+        std::ranges::copy(list, std::back_inserter(v));
         std::shuffle(v.begin(), v.end(), default_prng());
         list.clear();
         for (auto& e : v)
@@ -490,7 +490,7 @@ Livecache<Allocator>::hops_t::histogram() const
 template <class Allocator>
 Livecache<Allocator>::hops_t::hops_t(Allocator const& alloc)
 {
-    std::fill(m_hist.begin(), m_hist.end(), 0);
+    std::ranges::fill(m_hist, 0);
 }
 
 template <class Allocator>
@@ -532,5 +532,4 @@ Livecache<Allocator>::hops_t::remove(Element& e)
     list.erase(list.iterator_to(e));
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

@@ -26,8 +26,8 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
     // In order to prevent unnecessarily overlarge transactions, we
     // disallow duplicates in the list of offers to cancel.
     STVector256 ids = ctx.tx.getFieldV256(sfNFTokenOffers);
-    std::sort(ids.begin(), ids.end());
-    if (std::adjacent_find(ids.begin(), ids.end()) != ids.end())
+    std::ranges::sort(ids);
+    if (std::ranges::adjacent_find(ids) != ids.end())
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -40,7 +40,7 @@ NFTokenCancelOffer::preclaim(PreclaimContext const& ctx)
 
     auto const& ids = ctx.tx[sfNFTokenOffers];
 
-    auto ret = std::find_if(ids.begin(), ids.end(), [&ctx, &account](uint256 const& id) {
+    auto ret = std::ranges::find_if(ids, [&ctx, &account](uint256 const& id) {
         auto const offer = ctx.view.read(keylet::child(id));
 
         // If id is not in the ledger we assume the offer was consumed

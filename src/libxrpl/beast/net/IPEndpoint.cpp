@@ -12,15 +12,15 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
-namespace beast {
-namespace IP {
+namespace beast::IP {
 
 Endpoint::Endpoint() : m_port(0)
 {
 }
 
-Endpoint::Endpoint(Address const& addr, Port port) : m_addr(addr), m_port(port)
+Endpoint::Endpoint(Address addr, Port port) : m_addr(std::move(addr)), m_port(port)
 {
 }
 
@@ -176,5 +176,4 @@ operator>>(std::istream& is, Endpoint& endpoint)
     return is;
 }
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP

@@ -14,9 +14,7 @@
 #include <optional>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 std::tuple<Json::Value, Keylet>
 Vault::create(CreateArgs const& args) const
@@ -86,6 +84,4 @@ Vault::clawback(ClawbackArgs const& args)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

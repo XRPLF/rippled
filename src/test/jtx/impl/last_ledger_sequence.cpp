@@ -3,9 +3,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/JTx.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 last_ledger_seq::operator()(Env&, JTx& jt) const
@@ -13,6 +11,4 @@ last_ledger_seq::operator()(Env&, JTx& jt) const
     jt["LastLedgerSequence"] = num_;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

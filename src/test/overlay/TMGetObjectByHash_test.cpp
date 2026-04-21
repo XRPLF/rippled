@@ -36,8 +36,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using namespace jtx;
 
@@ -82,7 +81,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         {
         }
 
-        ~PeerTest() = default;
+        ~PeerTest() override = default;
 
         void
         run() override
@@ -222,5 +221,4 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(TMGetObjectByHash, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

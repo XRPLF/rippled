@@ -48,9 +48,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class AccountTx_test : public beast::unit_test::suite
 {
@@ -899,5 +897,4 @@ public:
 };
 BEAST_DEFINE_TESTSUITE(AccountTx, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

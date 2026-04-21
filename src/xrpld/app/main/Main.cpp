@@ -208,7 +208,7 @@ public:
         std::vector<std::string> v;
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
         selectors_.reserve(v.size());
-        std::for_each(v.begin(), v.end(), [this](std::string s) {
+        std::ranges::for_each(v, [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
                 selectors_.emplace_back(beast::unit_test::selector::automatch, s);

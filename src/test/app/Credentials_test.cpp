@@ -32,8 +32,7 @@
 #include <memory>
 #include <string_view>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Credentials_test : public beast::unit_test::suite
 {
@@ -1049,5 +1048,4 @@ struct Credentials_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Credentials, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
