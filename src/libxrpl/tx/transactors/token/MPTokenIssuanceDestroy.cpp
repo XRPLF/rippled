@@ -44,11 +44,10 @@ MPTokenIssuanceDestroy::doApply()
     if (!view().dirRemove(keylet::ownerDir(account_), (*mpt)[sfOwnerNode], mpt->key(), false))
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
-    view().erase(mpt);
-
     auto const sponsor = getLedgerEntryReserveSponsor(view(), mpt);
     adjustOwnerCount(view(), view().peek(keylet::account(account_)), sponsor, -1, j_);
 
+    view().erase(mpt);
     return tesSUCCESS;
 }
 
