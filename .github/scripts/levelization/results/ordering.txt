@@ -50,7 +50,6 @@ libxrpl.tx > xrpl.protocol
 libxrpl.tx > xrpl.server
 libxrpl.tx > xrpl.tx
 test.app > test.jtx
-test.app > test.shamap
 test.app > test.unit_test
 test.app > xrpl.basics
 test.app > xrpl.core
@@ -94,6 +93,7 @@ test.core > xrpl.basics
 test.core > xrpl.core
 test.core > xrpld.core
 test.core > xrpl.json
+test.core > xrpl.protocol
 test.core > xrpl.rdb
 test.core > xrpl.server
 test.csf > xrpl.basics
