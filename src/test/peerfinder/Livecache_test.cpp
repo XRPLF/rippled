@@ -22,8 +22,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 bool
 operator==(Endpoint const& a, Endpoint const& b)
@@ -212,5 +211,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Livecache, peerfinder, xrpl);
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

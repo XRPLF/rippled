@@ -16,8 +16,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 WorkSSL::WorkSSL(
     std::string const& host,
@@ -71,6 +70,4 @@ WorkSSL::onHandshake(error_code const& ec)
     onStart();
 }
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

@@ -334,8 +334,7 @@ private:
 
 }  // namespace
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 /**
  * Helper function to make a simple gRPC call to test connectivity.
  * Returns true if the call succeeded, false otherwise.
@@ -857,5 +856,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(GRPCServerTLS, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

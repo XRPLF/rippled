@@ -64,8 +64,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Basic tests of AMM that do not use offers.
@@ -7136,5 +7135,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

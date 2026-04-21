@@ -12,8 +12,7 @@
 #include <ostream>
 #include <string>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 Consumer::Consumer(Logic& logic, Entry& entry) : m_logic(&logic), m_entry(&entry)
 {
@@ -143,5 +142,4 @@ operator<<(std::ostream& os, Consumer const& v)
     return os;
 }
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

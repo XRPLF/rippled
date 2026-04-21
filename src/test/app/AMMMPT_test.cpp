@@ -53,8 +53,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Basic tests of AMM functionality involving MPT assets, excluding those that
@@ -7096,5 +7095,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AMMMPT, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

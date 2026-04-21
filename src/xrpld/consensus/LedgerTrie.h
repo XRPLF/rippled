@@ -10,6 +10,7 @@
 #include <optional>
 #include <sstream>
 #include <stack>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -133,7 +134,7 @@ public:
     }
 
 private:
-    Span(Seq start, Seq end, Ledger const& l) : start_{start}, end_{end}, ledger_{l}
+    Span(Seq start, Seq end, Ledger l) : start_{start}, end_{end}, ledger_{std::move(l)}
     {
         // Spans cannot be empty
         XRPL_ASSERT(start < end, "xrpl::Span::Span : non-empty span input");

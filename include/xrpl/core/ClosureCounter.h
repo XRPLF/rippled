@@ -75,7 +75,7 @@ private:
         std::remove_reference_t<Closure> closure_;
 
         static_assert(
-            std::is_same<decltype(closure_(std::declval<Args_t>()...)), Ret_t>::value,
+            std::is_same_v<decltype(closure_(std::declval<Args_t>()...)), Ret_t>,
             "Closure arguments don't match ClosureCounter Ret_t or Args_t");
 
     public:
@@ -86,7 +86,7 @@ private:
             ++counter_;
         }
 
-        Substitute(Substitute&& rhs) noexcept(std::is_nothrow_move_constructible<Closure>::value)
+        Substitute(Substitute&& rhs) noexcept(std::is_nothrow_move_constructible_v<Closure>)
             : counter_(rhs.counter_), closure_(std::move(rhs.closure_))
         {
             ++counter_;

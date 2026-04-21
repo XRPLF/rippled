@@ -13,8 +13,7 @@
 
 #include <iomanip>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Binary function that satisfies the strict-weak-ordering requirement.
 
@@ -196,5 +195,4 @@ public:
     }
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

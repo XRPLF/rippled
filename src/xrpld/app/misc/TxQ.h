@@ -425,7 +425,7 @@ private:
         Snapshot
         getSnapshot() const
         {
-            return {txnsExpected_, escalationMultiplier_};
+            return {.txnsExpected = txnsExpected_, .escalationMultiplier = escalationMultiplier_};
         }
 
         /** Use the number of transactions in the current open ledger

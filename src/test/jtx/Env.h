@@ -40,9 +40,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Wrapper that captures std::source_location when implicitly constructed.
     This solves the problem of combining std::source_location with variadic
@@ -885,6 +883,4 @@ Env::rpc(std::string const& cmd, Args&&... args)
     return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

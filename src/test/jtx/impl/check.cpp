@@ -8,11 +8,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace check {
+namespace xrpl::test::jtx::check {
 
 // Cash a check requiring that a specific amount be delivered.
 Json::Value
@@ -49,8 +45,4 @@ cancel(jtx::Account const& dest, uint256 const& checkId)
     return jv;
 }
 
-}  // namespace check
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::check

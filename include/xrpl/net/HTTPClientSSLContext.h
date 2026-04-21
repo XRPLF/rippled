@@ -79,8 +79,8 @@ public:
     template <
         class T,
         class = std::enable_if_t<
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::value ||
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::value>>
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>>>
     boost::system::error_code
     preConnectVerify(T& strm, std::string const& host)
     {
@@ -99,8 +99,8 @@ public:
     template <
         class T,
         class = std::enable_if_t<
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>>::value ||
-            std::is_same<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>::value>>
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket>> ||
+            std::is_same_v<T, boost::asio::ssl::stream<boost::asio::ip::tcp::socket&>>>>
     /**
      * @brief invoked after connect/async_connect but before sending data
      * on an ssl stream - to setup name verification.

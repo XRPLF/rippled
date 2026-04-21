@@ -16,9 +16,7 @@
 #include <sstream>
 #include <string>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 PrettyAmount::
 operator AnyAmount() const
@@ -120,6 +118,4 @@ operator<<(std::ostream& os, MPT const& mpt)
 
 any_t const any{};
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

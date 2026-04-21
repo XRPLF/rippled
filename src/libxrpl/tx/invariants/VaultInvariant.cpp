@@ -81,7 +81,7 @@ ValidVault::visitEntry(
     // validation. It is used to validate that the change in account
     // balances matches the change in vault balances, stored to deltas_ at the
     // end of this function.
-    DeltaInfo balanceDelta{numZero, std::nullopt};
+    DeltaInfo balanceDelta{.delta = numZero, .scale = std::nullopt};
 
     std::int8_t sign = 0;
     if (before)
@@ -1052,7 +1052,9 @@ ValidVault::finalize(
 [[nodiscard]] ValidVault::DeltaInfo
 ValidVault::DeltaInfo::makeDelta(Number const& before, Number const& after, Asset const& asset)
 {
-    return {after - before, std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
+    return {
+        .delta = after - before,
+        .scale = std::max(xrpl::scale(after, asset), xrpl::scale(before, asset))};
 }
 
 [[nodiscard]] std::int32_t
@@ -1061,10 +1063,8 @@ ValidVault::computeCoarsestScale(std::vector<DeltaInfo> const& numbers)
     if (numbers.empty())
         return 0;
 
-    auto const max =
-        std::max_element(numbers.begin(), numbers.end(), [](auto const& a, auto const& b) -> bool {
-            return a.scale < b.scale;
-        });
+    auto const max = std::ranges::max_element(
+        numbers, [](auto const& a, auto const& b) -> bool { return a.scale < b.scale; });
     XRPL_ASSERT_PARTS(
         max->scale, "xrpl::ValidVault::computeCoarsestScale", "scale set for destinationDelta");
     return max->scale.value_or(STAmount::cMaxOffset);
