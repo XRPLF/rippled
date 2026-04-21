@@ -80,7 +80,7 @@ jobs:
         env:
           TARGETS: ${{ inputs.files != '' && inputs.files || 'src tests' }}
         run: |
-          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -allow-no-checks ${TARGETS} 2>&1 | tee clang-tidy-output.txt
+          run-clang-tidy -j ${{ steps.nproc.outputs.nproc }} -p "${BUILD_DIR}" -quiet -fix -allow-no-checks ${TARGETS} 2>&1 | tee clang-tidy-output.txt
 
       - name: Upload clang-tidy output
         if: ${{ github.event.repository.visibility == 'public' && steps.run_clang_tidy.outcome != 'success' }}
