@@ -417,6 +417,85 @@ redact_peer_address=1 # Remove peer IP addresses
 
 > **WS** = WebSocket
 
+### 2.5.0 Deterministic Trace ID Strategy
+
+Both transaction and consensus tracing use **deterministic trace IDs** derived from
+a globally known hash, so all nodes handling the same workflow independently produce
+spans under the same `trace_id`. This is combined with protobuf `span_id` propagation
+for parent-child relay ordering when available.
+
+#### Transactions — `trace_id = txHash[0:16]`
+
+Every node that handles a transaction knows its `txID` (the `uint256` transaction
+hash). The first 16 bytes of this hash are used as the OTel `trace_id`:
+
+```
+uint256 txHash:  A1B2C3D4 E5F6A7B8 C9D0E1F2 A3B4C5D6  E7F8A9B0 C1D2E3F4 A5B6C7D8 E9F0A1B2
+                 |---------- trace_id (16 bytes) ---------|  (remaining 16 bytes unused)
+```
+
+Each node generates a **random 8-byte `span_id`** so its span is unique within the
+shared trace. When protobuf `TraceContext` is present in the incoming `TMTransaction`,
+the sender's `span_id` is extracted and used as the parent — preserving the relay
+chain as a parent-child tree. When absent (older peers, first hop from client), the
+span appears as a root in the same trace — correlation is preserved, only the tree
+structure degrades.
+
+```
+Node A (submitter)        Node B (relay)          Node C (relay)
+trace_id: A1B2...         trace_id: A1B2...       trace_id: A1B2...
+span_id:  1234 (random)   span_id:  5678 (random) span_id:  9ABC (random)
+parent:   (none)          parent:   1234 (proto)   parent:   5678 (proto)
+                               ↑                        ↑
+                       protobuf propagation      protobuf propagation
+```
+
+If protobuf propagation fails at Node B (old peer):
+
+```
+Node A                    Node B (old peer)       Node C
+trace_id: A1B2...         trace_id: A1B2...       trace_id: A1B2...
+span_id:  1234            span_id:  5678          span_id:  9ABC
+parent:   (none)          parent:   (none)        parent:   5678 (proto)
+                          ↑ no parent, but same trace_id — still grouped
+```
+
+#### Consensus — `trace_id = prevLedgerHash[0:16]`
+
+All validators in the same consensus round share the same `previousLedger.id()`.
+The first 16 bytes are used as trace_id. See [Phase 4a implementation status](./06-implementation-phases.md)
+and `createDeterministicContext()` in `RCLConsensus.cpp` for the implementation.
+
+Switchable via `consensus_trace_strategy` config:
+`"deterministic"` (default) or `"attribute"` (random trace_id, correlation via attribute queries).
+
+#### Why Not Random IDs with Propagation Only?
+
+Random trace IDs require **unbroken context propagation** across every hop. In a
+mixed-version network (common during upgrades), older peers silently drop the
+`trace_context` protobuf field. The trace splits and downstream spans become
+impossible to find. Deterministic IDs make correlation **propagation-resilient** — the trace
+backend groups all spans for the same transaction/round regardless of whether
+propagation succeeded.
+
+#### Why Keep Protobuf Propagation?
+
+Deterministic trace IDs alone provide correlation (all spans grouped) but not
+**causality** (which node relayed to which). Protobuf `span_id` propagation adds
+parent-child ordering that shows the exact relay path. The two mechanisms complement
+each other:
+
+| Mechanism                    | Provides                    | Fails when                             |
+| ---------------------------- | --------------------------- | -------------------------------------- |
+| Deterministic trace_id       | Cross-node correlation      | Never (hash is always known)           |
+| Protobuf span_id propagation | Parent-child relay ordering | Older peer drops `trace_context` field |
+
+#### Implementation Reference
+
+The utility function `createDeterministicTxContext(uint256 const& txHash)` follows
+the same pattern as `createDeterministicContext(uint256 const& ledgerId)` in
+`RCLConsensus.cpp`. See [Phase 3 Task 3.9](./Phase3_taskList.md) for the full spec.
+
 ### 2.5.1 Propagation Boundaries
 
 ```mermaid

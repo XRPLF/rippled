@@ -61,6 +61,14 @@ Add to `cfg/xrpld-example.cfg`:
 # trace_validator=0        # Validator list and manifest updates (low volume)
 # trace_amendment=0        # Amendment voting (very low volume)
 #
+# # Trace ID strategies for cross-node correlation
+# # "deterministic" (default) derives trace_id from a workflow hash
+# #   (txHash for transactions, prevLedgerHash for consensus) so all nodes
+# #   produce spans under the same trace_id for the same workflow.
+# # "attribute" uses random trace_id; correlation via attribute queries.
+# tx_trace_strategy=deterministic
+# consensus_trace_strategy=deterministic
+#
 # # Service identification (automatically detected if not specified)
 # # service_name=xrpld
 # # service_instance_id=<node_public_key>
@@ -71,28 +79,30 @@ enabled=0
 
 ### 5.1.2 Configuration Options Summary
 
-| Option                | Type   | Default          | Description                               |
-| --------------------- | ------ | ---------------- | ----------------------------------------- |
-| `enabled`             | bool   | `false`          | Enable/disable telemetry                  |
-| `exporter`            | string | `"otlp_grpc"`    | Exporter type: otlp_grpc, otlp_http, none |
-| `endpoint`            | string | `localhost:4317` | OTLP collector endpoint                   |
-| `use_tls`             | bool   | `false`          | Enable TLS for exporter connection        |
-| `tls_ca_cert`         | string | `""`             | Path to CA certificate file               |
-| `sampling_ratio`      | float  | `1.0`            | Sampling ratio (0.0-1.0)                  |
-| `batch_size`          | uint   | `512`            | Spans per export batch                    |
-| `batch_delay_ms`      | uint   | `5000`           | Max delay before sending batch (ms)       |
-| `max_queue_size`      | uint   | `2048`           | Maximum queued spans                      |
-| `trace_transactions`  | bool   | `true`           | Enable transaction tracing                |
-| `trace_consensus`     | bool   | `true`           | Enable consensus tracing                  |
-| `trace_rpc`           | bool   | `true`           | Enable RPC tracing                        |
-| `trace_peer`          | bool   | `false`          | Enable peer message tracing (high volume) |
-| `trace_ledger`        | bool   | `true`           | Enable ledger tracing                     |
-| `trace_pathfind`      | bool   | `true`           | Enable path computation tracing           |
-| `trace_txq`           | bool   | `true`           | Enable transaction queue tracing          |
-| `trace_validator`     | bool   | `false`          | Enable validator list/manifest tracing    |
-| `trace_amendment`     | bool   | `false`          | Enable amendment voting tracing           |
-| `service_name`        | string | `"xrpld"`        | Service name for traces                   |
-| `service_instance_id` | string | `<node_pubkey>`  | Instance identifier                       |
+| Option                     | Type   | Default           | Description                                                                                                |
+| -------------------------- | ------ | ----------------- | ---------------------------------------------------------------------------------------------------------- |
+| `enabled`                  | bool   | `false`           | Enable/disable telemetry                                                                                   |
+| `exporter`                 | string | `"otlp_grpc"`     | Exporter type: otlp_grpc, otlp_http, none                                                                  |
+| `endpoint`                 | string | `localhost:4317`  | OTLP collector endpoint                                                                                    |
+| `use_tls`                  | bool   | `false`           | Enable TLS for exporter connection                                                                         |
+| `tls_ca_cert`              | string | `""`              | Path to CA certificate file                                                                                |
+| `sampling_ratio`           | float  | `1.0`             | Sampling ratio (0.0-1.0)                                                                                   |
+| `batch_size`               | uint   | `512`             | Spans per export batch                                                                                     |
+| `batch_delay_ms`           | uint   | `5000`            | Max delay before sending batch (ms)                                                                        |
+| `max_queue_size`           | uint   | `2048`            | Maximum queued spans                                                                                       |
+| `trace_transactions`       | bool   | `true`            | Enable transaction tracing                                                                                 |
+| `trace_consensus`          | bool   | `true`            | Enable consensus tracing                                                                                   |
+| `trace_rpc`                | bool   | `true`            | Enable RPC tracing                                                                                         |
+| `trace_peer`               | bool   | `false`           | Enable peer message tracing (high volume)                                                                  |
+| `trace_ledger`             | bool   | `true`            | Enable ledger tracing                                                                                      |
+| `trace_pathfind`           | bool   | `true`            | Enable path computation tracing                                                                            |
+| `trace_txq`                | bool   | `true`            | Enable transaction queue tracing                                                                           |
+| `trace_validator`          | bool   | `false`           | Enable validator list/manifest tracing                                                                     |
+| `trace_amendment`          | bool   | `false`           | Enable amendment voting tracing                                                                            |
+| `tx_trace_strategy`        | string | `"deterministic"` | TX trace ID strategy: `"deterministic"` (trace_id = txHash[0:16]) or `"attribute"` (random)                |
+| `consensus_trace_strategy` | string | `"deterministic"` | Consensus trace ID strategy: `"deterministic"` (trace_id = prevLedgerHash[0:16]) or `"attribute"` (random) |
+| `service_name`             | string | `"xrpld"`         | Service name for traces                                                                                    |
+| `service_instance_id`      | string | `<node_pubkey>`   | Instance identifier                                                                                        |
 
 ---
 

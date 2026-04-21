@@ -118,21 +118,31 @@ gantt
 
 ## 6.4 Phase 3: Transaction Tracing (Weeks 5-6)
 
-**Objective**: Trace transaction lifecycle across network
+**Objective**: Trace transaction lifecycle across network with deterministic cross-node correlation
 
 ### Tasks
 
-| Task | Description                                          |
-| ---- | ---------------------------------------------------- |
-| 3.1  | Define `TraceContext` Protocol Buffer message        |
-| 3.2  | Implement protobuf context serialization             |
-| 3.3  | Instrument `PeerImp::handleTransaction()`            |
-| 3.4  | Instrument `NetworkOPs::submitTransaction()`         |
-| 3.5  | Instrument HashRouter integration                    |
-| 3.6  | Fee escalation instrumentation (`fee.escalate` span) |
-| 3.7  | Implement relay context propagation                  |
-| 3.8  | Integration tests (multi-node)                       |
-| 3.9  | Performance benchmarks                               |
+| Task | Description                                                    |
+| ---- | -------------------------------------------------------------- |
+| 3.1  | Define `TraceContext` Protocol Buffer message                  |
+| 3.2  | Implement protobuf context serialization                       |
+| 3.3  | Instrument `PeerImp::handleTransaction()`                      |
+| 3.4  | Instrument `NetworkOPs::submitTransaction()`                   |
+| 3.5  | Instrument HashRouter integration                              |
+| 3.6  | Fee escalation instrumentation (`fee.escalate` span)           |
+| 3.7  | Implement relay context propagation                            |
+| 3.8  | Integration tests (multi-node)                                 |
+| 3.9  | Deterministic transaction trace ID (`trace_id = txHash[0:16]`) |
+| 3.10 | Performance benchmarks                                         |
+
+### Deterministic Trace ID (Task 3.9)
+
+Transaction spans use **deterministic trace IDs** derived from the transaction hash:
+`trace_id = txHash[0:16]`. All nodes handling the same transaction independently
+produce spans under the same trace_id. Protobuf `span_id` propagation (Task 3.7)
+additionally provides parent-child relay ordering when available. See
+[02-design-decisions.md §2.5.0](./02-design-decisions.md) for the design rationale
+and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementation spec.
 
 ### Exit Criteria
 
@@ -141,6 +151,8 @@ gantt
 - [ ] HashRouter deduplication visible in traces
 - [ ] Multi-node integration tests passing
 - [ ] <5% overhead on transaction throughput
+- [ ] Deterministic trace_id: all nodes produce same trace_id for same transaction
+- [ ] Protobuf span_id propagation preserves parent-child ordering when available
 
 ---
 
@@ -443,15 +455,18 @@ Clear, measurable criteria for each phase.
 
 ### 6.10.3 Phase 3: Transaction Tracing
 
-| Criterion        | Measurement                     | Target                             |
-| ---------------- | ------------------------------- | ---------------------------------- |
-| Local Trace      | Submit → validate → TxQ traced  | Single-node test passes            |
-| Cross-Node       | Context propagates via protobuf | Multi-node test passes             |
-| Relay Visibility | relay_count attribute correct   | Spot check 100 txs                 |
-| HashRouter       | Deduplication visible in trace  | Duplicate txs show suppressed=true |
-| Performance      | TX throughput overhead          | <5% degradation                    |
+| Criterion             | Measurement                                       | Target                                                   |
+| --------------------- | ------------------------------------------------- | -------------------------------------------------------- |
+| Local Trace           | Submit → validate → TxQ traced                    | Single-node test passes                                  |
+| Cross-Node            | Context propagates via protobuf                   | Multi-node test passes                                   |
+| Deterministic TraceID | Same trace_id on all nodes for same tx            | Multi-node test: query by txHash[0:16] returns all spans |
+| Relay Ordering        | Protobuf span_id propagation creates parent-child | Tempo trace tree shows relay chain                       |
+| Graceful Degradation  | Old peer drops trace_context                      | Spans still grouped by deterministic trace_id            |
+| Relay Visibility      | relay_count attribute correct                     | Spot check 100 txs                                       |
+| HashRouter            | Deduplication visible in trace                    | Duplicate txs show suppressed=true                       |
+| Performance           | TX throughput overhead                            | <5% degradation                                          |
 
-**Definition of Done**: Transaction traces span 3+ nodes in test network, performance within bounds.
+**Definition of Done**: Transaction traces span 3+ nodes in test network with deterministic trace_id correlation, parent-child ordering via protobuf propagation, and performance within bounds.
 
 ### 6.10.4 Phase 4: Consensus Tracing
 
