@@ -63,7 +63,7 @@ repos:
     hooks:
       - id: clang-tidy
         name: "clang-tidy (enable with: TIDY=1)"
-        entry: ./scripts/clang_tidy_check.py
+        entry: ./bin/pre-commit/clang_tidy_check.py
         language: python
         types_or: [c++, c]
         exclude: ^include/xrpl/protocol_autogen
