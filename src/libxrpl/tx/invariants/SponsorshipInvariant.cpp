@@ -1,13 +1,15 @@
 #include <xrpl/tx/invariants/SponsorshipInvariant.h>
 //
 #include <xrpl/basics/Log.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/tx/transactors/oracle/OracleSet.h>
 
 namespace xrpl {
 
 // Add new sponsorship-related invariants implementations
 void
 SponsorshipOwnerCountsMatch::visitEntry(
-    bool,
+    bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
@@ -33,13 +35,56 @@ SponsorshipOwnerCountsMatch::visitEntry(
         return 0;
     };
 
+    auto getSponsoredObjectOwnerCount =
+        [&](std::shared_ptr<SLE const> const& sle) -> std::uint32_t {
+        if (!sle)
+            return 0;
+        switch (sle->getType())
+        {
+            case ltACCOUNT_ROOT: {
+                return 0;
+            }
+            case ltRIPPLE_STATE: {
+                uint32_t ownerCount = 0;
+                if (sle->isFieldPresent(sfHighSponsor))
+                    ownerCount++;
+                if (sle->isFieldPresent(sfLowSponsor))
+                    ownerCount++;
+                return ownerCount;
+            }
+            case ltORACLE: {
+                if (!sle->isFieldPresent(sfSponsor))
+                    return 0;
+                auto const priceDataSeries = sle->getFieldArray(sfPriceDataSeries);
+                return OracleSet::calculateOracleReserve(priceDataSeries.size());
+            }
+            case ltVAULT: {
+                if (!sle->isFieldPresent(sfSponsor))
+                    return 0;
+                return 2;
+            }
+            default: {
+                if (sle->isFieldPresent(sfSponsor))
+                    return 1;
+                return 0;
+            }
+        }
+    };
+
     std::int64_t const beforeSponsored = getSponsored(before);
     std::int64_t const afterSponsored = getSponsored(after);
     std::int64_t const beforeSponsoring = getSponsoring(before);
     std::int64_t const afterSponsoring = getSponsoring(after);
 
+    std::int64_t const beforeSponsoredObjectOwnerCount = getSponsoredObjectOwnerCount(before);
+    std::int64_t const afterSponsoredObjectOwnerCount =
+        isDelete ? 0 : getSponsoredObjectOwnerCount(after);
+
     deltaSponsoredOwnerCount_ += (afterSponsored - beforeSponsored);
     deltaSponsoringOwnerCount_ += (afterSponsoring - beforeSponsoring);
+
+    deltaSponsoredObjectOwnerCount_ +=
+        (afterSponsoredObjectOwnerCount - beforeSponsoredObjectOwnerCount);
 
     if (getOwnerCount(after) < getSponsoredOwnerCount(after))
         invalidOwnerCountLessThanSponsoredOwnerCount_ += 1;
@@ -57,6 +102,13 @@ SponsorshipOwnerCountsMatch::finalize(
     {
         JLOG(j.fatal()) << "Invariant failed: SponsoredOwnerCount does not "
                            "equal SponsoringOwnerCount delta.";
+        return false;
+    }
+
+    if (deltaSponsoredObjectOwnerCount_ != deltaSponsoredOwnerCount_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: SponsoredObjectOwnerCount does not "
+                           "equal SponsoredOwnerCount delta.";
         return false;
     }
 

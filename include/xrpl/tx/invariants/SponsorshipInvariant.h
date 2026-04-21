@@ -21,6 +21,7 @@ class SponsorshipOwnerCountsMatch
 {
     std::int64_t deltaSponsoredOwnerCount_ = 0;
     std::int64_t deltaSponsoringOwnerCount_ = 0;
+    std::int64_t deltaSponsoredObjectOwnerCount_ = 0;
     std::uint64_t invalidOwnerCountLessThanSponsoredOwnerCount_ = 0;
 
 public:
