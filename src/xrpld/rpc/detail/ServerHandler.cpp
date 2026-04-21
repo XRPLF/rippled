@@ -110,7 +110,7 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
         return true;
 
     auto const it = h.find("authorization");
-    if ((it == h.end()) || (it->second.substr(0, 6) != "Basic "))
+    if ((it == h.end()) || (!it->second.starts_with("Basic ")))
         return false;
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
@@ -277,9 +277,8 @@ build_map(boost::beast::http::fields const& h)
         // key cannot be a std::string_view because it needs to be used in
         // map and along with iterators
         std::string key(e.name_string());
-        std::transform(key.begin(), key.end(), key.begin(), [](auto kc) {
-            return std::tolower(static_cast<unsigned char>(kc));
-        });
+        std::ranges::transform(
+            key, key.begin(), [](auto kc) { return std::tolower(static_cast<unsigned char>(kc)); });
         c[key] = e.value();
     }
     return c;
@@ -475,18 +474,18 @@ ServerHandler::processSession(
         else
         {
             RPC::JsonContext context{
-                {app_.getJournal("RPCHandler"),
-                 app_,
-                 loadType,
-                 app_.getOPs(),
-                 app_.getLedgerMaster(),
-                 is->getConsumer(),
-                 role,
-                 coro,
-                 is,
-                 apiVersion},
+                {.j = app_.getJournal("RPCHandler"),
+                 .app = app_,
+                 .loadType = loadType,
+                 .netOps = app_.getOPs(),
+                 .ledgerMaster = app_.getLedgerMaster(),
+                 .consumer = is->getConsumer(),
+                 .role = role,
+                 .coro = coro,
+                 .infoSub = is,
+                 .apiVersion = apiVersion},
                 jv,
-                {is->user(), is->forwarded_for()}};
+                {.user = is->user(), .forwardedFor = is->forwarded_for()}};
 
             auto start = std::chrono::system_clock::now();
             RPC::doCommand(context, jr[jss::result]);
@@ -858,18 +857,18 @@ ServerHandler::processRequest(
         Resource::Charge loadType = Resource::feeReferenceRPC;
 
         RPC::JsonContext context{
-            {m_journal,
-             app_,
-             loadType,
-             m_networkOPs,
-             app_.getLedgerMaster(),
-             usage,
-             role,
-             coro,
-             InfoSub::pointer(),
-             apiVersion},
+            {.j = m_journal,
+             .app = app_,
+             .loadType = loadType,
+             .netOps = m_networkOPs,
+             .ledgerMaster = app_.getLedgerMaster(),
+             .consumer = usage,
+             .role = role,
+             .coro = coro,
+             .infoSub = InfoSub::pointer(),
+             .apiVersion = apiVersion},
             params,
-            {user, forwardedFor}};
+            {.user = user, .forwardedFor = forwardedFor}};
         Json::Value result;
 
         auto start = std::chrono::system_clock::now();
@@ -1232,9 +1231,8 @@ setup_Client(ServerHandler::Setup& setup)
 static void
 setup_Overlay(ServerHandler::Setup& setup)
 {
-    auto const iter = std::find_if(setup.ports.cbegin(), setup.ports.cend(), [](Port const& port) {
-        return port.protocol.count("peer") != 0;
-    });
+    auto const iter = std::ranges::find_if(
+        setup.ports, [](Port const& port) { return port.protocol.count("peer") != 0; });
     if (iter == setup.ports.cend())
     {
         setup.overlay = {};

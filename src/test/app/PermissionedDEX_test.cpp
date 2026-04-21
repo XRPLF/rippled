@@ -45,8 +45,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 using namespace jtx;
 
@@ -1485,5 +1484,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

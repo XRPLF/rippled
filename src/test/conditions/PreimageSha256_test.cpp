@@ -10,8 +10,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
 class PreimageSha256_test : public beast::unit_test::suite
 {
@@ -166,6 +165,4 @@ class PreimageSha256_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, xrpl);
 
-}  // namespace cryptoconditions
-
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

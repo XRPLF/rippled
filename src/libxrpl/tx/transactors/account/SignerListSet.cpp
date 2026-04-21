@@ -259,7 +259,7 @@ SignerListSet::validateQuorumAndSignerEntries(
         std::is_sorted(signers.begin(), signers.end()),
         "xrpl::SignerListSet::validateQuorumAndSignerEntries : sorted "
         "signers");
-    if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
+    if (std::ranges::adjacent_find(signers) != signers.end())
     {
         JLOG(j.trace()) << "Duplicate signers in signer list";
         return temBAD_SIGNER;

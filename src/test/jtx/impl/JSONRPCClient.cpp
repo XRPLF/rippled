@@ -31,8 +31,7 @@
 #include <stdexcept>
 #include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class JSONRPCClient : public AbstractClient
 {
@@ -159,5 +158,4 @@ makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
     return std::make_unique<JSONRPCClient>(cfg, rpc_version);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

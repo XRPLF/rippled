@@ -15,8 +15,7 @@
 #include <iterator>
 #include <optional>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct BookDirs_test : public beast::unit_test::suite
 {
@@ -100,5 +99,4 @@ struct BookDirs_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(BookDirs, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

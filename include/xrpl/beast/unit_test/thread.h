@@ -10,8 +10,7 @@
 #include <thread>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Replacement for std::thread that handles exceptions in unit tests. */
 class Thread
@@ -108,5 +107,4 @@ private:
     }
 };
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

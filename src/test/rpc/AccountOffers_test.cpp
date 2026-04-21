@@ -14,8 +14,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class AccountOffers_test : public beast::unit_test::suite
 {
@@ -300,5 +299,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountOffers, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

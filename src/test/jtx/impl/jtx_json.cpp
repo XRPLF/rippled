@@ -11,9 +11,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 json::json(std::string const& s)
 {
@@ -37,6 +35,4 @@ json::operator()(Env&, JTx& jt) const
         jv[iter.key().asString()] = *iter;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

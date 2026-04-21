@@ -194,7 +194,7 @@ SQLiteDatabase::getLedgerCountMinMax()
         return detail::getRowsMinMax(*db, detail::TableType::Ledgers);
     }
 
-    return {0, 0, 0};
+    return {.numberOfRows = 0, .minLedgerSequence = 0, .maxLedgerSequence = 0};
 }
 
 bool
@@ -636,7 +636,10 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     , j_(registry.getJournal("SQLiteDatabase"))
 {
     DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
-    if (!makeLedgerDBs(config, setup, DatabaseCon::CheckpointerSetup{&jobQueue, registry_}))
+    if (!makeLedgerDBs(
+            config,
+            setup,
+            DatabaseCon::CheckpointerSetup{.jobQueue = &jobQueue, .registry = registry_}))
     {
         std::string_view constexpr error = "Failed to create ledger databases";
 

@@ -9,8 +9,7 @@
 #include <limits>
 #include <type_traits>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class units_test : public beast::unit_test::suite
 {
@@ -342,5 +341,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(units, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

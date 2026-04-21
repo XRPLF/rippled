@@ -36,8 +36,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /*
  * This file implements the following negative UNL related tests:
@@ -786,7 +785,13 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
          */
         {
             // 1. no skip list
-            NetworkHistory history = {*this, {10, 0, false, false, 1}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 10,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = 1}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -798,7 +803,13 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
 
         {
             // 2. short skip list
-            NetworkHistory history = {*this, {10, 0, false, false, 256 / 2}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 10,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = 256 / 2}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -810,7 +821,13 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
 
         {
             // 3. local node not enough history
-            NetworkHistory history = {*this, {10, 0, false, false, 256 + 2}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 10,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = 256 + 2}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -829,7 +846,13 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
         {
             // 4. a node double validated some seq
             // 5. local node had enough validations but on a wrong chain
-            NetworkHistory history = {*this, {10, 0, false, false, 256 + 2}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 10,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = 256 + 2}};
             // We need two chains for these tests
             bool const wrongChainSuccess = history.goodHistory;
             BEAST_EXPECT(wrongChainSuccess);
@@ -890,7 +913,13 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
 
         {
             // 6. a good case
-            NetworkHistory history = {*this, {10, 0, false, false, 256 + 1}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 10,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = 256 + 1}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -962,7 +991,13 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
          * 8. 2 new validators have bad scores, not in negUnl
          * 9. expired the new validators have bad scores, not in negUnl
          */
-        NetworkHistory history = {*this, {35, 0, false, false, 0}};
+        NetworkHistory history = {
+            *this,
+            {.numNodes = 35,
+             .negUNLSize = 0,
+             .hasToDisable = false,
+             .hasToReEnable = false,
+             .numLedgers = 0}};
 
         hash_set<NodeID> negUnl_012;
         for (std::uint32_t i = 0; i < 3; ++i)
@@ -1337,7 +1372,13 @@ class NegativeUNLVoteScoreTable_test : public beast::unit_test::suite
         {
             for (std::uint32_t sp = 0; sp < 4; ++sp)
             {
-                NetworkHistory history = {*this, {unlSize, 0, false, false, 256 + 2}};
+                NetworkHistory history = {
+                    *this,
+                    {.numNodes = unlSize,
+                     .negUNLSize = 0,
+                     .hasToDisable = false,
+                     .hasToReEnable = false,
+                     .numLedgers = 256 + 2}};
                 BEAST_EXPECT(history.goodHistory);
                 if (history.goodHistory)
                 {
@@ -1452,7 +1493,13 @@ class NegativeUNLVoteGoodScore_test : public beast::unit_test::suite
         {
             //== all good score, negativeUNL empty
             //-- txSet.size = 0
-            NetworkHistory history = {*this, {51, 0, false, false, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 51,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1467,7 +1514,13 @@ class NegativeUNLVoteGoodScore_test : public beast::unit_test::suite
         {
             // all good score, negativeUNL not empty (use hasToDisable)
             //-- txSet.size = 1
-            NetworkHistory history = {*this, {37, 0, true, false, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 37,
+                 .negUNLSize = 0,
+                 .hasToDisable = true,
+                 .hasToReEnable = false,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1497,7 +1550,13 @@ class NegativeUNLVoteOffline_test : public beast::unit_test::suite
         {
             //== 2 nodes offline, negativeUNL empty (use hasToReEnable)
             //-- txSet.size = 1
-            NetworkHistory history = {*this, {29, 1, false, true, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 29,
+                 .negUNLSize = 1,
+                 .hasToDisable = false,
+                 .hasToReEnable = true,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1513,7 +1572,13 @@ class NegativeUNLVoteOffline_test : public beast::unit_test::suite
         {
             // 2 nodes offline, in negativeUNL
             //-- txSet.size = 0
-            NetworkHistory history = {*this, {30, 1, true, false, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 30,
+                 .negUNLSize = 1,
+                 .hasToDisable = true,
+                 .hasToReEnable = false,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1547,7 +1612,13 @@ class NegativeUNLVoteMaxListed_test : public beast::unit_test::suite
         {
             // 2 nodes offline, not in negativeUNL, but maxListed
             //-- txSet.size = 0
-            NetworkHistory history = {*this, {32, 8, true, true, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 32,
+                 .negUNLSize = 8,
+                 .hasToDisable = true,
+                 .hasToReEnable = true,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1578,7 +1649,13 @@ class NegativeUNLVoteRetiredValidator_test : public beast::unit_test::suite
         {
             //== 2 nodes offline including me, not in negativeUNL
             //-- txSet.size = 0
-            NetworkHistory history = {*this, {35, 0, false, false, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 35,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1593,7 +1670,13 @@ class NegativeUNLVoteRetiredValidator_test : public beast::unit_test::suite
         {
             // 2 nodes offline, not in negativeUNL, but I'm not a validator
             //-- txSet.size = 0
-            NetworkHistory history = {*this, {40, 0, false, false, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 40,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1608,7 +1691,13 @@ class NegativeUNLVoteRetiredValidator_test : public beast::unit_test::suite
         {
             //== 2 in negativeUNL, but not in unl, no other remove candidates
             //-- txSet.size = 1
-            NetworkHistory history = {*this, {25, 2, false, false, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 25,
+                 .negUNLSize = 2,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1642,7 +1731,13 @@ class NegativeUNLVoteNewValidator_test : public beast::unit_test::suite
         {
             //== 2 new validators have bad scores
             //-- txSet.size = 0
-            NetworkHistory history = {*this, {15, 0, false, false, {}}};
+            NetworkHistory history = {
+                *this,
+                {.numNodes = 15,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = {}}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1668,7 +1763,12 @@ class NegativeUNLVoteNewValidator_test : public beast::unit_test::suite
             //== 2 expired new validators have bad scores
             //-- txSet.size = 1
             NetworkHistory history = {
-                *this, {21, 0, false, false, NegativeUNLVote::newValidatorDisableSkip * 2}};
+                *this,
+                {.numNodes = 21,
+                 .negUNLSize = 0,
+                 .hasToDisable = false,
+                 .hasToReEnable = false,
+                 .numLedgers = NegativeUNLVote::newValidatorDisableSkip * 2}};
             BEAST_EXPECT(history.goodHistory);
             if (history.goodHistory)
             {
@@ -1886,5 +1986,4 @@ createTx(bool disabling, LedgerIndex seq, PublicKey const& txKey)
     return STTx(ttUNL_MODIFY, fill);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

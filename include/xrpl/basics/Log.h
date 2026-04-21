@@ -38,7 +38,7 @@ private:
         std::string partition_;
 
     public:
-        Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs);
+        Sink(std::string partition, beast::severities::Severity thresh, Logs& logs);
 
         Sink(Sink const&) = delete;
         Sink&

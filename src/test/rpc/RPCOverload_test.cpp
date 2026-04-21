@@ -18,8 +18,7 @@
 #include <memory>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class RPCOverload_test : public beast::unit_test::suite
 {
@@ -83,5 +82,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCOverload, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

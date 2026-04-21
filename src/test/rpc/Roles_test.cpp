@@ -10,9 +10,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class Roles_test : public beast::unit_test::suite
 {
@@ -349,6 +347,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Roles, rpc, xrpl);
 
-}  // namespace test
-
-}  // namespace xrpl
+}  // namespace xrpl::test

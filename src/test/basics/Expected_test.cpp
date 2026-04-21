@@ -14,8 +14,7 @@
 #endif  // BOOST_VERSION
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Expected_test : beast::unit_test::suite
 {
@@ -219,5 +218,4 @@ struct Expected_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Expected, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -21,8 +21,7 @@
 #include <cstdint>
 #include <memory>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class NetworkID_test : public beast::unit_test::suite
 {
@@ -156,5 +155,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

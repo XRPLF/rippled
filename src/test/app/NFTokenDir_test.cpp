@@ -148,7 +148,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         }
 
         // Buyer accepts all of the offers in reverse order.
-        std::reverse(offers.begin(), offers.end());
+        std::ranges::reverse(offers);
         for (uint256 const& offer : offers)
         {
             env(token::acceptSellOffer(buyer, offer));
@@ -257,7 +257,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             {
                 uint256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-                auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+                auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
                 // Assuming we find the NFT, erase it so we know it's been
                 // found and can't be found again.
@@ -465,7 +465,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             {
                 uint256 ownedID;
                 BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-                auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+                auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
                 // Assuming we find the NFT, erase it so we know it's been
                 // found and can't be found again.
@@ -703,7 +703,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         {
             uint256 ownedID;
             BEAST_EXPECT(ownedID.parseHex(ownedNFT[sfNFTokenID.jsonName].asString()));
-            auto const foundIter = std::find(nftIDs.begin(), nftIDs.end(), ownedID);
+            auto const foundIter = std::ranges::find(nftIDs, ownedID);
 
             // Assuming we find the NFT, erase it so we know it's been found
             // and can't be found again.
