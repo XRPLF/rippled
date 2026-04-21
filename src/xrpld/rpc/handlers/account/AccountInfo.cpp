@@ -42,9 +42,8 @@ namespace xrpl {
  *
  * @details
  * Populates the provided JSON value with the description of the specified
- * ledger entry. If the entry is an account root and contains an email hash,
+ * ledger entry. If the entry contains an email hash,
  * adds a 'urlgravatar' field with the corresponding Gravatar URL.
- * If the entry is not an account root, sets the 'Invalid' field to true.
  */
 void
 injectSLE(Json::Value& jv, RAccountRoot const& account)
