@@ -6,8 +6,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /** Count offer
  */
@@ -186,5 +185,4 @@ private:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

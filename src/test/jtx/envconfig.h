@@ -2,8 +2,7 @@
 
 #include <xrpld/core/Config.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // frequently used macros defined here for convenience.
 #define PORT_WS "port_ws"
@@ -159,5 +158,4 @@ makeConfig(
     std::map<std::string, std::string> extraVoting = {});
 
 }  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

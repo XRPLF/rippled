@@ -61,8 +61,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Invariants_test : public beast::unit_test::suite
 {
@@ -1665,23 +1664,24 @@ class Invariants_test : public beast::unit_test::suite
         };
         auto const mods = std::to_array<Mod>({
             {
-                "pseudo-account has 0 pseudo-account fields set",
-                [this](SLE::pointer& sle) {
-                    BEAST_EXPECT(sle->at(~sfVaultID));
-                    sle->at(~sfVaultID) = std::nullopt;
-                },
+                .expectedFailure = "pseudo-account has 0 pseudo-account fields set",
+                .func =
+                    [this](SLE::pointer& sle) {
+                        BEAST_EXPECT(sle->at(~sfVaultID));
+                        sle->at(~sfVaultID) = std::nullopt;
+                    },
             },
             {
-                "pseudo-account sequence changed",
-                [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
+                .expectedFailure = "pseudo-account sequence changed",
+                .func = [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
             },
             {
-                "pseudo-account flags are not set",
-                [](SLE::pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
+                .expectedFailure = "pseudo-account flags are not set",
+                .func = [](SLE::pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
             },
             {
-                "pseudo-account has a regular key",
-                [](SLE::pointer& sle) { sle->at(sfRegularKey) = Account("regular").id(); },
+                .expectedFailure = "pseudo-account has a regular key",
+                .func = [](SLE::pointer& sle) { sle->at(sfRegularKey) = Account("regular").id(); },
             },
         });
 
@@ -2512,9 +2512,9 @@ class Invariants_test : public beast::unit_test::suite
                 .sharesTotal = adjustment,
                 .vaultAssets = adjustment,
                 .accountAssets =  //
-                AccountAmount{id, -adjustment},
+                AccountAmount{.account = id, .amount = -adjustment},
                 .accountShares =  //
-                AccountAmount{id, adjustment}};
+                AccountAmount{.account = id, .amount = adjustment}};
             fn(sample);
             return sample;
         };
@@ -4101,7 +4101,7 @@ class Invariants_test : public beast::unit_test::suite
         NumberMantissaScaleGuard const g{MantissaRange::large};
 
         auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
-            return {n, scale(n, vaultAsset.raw())};
+            return {.delta = n, .scale = scale(n, vaultAsset.raw())};
         };
 
         auto const testCases = std::vector<TestCase>{
@@ -4241,5 +4241,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Invariants, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

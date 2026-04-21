@@ -26,6 +26,7 @@
 #include <locale>
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
@@ -125,7 +126,7 @@ public:
         HandlerType handler;
 
         template <class StringSequence>
-        Work(StringSequence const& names_, HandlerType const& handler_) : handler(handler_)
+        Work(StringSequence const& names_, HandlerType handler_) : handler(std::move(handler_))
         {
             names.reserve(names_.size());
 
@@ -294,9 +295,10 @@ public:
         auto const find_whitespace =
             std::bind(&std::isspace<std::string::value_type>, std::placeholders::_1, std::locale());
 
-        auto host_first = std::find_if_not(str.begin(), str.end(), find_whitespace);
+        auto host_first = std::ranges::find_if_not(str, find_whitespace);
 
-        auto port_last = std::find_if_not(str.rbegin(), str.rend(), find_whitespace).base();
+        auto port_last =
+            std::ranges::find_if_not(std::ranges::reverse_view(str), find_whitespace).base();
 
         // This should only happen for all-whitespace strings
         if (host_first >= port_last)

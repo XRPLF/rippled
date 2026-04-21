@@ -62,8 +62,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 namespace detail {
 
 // Used to pass extra parameters used when returning a
@@ -1106,15 +1105,14 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
         return RPC::make_param_error("Signers array may not be empty.");
 
     // Signers must be sorted by Account.
-    std::sort(signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
+    std::ranges::sort(signers, [](STObject const& a, STObject const& b) {
         return (a[sfAccount] < b[sfAccount]);
     });
 
     // Signers may not contain any duplicates.
-    auto const dupIter = std::adjacent_find(
-        signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
-            return (a[sfAccount] == b[sfAccount]);
-        });
+    auto const dupIter = std::ranges::adjacent_find(
+        signers,
+        [](STObject const& a, STObject const& b) { return (a[sfAccount] == b[sfAccount]); });
 
     if (dupIter != signers.end())
     {
@@ -1125,8 +1123,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
     }
 
     // An account may not sign for itself.
-    if (signers.end() !=
-        std::find_if(signers.begin(), signers.end(), [&signingForID](STObject const& elem) {
+    if (signers.end() != std::ranges::find_if(signers, [&signingForID](STObject const& elem) {
             return elem[sfAccount] == signingForID;
         }))
     {
@@ -1391,7 +1388,7 @@ transactionSubmitMultiSigned(
         return RPC::make_param_error("tx_json.Signers array may not be empty.");
 
     // The Signers array may only contain Signer objects.
-    if (std::find_if_not(signers.begin(), signers.end(), [](STObject const& obj) {
+    if (std::ranges::find_if_not(signers, [](STObject const& obj) {
             return (
                 // A Signer object always contains these fields and no
                 // others.
@@ -1428,5 +1425,4 @@ transactionSubmitMultiSigned(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

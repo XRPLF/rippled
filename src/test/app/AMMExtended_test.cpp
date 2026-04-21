@@ -60,8 +60,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Tests of AMM that use offers too.
@@ -3586,5 +3585,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AMMExtended, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

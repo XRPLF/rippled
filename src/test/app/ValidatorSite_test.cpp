@@ -177,7 +177,7 @@ private:
 
         for (auto const& cfg : paths)
         {
-            servers.push_back(cfg);
+            servers.emplace_back(cfg);
             auto& item = servers.back();
             item.isRetry = cfg.path == "/bad-resource";
             item.list.reserve(listSize);

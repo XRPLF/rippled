@@ -32,8 +32,7 @@
 #include <tuple>
 #include <utility>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 void
 ApplyStateTable::apply(RawView& to) const
@@ -669,5 +668,4 @@ ApplyStateTable::threadOwners(
     }
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

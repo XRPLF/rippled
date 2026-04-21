@@ -19,9 +19,7 @@ public:
     Asset out;
     std::optional<uint256> domain;
 
-    Book()
-    {
-    }
+    Book() = default;
 
     Book(Asset const& in_, Asset const& out_, std::optional<uint256> const& domain_)
         : in(in_), out(out_), domain(domain_)
