@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <memory>
 #include <optional>
 #include <utility>
 #pragma push_macro("TRANSACTION")

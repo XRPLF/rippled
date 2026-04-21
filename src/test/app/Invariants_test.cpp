@@ -48,7 +48,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
