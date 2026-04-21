@@ -1,7 +1,26 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/ledger/OpenView.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <boost/container/pmr/monotonic_buffer_resource.hpp>
+
+#include <cstddef>
+#include <memory>
+#include <optional>
 #include <stdexcept>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -72,12 +91,12 @@ OpenView::OpenView(OpenView const& rhs)
 OpenView::OpenView(
     open_ledger_t,
     ReadView const* base,
-    Rules const& rules,
+    Rules rules,
     std::shared_ptr<void const> hold)
     : monotonic_resource_{
           std::make_unique<boost::container::pmr::monotonic_buffer_resource>(initialBufferSize)}
     , txs_{monotonic_resource_.get()}
-    , rules_(rules)
+    , rules_(std::move(rules))
     , header_(base->header())
     , base_(base)
     , hold_(std::move(hold))

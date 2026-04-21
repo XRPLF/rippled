@@ -40,9 +40,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Wrapper that captures std::source_location when implicitly constructed.
     This solves the problem of combining std::source_location with variadic
@@ -85,9 +83,13 @@ testable_amendments()
         {
             (void)vote;
             if (auto const f = getRegisteredFeature(s))
+            {
                 feats.push_back(*f);
+            }
             else
+            {
                 Throw<std::runtime_error>("Unknown feature: " + s + "  in allAmendments.");
+            }
         }
         return FeatureBitset(feats);
     }();
@@ -128,12 +130,12 @@ public:
     /// Used by parseResult() and postConditions()
     struct ParsedResult
     {
-        std::optional<TER> ter{};
+        std::optional<TER> ter;
         // RPC errors tend to return either a "code" and a "message" (sometimes
         // with an "error" that corresponds to the "code"), or with an "error"
         // and an "exception". However, this structure allows all possible
         // combinations.
-        std::optional<error_code_i> rpcCode{};
+        std::optional<error_code_i> rpcCode;
         std::string rpcMessage;
         std::string rpcError;
         std::string rpcException;
@@ -256,6 +258,7 @@ public:
     virtual ~Env() = default;
 
     Application&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     app()
     {
         return *bundle_.app;
@@ -268,6 +271,7 @@ public:
     }
 
     ManualTimeKeeper&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     timeKeeper()
     {
         return *bundle_.timeKeeper;
@@ -279,6 +283,7 @@ public:
               close or by callers.
     */
     NetClock::time_point
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     now()
     {
         return timeKeeper().now();
@@ -286,6 +291,7 @@ public:
 
     /** Returns the connected client. */
     AbstractClient&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     client()
     {
         return *bundle_.client;
@@ -773,7 +779,7 @@ public:
     trust(STAmount const& amount, Account const& to0, Account const& to1, Accounts const&... toN)
     {
         trust(amount, to0);
-        trust(amount, to1, toN...);
+        trust(amount, to1, toN...);  // NOLINT(readability-suspicious-call-argument)
     }
     /** @} */
 
@@ -877,6 +883,4 @@ Env::rpc(std::string const& cmd, Args&&... args)
     return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

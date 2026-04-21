@@ -8,6 +8,7 @@
 #include <xrpl/shamap/SHAMap.h>
 
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -23,8 +24,8 @@ public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v)
-            : name(n), feature(f), vote(v)
+        FeatureInfo(std::string n, uint256 const& f, VoteBehavior v)
+            : name(std::move(n)), feature(f), vote(v)
         {
         }
 
@@ -75,10 +76,12 @@ public:
     doValidatedLedger(std::shared_ptr<ReadView const> const& lastValidatedLedger)
     {
         if (needValidatedLedger(lastValidatedLedger->seq()))
+        {
             doValidatedLedger(
                 lastValidatedLedger->seq(),
                 getEnabledAmendments(*lastValidatedLedger),
                 getMajorityAmendments(*lastValidatedLedger));
+        }
     }
 
     /** Called to determine whether the amendment logic needs to process

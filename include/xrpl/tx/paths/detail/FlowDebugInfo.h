@@ -11,9 +11,7 @@
 #include <optional>
 #include <sstream>
 
-namespace xrpl {
-namespace path {
-namespace detail {
+namespace xrpl::path::detail {
 // Track performance information of a single payment
 struct FlowDebugInfo
 {
@@ -255,28 +253,44 @@ struct FlowDebugInfo
 
             ostr << ", in_pass: ";
             if (passInfo.nativeIn)
+            {
                 writeXrpAmtList(passInfo.in);
+            }
             else
+            {
                 writeIouAmtList(passInfo.in);
+            }
             ostr << ", out_pass: ";
             if (passInfo.nativeOut)
+            {
                 writeXrpAmtList(passInfo.out);
+            }
             else
+            {
                 writeIouAmtList(passInfo.out);
+            }
             ostr << ", num_active: ";
             writeIntList(passInfo.numActive);
             if (!passInfo.liquiditySrcIn.empty() && !passInfo.liquiditySrcIn.back().empty())
             {
                 ostr << ", l_src_in: ";
                 if (passInfo.nativeIn)
+                {
                     writeNestedXrpAmtList(passInfo.liquiditySrcIn);
+                }
                 else
+                {
                     writeNestedIouAmtList(passInfo.liquiditySrcIn);
+                }
                 ostr << ", l_src_out: ";
                 if (passInfo.nativeOut)
+                {
                     writeNestedXrpAmtList(passInfo.liquiditySrcOut);
+                }
                 else
+                {
                     writeNestedIouAmtList(passInfo.liquiditySrcOut);
+                }
             }
         }
 
@@ -336,6 +350,4 @@ balanceDiffsToString(std::optional<BalanceDiffs> const& bd)
     return ostr.str();
 };
 
-}  // namespace detail
-}  // namespace path
-}  // namespace xrpl
+}  // namespace xrpl::path::detail

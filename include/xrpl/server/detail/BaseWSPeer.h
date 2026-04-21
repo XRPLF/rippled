@@ -15,6 +15,7 @@
 #include <boost/beast/websocket.hpp>
 #include <boost/logic/tribool.hpp>
 
+#include <algorithm>
 #include <functional>
 #include <list>
 
@@ -285,6 +286,7 @@ BaseWSPeer<Handler, Impl>::on_write(error_code const& ec)
         return;
     start_timer();
     if (!result.first)
+    {
         impl().ws_.async_write_some(
             static_cast<bool>(result.first),
             result.second,
@@ -292,7 +294,9 @@ BaseWSPeer<Handler, Impl>::on_write(error_code const& ec)
                 strand_,
                 std::bind(
                     &BaseWSPeer::on_write, impl().shared_from_this(), std::placeholders::_1)));
+    }
     else
+    {
         impl().ws_.async_write_some(
             static_cast<bool>(result.first),
             result.second,
@@ -300,6 +304,7 @@ BaseWSPeer<Handler, Impl>::on_write(error_code const& ec)
                 strand_,
                 std::bind(
                     &BaseWSPeer::on_write_fin, impl().shared_from_this(), std::placeholders::_1)));
+    }
 }
 
 template <class Handler, class Impl>
@@ -319,7 +324,9 @@ BaseWSPeer<Handler, Impl>::on_write_fin(error_code const& ec)
                     &BaseWSPeer::on_close, impl().shared_from_this(), std::placeholders::_1)));
     }
     else if (!wq_.empty())
+    {
         on_write({});
+    }
 }
 
 template <class Handler, class Impl>
@@ -346,7 +353,7 @@ BaseWSPeer<Handler, Impl>::on_read(error_code const& ec)
     auto const& data = rb_.data();
     std::vector<boost::asio::const_buffer> b;
     b.reserve(std::distance(data.begin(), data.end()));
-    std::copy(data.begin(), data.end(), std::back_inserter(b));
+    std::ranges::copy(data, std::back_inserter(b));
     this->handler_.onWSMessage(impl().shared_from_this(), b);
     rb_.consume(rb_.size());
 }

@@ -4,8 +4,7 @@
 
 #include <chrono>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 enum class FetchType { synchronous, async };
 
@@ -64,5 +63,4 @@ public:
     onBatchWrite(BatchWriteReport const& report) = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

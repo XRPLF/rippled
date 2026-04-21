@@ -1,7 +1,20 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/trust.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <optional>
+#include <vector>
 
 namespace xrpl {
 
@@ -114,7 +127,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice, gw);
         char currencySuffix{'A'};
         std::vector<std::optional<IOU>> gwCurrencies(26);  // A - Z
-        std::generate(gwCurrencies.begin(), gwCurrencies.end(), [&]() {
+        std::ranges::generate(gwCurrencies, [&]() {
             auto gwc = gw[std::string("US") + currencySuffix++];
             env(trust(alice, gwc(100)));
             return gwc;

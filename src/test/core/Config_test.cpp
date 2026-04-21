@@ -4,15 +4,31 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem.hpp>
-#include <boost/format.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/format.hpp>  // IWYU pragma: keep
+#include <boost/format/free_funcs.hpp>
+#include <boost/lexical_cast/bad_lexical_cast.hpp>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <exception>
 #include <fstream>
+#include <optional>
+#include <ostream>
 #include <regex>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace detail {
@@ -249,9 +265,7 @@ public:
         return absolute(file()).string();
     }
 
-    ~ValidatorsTxtGuard()
-    {
-    }
+    ~ValidatorsTxtGuard() = default;
 };
 }  // namespace detail
 
@@ -1262,20 +1276,41 @@ r.ripple.com:51235
         };
 
         std::array<TestCommentData, 13> const tests = {
-            {{"password = aaaa\\#bbbb", "password", "aaaa#bbbb", false},
-             {"password = aaaa#bbbb", "password", "aaaa", true},
-             {"password = aaaa #bbbb", "password", "aaaa", true},
+            {{.line = "password = aaaa\\#bbbb",
+              .field = "password",
+              .expect = "aaaa#bbbb",
+              .had_comment = false},
+             {.line = "password = aaaa#bbbb",
+              .field = "password",
+              .expect = "aaaa",
+              .had_comment = true},
+             {.line = "password = aaaa #bbbb",
+              .field = "password",
+              .expect = "aaaa",
+              .had_comment = true},
              // since the value is all comment, this doesn't parse as k=v :
-             {"password = #aaaa #bbbb", "", "password =", true},
-             {"password = aaaa\\# #bbbb", "password", "aaaa#", true},
-             {"password = aaaa\\##bbbb", "password", "aaaa#", true},
-             {"aaaa#bbbb", "", "aaaa", true},
-             {"aaaa\\#bbbb", "", "aaaa#bbbb", false},
-             {"aaaa\\##bbbb", "", "aaaa#", true},
-             {"aaaa #bbbb", "", "aaaa", true},
-             {"1 #comment", "", "1", true},
-             {"#whole thing is comment", "", "", false},
-             {"  #whole comment with space", "", "", false}}};
+             {.line = "password = #aaaa #bbbb",
+              .field = "",
+              .expect = "password =",
+              .had_comment = true},
+             {.line = "password = aaaa\\# #bbbb",
+              .field = "password",
+              .expect = "aaaa#",
+              .had_comment = true},
+             {.line = "password = aaaa\\##bbbb",
+              .field = "password",
+              .expect = "aaaa#",
+              .had_comment = true},
+             {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .had_comment = true},
+             {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .had_comment = false},
+             {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .had_comment = true},
+             {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .had_comment = true},
+             {.line = "1 #comment", .field = "", .expect = "1", .had_comment = true},
+             {.line = "#whole thing is comment", .field = "", .expect = "", .had_comment = false},
+             {.line = "  #whole comment with space",
+              .field = "",
+              .expect = "",
+              .had_comment = false}}};
 
         for (auto const& t : tests)
         {

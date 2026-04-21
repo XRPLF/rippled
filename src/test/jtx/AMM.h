@@ -14,9 +14,7 @@
 
 #include <nudb/detail/stream.hpp>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class LPToken
 {
@@ -99,7 +97,7 @@ struct BidArg
     std::optional<Account> account = std::nullopt;
     std::optional<std::variant<int, IOUAmount, STAmount>> bidMin = std::nullopt;
     std::optional<std::variant<int, IOUAmount, STAmount>> bidMax = std::nullopt;
-    std::vector<Account> authAccounts = {};
+    std::vector<Account> authAccounts = {};  // NOLINT(readability-redundant-member-init)
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::pair<Asset, Asset>> assets = std::nullopt;
 };
@@ -139,9 +137,9 @@ class AMM
 
 public:
     AMM(Env& env,
-        Account const& account,
-        STAmount const& asset1,
-        STAmount const& asset2,
+        Account account,
+        STAmount asset1,
+        STAmount asset2,
         bool log = false,
         std::uint16_t tfee = 0,
         std::uint32_t fee = 0,
@@ -372,13 +370,13 @@ public:
     }
 
     std::string
-    operator[](AccountID const& lp)
+    operator[](AccountID const& lp) const
     {
         return ammRpcInfo(lp).toStyledString();
     }
 
     Json::Value
-    operator()(AccountID const& lp)
+    operator()(AccountID const& lp) const
     {
         return ammRpcInfo(lp);
     }
@@ -425,9 +423,13 @@ public:
             auto const& jr = p.amm.ammRpcInfo();
             auto out = [&](Json::Value const& jv) {
                 if (jv.isMember(jss::value))
+                {
                     std::cout << jv[jss::value].asString();
+                }
                 else
+                {
                     std::cout << jv.asString();
+                }
                 std::cout << " ";
             };
             if (p.names.empty())
@@ -456,9 +458,13 @@ public:
         {
             auto out = [&](Json::Value const& jv) {
                 if (jv.isMember(jss::value))
+                {
                     s << jv[jss::value].asString();
+                }
                 else
+                {
                     s << jv;
+                }
             };
             for (auto const& o : offers.jv[jss::offers])
             {
@@ -517,6 +523,4 @@ ammClawback(
     std::optional<STAmount> const& amount);
 }  // namespace amm
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

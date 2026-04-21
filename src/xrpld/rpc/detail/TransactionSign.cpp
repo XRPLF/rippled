@@ -1,31 +1,68 @@
+#include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/detail/TransactionSign.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/mulDiv.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/apply.h>  // Validity::Valid
 #include <xrpl/tx/applySteps.h>
 
 #include <algorithm>
-#include <iterator>
+#include <chrono>
+#include <exception>
+#include <functional>
+#include <memory>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <utility>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 namespace detail {
 
 // Used to pass extra parameters used when returning a
@@ -1068,15 +1105,14 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
         return RPC::make_param_error("Signers array may not be empty.");
 
     // Signers must be sorted by Account.
-    std::sort(signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
+    std::ranges::sort(signers, [](STObject const& a, STObject const& b) {
         return (a[sfAccount] < b[sfAccount]);
     });
 
     // Signers may not contain any duplicates.
-    auto const dupIter = std::adjacent_find(
-        signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
-            return (a[sfAccount] == b[sfAccount]);
-        });
+    auto const dupIter = std::ranges::adjacent_find(
+        signers,
+        [](STObject const& a, STObject const& b) { return (a[sfAccount] == b[sfAccount]); });
 
     if (dupIter != signers.end())
     {
@@ -1087,8 +1123,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
     }
 
     // An account may not sign for itself.
-    if (signers.end() !=
-        std::find_if(signers.begin(), signers.end(), [&signingForID](STObject const& elem) {
+    if (signers.end() != std::ranges::find_if(signers, [&signingForID](STObject const& elem) {
             return elem[sfAccount] == signingForID;
         }))
     {
@@ -1353,7 +1388,7 @@ transactionSubmitMultiSigned(
         return RPC::make_param_error("tx_json.Signers array may not be empty.");
 
     // The Signers array may only contain Signer objects.
-    if (std::find_if_not(signers.begin(), signers.end(), [](STObject const& obj) {
+    if (std::ranges::find_if_not(signers, [](STObject const& obj) {
             return (
                 // A Signer object always contains these fields and no
                 // others.
@@ -1390,5 +1425,4 @@ transactionSubmitMultiSigned(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC
