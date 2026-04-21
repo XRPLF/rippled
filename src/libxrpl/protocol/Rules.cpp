@@ -183,4 +183,10 @@ isFeatureEnabled(uint256 const& feature, bool resultIfNoRules)
     return rules->enabled(feature);
 }
 
+bool
+isFeatureEnabled(uint256 const& feature)
+{
+    return isFeatureEnabled(feature, false);
+}
+
 }  // namespace ripple
