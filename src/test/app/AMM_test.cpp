@@ -7061,6 +7061,78 @@ private:
     }
 
     void
+    testStaleAuthAccountsAfterReinit()
+    {
+        testcase("Stale AuthAccounts persist after tfTwoAssetIfEmpty re-init");
+        using namespace jtx;
+        FeatureBitset const all{testable_amendments()};
+        Env env(
+            *this,
+            envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->FEES.reference_fee = XRPAmount(1);
+                return cfg;
+            }),
+            all);
+        Account const dan("dan");
+        Account const ed("ed");
+        fund(env, gw, {alice, carol, bob, dan, ed}, XRP(50'000), {USD(50'000)});
+        AMM amm(env, alice, XRP(10'000), USD(10'000));
+        env.close();
+        // Create excess trustlines to prevent AMM auto-deletion on withdrawal.
+        for (auto i = 0; i < maxDeletableAMMTrustLines + 10; ++i)
+        {
+            Account const a{std::to_string(i)};
+            env.fund(XRP(1'000), a);
+            env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+            env.close();
+        }
+        // Carol deposits so she has LP tokens to bid.
+        amm.deposit(carol, 1'000'000);
+        env.close();
+        // Carol wins the auction slot, authorizing bob and dan.
+        env(amm.bid({
+            .account = carol,
+            .bidMin = 100,
+            .authAccounts = {bob, dan},
+        }));
+        env.close();
+        BEAST_EXPECT(amm.expectAuctionSlot({bob.id(), dan.id()}));
+        // Withdraw all liquidity — AMM enters empty state but is not deleted
+        // because the excess trustlines prevent auto-deletion.
+        amm.withdrawAll(alice);
+        env.close();
+        amm.withdrawAll(carol);
+        env.close();
+        BEAST_EXPECT(amm.ammExists());
+        // Ed re-initializes the AMM via tfTwoAssetIfEmpty.
+        amm.deposit(
+            ed,
+            std::nullopt,
+            XRP(10'000),
+            USD(10'000),
+            std::nullopt,
+            tfTwoAssetIfEmpty,
+            std::nullopt,
+            std::nullopt,
+            500);
+        env.close();
+        // After re-init, Ed is the new slot owner and sfAuthAccounts must be
+        // absent — bob and dan should not retain discounted fees.
+        auto const ammSle = env.current()->read(keylet::amm(XRP(0).issue(), USD(0).issue()));
+        BEAST_EXPECT(ammSle);
+        if (!ammSle)
+            return;
+        BEAST_EXPECT(ammSle->isFieldPresent(sfAuctionSlot));
+        if (!ammSle->isFieldPresent(sfAuctionSlot))
+            return;
+        auto const& slot = safe_downcast<STObject const&>(ammSle->peekAtField(sfAuctionSlot));
+        BEAST_EXPECT(slot.getAccountID(sfAccount) == ed.id());
+        // BUG CHECK: sfAuthAccounts must NOT persist after re-initialization.
+        BEAST_EXPECT(
+            !slot.isFieldPresent(sfAuthAccounts) || slot.getFieldArray(sfAuthAccounts).empty());
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{testable_amendments()};
@@ -7130,6 +7202,7 @@ private:
         testWithdrawRounding(all);
         testWithdrawRounding(all - fixAMMv1_3);
         testFailedPseudoAccount();
+        testStaleAuthAccountsAfterReinit();
     }
 };
 
