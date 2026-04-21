@@ -61,9 +61,7 @@
 #include <variant>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 // Functions used in debugging
 Json::Value
@@ -217,16 +215,16 @@ find_paths_request(
     Resource::Consumer c;
 
     RPC::JsonContext context{
-        {env.journal,
-         app,
-         loadType,
-         app.getOPs(),
-         app.getLedgerMaster(),
-         c,
-         Role::USER,
-         {},
-         {},
-         RPC::apiVersionIfUnspecified},
+        {.j = env.journal,
+         .app = app,
+         .loadType = loadType,
+         .netOps = app.getOPs(),
+         .ledgerMaster = app.getLedgerMaster(),
+         .consumer = c,
+         .role = Role::USER,
+         .coro = {},
+         .infoSub = {},
+         .apiVersion = RPC::apiVersionIfUnspecified},
         {},
         {}};
 
@@ -415,7 +413,7 @@ expectOffers(
         if (sle->getType() == ltOFFER)
         {
             ++cnt;
-            if (std::find_if(toMatch.begin(), toMatch.end(), [&](auto const& a) {
+            if (std::ranges::find_if(toMatch, [&](auto const& a) {
                     return a.in == sle->getFieldAmount(sfTakerPays) &&
                         a.out == sle->getFieldAmount(sfTakerGets);
                 }) != toMatch.end())
@@ -858,6 +856,4 @@ pay(AccountID const& account, uint256 const& loanID, STAmount const& amount, std
 }
 
 }  // namespace loan
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

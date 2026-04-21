@@ -16,8 +16,7 @@
 #include <mutex>
 #include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class DNS_test : public beast::unit_test::suite
 {
@@ -120,5 +119,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DNS, app, xrpl, 20);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -22,7 +22,7 @@ Value const Value::null;
 class DefaultValueAllocator : public ValueAllocator
 {
 public:
-    virtual ~DefaultValueAllocator() = default;
+    ~DefaultValueAllocator() override = default;
 
     char*
     makeMemberName(char const* memberName) override
@@ -1054,7 +1054,7 @@ Value::getMemberNames() const
     ObjectValues::const_iterator const itEnd = value_.map_->end();
 
     for (; it != itEnd; ++it)
-        members.push_back(std::string((*it).first.c_str()));
+        members.emplace_back((*it).first.c_str());
 
     return members;
 }

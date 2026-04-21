@@ -11,9 +11,7 @@
 #include <optional>
 #include <sstream>
 
-namespace xrpl {
-namespace path {
-namespace detail {
+namespace xrpl::path::detail {
 // Track performance information of a single payment
 struct FlowDebugInfo
 {
@@ -352,6 +350,4 @@ balanceDiffsToString(std::optional<BalanceDiffs> const& bd)
     return ostr.str();
 };
 
-}  // namespace detail
-}  // namespace path
-}  // namespace xrpl
+}  // namespace xrpl::path::detail

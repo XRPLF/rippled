@@ -8,8 +8,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 Config::Config() : outPeers(calcOutPeers())
 
@@ -128,5 +127,4 @@ Config::makeConfig(
     return config;
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

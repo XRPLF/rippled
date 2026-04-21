@@ -8,9 +8,7 @@
 #include <optional>
 #include <utility>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 struct PeerIDTag;
 //< Uniquely identifies a peer
@@ -58,7 +56,7 @@ public:
         , seq_{seq}
         , signTime_{sign}
         , seenTime_{seen}
-        , key_{key}
+        , key_{std::move(key)}
         , nodeID_{nodeID}
         , full_{full}
         , loadFee_{loadFee}
@@ -172,6 +170,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

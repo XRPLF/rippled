@@ -12,8 +12,7 @@
 #include <system_error>
 #include <utility>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
 namespace detail {
 // The binary encoding of conditions differs based on their
@@ -220,5 +219,4 @@ Condition::deserialize(Slice s, std::error_code& ec)
     return c;
 }
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

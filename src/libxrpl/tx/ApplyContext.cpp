@@ -148,7 +148,7 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
         "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
 
     return checkInvariantsHelper(
-        result, fee, std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
+        result, fee, std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{});
 }
 
 }  // namespace xrpl

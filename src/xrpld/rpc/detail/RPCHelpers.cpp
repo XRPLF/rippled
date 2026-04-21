@@ -43,8 +43,7 @@
 #include <tuple>
 #include <utility>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 std::uint64_t
 getStartHint(std::shared_ptr<SLE const> const& sle, AccountID const& accountID)
@@ -471,5 +470,4 @@ parseSubUnsubJson(
     return rpcSUCCESS;
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

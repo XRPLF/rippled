@@ -236,9 +236,8 @@ ValidatorSite::setTimer(
         missingSite(site_lock);
     }
 
-    auto next = std::min_element(sites_.begin(), sites_.end(), [](Site const& a, Site const& b) {
-        return a.nextRefresh < b.nextRefresh;
-    });
+    auto const next = std::ranges::min_element(
+        sites_, [](Site const& a, Site const& b) { return a.nextRefresh < b.nextRefresh; });
 
     if (next != sites_.end())
     {
@@ -454,7 +453,10 @@ ValidatorSite::parseJsonResponse(
         app_.getOPs());
 
     sites_[siteIdx].lastRefreshStatus.emplace(
-        Site::Status{clock_type::now(), applyResult.bestDisposition(), ""});
+        Site::Status{
+            .refreshed = clock_type::now(),
+            .disposition = applyResult.bestDisposition(),
+            .message = ""});
 
     for (auto const& [disp, count] : applyResult.dispositions)
     {
@@ -566,7 +568,10 @@ ValidatorSite::onSiteFetch(
                          << endpoint;
         auto onError = [&](std::string const& errMsg, bool retry) {
             sites_[siteIdx].lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::invalid, errMsg});
+                Site::Status{
+                    .refreshed = clock_type::now(),
+                    .disposition = ListDisposition::invalid,
+                    .message = errMsg});
             if (retry)
                 sites_[siteIdx].nextRefresh = clock_type::now() + error_retry_interval;
 
@@ -659,7 +664,10 @@ ValidatorSite::onTextFetch(
         {
             JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
             sites_[siteIdx].lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::invalid, ex.what()});
+                Site::Status{
+                    .refreshed = clock_type::now(),
+                    .disposition = ListDisposition::invalid,
+                    .message = ex.what()});
         }
         sites_[siteIdx].activeResource.reset();
     }
