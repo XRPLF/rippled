@@ -48,7 +48,7 @@ accountInDomain(
                 return false;
 
             return !credentials::checkExpired(
-                sleCred, view.info().parentCloseTime);
+                *sleCred, view.info().parentCloseTime);
         });
 
     return inDomain;
