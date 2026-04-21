@@ -32,10 +32,22 @@ log() {
 
 require_root() {
   if [[ ${EUID:-$(id -u)} -ne 0 ]]; then
-    log "This update script must be run as root"
+    log "RESULT: failed reason=not-root"
     exit 1
   fi
 }
+
+get_installed_version() {
+  if command -v dpkg-query >/dev/null 2>&1; then
+    dpkg-query -W -f='${Version}' "$PKG_NAME" 2>/dev/null || printf 'unknown'
+  elif command -v rpm >/dev/null 2>&1; then
+    rpm -q --qf '%{VERSION}-%{RELEASE}' "$PKG_NAME" 2>/dev/null || printf 'unknown'
+  else
+    printf 'unknown'
+  fi
+}
+
+trap 'log "RESULT: failed reason=script-error exit_code=$?"' ERR
 
 apt_can_update() {
   apt-get update -qq
@@ -43,7 +55,10 @@ apt_can_update() {
 }
 
 apt_apply_update() {
-  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq "$PKG_NAME"
+  DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    -o Dpkg::Options::="--force-confdef" \
+    -o Dpkg::Options::="--force-confold" \
+    "$PKG_NAME"
 }
 
 get_rpm_pm() {
@@ -106,9 +121,9 @@ main() {
       log "Update available; installing"
       apt_apply_update
       restart_service
-      log "${PKG_NAME} updated successfully"
+      log "RESULT: updated ${PKG_NAME}=$(get_installed_version)"
     else
-      log "No updates available"
+      log "RESULT: no-update ${PKG_NAME}=$(get_installed_version)"
     fi
     return
   fi
@@ -120,14 +135,14 @@ main() {
       log "Update available; installing"
       rpm_apply_update "$rpm_pm"
       restart_service
-      log "${PKG_NAME} updated successfully"
+      log "RESULT: updated ${PKG_NAME}=$(get_installed_version)"
     else
-      log "No updates available"
+      log "RESULT: no-update ${PKG_NAME}=$(get_installed_version)"
     fi
     return
   fi
 
-  log "No supported package manager found (apt-get, dnf, or yum)"
+  log "RESULT: failed reason=no-package-manager"
   exit 1
 }
 
