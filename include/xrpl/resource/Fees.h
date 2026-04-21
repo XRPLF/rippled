@@ -2,8 +2,7 @@
 
 #include <xrpl/resource/Charge.h>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 /** Schedule of fees charged for imposing load on the server. */
 /** @{ */
@@ -30,5 +29,4 @@ extern Charge const feeWarning;  // The cost of receiving a warning.
 extern Charge const feeDrop;     // The cost of being dropped for excess load.
 /** @} */
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

@@ -1,14 +1,26 @@
 #include <test/jtx/paths.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <memory>
 #include <optional>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 paths::operator()(Env& env, JTx& jt) const
@@ -104,6 +116,4 @@ path::operator()(Env& env, JTx& jt) const
     jt.jv["Paths"].append(jv_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

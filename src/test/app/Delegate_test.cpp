@@ -1,12 +1,56 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/did.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+namespace xrpl::test {
 class Delegate_test : public beast::unit_test::suite
 {
     void
@@ -1857,6 +1901,21 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testDelegateUtilsNullptrCheck()
+    {
+        testcase("DelegateUtils nullptr check");
+
+        // checkTxPermission nullptr check
+        STTx const tx{ttPAYMENT, [](STObject&) {}};
+        BEAST_EXPECT(checkTxPermission(nullptr, tx) == terNO_DELEGATE_PERMISSION);
+
+        // loadGranularPermission nullptr check
+        std::unordered_set<GranularPermissionType> granularPermissions;
+        loadGranularPermission(nullptr, ttPAYMENT, granularPermissions);
+        BEAST_EXPECT(granularPermissions.empty());
+    }
+
+    void
     run() override
     {
         FeatureBitset const all = jtx::testable_amendments();
@@ -1881,8 +1940,8 @@ class Delegate_test : public beast::unit_test::suite
         testPermissionValue(all);
         testTxRequireFeatures(all);
         testTxDelegableCount();
+        testDelegateUtilsNullptrCheck();
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

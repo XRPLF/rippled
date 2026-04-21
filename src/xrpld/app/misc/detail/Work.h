@@ -3,9 +3,7 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/string_body.hpp>
 
-namespace xrpl {
-
-namespace detail {
+namespace xrpl::detail {
 
 using response_type = boost::beast::http::response<boost::beast::http::string_body>;
 
@@ -21,6 +19,4 @@ public:
     cancel() = 0;
 };
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

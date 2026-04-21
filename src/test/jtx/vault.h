@@ -11,9 +11,7 @@
 #include <optional>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class Env;
 
@@ -25,7 +23,8 @@ struct Vault
     {
         Account owner;
         Asset asset;
-        std::optional<std::uint32_t> flags{};
+        std::optional<std::uint32_t> flags =
+            std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
     /** Return a VaultCreate transaction and the Vault's expected keylet. */
@@ -75,13 +74,11 @@ struct Vault
         Account issuer;
         uint256 id;
         Account holder;
-        std::optional<STAmount> amount{};
+        std::optional<STAmount> amount = std::nullopt;  // NOLINT(readability-redundant-member-init)
     };
 
     static Json::Value
     clawback(ClawbackArgs const& args);
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx
