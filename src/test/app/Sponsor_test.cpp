@@ -1710,8 +1710,10 @@ public:
         Account const alice("alice");
         Account const sponsor("sponsor");
         Account const sponsor2("sponsor2");
+        Account const sponsor3("sponsor3");
         Account const bob("bob");
         Account const charlie("charlie");
+        Account const dave("dave");
         Account const gw("gw");
         auto const USD = gw["USD"];
 
@@ -1725,7 +1727,7 @@ public:
         }
 
         Env env{*this, testable_amendments()};
-        env.fund(XRP(10000), alice, sponsor, sponsor2);
+        env.fund(XRP(10000), alice, sponsor, sponsor2, sponsor3);
         env.close();
 
         // Invalid flags
@@ -1787,6 +1789,26 @@ public:
             BEAST_EXPECT(sponsoringAccountCount(env, sponsor2) == 1);
             // verify sponsor balance decreased by payment + fee
             BEAST_EXPECT(env.balance(sponsor2) == sponsor2BalanceBefore - drops(1) - XRP(1));
+        }
+        {
+            // insufficient reserve to sponsor acount
+
+            auto const sendAmount = drops(1);
+            // 2 account reserve + send amount
+            auto const requireBalance = accountReserve(env, 2) + sendAmount;
+            adjustAccountXRPBalance(env, sponsor3, requireBalance - drops(1));
+            env(pay(sponsor3, dave, sendAmount),
+                txflags(tfSponsorCreatedAccount),
+                fee(XRP(1)),
+                ter(tecUNFUNDED_PAYMENT));
+            env.close();
+
+            adjustAccountXRPBalance(env, sponsor3, requireBalance);
+            env(pay(sponsor3, dave, sendAmount),
+                txflags(tfSponsorCreatedAccount),
+                fee(XRP(1)),
+                ter(tesSUCCESS));
+            env.close();
         }
     }
 

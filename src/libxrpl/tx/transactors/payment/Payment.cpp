@@ -611,8 +611,7 @@ Payment::doApply()
 
     // the number of reserves in this ledger for this account that require a
     // reserve.
-    auto const reserve = calculateReserve(sleSrc, view().fees()) +
-        (((txFlags & tfSponsorCreatedAccount) != 0u) ? view().fees().reserve : beast::zero);
+    auto const reserve = calculateReserve(sleSrc, view().fees());
 
     // In a delegated payment, the fee payer is the delegated account,
     // not the source account (account_).
