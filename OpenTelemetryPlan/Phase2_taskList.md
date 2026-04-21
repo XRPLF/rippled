@@ -161,6 +161,32 @@ This surfaces all RPCs served during a blocked period — critical for post-inci
 
 ---
 
+## Task 2.9: PathFind RPC Instrumentation
+
+**Status**: COMPLETE
+
+**Objective**: Trace the path_find and ripple_path_find RPC handlers to capture request latency and computation cost.
+
+**Spans added**:
+
+- `pathfind.request` — wraps `doPathFind()` and `doRipplePathFind()` RPC handlers
+- `pathfind.compute` — wraps `PathRequest::doUpdate()` (fast/normal attr)
+- `pathfind.update_all` — wraps `PathRequestManager::updateAll()` on ledger close (ledger_index attr)
+- `pathfind.discover` — wraps `Pathfinder::findPaths()` graph exploration (search_level attr)
+- `pathfind.rank` — wraps `Pathfinder::computePathRanks()` liquidity validation (num_paths attr)
+
+**New file**: `src/xrpld/rpc/detail/PathFindSpanNames.h`
+
+**Modified files**:
+
+- `src/xrpld/rpc/handlers/orderbook/PathFind.cpp`
+- `src/xrpld/rpc/handlers/orderbook/RipplePathFind.cpp`
+- `src/xrpld/rpc/detail/PathRequest.cpp`
+- `src/xrpld/rpc/detail/PathRequestManager.cpp`
+- `src/xrpld/rpc/detail/Pathfinder.cpp`
+
+---
+
 ## Summary
 
 | Task | Description                                 | Status              | Notes                                            |
@@ -173,7 +199,8 @@ This surfaces all RPCs served during a blocked period — critical for post-inci
 | 2.6  | Build verification and performance baseline | Complete            | Verified in CI on Phase 1c                       |
 | 2.7  | Grafana Tempo search filters                | Complete            | rpc-command, rpc-status, rpc-role filters        |
 | 2.8  | RPC span attribute enrichment (node health) | Complete            | amendment_blocked + server_state                 |
+| 2.9  | PathFind RPC instrumentation (5 spans)      | Complete            | request, compute, update_all, discover, rank     |
 
-**Delivered in this branch**: Tasks 2.4, 2.7, 2.8.
+**Delivered in this branch**: Tasks 2.4, 2.7, 2.8, 2.9.
 **Deferred with rationale**: Tasks 2.1 (→Phase 3), 2.5 (low priority).
 **Superseded**: Task 2.2 (Phase 1c SpanGuard factory covers this).
