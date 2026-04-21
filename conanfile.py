@@ -129,9 +129,6 @@ class Xrpl(ConanFile):
         if self.settings.compiler in ["clang", "gcc"]:
             self.options["boost"].without_cobalt = True
 
-        if "SANITIZERS" in os.environ:
-            sanitizers = os.environ["SANITIZERS"]
-
     def requirements(self):
         self.requires("boost/1.90.0", force=True, transitive_headers=True)
         self.requires("date/3.0.4", transitive_headers=True)
