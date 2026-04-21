@@ -175,7 +175,12 @@ def main():
 
     run_clang_tidy = find_run_clang_tidy()
     if not run_clang_tidy:
-        return 0
+        print(
+            "clang-tidy check failed: TIDY is enabled but neither "
+            "'run-clang-tidy-21' nor 'run-clang-tidy' was found in PATH.",
+            file=sys.stderr,
+        )
+        return 1
 
     build_dir = find_build_dir(repo_root)
     if not build_dir:
