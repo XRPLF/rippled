@@ -17,6 +17,8 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -25,6 +27,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <memory>
 #include <unordered_set>
 
 namespace {
