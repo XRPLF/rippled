@@ -18,8 +18,7 @@ struct NoEdgeData
 
 }  // namespace detail
 
-namespace test {
-namespace csf {
+namespace test::csf {
 
 /** Directed graph
 
@@ -225,6 +224,6 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
+}  // namespace test::csf
+
 }  // namespace xrpl

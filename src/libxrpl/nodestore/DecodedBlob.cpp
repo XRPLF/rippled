@@ -10,8 +10,7 @@
 #include <memory>
 #include <utility>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 {
@@ -74,5 +73,4 @@ DecodedBlob::createObject()
     return object;
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

@@ -50,9 +50,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 using namespace xrpl::test;
 using namespace xrpl::test::jtx;
@@ -79,9 +77,7 @@ class compression_test : public beast::unit_test::suite
     using Algorithm = compression::Algorithm;
 
 public:
-    compression_test()
-    {
-    }
+    compression_test() = default;
 
     template <typename T>
     void
@@ -466,5 +462,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

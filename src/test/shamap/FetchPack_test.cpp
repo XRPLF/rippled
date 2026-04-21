@@ -28,8 +28,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 class FetchPack_test : public beast::unit_test::suite
 {
@@ -166,5 +165,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

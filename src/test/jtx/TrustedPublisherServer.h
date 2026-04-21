@@ -21,9 +21,9 @@
 
 #include <memory>
 #include <thread>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublisherServer>
 {
@@ -75,7 +75,7 @@ class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublis
 
     struct BlobInfo
     {
-        BlobInfo(std::string b, std::string s) : blob(b), signature(s)
+        BlobInfo(std::string b, std::string s) : blob(std::move(b)), signature(std::move(s))
         {
         }
 
@@ -122,9 +122,10 @@ public:
         auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
         auto const signingKeys = randomKeyPair(KeyType::secp256k1);
         return {
-            masterPublic,
-            signingKeys.first,
-            makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
+            .masterPublic = masterPublic,
+            .signingPublic = signingKeys.first,
+            .manifest =
+                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
     }
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
@@ -692,5 +693,4 @@ make_TrustedPublisherServer(
     return r;
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

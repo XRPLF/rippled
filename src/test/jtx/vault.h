@@ -11,9 +11,7 @@
 #include <optional>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class Env;
 
@@ -83,6 +81,4 @@ struct Vault
     clawback(ClawbackArgs const& args);
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

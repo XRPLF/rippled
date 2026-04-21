@@ -80,7 +80,7 @@ public:
         std::shared_ptr<SkipListAcquire>& skipListAcquirer,
         TaskParameter const& parameter);
 
-    ~LedgerReplayTask();
+    ~LedgerReplayTask() override;
 
     /** Start the task */
     void

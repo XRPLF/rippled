@@ -26,8 +26,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 class AMMClawbackMPT_test : public beast::unit_test::suite
 {
     void
@@ -1838,5 +1837,4 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(AMMClawbackMPT, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

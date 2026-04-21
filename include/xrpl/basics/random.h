@@ -15,8 +15,8 @@ namespace xrpl {
 #ifndef __INTELLISENSE__
 static_assert(
     // NOLINTNEXTLINE(misc-redundant-expression)
-    std::is_integral<beast::xor_shift_engine::result_type>::value &&
-        std::is_unsigned<beast::xor_shift_engine::result_type>::value,
+    std::is_integral_v<beast::xor_shift_engine::result_type> &&
+        std::is_unsigned_v<beast::xor_shift_engine::result_type>,
     "The XRPL default PRNG engine must return an unsigned integral type.");
 
 static_assert(
@@ -91,7 +91,7 @@ default_prng()
 */
 /** @{ */
 template <class Engine, class Integral>
-std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine, Integral min, Integral max)
 {
     XRPL_ASSERT(max > min, "xrpl::rand_int : max over min inputs");
@@ -103,35 +103,35 @@ rand_int(Engine& engine, Integral min, Integral max)
 }
 
 template <class Integral>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
 rand_int(Integral min, Integral max)
 {
     return rand_int(default_prng(), min, max);
 }
 
 template <class Engine, class Integral>
-std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine, Integral max)
 {
     return rand_int(engine, Integral(0), max);
 }
 
 template <class Integral>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
 rand_int(Integral max)
 {
     return rand_int(default_prng(), max);
 }
 
 template <class Integral, class Engine>
-std::enable_if_t<std::is_integral<Integral>::value && detail::is_engine<Engine>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine)
 {
     return rand_int(engine, std::numeric_limits<Integral>::max());
 }
 
 template <class Integral = int>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
 rand_int()
 {
     return rand_int(default_prng(), std::numeric_limits<Integral>::max());
@@ -142,7 +142,7 @@ rand_int()
 /** @{ */
 template <class Byte, class Engine>
 std::enable_if_t<
-    (std::is_same<Byte, unsigned char>::value || std::is_same<Byte, std::uint8_t>::value) &&
+    (std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>) &&
         detail::is_engine<Engine>::value,
     Byte>
 rand_byte(Engine& engine)
@@ -152,9 +152,7 @@ rand_byte(Engine& engine)
 }
 
 template <class Byte = std::uint8_t>
-std::enable_if_t<
-    (std::is_same<Byte, unsigned char>::value || std::is_same<Byte, std::uint8_t>::value),
-    Byte>
+std::enable_if_t<(std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>), Byte>
 rand_byte()
 {
     return rand_byte<Byte>(default_prng());

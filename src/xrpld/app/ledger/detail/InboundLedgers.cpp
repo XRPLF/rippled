@@ -329,7 +329,7 @@ public:
             for (auto const& it : mLedgers)
             {
                 XRPL_ASSERT(it.second, "xrpl::InboundLedgersImp::getInfo : non-null ledger");
-                acqs.push_back(it);
+                acqs.emplace_back(it);
             }
             for (auto const& it : mRecentFailures)
             {

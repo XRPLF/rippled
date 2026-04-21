@@ -140,7 +140,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
     while (inNode->isInner())
     {
         if (stack != nullptr)
-            stack->push({inNode, nodeID});
+            stack->emplace(inNode, nodeID);
 
         auto const inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(inNode);
         auto const branch = selectBranch(nodeID, id);
@@ -152,7 +152,7 @@ SHAMap::walkTowardsKey(uint256 const& id, SharedPtrNodeStack* stack) const
     }
 
     if (stack != nullptr)
-        stack->push({inNode, nodeID});
+        stack->emplace(inNode, nodeID);
     return safe_downcast<SHAMapLeafNode*>(inNode.get());
 }
 
@@ -449,11 +449,11 @@ SHAMap::belowHelper(
     auto inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
     if (stack.empty())
     {
-        stack.push({inner, SHAMapNodeID{}});
+        stack.emplace(inner, SHAMapNodeID{});
     }
     else
     {
-        stack.push({inner, stack.top().second.getChildNodeID(branch)});
+        stack.emplace(inner, stack.top().second.getChildNodeID(branch));
     }
     for (int i = init; cmp(i);)
     {
@@ -468,7 +468,7 @@ SHAMap::belowHelper(
                 return n.get();
             }
             inner = intr_ptr::static_pointer_cast<SHAMapInnerNode>(node);
-            stack.push({inner, stack.top().second.getChildNodeID(branch)});
+            stack.emplace(inner, stack.top().second.getChildNodeID(branch));
             i = init;  // descend and reset loop
         }
         else
@@ -813,7 +813,7 @@ SHAMap::addGiveItem(SHAMapNodeType type, boost::intrusive_ptr<SHAMapItem const> 
 
         while ((b1 = selectBranch(nodeID, tag)) == (b2 = selectBranch(nodeID, otherItem->key())))
         {
-            stack.push({node, nodeID});
+            stack.emplace(node, nodeID);
 
             // we need a new inner node, since both go on same branch at this
             // level
@@ -1115,7 +1115,7 @@ SHAMap::dump(bool hash) const
     JLOG(journal_.info()) << " MAP Contains";
 
     std::stack<std::pair<SHAMapTreeNode*, SHAMapNodeID>> stack;
-    stack.push({root_.get(), SHAMapNodeID()});
+    stack.emplace(root_.get(), SHAMapNodeID());
 
     do
     {
@@ -1141,7 +1141,7 @@ SHAMap::dump(bool hash) const
                         XRPL_ASSERT(
                             child->getHash() == inner->getChildHash(i),
                             "xrpl::SHAMap::dump : child hash do match");
-                        stack.push({child, nodeID.getChildNodeID(i)});
+                        stack.emplace(child, nodeID.getChildNodeID(i));
                     }
                 }
             }

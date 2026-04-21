@@ -11,8 +11,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class STIssue_test : public beast::unit_test::suite
 {
@@ -149,5 +148,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(STIssue, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

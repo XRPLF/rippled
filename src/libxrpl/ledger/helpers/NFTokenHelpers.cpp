@@ -38,9 +38,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace xrpl {
-
-namespace nft {
+namespace xrpl::nft {
 
 static std::shared_ptr<SLE const>
 locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
@@ -130,7 +128,7 @@ getPageForToken(
         // place to make the split.
         if (splitIter == narr.end())
         {
-            splitIter = std::find_if(narr.begin(), narr.end(), [&cmp](STObject const& obj) {
+            splitIter = std::ranges::find_if(narr, [&cmp](STObject const& obj) {
                 return (obj.getFieldH256(sfNFTokenID) & nft::pageMask) == cmp;
             });
         }
@@ -240,9 +238,8 @@ changeTokenURI(
     // Locate the NFT in the page
     STArray& arr = page->peekFieldArray(sfNFTokens);
 
-    auto const nftIter = std::find_if(arr.begin(), arr.end(), [&nftokenID](STObject const& obj) {
-        return (obj[sfNFTokenID] == nftokenID);
-    });
+    auto const nftIter = std::ranges::find_if(
+        arr, [&nftokenID](STObject const& obj) { return (obj[sfNFTokenID] == nftokenID); });
 
     if (nftIter == arr.end())
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -321,13 +318,8 @@ mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE>
 
     STArray x(p1arr.size() + p2arr.size());
 
-    std::merge(
-        p1arr.begin(),
-        p1arr.end(),
-        p2arr.begin(),
-        p2arr.end(),
-        std::back_inserter(x),
-        [](STObject const& a, STObject const& b) {
+    std::ranges::merge(
+        p1arr, p2arr, std::back_inserter(x), [](STObject const& a, STObject const& b) {
             return compareTokens(a.getFieldH256(sfNFTokenID), b.getFieldH256(sfNFTokenID));
         });
 
@@ -383,9 +375,8 @@ removeToken(
     auto arr = curr->getFieldArray(sfNFTokens);
 
     {
-        auto x = std::find_if(arr.begin(), arr.end(), [&nftokenID](STObject const& obj) {
-            return (obj[sfNFTokenID] == nftokenID);
-        });
+        auto x = std::ranges::find_if(
+            arr, [&nftokenID](STObject const& obj) { return (obj[sfNFTokenID] == nftokenID); });
 
         if (x == arr.end())
             return tecNO_ENTRY;
@@ -1103,5 +1094,4 @@ checkTrustlineDeepFrozen(
     return tesSUCCESS;
 }
 
-}  // namespace nft
-}  // namespace xrpl
+}  // namespace xrpl::nft
