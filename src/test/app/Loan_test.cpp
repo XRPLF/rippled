@@ -4861,15 +4861,15 @@ protected:
         // Fee difference rounds evenly
         test(
             loanMaximumPaymentsPerTransaction - 10,
-            (loanMaximumPaymentsPerTransaction - 10) / loanPaymentsPerFeeIncrement - 1,
+            ((loanMaximumPaymentsPerTransaction - 10) / loanPaymentsPerFeeIncrement) - 1,
             telINSUF_FEE_P);
         test(
             loanMaximumPaymentsPerTransaction - 10,
-            (loanMaximumPaymentsPerTransaction - 10) / loanPaymentsPerFeeIncrement);
+            ((loanMaximumPaymentsPerTransaction - 10) / loanPaymentsPerFeeIncrement));
         // More fee is always ok
         test(
             loanMaximumPaymentsPerTransaction - 10,
-            (loanMaximumPaymentsPerTransaction - 10) / loanPaymentsPerFeeIncrement + 3);
+            ((loanMaximumPaymentsPerTransaction - 10) / loanPaymentsPerFeeIncrement) + 3);
         // Fee rounds up
         for (int under = 1; under < loanPaymentsPerFeeIncrement; ++under)
         {
