@@ -121,7 +121,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         // If AllowTrustLineClawback is not set or NoFreeze is set, return no
         // permission
         if (!acctIssuer->isFlag(lsfAllowTrustLineClawback) || acctIssuer->isFlag(lsfNoFreeze))
-            return tesSUCCESS;
+            return tecNO_PERMISSION;
     }
 
     auto const checkClawAsset = [&](Asset const asset) -> bool {
