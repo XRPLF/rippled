@@ -12,7 +12,7 @@ namespace xrpl {
 class MPTIssue
 {
 private:
-    MPTID mptID_;
+    MPTID mptID_{};
 
 public:
     MPTIssue() = default;

@@ -1,18 +1,22 @@
 #include <xrpl/ledger/CredentialHelpers.h>
 
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/digest.h>
+
+#include "xrpl/beast/utility/Journal.h"
+#include "xrpl/ledger/ApplyView.h"
+#include "xrpl/ledger/ReadView.h"
+#include "xrpl/protocol/AccountID.h"
+#include "xrpl/protocol/Indexes.h"
+#include "xrpl/protocol/Protocol.h"
+#include "xrpl/protocol/SField.h"
+#include "xrpl/protocol/STLedgerEntry.h"
+#include "xrpl/protocol/STObject.h"
+#include "xrpl/protocol/STTx.h"
+#include "xrpl/protocol/STVector256.h"
 
 #include <cstdint>
-#include <limits>
 #include <memory>
-#include <set>
-#include <unordered_set>
-#include <utility>
-#include <vector>
 
 namespace xrpl {
 namespace credentials {
@@ -30,7 +34,7 @@ bool
 removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
     auto const closeTime = view.header().parentCloseTime;
-    bool foundExpired = false;
+    bool const foundExpired = false;
 
     for (auto const& h : arr)
     {
@@ -85,7 +89,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
     auto const issuer = sleCredential->getAccountID(sfIssuer);
     auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = (sleCredential->getFlags() & lsfAccepted) != 0u;
+    bool const accepted = (sleCredential->getFlags() & lsfAccepted) != 0u = false;
 
     auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
@@ -181,7 +185,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         return tecOBJECT_NOT_FOUND;
 
     auto const closeTime = view.header().parentCloseTime;
-    bool foundExpired = false;
+    bool const foundExpired = false;
     for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
     {
         auto const issuer = h.getAccountID(sfIssuer);
@@ -305,7 +309,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
 
     // Collect all matching credentials on a side, so we can remove expired ones
     // We may finish the loop with this collection empty, it's fine.
-    STVector256 credentials;
+    STVector256 const credentials;
     for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
     {
         auto const issuer = h.getAccountID(sfIssuer);

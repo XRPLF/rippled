@@ -9,7 +9,7 @@ namespace xrpl {
 
 class STVector256 : public STBase, public CountedObject<STVector256>
 {
-    std::vector<uint256> mValue;
+    std::vector<uint256> mValue{};
 
 public:
     using value_type = std::vector<uint256> const&;

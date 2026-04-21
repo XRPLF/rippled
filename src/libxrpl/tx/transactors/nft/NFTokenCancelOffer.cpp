@@ -12,6 +12,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/Transactor.h>
 
+#include "xrpl/protocol/Feature.h"
+
 #include <algorithm>
 
 namespace xrpl {

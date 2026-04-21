@@ -40,7 +40,7 @@ public:
     value_type const&
     value() const noexcept;
 
-    void
+    static void
     setIssue(Asset const& issue);
 
     SerializedTypeID

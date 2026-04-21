@@ -77,9 +77,7 @@ private:
 public:
     using result_type = typename HashAlgorithm::result_type;
 
-    hardened_hash() : m_seeds(detail::make_seed_pair<>())
-    {
-    }
+    hardened_hash() : m_seeds(detail::make_seed_pair<>()) = default;
 
     template <class T>
     result_type

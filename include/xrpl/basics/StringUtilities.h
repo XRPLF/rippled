@@ -98,12 +98,12 @@ struct parsedURL
 {
     explicit parsedURL() = default;
 
-    std::string scheme;
-    std::string username;
-    std::string password;
-    std::string domain;
+    std::string scheme{};
+    std::string username{};
+    std::string password{};
+    std::string domain{};
     std::optional<std::uint16_t> port;
-    std::string path;
+    std::string path{};
 
     bool
     operator==(parsedURL const& other) const

@@ -10,6 +10,8 @@
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
+#include "xrpl/protocol/Feature.h"
+
 namespace xrpl {
 
 NotTEC

@@ -41,7 +41,7 @@ struct LocalValues
     };
 
     // Keys are the address of a LocalValue.
-    std::unordered_map<void const*, std::unique_ptr<BasicValue>> values;
+    std::unordered_map<void const*, std::unique_ptr<BasicValue>> values{};
 
     static void
     cleanup(LocalValues* lvs)

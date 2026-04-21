@@ -14,7 +14,7 @@ namespace Json {
 struct JsonMissingKeyError : std::exception
 {
     char const* const key;
-    mutable std::string msg;
+    mutable std::string msg{};
     JsonMissingKeyError(Json::StaticString const& k) : key{k.c_str()}
     {
     }
@@ -32,8 +32,8 @@ struct JsonMissingKeyError : std::exception
 struct JsonTypeMismatchError : std::exception
 {
     char const* const key;
-    std::string const expectedType;
-    mutable std::string msg;
+    std::string const expectedType{};
+    mutable std::string msg{};
     JsonTypeMismatchError(Json::StaticString const& k, std::string et)
         : key{k.c_str()}, expectedType{std::move(et)}
     {
