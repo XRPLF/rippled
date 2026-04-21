@@ -51,8 +51,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Regression_test : public beast::unit_test::suite
 {
@@ -349,5 +348,4 @@ struct Regression_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Regression, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

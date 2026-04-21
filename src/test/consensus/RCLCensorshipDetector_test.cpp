@@ -6,8 +6,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class RCLCensorshipDetector_test : public beast::unit_test::suite
 {
@@ -81,5 +80,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

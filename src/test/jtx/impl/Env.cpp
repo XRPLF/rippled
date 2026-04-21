@@ -65,9 +65,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 //------------------------------------------------------------------------------
 
@@ -696,6 +694,4 @@ Env::disableFeature(uint256 const feature)
     app().config().features.erase(feature);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

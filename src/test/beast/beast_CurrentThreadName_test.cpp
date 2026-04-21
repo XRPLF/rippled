@@ -11,8 +11,7 @@
 #include <string>
 #include <thread>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class CurrentThreadName_test : public beast::unit_test::suite
 {
@@ -106,5 +105,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(CurrentThreadName, beast, beast);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

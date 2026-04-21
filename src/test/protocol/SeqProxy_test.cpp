@@ -54,7 +54,7 @@ struct SeqProxy_test : public beast::unit_test::suite
         ss << seqProx;
         std::string str{ss.str()};
 
-        return str.find(type) == 0 && str[type.size()] == ' ' &&
+        return str.starts_with(type) && str[type.size()] == ' ' &&
             str.find(value) == (type.size() + 1);
     }
 

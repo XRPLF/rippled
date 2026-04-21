@@ -75,7 +75,7 @@ parseSection(Section const& section)
                 "Invalid amendment ID '" + match[1] + "' in [" + section.name() + "]");
         }
 
-        names.push_back(std::make_pair(id, match[2]));
+        names.emplace_back(id, match[2]);
     }
 
     return names;
@@ -221,9 +221,8 @@ public:
         }
 
         // Now remove any expired records from recordedVotes_.
-        std::for_each(
-            recordedVotes_.begin(),
-            recordedVotes_.end(),
+        std::ranges::for_each(
+            recordedVotes_,
             [&closeTime, newTimeout, &j](decltype(recordedVotes_)::value_type& votes) {
                 auto const pkHuman = toBase58(TokenType::NodePublic, votes.first);
                 if (!votes.second.timeout)
@@ -784,7 +783,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
     }
 
     if (!amendments.empty())
-        std::sort(amendments.begin(), amendments.end());
+        std::ranges::sort(amendments);
 
     return amendments;
 }
