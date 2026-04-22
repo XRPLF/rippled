@@ -257,11 +257,8 @@ SignerListSet::validateQuorumAndSignerEntries(
     }
 
     // Make sure there are no duplicate signers.
-    // SignerEntry only defines operator< and operator==, not the full
-    // std::totally_ordered set required by std::ranges::less, so the
-    // ranges version does not compile. NOLINTNEXTLINE(modernize-use-ranges)
     XRPL_ASSERT(
-        std::is_sorted(signers.begin(), signers.end()),
+        std::ranges::is_sorted(signers),
         "xrpl::SignerListSet::validateQuorumAndSignerEntries : sorted "
         "signers");
     if (std::ranges::adjacent_find(signers) != signers.end())
