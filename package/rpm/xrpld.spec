@@ -1,5 +1,3 @@
-%global xrpld_version  @xrpld_version@
-%global pkg_release    @pkg_release@
 %global _opt_prefix    /opt/xrpld
 %global ver_base       %(v=%{xrpld_version}; echo ${v%%-*})
 %global _has_dash      %(v=%{xrpld_version}; [ "${v#*-}" != "$v" ] && echo 1 || echo 0)

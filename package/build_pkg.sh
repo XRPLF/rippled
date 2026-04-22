@@ -5,7 +5,7 @@
 #   pkg_type    : rpm | deb
 #   src_dir     : path to repository root
 #   build_dir   : directory containing the pre-built xrpld binary
-#   version     : package version string (e.g. 2.4.0-b1)
+#   version     : package version string (e.g. 3.2.0-b1)
 #   pkg_release : package release number (default: 1)
 
 set -euo pipefail
@@ -13,7 +13,7 @@ set -euo pipefail
 PKG_TYPE="${1:?pkg_type required}"
 SRC_DIR="$(cd "${2:?src_dir required}" && pwd)"
 BUILD_DIR="$(cd "${3:?build_dir required}" && pwd)"
-VERSION="${4:-1.0.0}"
+VERSION="${4:-$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3}')}"
 PKG_RELEASE="${5:-1}"
 
 SHARED="${SRC_DIR}/package/shared"
@@ -33,7 +33,7 @@ build_rpm() {
     local topdir="${BUILD_DIR}/rpmbuild"
     mkdir -p "${topdir}"/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}
 
-    cp "${BUILD_DIR}/package/rpm/xrpld.spec" "${topdir}/SPECS/xrpld.spec"
+    cp "${SRC_DIR}/package/rpm/xrpld.spec" "${topdir}/SPECS/xrpld.spec"
 
     stage_common "${topdir}/SOURCES"
     cp "${SHARED}/xrpld.service"  "${topdir}/SOURCES/xrpld.service"
@@ -45,6 +45,8 @@ build_rpm() {
     set -x
     rpmbuild -bb \
         --define "_topdir ${topdir}" \
+        --define "xrpld_version ${VERSION}" \
+        --define "pkg_release ${PKG_RELEASE}" \
         "${topdir}/SPECS/xrpld.spec"
 }
 

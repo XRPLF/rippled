@@ -14,17 +14,6 @@ endif()
 if(NOT DEFINED pkg_release)
     set(pkg_release 1)
 endif()
-if(NOT DEFINED xrpld_version OR "${xrpld_version}" STREQUAL "")
-    message(
-        FATAL_ERROR
-        "xrpld_version must be set (e.g. -Dxrpld_version=2.4.0)"
-    )
-endif()
-configure_file(
-    ${CMAKE_SOURCE_DIR}/package/rpm/xrpld.spec.in
-    ${CMAKE_BINARY_DIR}/package/rpm/xrpld.spec
-    @ONLY
-)
 
 find_program(RPMBUILD_EXECUTABLE rpmbuild)
 if(RPMBUILD_EXECUTABLE)
@@ -32,7 +21,7 @@ if(RPMBUILD_EXECUTABLE)
         package-rpm
         COMMAND
             ${CMAKE_SOURCE_DIR}/package/build_pkg.sh rpm ${CMAKE_SOURCE_DIR}
-            ${CMAKE_BINARY_DIR}
+            ${CMAKE_BINARY_DIR} "${xrpld_version}" ${pkg_release}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         DEPENDS xrpld
         COMMENT "Building RPM package"
@@ -48,7 +37,7 @@ if(DPKG_BUILDPACKAGE_EXECUTABLE)
         package-deb
         COMMAND
             ${CMAKE_SOURCE_DIR}/package/build_pkg.sh deb ${CMAKE_SOURCE_DIR}
-            ${CMAKE_BINARY_DIR} ${xrpld_version} ${pkg_release}
+            ${CMAKE_BINARY_DIR} "${xrpld_version}" ${pkg_release}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         DEPENDS xrpld
         COMMENT "Building Debian package"
