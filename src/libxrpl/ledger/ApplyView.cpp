@@ -77,7 +77,7 @@ insertKey(
 {
     if (preserveOrder)
     {
-        if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
+        if (std::ranges::find(indexes, key) != indexes.end())
             Throw<std::logic_error>("dirInsert: double insertion");  // LCOV_EXCL_LINE
 
         indexes.push_back(key);
@@ -86,9 +86,9 @@ insertKey(
     {
         // We can't be sure if this page is already sorted because it may be a
         // legacy page we haven't yet touched. Take the time to sort it.
-        std::sort(indexes.begin(), indexes.end());
+        std::ranges::sort(indexes);
 
-        auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
+        auto pos = std::ranges::lower_bound(indexes, key);
 
         if (pos != indexes.end() && key == *pos)
             Throw<std::logic_error>("dirInsert: double insertion");  // LCOV_EXCL_LINE
@@ -263,7 +263,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
     {
         auto entries = node->getFieldV256(sfIndexes);
 
-        auto it = std::find(entries.begin(), entries.end(), key);
+        auto it = std::ranges::find(entries, key);
 
         if (entries.end() == it)
             return false;

@@ -6,6 +6,7 @@
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
@@ -176,7 +177,7 @@ void
 DeferredCredits::ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next)
 {
     auto const v = std::max(cur, next);
-    auto r = ownerCounts_.emplace(std::make_pair(id, v));
+    auto r = ownerCounts_.emplace(id, v);
     if (!r.second)
     {
         auto& mapVal = r.first->second;

@@ -25,9 +25,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 // use this for creating a bridge for a transaction
 Json::Value
@@ -481,6 +479,4 @@ XChainBridgeObjects::createBridgeObjects(Env& mcEnv, Env& scEnv)
     createMcBridgeObjects(mcEnv);
     createScBridgeObjects(scEnv);
 }
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

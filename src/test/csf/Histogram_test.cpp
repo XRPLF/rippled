@@ -2,8 +2,7 @@
 
 #include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Histogram_test : public beast::unit_test::suite
 {
@@ -64,5 +63,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Histogram, csf, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -63,8 +63,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Env_test : public beast::unit_test::suite
 {
@@ -110,10 +109,10 @@ public:
         PrettyAmount(0u);  // NOLINT(bugprone-unused-raii)
         PrettyAmount(1u);  // NOLINT(bugprone-unused-raii)
         PrettyAmount(-1);  // NOLINT(bugprone-unused-raii)
-        static_assert(!std::is_trivially_constructible<PrettyAmount, char>::value, "");
-        static_assert(!std::is_trivially_constructible<PrettyAmount, unsigned char>::value, "");
-        static_assert(!std::is_trivially_constructible<PrettyAmount, short>::value, "");
-        static_assert(!std::is_trivially_constructible<PrettyAmount, unsigned short>::value, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, char>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned char>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, short>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned short>, "");
 
         try
         {
@@ -903,5 +902,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Env, jtx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -10,8 +11,12 @@
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
@@ -46,12 +51,24 @@ struct MPTMutabilityFlags
 };
 
 static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
-    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lsmfMPTCanMutateCanLock},
-     {tmfMPTSetRequireAuth, tmfMPTClearRequireAuth, lsmfMPTCanMutateRequireAuth},
-     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lsmfMPTCanMutateCanEscrow},
-     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade},
-     {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lsmfMPTCanMutateCanTransfer},
-     {tmfMPTSetCanClawback, tmfMPTClearCanClawback, lsmfMPTCanMutateCanClawback}}};
+    {{.setFlag = tmfMPTSetCanLock,
+      .clearFlag = tmfMPTClearCanLock,
+      .canMutateFlag = lsmfMPTCanMutateCanLock},
+     {.setFlag = tmfMPTSetRequireAuth,
+      .clearFlag = tmfMPTClearRequireAuth,
+      .canMutateFlag = lsmfMPTCanMutateRequireAuth},
+     {.setFlag = tmfMPTSetCanEscrow,
+      .clearFlag = tmfMPTClearCanEscrow,
+      .canMutateFlag = lsmfMPTCanMutateCanEscrow},
+     {.setFlag = tmfMPTSetCanTrade,
+      .clearFlag = tmfMPTClearCanTrade,
+      .canMutateFlag = lsmfMPTCanMutateCanTrade},
+     {.setFlag = tmfMPTSetCanTransfer,
+      .clearFlag = tmfMPTClearCanTransfer,
+      .canMutateFlag = lsmfMPTCanMutateCanTransfer},
+     {.setFlag = tmfMPTSetCanClawback,
+      .clearFlag = tmfMPTClearCanClawback,
+      .canMutateFlag = lsmfMPTCanMutateCanClawback}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -107,12 +124,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
-            if (std::any_of(
-                    mptMutabilityFlags.begin(),
-                    mptMutabilityFlags.end(),
-                    [mutableFlags](auto const& f) {
-                        return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
-                    }))
+            if (std::ranges::any_of(mptMutabilityFlags, [mutableFlags](auto const& f) {
+                    return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
+                }))
                 return temINVALID_FLAG;
 
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
@@ -185,13 +199,16 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
-        if (std::any_of(
-                mptMutabilityFlags.begin(),
-                mptMutabilityFlags.end(),
-                [mutableFlags, &isMutableFlag](auto const& f) {
-                    return !isMutableFlag(f.canMutateFlag) &&
-                        ((*mutableFlags & (f.setFlag | f.clearFlag)));
-                }))
+        if (std::ranges::any_of(mptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
+                return !isMutableFlag(f.canMutateFlag) &&
+                    ((*mutableFlags & (f.setFlag | f.clearFlag)));
+            }))
+            return tecNO_PERMISSION;
+
+        // Clearing lsfMPTRequireAuth is invalid when the issuance already has
+        // a DomainID set, because a DomainID requires RequireAuth to be active.
+        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
+            sleMptIssuance->isFieldPresent(sfDomainID))
             return tecNO_PERMISSION;
     }
 
@@ -321,6 +338,25 @@ MPTokenIssuanceSet::doApply()
     view().update(sle);
 
     return tesSUCCESS;
+}
+
+void
+MPTokenIssuanceSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+MPTokenIssuanceSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

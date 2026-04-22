@@ -7,6 +7,8 @@
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/applySteps.h>
 
+#include <utility>
+
 namespace xrpl {
 
 /** State information when preflighting a tx. */
@@ -24,12 +26,12 @@ public:
         ServiceRegistry& registry_,
         STTx const& tx_,
         uint256 parentBatchId_,
-        Rules const& rules_,
+        Rules rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
         : registry(registry_)
         , tx(tx_)
-        , rules(rules_)
+        , rules(std::move(rules_))
         , flags(flags_)
         , parentBatchId(parentBatchId_)
         , j(j_)
@@ -40,10 +42,10 @@ public:
     PreflightContext(
         ServiceRegistry& registry_,
         STTx const& tx_,
-        Rules const& rules_,
+        Rules rules_,
         ApplyFlags flags_,
         beast::Journal j_ = beast::Journal{beast::Journal::getNullSink()})
-        : registry(registry_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+        : registry(registry_), tx(tx_), rules(std::move(rules_)), flags(flags_), j(j_)
     {
         XRPL_ASSERT((flags_ & tapBATCH) == 0, "Batch apply flag should not be set");
     }
@@ -116,14 +118,13 @@ protected:
     AccountID const account_;
     XRPAmount preFeeBalance_{};  // Balance before fees.
 
+public:
+    virtual ~Transactor() = default;
     Transactor(Transactor const&) = delete;
     Transactor&
     operator=(Transactor const&) = delete;
-
-public:
-    virtual ~Transactor() = default;
-
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
+
     /** Process the transaction. */
     ApplyResult
     operator()();
@@ -139,6 +140,20 @@ public:
     {
         return ctx_.view();
     }
+
+    /** Check all invariants for the current transaction.
+     *
+     *  Runs transaction-specific invariants first (visitInvariantEntry +
+     *  finalizeInvariants), then protocol-level invariants.  Both layers
+     *  always run; the worst failure code is returned.
+     *
+     *  @param result  the tentative TER from transaction processing.
+     *  @param fee     the fee consumed by the transaction.
+     *
+     *  @return the final TER after all invariant checks.
+     */
+    [[nodiscard]] TER
+    checkInvariants(TER result, XRPAmount fee);
 
     /////////////////////////////////////////////////////
     /*
@@ -269,6 +284,52 @@ protected:
     virtual TER
     doApply() = 0;
 
+    /** Inspect a single ledger entry modified by this transaction.
+     *
+     *  Called once for every SLE created, modified, or deleted by the
+     *  transaction, before finalizeInvariants.  Implementations should
+     *  accumulate whatever state they need to verify transaction-specific
+     *  post-conditions.
+     *
+     *  @param isDelete  true if the entry was erased from the ledger.
+     *  @param before    the entry's state before the transaction (nullptr
+     *                   for newly created entries).
+     *  @param after     the entry's state as supplied by the apply logic
+     *                   for this transaction. For deletions, this is the
+     *                   SLE being erased and is not guaranteed to be null;
+     *                   callers must use isDelete rather than after == nullptr
+     *                   to detect deletions.
+     */
+    virtual void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) = 0;
+
+    /** Check transaction-specific post-conditions after all entries have
+     *  been visited.
+     *
+     *  Called once after every modified ledger entry has been passed to
+     *  visitInvariantEntry.  Returns true if all transaction-specific
+     *  invariants hold, or false to fail the transaction with
+     *  tecINVARIANT_FAILED.
+     *
+     *  @param tx    the transaction being applied.
+     *  @param result the tentative TER result so far.
+     *  @param fee   the fee consumed by the transaction.
+     *  @param view  read-only view of the ledger after the transaction.
+     *  @param j     journal for logging invariant failures.
+     *
+     *  @return true if all invariants pass; false otherwise.
+     */
+    [[nodiscard]] virtual bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) = 0;
+
     /** Compute the minimum fee required to process a transaction
         with a given baseFee based on the current server load.
 
@@ -380,6 +441,21 @@ private:
     */
     static NotTEC
     preflight2(PreflightContext const& ctx);
+
+    /** Check transaction-specific invariants only.
+     *
+     *  Walks every modified ledger entry via visitInvariantEntry, then
+     *  calls finalizeInvariants on the derived transactor.  Returns
+     *  tecINVARIANT_FAILED if any transaction invariant is violated.
+     *
+     *  @param result  the tentative TER from transaction processing.
+     *  @param fee     the fee consumed by the transaction.
+     *
+     *  @return the original result if all invariants pass, or
+     *          tecINVARIANT_FAILED otherwise.
+     */
+    [[nodiscard]] TER
+    checkTransactionInvariants(TER result, XRPAmount fee);
 };
 
 inline bool

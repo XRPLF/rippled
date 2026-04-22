@@ -38,7 +38,7 @@ public:
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
+                std::is_enum_v<KeyType> || std::is_integral_v<KeyType>,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
@@ -179,10 +179,10 @@ private:
     // One of the situations where a std::forward_list is useful.  We want to
     // store each Item in a place where its address won't change.  So a node-
     // based container is appropriate.  But we don't need searchability.
-    std::forward_list<Item> formats_;
+    std::forward_list<Item> formats_{};
 
-    boost::container::flat_map<std::string, Item const*> names_;
-    boost::container::flat_map<KeyType, Item const*> types_;
+    boost::container::flat_map<std::string, Item const*> names_{};
+    boost::container::flat_map<KeyType, Item const*> types_{};
     friend Derived;
 };
 

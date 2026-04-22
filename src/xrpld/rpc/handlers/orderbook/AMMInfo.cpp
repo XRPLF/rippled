@@ -160,7 +160,8 @@ doAMMInfo(RPC::JsonContext& context)
             asset2 = (*amm)[sfAsset2];
         }
 
-        return ValuesFromContextParams{accountID, *asset1, *asset2, amm};
+        return ValuesFromContextParams{
+            .accountID = accountID, .asset1 = *asset1, .asset2 = *asset2, .amm = amm};
     };
 
     auto const r = getValuesFromContextParams();

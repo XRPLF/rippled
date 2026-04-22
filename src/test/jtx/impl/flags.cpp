@@ -9,9 +9,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 fset(Account const& account, std::uint32_t on, std::uint32_t off)
@@ -62,6 +60,4 @@ nflags::operator()(Env& env) const
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

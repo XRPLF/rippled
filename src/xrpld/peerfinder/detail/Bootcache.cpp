@@ -16,8 +16,7 @@
 #include <cstdlib>
 #include <vector>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
     : m_store(store), m_clock(clock), m_journal(journal), m_whenUpdate(m_clock.now())
@@ -262,5 +261,4 @@ Bootcache::flagForUpdate()
     checkUpdate();
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

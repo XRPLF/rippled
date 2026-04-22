@@ -12,8 +12,7 @@
 #include <string>
 #include <vector>
 
-namespace beast {
-namespace rfc2616 {
+namespace beast::rfc2616 {
 
 namespace detail {
 
@@ -370,5 +369,4 @@ is_keep_alive(boost::beast::http::message<isRequest, Body, Fields> const& m)
         "close");
 }
 
-}  // namespace rfc2616
-}  // namespace beast
+}  // namespace beast::rfc2616

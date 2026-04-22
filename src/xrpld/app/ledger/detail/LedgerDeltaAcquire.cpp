@@ -42,7 +42,9 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           app,
           ledgerHash,
           LedgerReplayParameters::SUB_TASK_TIMEOUT,
-          {jtREPLAY_TASK, "LedReplDelta", LedgerReplayParameters::MAX_QUEUED_TASKS},
+          {.jobType = jtREPLAY_TASK,
+           .jobName = "LedReplDelta",
+           .jobLimit = LedgerReplayParameters::MAX_QUEUED_TASKS},
           app.getJournal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
     , ledgerSeq_(ledgerSeq)

@@ -7,6 +7,7 @@
 #include <xrpl/protocol/UintTypes.h>
 
 #include <cstdint>
+#include <utility>
 
 namespace xrpl {
 
@@ -24,8 +25,7 @@ owned_count_helper(
 
 }  // namespace detail
 
-namespace test {
-namespace jtx {
+namespace test::jtx {
 
 // Helper for aliases
 template <LedgerEntryType Type>
@@ -36,7 +36,7 @@ private:
     std::uint32_t value_;
 
 public:
-    owner_count(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    owner_count(Account account, std::uint32_t value) : account_(std::move(account)), value_(value)
     {
     }
 
@@ -55,7 +55,7 @@ private:
     std::uint32_t value_;
 
 public:
-    owners(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    owners(Account account, std::uint32_t value) : account_(std::move(account)), value_(value)
     {
     }
 
@@ -72,6 +72,6 @@ using offers = owner_count<ltOFFER>;
 /** Match the number of MPToken in the account's owner directory */
 using mptokens = owner_count<ltMPTOKEN>;
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl
