@@ -172,7 +172,7 @@ protected:
     }
 
 private:
-    std::string name_{beast::type_name<Derived>()};
+    std::string name_;
 
     // One of the situations where a std::forward_list is useful.  We want to
     // store each Item in a place where its address won't change.  So a node-
