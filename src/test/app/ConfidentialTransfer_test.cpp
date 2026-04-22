@@ -129,7 +129,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         return strHex(buf);
     }
 
-    // Helper struct to encapsulate common setup for ZKP integration tests.
+    // Helper struct to encapsulate common setup for integration tests.
     struct ConfidentialSendSetup
     {
         // Constants
@@ -10518,15 +10518,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Replay Tests
         testMutatePrivacy(features);
 
-        // Zero knowledge proof tests
-        testForgedEqualityProof(features);
-        testForgedRangeProof(features);
-        testNegativeValueMalleability(features);
-        testFiatShamirBinding(features);
-        testProofComponentReuse(features);
-        testSpecialWitnessValues(features);
-        testCrossStatementProofSubstitution(features);
-
         // Replay tests
         testProofContextBinding(features);
         testProofCiphertextBinding(features);
@@ -10556,6 +10547,15 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Delegation with Tickets Tests
         testInvalidDelegationWithTickets(features);
         testDelegationWithTickets(features);
+
+        // Zero knowledge proof tests
+        testForgedEqualityProof(features);
+        testForgedRangeProof(features);
+        testNegativeValueMalleability(features);
+        testFiatShamirBinding(features);
+        testProofComponentReuse(features);
+        testSpecialWitnessValues(features);
+        testCrossStatementProofSubstitution(features);
 
         // Ciphertext malleability tests
         testCiphertextMalleability(features);
