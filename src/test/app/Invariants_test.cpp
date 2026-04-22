@@ -47,6 +47,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/invariants/VaultInvariant.h>
 
 #include <algorithm>
@@ -60,6 +62,16 @@
 #include <string>
 #include <utility>
 #include <vector>
+
+namespace xrpl {
+
+// Test-only factory — not part of the public API.
+// The returned Transactor holds a raw reference to ctx; the caller must ensure
+// the ApplyContext outlives the Transactor. Implemented in applySteps.cpp
+std::unique_ptr<Transactor>
+makeTransactor(ApplyContext& ctx);
+
+}  // namespace xrpl
 
 namespace xrpl::test {
 
@@ -170,6 +182,10 @@ class Invariants_test : public beast::unit_test::suite
 
         BEAST_EXPECT(precheck(A1, A2, ac));
 
+        auto transactor = makeTransactor(ac);
+        if (!BEAST_EXPECT(transactor))
+            return;
+
         // invoke check twice to cover tec and tef cases
         if (!BEAST_EXPECT(ters.size() == 2))
             return;
@@ -177,8 +193,10 @@ class Invariants_test : public beast::unit_test::suite
         TER terActual = tesSUCCESS;
         for (TER const& terExpect : ters)
         {
-            terActual = ac.checkInvariants(terActual, fee);
-            BEAST_EXPECTS(terExpect == terActual, std::to_string(TERtoInt(terActual)));
+            terActual = transactor->checkInvariants(terActual, fee);
+            BEAST_EXPECTS(
+                terExpect == terActual,
+                "expected: " + transToken(terExpect) + " got: " + transToken(terActual));
             auto const messages = sink.messages().str();
 
             if (!isTesSuccess(terActual))
