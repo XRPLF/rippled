@@ -223,7 +223,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 sendAmount,
                 recipients,
                 blindingFactor,
-                nRecipients,
                 ctxHash,
                 {.pedersenCommitment = amountCommitment,
                  .amt = sendAmount,
@@ -9197,7 +9196,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Attack: Generate valid proof, then swap the amount commitment
         // with a forged one committing to a different value.
         //
-        // Why it fails: The Pedersen linkage proof binds the commitment to
+        // Why it fails: The compact sigma proof binds the commitment to
         // the proof. When the verifier recomputes the challenge using the
         // forged commitment, it gets a different challenge than what the
         // prover used, causing the response scalars to fail verification.
@@ -9685,7 +9684,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Variant A: Swap proof type (cross-statement substitution)
         // -----------------------------------------------------------------
-        // Attack: Generate a valid convertBack proof (Pedersen linkage +
+        // Attack: Generate a valid convertBack proof (compact sigma +
         // single bulletproof) and attempt to use it as the ZK proof in a
         // ConfidentialMPTSend transaction.
         //
@@ -9766,7 +9765,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 sendAmount,
                 setup.recipients,
                 setup.blindingFactor,
-                setup.nRecipients,
                 wrongCtxHash,
                 {.pedersenCommitment = setup.amountCommitment,
                  .amt = sendAmount,
@@ -9881,7 +9879,6 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 sendAmount,
                 setup.recipients,
                 setup.blindingFactor,
-                setup.nRecipients,
                 ctxHash,
                 {.pedersenCommitment = setup.amountCommitment,
                  .amt = sendAmount,
