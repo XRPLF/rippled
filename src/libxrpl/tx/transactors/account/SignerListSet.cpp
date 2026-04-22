@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -14,6 +15,7 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -255,6 +257,9 @@ SignerListSet::validateQuorumAndSignerEntries(
     }
 
     // Make sure there are no duplicate signers.
+    // SignerEntry only defines operator< and operator==, not the full
+    // std::totally_ordered set required by std::ranges::less, so the
+    // ranges version does not compile. NOLINTNEXTLINE(modernize-use-ranges)
     XRPL_ASSERT(
         std::is_sorted(signers.begin(), signers.end()),
         "xrpl::SignerListSet::validateQuorumAndSignerEntries : sorted "
@@ -401,6 +406,25 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
 
     // Assign the SignerEntries.
     ledgerEntry->setFieldArray(sfSignerEntries, toLedger);
+}
+
+void
+SignerListSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+SignerListSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl
