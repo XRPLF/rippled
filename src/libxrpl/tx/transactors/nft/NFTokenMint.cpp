@@ -25,7 +25,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
-#include <iterator>
+#include <iterator>  // IWYU pragma: keep
 #include <memory>
 #include <utility>
 
