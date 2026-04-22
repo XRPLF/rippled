@@ -165,7 +165,7 @@ public:
     newSLE()
         requires isWritable
     {
-        XRPL_ASSERT(!canModify(), "xrpl::SLEBase::newSLE : sle_ is not null");
+        XRPL_ASSERT(!canModify(), "xrpl::SLEBase::newSLE : no existing SLE");
         sle_ = std::make_shared<SLE>(key_);
     }
 
