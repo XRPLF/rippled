@@ -275,7 +275,7 @@ If you have already installed the pre-commit hooks (see above), you can run clan
 TIDY=1 pre-commit run clang-tidy
 ```
 
-This runs the same hook that CI uses, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
+This runs clang-tidy locally with the same configuration/flags as CI, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
 
 You can also have clang-tidy run automatically on every `git commit` by setting `TIDY=1` in your shell environment:
 
