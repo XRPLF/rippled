@@ -1160,8 +1160,8 @@ Transactor::processPersistentChanges(TER& result, XRPAmount& fee, bool& applied)
             {
                 XRPL_ASSERT(
                     before && after,
-                    "xrpl::Transactor::operator()::visit : non-null SLE "
-                    "inputs");
+                    "xrpl::Transactor::processPersistentChanges : non-null "
+                    "SLE inputs");
                 if (before && after)
                 {
                     auto const type = before->getType();
