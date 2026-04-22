@@ -110,6 +110,24 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     // about the same amount of work, if not more.
     NumberRoundModeGuard mg(
         tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
+
+    static_assert(
+        loanMaximumPaymentsPerTransaction % loanPaymentsPerFeeIncrement == 0);
+    std::int64_t constexpr maxFeeIncrements =
+        loanMaximumPaymentsPerTransaction / loanPaymentsPerFeeIncrement;
+
+    if (view.rules().enabled(fixSecurity3_1_3) &&
+        amount >= regularPayment * loanMaximumPaymentsPerTransaction)
+    {
+        // The payment handler will never process more than
+        // loanMaximumPaymentsPerTransaction payments (including overpayments),
+        // and one fee increment is charged for every
+        // loanPaymentsPerFeeIncrement, so don't charge more than
+        // loanMaximumPaymentsPerTransaction / loanPaymentsPerFeeIncrement fee
+        // increments.
+        return maxFeeIncrements * normalCost;
+    }
+
     // Estimate how many payments will be made
     Number const numPaymentEstimate =
         static_cast<std::int64_t>(amount / regularPayment);
@@ -120,6 +138,11 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         std::int64_t(1),
         static_cast<std::int64_t>(
             numPaymentEstimate / loanPaymentsPerFeeIncrement));
+    XRPL_ASSERT(
+        !view.rules().enabled(fixSecurity3_1_3) ||
+            feeIncrements <= maxFeeIncrements,
+        "ripple::LoanPay::calculateBaseFee : number of fee increments is in "
+        "range");
 
     return feeIncrements * normalCost;
 }
