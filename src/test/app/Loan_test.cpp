@@ -5169,7 +5169,6 @@ protected:
         auto const createJson = env.json(
             set(borrower, broker.brokerID, principalRequest),
             fee(loanSetFee),
-            seq(none),
             json(sfCounterpartySignature, Json::objectValue),
             closePaymentFee(0),
             gracePeriod(60),
@@ -5190,7 +5189,7 @@ protected:
         auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
         auto const keylet = keylet::loan(broker.brokerID, loanSequence);
 
-        env(env.jt(createJson), sig(sfCounterpartySignature, lender));
+        env(createJson, sig(sfCounterpartySignature, lender));
         env.close();
 
         auto const roundedPayment = [&]() {
