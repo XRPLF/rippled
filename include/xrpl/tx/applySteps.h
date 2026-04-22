@@ -202,7 +202,7 @@ public:
 
     /// Success flag - whether the transaction is likely to
     /// claim a fee
-    bool const likelyToClaimFee;
+    bool const likelyToClaimFee{};
 
     /// Constructor
     template <class Context>

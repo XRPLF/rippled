@@ -24,9 +24,7 @@ public:
     using reference = std::
         conditional_t<IsConst, typename Container::const_reference, typename Container::reference>;
 
-    LockFreeStackIterator() : m_node()
-    {
-    }
+    LockFreeStackIterator() = default;
 
     LockFreeStackIterator(NodePtr node) : m_node(node)
     {
@@ -79,7 +77,7 @@ public:
     }
 
 private:
-    NodePtr m_node;
+    NodePtr m_node{};
 };
 
 //------------------------------------------------------------------------------
