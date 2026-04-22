@@ -124,6 +124,12 @@ public:
 
     virtual std::int64_t
     setGas(std::int64_t gas) = 0;
+
+    virtual std::int64_t
+    getTransferLimit() = 0;
+
+    virtual std::int64_t
+    setTransferLimit(std::int64_t transferLimit) = 0;
 };
 using RTOptRef = std::optional<std::reference_wrapper<WasmRuntimeWrapper>>;
 

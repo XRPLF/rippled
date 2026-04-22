@@ -41,6 +41,8 @@ namespace xrpl {
 
 using SFieldCRef = std::reference_wrapper<SField const>;
 
+constexpr int64_t unalignedGas = 1000;
+
 static inline Expected<std::int64_t, HostFunctionError>
 checkGas(WasmRuntimeWrapper& rt, int64_t delta)
 {
@@ -81,6 +83,21 @@ checkGas(WasmRuntimeWrapper& rt, WasmImportFunc const& impFunc)
     return *g;
 }
 
+static inline Expected<std::int64_t, HostFunctionError>
+checkTransfer(WasmRuntimeWrapper& rt, int64_t delta)
+{
+    auto const transLimit = rt.getTransferLimit();
+    int64_t const x = transLimit >= delta ? transLimit - delta : 0;
+
+    if (rt.setTransferLimit(x) < 0)
+        return Unexpected(HostFunctionError::Internal);  // LCOV_EXCL_LINE
+
+    if (transLimit < delta)
+        return Unexpected(HostFunctionError::OutOfTransferLimit);
+
+    return x;
+}
+
 static Expected<std::tuple<HostFunctions&, WasmImportFunc const&>, wasm_trap_t*>
 mainCheck(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
@@ -112,6 +129,14 @@ mainCheck(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 
     if (auto g = checkGas(rt, impFunc); !g)
         return Unexpected(g.error());  // LCOV_EXCL_LINE
+
+    auto const transLimit = rt.getTransferLimit();
+    if (transLimit <= 0)
+    {
+        wasm_trap_t* trap = reinterpret_cast<wasm_trap_t*>(        // NOLINT
+            WasmEngine::instance().newTrap("no transfer limit"));  // LCOV_EXCL_LINE
+        return Unexpected(trap);                                   // LCOV_EXCL_LINE
+    }
 
     return std::tie(hf, impFunc);
 }
@@ -145,6 +170,9 @@ setData(
         return hfErrorToInt(HostFunctionError::PointerOutOfBounds);
     if (srcSize > dstSize)
         return hfErrorToInt(HostFunctionError::BufferTooSmall);
+
+    if (auto t = checkTransfer(runtime, srcSize); !t)
+        return hfErrorToInt(t.error());
 
     memcpy(memory.p + dst, src, srcSize);
 
@@ -255,6 +283,9 @@ getDataUInt256(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_
     if (slice->size() != uint256::size())
         return Unexpected(HostFunctionError::InvalidParams);
 
+    if (auto t = checkTransfer(runtime, uint256::size()); !t)
+        return Unexpected(t.error());
+
     return uint256::fromVoid(slice->data());
 }
 
@@ -267,6 +298,9 @@ getDataAccountID(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int3
 
     if (slice->size() != AccountID::size())
         return Unexpected(HostFunctionError::InvalidParams);
+
+    if (auto t = checkTransfer(runtime, AccountID::size()); !t)
+        return Unexpected(t.error());
 
     return AccountID::fromVoid(slice->data());
 }
@@ -281,6 +315,9 @@ getDataCurrency(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32
     if (slice->size() != Currency::size())
         return Unexpected(HostFunctionError::InvalidParams);
 
+    if (auto t = checkTransfer(runtime, Currency::size()); !t)
+        return Unexpected(t.error());
+
     return Currency::fromVoid(slice->data());
 }
 
@@ -293,12 +330,18 @@ getDataAsset(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t&
 
     if (slice->size() == MPTID::size())
     {
+        if (auto t = checkTransfer(runtime, slice->size()); !t)
+            return Unexpected(t.error());
+
         auto const mptid = MPTID::fromVoid(slice->data());
         return Asset{mptid};
     }
 
     if (slice->size() == Currency::size())
     {
+        if (auto t = checkTransfer(runtime, slice->size()); !t)
+            return Unexpected(t.error());
+
         auto const currency = Currency::fromVoid(slice->data());
         auto const issue = Issue{currency, xrpAccount()};
         if (!issue.native())
@@ -309,6 +352,9 @@ getDataAsset(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_t&
 
     if (slice->size() == (Currency::size() + AccountID::size()))
     {
+        if (auto t = checkTransfer(runtime, slice->size()); !t)
+            return Unexpected(t.error());
+
         auto const issue = Issue(
             Currency::fromVoid(slice->data()),
             AccountID::fromVoid(slice->data() + Currency::size()));
@@ -348,6 +394,12 @@ getDataLocator(WasmRuntimeWrapper& runtime, wasm_val_vec_t const* params, int32_
 
     if ((p & (alignof(int32_t) - 1)) != 0u)
     {  // unaligned
+
+        // Use gas and transfer limit for copying
+        if (auto g = checkGas(runtime, unalignedGas); !g)
+            return Unexpected(g.error());
+        if (auto t = checkTransfer(runtime, slice->size()); !t)
+            return Unexpected(t.error());
 
         std::vector<int32_t> locBuf(locSize);
         memcpy(&locBuf[0], slice->data(), slice->size());
@@ -481,6 +533,7 @@ returnResult(
 }
 
 //----------------------------------------------------------------------------------------------------------------------
+
 wasm_trap_t*
 HostFuncMain_wrap(WASM_CB_PARAMS_LIST)
 {
@@ -1677,6 +1730,7 @@ class MockWasmRuntimeWrapper : public WasmRuntimeWrapper
     Wmem mem_;
 
     std::int64_t gas_ = 1'000'000;
+    std::int64_t transferLimit_ = kWasmTransferLimit;
 
 public:
     MockWasmRuntimeWrapper(Wmem memory) : mem_(memory)
@@ -1701,6 +1755,19 @@ public:
     {
         gas_ = gas;
         return gas_;
+    }
+
+    std::int64_t
+    getTransferLimit() override
+    {
+        return transferLimit_;
+    }
+
+    std::int64_t
+    setTransferLimit(std::int64_t x) override
+    {
+        transferLimit_ = x;
+        return transferLimit_;
     }
 };
 

@@ -166,8 +166,11 @@ class VirtualRuntime : public WasmRuntimeWrapper
 {
     Bytes buffer_;
     std::int64_t gas_ = 1'000'000;
+    std::int64_t transferLimit_ = kWasmTransferLimit;
 
 public:
+    static constexpr std::int64_t transferDiff = 1024;
+
     VirtualRuntime() : buffer_(1024 * 1024)
     {
     }
@@ -201,6 +204,31 @@ public:
         }
 
         return gas_;
+    }
+
+    std::int64_t
+    getTransferLimit() override
+    {
+        transferLimit_ -= transferDiff;
+        return transferLimit_;
+    }
+
+    std::int64_t
+    setTransferLimit(std::int64_t x) override
+    {
+        if (x == -2)
+            return -1;
+
+        if (x < 0)
+        {
+            transferLimit_ = std::numeric_limits<decltype(transferLimit_)>::max();
+        }
+        else
+        {
+            transferLimit_ = x;
+        }
+
+        return transferLimit_;
     }
 
     void
@@ -6062,6 +6090,117 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
     }
 
     void
+    testTransferLimit()
+    {
+        testcase("transferLimit");
+        using namespace test::jtx;
+
+        Env env{*this};
+        OpenView ov{*env.current()};
+        ApplyContext ac = createApplyContext(env, ov);
+        auto const dummyEscrow = keylet::escrow(env.master, env.seq(env.master));
+        VirtualRuntime vrt;
+        WasmHostFunctionsImpl hfs(ac, dummyEscrow);
+
+        auto import = xrpl::createWasmImport(hfs);
+        hfs.setRT(vrt);
+
+        // Test 1: Test setData() - copying FROM host TO wasm
+        // Multiple calls to getLedgerSqn() which uses setData() to write result to WASM memory
+        vrt.setTransferLimit(kWasmTransferLimit + 1024);
+
+        // hfs.getLedgerSqn();
+        for (int i = 0; i < (kWasmTransferLimit / vrt.transferDiff / 2) - 1; ++i)
+        {
+            WasmValVec params(2), result(1);
+
+            auto* trap = ww(&import.at("get_ledger_sqn"), params, result, 0, sizeof(std::uint32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == sizeof(std::uint32_t)) &&
+                BEAST_EXPECT(vrt.getUint32(params, 0) == env.current()->header().seq);
+        }
+
+        // Next call should hit OutOfTransferLimit
+        {
+            WasmValVec params(2), result(1);
+            auto* trap = ww(&import.at("get_ledger_sqn"), params, result, 0, sizeof(std::uint32_t));
+
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == hfErrorToInt(HostFunctionError::OutOfTransferLimit));
+        }
+
+        // After limit exhausted, next call should trap with "no transfer limit"
+        {
+            WasmValVec params(2), result(1);
+            wasm_byte_vec_t errorMessage WASM_EMPTY_VEC;
+
+            auto* trap = ww(&import.at("get_ledger_sqn"), params, result, 0, sizeof(std::uint32_t));
+
+            if (BEAST_EXPECT(trap))
+            {
+                wasm_trap_message(trap, &errorMessage);
+                auto const s = std::string_view(errorMessage.data, errorMessage.size - 1);
+                BEAST_EXPECTS(s == "Error { kind: Message(\"no transfer limit\") }", s);
+            }
+        }
+
+        // Reset transfer limit to a small value that can accommodate overhead but not AccountID
+        // copy
+        vrt.setTransferLimit(vrt.transferDiff + 10);
+
+        Account const alice("alice");
+        auto const aliceID = env.master.id();
+        vrt.setBytes(0, aliceID.data(), AccountID::size());
+
+        // This should fail because getDataAccountID() needs to copy AccountID (20 bytes)
+        // After getTransferLimit() overhead (1024), we only have 10 bytes left, not enough for 20
+        {
+            WasmValVec params(4), result(1);
+            auto* trap =
+                ww(&import.at("account_keylet"), params, result, 0, AccountID::size(), 100, 32);
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(
+                    result[0].of.i32 == hfErrorToInt(HostFunctionError::OutOfTransferLimit));
+        }
+
+        // Verify that reading slices (without copying) does NOT consume transfer limit
+        vrt.setTransferLimit(vrt.transferDiff + 10);
+
+        // trace() uses getDataString() -> getDataSlice() which does NOT check transfer limit
+        std::string testMsg = "This message is longer than 10 bytes to prove slices don't count";
+        vrt.setBytes(0, testMsg.data(), testMsg.size());
+        vrt.setBytes(100, (uint8_t const*)"dummy", 5);  // Empty data slice for trace
+        {
+            WasmValVec params(5), result(1);
+            // trace(msg_ptr, msg_len, data_ptr, data_len, asHex)
+            auto* trap = ww(&import.at("trace"), params, result, 0, testMsg.size(), 100, 5, 0);
+
+            // Should succeed even though message is >10 bytes, because trace only uses slices
+            // (no transfer limit check in getDataSlice)
+            BEAST_EXPECT(!trap) && BEAST_EXPECT(result[0].kind == WASM_I32) &&
+                BEAST_EXPECT(result[0].of.i32 == 0);
+        }
+
+        // However, setData should trap when transfer limit is exhausted
+        // After trace consumed overhead (1024 bytes), we have 10 - 1024 = negative limit left
+        {
+            WasmValVec params(2), result(1);
+            wasm_byte_vec_t errorMessage WASM_EMPTY_VEC;
+            auto* trap = ww(&import.at("get_parent_ledger_hash"), params, result, 500, 32);
+
+            // This should trap because the transfer limit went negative
+            if (BEAST_EXPECT(trap))
+            {
+                wasm_trap_message(trap, &errorMessage);
+                auto const s = std::string_view(errorMessage.data, errorMessage.size - 1);
+                BEAST_EXPECTS(s == "Error { kind: Message(\"no transfer limit\") }", s);
+            }
+        }
+    }
+
+    void
     run() override
     {
         testGetLedgerSqn();
@@ -6099,6 +6238,8 @@ struct HostFuncImpl_test : public beast::unit_test::Suite
         testFloats();
 
         testVectorIndexes();
+
+        testTransferLimit();
     }
 };
 

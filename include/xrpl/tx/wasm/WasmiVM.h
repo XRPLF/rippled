@@ -147,6 +147,7 @@ class InstanceWrapper
     mutable int memIdx_ = -1;
     InstancePtr instance_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
+    std::int64_t transferLimit_ = kWasmTransferLimit;
 
 private:
     static InstancePtr
@@ -194,6 +195,12 @@ public:
 
     std::int64_t
     setGas(std::int64_t) const;
+
+    std::int64_t
+    getTransferLimit() const;
+
+    std::int64_t
+    setTransferLimit(std::int64_t);
 };
 
 class ModuleWrapper
