@@ -31,7 +31,7 @@ ConfidentialMPTClawback::preflight(PreflightContext const& ctx)
         return temBAD_AMOUNT;
 
     // Verify proof length
-    if (ctx.tx[sfZKProof].length() != ecEqualityProofLength)
+    if (ctx.tx[sfZKProof].length() != ecClawbackProofLength)
         return temMALFORMED;
 
     return tesSUCCESS;
@@ -86,8 +86,10 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // Sanity check: claw amount can not exceed confidential outstanding amount
+    // or total outstanding amount (prevents underflow in doApply)
     auto const amount = ctx.tx[sfMPTAmount];
-    if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
+    if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) ||
+        amount > (*sleIssuance)[sfOutstandingAmount])
         return tecINSUFFICIENT_FUNDS;
 
     auto const contextHash =
@@ -95,7 +97,7 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Verify the revealed confidential amount by the issuer matches the exact
     // confidential balance of the holder.
-    return verifyClawbackEqualityProof(
+    return verifyClawbackProof(
         amount,
         ctx.tx[sfZKProof],
         (*sleIssuance)[sfIssuerEncryptionKey],

@@ -4,6 +4,8 @@
 #include <openssl/rand.h>
 #include <utility/mpt_utility.h>
 
+#include <secp256k1_mpt.h>
+
 namespace xrpl {
 
 /**
@@ -277,7 +279,6 @@ verifyRevealedAmount(
 
     auto const holderP = toParticipant(holder);
     auto const issuerP = toParticipant(issuer);
-
     mpt_confidential_participant auditorP;
     mpt_confidential_participant const* auditorPtr = nullptr;
     if (auditor)
@@ -337,7 +338,7 @@ verifySchnorrProof(Slice const& pubKeySlice, Slice const& proofSlice, uint256 co
 }
 
 TER
-verifyClawbackEqualityProof(
+verifyClawbackProof(
     uint64_t const amount,
     Slice const& proof,
     Slice const& pubKeySlice,
@@ -345,7 +346,7 @@ verifyClawbackEqualityProof(
     uint256 const& contextHash)
 {
     if (ciphertext.size() != ecGamalEncryptedTotalLength || pubKeySlice.size() != ecPubKeyLength ||
-        proof.size() != ecEqualityProofLength)
+        proof.size() != ecClawbackProofLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     if (mpt_verify_clawback_proof(
@@ -368,10 +369,7 @@ verifySendProof(
     uint256 const& contextHash)
 {
     auto const recipientCount = getConfidentialRecipientCount(auditor.has_value());
-    auto const expectedProofSize = getEqualityProofSize(recipientCount) +
-        2 * ecPedersenProofLength + ecDoubleBulletproofLength;
-
-    if (proof.size() != expectedProofSize || sender.publicKey.size() != ecPubKeyLength ||
+    if (proof.size() != ecSendProofLength || sender.publicKey.size() != ecPubKeyLength ||
         sender.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
         destination.publicKey.size() != ecPubKeyLength ||
         destination.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
@@ -403,7 +401,6 @@ verifySendProof(
 
     if (mpt_verify_send_proof(
             proof.data(),
-            proof.size(),
             participants.data(),
             static_cast<uint8_t>(recipientCount),
             spendingBalance.data(),
@@ -424,8 +421,7 @@ verifyConvertBackProof(
     uint64_t amount,
     uint256 const& contextHash)
 {
-    if (proof.size() != ecPedersenProofLength + ecSingleBulletproofLength ||
-        pubKeySlice.size() != ecPubKeyLength ||
+    if (proof.size() != ecConvertBackProofLength || pubKeySlice.size() != ecPubKeyLength ||
         spendingBalance.size() != ecGamalEncryptedTotalLength ||
         balanceCommitment.size() != ecPedersenCommitmentLength)
         return tecINTERNAL;  // LCOV_EXCL_LINE
