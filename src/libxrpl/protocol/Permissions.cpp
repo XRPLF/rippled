@@ -293,7 +293,6 @@ Permission::checkGranularSandbox(
                 return it != granularTemplates_.end() &&
                     it->second.getIndex(field.getFName()) != -1;
             }))
-
             return false;
     }
 

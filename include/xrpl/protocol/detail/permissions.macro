@@ -46,28 +46,22 @@ GRANULAR_PERMISSION(AccountTickSizeSet, ttACCOUNT_SET, 65544, tfUniversal,
     ({{sfTickSize, soeOPTIONAL}}))
 
 /** Grants the ability to mint payment (sending account is the issuer). Cross-currency payments are disallowed. */
-GRANULAR_PERMISSION(PaymentMint, ttPAYMENT, 65545,
-    tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect,
+GRANULAR_PERMISSION(PaymentMint, ttPAYMENT, 65545, tfUniversal,
     ({{sfDestination, soeREQUIRED},
       {sfAmount, soeREQUIRED},
       {sfSendMax, soeOPTIONAL},
       {sfInvoiceID, soeOPTIONAL},
       {sfDestinationTag, soeOPTIONAL},
-      {sfDeliverMin, soeOPTIONAL},
-      {sfCredentialIDs, soeOPTIONAL},
-      {sfDomainID, soeOPTIONAL}}))
+      {sfCredentialIDs, soeOPTIONAL}}))
 
 /** Grants the ability to burn payment (destination account is the issuer). Cross-currency payments are disallowed. */
-GRANULAR_PERMISSION(PaymentBurn, ttPAYMENT, 65546,
-    tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect,
+GRANULAR_PERMISSION(PaymentBurn, ttPAYMENT, 65546, tfUniversal,
     ({{sfDestination, soeREQUIRED},
       {sfAmount, soeREQUIRED},
       {sfSendMax, soeOPTIONAL},
       {sfInvoiceID, soeOPTIONAL},
       {sfDestinationTag, soeOPTIONAL},
-      {sfDeliverMin, soeOPTIONAL},
-      {sfCredentialIDs, soeOPTIONAL},
-      {sfDomainID, soeOPTIONAL}}))
+      {sfCredentialIDs, soeOPTIONAL}}))
 
 /** Grants the ability to lock an MPToken. */
 GRANULAR_PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547, tfUniversal | tfMPTLock,

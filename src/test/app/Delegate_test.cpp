@@ -6,7 +6,9 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/delivermin.h>
 #include <test/jtx/did.h>
+#include <test/jtx/domain.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
@@ -941,6 +943,45 @@ class Delegate_test : public beast::unit_test::suite
 
             env(pay(alice, gw, USD(30)), sendmax(USD(30)), delegate::as(bob));
             env.require(balance(alice, USD(20)));
+        }
+
+        // Test invalid fields or flags not allowed in granular permission template
+        {
+            Env env(*this, features);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gw"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.trust(USD(200), alice);
+            env.close();
+
+            env(delegate::set(gw, bob, {"PaymentMint"}));
+            env(delegate::set(alice, bob, {"PaymentBurn"}));
+            env.close();
+
+            // sfDeliverMin (with tfPartialPayment) is not in the PaymentMint
+            // or PaymentBurn template.
+            env(pay(gw, alice, USD(100)),
+                deliver_min(USD(50)),
+                txflags(tfPartialPayment),
+                delegate::as(bob),
+                ter(terNO_DELEGATE_PERMISSION));
+            env(pay(alice, gw, USD(50)),
+                deliver_min(USD(25)),
+                txflags(tfPartialPayment),
+                delegate::as(bob),
+                ter(terNO_DELEGATE_PERMISSION));
+
+            // sfDomainID is not in the PaymentMint or PaymentBurn template.
+            env(pay(gw, alice, USD(100)),
+                domain(uint256{1}),
+                delegate::as(bob),
+                ter(terNO_DELEGATE_PERMISSION));
+            env(pay(alice, gw, USD(50)),
+                domain(uint256{1}),
+                delegate::as(bob),
+                ter(terNO_DELEGATE_PERMISSION));
         }
 
         // Delegate account holds no granular permissions for the tx type:
