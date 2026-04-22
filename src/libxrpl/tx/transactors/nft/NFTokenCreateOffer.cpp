@@ -1,15 +1,20 @@
 #include <xrpl/tx/transactors/nft/NFTokenCreateOffer.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -84,6 +89,25 @@ NFTokenCreateOffer::doApply()
         preFeeBalance_,
         j_,
         ctx_.tx.getFlags());
+}
+
+void
+NFTokenCreateOffer::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+NFTokenCreateOffer::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl
