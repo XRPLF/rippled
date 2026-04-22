@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
@@ -12,9 +13,12 @@
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
@@ -51,18 +55,36 @@ struct MPTMutabilityFlags
     bool isCannotMutate = false;  // if true, cannot mutate by default.
 };
 
-static constexpr std::array<MPTMutabilityFlags, 7> mptMutabilityFlags = {
-    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lsmfMPTCanMutateCanLock, lsfMPTCanLock},
-     {tmfMPTSetRequireAuth, tmfMPTClearRequireAuth, lsmfMPTCanMutateRequireAuth, lsfMPTRequireAuth},
-     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lsmfMPTCanMutateCanEscrow, lsfMPTCanEscrow},
-     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade, lsfMPTCanTrade},
-     {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lsmfMPTCanMutateCanTransfer, lsfMPTCanTransfer},
-     {tmfMPTSetCanClawback, tmfMPTClearCanClawback, lsmfMPTCanMutateCanClawback, lsfMPTCanClawback},
-     {tmfMPTSetCanConfidentialAmount,
-      tmfMPTClearCanConfidentialAmount,
-      lsmfMPTCannotMutateCanConfidentialAmount,
-      lsfMPTCanConfidentialAmount,
-      true}}};
+static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
+    {{.setFlag = tmfMPTSetCanLock,
+      .clearFlag = tmfMPTClearCanLock,
+      .canMutateFlag = lsmfMPTCanMutateCanLock,
+      .targetFlag = lsfMPTCanLock},
+     {.setFlag = tmfMPTSetRequireAuth,
+      .clearFlag = tmfMPTClearRequireAuth,
+      .canMutateFlag = lsmfMPTCanMutateRequireAuth,
+      .targetFlag = lsfMPTRequireAuth},
+     {.setFlag = tmfMPTSetCanEscrow,
+      .clearFlag = tmfMPTClearCanEscrow,
+      .canMutateFlag = lsmfMPTCanMutateCanEscrow,
+      .targetFlag = lsfMPTCanEscrow},
+     {.setFlag = tmfMPTSetCanTrade,
+      .clearFlag = tmfMPTClearCanTrade,
+      .canMutateFlag = lsmfMPTCanMutateCanTrade,
+      .targetFlag = lsfMPTCanTrade},
+     {.setFlag = tmfMPTSetCanTransfer,
+      .clearFlag = tmfMPTClearCanTransfer,
+      .canMutateFlag = lsmfMPTCanMutateCanTransfer,
+      .targetFlag = lsfMPTCanTransfer},
+     {.setFlag = tmfMPTSetCanClawback,
+      .clearFlag = tmfMPTClearCanClawback,
+      .canMutateFlag = lsmfMPTCanMutateCanClawback,
+      .targetFlag = lsfMPTCanClawback},
+     {.setFlag = tmfMPTSetCanConfidentialAmount,
+      .clearFlag = tmfMPTClearCanConfidentialAmount,
+      .canMutateFlag = lsmfMPTCanMutateCanConfidentialAmount,
+      .targetFlag = lsfMPTCanConfidentialAmount,
+      .isCannotMutate = true}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -135,12 +157,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
-            if (std::any_of(
-                    mptMutabilityFlags.begin(),
-                    mptMutabilityFlags.end(),
-                    [mutableFlags](auto const& f) {
-                        return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
-                    }))
+            if (std::ranges::any_of(mptMutabilityFlags, [mutableFlags](auto const& f) {
+                    return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
+                }))
                 return temINVALID_FLAG;
 
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
@@ -266,14 +285,11 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
     if (mutableFlags)
     {
-        if (std::any_of(
-                mptMutabilityFlags.begin(),
-                mptMutabilityFlags.end(),
-                [mutableFlags, &isMutableFlag](auto const& f) {
-                    bool const canMutate = f.isCannotMutate ? isMutableFlag(f.mutabilityFlag)
-                                                            : !isMutableFlag(f.mutabilityFlag);
-                    return canMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
-                }))
+        if (std::ranges::any_of(mptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
+                bool const canMutate = f.isCannotMutate ? isMutableFlag(f.mutabilityFlag)
+                                                        : !isMutableFlag(f.mutabilityFlag);
+                return canMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
+            }))
             return tecNO_PERMISSION;
 
         // Clearing lsfMPTRequireAuth is invalid when the issuance already has
@@ -481,6 +497,25 @@ MPTokenIssuanceSet::doApply()
     view().update(sle);
 
     return tesSUCCESS;
+}
+
+void
+MPTokenIssuanceSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+MPTokenIssuanceSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

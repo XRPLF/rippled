@@ -8,9 +8,7 @@
 #include <limits>
 #include <set>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 void
 Sim::run(int ledgers)
@@ -46,7 +44,7 @@ Sim::synchronized(PeerGroup const& g)
     if (g.size() < 1)
         return true;
     Peer const* ref = g[0];
-    return std::all_of(g.begin(), g.end(), [&ref](Peer const* p) {
+    return std::ranges::all_of(g, [&ref](Peer const* p) {
         return p->lastClosedLedger.id() == ref->lastClosedLedger.id() &&
             p->fullyValidatedLedger.id() == ref->fullyValidatedLedger.id();
     });
@@ -69,6 +67,4 @@ Sim::branches(PeerGroup const& g) const
     return oracle.branches(ledgers);
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

@@ -49,8 +49,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 bool
 getNoRippleFlag(
@@ -1324,5 +1323,4 @@ struct Flow_manual_test : public Flow_test
 BEAST_DEFINE_TESTSUITE_PRIO(Flow, app, xrpl, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Flow_manual, app, xrpl, 4);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

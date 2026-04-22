@@ -122,7 +122,7 @@ ApplyContext::checkInvariantsHelper(
         // call each check's finalizer to see that it passes
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {
-            JLOG(journal.fatal()) << "Transaction has failed one or more invariants: "
+            JLOG(journal.fatal()) << "Transaction has failed one or more global invariants: "
                                   << to_string(tx.getJson(JsonOptions::none));
 
             return failInvariantCheck(result);
@@ -130,7 +130,7 @@ ApplyContext::checkInvariantsHelper(
     }
     catch (std::exception const& ex)
     {
-        JLOG(journal.fatal()) << "Transaction caused an exception in an invariant"
+        JLOG(journal.fatal()) << "Transaction caused an exception in a global invariant"
                               << ", ex: " << ex.what()
                               << ", tx: " << to_string(tx.getJson(JsonOptions::none));
 
@@ -148,7 +148,7 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
         "xrpl::ApplyContext::checkInvariants : is tesSUCCESS or tecCLAIM");
 
     return checkInvariantsHelper(
-        result, fee, std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
+        result, fee, std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{});
 }
 
 }  // namespace xrpl

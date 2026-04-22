@@ -5,9 +5,7 @@
 
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 sendmax::operator()(Env& env, JTx& jt) const
@@ -15,6 +13,4 @@ sendmax::operator()(Env& env, JTx& jt) const
     jt.jv[jss::SendMax] = amount_.getJson(JsonOptions::none);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

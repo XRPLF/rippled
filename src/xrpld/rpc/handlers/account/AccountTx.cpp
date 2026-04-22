@@ -73,7 +73,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
             ? params[jss::ledger_index_max].asUInt()
             : UINT32_MAX;
 
-        return LedgerRange{min, max};
+        return LedgerRange{.min = min, .max = max};
     }
     if (params.isMember(jss::ledger_hash))
     {
@@ -205,7 +205,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
         if (status)
             return status;
     }
-    return LedgerRange{uLedgerMin, uLedgerMax};
+    return LedgerRange{.min = uLedgerMin, .max = uLedgerMax};
 }
 
 std::pair<AccountTxResult, RPC::Status>
@@ -227,7 +227,11 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     result.marker = args.marker;
 
     RelationalDatabase::AccountTxPageOptions const options = {
-        args.account, result.ledgerRange, result.marker, args.limit, isUnlimited(context.role)};
+        .account = args.account,
+        .ledgerRange = result.ledgerRange,
+        .marker = result.marker,
+        .limit = args.limit,
+        .bAdmin = isUnlimited(context.role)};
 
     auto& db = context.app.getRelationalDatabase();
 
@@ -442,7 +446,8 @@ doAccountTx(RPC::JsonContext& context)
             status.inject(response);
             return response;
         }
-        args.marker = {token[jss::ledger].asUInt(), token[jss::seq].asUInt()};
+        args.marker = {
+            .ledgerSeq = token[jss::ledger].asUInt(), .txnSeq = token[jss::seq].asUInt()};
     }
 
     auto res = doAccountTxHelp(context, args);

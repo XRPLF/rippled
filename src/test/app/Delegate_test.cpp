@@ -50,8 +50,7 @@
 #include <unordered_set>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 class Delegate_test : public beast::unit_test::suite
 {
     void
@@ -1945,5 +1944,4 @@ class Delegate_test : public beast::unit_test::suite
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

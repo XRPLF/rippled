@@ -51,7 +51,7 @@ getAccountObjects(
 
     auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
                                 LedgerEntryType ledgerType) {
-        auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
+        auto it = std::ranges::find(typeFilter, ledgerType);
         return it != typeFilter.end();
     };
 
@@ -262,18 +262,19 @@ doAccountObjects(RPC::JsonContext& context)
             Json::StaticString name;
             LedgerEntryType type;
         } static constexpr deletionBlockers[] = {
-            {jss::check, ltCHECK},
-            {jss::escrow, ltESCROW},
-            {jss::nft_page, ltNFTOKEN_PAGE},
-            {jss::payment_channel, ltPAYCHAN},
-            {jss::state, ltRIPPLE_STATE},
-            {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-            {jss::xchain_owned_create_account_claim_id, ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-            {jss::bridge, ltBRIDGE},
-            {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
-            {jss::mptoken, ltMPTOKEN},
-            {jss::permissioned_domain, ltPERMISSIONED_DOMAIN},
-            {jss::vault, ltVAULT},
+            {.name = jss::check, .type = ltCHECK},
+            {.name = jss::escrow, .type = ltESCROW},
+            {.name = jss::nft_page, .type = ltNFTOKEN_PAGE},
+            {.name = jss::payment_channel, .type = ltPAYCHAN},
+            {.name = jss::state, .type = ltRIPPLE_STATE},
+            {.name = jss::xchain_owned_claim_id, .type = ltXCHAIN_OWNED_CLAIM_ID},
+            {.name = jss::xchain_owned_create_account_claim_id,
+             .type = ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+            {.name = jss::bridge, .type = ltBRIDGE},
+            {.name = jss::mpt_issuance, .type = ltMPTOKEN_ISSUANCE},
+            {.name = jss::mptoken, .type = ltMPTOKEN},
+            {.name = jss::permissioned_domain, .type = ltPERMISSIONED_DOMAIN},
+            {.name = jss::vault, .type = ltVAULT},
         };
 
         typeFilter.emplace();

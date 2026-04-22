@@ -163,7 +163,7 @@ public:
                 return;
             }
 
-            data.emplace_back(std::make_pair(*id, makeSlice(node.nodedata())));
+            data.emplace_back(*id, makeSlice(node.nodedata()));
         }
 
         if (!ta->takeNodes(data, peer).isUseful())

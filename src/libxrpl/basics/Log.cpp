@@ -20,8 +20,8 @@
 
 namespace xrpl {
 
-Logs::Sink::Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs)
-    : beast::Journal::Sink(thresh, false), logs_(logs), partition_(partition)
+Logs::Sink::Sink(std::string partition, beast::severities::Severity thresh, Logs& logs)
+    : beast::Journal::Sink(thresh, false), logs_(logs), partition_(std::move(partition))
 {
 }
 

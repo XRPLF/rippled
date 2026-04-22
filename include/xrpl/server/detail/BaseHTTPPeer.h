@@ -23,6 +23,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -93,7 +94,7 @@ public:
         endpoint_type remote_address,
         ConstBufferSequence const& buffers);
 
-    virtual ~BaseHTTPPeer();
+    ~BaseHTTPPeer() override;
 
     Session&
     session()
@@ -195,7 +196,7 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     , handler_(handler)
     , work_(boost::asio::make_work_guard(executor))
     , strand_(boost::asio::make_strand(executor))
-    , remote_address_(remote_address)
+    , remote_address_(std::move(remote_address))
     , journal_(journal)
 {
     read_buf_.commit(

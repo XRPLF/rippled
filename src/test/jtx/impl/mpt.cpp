@@ -49,9 +49,7 @@
 #include <variant>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /**
  * @brief Helper function to convert a PedersenProofParams into the C library struct.
@@ -102,9 +100,9 @@ MPTTester::makeHolders(std::vector<Account> const& holders)
     return accounts;
 }
 
-MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
+MPTTester::MPTTester(Env& env, Account issuer, MPTInit const& arg)
     : env_(env)
-    , issuer_(issuer)
+    , issuer_(std::move(issuer))
     , holders_(makeHolders(arg.holders))
     , auditor_(arg.auditor)
     , close_(arg.close)
@@ -139,11 +137,11 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
 
 MPTTester::MPTTester(
     Env& env,
-    Account const& issuer,
+    Account issuer,
     MPTID const& id,
     std::vector<Account> const& holders,
     bool close)
-    : env_(env), issuer_(issuer), holders_(makeHolders(holders)), id_(id), close_(close)
+    : env_(env), issuer_(std::move(issuer)), holders_(makeHolders(holders)), id_(id), close_(close)
 {
 }
 
@@ -2403,6 +2401,1357 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+template <typename T>
+void
+MPTTester::fillConversionCiphertexts(
+    T const& arg,
+    Json::Value& jv,
+    Buffer& holderCiphertext,
+    Buffer& issuerCiphertext,
+    std::optional<Buffer>& auditorCiphertext,
+    Buffer& blindingFactor) const
+{
+    blindingFactor = arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
+
+    // Handle Holder
+    if (arg.holderEncryptedAmt)
+    {
+        holderCiphertext = *arg.holderEncryptedAmt;
+    }
+    else
+    {
+        holderCiphertext = encryptAmount(*arg.account, *arg.amt, blindingFactor);
+    }
+
+    jv[sfHolderEncryptedAmount.jsonName] = strHex(holderCiphertext);
+
+    // Handle Issuer
+    if (arg.issuerEncryptedAmt)
+    {
+        issuerCiphertext = *arg.issuerEncryptedAmt;
+    }
+    else
+    {
+        issuerCiphertext = encryptAmount(issuer_, *arg.amt, blindingFactor);
+    }
+
+    jv[sfIssuerEncryptedAmount.jsonName] = strHex(issuerCiphertext);
+
+    // Handle Auditor
+    if (arg.auditorEncryptedAmt)
+    {
+        auditorCiphertext = *arg.auditorEncryptedAmt;
+    }
+    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
+    {
+        auditorCiphertext = encryptAmount(*auditor_, *arg.amt, blindingFactor);
+    }
+
+    // Update auditor JSON only if ciphertext exists
+    if (auditorCiphertext)
+        jv[sfAuditorEncryptedAmount.jsonName] = strHex(*auditorCiphertext);
+}
+
+void
+MPTTester::convert(MPTConvert const& arg)
+{
+    Json::Value jv;
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    if (arg.amt)
+        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+    if (arg.holderPubKey)
+        jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
+
+    Buffer holderCiphertext;
+    Buffer issuerCiphertext;
+    std::optional<Buffer> auditorCiphertext;
+    Buffer blindingFactor;
+
+    fillConversionCiphertexts(
+        arg, jv, holderCiphertext, issuerCiphertext, auditorCiphertext, blindingFactor);
+
+    jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
+    if (arg.proof)
+    {
+        jv[sfZKProof.jsonName] = *arg.proof;
+    }
+    else if (arg.fillSchnorrProof.value_or(arg.holderPubKey.has_value()))
+    {
+        // whether to automatically generate and attach a Schnorr proof:
+        // if fillSchnorrProof is explicitly set, follow its value;
+        // otherwise, default to generating the proof only if holder pub key is
+        // present.
+        auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
+        auto const contextHash = getConvertContextHash(arg.account->id(), *id_, seq);
+
+        auto const proof = getSchnorrProof(*arg.account, contextHash);
+        if (proof)
+        {
+            jv[sfZKProof.jsonName] = strHex(*proof);
+        }
+        else
+        {
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSchnorrProofLength));
+        }
+    }
+
+    auto const holderAmt = getBalance(*arg.account);
+    auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
+
+    auto const prevInboxBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+    if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
+        Throw<std::runtime_error>("Failed to get Pre-convert balance");
+
+    std::optional<uint64_t> prevAuditorBalance;
+    if (arg.auditorEncryptedAmt || auditor_)
+    {
+        prevAuditorBalance = getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
+        if (!prevAuditorBalance)
+            Throw<std::runtime_error>("Failed to get Pre-convert balance");
+    }
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
+        env_.require(mptbalance(*this, *arg.account, holderAmt - *arg.amt));
+        env_.require(requireAny([&]() -> bool {
+            return prevConfidentialOutstanding + *arg.amt == postConfidentialOutstanding;
+        }));
+
+        auto const postInboxBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        auto const postIssuerBalance = getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+        auto const postSpendingBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        if (!postInboxBalance || !postIssuerBalance || !postSpendingBalance)
+            Throw<std::runtime_error>("Failed to get post-convert balance");
+
+        if (arg.auditorEncryptedAmt || auditor_)
+        {
+            auto const postAuditorBalance =
+                getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
+
+            if (!postAuditorBalance)
+                Throw<std::runtime_error>("Failed to get post-convert auditor balance");
+
+            // auditor's encrypted balance is updated correctly
+            env_.require(requireAny(
+                [&]() -> bool { return *prevAuditorBalance + *arg.amt == *postAuditorBalance; }));
+        }
+        // spending balance should not change
+        env_.require(
+            requireAny([&]() -> bool { return *postSpendingBalance == *prevSpendingBalance; }));
+
+        // issuer's encrypted balance is updated correctly
+        env_.require(requireAny(
+            [&]() -> bool { return *prevIssuerBalance + *arg.amt == *postIssuerBalance; }));
+
+        // holder's inbox balance is updated correctly
+        env_.require(requireAny(
+            [&]() -> bool { return *prevInboxBalance + *arg.amt == *postInboxBalance; }));
+
+        // sum of holder's inbox and spending balance should equal to issuer's
+        // encrypted balance
+        env_.require(requireAny([&]() -> bool {
+            return *postInboxBalance + *postSpendingBalance == *postIssuerBalance;
+        }));
+
+        if (arg.holderPubKey)
+        {
+            env_.require(requireAny([&]() -> bool {
+                return forObject(
+                    [&](SLEP const& sle) -> bool {
+                        if (sle)
+                        {
+                            auto const holderPubKey = getPubKey(*arg.account);
+                            if (!holderPubKey)
+                            {
+                                Throw<std::runtime_error>(
+                                    "MPTTester::convert: holder's pubkey is "
+                                    "not set");
+                            }
+
+                            return strHex((*sle)[sfHolderEncryptionKey]) == strHex(*holderPubKey);
+                        }
+                        return false;
+                    },
+                    arg.account);
+            }));
+        }
+    }
+}
+
+Json::Value
+MPTTester::convertJV(MPTConvert const& arg, std::uint32_t seq)
+{
+    Json::Value jv;
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTConvert;
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    if (arg.amt)
+        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+    if (arg.holderPubKey)
+        jv[sfHolderEncryptionKey.jsonName] = strHex(*arg.holderPubKey);
+
+    Buffer holderCiphertext;
+    Buffer issuerCiphertext;
+    std::optional<Buffer> auditorCiphertext;
+    Buffer blindingFactor;
+
+    fillConversionCiphertexts(
+        arg, jv, holderCiphertext, issuerCiphertext, auditorCiphertext, blindingFactor);
+
+    jv[sfBlindingFactor.jsonName] = strHex(blindingFactor);
+
+    if (arg.proof)
+    {
+        jv[sfZKProof.jsonName] = *arg.proof;
+    }
+    else if (arg.fillSchnorrProof.value_or(arg.holderPubKey.has_value()))
+    {
+        auto const contextHash = getConvertContextHash(arg.account->id(), *id_, seq);
+        auto const proof = getSchnorrProof(*arg.account, contextHash);
+        if (proof)
+        {
+            jv[sfZKProof.jsonName] = strHex(*proof);
+        }
+        else
+        {
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSchnorrProofLength));
+        }
+    }
+
+    return jv;
+}
+
+void
+MPTTester::send(MPTConfidentialSend const& arg)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::ConfidentialMPTSend;
+
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    if (arg.dest)
+    {
+        jv[sfDestination] = arg.dest->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Destination not specified");
+    }
+
+    if (!arg.amt)
+        Throw<std::runtime_error>("Amount not specified for testing purposes");
+
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    Buffer const blindingFactor =
+        arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
+
+    // fill in the encrypted amounts if not provided
+    auto const senderAmt = arg.senderEncryptedAmt
+        ? *arg.senderEncryptedAmt
+        : encryptAmount(*arg.account, *arg.amt, blindingFactor);
+    auto const destAmt = arg.destEncryptedAmt ? *arg.destEncryptedAmt
+                                              : encryptAmount(*arg.dest, *arg.amt, blindingFactor);
+    auto const issuerAmt = arg.issuerEncryptedAmt
+        ? *arg.issuerEncryptedAmt
+        : encryptAmount(issuer_, *arg.amt, blindingFactor);
+
+    std::optional<Buffer> auditorAmt;
+    if (arg.auditorEncryptedAmt)
+    {
+        auditorAmt = arg.auditorEncryptedAmt;
+    }
+    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
+    {
+        auditorAmt = encryptAmount(*auditor_, *arg.amt, blindingFactor);
+    }
+
+    jv[sfSenderEncryptedAmount] = strHex(senderAmt);
+    jv[sfDestinationEncryptedAmount] = strHex(destAmt);
+    jv[sfIssuerEncryptedAmount] = strHex(issuerAmt);
+    if (auditorAmt)
+        jv[sfAuditorEncryptedAmount] = strHex(*auditorAmt);
+
+    if (arg.credentials)
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& hash : *arg.credentials)
+            arr.append(hash);
+    }
+
+    // Version counters before send
+    auto const prevSenderVersion = getMPTokenVersion(*arg.account);
+    auto const prevDestVersion = getMPTokenVersion(*arg.dest);
+
+    // Sender's previous confidential state
+    auto const prevSenderInbox = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    auto const prevSenderSpending = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevSenderIssuer = getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+    if (!prevSenderInbox || !prevSenderSpending || !prevSenderIssuer)
+        Throw<std::runtime_error>("Failed to get Pre-send balance");
+
+    std::optional<uint64_t> prevSenderAuditor;
+    if (arg.auditorEncryptedAmt || auditor_)
+    {
+        prevSenderAuditor = getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
+        if (!prevSenderAuditor)
+            Throw<std::runtime_error>("Failed to get Pre-send balance");
+    }
+
+    // Destination's previous confidential state
+    auto const prevDestInbox = getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_INBOX);
+    auto const prevDestSpending = getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevDestIssuer = getDecryptedBalance(*arg.dest, ISSUER_ENCRYPTED_BALANCE);
+    if (!prevDestInbox || !prevDestSpending || !prevDestIssuer)
+        Throw<std::runtime_error>("Failed to get Pre-send balance");
+
+    std::optional<uint64_t> prevDestAuditor;
+    if (arg.auditorEncryptedAmt || auditor_)
+    {
+        prevDestAuditor = getDecryptedBalance(*arg.dest, AUDITOR_ENCRYPTED_BALANCE);
+        if (!prevDestAuditor)
+            Throw<std::runtime_error>("Failed to get Pre-send balance");
+    }
+
+    // Fill in the commitment if not provided
+    // The amount commitment must use the same blinding factor as the ElGamal
+    // encryption. The sigma proof links the two, so using different randomness
+    // for each would cause proof verification to fail.
+    Buffer amountCommitment, balanceCommitment;
+    if (arg.amountCommitment)
+    {
+        amountCommitment = *arg.amountCommitment;
+    }
+    else
+    {
+        amountCommitment = getPedersenCommitment(*arg.amt, blindingFactor);
+    }
+
+    jv[sfAmountCommitment] = strHex(amountCommitment);
+
+    auto const balanceBlindingFactor = generateBlindingFactor();
+    if (arg.balanceCommitment)
+    {
+        balanceCommitment = *arg.balanceCommitment;
+    }
+    else
+    {
+        balanceCommitment = getPedersenCommitment(*prevSenderSpending, balanceBlindingFactor);
+    }
+
+    jv[sfBalanceCommitment] = strHex(balanceCommitment);
+
+    // Fill in the proof if not provided
+    if (arg.proof)
+    {
+        jv[sfZKProof] = *arg.proof;
+    }
+    else
+    {
+        auto const version = getMPTokenVersion(*arg.account);
+        auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
+        auto const ctxHash =
+            getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
+
+        std::vector<ConfidentialRecipient> recipients;
+
+        auto const senderPubKey = getPubKey(*arg.account);
+        auto const destPubKey = getPubKey(*arg.dest);
+        auto const issuerPubKey = getPubKey(issuer_);
+
+        // If a key is missing, we skip adding the recipient. This intentionally
+        // causes proof generation to fail, triggering the dummy proof fallback.
+        if (senderPubKey)
+            recipients.push_back({Slice(*senderPubKey), senderAmt});
+        if (destPubKey)
+            recipients.push_back({Slice(*destPubKey), destAmt});
+        if (issuerPubKey)
+            recipients.push_back({Slice(*issuerPubKey), issuerAmt});
+
+        std::optional<Buffer> auditorPubKey;
+        if (auditorAmt)
+        {
+            if (!auditor_)
+                Throw<std::runtime_error>("Auditor not registered");
+
+            auditorPubKey = getPubKey(*auditor_);
+            if (auditorPubKey)
+                recipients.push_back({Slice(*auditorPubKey), *auditorAmt});
+        }
+
+        auto const prevEncryptedSenderSpending =
+            getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        std::optional<Buffer> proof;
+
+        // Skip proof generation if encrypted balance is missing (e.g.,
+        // feature disabled), when the sender and destination are the same
+        // (malformed case causing pcm to be zero), or when spending balance
+        // is 0
+        if (arg.account != arg.dest && prevEncryptedSenderSpending && *prevSenderSpending > 0)
+        {
+            proof = getConfidentialSendProof(
+                *arg.account,
+                *arg.amt,
+                recipients,
+                blindingFactor,
+                ctxHash,
+                {amountCommitment, *arg.amt, senderAmt, blindingFactor},
+                {balanceCommitment,
+                 *prevSenderSpending,
+                 *prevEncryptedSenderSpending,
+                 balanceBlindingFactor});
+        }
+
+        if (proof)
+        {
+            jv[sfZKProof.jsonName] = strHex(*proof);
+        }
+        else
+        {
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSendProofLength));
+        }
+    }
+
+    auto const senderPubAmt = getBalance(*arg.account);
+    auto const destPubAmt = getBalance(*arg.dest);
+    auto const prevCOA = getIssuanceConfidentialBalance();
+    auto const prevOA = getIssuanceOutstandingBalance();
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const postCOA = getIssuanceConfidentialBalance();
+        auto const postOA = getIssuanceOutstandingBalance();
+
+        // Sender's post confidential state
+        auto const postSenderInbox = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        auto const postSenderSpending =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        auto const postSenderIssuer = getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+        if (!postSenderInbox || !postSenderSpending || !postSenderIssuer)
+            Throw<std::runtime_error>("Failed to get Post-send balance");
+
+        // Destination's post confidential state
+        auto const postDestInbox = getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_INBOX);
+        auto const postDestSpending = getDecryptedBalance(*arg.dest, HOLDER_ENCRYPTED_SPENDING);
+        auto const postDestIssuer = getDecryptedBalance(*arg.dest, ISSUER_ENCRYPTED_BALANCE);
+
+        if (!postDestInbox || !postDestSpending || !postDestIssuer)
+            Throw<std::runtime_error>("Failed to get Post-send balance");
+
+        // Public balances unchanged
+        env_.require(mptbalance(*this, *arg.account, senderPubAmt));
+        env_.require(mptbalance(*this, *arg.dest, destPubAmt));
+
+        // OA and COA unchanged
+        env_.require(requireAny([&]() -> bool { return prevOA == postOA; }));
+        env_.require(requireAny([&]() -> bool { return prevCOA == postCOA; }));
+
+        // Verify sender changes
+        env_.require(requireAny([&]() -> bool {
+            return *prevSenderSpending >= *arg.amt &&
+                *postSenderSpending == *prevSenderSpending - *arg.amt;
+        }));
+        env_.require(requireAny([&]() -> bool { return postSenderInbox == prevSenderInbox; }));
+        env_.require(requireAny([&]() -> bool {
+            return *prevSenderIssuer >= *arg.amt &&
+                *postSenderIssuer == *prevSenderIssuer - *arg.amt;
+        }));
+
+        // Verify destination changes
+        env_.require(
+            requireAny([&]() -> bool { return *postDestInbox == *prevDestInbox + *arg.amt; }));
+        env_.require(requireAny([&]() -> bool { return *postDestSpending == *prevDestSpending; }));
+        env_.require(
+            requireAny([&]() -> bool { return *postDestIssuer == *prevDestIssuer + *arg.amt; }));
+
+        // Cross checks
+        env_.require(requireAny(
+            [&]() -> bool { return *postSenderInbox + *postSenderSpending == *postSenderIssuer; }));
+        env_.require(requireAny(
+            [&]() -> bool { return *postDestInbox + *postDestSpending == *postDestIssuer; }));
+
+        // Version: sender increments by 1; receiver version is unchanged by incoming sends
+        env_.require(requireAny(
+            [&]() -> bool { return getMPTokenVersion(*arg.account) == prevSenderVersion + 1; }));
+        env_.require(
+            requireAny([&]() -> bool { return getMPTokenVersion(*arg.dest) == prevDestVersion; }));
+
+        if (arg.auditorEncryptedAmt || auditor_)
+        {
+            auto const postSenderAuditor =
+                getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
+            auto const postDestAuditor = getDecryptedBalance(*arg.dest, AUDITOR_ENCRYPTED_BALANCE);
+            if (!postSenderAuditor || !postDestAuditor)
+                Throw<std::runtime_error>("Failed to get Post-send balance");
+
+            env_.require(requireAny([&]() -> bool {
+                return *postSenderAuditor == *postSenderIssuer &&
+                    *postDestAuditor == *postDestIssuer;
+            }));
+
+            // verify sender
+            env_.require(requireAny([&]() -> bool {
+                return prevSenderAuditor >= *arg.amt &&
+                    *postSenderAuditor == *prevSenderAuditor - *arg.amt;
+            }));
+
+            // verify dest
+            env_.require(requireAny(
+                [&]() -> bool { return *postDestAuditor == *prevDestAuditor + *arg.amt; }));
+        }
+    }
+}
+
+Json::Value
+MPTTester::sendJV(
+    MPTConfidentialSend const& arg,
+    std::uint32_t seq,
+    std::optional<ConfidentialSendChainState> chain)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::ConfidentialMPTSend;
+
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    if (arg.dest)
+    {
+        jv[sfDestination] = arg.dest->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Destination not specified");
+    }
+
+    if (!arg.amt)
+        Throw<std::runtime_error>("Amount not specified for testing purposes");
+
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    Buffer const blindingFactor =
+        arg.blindingFactor ? *arg.blindingFactor : generateBlindingFactor();
+
+    auto const senderAmt = arg.senderEncryptedAmt
+        ? *arg.senderEncryptedAmt
+        : encryptAmount(*arg.account, *arg.amt, blindingFactor);
+    auto const destAmt = arg.destEncryptedAmt ? *arg.destEncryptedAmt
+                                              : encryptAmount(*arg.dest, *arg.amt, blindingFactor);
+    auto const issuerAmt = arg.issuerEncryptedAmt
+        ? *arg.issuerEncryptedAmt
+        : encryptAmount(issuer_, *arg.amt, blindingFactor);
+
+    std::optional<Buffer> auditorAmt;
+    if (arg.auditorEncryptedAmt)
+    {
+        auditorAmt = arg.auditorEncryptedAmt;
+    }
+    else if (auditor_.has_value() && *arg.fillAuditorEncryptedAmt)
+    {
+        auditorAmt = encryptAmount(*auditor_, *arg.amt, blindingFactor);
+    }
+
+    jv[sfSenderEncryptedAmount] = strHex(senderAmt);
+    jv[sfDestinationEncryptedAmount] = strHex(destAmt);
+    jv[sfIssuerEncryptedAmount] = strHex(issuerAmt);
+    if (auditorAmt)
+        jv[sfAuditorEncryptedAmount] = strHex(*auditorAmt);
+
+    if (arg.credentials)
+    {
+        auto& arr(jv[sfCredentialIDs.jsonName] = Json::arrayValue);
+        for (auto const& hash : *arg.credentials)
+            arr.append(hash);
+    }
+
+    std::uint64_t prevSenderSpending = 0;
+    std::optional<Buffer> prevEncryptedSenderSpending;
+    std::uint32_t version = 0;
+    if (chain)
+    {
+        prevSenderSpending = chain->spending;
+        prevEncryptedSenderSpending = chain->encSpending;
+        version = chain->version;
+    }
+    else
+    {
+        auto const ledgerSpending = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        if (!ledgerSpending)
+            Throw<std::runtime_error>("Failed to get sender spending balance");
+        prevSenderSpending = *ledgerSpending;
+        prevEncryptedSenderSpending = getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        version = getMPTokenVersion(*arg.account);
+    }
+
+    // The amount commitment must use the same blinding factor as the tx ElGamal
+    // encryption blinding factor.
+    Buffer amountCommitment, balanceCommitment;
+    if (arg.amountCommitment)
+    {
+        amountCommitment = *arg.amountCommitment;
+    }
+    else
+    {
+        amountCommitment = getPedersenCommitment(*arg.amt, blindingFactor);
+    }
+
+    jv[sfAmountCommitment] = strHex(amountCommitment);
+
+    auto const balanceBlindingFactor = generateBlindingFactor();
+    if (arg.balanceCommitment)
+    {
+        balanceCommitment = *arg.balanceCommitment;
+    }
+    else
+    {
+        balanceCommitment = getPedersenCommitment(prevSenderSpending, balanceBlindingFactor);
+    }
+
+    jv[sfBalanceCommitment] = strHex(balanceCommitment);
+
+    if (arg.proof)
+    {
+        jv[sfZKProof.jsonName] = *arg.proof;
+    }
+    else
+    {
+        auto const ctxHash =
+            getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
+
+        std::vector<ConfidentialRecipient> recipients;
+
+        auto const senderPubKey = getPubKey(*arg.account);
+        auto const destPubKey = getPubKey(*arg.dest);
+        auto const issuerPubKey = getPubKey(issuer_);
+
+        if (senderPubKey)
+            recipients.push_back({Slice(*senderPubKey), senderAmt});
+        if (destPubKey)
+            recipients.push_back({Slice(*destPubKey), destAmt});
+        if (issuerPubKey)
+            recipients.push_back({Slice(*issuerPubKey), issuerAmt});
+
+        std::optional<Buffer> auditorPubKey;
+        if (auditorAmt)
+        {
+            if (!auditor_)
+                Throw<std::runtime_error>("Auditor not registered");
+            auditorPubKey = getPubKey(*auditor_);
+            if (auditorPubKey)
+                recipients.push_back({Slice(*auditorPubKey), *auditorAmt});
+        }
+
+        std::optional<Buffer> proof;
+
+        // Skip proof generation when spending balance is 0
+        if (arg.account != arg.dest && prevEncryptedSenderSpending && prevSenderSpending > 0)
+        {
+            proof = getConfidentialSendProof(
+                *arg.account,
+                *arg.amt,
+                recipients,
+                blindingFactor,
+                ctxHash,
+                {amountCommitment, *arg.amt, senderAmt, blindingFactor},
+                {balanceCommitment,
+                 prevSenderSpending,
+                 *prevEncryptedSenderSpending,
+                 balanceBlindingFactor});
+        }
+
+        if (proof)
+        {
+            jv[sfZKProof.jsonName] = strHex(*proof);
+        }
+        else
+        {
+            jv[sfZKProof.jsonName] = strHex(makeZeroBuffer(ecSendProofLength));
+        }
+    }
+
+    return jv;
+}
+
+static Buffer
+parseSenderEncAmt(Json::Value const& jv)
+{
+    auto const hexStr = jv[sfSenderEncryptedAmount.jsonName].asString();
+    auto const bytes = strUnHex(hexStr);
+    if (!bytes)
+        Throw<std::runtime_error>("chainAfterSend: invalid hex in sfSenderEncryptedAmount");
+    return Buffer(bytes->data(), bytes->size());
+}
+
+ConfidentialSendChainState
+MPTTester::chainAfterSend(Account const& sender, std::uint64_t sendAmt, Json::Value const& jv) const
+{
+    auto const prevSpending = getDecryptedBalance(sender, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevEncSpending = getEncryptedBalance(sender, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevVersion = getMPTokenVersion(sender);
+
+    if (!prevSpending || !prevEncSpending)
+        Throw<std::runtime_error>("chainAfterSend: failed to read sender state from ledger");
+
+    Buffer const senderEncAmt = parseSenderEncAmt(jv);
+    auto chain = computeNextSendChainState(
+        *prevSpending, Slice(*prevEncSpending), prevVersion, sendAmt, Slice(senderEncAmt));
+    if (!chain)
+        Throw<std::runtime_error>("chainAfterSend: computeNextSendChainState failed");
+    return std::move(*chain);
+}
+
+std::optional<ConfidentialSendChainState>
+computeNextSendChainState(
+    std::uint64_t currentSpending,
+    Slice const& currentEncSpending,
+    std::uint32_t currentVersion,
+    std::uint64_t sendAmt,
+    Slice const& senderEncAmt)
+{
+    if (sendAmt > currentSpending)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    auto newEncSpending = homomorphicSubtract(currentEncSpending, senderEncAmt);
+    if (!newEncSpending)
+        return std::nullopt;  // LCOV_EXCL_LINE
+
+    return ConfidentialSendChainState{
+        .spending = currentSpending - sendAmt,
+        .encSpending = std::move(*newEncSpending),
+        .version = currentVersion + 1,
+    };
+}
+
+void
+MPTTester::confidentialClaw(MPTConfidentialClawback const& arg)
+{
+    Json::Value jv;
+    auto const account = arg.account ? *arg.account : issuer_;
+    jv[sfAccount] = account.human();
+
+    if (arg.holder)
+    {
+        jv[sfHolder] = arg.holder->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Holder not specified");
+    }
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTClawback;
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else if (id_)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+    else
+    {
+        Throw<std::runtime_error>("MPT has not been created");
+    }
+
+    if (arg.amt)
+        jv[sfMPTAmount] = std::to_string(*arg.amt);
+
+    if (arg.proof)
+    {
+        jv[sfZKProof] = *arg.proof;
+    }
+    else
+    {
+        auto const seq = arg.ticketSeq ? *arg.ticketSeq : env_.seq(account);
+        auto const contextHash = getClawbackContextHash(account.id(), *id_, seq, arg.holder->id());
+
+        auto const privKey = getPrivKey(account);
+        if (!privKey || privKey->size() != ecPrivKeyLength)
+            Throw<std::runtime_error>("Failed to get clawback private key");
+
+        auto const proof = getClawbackProof(*arg.holder, *arg.amt, *privKey, contextHash);
+
+        if (proof)
+        {
+            jv[sfZKProof] = strHex(*proof);
+        }
+        else
+        {
+            jv[sfZKProof] = strHex(makeZeroBuffer(ecClawbackProofLength));
+        }
+    }
+
+    auto const holderPubAmt = getBalance(*arg.holder);
+    auto const prevCOA = getIssuanceConfidentialBalance();
+    auto const prevOA = getIssuanceOutstandingBalance();
+    auto const prevVersion = getMPTokenVersion(*arg.holder);
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const postCOA = getIssuanceConfidentialBalance();
+        auto const postOA = getIssuanceOutstandingBalance();
+        auto const postVersion = getMPTokenVersion(*arg.holder);
+
+        // Verify holder's public balance is unchanged
+        env_.require(mptbalance(*this, *arg.holder, holderPubAmt));
+
+        // Verify COA and OA are reduced correctly
+        env_.require(requireAny(
+            [&]() -> bool { return prevCOA >= *arg.amt && postCOA == prevCOA - *arg.amt; }));
+        env_.require(requireAny(
+            [&]() -> bool { return prevOA >= *arg.amt && postOA == prevOA - *arg.amt; }));
+
+        // Verify holder's confidential balances are zeroed out
+        env_.require(requireAny([&]() -> bool {
+            return getDecryptedBalance(*arg.holder, HOLDER_ENCRYPTED_INBOX) == 0;
+        }));
+        env_.require(requireAny([&]() -> bool {
+            return getDecryptedBalance(*arg.holder, HOLDER_ENCRYPTED_SPENDING) == 0;
+        }));
+        env_.require(requireAny([&]() -> bool {
+            return getDecryptedBalance(*arg.holder, ISSUER_ENCRYPTED_BALANCE) == 0;
+        }));
+        env_.require(requireAny([&]() -> bool {
+            return getDecryptedBalance(*arg.holder, AUDITOR_ENCRYPTED_BALANCE) == 0;
+        }));
+
+        // Verify version is incremented
+        env_.require(requireAny([&]() -> bool { return postVersion == prevVersion + 1; }));
+    }
+}
+
+void
+MPTTester::generateKeyPair(Account const& account)
+{
+    unsigned char privKey[ecPrivKeyLength];
+    secp256k1_pubkey pubKey;
+    if (secp256k1_elgamal_generate_keypair(secp256k1Context(), privKey, &pubKey) == 0)
+        Throw<std::runtime_error>("failed to generate key pair");
+
+    // Serialize public key to compressed format (33 bytes)
+    unsigned char compressedPubKey[ecPubKeyLength];
+    size_t outLen = ecPubKeyLength;
+    if (secp256k1_ec_pubkey_serialize(
+            secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) != 1 ||
+        outLen != ecPubKeyLength)
+        Throw<std::runtime_error>("failed to serialize public key");
+
+    pubKeys.insert({account.id(), Buffer{compressedPubKey, ecPubKeyLength}});
+    privKeys.insert({account.id(), Buffer{privKey, ecPrivKeyLength}});
+}
+
+std::optional<Buffer>
+MPTTester::getPubKey(Account const& account) const
+{
+    if (auto const it = pubKeys.find(account.id()); it != pubKeys.end())
+        return it->second;
+
+    return std::nullopt;
+}
+
+std::optional<Buffer>
+MPTTester::getPrivKey(Account const& account) const
+{
+    if (auto const it = privKeys.find(account.id()); it != privKeys.end())
+        return it->second;
+
+    return std::nullopt;
+}
+
+Buffer
+MPTTester::encryptAmount(Account const& account, uint64_t const amt, Buffer const& blindingFactor)
+    const
+{
+    if (auto const pubKey = getPubKey(account))
+    {
+        if (auto const result = xrpl::encryptAmount(amt, *pubKey, blindingFactor))
+            return *result;
+    }
+
+    // Return a dummy buffer on failure to allow testing of
+    // failures that occur prior to encryption.
+    return makeZeroBuffer(ecGamalEncryptedTotalLength);
+}
+
+std::optional<uint64_t>
+MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
+{
+    if (amt.size() != ecGamalEncryptedTotalLength)
+        return std::nullopt;
+
+    auto const pair = makeEcPair(amt);
+    if (!pair)
+        return std::nullopt;
+
+    auto const privKey = getPrivKey(account);
+    if (!privKey || privKey->size() != ecPrivKeyLength)
+        return std::nullopt;
+
+    uint64_t decryptedAmt = 0;
+    if (secp256k1_elgamal_decrypt(
+            secp256k1Context(), &decryptedAmt, &pair->c1, &pair->c2, privKey->data()) == 0)
+        return std::nullopt;
+
+    return decryptedAmt;
+}
+
+std::optional<uint64_t>
+MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const
+{
+    auto const encryptedAmt = getEncryptedBalance(account, balanceType);
+
+    // Return zero to test cases like Feature Disabled, where the ledger object
+    // does not exist.
+    if (!encryptedAmt)
+        return 0;
+
+    Account decryptor = account;
+
+    if (balanceType == ISSUER_ENCRYPTED_BALANCE)
+    {
+        decryptor = issuer_;
+    }
+    else if (balanceType == AUDITOR_ENCRYPTED_BALANCE)
+    {
+        if (!auditor_)
+            return std::nullopt;
+        decryptor = *auditor_;
+    }
+
+    return decryptAmount(decryptor, *encryptedAmt);
+};
+
+Json::Value
+MPTTester::mergeInboxJV(MPTMergeInbox const& arg) const
+{
+    Json::Value jv;
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+    jv[sfTransactionType] = jss::ConfidentialMPTMergeInbox;
+    return jv;
+}
+
+void
+MPTTester::mergeInbox(MPTMergeInbox const& arg)
+{
+    Json::Value jv;
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    jv[sfTransactionType] = jss::ConfidentialMPTMergeInbox;
+    auto const prevInboxBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+    if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
+        Throw<std::runtime_error>("Failed to get pre-mergeInbox balances");
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const postInboxBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        auto const postSpendingBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        auto const postIssuerBalance = getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+        if (!postInboxBalance || !postSpendingBalance || !postIssuerBalance)
+            Throw<std::runtime_error>("Failed to get post-mergeInbox balances");
+
+        env_.require(requireAny([&]() -> bool {
+            return *postSpendingBalance == *prevInboxBalance + *prevSpendingBalance &&
+                *postInboxBalance == 0;
+        }));
+
+        env_.require(
+            requireAny([&]() -> bool { return *prevIssuerBalance == *postIssuerBalance; }));
+
+        env_.require(requireAny([&]() -> bool {
+            return *postSpendingBalance + *postInboxBalance == *postIssuerBalance;
+        }));
+    }
+}
+
+std::int64_t
+MPTTester::getIssuanceOutstandingBalance() const
+{
+    if (!id_)
+        Throw<std::runtime_error>("Issuance ID does not exist");
+
+    auto const sle = env_.current()->read(keylet::mptIssuance(*id_));
+
+    if (!sle || !sle->isFieldPresent(sfOutstandingAmount))
+        Throw<std::runtime_error>("Issuance object does not contain outstanding amount");
+
+    return (*sle)[sfOutstandingAmount];
+}
+
+std::uint32_t
+MPTTester::getMPTokenVersion(Account const account) const
+{
+    if (!id_)
+        Throw<std::runtime_error>("Issuance ID does not exist");
+
+    auto const sle = env_.current()->read(keylet::mptoken(*id_, account));
+
+    // return 0 here instead of throwing an exception since tests for
+    // preclaim will check if the MPToken exists
+    if (!sle)
+        return 0;
+
+    return (*sle)[~sfConfidentialBalanceVersion].value_or(0);
+}
+
+void
+MPTTester::convertBack(MPTConvertBack const& arg)
+{
+    Json::Value jv;
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    if (arg.amt)
+        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+
+    Buffer holderCiphertext;
+    Buffer issuerCiphertext;
+    std::optional<Buffer> auditorCiphertext;
+    Buffer blindingFactor;
+
+    fillConversionCiphertexts(
+        arg, jv, holderCiphertext, issuerCiphertext, auditorCiphertext, blindingFactor);
+
+    jv[sfBlindingFactor] = strHex(blindingFactor);
+
+    auto const prevInboxBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    auto const prevIssuerBalance = getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+
+    if (!prevInboxBalance || !prevSpendingBalance || !prevIssuerBalance)
+        Throw<std::runtime_error>("Failed to get Pre-convertBack balance");
+
+    Buffer pedersenCommitment;
+    Buffer const pcBlindingFactor = generateBlindingFactor();
+    if (arg.pedersenCommitment)
+    {
+        pedersenCommitment = *arg.pedersenCommitment;
+    }
+    else
+    {
+        pedersenCommitment = getPedersenCommitment(*prevSpendingBalance, pcBlindingFactor);
+    }
+
+    jv[sfBalanceCommitment] = strHex(pedersenCommitment);
+
+    if (arg.proof)
+    {
+        jv[sfZKProof.jsonName] = strHex(*arg.proof);
+    }
+    else
+    {
+        auto const version = getMPTokenVersion(*arg.account);
+
+        // if the caller generated ciphertexts themselves, they should also
+        // generate the proof themselves from the blinding factor
+        auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
+        auto const contextHash = getConvertBackContextHash(arg.account->id(), *id_, seq, version);
+        auto const prevEncryptedSpendingBalance =
+            getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        Buffer proof;
+        // generate a dummy proof if no encrypted amount field, so that other
+        // preflight/preclaim are checked
+        if (!prevEncryptedSpendingBalance)
+        {
+            proof = makeZeroBuffer(ecConvertBackProofLength);
+        }
+        else
+        {
+            proof = getConvertBackProof(
+                *arg.account,
+                *arg.amt,
+                contextHash,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *prevSpendingBalance,
+                    .encryptedAmt = *prevEncryptedSpendingBalance,
+                    .blindingFactor = pcBlindingFactor,
+                });
+        }
+        jv[sfZKProof] = strHex(proof);
+    }
+
+    auto const holderAmt = getBalance(*arg.account);
+    auto const prevConfidentialOutstanding = getIssuanceConfidentialBalance();
+
+    std::optional<uint64_t> prevAuditorBalance;
+    if (arg.auditorEncryptedAmt || auditor_)
+    {
+        prevAuditorBalance = getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
+        if (!prevAuditorBalance)
+            Throw<std::runtime_error>("Failed to get Pre-convertBack balance");
+    }
+
+    if (submit(arg, jv) == tesSUCCESS)
+    {
+        auto const postConfidentialOutstanding = getIssuanceConfidentialBalance();
+        env_.require(mptbalance(*this, *arg.account, holderAmt + *arg.amt));
+        env_.require(requireAny([&]() -> bool {
+            return prevConfidentialOutstanding - *arg.amt == postConfidentialOutstanding;
+        }));
+
+        auto const postInboxBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_INBOX);
+        auto const postIssuerBalance = getDecryptedBalance(*arg.account, ISSUER_ENCRYPTED_BALANCE);
+        auto const postSpendingBalance =
+            getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+
+        if (!postInboxBalance || !postIssuerBalance || !postSpendingBalance)
+            Throw<std::runtime_error>("Failed to get post-convertBack balance");
+
+        if (arg.auditorEncryptedAmt || auditor_)
+        {
+            auto const postAuditorBalance =
+                getDecryptedBalance(*arg.account, AUDITOR_ENCRYPTED_BALANCE);
+
+            if (!postAuditorBalance)
+                Throw<std::runtime_error>("Failed to get post-convertBack balance");
+
+            // auditor's encrypted balance is updated correctly
+            env_.require(requireAny(
+                [&]() -> bool { return *prevAuditorBalance - *arg.amt == *postAuditorBalance; }));
+        }
+
+        // inbox balance should not change
+        env_.require(requireAny([&]() -> bool { return *postInboxBalance == *prevInboxBalance; }));
+
+        // issuer's encrypted balance is updated correctly
+        env_.require(requireAny(
+            [&]() -> bool { return *prevIssuerBalance - *arg.amt == *postIssuerBalance; }));
+
+        // holder's spending balance is updated correctly
+        env_.require(requireAny(
+            [&]() -> bool { return *prevSpendingBalance - *arg.amt == *postSpendingBalance; }));
+
+        // sum of holder's inbox and spending balance should equal to issuer's
+        // encrypted balance
+        env_.require(requireAny([&]() -> bool {
+            return *postInboxBalance + *postSpendingBalance == *postIssuerBalance;
+        }));
+    }
+}
+
+Json::Value
+MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
+{
+    Json::Value jv;
+    if (arg.account)
+    {
+        jv[sfAccount] = arg.account->human();
+    }
+    else
+    {
+        Throw<std::runtime_error>("Account not specified");
+    }
+
+    jv[jss::TransactionType] = jss::ConfidentialMPTConvertBack;
+    if (arg.id)
+    {
+        jv[sfMPTokenIssuanceID] = to_string(*arg.id);
+    }
+    else
+    {
+        if (!id_)
+            Throw<std::runtime_error>("MPT has not been created");
+        jv[sfMPTokenIssuanceID] = to_string(*id_);
+    }
+
+    if (arg.amt)
+        jv[sfMPTAmount.jsonName] = std::to_string(*arg.amt);
+
+    Buffer holderCiphertext;
+    Buffer issuerCiphertext;
+    std::optional<Buffer> auditorCiphertext;
+    Buffer blindingFactor;
+
+    fillConversionCiphertexts(
+        arg, jv, holderCiphertext, issuerCiphertext, auditorCiphertext, blindingFactor);
+
+    jv[sfBlindingFactor] = strHex(blindingFactor);
+
+    auto const prevSpendingBalance = getDecryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+    if (!prevSpendingBalance)
+        Throw<std::runtime_error>("convertBackJV: failed to read spending balance from ledger");
+
+    Buffer pedersenCommitment;
+    Buffer const pcBlindingFactor = generateBlindingFactor();
+    if (arg.pedersenCommitment)
+    {
+        pedersenCommitment = *arg.pedersenCommitment;
+    }
+    else
+    {
+        pedersenCommitment = getPedersenCommitment(*prevSpendingBalance, pcBlindingFactor);
+    }
+
+    jv[sfBalanceCommitment] = strHex(pedersenCommitment);
+
+    if (arg.proof)
+    {
+        jv[sfZKProof.jsonName] = strHex(*arg.proof);
+    }
+    else
+    {
+        auto const version = getMPTokenVersion(*arg.account);
+        auto const prevEncSpending = getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
+        auto const contextHash = getConvertBackContextHash(arg.account->id(), *id_, seq, version);
+
+        Buffer proof;
+        if (!prevEncSpending)
+        {
+            proof = makeZeroBuffer(ecConvertBackProofLength);
+        }
+        else
+        {
+            proof = getConvertBackProof(
+                *arg.account,
+                *arg.amt,
+                contextHash,
+                {
+                    .pedersenCommitment = pedersenCommitment,
+                    .amt = *prevSpendingBalance,
+                    .encryptedAmt = *prevEncSpending,
+                    .blindingFactor = pcBlindingFactor,
+                });
+        }
+
+        jv[sfZKProof] = strHex(proof);
+    }
+
+    return jv;
+}
+
+}  // namespace xrpl::test::jtx

@@ -12,11 +12,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-#include <cstdint>
-
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class MPTTester;
 
@@ -356,11 +352,11 @@ public:
         AUDITOR_ENCRYPTED_BALANCE,
     };
 
-    MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
+    MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
     MPTTester(
         Env& env,
-        Account const& issuer,
+        Account issuer,
         MPTID const& id,
         std::vector<Account> const& holders = {},
         bool close = true);
@@ -665,6 +661,4 @@ private:
         Buffer& blindingFactor) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -22,17 +22,17 @@ public:
 
     template <class Integer>
     static STAmount
-    amount(Integer integer, std::enable_if_t<std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral<Integer>::value, "");
+        static_assert(std::is_integral_v<Integer>, "");
         return STAmount(integer, false);
     }
 
     template <class Integer>
     static STAmount
-    amount(Integer integer, std::enable_if_t<!std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<!std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral<Integer>::value, "");
+        static_assert(std::is_integral_v<Integer>, "");
         if (integer < 0)
             return STAmount(-integer, true);
         return STAmount(integer, false);

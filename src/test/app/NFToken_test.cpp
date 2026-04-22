@@ -2519,9 +2519,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         sortedNFTs.reserve(nfts.size());
         for (std::size_t i = 0; i < nfts.size(); ++i)
             sortedNFTs.push_back(nfts[i]);
-        std::sort(
-            sortedNFTs.begin(),
-            sortedNFTs.end(),
+        std::ranges::sort(
+            sortedNFTs,
+
             [](Json::Value const& lhs, Json::Value const& rhs) {
                 return lhs[jss::nft_serial] < rhs[jss::nft_serial];
             });
@@ -5623,7 +5623,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // The new NFT minted will not have the same ID
             // as any of the NFTs authorized minter minted
-            BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
+            BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
         }
 
         // When an account mints and burns a batch of NFTokens using tickets,
@@ -5722,7 +5722,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // The new NFT minted will not have the same ID
             // as any of the NFTs authorized minter minted using tickets
-            BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
+            BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
         }
         // When an authorized minter mints and burns a batch of NFTokens using
         // tickets, issuer's account needs to wait a longer time before it can
@@ -5825,7 +5825,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // The new NFT minted will not have the same ID
         // as one of NFTs authorized minter minted using tickets
-        BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
+        BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
     }
 
     void
@@ -6143,8 +6143,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 });
 
             // Sort both array to prepare for comparison
-            std::sort(metaIDs.begin(), metaIDs.end());
-            std::sort(actualNftIDs.begin(), actualNftIDs.end());
+            std::ranges::sort(metaIDs);
+            std::ranges::sort(actualNftIDs);
 
             // Make sure the expect number of NFTs is correct
             BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
