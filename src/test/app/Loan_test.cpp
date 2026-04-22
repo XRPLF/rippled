@@ -7097,12 +7097,11 @@ protected:
                 .debtMax = Number{100'000'000},
                 .coverDeposit = 500'000,
             });
-        auto const [currentSeq, vaultId, vaultKeylet] = [&]() {
+        auto const [currentSeq, vaultKeylet] = [&]() {
             auto const brokerSle = env.le(keylet::loanbroker(brokerInfo.brokerID));
             auto const currentSeq = brokerSle->at(sfLoanSequence);
             auto const vaultKeylet = keylet::vault(brokerSle->at(sfVaultID));
-            auto const vaultId = brokerSle->at(sfVaultID);
-            return std::make_tuple(currentSeq, vaultId, vaultKeylet);
+            return std::make_tuple(currentSeq, vaultKeylet);
         }();
 
         // 4. Loan Parameters (Attack Vector)
@@ -7126,11 +7125,13 @@ protected:
         auto const borrowerScale = static_cast<STAmount const&>(borrowerBalance()).exponent();
 
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, currentSeq);
-        auto const [periodicPayment, loanScale] = [&]() {
+        auto const periodicPayment = [&]() {
             auto const loanSle = env.le(loanKeylet);
+            BEAST_EXPECT(loanSle);
+            if (!loanSle)
+                return STAmount{iou};
             // Construct Payment
-            return std::make_tuple(
-                STAmount{iou, loanSle->at(sfPeriodicPayment)}, loanSle->at(sfLoanScale));
+            return STAmount{iou, loanSle->at(sfPeriodicPayment)};
         }();
         auto const roundedPayment = roundToScale(periodicPayment, borrowerScale, Number::upward);
 
