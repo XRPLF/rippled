@@ -2,8 +2,7 @@
 
 #include <xrpl/nodestore/NodeObject.h>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Parsed key/value blob into NodeObject components.
 
@@ -41,5 +40,4 @@ private:
     int m_dataBytes;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

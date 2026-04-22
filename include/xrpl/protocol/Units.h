@@ -267,7 +267,9 @@ public:
     constexpr int
     signum() const noexcept
     {
-        return (value_ < 0) ? -1 : (value_ ? 1 : 0);
+        if (value_ < 0)
+            return -1;
+        return value_ ? 1 : 0;
     }
 
     /** Returns the number of drops */

@@ -288,10 +288,10 @@ private:
 inline std::pair<std::optional<QualityFunction>, DebtDirection>
 Step::getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const
 {
-    if (auto const res = qualityUpperBound(v, prevStepDir); res.first)
+    auto const res = qualityUpperBound(v, prevStepDir);
+    if (res.first)
         return {QualityFunction{*res.first, QualityFunction::CLOBLikeTag{}}, res.second};
-    else
-        return {std::nullopt, res.second};
+    return {std::nullopt, res.second};
 }
 
 /// @cond INTERNAL
@@ -317,8 +317,10 @@ operator==(Strand const& lhs, Strand const& rhs)
     if (lhs.size() != rhs.size())
         return false;
     for (size_t i = 0, e = lhs.size(); i != e; ++i)
+    {
         if (*lhs[i] != *rhs[i])
             return false;
+    }
     return true;
 }
 /// @endcond
@@ -429,8 +431,10 @@ toStrands(
 template <StepAmount TIn, StepAmount TOut, class TDerived>
 struct StepImp : public Step
 {
+private:
     explicit StepImp() = default;
 
+public:
     std::pair<EitherAmount, EitherAmount>
     rev(PaymentSandbox& sb,
         ApplyView& afView,
@@ -470,6 +474,7 @@ struct StepImp : public Step
     {
         return get<TIn>(lhs) == get<TIn>(rhs);
     }
+    friend TDerived;
 };
 /// @endcond
 
@@ -632,9 +637,13 @@ bool
 isDirectXrpToXrp(Strand const& strand)
 {
     if constexpr (std::is_same_v<InAmt, XRPAmount> && std::is_same_v<OutAmt, XRPAmount>)
+    {
         return strand.size() == 2;
+    }
     else
+    {
         return false;
+    }
 }
 /// @endcond
 

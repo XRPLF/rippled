@@ -8,8 +8,8 @@
 
 namespace xrpl {
 class STPath;
-namespace test {
-namespace jtx {
+
+namespace test::jtx {
 
 /** Set Paths, SendMax on a JTx. */
 class paths
@@ -62,7 +62,7 @@ private:
     append_one(AccountID const& account);
 
     template <class T>
-    std::enable_if_t<std::is_constructible<Account, T>::value>
+    std::enable_if_t<std::is_constructible_v<Account, T>>
     append_one(T const& t)
     {
         append_one(Account{t});
@@ -94,6 +94,6 @@ path::append(T const& t, Args const&... args)
         append(args...);
 }
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl

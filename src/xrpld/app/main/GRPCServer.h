@@ -66,6 +66,13 @@ private:
 
     std::vector<boost::asio::ip::address> secureGatewayIPs_;
 
+    // TLS certificate paths
+    std::optional<std::string> sslCertPath_;
+    std::optional<std::string> sslKeyPath_;
+    std::optional<std::string> sslCertChainPath_;  // Intermediate CA certs for server cert chain
+    std::optional<std::string>
+        sslClientCAPath_;  // CA cert for client certificate verification (mTLS)
+
     beast::Journal journal_;
 
     // typedef for function to bind a listener
@@ -124,6 +131,10 @@ public:
     getEndpoint() const;
 
 private:
+    // Create server credentials (TLS or insecure) based on configuration
+    std::shared_ptr<grpc::ServerCredentials>
+    createServerCredentials();
+
     // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
     class CallData : public Processor,
@@ -175,7 +186,7 @@ private:
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
     public:
-        virtual ~CallData() = default;
+        ~CallData() override = default;
 
         // Take in the "service" instance (in this case representing an
         // asynchronous server) and the completion queue "cq" used for
@@ -196,10 +207,10 @@ private:
         CallData&
         operator=(CallData const&) = delete;
 
-        virtual void
+        void
         process() override;
 
-        virtual bool
+        bool
         isFinished() override;
 
         std::shared_ptr<Processor>

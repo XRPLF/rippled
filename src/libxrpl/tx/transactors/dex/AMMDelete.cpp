@@ -1,9 +1,21 @@
+#include <xrpl/tx/transactors/dex/AMMDelete.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/dex/AMMDelete.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -52,6 +64,20 @@ AMMDelete::doApply()
         sb.apply(ctx_.rawView());
 
     return ter;
+}
+
+void
+AMMDelete::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+AMMDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

@@ -1,10 +1,29 @@
+#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/nft/NFTokenAcceptOffer.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -548,6 +567,25 @@ NFTokenAcceptOffer::doApply()
         return acceptOffer(so);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
+}
+
+void
+NFTokenAcceptOffer::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+NFTokenAcceptOffer::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl
