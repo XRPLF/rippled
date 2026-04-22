@@ -2400,6 +2400,28 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
         }
 
+        // destination requires destination tag but none provided
+        {
+            env(fset(carol, asfRequireDest));
+            env.close();
+
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = 10,
+                .proof = getTrivialSendProofHex(),
+                .senderEncryptedAmt = getTrivialCiphertext(),
+                .destEncryptedAmt = getTrivialCiphertext(),
+                .issuerEncryptedAmt = getTrivialCiphertext(),
+                .amountCommitment = getTrivialCommitment(),
+                .balanceCommitment = getTrivialCommitment(),
+                .err = tecDST_TAG_NEEDED,
+            });
+
+            env(fclear(carol, asfRequireDest));
+            env.close();
+        }
+
         // dave exists, but has no confidential fields (never converted)
         {
             mptAlice.send({
@@ -7213,6 +7235,74 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     // Exercises ticket-specific error codes for confidential transfer transactions:
+
+    void
+    testDestinationTag(FeatureBitset features)
+    {
+        testcase("test Destination Tag");
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // Set RequireDest on carol
+        env(fset(carol, asfRequireDest));
+        env.close();
+
+        // Send without destination tag — rejected
+        mptAlice.send({
+            .account = bob,
+            .dest = carol,
+            .amt = 10,
+            .proof = getTrivialSendProofHex(),
+            .senderEncryptedAmt = getTrivialCiphertext(),
+            .destEncryptedAmt = getTrivialCiphertext(),
+            .issuerEncryptedAmt = getTrivialCiphertext(),
+            .amountCommitment = getTrivialCommitment(),
+            .balanceCommitment = getTrivialCommitment(),
+            .err = tecDST_TAG_NEEDED,
+        });
+
+        // Send with destination tag — succeeds (passes preclaim,
+        // reaches ZKP verification with the real proof)
+        mptAlice.send({.account = bob, .dest = carol, .amt = 10, .destinationTag = 42});
+
+        // Verify the destination tag is in the confirmed transaction
+        auto const tx = env.tx();
+        BEAST_EXPECT(tx);
+        BEAST_EXPECT(tx->isFieldPresent(sfDestinationTag));
+        BEAST_EXPECT((*tx)[sfDestinationTag] == 42);
+
+        env(fclear(carol, asfRequireDest));
+        env.close();
+
+        // Send without destination tag when not required — succeeds
+        mptAlice.mergeInbox({.account = carol});
+        mptAlice.send({.account = bob, .dest = carol, .amt = 10});
+    }
+
     // terPRE_TICKET when the ticket doesn't exist yet, and tefNO_TICKET when
     // the ticket has already been consumed or was never created.
     void
@@ -8660,6 +8750,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testSendDepositPreauth(features);
         testSendCredentialValidation(features);
         testSendWithAuditor(features);
+        testDestinationTag(features);
 
         // ConfidentialMPTClawback
         testClawback(features);

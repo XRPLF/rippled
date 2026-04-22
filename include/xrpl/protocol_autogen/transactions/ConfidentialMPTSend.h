@@ -70,6 +70,32 @@ public:
     }
 
     /**
+     * @brief Get sfDestinationTag (soeOPTIONAL)
+     * @return The field value, or std::nullopt if not present.
+     */
+    [[nodiscard]]
+    protocol_autogen::Optional<SF_UINT32::type::value_type>
+    getDestinationTag() const
+    {
+        if (hasDestinationTag())
+        {
+            return this->tx_->at(sfDestinationTag);
+        }
+        return std::nullopt;
+    }
+
+    /**
+     * @brief Check if sfDestinationTag is present.
+     * @return True if the field is present, false otherwise.
+     */
+    [[nodiscard]]
+    bool
+    hasDestinationTag() const
+    {
+        return this->tx_->isFieldPresent(sfDestinationTag);
+    }
+
+    /**
      * @brief Get sfSenderEncryptedAmount (soeREQUIRED)
      * @return The field value.
      */
@@ -263,6 +289,17 @@ public:
     setDestination(std::decay_t<typename SF_ACCOUNT::type::value_type> const& value)
     {
         object_[sfDestination] = value;
+        return *this;
+    }
+
+    /**
+     * @brief Set sfDestinationTag (soeOPTIONAL)
+     * @return Reference to this builder for method chaining.
+     */
+    ConfidentialMPTSendBuilder&
+    setDestinationTag(std::decay_t<typename SF_UINT32::type::value_type> const& value)
+    {
+        object_[sfDestinationTag] = value;
         return *this;
     }
 

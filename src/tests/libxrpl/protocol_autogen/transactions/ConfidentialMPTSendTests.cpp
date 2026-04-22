@@ -31,6 +31,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
     // Transaction-specific field values
     auto const mPTokenIssuanceIDValue = canonical_UINT192();
     auto const destinationValue = canonical_ACCOUNT();
+    auto const destinationTagValue = canonical_UINT32();
     auto const senderEncryptedAmountValue = canonical_VL();
     auto const destinationEncryptedAmountValue = canonical_VL();
     auto const issuerEncryptedAmountValue = canonical_VL();
@@ -55,6 +56,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
     };
 
     // Set optional fields
+    builder.setDestinationTag(destinationTagValue);
     builder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
     builder.setCredentialIDs(credentialIDsValue);
 
@@ -123,6 +125,14 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderSettersRoundTrip)
 
     // Verify optional fields
     {
+        auto const& expected = destinationTagValue;
+        auto const actualOpt = tx.getDestinationTag();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
+        expectEqualField(expected, *actualOpt, "sfDestinationTag");
+        EXPECT_TRUE(tx.hasDestinationTag());
+    }
+
+    {
         auto const& expected = auditorEncryptedAmountValue;
         auto const actualOpt = tx.getAuditorEncryptedAmount();
         ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfAuditorEncryptedAmount should be present";
@@ -156,6 +166,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderFromStTxRoundTrip)
     // Transaction-specific field values
     auto const mPTokenIssuanceIDValue = canonical_UINT192();
     auto const destinationValue = canonical_ACCOUNT();
+    auto const destinationTagValue = canonical_UINT32();
     auto const senderEncryptedAmountValue = canonical_VL();
     auto const destinationEncryptedAmountValue = canonical_VL();
     auto const issuerEncryptedAmountValue = canonical_VL();
@@ -180,6 +191,7 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderFromStTxRoundTrip)
         feeValue
     };
 
+    initialBuilder.setDestinationTag(destinationTagValue);
     initialBuilder.setAuditorEncryptedAmount(auditorEncryptedAmountValue);
     initialBuilder.setCredentialIDs(credentialIDsValue);
 
@@ -248,6 +260,13 @@ TEST(TransactionsConfidentialMPTSendTests, BuilderFromStTxRoundTrip)
     }
 
     // Verify optional fields
+    {
+        auto const& expected = destinationTagValue;
+        auto const actualOpt = rebuiltTx.getDestinationTag();
+        ASSERT_TRUE(actualOpt.has_value()) << "Optional field sfDestinationTag should be present";
+        expectEqualField(expected, *actualOpt, "sfDestinationTag");
+    }
+
     {
         auto const& expected = auditorEncryptedAmountValue;
         auto const actualOpt = rebuiltTx.getAuditorEncryptedAmount();
@@ -333,6 +352,8 @@ TEST(TransactionsConfidentialMPTSendTests, OptionalFieldsReturnNullopt)
     auto tx = builder.build(publicKey, secretKey);
 
     // Verify optional fields are not present
+    EXPECT_FALSE(tx.hasDestinationTag());
+    EXPECT_FALSE(tx.getDestinationTag().has_value());
     EXPECT_FALSE(tx.hasAuditorEncryptedAmount());
     EXPECT_FALSE(tx.getAuditorEncryptedAmount().has_value());
     EXPECT_FALSE(tx.hasCredentialIDs());
