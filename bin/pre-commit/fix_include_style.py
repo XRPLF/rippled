@@ -4,7 +4,7 @@
 Converts quoted includes (#include "...") to angle-bracket includes
 (#include <...>), which is the required style in this project.
 
-Usage: ./bin/pre-commit/fix-include-style.py <file1> <file2> ...
+Usage: ./bin/pre-commit/fix_include_style.py <file1> <file2> ...
 """
 
 import re
