@@ -7125,21 +7125,31 @@ protected:
         auto const borrowerScale = static_cast<STAmount const&>(borrowerBalance()).exponent();
 
         auto const loanKeylet = keylet::loan(brokerInfo.brokerID, currentSeq);
-        auto const periodicPayment = [&]() {
+        auto const maybePeriodicPayment = [&]() -> std::optional<STAmount> {
             auto const loanSle = env.le(loanKeylet);
-            BEAST_EXPECT(loanSle);
-            if (!loanSle)
-                return STAmount{iou};
+            if (!BEAST_EXPECT(loanSle))
+                return std::nullopt;
             // Construct Payment
             return STAmount{iou, loanSle->at(sfPeriodicPayment)};
         }();
+        if (!maybePeriodicPayment)
+            return;
+        auto const periodicPayment = *maybePeriodicPayment;
         auto const roundedPayment = roundToScale(periodicPayment, borrowerScale, Number::upward);
 
         // ATTACK: Add dust buffer (1e-9) to force 'excess' logic execution
         STAmount const paymentBuffer{iou, Number(1, -9)};
         STAmount const attackPayment = periodicPayment + paymentBuffer;
 
-        auto const initialVaultAssets = env.le(vaultKeylet)->at(sfAssetsTotal);
+        auto const maybeInitialVaultAssets = [&]() -> std::optional<Number> {
+            auto const vault = env.le(vaultKeylet);
+            if (!BEAST_EXPECT(vault))
+                return std::nullopt;
+            return vault->at(sfAssetsTotal);
+        }();
+        if (!maybeInitialVaultAssets)
+            return;
+        auto const initialVaultAssets = *maybeInitialVaultAssets;
 
         // 5. Execution Loop
         int yieldTheftCount = 0;
