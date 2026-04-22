@@ -11,6 +11,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <memory>
@@ -96,7 +97,8 @@ verifySendProofs(
     {
         auditor.emplace(
             ConfidentialRecipient{
-                (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
+                .publicKey = (*sleIssuance)[sfAuditorEncryptionKey],
+                .encryptedAmount = ctx.tx[sfAuditorEncryptedAmount]});
     }
 
     auto const contextHash = getSendContextHash(
@@ -108,9 +110,12 @@ verifySendProofs(
 
     return verifySendProof(
         ctx.tx[sfZKProof],
-        {(*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]},
-        {(*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]},
-        {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
+        {.publicKey = (*sleSenderMPToken)[sfHolderEncryptionKey],
+         .encryptedAmount = ctx.tx[sfSenderEncryptedAmount]},
+        {.publicKey = (*sleDestinationMPToken)[sfHolderEncryptionKey],
+         .encryptedAmount = ctx.tx[sfDestinationEncryptedAmount]},
+        {.publicKey = (*sleIssuance)[sfIssuerEncryptionKey],
+         .encryptedAmount = ctx.tx[sfIssuerEncryptedAmount]},
         auditor,
         (*sleSenderMPToken)[sfConfidentialBalanceSpending],
         ctx.tx[sfAmountCommitment],

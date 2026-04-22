@@ -1503,11 +1503,14 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 recipients,
                 blindingFactor,
                 ctxHash,
-                {amountCommitment, *arg.amt, senderAmt, blindingFactor},
-                {balanceCommitment,
-                 *prevSenderSpending,
-                 *prevEncryptedSenderSpending,
-                 balanceBlindingFactor});
+                {.pedersenCommitment = amountCommitment,
+                 .amt = *arg.amt,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = blindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *prevSenderSpending,
+                 .encryptedAmt = *prevEncryptedSenderSpending,
+                 .blindingFactor = balanceBlindingFactor});
         }
 
         if (proof)
@@ -1775,11 +1778,14 @@ MPTTester::sendJV(
                 recipients,
                 blindingFactor,
                 ctxHash,
-                {amountCommitment, *arg.amt, senderAmt, blindingFactor},
-                {balanceCommitment,
-                 prevSenderSpending,
-                 *prevEncryptedSenderSpending,
-                 balanceBlindingFactor});
+                {.pedersenCommitment = amountCommitment,
+                 .amt = *arg.amt,
+                 .encryptedAmt = senderAmt,
+                 .blindingFactor = blindingFactor},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = prevSenderSpending,
+                 .encryptedAmt = *prevEncryptedSenderSpending,
+                 .blindingFactor = balanceBlindingFactor});
         }
 
         if (proof)

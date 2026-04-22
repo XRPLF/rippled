@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/ConfidentialMPTConvertBack.h>
 
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
@@ -12,6 +13,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <memory>
@@ -89,7 +91,8 @@ verifyProofs(
     {
         auditor.emplace(
             ConfidentialRecipient{
-                (*issuance)[sfAuditorEncryptionKey], tx[sfAuditorEncryptedAmount]});
+                .publicKey = (*issuance)[sfAuditorEncryptionKey],
+                .encryptedAmount = tx[sfAuditorEncryptedAmount]});
     }
 
     // Run all verifications before returning any error to prevent timing attacks
@@ -99,8 +102,9 @@ verifyProofs(
     if (auto const ter = verifyRevealedAmount(
             amount,
             Slice(blindingFactor.data(), blindingFactor.size()),
-            {holderPubKey, tx[sfHolderEncryptedAmount]},
-            {(*issuance)[sfIssuerEncryptionKey], tx[sfIssuerEncryptedAmount]},
+            {.publicKey = holderPubKey, .encryptedAmount = tx[sfHolderEncryptedAmount]},
+            {.publicKey = (*issuance)[sfIssuerEncryptionKey],
+             .encryptedAmount = tx[sfIssuerEncryptedAmount]},
             auditor);
         !isTesSuccess(ter))
     {
