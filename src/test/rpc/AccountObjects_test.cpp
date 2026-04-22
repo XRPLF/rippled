@@ -692,7 +692,7 @@ public:
 
         {
             std::string const credentialType1 = "credential1";
-            Account issuer("issuer");
+            Account const issuer("issuer");
             env.fund(XRP(5000), issuer);
 
             // gw creates an PermissionedDomain.
