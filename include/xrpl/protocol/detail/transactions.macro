@@ -1138,6 +1138,7 @@ TRANSACTION(ttCONFIDENTIAL_MPT_SEND, 88, ConfidentialMPTSend,
     ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfDestination, soeREQUIRED},
+    {sfDestinationTag, soeOPTIONAL},
     {sfSenderEncryptedAmount, soeREQUIRED},
     {sfDestinationEncryptedAmount, soeREQUIRED},
     {sfIssuerEncryptedAmount, soeREQUIRED},

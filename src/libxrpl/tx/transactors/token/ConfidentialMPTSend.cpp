@@ -33,7 +33,9 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfSenderEncryptedAmount].length() != ecGamalEncryptedTotalLength ||
         ctx.tx[sfDestinationEncryptedAmount].length() != ecGamalEncryptedTotalLength ||
         ctx.tx[sfIssuerEncryptedAmount].length() != ecGamalEncryptedTotalLength)
+    {
         return temBAD_CIPHERTEXT;
+    }
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
     if (hasAuditor && ctx.tx[sfAuditorEncryptedAmount].length() != ecGamalEncryptedTotalLength)
@@ -46,14 +48,18 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
     // Check the Pedersen commitments are valid
     if (!isValidCompressedECPoint(ctx.tx[sfBalanceCommitment]) ||
         !isValidCompressedECPoint(ctx.tx[sfAmountCommitment]))
+    {
         return temMALFORMED;
+    }
 
     // Check the encrypted amount formats, this is more expensive so put it at
     // the end
     if (!isValidCiphertext(ctx.tx[sfSenderEncryptedAmount]) ||
         !isValidCiphertext(ctx.tx[sfDestinationEncryptedAmount]) ||
         !isValidCiphertext(ctx.tx[sfIssuerEncryptedAmount]))
+    {
         return temBAD_CIPHERTEXT;
+    }
 
     if (hasAuditor && !isValidCiphertext(ctx.tx[sfAuditorEncryptedAmount]))
         return temBAD_CIPHERTEXT;
@@ -112,8 +118,16 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     // Check if destination account exists
     auto const destination = ctx.tx[sfDestination];
-    if (!ctx.view.exists(keylet::account(destination)))
+    auto const sleDst = ctx.view.read(keylet::account(destination));
+    if (!sleDst)
         return tecNO_TARGET;
+
+    // Check destination tag
+    if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+        !ctx.tx.isFieldPresent(sfDestinationTag))
+    {
+        return tecDST_TAG_NEEDED;
+    }
 
     // Check if MPT issuance exists
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
@@ -154,7 +168,9 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
     if (!sleSenderMPToken->isFieldPresent(sfHolderEncryptionKey) ||
         !sleSenderMPToken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleSenderMPToken->isFieldPresent(sfIssuerEncryptedBalance))
+    {
         return tecNO_PERMISSION;
+    }
 
     // Check destination's MPToken existence
     auto const sleDestinationMPToken = ctx.view.read(keylet::mptoken(mptIssuanceID, destination));
@@ -165,14 +181,18 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
     if (!sleDestinationMPToken->isFieldPresent(sfHolderEncryptionKey) ||
         !sleDestinationMPToken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleDestinationMPToken->isFieldPresent(sfIssuerEncryptedBalance))
+    {
         return tecNO_PERMISSION;
+    }
 
     // Sanity check: Both MPTokens' auditor fields must be present if auditing
     // is enabled
     if (requiresAuditor &&
         (!sleSenderMPToken->isFieldPresent(sfAuditorEncryptedBalance) ||
          !sleDestinationMPToken->isFieldPresent(sfAuditorEncryptedBalance)))
+    {
         return tefINTERNAL;  // LCOV_EXCL_LINE
+    }
 
     // Check lock
     MPTIssue const mptIssue(mptIssuanceID);
@@ -205,7 +225,7 @@ ConfidentialMPTSend::doApply()
     auto sleSenderMPToken = view().peek(keylet::mptoken(mptIssuanceID, account_));
     auto sleDestinationMPToken = view().peek(keylet::mptoken(mptIssuanceID, destination));
 
-    auto sleDestAcct = view().peek(keylet::account(destination));
+    auto const sleDestAcct = view().peek(keylet::account(destination));
 
     if (!sleSenderMPToken || !sleDestinationMPToken || !sleDestAcct)
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -215,15 +235,15 @@ ConfidentialMPTSend::doApply()
         !isTesSuccess(err))
         return err;
 
-    Slice const senderEc = ctx_.tx[sfSenderEncryptedAmount];
-    Slice const destEc = ctx_.tx[sfDestinationEncryptedAmount];
-    Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
+    auto const senderEc = ctx_.tx[sfSenderEncryptedAmount];
+    auto const destEc = ctx_.tx[sfDestinationEncryptedAmount];
+    auto const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
 
     auto const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
     // Subtract from sender's spending balance
     {
-        Slice const curSpending = (*sleSenderMPToken)[sfConfidentialBalanceSpending];
+        auto const curSpending = (*sleSenderMPToken)[sfConfidentialBalanceSpending];
         auto newSpending = homomorphicSubtract(curSpending, senderEc);
         if (!newSpending)
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -233,7 +253,7 @@ ConfidentialMPTSend::doApply()
 
     // Subtract from issuer's balance
     {
-        Slice const curIssuerEnc = (*sleSenderMPToken)[sfIssuerEncryptedBalance];
+        auto const curIssuerEnc = (*sleSenderMPToken)[sfIssuerEncryptedBalance];
         auto newIssuerEnc = homomorphicSubtract(curIssuerEnc, issuerEc);
         if (!newIssuerEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -244,7 +264,7 @@ ConfidentialMPTSend::doApply()
     // Subtract from auditor's balance if present
     if (auditorEc)
     {
-        Slice const curAuditorEnc = (*sleSenderMPToken)[sfAuditorEncryptedBalance];
+        auto const curAuditorEnc = (*sleSenderMPToken)[sfAuditorEncryptedBalance];
         auto newAuditorEnc = homomorphicSubtract(curAuditorEnc, *auditorEc);
         if (!newAuditorEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -254,7 +274,7 @@ ConfidentialMPTSend::doApply()
 
     // Add to destination's inbox balance
     {
-        Slice const curInbox = (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
+        auto const curInbox = (*sleDestinationMPToken)[sfConfidentialBalanceInbox];
         auto newInbox = homomorphicAdd(curInbox, destEc);
         if (!newInbox)
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -264,7 +284,7 @@ ConfidentialMPTSend::doApply()
 
     // Add to issuer's balance
     {
-        Slice const curIssuerEnc = (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
+        auto const curIssuerEnc = (*sleDestinationMPToken)[sfIssuerEncryptedBalance];
         auto newIssuerEnc = homomorphicAdd(curIssuerEnc, issuerEc);
         if (!newIssuerEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -275,7 +295,7 @@ ConfidentialMPTSend::doApply()
     // Add to auditor's balance if present
     if (auditorEc)
     {
-        Slice const curAuditorEnc = (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
+        auto const curAuditorEnc = (*sleDestinationMPToken)[sfAuditorEncryptedBalance];
         auto newAuditorEnc = homomorphicAdd(curAuditorEnc, *auditorEc);
         if (!newAuditorEnc)
             return tecINTERNAL;  // LCOV_EXCL_LINE

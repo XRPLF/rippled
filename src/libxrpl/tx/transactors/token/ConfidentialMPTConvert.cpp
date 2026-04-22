@@ -67,7 +67,9 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
 
     if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount) ||
         !sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
+    {
         return tecNO_PERMISSION;
+    }
 
     // already checked in preflight, but should also check that issuer on the
     // issuance isn't the account either
@@ -102,7 +104,7 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     if (auto const ter = requireAuth(ctx.view, mptIssue, account); !isTesSuccess(ter))
         return ter;
 
-    STAmount const mptAmount =
+    auto const mptAmount =
         STAmount(MPTAmount{static_cast<MPTAmount::value_type>(amount)}, mptIssue);
     if (accountHolds(
             ctx.view,
@@ -203,9 +205,8 @@ ConfidentialMPTConvert::doApply()
     (*sleMptoken)[sfMPTAmount] = amt - amtToConvert;
     (*sleIssuance)[sfConfidentialOutstandingAmount] = currentCOA + amtToConvert;
 
-    Slice const holderEc = ctx_.tx[sfHolderEncryptedAmount];
-    Slice const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
-
+    auto const holderEc = ctx_.tx[sfHolderEncryptedAmount];
+    auto const issuerEc = ctx_.tx[sfIssuerEncryptedAmount];
     auto const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
     // Two cases for Convert:

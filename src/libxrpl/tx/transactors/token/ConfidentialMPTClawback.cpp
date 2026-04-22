@@ -119,8 +119,8 @@ ConfidentialMPTClawback::doApply()
 
     auto const clawAmount = ctx_.tx[sfMPTAmount];
 
-    Slice const holderPubKey = (*sleHolderMPToken)[sfHolderEncryptionKey];
-    Slice const issuerPubKey = (*sleIssuance)[sfIssuerEncryptionKey];
+    auto const holderPubKey = (*sleHolderMPToken)[sfHolderEncryptionKey];
+    auto const issuerPubKey = (*sleIssuance)[sfIssuerEncryptionKey];
 
     // After clawback, the balance should be encrypted zero.
     auto const encZeroForHolder = encryptCanonicalZeroAmount(holderPubKey, holder, mptIssuanceID);
@@ -144,7 +144,7 @@ ConfidentialMPTClawback::doApply()
         if (!sleIssuance->isFieldPresent(sfAuditorEncryptionKey))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        Slice const auditorPubKey = (*sleIssuance)[sfAuditorEncryptionKey];
+        auto const auditorPubKey = (*sleIssuance)[sfAuditorEncryptionKey];
 
         auto encZeroForAuditor = encryptCanonicalZeroAmount(auditorPubKey, holder, mptIssuanceID);
 

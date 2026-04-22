@@ -3,6 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/tag.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/txflags.h>
@@ -242,6 +243,7 @@ struct MPTConfidentialSend
     std::optional<Buffer> amountCommitment = std::nullopt;
     std::optional<Buffer> balanceCommitment = std::nullopt;
     std::optional<Account> delegate = std::nullopt;
+    std::optional<std::uint32_t> destinationTag = std::nullopt;
     std::optional<std::uint32_t> ticketSeq = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
@@ -567,7 +569,6 @@ public:
         std::uint64_t const amount,
         std::vector<ConfidentialRecipient> const& recipients,
         Slice const& blindingFactor,
-        std::size_t const nRecipients,
         uint256 const& contextHash,
         PedersenProofParams const& amountParams,
         PedersenProofParams const& balanceParams) const;
@@ -613,6 +614,10 @@ private:
         if constexpr (requires { arg.delegate; })
             delegateAcct = arg.delegate;
 
+        std::optional<std::uint32_t> dstTag;
+        if constexpr (requires { arg.destinationTag; })
+            dstTag = arg.destinationTag;
+
         if (ticketSeq && delegateAcct)
             env_(
                 jv,
@@ -624,6 +629,8 @@ private:
             env_(jv, expectedFlags, expectedTer, ticket::use(*ticketSeq));
         else if (delegateAcct)
             env_(jv, expectedFlags, expectedTer, delegate::as(*delegateAcct));
+        else if (dstTag)
+            env_(jv, expectedFlags, expectedTer, dtag(*dstTag));
         else
             env_(jv, expectedFlags, expectedTer);
         auto const err = env_.ter();

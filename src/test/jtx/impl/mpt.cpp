@@ -577,6 +577,7 @@ MPTTester::checkDomainID(std::optional<uint256> expected) const
     });
 }
 
+// todo: remove this function, which is only for debugging
 [[nodiscard]] bool
 MPTTester::printMPT(Account const& holder_) const
 {
@@ -833,14 +834,11 @@ MPTTester::getConfidentialSendProof(
     std::uint64_t const amount,
     std::vector<ConfidentialRecipient> const& recipients,
     Slice const& blindingFactor,
-    std::size_t const nRecipients,
     uint256 const& contextHash,
     PedersenProofParams const& amountParams,
     PedersenProofParams const& balanceParams) const
 {
     auto const pedersenBalanceParams = makePedersenParams(balanceParams);
-    if (recipients.size() != nRecipients)
-        return std::nullopt;
 
     if (blindingFactor.size() != ecBlindingFactorLength)
         return std::nullopt;
@@ -857,13 +855,15 @@ MPTTester::getConfidentialSendProof(
         return std::nullopt;
 
     // Build mpt_confidential_participant array
-    std::vector<mpt_confidential_participant> participants(nRecipients);
-    for (size_t i = 0; i < nRecipients; ++i)
+    std::vector<mpt_confidential_participant> participants(recipients.size());
+    for (size_t i = 0; i < recipients.size(); ++i)
     {
         auto const& r = recipients[i];
         if (r.encryptedAmount.size() != ecGamalEncryptedTotalLength ||
             r.publicKey.size() != ecPubKeyLength)
+        {
             return std::nullopt;
+        }
         std::memcpy(participants[i].pubkey, r.publicKey.data(), kMPT_PUBKEY_SIZE);
         std::memcpy(participants[i].ciphertext, r.encryptedAmount.data(), kMPT_ELGAMAL_TOTAL_SIZE);
     }
@@ -876,7 +876,7 @@ MPTTester::getConfidentialSendProof(
             senderPubKey->data(),
             amount,
             participants.data(),
-            nRecipients,
+            recipients.size(),
             blindingFactor.data(),
             contextHash.data(),
             amountParams.pedersenCommitment.data(),
@@ -1353,7 +1353,6 @@ MPTTester::send(MPTConfidentialSend const& arg)
         auto const ctxHash =
             getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
 
-        auto const nRecipients = getConfidentialRecipientCount(auditorAmt.has_value());
         std::vector<ConfidentialRecipient> recipients;
 
         auto const senderPubKey = getPubKey(*arg.account);
@@ -1361,8 +1360,7 @@ MPTTester::send(MPTConfidentialSend const& arg)
         auto const issuerPubKey = getPubKey(issuer_);
 
         // If a key is missing, we skip adding the recipient. This intentionally
-        // causes proof generation to fail (due to recipient count mismatch),
-        // triggering the dummy proof fallback.
+        // causes proof generation to fail, triggering the dummy proof fallback.
         if (senderPubKey)
             recipients.push_back({Slice(*senderPubKey), senderAmt});
         if (destPubKey)
@@ -1397,7 +1395,6 @@ MPTTester::send(MPTConfidentialSend const& arg)
                 *arg.amt,
                 recipients,
                 blindingFactor,
-                nRecipients,
                 ctxHash,
                 {amountCommitment, *arg.amt, senderAmt, blindingFactor},
                 {balanceCommitment,
@@ -1611,7 +1608,6 @@ MPTTester::sendJV(
         auto const ctxHash =
             getSendContextHash(arg.account->id(), *id_, seq, arg.dest->id(), version);
 
-        auto const nRecipients = getConfidentialRecipientCount(auditorAmt.has_value());
         std::vector<ConfidentialRecipient> recipients;
 
         auto const senderPubKey = getPubKey(*arg.account);
@@ -1645,7 +1641,6 @@ MPTTester::sendJV(
                 *arg.amt,
                 recipients,
                 blindingFactor,
-                nRecipients,
                 ctxHash,
                 {amountCommitment, *arg.amt, senderAmt, blindingFactor},
                 {balanceCommitment,
@@ -1808,7 +1803,9 @@ MPTTester::generateKeyPair(Account const& account)
     if (secp256k1_ec_pubkey_serialize(
             secp256k1Context(), compressedPubKey, &outLen, &pubKey, SECP256K1_EC_COMPRESSED) != 1 ||
         outLen != ecPubKeyLength)
+    {
         Throw<std::runtime_error>("failed to serialize public key");
+    }
 
     pubKeys.insert({account.id(), Buffer{compressedPubKey, ecPubKeyLength}});
     privKeys.insert({account.id(), Buffer{privKey, ecPrivKeyLength}});
@@ -1817,11 +1814,8 @@ MPTTester::generateKeyPair(Account const& account)
 std::optional<Buffer>
 MPTTester::getPubKey(Account const& account) const
 {
-    auto it = pubKeys.find(account.id());
-    if (it != pubKeys.end())
-    {
+    if (auto const it = pubKeys.find(account.id()); it != pubKeys.end())
         return it->second;
-    }
 
     return std::nullopt;
 }
@@ -1829,11 +1823,8 @@ MPTTester::getPubKey(Account const& account) const
 std::optional<Buffer>
 MPTTester::getPrivKey(Account const& account) const
 {
-    auto it = privKeys.find(account.id());
-    if (it != privKeys.end())
-    {
+    if (auto const it = privKeys.find(account.id()); it != privKeys.end())
         return it->second;
-    }
 
     return std::nullopt;
 }
@@ -1879,9 +1870,8 @@ MPTTester::decryptAmount(Account const& account, Buffer const& amt) const
 
 std::optional<uint64_t>
 MPTTester::getDecryptedBalance(Account const& account, EncryptedBalanceType balanceType) const
-
 {
-    auto encryptedAmt = getEncryptedBalance(account, balanceType);
+    auto const encryptedAmt = getEncryptedBalance(account, balanceType);
 
     // Return zero to test cases like Feature Disabled, where the ledger object
     // does not exist.
@@ -2058,8 +2048,7 @@ MPTTester::convertBack(MPTConvertBack const& arg)
         // if the caller generated ciphertexts themselves, they should also
         // generate the proof themselves from the blinding factor
         auto const seq = arg.ticketSeq.value_or(env_.seq(*arg.account));
-        uint256 const contextHash =
-            getConvertBackContextHash(arg.account->id(), *id_, seq, version);
+        auto const contextHash = getConvertBackContextHash(arg.account->id(), *id_, seq, version);
         auto const prevEncryptedSpendingBalance =
             getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
 
@@ -2194,8 +2183,7 @@ MPTTester::convertBackJV(MPTConvertBack const& arg, std::uint32_t seq)
     {
         auto const version = getMPTokenVersion(*arg.account);
         auto const prevEncSpending = getEncryptedBalance(*arg.account, HOLDER_ENCRYPTED_SPENDING);
-        uint256 const contextHash =
-            getConvertBackContextHash(arg.account->id(), *id_, seq, version);
+        auto const contextHash = getConvertBackContextHash(arg.account->id(), *id_, seq, version);
 
         Buffer proof;
         if (!prevEncSpending)

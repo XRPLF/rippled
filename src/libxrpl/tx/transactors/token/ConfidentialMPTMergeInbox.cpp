@@ -46,7 +46,9 @@ ConfidentialMPTMergeInbox::preclaim(PreclaimContext const& ctx)
     if (!sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) ||
         !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) ||
         !sleMptoken->isFieldPresent(sfHolderEncryptionKey))
+    {
         return tecNO_PERMISSION;
+    }
 
     // Check lock
     auto const account = ctx.tx[sfAccount];
