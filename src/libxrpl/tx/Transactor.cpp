@@ -1165,7 +1165,7 @@ Transactor::checkInvariants(TER result, XRPAmount fee)
     auto const protoResult = ctx_.checkInvariants(result, fee);
 
     // Fail if either check failed. tef (fatal) takes priority over tec.
-    if (txResult == tefINVARIANT_FAILED || protoResult == tefINVARIANT_FAILED)
+    if (protoResult == tefINVARIANT_FAILED)
         return tefINVARIANT_FAILED;
     if (txResult == tecINVARIANT_FAILED || protoResult == tecINVARIANT_FAILED)
         return tecINVARIANT_FAILED;
