@@ -145,10 +145,10 @@ private:
     struct AppBundle
     {
         Application* app = nullptr;
-        std::unique_ptr<Application> owned{};
+        std::unique_ptr<Application> owned;
         ManualTimeKeeper* timeKeeper = nullptr;
         std::thread thread;
-        std::unique_ptr<AbstractClient> client{};
+        std::unique_ptr<AbstractClient> client;
 
         AppBundle() = default;
         AppBundle(
@@ -838,7 +838,7 @@ protected:
     }
 
     // Map of account IDs to Account
-    std::unordered_map<AccountID, Account> map_{};
+    std::unordered_map<AccountID, Account> map_;
 };
 
 template <class... Args>

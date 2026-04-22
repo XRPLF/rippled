@@ -475,8 +475,8 @@ private:
         std::uint32_t generation_;
 
         // nodes we have discovered to be missing
-        std::vector<std::pair<SHAMapNodeID, uint256>> missingNodes_{};
-        std::set<SHAMapHash> missingHashes_{};
+        std::vector<std::pair<SHAMapNodeID, uint256>> missingNodes_;
+        std::set<SHAMapHash> missingHashes_;
 
         // nodes we are in the process of traversing
         using StackEntry = std::tuple<
@@ -491,7 +491,7 @@ private:
         // elements will not be invalidated during the course of element
         // insertion and removal. Containers that do not offer this guarantee,
         // such as std::vector, can't be used here.
-        std::stack<StackEntry, std::deque<StackEntry>> stack_{};
+        std::stack<StackEntry, std::deque<StackEntry>> stack_;
 
         // nodes we may have acquired from deferred reads
         using DeferredNode = std::tuple<
@@ -503,11 +503,11 @@ private:
         int deferred_;
         std::mutex deferLock_;
         std::condition_variable deferCondVar_;
-        std::vector<DeferredNode> finishedReads_{};
+        std::vector<DeferredNode> finishedReads_;
 
         // nodes we need to resume after we get their children from deferred
         // reads
-        std::map<SHAMapInnerNode*, SHAMapNodeID> resumes_{};
+        std::map<SHAMapInnerNode*, SHAMapNodeID> resumes_;
 
         MissingNodes(int max, SHAMapSyncFilter* filter, int maxDefer, std::uint32_t generation)
             : max_(max), filter_(filter), maxDefer_(maxDefer), generation_(generation), deferred_(0)
@@ -589,7 +589,7 @@ public:
     using pointer = value_type const*;
 
 private:
-    SharedPtrNodeStack stack_{};
+    SharedPtrNodeStack stack_;
     SHAMap const* map_ = nullptr;
     pointer item_ = nullptr;
 

@@ -19,9 +19,16 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
+#include "xrpl/basics/Slice.h"
+#include "xrpl/protocol/LedgerFormats.h"
+
 #include <cstdint>
 #include <limits>
 #include <memory>
+#include <set>
+#include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace credentials {

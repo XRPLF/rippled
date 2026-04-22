@@ -18,10 +18,13 @@
 
 #include <boost/endian/conversion.hpp>
 
+#include "xrpl/basics/Expected.h"
+#include "xrpl/ledger/helpers/NFTokenHelpers.h"
+
 #include <array>
 #include <cstdint>
 #include <cstring>
-#include <iterator>
+#include <utility>
 
 namespace xrpl {
 

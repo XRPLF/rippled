@@ -483,7 +483,7 @@ public:
 class FlowException : public std::runtime_error
 {
 public:
-    TER ter{};
+    TER ter;
 
     FlowException(TER t, std::string const& msg) : std::runtime_error(msg), ter(t)
     {

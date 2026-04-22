@@ -11,7 +11,7 @@ class TxQ;
 
 struct ApplyResult
 {
-    TER ter{};
+    TER ter;
     bool applied;
     std::optional<TxMeta> metadata;
 
@@ -156,7 +156,7 @@ public:
     beast::Journal const j;
 
     /// Intermediate transaction result
-    NotTEC const ter{};
+    NotTEC const ter;
 
     /// Constructor
     template <class Context>
@@ -198,7 +198,7 @@ public:
     beast::Journal const j;
 
     /// Intermediate transaction result
-    TER const ter{};
+    TER const ter;
 
     /// Success flag - whether the transaction is likely to
     /// claim a fee
