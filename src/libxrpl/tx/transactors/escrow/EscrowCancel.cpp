@@ -17,9 +17,13 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 
+#include <memory>
 #include <variant>
 
 namespace xrpl {
@@ -215,4 +219,22 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
+void
+EscrowCancel::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+EscrowCancel::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
 }  // namespace xrpl

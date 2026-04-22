@@ -13,7 +13,10 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -564,6 +567,25 @@ NFTokenAcceptOffer::doApply()
         return acceptOffer(so);
 
     return tecINTERNAL;  // LCOV_EXCL_LINE
+}
+
+void
+NFTokenAcceptOffer::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+NFTokenAcceptOffer::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

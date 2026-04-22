@@ -14,7 +14,10 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 
@@ -183,4 +186,22 @@ PaymentChannelCreate::doApply()
     return tesSUCCESS;
 }
 
+void
+PaymentChannelCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+PaymentChannelCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
 }  // namespace xrpl
