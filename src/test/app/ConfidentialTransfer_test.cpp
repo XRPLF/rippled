@@ -10212,6 +10212,161 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     }
 
     void
+    testZeroRandomnessCiphertext(FeatureBitset features)
+    {
+        testcase("test Zero Randomness Ciphertext");
+
+        // Setting r = 0 in ElGamal yields C1 = O (identity), C2 = mG —
+        // a deterministic ciphertext that reveals the plaintext.
+
+        using namespace test::jtx;
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}});
+
+        mptAlice.create({.ownerCount = 1, .flags = tfMPTCanTransfer | tfMPTCanConfidentialAmount});
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+
+        mptAlice.pay(alice, bob, 1000);
+        mptAlice.pay(alice, carol, 1000);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+
+        mptAlice.set({.account = alice, .issuerPubKey = mptAlice.getPubKey(alice)});
+
+        mptAlice.convert({.account = bob, .amt = 100, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        uint64_t const sendAmount = 10;
+
+        // -----------------------------------------------------------------
+        // Variant A: Post-signature zero-randomness substitution
+        // -----------------------------------------------------------------
+        // Construct a valid ConfidentialMPTSend transaction with proper
+        // ciphertexts and ZKPs, sign it, then replace the sender ciphertext
+        // with a deterministic form (C1 = 0x00...00, C2 = arbitrary).
+        // Since the identity element has no valid compressed encoding,
+        // the modified blob fails deserialization / signature check.
+        {
+            auto const seq = env.seq(bob);
+            auto jv = mptAlice.sendJV({.account = bob, .dest = carol, .amt = sendAmount}, seq);
+            auto jtx = env.jt(jv);
+            BEAST_EXPECT(jtx.stx);
+
+            // Serialize the signed transaction
+            Serializer s;
+            jtx.stx->add(s);
+            SerialIter sit(s.slice());
+            STObject obj(sit, sfTransaction);
+
+            // Replace sender ciphertext with zero-randomness form:
+            // C1 = all zeros (identity element — invalid encoding)
+            // C2 = valid trivial point (simulating mG)
+            Buffer zeroCiphertext(ecGamalEncryptedTotalLength);
+            std::memset(zeroCiphertext.data(), 0, ecGamalEncryptedTotalLength);
+            // C2 half: use a valid point so only C1 is the problem
+            auto const& tc = getTrivialCiphertext();
+            std::memcpy(
+                zeroCiphertext.data() + ecGamalEncryptedLength,
+                tc.data() + ecGamalEncryptedLength,
+                ecGamalEncryptedLength);
+            obj.setFieldVL(sfSenderEncryptedAmount, zeroCiphertext);
+
+            // Re-serialize with the original (now-stale) signature
+            Serializer tampered;
+            obj.add(tampered);
+
+            // Signature verification fails because ciphertext fields are
+            // signed — transaction rejected before ZKP verification.
+            auto const jr = env.rpc("submit", strHex(tampered.slice()));
+            BEAST_EXPECT(jr[jss::result][jss::error] == "invalidTransaction");
+        }
+
+        // -----------------------------------------------------------------
+        // Variant B: Re-signed zero-randomness ciphertext
+        // -----------------------------------------------------------------
+        // Same zero-randomness ciphertext as Variant A (C1 = 0, C2 = mG),
+        // but submitted normally via send() which re-signs the transaction.
+        // Signature verification passes, but preflight's isValidCiphertext
+        // rejects it: the identity element has no valid compressed encoding
+        // on secp256k1, so secp256k1_ec_pubkey_parse fails on C1 = 0.
+        {
+            // Build zero-randomness ciphertext: C1 = all zeros (identity),
+            // C2 = valid trivial point (simulating mG)
+            Buffer zeroCiphertext(ecGamalEncryptedTotalLength);
+            std::memset(zeroCiphertext.data(), 0, ecGamalEncryptedTotalLength);
+            auto const& tc = getTrivialCiphertext();
+            std::memcpy(
+                zeroCiphertext.data() + ecGamalEncryptedLength,
+                tc.data() + ecGamalEncryptedLength,
+                ecGamalEncryptedLength);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = sendAmount,
+                 .senderEncryptedAmt = zeroCiphertext,
+                 .err = temBAD_CIPHERTEXT});
+        }
+
+        // -----------------------------------------------------------------
+        // Variant C: Deterministic ciphertext reuse across transactions
+        // -----------------------------------------------------------------
+        // Construct two transactions using identical deterministic
+        // ciphertexts (same fixed blinding factor).  Even if a valid
+        // proof could be generated for one, it cannot be reused because
+        // the TransactionContextID (which includes account sequence)
+        // differs between transactions.
+        {
+            // First transaction: generate valid proof for sendAmount
+            ConfidentialSendSetup setup1(mptAlice, bob, carol, alice, sendAmount);
+
+            auto const proof1 = setup1.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(proof1.has_value()))
+                return;
+
+            // Submit first transaction successfully
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup1.sendAmount,
+                 .proof = strHex(*proof1),
+                 .senderEncryptedAmt = setup1.senderAmt,
+                 .destEncryptedAmt = setup1.destAmt,
+                 .issuerEncryptedAmt = setup1.issuerAmt,
+                 .amountCommitment = setup1.amountCommitment,
+                 .balanceCommitment = setup1.balanceCommitment});
+
+            mptAlice.mergeInbox({.account = carol});
+
+            // Second transaction: reuse the same proof from tx1.
+            // The context hash includes the new account sequence, so the
+            // proof generated for the old sequence is invalid.
+            ConfidentialSendSetup setup2(mptAlice, bob, carol, alice, sendAmount);
+
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup2.sendAmount,
+                 .proof = strHex(*proof1),  // reuse proof from tx1
+                 .senderEncryptedAmt = setup2.senderAmt,
+                 .destEncryptedAmt = setup2.destAmt,
+                 .issuerEncryptedAmt = setup2.issuerAmt,
+                 .amountCommitment = setup2.amountCommitment,
+                 .balanceCommitment = setup2.balanceCommitment,
+                 .err = tecBAD_PROOF});
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         // ConfidentialMPTConvert
@@ -10314,6 +10469,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testCiphertextNegation(features);
         testCiphertextCombination(features);
         testCiphertextRerandomization(features);
+        testZeroRandomnessCiphertext(features);
     }
 
 public:
