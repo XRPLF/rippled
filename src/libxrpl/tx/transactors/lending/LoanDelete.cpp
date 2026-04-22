@@ -1,15 +1,22 @@
 #include <xrpl/tx/transactors/lending/LoanDelete.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>  // IWYU pragma: keep
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -132,6 +139,20 @@ LoanDelete::doApply()
     associateAsset(*vaultSle, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+LoanDelete::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+LoanDelete::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 //------------------------------------------------------------------------------
