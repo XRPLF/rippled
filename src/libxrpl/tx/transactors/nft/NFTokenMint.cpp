@@ -12,8 +12,11 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
 
@@ -22,6 +25,8 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <iterator>  // IWYU pragma: keep
+#include <memory>
 #include <utility>
 
 namespace xrpl {
@@ -335,6 +340,20 @@ NFTokenMint::doApply()
             return tecINSUFFICIENT_RESERVE;
     }
     return tesSUCCESS;
+}
+
+void
+NFTokenMint::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+NFTokenMint::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl
