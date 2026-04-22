@@ -255,8 +255,11 @@ protected:
      *  @param isDelete  true if the entry was erased from the ledger.
      *  @param before    the entry's state before the transaction (nullptr
      *                   for newly created entries).
-     *  @param after     the entry's state after the transaction (nullptr
-     *                   when isDelete is true).
+     *  @param after     the entry's state as supplied by the apply logic
+     *                   for this transaction. For deletions, this is the
+     *                   SLE being erased and is not guaranteed to be null;
+     *                   callers must use isDelete rather than after == nullptr
+     *                   to detect deletions.
      */
     virtual void
     visitInvariantEntry(
