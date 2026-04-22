@@ -21,7 +21,7 @@ class PaymentBuilder;
  * Type: ttPAYMENT (0)
  * Delegable: Delegation::delegable
  * Amendment: uint256{}
- * Privileges: createAcct
+ * Privileges: createAcct | mayCreateMPT
  *
  * Immutable wrapper around STTx providing type-safe field access.
  * Use PaymentBuilder to construct new transactions.

@@ -12,9 +12,7 @@
 
 #include <functional>
 
-namespace xrpl {
-
-namespace LedgerEntryHelpers {
+namespace xrpl::LedgerEntryHelpers {
 
 inline Unexpected<Json::Value>
 missingFieldError(Json::StaticString const field, std::optional<std::string> err = std::nullopt)
@@ -212,12 +210,12 @@ requiredUInt192(
 }
 
 template <>
-inline std::optional<Issue>
+inline std::optional<Asset>
 parse(Json::Value const& param)
 {
     try
     {
-        return issueFromJson(param);
+        return assetFromJson(param);
     }
     catch (std::runtime_error const&)
     {
@@ -225,10 +223,10 @@ parse(Json::Value const& param)
     }
 }
 
-inline Expected<Issue, Json::Value>
-requiredIssue(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
+inline Expected<Asset, Json::Value>
+requiredAsset(Json::Value const& params, Json::StaticString const fieldName, std::string const& err)
 {
-    return required<Issue>(params, fieldName, err, "Issue");
+    return required<Asset>(params, fieldName, err, "Asset");
 }
 
 inline Expected<STXChainBridge, Json::Value>
@@ -283,6 +281,4 @@ parseBridgeFields(Json::Value const& params)
         *lockingChainDoor, lockingChainIssue, *issuingChainDoor, issuingChainIssue);
 }
 
-}  // namespace LedgerEntryHelpers
-
-}  // namespace xrpl
+}  // namespace xrpl::LedgerEntryHelpers

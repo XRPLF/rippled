@@ -28,7 +28,7 @@ if [ ! -d "${DIRECTORY}" ]; then
     echo "Error: Directory '${DIRECTORY}' does not exist."
     exit 1
 fi
-pushd ${DIRECTORY}
+pushd "${DIRECTORY}"
 
 # Add the xrpld.cfg to the .gitignore.
 if ! grep -q 'xrpld.cfg' .gitignore; then
@@ -52,15 +52,14 @@ for DIRECTORY in "${DIRECTORIES[@]}"; do
   find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.cmake" -o -name "*.txt" -o -name "*.cfg" -o -name "*.md" \) | while read -r FILE; do
       echo "Processing file: ${FILE}"
       ${SED_COMMAND} -i -E 's/rippled(-example)?[ .]cfg/xrpld\1.cfg/g' "${FILE}"
+      ${SED_COMMAND} -i 's/rippleConfig/xrpldConfig/g' "${FILE}"
   done
 done
 ${SED_COMMAND} -i 's/rippled/xrpld/g' cfg/xrpld-example.cfg
 ${SED_COMMAND} -i 's/rippled/xrpld/g' src/test/core/Config_test.cpp
 ${SED_COMMAND} -i 's/ripplevalidators/xrplvalidators/g' src/test/core/Config_test.cpp # cspell: disable-line
-${SED_COMMAND} -i 's/rippleConfig/xrpldConfig/g' src/test/core/Config_test.cpp
 ${SED_COMMAND} -i 's@ripple/@xrpld/@g' src/test/core/Config_test.cpp
 ${SED_COMMAND} -i 's/Rippled/File/g' src/test/core/Config_test.cpp
-
 
 # Restore the old config file name in the code that maintains support for now.
 ${SED_COMMAND} -i 's/configLegacyName = "xrpld.cfg"/configLegacyName = "rippled.cfg"/g' src/xrpld/core/detail/Config.cpp

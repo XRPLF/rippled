@@ -1,13 +1,24 @@
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
+
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -123,7 +134,7 @@ PaymentChannelCreate::doApply()
 
     // Create PayChan in ledger.
     //
-    // Note that we we use the value from the sequence or ticket as the
+    // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet = keylet::payChan(account, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);

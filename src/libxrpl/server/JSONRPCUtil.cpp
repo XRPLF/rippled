@@ -1,9 +1,10 @@
+#include <xrpl/server/detail/JSONRPCUtil.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/server/detail/JSONRPCUtil.h>
 
 #include <ctime>
 #include <string>

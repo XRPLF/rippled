@@ -1,7 +1,10 @@
+#include <xrpl/server/NetworkOPs.h>
+
 #include <xrpld/app/consensus/RCLConsensus.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/AcceptedLedger.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
@@ -11,17 +14,19 @@
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/main/Tuning.h>
 #include <xrpld/app/misc/DeliverMax.h>
+#include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/consensus/Consensus.h>
 #include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/consensus/ConsensusTypes.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/ClusterNode.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/rpc/BookChanges.h>
@@ -30,47 +35,122 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/ToString.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/clock/abstract_clock.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/git/Git.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
+#include <xrpl/ledger/AcceptedLedgerTx.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/Manifest.h>
+#include <xrpl/shamap/SHAMap.h>
 #include <xrpl/tx/apply.h>
 
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/system_error.hpp>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <array>
+#include <atomic>
+#include <chrono>
+#include <climits>
+#include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <exception>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
-#include <tuple>
+#include <string_view>
+#include <type_traits>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -91,7 +171,7 @@ class NetworkOPsImp final : public NetworkOPs
         TER result;
 
         TransactionStatus(std::shared_ptr<Transaction> t, bool a, bool l, FailHard f)
-            : transaction(t), admin(a), local(l), failType(f)
+            : transaction(std::move(t)), admin(a), local(l), failType(f)
         {
             XRPL_ASSERT(
                 local || failType == FailHard::no,
@@ -178,7 +258,11 @@ class NetworkOPsImp final : public NetworkOPs
         getCounterData() const
         {
             std::lock_guard const lock(mutex_);
-            return {counters_, mode_, start_, initialSyncUs_};
+            return {
+                .counters = counters_,
+                .mode = mode_,
+                .start = start_,
+                .initialSyncUs = initialSyncUs_};
         }
     };
 
@@ -1254,7 +1338,7 @@ NetworkOPsImp::doTransactionAsync(
     if (transaction->getApplying())
         return;
 
-    mTransactions.push_back(TransactionStatus(transaction, bUnlimited, false, failType));
+    mTransactions.emplace_back(transaction, bUnlimited, false, failType);
     transaction->setApplying();
 
     if (mDispatchState == DispatchState::none)
@@ -1276,7 +1360,7 @@ NetworkOPsImp::doTransactionSync(
 
     if (!transaction->getApplying())
     {
-        mTransactions.push_back(TransactionStatus(transaction, bUnlimited, true, failType));
+        mTransactions.emplace_back(transaction, bUnlimited, true, failType);
         transaction->setApplying();
     }
 
@@ -1373,9 +1457,8 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 
     doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {
         XRPL_ASSERT(lock.owns_lock(), "xrpl::NetworkOPsImp::processTransactionSet has lock");
-        return std::any_of(mTransactions.begin(), mTransactions.end(), [](auto const& t) {
-            return t.transaction->getApplying();
-        });
+        return std::ranges::any_of(
+            mTransactions, [](auto const& t) { return t.transaction->getApplying(); });
     });
 }
 
@@ -2860,7 +2943,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     // This array must be sorted in increasing order.
     static constexpr std::array<std::string_view, 7> protocols{
         "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
-    static_assert(std::is_sorted(std::begin(protocols), std::end(protocols)));
+    static_assert(std::ranges::is_sorted(protocols));
     {
         Json::Value ports{Json::arrayValue};
         for (auto const& port : registry_.get().getServerHandler().setup().ports)
@@ -2871,6 +2954,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                   port.admin_user.empty() && port.admin_password.empty()))
                 continue;
             std::vector<std::string> proto;
+            // NOLINTNEXTLINE(modernize-use-ranges)
             std::set_intersection(
                 std::begin(port.protocol),
                 std::end(port.protocol),
@@ -3177,10 +3261,15 @@ NetworkOPsImp::transJson(
         auto const amount = transaction->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
-        if (account != amount.issue().account)
+        if (account != amount.getIssuer())
         {
             auto const ownerFunds = accountFunds(
-                *ledger, account, amount, fhIGNORE_FREEZE, registry_.get().getJournal("View"));
+                *ledger,
+                account,
+                amount,
+                fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
+                registry_.get().getJournal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
     }
@@ -3344,7 +3433,7 @@ NetworkOPsImp::pubAccountTransaction(
                         if (auto isSptr = info.sinkWptr_.lock(); isSptr)
                         {
                             accountHistoryNotify.emplace_back(
-                                SubAccountHistoryInfo{isSptr, info.index_});
+                                SubAccountHistoryInfo{.sink_ = isSptr, .index_ = info.index_});
                             ++it;
                         }
                         else
@@ -3673,7 +3762,12 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                     case Sqlite: {
                         auto& db = registry_.get().getRelationalDatabase();
                         RelationalDatabase::AccountTxPageOptions const options{
-                            accountId, {minLedger, maxLedger}, marker, 0, true, std::nullopt};
+                            .account = accountId,
+                            .ledgerRange = {.min = minLedger, .max = maxLedger},
+                            .marker = marker,
+                            .limit = 0,
+                            .bAdmin = true,
+                            .delegate = std::nullopt};
                         return db.newestAccountTxPage(options);
                     }
                     // LCOV_EXCL_START
@@ -3897,7 +3991,8 @@ NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& acco
     }
 
     std::lock_guard const sl(mSubLock);
-    SubAccountHistoryInfoWeak ahi{isrListener, std::make_shared<SubAccountHistoryIndex>(accountId)};
+    SubAccountHistoryInfoWeak ahi{
+        .sinkWptr_ = isrListener, .index_ = std::make_shared<SubAccountHistoryIndex>(accountId)};
     auto simIterator = mSubAccountHistory.find(accountId);
     if (simIterator == mSubAccountHistory.end())
     {
@@ -4271,7 +4366,7 @@ NetworkOPsImp::getBookPage(
     ReadView const& view = *lpLedger;
 
     bool const bGlobalFreeze =
-        isGlobalFrozen(view, book.out.account) || isGlobalFrozen(view, book.in.account);
+        isGlobalFrozen(view, book.out.getIssuer()) || isGlobalFrozen(view, book.in.getIssuer());
 
     bool bDone = false;
     bool bDirectAdvance = true;
@@ -4281,7 +4376,7 @@ NetworkOPsImp::getBookPage(
     unsigned int uBookEntry = 0;
     STAmount saDirRate;
 
-    auto const rate = transferRate(view, book.out.account);
+    auto const rate = transferRate(view, book.out.getIssuer());
     auto viewJ = registry_.get().getJournal("View");
 
     while (!bDone && iLimit-- > 0)
@@ -4331,7 +4426,7 @@ NetworkOPsImp::getBookPage(
                 STAmount saOwnerFunds;
                 bool firstOwnerOffer(true);
 
-                if (book.out.account == uOfferOwnerID)
+                if (book.out.getIssuer() == uOfferOwnerID)
                 {
                     // If an offer is selling issuer's own IOUs, it is fully
                     // funded.
@@ -4360,9 +4455,9 @@ NetworkOPsImp::getBookPage(
                         saOwnerFunds = accountHolds(
                             view,
                             uOfferOwnerID,
-                            book.out.currency,
-                            book.out.account,
+                            book.out,
                             fhZERO_IF_FROZEN,
+                            ahZERO_IF_UNAUTHORIZED,
                             viewJ);
 
                         if (saOwnerFunds < beast::zero)
@@ -4382,9 +4477,9 @@ NetworkOPsImp::getBookPage(
 
                 if (rate != parityRate
                     // Have a transfer fee.
-                    && uTakerID != book.out.account
+                    && uTakerID != book.out.getIssuer()
                     // Not taking offers of own IOUs.
-                    && book.out.account != uOfferOwnerID)
+                    && book.out.getIssuer() != uOfferOwnerID)
                 // Offer owner not issuing ownfunds
                 {
                     // Need to charge a transfer fee to offer owner.
@@ -4405,7 +4500,7 @@ NetworkOPsImp::getBookPage(
 
                     saTakerGetsFunded.setJson(jvOffer[jss::taker_gets_funded]);
                     std::min(
-                        saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.issue()))
+                        saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.asset()))
                         .setJson(jvOffer[jss::taker_pays_funded]);
                 }
 
@@ -4549,7 +4644,7 @@ NetworkOPsImp::getBookPage(
 
                 // TODO(tom): The result of this expression is not used - what's
                 // going on here?
-                std::min(saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.issue()))
+                std::min(saTakerPays, multiply(saTakerGetsFunded, saDirRate, saTakerPays.asset()))
                     .setJson(jvOffer[jss::taker_pays_funded]);
             }
 

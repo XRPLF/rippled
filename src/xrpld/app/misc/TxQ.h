@@ -382,11 +382,12 @@ private:
             , targetTxnCount_(
                   setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
                                                              : setup.targetTxnInLedger)
-            , maximumTxnCount_(
-                  setup.maximumTxnInLedger ? *setup.maximumTxnInLedger < targetTxnCount_
-                          ? targetTxnCount_
-                          : *setup.maximumTxnInLedger
-                                           : std::optional<std::size_t>(std::nullopt))
+            , maximumTxnCount_([&]() -> std::optional<std::size_t> {
+                if (!setup.maximumTxnInLedger)
+                    return std::nullopt;
+                return *setup.maximumTxnInLedger < targetTxnCount_ ? targetTxnCount_
+                                                                   : *setup.maximumTxnInLedger;
+            }())
             , txnsExpected_(minimumTxnCount_)
             , recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
@@ -398,9 +399,9 @@ private:
             Updates fee metrics based on the transactions in the ReadView
             for use in fee escalation calculations.
 
-            @param app Rippled Application object.
+            @param app Xrpld Application object.
             @param view View of the LCL that was just closed or received.
-            @param timeLeap Indicates that rippled is under load so fees
+            @param timeLeap Indicates that xrpld is under load so fees
             should grow faster.
             @param setup Customization params.
         */
@@ -424,7 +425,7 @@ private:
         Snapshot
         getSnapshot() const
         {
-            return {txnsExpected_, escalationMultiplier_};
+            return {.txnsExpected = txnsExpected_, .escalationMultiplier = escalationMultiplier_};
         }
 
         /** Use the number of transactions in the current open ledger
@@ -672,7 +673,7 @@ private:
         bool
         empty() const
         {
-            return !getTxnCount();
+            return getTxnCount() == 0u;
         }
 
         /// Find the entry in transactions that precedes seqProx, if one does.

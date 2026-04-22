@@ -8,9 +8,7 @@
 #include <optional>
 #include <utility>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 struct PeerIDTag;
 //< Uniquely identifies a peer
@@ -58,7 +56,7 @@ public:
         , seq_{seq}
         , signTime_{sign}
         , seenTime_{seen}
-        , key_{key}
+        , key_{std::move(key)}
         , nodeID_{nodeID}
         , full_{full}
         , loadFee_{loadFee}
@@ -129,7 +127,7 @@ public:
     Validation const&
     unwrap() const
     {
-        // For the rippled implementation in which RCLValidation wraps
+        // For the xrpld implementation in which RCLValidation wraps
         // STValidation, the csf::Validation has no more specific type it
         // wraps, so csf::Validation unwraps to itself
         return *this;
@@ -172,6 +170,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf
