@@ -8,16 +8,16 @@ set -e
 SED_COMMAND=sed
 HEAD_COMMAND=head
 if [[ "${OSTYPE}" == 'darwin'* ]]; then
-  if ! command -v gsed &> /dev/null; then
-      echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
-      exit 1
-  fi
-  SED_COMMAND=gsed
-  if ! command -v ghead &> /dev/null; then
-      echo "Error: ghead is not installed. Please install it using 'brew install coreutils'."
-      exit 1
-  fi
-  HEAD_COMMAND=ghead
+    if ! command -v gsed &> /dev/null; then
+        echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
+        exit 1
+    fi
+    SED_COMMAND=gsed
+    if ! command -v ghead &> /dev/null; then
+        echo "Error: ghead is not installed. Please install it using 'brew install coreutils'."
+        exit 1
+    fi
+    HEAD_COMMAND=ghead
 fi
 
 # This script renames CMake files from `RippleXXX.cmake` or `RippledXXX.cmake`
@@ -44,10 +44,10 @@ pushd "${DIRECTORY}"
 find cmake -type f -name 'Rippled*.cmake' -exec bash -c 'mv "${1}" "${1/Rippled/Xrpl}"' - {} \;
 find cmake -type f -name 'Ripple*.cmake' -exec bash -c 'mv "${1}" "${1/Ripple/Xrpl}"' - {} \;
 if [ -e cmake/xrpl_add_test.cmake ]; then
-  mv cmake/xrpl_add_test.cmake cmake/XrplAddTest.cmake
+    mv cmake/xrpl_add_test.cmake cmake/XrplAddTest.cmake
 fi
 if [ -e include/xrpl/proto/ripple.proto ]; then
-  mv include/xrpl/proto/ripple.proto include/xrpl/proto/xrpl.proto
+    mv include/xrpl/proto/ripple.proto include/xrpl/proto/xrpl.proto
 fi
 
 # Rename inside the files.
@@ -71,14 +71,14 @@ ${SED_COMMAND} -i 's@xrpl/validator-keys-tool@ripple/validator-keys-tool@' cmake
 # Ensure the name of the binary and config remain 'rippled' for now.
 ${SED_COMMAND} -i -E 's/xrpld(-example)?\.cfg/rippled\1.cfg/g' cmake/XrplInstall.cmake
 if grep -q '"xrpld"' cmake/XrplCore.cmake; then
-  # The script has been rerun, so just restore the name of the binary.
-  ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' cmake/XrplCore.cmake
+    # The script has been rerun, so just restore the name of the binary.
+    ${SED_COMMAND} -i 's/"xrpld"/"rippled"/' cmake/XrplCore.cmake
 elif ! grep -q '"rippled"' cmake/XrplCore.cmake; then
-  ${HEAD_COMMAND} -n -1 cmake/XrplCore.cmake > cmake.tmp
-  echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
-  echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
-  tail -1 cmake/XrplCore.cmake >> cmake.tmp
-  mv cmake.tmp cmake/XrplCore.cmake
+    ${HEAD_COMMAND} -n -1 cmake/XrplCore.cmake > cmake.tmp
+    echo '  # For the time being, we will keep the name of the binary as it was.' >> cmake.tmp
+    echo '  set_target_properties(xrpld PROPERTIES OUTPUT_NAME "rippled")' >> cmake.tmp
+    tail -1 cmake/XrplCore.cmake >> cmake.tmp
+    mv cmake.tmp cmake/XrplCore.cmake
 fi
 
 # Restore the symlink from 'xrpld' to 'rippled'.

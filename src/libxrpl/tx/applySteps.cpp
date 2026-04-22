@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include <exception>
+#include <memory>
 #include <optional>
 #include <utility>
 #pragma push_macro("TRANSACTION")
@@ -310,6 +311,18 @@ invoke_apply(ApplyContext& ctx)
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
+}
+
+// Test-only factory — not part of the public API.
+// The returned Transactor holds a raw reference to ctx; the caller must ensure
+// the ApplyContext outlives the Transactor.
+std::unique_ptr<Transactor>
+makeTransactor(ApplyContext& ctx)
+{
+    return with_txn_type(
+        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
+            return std::make_unique<T>(ctx);
+        });
 }
 
 PreflightResult
