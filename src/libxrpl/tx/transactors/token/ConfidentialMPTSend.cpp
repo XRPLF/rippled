@@ -133,8 +133,16 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
 
     // Check if destination account exists
     auto const destination = ctx.tx[sfDestination];
-    if (!ctx.view.exists(keylet::account(destination)))
+    auto const sleDst = ctx.view.read(keylet::account(destination));
+    if (!sleDst)
         return tecNO_TARGET;
+
+    // Check destination tag
+    if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+        !ctx.tx.isFieldPresent(sfDestinationTag))
+    {
+        return tecDST_TAG_NEEDED;
+    }
 
     // Check if MPT issuance exists
     auto const mptIssuanceID = ctx.tx[sfMPTokenIssuanceID];
