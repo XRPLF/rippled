@@ -75,7 +75,9 @@ public:
         Derived classes will load the object with all the known formats.
     */
 private:
-    KnownFormats() = default;
+    KnownFormats() : name_(beast::type_name<Derived>())
+    {
+    }
 
 public:
     /** Destroy the known formats object.
