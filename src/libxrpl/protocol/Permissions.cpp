@@ -9,6 +9,7 @@
 #include <xrpl/protocol/TxFlags.h>  // IWYU pragma: keep
 #include <xrpl/protocol/TxFormats.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <optional>
