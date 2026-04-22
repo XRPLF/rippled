@@ -1,5 +1,6 @@
 #pragma once
 
+#include <test/csf/Digraph.h>
 #include <test/csf/random.h>
 
 #include <boost/container/flat_set.hpp>
@@ -9,9 +10,7 @@
 #include <random>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Trust graph
 
@@ -146,6 +145,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

@@ -1,14 +1,18 @@
 #include <xrpl/basics/hardened_hash.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <array>
+#include <cstddef>
 #include <cstdint>
 #include <iomanip>
+#include <ios>
+#include <ostream>
+#include <string>
+#include <type_traits>
 #include <unordered_map>
 #include <unordered_set>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 template <class T>
 class test_user_type_member
@@ -50,8 +54,7 @@ public:
     }
 };
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail
 
 //------------------------------------------------------------------------------
 
@@ -78,7 +81,7 @@ class unsigned_integer
 {
 private:
     static_assert(
-        std::is_integral<UInt>::value && std::is_unsigned<UInt>::value,
+        std::is_integral_v<UInt> && std::is_unsigned_v<UInt>,
         "UInt must be an unsigned integral type");
 
     static_assert(Bits % (8 * sizeof(UInt)) == 0, "Bits must be a multiple of 8*sizeof(UInt)");

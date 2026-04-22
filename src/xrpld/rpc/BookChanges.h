@@ -102,7 +102,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             std::string const g{to_string(deltaGets.asset())};
             std::string const p{to_string(deltaPays.asset())};
 
-            bool const noswap = isXRP(deltaGets) ? true : (isXRP(deltaPays) ? false : (g < p));
+            bool const noswap = isXRP(deltaGets) || (!isXRP(deltaPays) && (g < p));
 
             STAmount first = noswap ? deltaGets : deltaPays;
             STAmount second = noswap ? deltaPays : deltaGets;
@@ -121,15 +121,20 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
             std::stringstream ss;
             if (noswap)
+            {
                 ss << g << "|" << p;
+            }
             else
+            {
                 ss << p << "|" << g;
+            }
 
             std::optional<uint256> const domain = finalFields[~sfDomainID];
 
             std::string const key{ss.str()};
 
-            if (tally.find(key) == tally.end())
+            if (!tally.contains(key))
+            {
                 tally[key] = {
                     first,   // side A vol
                     second,  // side B vol
@@ -138,6 +143,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                     rate,    // open
                     rate,    // close
                     domain};
+            }
             else
             {
                 // increment volume
