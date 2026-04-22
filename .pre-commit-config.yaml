@@ -44,6 +44,12 @@ repos:
     hooks:
       - id: black
 
+  - repo: https://github.com/openstack/bashate
+    rev: 5798d24d571676fc407e81df574c1ef57b520f23 # frozen: 2.1.1
+    hooks:
+      - id: bashate
+        args: ["--ignore=E006"]
+
   - repo: https://github.com/streetsidesoftware/cspell-cli
     rev: a42085ade523f591dca134379a595e7859986445 # frozen: v9.7.0
     hooks:
