@@ -10,6 +10,7 @@
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -19,8 +20,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/tx/transactors/vault/VaultCreate.h>
-
-#include "xrpl/protocol/AccountID.h"
 
 #include <algorithm>
 #include <cstddef>
