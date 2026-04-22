@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/nft/NFTokenBurn.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Indexes.h>

@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/Indexes.h>
