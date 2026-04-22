@@ -109,4 +109,23 @@ ConfidentialMPTMergeInbox::doApply()
     return tesSUCCESS;
 }
 
+void
+ConfidentialMPTMergeInbox::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+ConfidentialMPTMergeInbox::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
 }  // namespace xrpl

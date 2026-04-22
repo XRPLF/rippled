@@ -55,34 +55,34 @@ struct MPTMutabilityFlags
     bool isCannotMutate = false;  // if true, cannot mutate by default.
 };
 
-static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
+static constexpr std::array<MPTMutabilityFlags, 7> mptMutabilityFlags = {
     {{.setFlag = tmfMPTSetCanLock,
       .clearFlag = tmfMPTClearCanLock,
-      .canMutateFlag = lsmfMPTCanMutateCanLock,
+      .mutabilityFlag = lsmfMPTCanMutateCanLock,
       .targetFlag = lsfMPTCanLock},
      {.setFlag = tmfMPTSetRequireAuth,
       .clearFlag = tmfMPTClearRequireAuth,
-      .canMutateFlag = lsmfMPTCanMutateRequireAuth,
+      .mutabilityFlag = lsmfMPTCanMutateRequireAuth,
       .targetFlag = lsfMPTRequireAuth},
      {.setFlag = tmfMPTSetCanEscrow,
       .clearFlag = tmfMPTClearCanEscrow,
-      .canMutateFlag = lsmfMPTCanMutateCanEscrow,
+      .mutabilityFlag = lsmfMPTCanMutateCanEscrow,
       .targetFlag = lsfMPTCanEscrow},
      {.setFlag = tmfMPTSetCanTrade,
       .clearFlag = tmfMPTClearCanTrade,
-      .canMutateFlag = lsmfMPTCanMutateCanTrade,
+      .mutabilityFlag = lsmfMPTCanMutateCanTrade,
       .targetFlag = lsfMPTCanTrade},
      {.setFlag = tmfMPTSetCanTransfer,
       .clearFlag = tmfMPTClearCanTransfer,
-      .canMutateFlag = lsmfMPTCanMutateCanTransfer,
+      .mutabilityFlag = lsmfMPTCanMutateCanTransfer,
       .targetFlag = lsfMPTCanTransfer},
      {.setFlag = tmfMPTSetCanClawback,
       .clearFlag = tmfMPTClearCanClawback,
-      .canMutateFlag = lsmfMPTCanMutateCanClawback,
+      .mutabilityFlag = lsmfMPTCanMutateCanClawback,
       .targetFlag = lsfMPTCanClawback},
      {.setFlag = tmfMPTSetCanConfidentialAmount,
       .clearFlag = tmfMPTClearCanConfidentialAmount,
-      .canMutateFlag = lsmfMPTCanMutateCanConfidentialAmount,
+      .mutabilityFlag = lsmfMPTCannotMutateCanConfidentialAmount,
       .targetFlag = lsfMPTCanConfidentialAmount,
       .isCannotMutate = true}}};
 
