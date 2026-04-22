@@ -22,6 +22,13 @@ repos:
 
   - repo: local
     hooks:
+      - id: clang-tidy
+        name: "clang-tidy (enable with: TIDY=1)"
+        entry: ./bin/pre-commit/clang_tidy_check.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen
+        pass_filenames: false # script determines the staged files itself
       - id: fix-include-style
         name: fix include style
         entry: ./bin/pre-commit/fix-include-style.py
@@ -76,14 +83,6 @@ repos:
 
   - repo: local
     hooks:
-      - id: clang-tidy
-        name: "clang-tidy (enable with: TIDY=1)"
-        entry: ./bin/pre-commit/clang_tidy_check.py
-        language: python
-        types_or: [c++, c]
-        exclude: ^include/xrpl/protocol_autogen
-        pass_filenames: false # script determines the staged files itself
-
       - id: nix-fmt
         name: Format Nix files
         entry: |

@@ -19,15 +19,19 @@ def fix_includes(path: Path) -> bool:
     fixed = PATTERN.sub(r"\1<\2>", original)
     if fixed != original:
         path.write_text(fixed, encoding="utf-8")
-        return True
-    return False
+        return False
+    return True
 
 
-def main() -> None:
+def main() -> int:
     files = [Path(f) for f in sys.argv[1:]]
+    success = True
+
     for path in files:
-        fix_includes(path)
+        success &= fix_includes(path)
+
+    return 0 if success else 1
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
