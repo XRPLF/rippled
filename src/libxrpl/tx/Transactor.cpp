@@ -1138,8 +1138,10 @@ Transactor::processPersistentChanges(TER& result, XRPAmount& fee, bool& applied)
     if ((result == tecOVERSIZE) || (result == tecKILLED))
         typesToCollect.insert(ltOFFER);
     if (result == tecINCOMPLETE)
+    {
         typesToCollect.insert(ltRIPPLE_STATE);
-    typesToCollect.insert(ltMPTOKEN);
+        typesToCollect.insert(ltMPTOKEN);
+    }
     if (result == tecEXPIRED)
     {
         typesToCollect.insert(ltNFTOKEN_OFFER);
@@ -1188,37 +1190,41 @@ Transactor::processPersistentChanges(TER& result, XRPAmount& fee, bool& applied)
         fee = resetResult.second;
     }
 
-    // Re-apply the collected deletions
-    auto const viewJ = ctx_.registry.get().getJournal("View");
-    for (auto const& [type, ids] : deletedObjects)
+    // Re-apply the collected deletions, but only if the reset
+    // succeeded (i.e. result is still a tec code).
+    if (isTecClaim(result))
     {
-        if (ids.empty())
-            continue;
-
-        switch (type)
+        auto const viewJ = ctx_.registry.get().getJournal("View");
+        for (auto const& [type, ids] : deletedObjects)
         {
-            case ltOFFER:
-                removeUnfundedOffers(view(), ids, viewJ);
-                break;
-            case ltNFTOKEN_OFFER:
-                removeExpiredNFTokenOffers(view(), ids, viewJ);
-                break;
-            case ltRIPPLE_STATE:
-                removeDeletedTrustLines(view(), ids, viewJ);
-                break;
-            case ltMPTOKEN:
-                removeDeletedMPTs(view(), ids, viewJ);
-                break;
-            case ltCREDENTIAL:
-                removeExpiredCredentials(view(), ids, viewJ);
-                break;
-            // LCOV_EXCL_START
-            default:
-                UNREACHABLE(
-                    "xrpl::Transactor::processPersistentChanges() : "
-                    "unexpected type");
-                break;
-                // LCOV_EXCL_STOP
+            if (ids.empty())
+                continue;
+
+            switch (type)
+            {
+                case ltOFFER:
+                    removeUnfundedOffers(view(), ids, viewJ);
+                    break;
+                case ltNFTOKEN_OFFER:
+                    removeExpiredNFTokenOffers(view(), ids, viewJ);
+                    break;
+                case ltRIPPLE_STATE:
+                    removeDeletedTrustLines(view(), ids, viewJ);
+                    break;
+                case ltMPTOKEN:
+                    removeDeletedMPTs(view(), ids, viewJ);
+                    break;
+                case ltCREDENTIAL:
+                    removeExpiredCredentials(view(), ids, viewJ);
+                    break;
+                // LCOV_EXCL_START
+                default:
+                    UNREACHABLE(
+                        "xrpl::Transactor::processPersistentChanges() : "
+                        "unexpected type");
+                    break;
+                    // LCOV_EXCL_STOP
+            }
         }
     }
 
