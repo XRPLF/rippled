@@ -6,11 +6,11 @@ set -e
 # On MacOS, ensure that GNU sed is installed and available as `gsed`.
 SED_COMMAND=sed
 if [[ "${OSTYPE}" == 'darwin'* ]]; then
-  if ! command -v gsed &> /dev/null; then
-      echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
-      exit 1
-  fi
-  SED_COMMAND=gsed
+    if ! command -v gsed &> /dev/null; then
+        echo "Error: gsed is not installed. Please install it using 'brew install gnu-sed'."
+        exit 1
+    fi
+    SED_COMMAND=gsed
 fi
 
 # This script renames the config from `rippled.cfg` to `xrpld.cfg`, and updates
@@ -32,28 +32,28 @@ pushd "${DIRECTORY}"
 
 # Add the xrpld.cfg to the .gitignore.
 if ! grep -q 'xrpld.cfg' .gitignore; then
-  ${SED_COMMAND} -i '/rippled.cfg/a\
+    ${SED_COMMAND} -i '/rippled.cfg/a\
 /xrpld.cfg' .gitignore
 fi
 
 # Rename the files.
 if [ -e rippled.cfg ]; then
-  mv rippled.cfg xrpld.cfg
+    mv rippled.cfg xrpld.cfg
 fi
 if [ -e cfg/rippled-example.cfg ]; then
-  mv cfg/rippled-example.cfg cfg/xrpld-example.cfg
+    mv cfg/rippled-example.cfg cfg/xrpld-example.cfg
 fi
 
 # Rename inside the files.
 DIRECTORIES=("cfg" "cmake" "include" "src")
 for DIRECTORY in "${DIRECTORIES[@]}"; do
-  echo "Processing directory: ${DIRECTORY}"
+    echo "Processing directory: ${DIRECTORY}"
 
-  find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.cmake" -o -name "*.txt" -o -name "*.cfg" -o -name "*.md" \) | while read -r FILE; do
-      echo "Processing file: ${FILE}"
-      ${SED_COMMAND} -i -E 's/rippled(-example)?[ .]cfg/xrpld\1.cfg/g' "${FILE}"
-      ${SED_COMMAND} -i 's/rippleConfig/xrpldConfig/g' "${FILE}"
-  done
+    find "${DIRECTORY}" -type f \( -name "*.h" -o -name "*.hpp" -o -name "*.ipp" -o -name "*.cpp" -o -name "*.cmake" -o -name "*.txt" -o -name "*.cfg" -o -name "*.md" \) | while read -r FILE; do
+        echo "Processing file: ${FILE}"
+        ${SED_COMMAND} -i -E 's/rippled(-example)?[ .]cfg/xrpld\1.cfg/g' "${FILE}"
+        ${SED_COMMAND} -i 's/rippleConfig/xrpldConfig/g' "${FILE}"
+    done
 done
 ${SED_COMMAND} -i 's/rippled/xrpld/g' cfg/xrpld-example.cfg
 ${SED_COMMAND} -i 's/rippled/xrpld/g' src/test/core/Config_test.cpp

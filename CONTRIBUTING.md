@@ -267,6 +267,26 @@ See the [environment setup guide](./docs/build/environment.md#clang-tidy) for pl
 
 Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
 
+#### Via pre-commit (recommended)
+
+If you have already installed the pre-commit hooks (see above), you can run clang-tidy on your staged files using:
+
+```
+TIDY=1 pre-commit run clang-tidy
+```
+
+This runs clang-tidy locally with the same configuration/flags as CI, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
+
+You can also have clang-tidy run automatically on every `git commit` by setting `TIDY=1` in your shell environment:
+
+```
+export TIDY=1
+```
+
+With this set, the hook will run as part of `git commit` alongside the other pre-commit checks.
+
+#### Manually
+
 Then run clang-tidy on your local changes:
 
 ```
