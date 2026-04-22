@@ -224,6 +224,8 @@ words:
   - queuable
   - Raphson
   - replayer
+  - rerandomization
+  - rerandomized
   - rerere
   - retriable
   - RIPD

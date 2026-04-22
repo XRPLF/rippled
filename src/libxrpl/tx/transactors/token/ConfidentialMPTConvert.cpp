@@ -237,6 +237,9 @@ ConfidentialMPTConvert::doApply()
         // homomorphically add auditor's encrypted balance
         if (auditorEc)
         {
+            if (!sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
             auto sum = homomorphicAdd(*auditorEc, (*sleMptoken)[sfAuditorEncryptedBalance]);
             if (!sum)
                 return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -247,7 +250,8 @@ ConfidentialMPTConvert::doApply()
     else if (
         !sleMptoken->isFieldPresent(sfIssuerEncryptedBalance) &&
         !sleMptoken->isFieldPresent(sfConfidentialBalanceInbox) &&
-        !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending))
+        !sleMptoken->isFieldPresent(sfConfidentialBalanceSpending) &&
+        !sleMptoken->isFieldPresent(sfAuditorEncryptedBalance))
     {
         // Case 2: First-time convert - initialize all confidential fields
         (*sleMptoken)[sfConfidentialBalanceInbox] = holderEc;
