@@ -1,5 +1,6 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
