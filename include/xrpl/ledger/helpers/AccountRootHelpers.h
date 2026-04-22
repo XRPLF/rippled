@@ -27,7 +27,7 @@ namespace xrpl {
 template <typename ViewT>
 class AccountRoot : public SLEBase<ViewT>
 {
-    static constexpr bool is_writable = SLEBase<ViewT>::is_writable;
+    static constexpr bool isWritable = SLEBase<ViewT>::isWritable;
 
     AccountID const id_;
 
@@ -37,7 +37,7 @@ public:
         AccountID const& id,
         ReadView const& view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires(!is_writable)
+        requires(!isWritable)
         : SLEBase<ViewT>(view.read(keylet::account(id)), view, j), id_(id)
     {
     }
@@ -47,7 +47,7 @@ public:
         AccountID const& id,
         ApplyView& view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires is_writable
+        requires isWritable
         : SLEBase<ViewT>(keylet::account(id), view, j), id_(id)
     {
     }
@@ -55,7 +55,7 @@ public:
     /** Converting constructor: writable → read-only. */
     template <WritableView OtherViewT>
     AccountRoot(AccountRoot<OtherViewT> const& other)
-        requires(!is_writable)
+        requires(!isWritable)
         : SLEBase<ViewT>(other), id_(other.id())
     {
     }
@@ -67,7 +67,7 @@ public:
         AccountID const& id,
         ApplyView& view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires is_writable
+        requires isWritable
     {
         return AccountRoot(id, view, j, std::make_shared<SLE>(keylet::account(id)));
     }
@@ -141,12 +141,12 @@ public:
     /** Adjust the owner count up or down. */
     void
     adjustOwnerCount(std::int32_t amount)
-        requires is_writable;
+        requires isWritable;
 
 private:
     // Private constructor only used by `makeNew`
     AccountRoot(AccountID const& id, ApplyView& view, beast::Journal j, std::shared_ptr<SLE> sle)
-        requires is_writable
+        requires isWritable
         : SLEBase<ViewT>(std::move(sle), view, j), id_(id)
     {
         this->insert();

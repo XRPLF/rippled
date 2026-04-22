@@ -32,13 +32,13 @@ template <typename ViewT>
 class SLEBase
 {
 public:
-    static constexpr bool is_writable = WritableView<ViewT>;
+    static constexpr bool isWritable = WritableView<ViewT>;
 
     // SLE pointer type: mutable for writable views, const for read-only
-    using sle_ptr_type = std::conditional_t<is_writable, std::shared_ptr<SLE>, SLE::const_pointer>;
+    using sle_ptr_type = std::conditional_t<isWritable, std::shared_ptr<SLE>, SLE::const_pointer>;
 
     // View reference type: ApplyView& for writable, ReadView const& for read-only
-    using view_ref_type = std::conditional_t<is_writable, ApplyView&, ReadView const&>;
+    using view_ref_type = std::conditional_t<isWritable, ApplyView&, ReadView const&>;
 
     virtual ~SLEBase() = default;
 
@@ -99,7 +99,7 @@ public:
     /** Returns a mutable SLE for write operations */
     sle_ptr_type const&
     mutableSle() const
-        requires is_writable
+        requires isWritable
     {
         return sle_;
     }
@@ -107,7 +107,7 @@ public:
     /** Returns true if this wrapper supports write operations */
     bool
     canModify() const
-        requires is_writable
+        requires isWritable
     {
         return sle_ != nullptr;
     }
@@ -115,7 +115,7 @@ public:
     /** Returns the apply view for write operations */
     ApplyView&
     applyView() const
-        requires is_writable
+        requires isWritable
     {
         return view_;
     }
@@ -123,7 +123,7 @@ public:
     /** Mutable dereference operators */
     STLedgerEntry*
     operator->()
-        requires is_writable
+        requires isWritable
     {
         XRPL_ASSERT(canModify(), "xrpl::SLEBase::operator-> : can modify");
         return sle_.get();
@@ -131,7 +131,7 @@ public:
 
     STLedgerEntry&
     operator*()
-        requires is_writable
+        requires isWritable
     {
         XRPL_ASSERT(canModify(), "xrpl::SLEBase::operator* : can modify");
         return *sle_;
@@ -139,7 +139,7 @@ public:
 
     void
     insert()
-        requires is_writable
+        requires isWritable
     {
         XRPL_ASSERT(canModify(), "xrpl::SLEBase::insert : can modify");
         view_.insert(sle_);
@@ -147,7 +147,7 @@ public:
 
     void
     erase()
-        requires is_writable
+        requires isWritable
     {
         XRPL_ASSERT(canModify(), "xrpl::SLEBase::erase : can modify");
         view_.erase(sle_);
@@ -155,7 +155,7 @@ public:
 
     void
     update()
-        requires is_writable
+        requires isWritable
     {
         XRPL_ASSERT(canModify(), "xrpl::SLEBase::update : can modify");
         view_.update(sle_);
@@ -163,7 +163,7 @@ public:
 
     void
     newSLE()
-        requires is_writable
+        requires isWritable
     {
         XRPL_ASSERT(!canModify(), "xrpl::SLEBase::newSLE : sle_ is not null");
         sle_ = std::make_shared<SLE>(key_);
@@ -183,7 +183,7 @@ protected:
         SLE::const_pointer sle,
         ReadView const& view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires(!is_writable)
+        requires(!isWritable)
         : view_(view), sle_(std::move(sle)), j_(j)
     {
     }
@@ -195,7 +195,7 @@ protected:
      */
     template <WritableView OtherViewT>
     SLEBase(SLEBase<OtherViewT> const& other)
-        requires(!is_writable)
+        requires(!isWritable)
         : view_(other.readView()), sle_(other.sle()), j_(other.journal())
     {
     }
@@ -205,7 +205,7 @@ protected:
         std::shared_ptr<SLE> sle,
         ApplyView& view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires is_writable
+        requires isWritable
         : view_(view)
         , key_(sle ? Keylet(sle->getType(), sle->key()) : Keylet(ltANY, uint256{}))
         , sle_(std::move(sle))
@@ -218,7 +218,7 @@ protected:
         Keylet const& key,
         ApplyView& view,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()})
-        requires is_writable
+        requires isWritable
         : view_(view), key_(key), sle_(view_.peek(key)), j_(j)
     {
     }
@@ -231,7 +231,7 @@ protected:
     {
     };
     [[no_unique_address]]
-    std::conditional_t<is_writable, Keylet, Empty> key_{};
+    std::conditional_t<isWritable, Keylet, Empty> key_{};
 
     sle_ptr_type sle_;
     beast::Journal j_;
