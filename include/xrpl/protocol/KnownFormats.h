@@ -179,10 +179,10 @@ private:
     // One of the situations where a std::forward_list is useful.  We want to
     // store each Item in a place where its address won't change.  So a node-
     // based container is appropriate.  But we don't need searchability.
-    std::forward_list<Item> formats_;
+    std::forward_list<Item> formats_{};
 
-    boost::container::flat_map<std::string, Item const*> names_;
-    boost::container::flat_map<KeyType, Item const*> types_;
+    boost::container::flat_map<std::string, Item const*> names_{};
+    boost::container::flat_map<KeyType, Item const*> types_{};
     friend Derived;
 };
 
