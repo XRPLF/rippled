@@ -28,7 +28,7 @@ repos:
         language: python
         types_or: [c++, c]
         exclude: ^include/xrpl/protocol_autogen
-        pass_filenames: false  # script determines the staged files itself
+        pass_filenames: false # script determines the staged files itself
       - id: fix-include-style
         name: fix include style
         entry: ./bin/pre-commit/fix-include-style.py
