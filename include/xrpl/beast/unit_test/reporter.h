@@ -18,8 +18,7 @@
 #include <string>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 namespace detail {
 
@@ -86,7 +85,7 @@ public:
     reporter&
     operator=(reporter const&) = delete;
 
-    ~reporter();
+    ~reporter() override;
 
     explicit reporter(std::ostream& os = std::cout);
 
@@ -94,42 +93,42 @@ private:
     static std::string
     fmtdur(typename clock_type::duration const& d);
 
-    virtual void
+    void
     on_suite_begin(suite_info const& info) override;
 
-    virtual void
+    void
     on_suite_end() override;
 
-    virtual void
+    void
     on_case_begin(std::string const& name) override;
 
-    virtual void
+    void
     on_case_end() override;
 
-    virtual void
+    void
     on_pass() override;
 
-    virtual void
+    void
     on_fail(std::string const& reason) override;
 
-    virtual void
+    void
     on_log(std::string const& s) override;
 };
 
 //------------------------------------------------------------------------------
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::suite_results::add(case_results const& r)
+reporter<Unused>::suite_results::add(case_results const& r)
 {
     ++cases;
     total += r.total;
     failed += r.failed;
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::results::add(suite_results const& r)
+reporter<Unused>::results::add(suite_results const& r)
 {
     ++suites;
     total += r.total;
@@ -160,13 +159,13 @@ reporter<_>::results::add(suite_results const& r)
 
 //------------------------------------------------------------------------------
 
-template <class _>
-reporter<_>::reporter(std::ostream& os) : os_(os)
+template <class Unused>
+reporter<Unused>::reporter(std::ostream& os) : os_(os)
 {
 }
 
-template <class _>
-reporter<_>::~reporter()
+template <class Unused>
+reporter<Unused>::~reporter()
 {
     if (results_.top.size() > 0)
     {
@@ -180,9 +179,9 @@ reporter<_>::~reporter()
         << amount{results_.failed, "failure"} << std::endl;
 }
 
-template <class _>
+template <class Unused>
 std::string
-reporter<_>::fmtdur(typename clock_type::duration const& d)
+reporter<Unused>::fmtdur(typename clock_type::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
@@ -193,46 +192,46 @@ reporter<_>::fmtdur(typename clock_type::duration const& d)
     return ss.str();
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::on_suite_begin(suite_info const& info)
+reporter<Unused>::on_suite_begin(suite_info const& info)
 {
     suite_results_ = suite_results{info.full_name()};
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::on_suite_end()
+reporter<Unused>::on_suite_end()
 {
     results_.add(suite_results_);
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::on_case_begin(std::string const& name)
+reporter<Unused>::on_case_begin(std::string const& name)
 {
     case_results_ = case_results(name);
     os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
         << std::endl;
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::on_case_end()
+reporter<Unused>::on_case_end()
 {
     suite_results_.add(case_results_);
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::on_pass()
+reporter<Unused>::on_pass()
 {
     ++case_results_.total;
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::on_fail(std::string const& reason)
+reporter<Unused>::on_fail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
@@ -240,9 +239,9 @@ reporter<_>::on_fail(std::string const& reason)
         << std::endl;
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::on_log(std::string const& s)
+reporter<Unused>::on_log(std::string const& s)
 {
     os_ << s;
 }
@@ -251,5 +250,4 @@ reporter<_>::on_log(std::string const& s)
 
 using reporter = detail::reporter<>;
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

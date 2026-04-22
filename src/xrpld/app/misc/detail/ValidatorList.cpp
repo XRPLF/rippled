@@ -1,24 +1,61 @@
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/overlay/Overlay.h>
 
+#include <xrpld/core/TimeKeeper.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/Peer.h>
+
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/FileUtilities.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/regex.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/errc.hpp>
 
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <chrono>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <limits>
+#include <map>
+#include <memory>
+#include <mutex>
 #include <numeric>
+#include <optional>
 #include <shared_mutex>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -786,10 +823,14 @@ ValidatorList::buildBlobInfos(
 {
     auto const& current = lists.current;
     auto const& remaining = lists.remaining;
-    blobInfos[current.sequence] = {current.rawBlob, current.rawSignature, current.rawManifest};
+    blobInfos[current.sequence] = {
+        .blob = current.rawBlob,
+        .signature = current.rawSignature,
+        .manifest = current.rawManifest};
     for (auto const& [sequence, vl] : remaining)
     {
-        blobInfos[sequence] = {vl.rawBlob, vl.rawSignature, vl.rawManifest};
+        blobInfos[sequence] = {
+            .blob = vl.rawBlob, .signature = vl.rawSignature, .manifest = vl.rawManifest};
     }
 }
 
@@ -1199,7 +1240,7 @@ ValidatorList::applyList(
                 }
                 else
                 {
-                    publisherList.push_back(PublicKey(Slice{ret->data(), ret->size()}));
+                    publisherList.emplace_back(Slice{ret->data(), ret->size()});
                 }
 
                 if (val.isMember(jss::manifest) && val[jss::manifest].isString())
@@ -1208,7 +1249,7 @@ ValidatorList::applyList(
         }
 
         // Standardize the list order by sorting
-        std::sort(publisherList.begin(), publisherList.end());
+        std::sort(publisherList.begin(), publisherList.end());  // NOLINT(modernize-use-ranges)
     }
     // If this publisher has ever sent a more updated version than the one
     // in this file, keep it. This scenario is unlikely, but legal.
@@ -2058,9 +2099,8 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
     if (!negativeUNL_.empty())
     {
         ret.erase(
-            std::remove_if(
-                ret.begin(),
-                ret.end(),
+            std::ranges::remove_if(
+                ret,
                 [&](auto const& v) -> bool {
                     if (auto const masterKey = getTrustedKey(read_lock, v->getSignerPublic());
                         masterKey)
@@ -2069,7 +2109,8 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
                     }
 
                     return false;
-                }),
+                })
+                .begin(),
             ret.end());
     }
 

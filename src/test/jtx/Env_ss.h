@@ -2,9 +2,7 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** A transaction testing environment wrapper.
     Transactions submitted in sign-and-submit mode
@@ -66,6 +64,4 @@ public:
     }
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

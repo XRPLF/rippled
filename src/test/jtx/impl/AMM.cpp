@@ -1,17 +1,44 @@
 #include <test/jtx/AMM.h>
-#include <test/jtx/Env.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/AMMUtils.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <algorithm>
+#include <cstdint>
+#include <iostream>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test::jtx {
 
 static Number
 number(STAmount const& a)
@@ -34,9 +61,9 @@ AMM::initialTokens()
 
 AMM::AMM(
     Env& env,
-    Account const& account,
-    STAmount const& asset1,
-    STAmount const& asset2,
+    Account account,
+    STAmount asset1,
+    STAmount asset2,
     bool log,
     std::uint16_t tfee,
     std::uint32_t fee,
@@ -46,14 +73,14 @@ AMM::AMM(
     std::optional<ter> const& ter,
     bool close)
     : env_(env)
-    , creatorAccount_(account)
-    , asset1_(asset1)
-    , asset2_(asset2)
+    , creatorAccount_(std::move(account))
+    , asset1_(std::move(asset1))
+    , asset2_(std::move(asset2))
     , ammID_(keylet::amm(asset1_.asset(), asset2_.asset()).key)
     , log_(log)
     , doClose_(close)
     , lastPurchasePrice_(0)
-    , msig_(ms)
+    , msig_(std::move(ms))
     , fee_(fee)
     , ammAccount_(create(tfee, flags, seq, ter))
     , lptIssue_(xrpl::ammLPTIssue(asset1_.asset(), asset2_.asset(), ammAccount_))
@@ -283,10 +310,8 @@ AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
         [&](std::uint32_t, std::optional<std::uint8_t>, IOUAmount const&, STArray const& accounts) {
             for (auto const& account : accounts)
             {
-                if (std::find(
-                        authAccounts.cbegin(),
-                        authAccounts.cend(),
-                        account.getAccountID(sfAccount)) == authAccounts.end())
+                if (std::ranges::find(authAccounts, account.getAccountID(sfAccount)) ==
+                    authAccounts.end())
                     return false;
             }
             return true;
@@ -893,6 +918,4 @@ ammClawback(
     return jv;
 }
 }  // namespace amm
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx
