@@ -5,6 +5,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>  // IWYU pragma: keep
 #include <test/jtx/check.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/deposit.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/fee.h>
@@ -37,6 +38,8 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
+
+#include "xrpl/protocol/AccountID.h"
 
 #include <chrono>
 #include <cstddef>

@@ -42,6 +42,9 @@
 #include <boost/optional/optional.hpp>
 #include <boost/system/detail/error_code.hpp>
 
+#include "xrpl/basics/Slice.h"
+#include "xrpl/protocol/PublicKey.h"
+#include "xrpl/protocol/SField.h"
 #include <soci/blob.h>
 #include <soci/into.h>
 #include <soci/soci-backend.h>
@@ -1191,9 +1194,13 @@ accountTxPage(
                         if (isDelegated)
                         {
                             if (filter.counterparty)
+                            {
                                 keep = (txSigner == *filter.counterparty);
+                            }
                             else
+                            {
                                 keep = true;
+                            }
                         }
                         break;
                     }
@@ -1208,9 +1215,13 @@ accountTxPage(
                         if (isActingAsDelegate)
                         {
                             if (filter.counterparty)
+                            {
                                 keep = (txOwner == *filter.counterparty);
+                            }
                             else
+                            {
                                 keep = true;
+                            }
                         }
                     }
                 }

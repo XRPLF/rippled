@@ -29,6 +29,8 @@
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
 
+#include "xrpl/basics/Expected.h"
+
 #include <cstdint>
 #include <memory>
 #include <optional>
@@ -274,7 +276,7 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
         .marker = result.marker,
         .limit = args.limit,
         .bAdmin = isUnlimited(context.role),
-        .delegate = std::nullopt};
+        .delegate = args.delegate};
 
     auto& db = context.app.getRelationalDatabase();
 

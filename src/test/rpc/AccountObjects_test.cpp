@@ -696,7 +696,7 @@ public:
             env.fund(XRP(5000), issuer);
 
             // gw creates an PermissionedDomain.
-            env(pdomain::setTx(gw, {{issuer, credentialType1}}));
+            env(pdomain::setTx(gw, {{.issuer = issuer, .credType = credentialType1}}));
             env.close();
 
             // Find the PermissionedDomain.
