@@ -123,7 +123,8 @@ ConfidentialMPTSend::preclaim(PreclaimContext const& ctx)
         return tecNO_TARGET;
 
     // Check destination tag
-    if ((sleDst->getFlags() & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
+    if (((sleDst->getFlags() & lsfRequireDestTag) != 0u) &&
+        !ctx.tx.isFieldPresent(sfDestinationTag))
     {
         return tecDST_TAG_NEEDED;
     }
