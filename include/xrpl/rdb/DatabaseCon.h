@@ -94,7 +94,7 @@ public:
 
     struct CheckpointerSetup
     {
-        JobQueue* jobQueue;
+        JobQueue* jobQueue{};
         std::reference_wrapper<ServiceRegistry> registry;
     };
 
