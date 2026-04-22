@@ -415,7 +415,7 @@ private:
             // Number of transactions expected per ledger.
             // One more than this value will be accepted
             // before escalation kicks in.
-            std::size_t const txnsExpected;
+            std::size_t const txnsExpected{};
             // Based on the median fee of the LCL. Used
             // when fee escalation kicks in.
             FeeLevel64 const escalationMultiplier;
