@@ -145,7 +145,7 @@ PeerImp::PeerImp(
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(true)
-    , protocol_(protocol)
+    , protocol_(std::move(protocol))
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
@@ -153,7 +153,7 @@ PeerImp::PeerImp(
     , creationTime_(clock_type::now())
     , squelch_(app_.getJournal("Squelch"))
     , usage_(consumer)
-    , fee_{Resource::feeTrivialPeer, ""}
+    , fee_{.fee = Resource::feeTrivialPeer, .context = ""}
     , slot_(slot)
     , request_(std::move(request))
     , headers_(request_)
@@ -365,9 +365,8 @@ PeerImp::sendTxQueue()
     if (!txQueue_.empty())
     {
         protocol::TMHaveTransactions ht;
-        std::for_each(txQueue_.begin(), txQueue_.end(), [&](auto const& hash) {
-            ht.add_hashes(hash.data(), hash.size());
-        });
+        std::ranges::for_each(
+            txQueue_, [&](auto const& hash) { ht.add_hashes(hash.data(), hash.size()); });
         JLOG(p_journal_.trace()) << "sendTxQueue " << txQueue_.size();
         txQueue_.clear();
         send(std::make_shared<Message>(ht, protocol::mtHAVE_TRANSACTIONS));
@@ -582,7 +581,7 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
         if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
             (tracking_.load() == Tracking::converged))
             return true;
-        if (std::find(recentLedgers_.begin(), recentLedgers_.end(), hash) != recentLedgers_.end())
+        if (std::ranges::find(recentLedgers_, hash) != recentLedgers_.end())
             return true;
     }
     return false;
@@ -601,7 +600,7 @@ bool
 PeerImp::hasTxSet(uint256 const& hash) const
 {
     std::lock_guard const sl(recentLock_);
-    return std::find(recentTxSets_.begin(), recentTxSets_.end(), hash) != recentTxSets_.end();
+    return std::ranges::find(recentTxSets_, hash) != recentTxSets_.end();
 }
 
 void
@@ -1187,7 +1186,7 @@ PeerImp::onMessageBegin(
 {
     auto const name = protocolMessageName(type);
     load_event_ = app_.getJobQueue().makeLoadEvent(jtPEER, name);
-    fee_ = {Resource::feeTrivialPeer, name};
+    fee_ = {.fee = Resource::feeTrivialPeer, .context = name};
 
     auto const category =
         TrafficCount::categorize(*m, static_cast<protocol::MessageType>(type), true);
@@ -2184,7 +2183,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
     {
         std::lock_guard const sl(recentLock_);
 
-        if (std::find(recentTxSets_.begin(), recentTxSets_.end(), hash) != recentTxSets_.end())
+        if (std::ranges::find(recentTxSets_, hash) != recentTxSets_.end())
         {
             fee_.update(Resource::feeUselessData, "duplicate (tsHAVE)");
             return;
@@ -2849,7 +2848,7 @@ PeerImp::addLedger(uint256 const& hash, std::lock_guard<std::mutex> const& locke
     // locked by the caller.
     (void)lockedRecentLock;
 
-    if (std::find(recentLedgers_.begin(), recentLedgers_.end(), hash) != recentLedgers_.end())
+    if (std::ranges::find(recentLedgers_, hash) != recentLedgers_.end())
         return;
 
     recentLedgers_.push_back(hash);

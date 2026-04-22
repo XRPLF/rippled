@@ -8,8 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Buffer_test : beast::unit_test::suite
 {
@@ -104,8 +103,8 @@ struct Buffer_test : beast::unit_test::suite
         {
             testcase("Move Construction / Assignment");
 
-            static_assert(std::is_nothrow_move_constructible<Buffer>::value, "");
-            static_assert(std::is_nothrow_move_assignable<Buffer>::value, "");
+            static_assert(std::is_nothrow_move_constructible_v<Buffer>, "");
+            static_assert(std::is_nothrow_move_assignable_v<Buffer>, "");
 
             {  // Move-construct from empty buf
                 Buffer x;
@@ -266,5 +265,4 @@ struct Buffer_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Buffer, basics, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

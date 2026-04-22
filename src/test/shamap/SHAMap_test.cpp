@@ -23,8 +23,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 #ifndef __INTELLISENSE__
 static_assert(std::is_nothrow_destructible<SHAMap>{}, "");
@@ -425,5 +424,4 @@ class SHAMapPathProof_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(SHAMap, shamap, xrpl);
 BEAST_DEFINE_TESTSUITE(SHAMapPathProof, shamap, xrpl);
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

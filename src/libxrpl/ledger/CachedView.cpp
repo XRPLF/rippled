@@ -11,8 +11,7 @@
 #include <mutex>
 #include <optional>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 bool
 CachedViewImpl::exists(Keylet const& k) const
@@ -75,5 +74,4 @@ CachedViewImpl::read(Keylet const& k) const
     return sle;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

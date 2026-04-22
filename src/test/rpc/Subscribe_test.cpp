@@ -54,8 +54,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Subscribe_test : public beast::unit_test::suite
 {
@@ -1370,8 +1369,8 @@ public:
                         return nftID;
                     });
                 // Sort both array to prepare for comparison
-                std::sort(metaIDs.begin(), metaIDs.end());
-                std::sort(actualNftIDs.begin(), actualNftIDs.end());
+                std::ranges::sort(metaIDs);
+                std::ranges::sort(actualNftIDs);
 
                 // Make sure the expect number of NFTs is correct
                 BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
@@ -1532,5 +1531,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Subscribe, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

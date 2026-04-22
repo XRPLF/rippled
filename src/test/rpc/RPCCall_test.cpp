@@ -21,8 +21,7 @@
 #include <typeinfo>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct RPCCallTestData
 {
@@ -5934,5 +5933,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCCall, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

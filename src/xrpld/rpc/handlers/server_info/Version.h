@@ -2,8 +2,7 @@
 
 #include <xrpl/protocol/ApiVersion.h>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 class VersionHandler
 {
@@ -40,5 +39,4 @@ private:
     bool betaEnabled_;
 };
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

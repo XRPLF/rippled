@@ -20,9 +20,7 @@
 #include <memory>
 #include <optional>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 paths::operator()(Env& env, JTx& jt) const
@@ -118,6 +116,4 @@ path::operator()(Env& env, JTx& jt) const
     jt.jv["Paths"].append(jv_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

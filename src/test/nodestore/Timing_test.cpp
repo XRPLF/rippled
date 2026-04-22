@@ -43,8 +43,7 @@
 #define NODESTORE_TIMING_DO_VERIFY 0
 #endif
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 std::unique_ptr<Backend>
 make_Backend(Section const& config, Scheduler& scheduler, beast::Journal journal)
@@ -729,5 +728,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, xrpl, 1);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore
