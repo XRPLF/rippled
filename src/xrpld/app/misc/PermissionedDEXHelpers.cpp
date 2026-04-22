@@ -73,12 +73,30 @@ offerInDomain(
     if (sleOffer->getFieldH256(sfDomainID) != domainID)
         return false;  // LCOV_EXCL_LINE
 
-    if (sleOffer->isFlag(lsfHybrid) &&
-        !sleOffer->isFieldPresent(sfAdditionalBooks))
+    if (view.rules().enabled(fixSecurity3_1_3))
     {
-        JLOG(j.error()) << "Hybrid offer " << offerID
-                        << " missing AdditionalBooks field";
-        return false;  // LCOV_EXCL_LINE
+        // post-fixSecurity3_1_3: a valid hybrid offer must have
+        // sfAdditionalBooks present with exactly 1 entry
+        if (sleOffer->isFlag(lsfHybrid) &&
+            (!sleOffer->isFieldPresent(sfAdditionalBooks) ||
+             sleOffer->getFieldArray(sfAdditionalBooks).size() != 1))
+        {
+            JLOG(j.error()) << "Hybrid offer " << offerID
+                            << " missing or malformed AdditionalBooks field";
+            return false;  // LCOV_EXCL_LINE
+        }
+    }
+    else
+    {
+        // pre-fixSecurity3_1_3: a valid hybrid offer must have
+        // sfAdditionalBooks present (size is not checked)
+        if (sleOffer->isFlag(lsfHybrid) &&
+            !sleOffer->isFieldPresent(sfAdditionalBooks))
+        {
+            JLOG(j.error()) << "Hybrid offer " << offerID
+                            << " missing AdditionalBooks field";
+            return false;  // LCOV_EXCL_LINE
+        }
     }
 
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
