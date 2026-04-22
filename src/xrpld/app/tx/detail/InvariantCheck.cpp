@@ -1931,13 +1931,20 @@ ValidPermissionedDEX::visitEntry(
         else
             regularOffers_ = true;
 
-        // if a hybrid offer is missing domain or additional book, there's
-        // something wrong
-        if (after->isFlag(lsfHybrid) &&
-            (!after->isFieldPresent(sfDomainID) ||
-             !after->isFieldPresent(sfAdditionalBooks) ||
-             after->getFieldArray(sfAdditionalBooks).size() > 1))
-            badHybrids_ = true;
+        if (after->isFlag(lsfHybrid))
+        {
+            bool const hasDomainID = after->isFieldPresent(sfDomainID);
+            std::optional<std::size_t> additionalBooksSize;
+            if (after->isFieldPresent(sfAdditionalBooks))
+                additionalBooksSize =
+                    after->getFieldArray(sfAdditionalBooks).size();
+            if (!hasDomainID || !additionalBooksSize ||
+                *additionalBooksSize > 1)
+                badHybridsOld_ = true;
+            if (!hasDomainID || !additionalBooksSize ||
+                *additionalBooksSize != 1)
+                badHybrids_ = true;
+        }
     }
 }
 
@@ -1956,7 +1963,9 @@ ValidPermissionedDEX::finalize(
 
     // For each offercreate transaction, check if
     // permissioned offers are valid
-    if (txType == ttOFFER_CREATE && badHybrids_)
+    bool const isMalformed =
+        view.rules().enabled(fixSecurity3_1_3) ? badHybrids_ : badHybridsOld_;
+    if (txType == ttOFFER_CREATE && isMalformed)
     {
         JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
         return false;
