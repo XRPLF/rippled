@@ -1131,8 +1131,9 @@ Transactor::checkTransactionInvariants(TER result, XRPAmount fee)
         // Phase 2: finalize
         if (!this->finalizeInvariants(ctx_.tx, result, fee, ctx_.view(), ctx_.journal))
         {
-            JLOG(ctx_.journal.fatal()) <<  //
-                "Transaction has failed one or more transaction invariants";
+            JLOG(ctx_.journal.fatal()) <<                                             //
+                "Transaction has failed one or more transaction invariants, tx: " <<  //
+                to_string(ctx_.tx.getJson(JsonOptions::none));
             return tecINVARIANT_FAILED;
         }
     }
