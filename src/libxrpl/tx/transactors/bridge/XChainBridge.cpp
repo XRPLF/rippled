@@ -1508,13 +1508,13 @@ BridgeModify::preflight(PreflightContext const& ctx)
     if (!reward && !minAccountCreate && !clearAccountCreate)
     {
         // Must change something
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
     }
 
     if (minAccountCreate && clearAccountCreate)
     {
         // Can't both clear and set account create in the same txn
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temMUTUALLY_EXCLUSIVE : temMALFORMED;
     }
 
     if (bridgeSpec.lockingChainDoor() != account && bridgeSpec.issuingChainDoor() != account)

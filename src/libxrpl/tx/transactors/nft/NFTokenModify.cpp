@@ -3,6 +3,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -16,12 +17,12 @@ NotTEC
 NFTokenModify::preflight(PreflightContext const& ctx)
 {
     if (auto owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temDST_IS_SRC : temMALFORMED;
 
     if (auto uri = ctx.tx[~sfURI])
     {
         if (uri->empty() || uri->length() > maxTokenURILength)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     return tesSUCCESS;

@@ -280,7 +280,7 @@ struct Escrow_test : public beast::unit_test::suite
         env(escrow::create("alice", "bob", XRP(100)),
             escrow::cancel_time(env.now() + 90s),
             fee(baseFee * 150),
-            ter(temMALFORMED));
+            ter(features[fixErrorCodes] ? temINVALID : temMALFORMED));
 
         // Creating an escrow with only a cancel time and a condition is
         // allowed:
@@ -371,7 +371,7 @@ struct Escrow_test : public beast::unit_test::suite
         // Fail if neither a FinishTime nor a condition are attached:
         env(escrow::create("alice", "carol", XRP(1)),
             escrow::cancel_time(env.now() + 1s),
-            ter(temMALFORMED));
+            ter(features[fixErrorCodes] ? temINVALID : temMALFORMED));
 
         // Fail if FinishAfter has already passed:
         env(escrow::create("alice", "carol", XRP(1)),
@@ -1637,6 +1637,8 @@ public:
         testWithFeats(all);
         testWithFeats(all - featureTokenEscrow);
         testTags(all - fixIncludeKeyletFields);
+        // Test without fixErrorCodes to cover old error code paths
+        testRequiresConditionOrFinishAfter(all - fixErrorCodes);
     }
 };
 

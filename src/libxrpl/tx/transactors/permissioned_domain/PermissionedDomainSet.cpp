@@ -31,6 +31,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
             maxPermissionedDomainCredentialsArraySize,
+            ctx.rules,
             ctx.j);
         !isTesSuccess(err))
         return err;

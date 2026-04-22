@@ -4,6 +4,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
@@ -19,16 +20,24 @@ namespace xrpl {
 NotTEC
 NFTokenCancelOffer::preflight(PreflightContext const& ctx)
 {
-    if (auto const& ids = ctx.tx[sfNFTokenOffers];
-        ids.empty() || (ids.size() > maxTokenOfferCancelCount))
-        return temMALFORMED;
+    {
+        auto const& ids = ctx.tx[sfNFTokenOffers];
+        if (ids.empty())
+        {
+            return ctx.rules.enabled(fixErrorCodes) ? temARRAY_EMPTY : temMALFORMED;
+        }
+        if (ids.size() > maxTokenOfferCancelCount)
+        {
+            return ctx.rules.enabled(fixErrorCodes) ? temARRAY_TOO_LARGE : temMALFORMED;
+        }
+    }
 
     // In order to prevent unnecessarily overlarge transactions, we
     // disallow duplicates in the list of offers to cancel.
     STVector256 ids = ctx.tx.getFieldV256(sfNFTokenOffers);
     std::ranges::sort(ids);
     if (std::ranges::adjacent_find(ids) != ids.end())
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
 
     return tesSUCCESS;
 }

@@ -79,7 +79,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
     if (std::popcount(flags & tfWithdrawSubTx) != 1)
     {
         JLOG(ctx.j.debug()) << "AMM Withdraw: invalid flags.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temINVALID_FLAG : temMALFORMED;
     }
     if ((flags & tfLPToken) != 0u)
     {

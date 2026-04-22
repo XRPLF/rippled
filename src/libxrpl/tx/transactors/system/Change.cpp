@@ -91,7 +91,7 @@ Change::preclaim(PreclaimContext const& ctx)
                 if (!ctx.tx.isFieldPresent(sfBaseFeeDrops) ||
                     !ctx.tx.isFieldPresent(sfReserveBaseDrops) ||
                     !ctx.tx.isFieldPresent(sfReserveIncrementDrops))
-                    return temMALFORMED;
+                    return ctx.view.rules().enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
                 // The ttFEE transaction format defines these fields as
                 // optional, but once the XRPFees feature is enabled, they are
                 // forbidden.
@@ -99,7 +99,7 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
                     ctx.tx.isFieldPresent(sfReserveBase) ||
                     ctx.tx.isFieldPresent(sfReserveIncrement))
-                    return temMALFORMED;
+                    return ctx.view.rules().enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
             }
             else
             {
@@ -111,7 +111,7 @@ Change::preclaim(PreclaimContext const& ctx)
                     !ctx.tx.isFieldPresent(sfReferenceFeeUnits) ||
                     !ctx.tx.isFieldPresent(sfReserveBase) ||
                     !ctx.tx.isFieldPresent(sfReserveIncrement))
-                    return temMALFORMED;
+                    return ctx.view.rules().enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
                 // The ttFEE transaction format defines these fields as
                 // optional, but without the XRPFees feature, they are
                 // forbidden.

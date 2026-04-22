@@ -22,6 +22,7 @@
 #include <array>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
 #include <utility>
 
 namespace xrpl {
@@ -86,17 +87,17 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         // If a non-zero TransferFee is set then the tfTransferable flag
         // must also be set.
         if (f > 0u && !ctx.tx.isFlag(tfTransferable))
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temINVALID_FLAG : temMALFORMED;
     }
 
     // An issuer must only be set if the tx is executed by the minter
     if (auto iss = ctx.tx[~sfIssuer]; iss == ctx.tx[sfAccount])
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temDST_IS_SRC : temMALFORMED;
 
     if (auto uri = ctx.tx[~sfURI])
     {
         if (uri->empty() || uri->length() > maxTokenURILength)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     if (hasOfferFields(ctx))

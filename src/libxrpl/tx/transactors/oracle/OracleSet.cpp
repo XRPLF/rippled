@@ -50,7 +50,7 @@ OracleSet::preflight(PreflightContext const& ctx)
 
     if (isInvalidLength(sfProvider, maxOracleProvider) || isInvalidLength(sfURI, maxOracleURI) ||
         isInvalidLength(sfAssetClass, maxOracleSymbolClass))
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
 
     return tesSUCCESS;
 }
@@ -91,7 +91,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
             return temMALFORMED;
         auto const key = tokenPairKey(entry);
         if (pairs.contains(key) || pairsDel.contains(key))
-            return temMALFORMED;
+            return ctx.view.rules().enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
         if (entry[~sfScale] > maxPriceScale)
             return temMALFORMED;
         if (entry.isFieldPresent(sfAssetPrice))

@@ -59,7 +59,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         // If a non-zero TransferFee is set then the tfTransferable flag
         // must also be set.
         if (fee > 0u && !ctx.tx.isFlag(tfMPTCanTransfer))
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temINVALID_FLAG : temMALFORMED;
     }
 
     if (auto const domain = ctx.tx[~sfDomainID])
@@ -75,17 +75,17 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
         if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     // Check if maximumAmount is within unsigned 63 bit range
     if (auto const maxAmt = ctx.tx[~sfMaximumAmount])
     {
         if (maxAmt == 0)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
 
         if (maxAmt > maxMPTokenAmount)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
     }
     return tesSUCCESS;
 }

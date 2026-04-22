@@ -199,6 +199,9 @@ transResults()
         MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
         MAKE_ERROR(temBAD_TRANSFER_FEE,          "Malformed: Transfer fee is outside valid range."),
         MAKE_ERROR(temINVALID_INNER_BATCH,       "Malformed: Invalid inner batch transaction."),
+        MAKE_ERROR(temBAD_FIELD_LENGTH,          "Malformed: Field length is invalid."),
+        MAKE_ERROR(temDUPLICATE,                "Malformed: Duplicate entry in array."),
+        MAKE_ERROR(temMUTUALLY_EXCLUSIVE,     "Malformed: Fields are mutually exclusive."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

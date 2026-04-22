@@ -81,6 +81,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
                 ctx.tx.getFieldArray(
                     authArrPresent ? sfAuthorizeCredentials : sfUnauthorizeCredentials),
                 maxCredentialsArraySize,
+                ctx.rules,
                 ctx.j);
             !isTesSuccess(err))
             return err;

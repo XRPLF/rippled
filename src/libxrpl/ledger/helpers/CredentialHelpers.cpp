@@ -1,32 +1,23 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Slice.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
 #include <cstdint>
-#include <limits>
 #include <memory>
-#include <set>
-#include <unordered_set>
-#include <utility>
-#include <vector>
 
 namespace xrpl {
 namespace credentials {
@@ -119,17 +110,23 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 }
 
 NotTEC
-checkFields(STTx const& tx, beast::Journal j)
+checkFields(STTx const& tx, Rules const& rules, beast::Journal j)
 {
     if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
 
     auto const& credentials = tx.getFieldV256(sfCredentialIDs);
-    if (credentials.empty() || (credentials.size() > maxCredentialsArraySize))
+    if (credentials.empty())
     {
         JLOG(j.trace()) << "Malformed transaction: Credentials array size is invalid: "
                         << credentials.size();
-        return temMALFORMED;
+        return rules.enabled(fixErrorCodes) ? temARRAY_EMPTY : temMALFORMED;
+    }
+    if (credentials.size() > maxCredentialsArraySize)
+    {
+        JLOG(j.trace()) << "Malformed transaction: Credentials array size is too large: "
+                        << credentials.size();
+        return rules.enabled(fixErrorCodes) ? temARRAY_TOO_LARGE : temMALFORMED;
     }
 
     std::unordered_set<uint256> duplicates;
@@ -139,7 +136,7 @@ checkFields(STTx const& tx, beast::Journal j)
         if (!ins)
         {
             JLOG(j.trace()) << "Malformed transaction: duplicates in credentials.";
-            return temMALFORMED;
+            return rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
         }
     }
 
@@ -259,7 +256,7 @@ makeSorted(STArray const& credentials)
 }
 
 NotTEC
-checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
+checkArray(STArray const& credentials, unsigned maxSize, Rules const& rules, beast::Journal j)
 {
     if (credentials.empty() || (credentials.size() > maxSize))
     {
@@ -287,7 +284,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
             JLOG(j.trace()) << "Malformed transaction: "
                                "Invalid credentialType size: "
                             << ct.size();
-            return temMALFORMED;
+            return rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
         }
 
         auto [it, ins] = duplicates.insert(sha512Half(issuer, ct));
@@ -295,7 +292,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
         {
             JLOG(j.trace()) << "Malformed transaction: "
                                "duplicates in credentials.";
-            return temMALFORMED;
+            return rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
         }
     }
 

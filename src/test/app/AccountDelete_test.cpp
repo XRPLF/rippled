@@ -741,7 +741,7 @@ public:
     }
 
     void
-    testDestinationDepositAuthCredentials()
+    testDestinationDepositAuthCredentials(FeatureBitset features)
     {
         {
             testcase("Destination Constraints with DepositPreauth and Credentials");
@@ -755,7 +755,7 @@ public:
 
             char const credType[] = "abcd";
 
-            Env env{*this};
+            Env env{*this, features};
             env.fund(XRP(100000), alice, becky, carol, daria);
             env.close();
 
@@ -820,7 +820,10 @@ public:
             env(acctdelete(becky, alice), fee(acctDelFee), ter(tecNO_PERMISSION));
 
             // becky use empty credentials and can't delete account
-            env(acctdelete(becky, alice), fee(acctDelFee), credentials::ids({}), ter(temMALFORMED));
+            env(acctdelete(becky, alice),
+                fee(acctDelFee),
+                credentials::ids({}),
+                ter(features[fixErrorCodes] ? temARRAY_EMPTY : temMALFORMED));
 
             // becky use bad credentials and can't delete account
             env(acctdelete(becky, alice),
@@ -1083,7 +1086,9 @@ public:
         testBalanceTooSmallForFee();
         testWithTickets();
         testDest();
-        testDestinationDepositAuthCredentials();
+        FeatureBitset const all{jtx::testable_amendments()};
+        testDestinationDepositAuthCredentials(all);
+        testDestinationDepositAuthCredentials(all - fixErrorCodes);
         testDeleteCredentialsOwner();
     }
 };

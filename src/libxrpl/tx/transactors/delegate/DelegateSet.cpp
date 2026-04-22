@@ -5,6 +5,7 @@
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -27,14 +28,14 @@ DelegateSet::preflight(PreflightContext const& ctx)
 
     // can not authorize self
     if (ctx.tx[sfAccount] == ctx.tx[sfAuthorize])
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temDST_IS_SRC : temMALFORMED;
 
     std::unordered_set<std::uint32_t> permissionSet;
 
     for (auto const& permission : permissions)
     {
         if (!permissionSet.insert(permission[sfPermissionValue]).second)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
 
         if (!Permission::getInstance().isDelegable(permission[sfPermissionValue], ctx.rules))
             return temMALFORMED;

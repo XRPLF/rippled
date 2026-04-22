@@ -80,7 +80,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (ctx.tx.isFieldPresent(sfDomainID) && ctx.tx.isFieldPresent(sfHolder))
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temMUTUALLY_EXCLUSIVE : temMALFORMED;
 
     auto const txFlags = ctx.tx.getFlags();
 
@@ -91,7 +91,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const accountID = ctx.tx[sfAccount];
     auto const holderID = ctx.tx[~sfHolder];
     if (holderID && accountID == holderID)
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temDST_IS_SRC : temMALFORMED;
 
     if (ctx.rules.enabled(featureSingleAssetVault) || ctx.rules.enabled(featureDynamicMPT))
     {
@@ -114,7 +114,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
             return temBAD_TRANSFER_FEE;
 
         if (metadata && metadata->length() > maxMPTokenMetadataLength)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
 
         if (mutableFlags)
         {

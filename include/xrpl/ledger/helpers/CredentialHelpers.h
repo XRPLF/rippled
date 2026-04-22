@@ -6,6 +6,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
@@ -31,7 +32,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
 // Amendment and parameters checks for sfCredentialIDs field
 NotTEC
-checkFields(STTx const& tx, beast::Journal j);
+checkFields(STTx const& tx, Rules const& rules, beast::Journal j);
 
 // Accessing the ledger to check if provided credentials are valid. Do not use
 // in doApply (only in preclaim) since it does not remove expired credentials.
@@ -58,7 +59,7 @@ makeSorted(STArray const& credentials);
 // Check credentials array passed to DepositPreauth/PermissionedDomainSet
 // transactions
 NotTEC
-checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
+checkArray(STArray const& credentials, unsigned maxSize, Rules const& rules, beast::Journal j);
 
 }  // namespace credentials
 

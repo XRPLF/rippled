@@ -939,10 +939,13 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
         //    ter(temMALFORMED));
 
         // must change something
+        // Note: With fixErrorCodes enabled, this returns temINVALID.
+        // The amendment-gated behavior is tested via the transactor code.
         XEnv(*this)
             .tx(create_bridge(mcDoor, jvb, XRP(1), XRP(1)))
             .close()
-            .tx(bridge_modify(mcDoor, jvb, {}, {}), ter(temMALFORMED));
+            .tx(bridge_modify(mcDoor, jvb, {}, {}),
+                ter(features[fixErrorCodes] ? temINVALID : temMALFORMED));
 
         // Reward amount is non-xrp
         XEnv(*this).tx(
@@ -1164,6 +1167,8 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
          * -- tx has the flag and also modifies signature reward, tesSUCCESS
          * -- XChainCreateAccountCommit tx fail after previous step
          */
+        // Note: With fixErrorCodes enabled, having both minAccountCreateAmount
+        // and the flag returns temMUTUALLY_EXCLUSIVE.
         XEnv(*this)
             .tx(create_bridge(mcDoor, jvb, XRP(1), XRP(20)))
             .close()
@@ -1171,7 +1176,7 @@ struct XChain_test : public beast::unit_test::suite, public jtx::XChainBridgeObj
             .close()
             .tx(bridge_modify(mcDoor, jvb, {}, XRP(2)),
                 txflags(tfClearAccountCreateAmount),
-                ter(temMALFORMED))
+                ter(features[fixErrorCodes] ? temMUTUALLY_EXCLUSIVE : temMALFORMED))
             .close()
             .tx(bridge_modify(mcDoor, jvb, XRP(3), {}), txflags(tfClearAccountCreateAmount))
             .close()

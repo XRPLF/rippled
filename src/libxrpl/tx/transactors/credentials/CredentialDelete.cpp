@@ -36,7 +36,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
         // Neither field is present, the transaction is malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: "
                                "No Subject or Issuer fields.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
     }
 
     // Make sure that the passed account is valid.
@@ -51,7 +51,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     if (credType.empty() || (credType.size() > maxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     return tesSUCCESS;

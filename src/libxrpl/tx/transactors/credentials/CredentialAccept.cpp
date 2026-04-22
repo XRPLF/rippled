@@ -42,7 +42,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     if (credType.empty() || (credType.size() > maxCredentialTypeLength))
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: invalid size of CredentialType.";
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
     }
 
     return tesSUCCESS;

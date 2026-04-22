@@ -54,7 +54,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
         auto const flags = ctx.tx.getFlags();
 
         if (((flags & tfClose) != 0u) && ((flags & tfRenew) != 0u))
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temMUTUALLY_EXCLUSIVE : temMALFORMED;
     }
 
     if (auto const sig = ctx.tx[~sfSignature])
@@ -74,7 +74,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
 
         Keylet const k(ltPAYCHAN, ctx.tx[sfChannel]);
         if (!publicKeyType(ctx.tx[sfPublicKey]))
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? NotTEC{telBAD_PUBLIC_KEY} : temMALFORMED;
 
         PublicKey const pk(ctx.tx[sfPublicKey]);
         Serializer msg;
@@ -83,7 +83,7 @@ PaymentChannelClaim::preflight(PreflightContext const& ctx)
             return temBAD_SIGNATURE;
     }
 
-    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.rules, ctx.j); !isTesSuccess(err))
         return err;
 
     return tesSUCCESS;

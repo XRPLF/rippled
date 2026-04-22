@@ -32,17 +32,17 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
 
     // At least one of these MUST be specified
     if (!bo && !so)
-        return temMALFORMED;
+        return ctx.rules.enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
 
     // The `BrokerFee` field must not be present in direct mode but may be
     // present and greater than zero in brokered mode.
     if (auto const bf = ctx.tx[~sfNFTokenBrokerFee])
     {
         if (!bo || !so)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temINVALID : temMALFORMED;
 
         if (*bf <= beast::zero)
-            return temMALFORMED;
+            return ctx.rules.enabled(fixErrorCodes) ? temBAD_AMOUNT : temMALFORMED;
     }
 
     return tesSUCCESS;

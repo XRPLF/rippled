@@ -112,10 +112,12 @@ class AMMClawback_test : public beast::unit_test::suite
             AMM const amm(env, gw, XRP(100), USD(100), ter(tesSUCCESS));
 
             // Issuer can not clawback from himself.
-            env(amm::ammClawback(gw, gw, USD, XRP, std::nullopt), ter(temMALFORMED));
+            env(amm::ammClawback(gw, gw, USD, XRP, std::nullopt),
+                ter(features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED));
 
             // Holder can not clawback from himself.
-            env(amm::ammClawback(alice, alice, USD, XRP, std::nullopt), ter(temMALFORMED));
+            env(amm::ammClawback(alice, alice, USD, XRP, std::nullopt),
+                ter(features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED));
         }
 
         // Test if the Asset field matches the Account field.
@@ -2511,6 +2513,7 @@ class AMMClawback_test : public beast::unit_test::suite
 
         testInvalidRequest(all);
         testInvalidRequest(all - featureMPTokensV2);
+        testInvalidRequest(all - fixErrorCodes);
         testFeatureDisabled(all - featureAMMClawback);
         for (auto const& features :
              {all - fixAMMv1_3 - fixAMMClawbackRounding - featureMPTokensV2,

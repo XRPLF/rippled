@@ -95,12 +95,13 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.create({.flags = 0x00000001, .err = temINVALID_FLAG});
 
             // tries to set a txfee while not enabling in the flag
+            // tries to set a txfee while not enabling in the flag
             mptAlice.create(
                 {.maxAmt = 100,
                  .assetScale = 0,
                  .transferFee = 1,
                  .metadata = "test",
-                 .err = temMALFORMED});
+                 .err = features[fixErrorCodes] ? temINVALID_FLAG : temMALFORMED});
 
             if (!features[featureSingleAssetVault])
             {
@@ -159,7 +160,7 @@ class MPToken_test : public beast::unit_test::suite
                  .assetScale = 0,
                  .transferFee = maxTransferFee,
                  .metadata = "test",
-                 .err = temMALFORMED});
+                 .err = features[fixErrorCodes] ? temINVALID_FLAG : temMALFORMED});
 
             // empty metadata returns error
             mptAlice.create(
@@ -167,15 +168,15 @@ class MPToken_test : public beast::unit_test::suite
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "",
-                 .err = temMALFORMED});
+                 .err = features[fixErrorCodes] ? temBAD_FIELD_LENGTH : temMALFORMED});
 
             // MaximumAmount of 0 returns error
             mptAlice.create(
                 {.maxAmt = 0,
                  .assetScale = 1,
-                 .transferFee = 1,
+                 .transferFee = 0,
                  .metadata = "test",
-                 .err = temMALFORMED});
+                 .err = features[fixErrorCodes] ? temBAD_AMOUNT : temMALFORMED});
 
             // MaximumAmount larger than 63 bit returns error
             mptAlice.create(
@@ -183,13 +184,13 @@ class MPToken_test : public beast::unit_test::suite
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "test",
-                 .err = temMALFORMED});
+                 .err = features[fixErrorCodes] ? temBAD_AMOUNT : temMALFORMED});
             mptAlice.create(
                 {.maxAmt = maxMPTokenAmount + 1,  // 9'223'372'036'854'775'808
                  .assetScale = 0,
                  .transferFee = 0,
                  .metadata = "test",
-                 .err = temMALFORMED});
+                 .err = features[fixErrorCodes] ? temBAD_AMOUNT : temMALFORMED});
         }
     }
 
@@ -358,9 +359,13 @@ class MPToken_test : public beast::unit_test::suite
             // has a value of 1
             mptAlice.authorize({.account = bob, .flags = 0x00000002, .err = temINVALID_FLAG});
 
-            mptAlice.authorize({.account = bob, .holder = bob, .err = temMALFORMED});
+            mptAlice.authorize(
+                {.account = bob,
+                 .holder = bob,
+                 .err = features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED});
 
-            mptAlice.authorize({.holder = alice, .err = temMALFORMED});
+            mptAlice.authorize(
+                {.holder = alice, .err = features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED});
         }
 
         // Try authorizing when MPTokenIssuance doesn't exist in
@@ -625,7 +630,7 @@ class MPToken_test : public beast::unit_test::suite
                         {.account = alice,
                          .holder = bob,
                          .domainID = uint256(42),
-                         .err = temMALFORMED});
+                         .err = features[fixErrorCodes] ? temMUTUALLY_EXCLUSIVE : temMALFORMED});
                 }
             }
 
@@ -636,7 +641,10 @@ class MPToken_test : public beast::unit_test::suite
             // if the holder is the same as the acct that submitted the tx,
             // tx fails
             mptAlice.set(
-                {.account = alice, .holder = alice, .flags = tfMPTLock, .err = temMALFORMED});
+                {.account = alice,
+                 .holder = alice,
+                 .flags = tfMPTLock,
+                 .err = features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED});
         }
 
         // Validate fields in MPTokenIssuanceSet (preclaim)
@@ -2180,7 +2188,8 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
 
             // alice can't claw back from herself
-            env(claw(alice, mpt(5), alice), ter(temMALFORMED));
+            env(claw(alice, mpt(5), alice),
+                ter(features[fixErrorCodes] ? temDST_IS_SRC : temMALFORMED));
             env.close();
 
             // can't clawback negative amount
@@ -2711,7 +2720,10 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.create({.ownerCount = 1, .mutableFlags = tmfMPTCanMutateMetadata});
 
             std::string metadata(maxMPTokenMetadataLength + 1, 'a');
-            mptAlice.set({.account = alice, .metadata = metadata, .err = temMALFORMED});
+            mptAlice.set(
+                {.account = alice,
+                 .metadata = metadata,
+                 .err = features[fixErrorCodes] ? temBAD_FIELD_LENGTH : temMALFORMED});
         }
 
         // Can not mutate metadata when it is not mutable
@@ -6713,6 +6725,8 @@ public:
         testCreateValidation(all - featureSingleAssetVault);
         testCreateValidation(all - featurePermissionedDomains);
         testCreateValidation(all);
+        // Test without fixErrorCodes to cover old error code paths
+        testCreateValidation(all - fixErrorCodes);
         testCreateEnabled(all - featureSingleAssetVault);
         testCreateEnabled(all);
 
@@ -6734,6 +6748,8 @@ public:
         testAuthorizeValidation((all | featureSingleAssetVault) - featureMPTokensV2);
         testAuthorizeValidation(all - featureMPTokensV2);
         testAuthorizeValidation(all | featureSingleAssetVault);
+        // Test without fixErrorCodes to cover old error code paths
+        testAuthorizeValidation(all - fixErrorCodes);
         testAuthorizeEnabled(all - featureSingleAssetVault);
         testAuthorizeEnabled(all - featureSingleAssetVault - featureMPTokensV2);
         testAuthorizeEnabled((all | featureSingleAssetVault) - featureMPTokensV2);
@@ -6746,6 +6762,8 @@ public:
         testSetValidation(all - featureDynamicMPT);
         testSetValidation(all - featurePermissionedDomains);
         testSetValidation(all);
+        // Test without fixErrorCodes to cover old error code paths
+        testSetValidation(all - fixErrorCodes);
 
         testSetEnabled(all - featureSingleAssetVault);
         testSetEnabled(all);
@@ -6753,6 +6771,8 @@ public:
         // MPT clawback
         testClawbackValidation(all);
         testClawbackValidation(all - featureMPTokensV2);
+        // Test without fixErrorCodes to cover old error code paths
+        testClawbackValidation(all - fixErrorCodes);
         testClawback(all);
         testClawback(all - featureMPTokensV2);
 

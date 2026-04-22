@@ -171,9 +171,10 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(exceptionExpected(env, txJsonMutable).starts_with("invalidParams"));
 
         // Make an empty CredentialType.
+        auto const lenErr = env.enabled(fixErrorCodes) ? temBAD_FIELD_LENGTH : temMALFORMED;
         txJsonMutable["AcceptedCredentials"][2u] = credentialOrig;
         txJsonMutable["AcceptedCredentials"][2u][jss::Credential]["CredentialType"] = "";
-        env(txJsonMutable, ter(temMALFORMED));
+        env(txJsonMutable, ter(lenErr));
 
         // Make too long CredentialType.
         constexpr std::string_view longCredentialType =
@@ -209,7 +210,8 @@ class PermissionedDomains_test : public beast::unit_test::suite
 
             auto const sorted = pdomain::sortCredentials(credentialsDup);
             BEAST_EXPECT(sorted.size() == 4);
-            env(pdomain::setTx(account, credentialsDup, domain), ter(temMALFORMED));
+            auto const dupErr = env.enabled(fixErrorCodes) ? temDUPLICATE : temMALFORMED;
+            env(pdomain::setTx(account, credentialsDup, domain), ter(dupErr));
 
             env.close();
             env(pdomain::setTx(account, sorted, domain));
@@ -539,6 +541,7 @@ public:
         testDisabled();
         testSet(withFeature_);
         testSet(withFix_);
+        testSet(withFeature_ - fixErrorCodes);
         testDelete(withFeature_);
         testDelete(withFix_);
         testAccountReserve(withFeature_);
