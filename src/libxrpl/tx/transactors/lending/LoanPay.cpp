@@ -21,9 +21,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LoanManage.h>
-
-#include "xrpl/tx/Transactor.h"
 
 #include <algorithm>
 #include <bit>
