@@ -25,7 +25,7 @@
 
 namespace xrpl {
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     auto item = make_shamapitem(sha512Half(HashPrefix::transactionID, data), data);
@@ -36,7 +36,7 @@ SHAMapTreeNode::makeTransaction(Slice data, SHAMapHash const& hash, bool hashVal
     return intr_ptr::make_shared<SHAMapTxLeafNode>(std::move(item), 0);
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     Serializer s(data.data(), data.size());
@@ -60,7 +60,7 @@ SHAMapTreeNode::makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool
     return intr_ptr::make_shared<SHAMapTxPlusMetaLeafNode>(std::move(item), 0);
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid)
 {
     Serializer s(data.data(), data.size());
@@ -87,7 +87,7 @@ SHAMapTreeNode::makeAccountState(Slice data, SHAMapHash const& hash, bool hashVa
     return intr_ptr::make_shared<SHAMapAccountStateLeafNode>(std::move(item), 0);
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeFromWire(Slice rawNode)
 {
     if (rawNode.empty())
@@ -118,7 +118,7 @@ SHAMapTreeNode::makeFromWire(Slice rawNode)
     Throw<std::runtime_error>("wire: Unknown type (" + std::to_string(type) + ")");
 }
 
-intr_ptr::SharedPtr<SHAMapTreeNode>
+SHAMapTreeNodePtr
 SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
 {
     if (rawNode.size() < 4)

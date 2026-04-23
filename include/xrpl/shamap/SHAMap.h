@@ -74,6 +74,17 @@ enum class SHAMapState {
 
     See https://en.wikipedia.org/wiki/Merkle_tree
  */
+
+/** Holds a SHAMap node's identity, serialized data, and leaf status.
+    Used by getNodeFat to return node data for peer synchronization.
+*/
+struct SHAMapNodeData
+{
+    SHAMapNodeID nodeID;
+    Blob data;
+    bool isLeaf;
+};
+
 class SHAMap
 {
 private:
@@ -86,7 +97,7 @@ private:
     /** The sequence of the ledger that this map references, if any. */
     std::uint32_t ledgerSeq_ = 0;
 
-    intr_ptr::SharedPtr<SHAMapTreeNode> root_;
+    SHAMapTreeNodePtr root_;
     mutable SHAMapState state_;
     SHAMapType const type_;
     bool backed_ = true;         // Map is backed by the database
@@ -254,7 +265,7 @@ public:
     bool
     getNodeFat(
         SHAMapNodeID const& wanted,
-        std::vector<std::tuple<SHAMapNodeID, Blob, bool>>& data,
+        std::vector<SHAMapNodeData>& data,
         bool fatLeaves,
         std::uint32_t depth) const;
 
@@ -296,10 +307,7 @@ public:
      *       function.
      */
     SHAMapAddNode
-    addRootNode(
-        SHAMapHash const& hash,
-        intr_ptr::SharedPtr<SHAMapTreeNode> rootNode,
-        SHAMapSyncFilter const* filter);
+    addRootNode(SHAMapHash const& hash, SHAMapTreeNodePtr rootNode, SHAMapSyncFilter const* filter);
 
     /** Add a known node at a specific position in the SHAMap during synchronization.
      *
@@ -318,7 +326,7 @@ public:
     SHAMapAddNode
     addKnownNode(
         SHAMapNodeID const& nodeID,
-        intr_ptr::SharedPtr<SHAMapTreeNode> treeNode,
+        SHAMapTreeNodePtr treeNode,
         SHAMapSyncFilter const* filter);
 
     // status functions
@@ -362,36 +370,32 @@ public:
     invariants() const;
 
 private:
-    using SharedPtrNodeStack =
-        std::stack<std::pair<intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapNodeID>>;
+    using SharedPtrNodeStack = std::stack<std::pair<SHAMapTreeNodePtr, SHAMapNodeID>>;
     using DeltaRef =
         std::pair<boost::intrusive_ptr<SHAMapItem const>, boost::intrusive_ptr<SHAMapItem const>>;
 
     // tree node cache operations
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     cacheLookup(SHAMapHash const& hash) const;
 
     void
-    canonicalize(SHAMapHash const& hash, intr_ptr::SharedPtr<SHAMapTreeNode>&) const;
+    canonicalize(SHAMapHash const& hash, SHAMapTreeNodePtr&) const;
 
     // database operations
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     fetchNodeFromDB(SHAMapHash const& hash) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     fetchNodeNT(SHAMapHash const& hash) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     fetchNodeNT(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     fetchNode(SHAMapHash const& hash) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     checkFilter(SHAMapHash const& hash, SHAMapSyncFilter const* filter) const;
 
     /** Update hashes up to the root */
     void
-    dirtyUp(
-        SharedPtrNodeStack& stack,
-        uint256 const& target,
-        intr_ptr::SharedPtr<SHAMapTreeNode> terminal);
+    dirtyUp(SharedPtrNodeStack& stack, uint256 const& target, SHAMapTreeNodePtr terminal);
 
     /** Walk towards the specified id, returning the node.  Caller must check
         if the return is nullptr, and if not, if the node->peekItem()->key() ==
@@ -413,25 +417,21 @@ private:
     preFlushNode(intr_ptr::SharedPtr<Node> node) const;
 
     /** write and canonicalize modified node */
-    intr_ptr::SharedPtr<SHAMapTreeNode>
-    writeNode(NodeObjectType t, intr_ptr::SharedPtr<SHAMapTreeNode> node) const;
+    SHAMapTreeNodePtr
+    writeNode(NodeObjectType t, SHAMapTreeNodePtr node) const;
 
     // returns the first item at or below this node
     SHAMapLeafNode*
-    firstBelow(intr_ptr::SharedPtr<SHAMapTreeNode>, SharedPtrNodeStack& stack, int branch = 0)
-        const;
+    firstBelow(SHAMapTreeNodePtr, SharedPtrNodeStack& stack, int branch = 0) const;
 
     // returns the last item at or below this node
     SHAMapLeafNode*
-    lastBelow(
-        intr_ptr::SharedPtr<SHAMapTreeNode> node,
-        SharedPtrNodeStack& stack,
-        int branch = branchFactor) const;
+    lastBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = branchFactor) const;
 
     // helper function for firstBelow and lastBelow
     SHAMapLeafNode*
     belowHelper(
-        intr_ptr::SharedPtr<SHAMapTreeNode> node,
+        SHAMapTreeNodePtr node,
         SharedPtrNodeStack& stack,
         int branch,
         std::tuple<int, std::function<bool(int)>, std::function<void(int&)>> const& loopParams)
@@ -443,15 +443,14 @@ private:
     descend(SHAMapInnerNode*, int branch) const;
     SHAMapTreeNode*
     descendThrow(SHAMapInnerNode*, int branch) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     descend(SHAMapInnerNode&, int branch) const;
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     descendThrow(SHAMapInnerNode&, int branch) const;
 
     // Descend with filter
     // If pending, callback is called as if it called fetchNodeNT
-    using descendCallback =
-        std::function<void(intr_ptr::SharedPtr<SHAMapTreeNode>, SHAMapHash const&)>;
+    using descendCallback = std::function<void(SHAMapTreeNodePtr, SHAMapHash const&)>;
     SHAMapTreeNode*
     descendAsync(
         SHAMapInnerNode* parent,
@@ -469,7 +468,7 @@ private:
 
     // Non-storing
     // Does not hook the returned node to its parent
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     descendNoStore(SHAMapInnerNode&, int branch) const;
 
     /** If there is only one leaf below this node, get its contents */
@@ -531,10 +530,10 @@ private:
 
         // nodes we may have acquired from deferred reads
         using DeferredNode = std::tuple<
-            SHAMapInnerNode*,                      // parent node
-            SHAMapNodeID,                          // parent node ID
-            int,                                   // branch
-            intr_ptr::SharedPtr<SHAMapTreeNode>>;  // node
+            SHAMapInnerNode*,    // parent node
+            SHAMapNodeID,        // parent node ID
+            int,                 // branch
+            SHAMapTreeNodePtr>;  // node
 
         int deferred_;
         std::mutex deferLock_;
@@ -560,7 +559,7 @@ private:
     gmn_ProcessDeferredReads(MissingNodes&);
 
     // fetch from DB helper function
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     finishFetch(SHAMapHash const& hash, std::shared_ptr<NodeObject> const& object) const;
 };
 

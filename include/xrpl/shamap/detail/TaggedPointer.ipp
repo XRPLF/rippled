@@ -25,8 +25,7 @@ static_assert(
 // Terminology: A chunk is the memory being allocated from a block. A block
 // contains multiple chunks. This is the terminology the boost documentation
 // uses. Pools use "Simple Segregated Storage" as their storage format.
-constexpr size_t elementSizeBytes =
-    (sizeof(SHAMapHash) + sizeof(intr_ptr::SharedPtr<SHAMapTreeNode>));
+constexpr size_t elementSizeBytes = (sizeof(SHAMapHash) + sizeof(SHAMapTreeNodePtr));
 
 constexpr size_t blockSizeBytes = kilobytes(512);
 
@@ -363,8 +362,7 @@ inline TaggedPointer::TaggedPointer(
                 // keep
                 new (&dstHashes[dstIndex]) SHAMapHash{srcHashes[srcIndex]};
 
-                new (&dstChildren[dstIndex])
-                    intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(srcChildren[srcIndex])};
+                new (&dstChildren[dstIndex]) SHAMapTreeNodePtr{std::move(srcChildren[srcIndex])};
                 ++dstIndex;
                 ++srcIndex;
             }
@@ -375,7 +373,7 @@ inline TaggedPointer::TaggedPointer(
                 if (dstIsDense)
                 {
                     new (&dstHashes[dstIndex]) SHAMapHash{};
-                    new (&dstChildren[dstIndex]) intr_ptr::SharedPtr<SHAMapTreeNode>{};
+                    new (&dstChildren[dstIndex]) SHAMapTreeNodePtr{};
                     ++dstIndex;
                 }
             }
@@ -383,7 +381,7 @@ inline TaggedPointer::TaggedPointer(
             {
                 // add
                 new (&dstHashes[dstIndex]) SHAMapHash{};
-                new (&dstChildren[dstIndex]) intr_ptr::SharedPtr<SHAMapTreeNode>{};
+                new (&dstChildren[dstIndex]) SHAMapTreeNodePtr{};
                 ++dstIndex;
                 if (srcIsDense)
                 {
@@ -396,7 +394,7 @@ inline TaggedPointer::TaggedPointer(
                 if (dstIsDense)
                 {
                     new (&dstHashes[dstIndex]) SHAMapHash{};
-                    new (&dstChildren[dstIndex]) intr_ptr::SharedPtr<SHAMapTreeNode>{};
+                    new (&dstChildren[dstIndex]) SHAMapTreeNodePtr{};
                     ++dstIndex;
                 }
                 if (srcIsDense)
@@ -413,7 +411,7 @@ inline TaggedPointer::TaggedPointer(
         for (int i = dstIndex; i < dstNumAllocated; ++i)
         {
             new (&dstHashes[i]) SHAMapHash{};
-            new (&dstChildren[i]) intr_ptr::SharedPtr<SHAMapTreeNode>{};
+            new (&dstChildren[i]) SHAMapTreeNodePtr{};
         }
         *this = std::move(dst);
     }
@@ -433,7 +431,7 @@ inline TaggedPointer::TaggedPointer(
     // allocate hashes and children, but do not run constructors
     TaggedPointer newHashesAndChildren{RawAllocateTag{}, toAllocate};
     SHAMapHash *newHashes, *oldHashes;
-    intr_ptr::SharedPtr<SHAMapTreeNode>*newChildren, *oldChildren;
+    SHAMapTreeNodePtr *newChildren, *oldChildren;
     std::uint8_t newNumAllocated;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(newNumAllocated, newHashes, newChildren) = newHashesAndChildren.getHashesAndChildren();
@@ -444,8 +442,7 @@ inline TaggedPointer::TaggedPointer(
         // new arrays are dense, old arrays are sparse
         iterNonEmptyChildIndexes(isBranch, [&](auto branchNum, auto indexNum) {
             new (&newHashes[branchNum]) SHAMapHash{oldHashes[indexNum]};
-            new (&newChildren[branchNum])
-                intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(oldChildren[indexNum])};
+            new (&newChildren[branchNum]) SHAMapTreeNodePtr{std::move(oldChildren[indexNum])};
         });
         // Run the constructors for the remaining elements
         for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
@@ -453,7 +450,7 @@ inline TaggedPointer::TaggedPointer(
             if ((1 << i) & isBranch)
                 continue;
             new (&newHashes[i]) SHAMapHash{};
-            new (&newChildren[i]) intr_ptr::SharedPtr<SHAMapTreeNode>{};
+            new (&newChildren[i]) SHAMapTreeNodePtr{};
         }
     }
     else
@@ -463,14 +460,14 @@ inline TaggedPointer::TaggedPointer(
         iterNonEmptyChildIndexes(isBranch, [&](auto branchNum, auto indexNum) {
             new (&newHashes[curCompressedIndex]) SHAMapHash{oldHashes[indexNum]};
             new (&newChildren[curCompressedIndex])
-                intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(oldChildren[indexNum])};
+                SHAMapTreeNodePtr{std::move(oldChildren[indexNum])};
             ++curCompressedIndex;
         });
         // Run the constructors for the remaining elements
         for (int i = curCompressedIndex; i < newNumAllocated; ++i)
         {
             new (&newHashes[i]) SHAMapHash{};
-            new (&newChildren[i]) intr_ptr::SharedPtr<SHAMapTreeNode>{};
+            new (&newChildren[i]) SHAMapTreeNodePtr{};
         }
     }
 
@@ -484,7 +481,7 @@ inline TaggedPointer::TaggedPointer(std::uint8_t numChildren)
     for (std::size_t i = 0; i < numAllocated; ++i)
     {
         new (&hashes[i]) SHAMapHash{};
-        new (&children[i]) intr_ptr::SharedPtr<SHAMapTreeNode>{};
+        new (&children[i]) SHAMapTreeNodePtr{};
     }
 }
 
@@ -522,14 +519,13 @@ TaggedPointer::isDense() const
     return (tp_ & tagMask) == boundaries.size() - 1;
 }
 
-[[nodiscard]] inline std::tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
+[[nodiscard]] inline std::tuple<std::uint8_t, SHAMapHash*, SHAMapTreeNodePtr*>
 TaggedPointer::getHashesAndChildren() const
 {
     auto const [tag, ptr] = decode();
     auto const hashes = reinterpret_cast<SHAMapHash*>(ptr);
     std::uint8_t numAllocated = boundaries[tag];
-    auto const children =
-        reinterpret_cast<intr_ptr::SharedPtr<SHAMapTreeNode>*>(hashes + numAllocated);
+    auto const children = reinterpret_cast<SHAMapTreeNodePtr*>(hashes + numAllocated);
     return {numAllocated, hashes, children};
 };
 
@@ -539,7 +535,7 @@ TaggedPointer::getHashes() const
     return reinterpret_cast<SHAMapHash*>(tp_ & ptrMask);
 };
 
-[[nodiscard]] inline intr_ptr::SharedPtr<SHAMapTreeNode>*
+[[nodiscard]] inline SHAMapTreeNodePtr*
 TaggedPointer::getChildren() const
 {
     auto [unused1, unused2, result] = getHashesAndChildren();

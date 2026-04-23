@@ -6,7 +6,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
-#include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/core/Job.h>
@@ -174,7 +173,7 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 
 SHAMapAddNode
 TransactionAcquire::takeNodes(
-    std::vector<std::pair<SHAMapNodeID, intr_ptr::SharedPtr<SHAMapTreeNode>>> data,
+    std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data,
     std::shared_ptr<Peer> const& peer)
 {
     ScopedLockType const sl(mtx_);

@@ -22,9 +22,11 @@
 #include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
@@ -882,9 +884,9 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
     {
         auto const f = filter.get();
 
-        for (auto const& ledger_node : packet.nodes())
+        for (auto const& ledgerNode : packet.nodes())
         {
-            auto treeNode = getTreeNode(ledger_node.nodedata());
+            auto treeNode = getTreeNode(ledgerNode.nodedata());
             if (!treeNode)
             {
                 JLOG(journal_.warn()) << "Got invalid node data";
@@ -892,7 +894,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
                 return;
             }
 
-            auto const nodeID = getSHAMapNodeID(ledger_node, *treeNode);
+            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
             if (!nodeID)
             {
                 JLOG(journal_.warn()) << "Got invalid node id";
@@ -1141,12 +1143,12 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         ScopedLockType const sl(mtx_);
 
         // Verify nodes are complete
-        for (auto const& ledger_node : packet.nodes())
+        for (auto const& ledgerNode : packet.nodes())
         {
-            if (!validateLedgerNode(ledger_node))
+            if (!validateLedgerNode(ledgerNode))
             {
                 JLOG(journal_.warn()) << "Got malformed ledger node";
-                peer->charge(Resource::feeMalformedRequest, "ledger_node");
+                peer->charge(Resource::feeMalformedRequest, "ledgerNode");
                 return -1;
             }
         }

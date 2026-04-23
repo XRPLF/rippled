@@ -24,11 +24,11 @@ namespace xrpl {
  *   be set) then the legacy `nodeid` must not be present.
  * - If the `depth` field is present then it must be between 0 and SHAMap::leafDepth (inclusive).
  *
- * @param ledger_node The ledger node to validate.
+ * @param ledgerNode The ledger node to validate.
  * @return true if the ledger node has the expected fields, false otherwise.
  */
 [[nodiscard]] bool
-validateLedgerNode(protocol::TMLedgerNode const& ledger_node);
+validateLedgerNode(protocol::TMLedgerNode const& ledgerNode);
 
 /**
  * @brief Deserializes a SHAMapTreeNode from wire format data.
@@ -41,7 +41,7 @@ validateLedgerNode(protocol::TMLedgerNode const& ledger_node);
  * @return An optional containing the deserialized tree node if successful, or std::nullopt if
  *         deserialization fails.
  */
-[[nodiscard]] std::optional<intr_ptr::SharedPtr<SHAMapTreeNode>>
+[[nodiscard]] std::optional<SHAMapTreeNodePtr>
 getTreeNode(std::string_view data);
 
 /**
@@ -60,7 +60,7 @@ getTreeNode(std::string_view data);
  *   key from the leaf node's item.
  * Note that root nodes may be inner nodes or leaf nodes.
  *
- * @param ledger_node The validated protocol message containing the ledger node data.
+ * @param ledgerNode The validated protocol message containing the ledger node data.
  * @param treeNode The deserialized tree node (inner or leaf node).
  * @return An optional containing the node ID if extraction/reconstruction succeeds, or std::nullopt
  *         if the required fields are missing or validation fails.
@@ -68,8 +68,6 @@ getTreeNode(std::string_view data);
  *       `validateLedgerNode` function and obtained a valid tree node by calling `getTreeNode`.
  */
 [[nodiscard]] std::optional<SHAMapNodeID>
-getSHAMapNodeID(
-    protocol::TMLedgerNode const& ledger_node,
-    intr_ptr::SharedPtr<SHAMapTreeNode> const& treeNode);
+getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNodePtr const& treeNode);
 
 }  // namespace xrpl

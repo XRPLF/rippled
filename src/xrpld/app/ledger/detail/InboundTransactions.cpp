@@ -5,7 +5,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
-#include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/insight/Collector.h>
@@ -146,19 +145,19 @@ public:
             return;
         }
 
-        std::vector<std::pair<SHAMapNodeID, intr_ptr::SharedPtr<SHAMapTreeNode>>> data;
+        std::vector<std::pair<SHAMapNodeID, SHAMapTreeNodePtr>> data;
         data.reserve(packet.nodes().size());
 
-        for (auto const& ledger_node : packet.nodes())
+        for (auto const& ledgerNode : packet.nodes())
         {
-            if (!validateLedgerNode(ledger_node))
+            if (!validateLedgerNode(ledgerNode))
             {
                 JLOG(j_.warn()) << "Got malformed ledger node";
-                peer->charge(Resource::feeMalformedRequest, "ledger_node");
+                peer->charge(Resource::feeMalformedRequest, "ledgerNode");
                 return;
             }
 
-            auto treeNode = getTreeNode(ledger_node.nodedata());
+            auto treeNode = getTreeNode(ledgerNode.nodedata());
             if (!treeNode)
             {
                 JLOG(j_.warn()) << "Got invalid node data";
@@ -166,7 +165,7 @@ public:
                 return;
             }
 
-            auto const nodeID = getSHAMapNodeID(ledger_node, *treeNode);
+            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
             if (!nodeID)
             {
                 JLOG(j_.warn()) << "Got invalid node id";

@@ -1,7 +1,6 @@
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -21,7 +20,6 @@
 #include <cstdint>
 #include <list>
 #include <ostream>
-#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -116,13 +114,13 @@ public:
         destination.setSynching();
 
         {
-            std::vector<std::tuple<SHAMapNodeID, Blob, bool>> a;
+            std::vector<SHAMapNodeData> a;
 
             BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
 
             unexpected(a.empty(), "NodeSize");
 
-            auto node = SHAMapTreeNode::makeFromWire(makeSlice(std::get<1>(a[0])));
+            auto node = SHAMapTreeNode::makeFromWire(makeSlice(a[0].data));
             if (!node)
                 fail("", __FILE__, __LINE__);
             BEAST_EXPECT(
@@ -140,7 +138,7 @@ public:
                 break;
 
             // get as many nodes as possible based on this information
-            std::vector<std::tuple<SHAMapNodeID, Blob, bool>> b;
+            std::vector<SHAMapNodeData> b;
 
             for (auto& it : nodesMissing)
             {
@@ -162,11 +160,10 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                auto node = SHAMapTreeNode::makeFromWire(makeSlice(std::get<1>(b[i])));
+                auto node = SHAMapTreeNode::makeFromWire(makeSlice(b[i].data));
                 if (!node)
                     fail("", __FILE__, __LINE__);
-                if (!destination.addKnownNode(std::get<0>(b[i]), std::move(node), nullptr)
-                         .isUseful())
+                if (!destination.addKnownNode(b[i].nodeID, std::move(node), nullptr).isUseful())
                     fail("", __FILE__, __LINE__);
             }
         } while (true);

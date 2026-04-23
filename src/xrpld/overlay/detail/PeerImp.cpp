@@ -61,6 +61,7 @@
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/tx/apply.h>
 
@@ -3457,7 +3458,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         std::uint32_t const defaultDepth = isHighLatency() ? 2 : 1;
         auto const queryDepth{m->has_querydepth() ? m->querydepth() : defaultDepth};
 
-        std::vector<std::tuple<SHAMapNodeID, Blob, bool>> data;
+        std::vector<SHAMapNodeData> data;
         auto const useLedgerNodeDepth = supportsFeature(ProtocolFeature::LedgerNodeDepth);
 
         for (int i = 0;
@@ -3485,24 +3486,22 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
 
                         protocol::TMLedgerNode* node{ledgerData.add_nodes()};
 
-                        auto const& nodeData = std::get<1>(d);
-                        node->set_nodedata(nodeData.data(), nodeData.size());
+                        node->set_nodedata(d.data.data(), d.data.size());
 
                         // When the LedgerNodeDepth protocol feature is not supported by the peer,
                         // we always set the `nodeid` field. However, when it is supported then we
                         // set the `id` field for inner nodes and the `depth` field for leaf nodes.
-                        auto const& nodeID = std::get<0>(d);
                         if (!useLedgerNodeDepth)
                         {
-                            node->set_nodeid(nodeID.getRawString());
+                            node->set_nodeid(d.nodeID.getRawString());
                         }
-                        else if (std::get<2>(d))
+                        else if (d.isLeaf)
                         {
-                            node->set_depth(nodeID.getDepth());
+                            node->set_depth(d.nodeID.getDepth());
                         }
                         else
                         {
-                            node->set_id(nodeID.getRawString());
+                            node->set_id(d.nodeID.getRawString());
                         }
                     }
                 }

@@ -248,12 +248,12 @@ public:
         Serializer s;
         try
         {
-            for (auto const& ledger_node : packet_ptr->nodes())
+            for (auto const& ledgerNode : packet_ptr->nodes())
             {
-                if (!validateLedgerNode(ledger_node))
+                if (!validateLedgerNode(ledgerNode))
                     return;
 
-                auto const treeNode = getTreeNode(ledger_node.nodedata());
+                auto const treeNode = getTreeNode(ledgerNode.nodedata());
                 if (!treeNode)
                     return;
                 auto const tn = *treeNode;

@@ -92,7 +92,7 @@ public:
         std::array<std::string, 1> lgrPragma;
     };
 
-    struct CheckpointerSetup
+    struct CheckpointerSetup  // NOLINT(cppcoreguidelines-pro-type-member-init)
     {
         JobQueue* jobQueue{};
         std::reference_wrapper<ServiceRegistry> registry;

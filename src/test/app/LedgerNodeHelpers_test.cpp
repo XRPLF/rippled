@@ -22,7 +22,6 @@ namespace xrpl::tests {
 
 class LedgerNodeHelpers_test : public beast::unit_test::suite
 {
-    // Helper function to create a simple SHAMapItem for testing.
     static boost::intrusive_ptr<SHAMapItem>
     makeTestItem(std::uint32_t seed)
     {
@@ -33,9 +32,8 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
         return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
-    // Helper function to serialize a tree node to wire format.
     static std::string
-    serializeNode(intr_ptr::SharedPtr<SHAMapTreeNode> const& node)
+    serializeNode(SHAMapTreeNodePtr const& node)
     {
         Serializer s;
         node->serializeForWire(s);
@@ -267,7 +265,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_nodeid(leafID.getRawString());
-                auto result = getSHAMapNodeID(ledgerNode, leafNode);
+                auto const result = getSHAMapNodeID(ledgerNode, leafNode);
                 BEAST_EXPECT(result.has_value());
                 BEAST_EXPECT(*result == leafID);
             }
@@ -280,7 +278,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_id(leafID.getRawString());
-                auto result = getSHAMapNodeID(ledgerNode, leafNode);
+                auto const result = getSHAMapNodeID(ledgerNode, leafNode);
                 BEAST_EXPECT(!result.has_value());
             }
 
@@ -292,7 +290,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 protocol::TMLedgerNode node;
                 node.set_nodedata(leafData);
                 node.set_depth(leafDepth);
-                auto result = getSHAMapNodeID(node, leafNode);
+                auto const result = getSHAMapNodeID(node, leafNode);
                 BEAST_EXPECT(result.has_value());
                 BEAST_EXPECT(*result == leafID);
             }
@@ -305,7 +303,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_depth(leafDepth);
-                auto result = getSHAMapNodeID(ledgerNode, leafNode);
+                auto const result = getSHAMapNodeID(ledgerNode, leafNode);
                 BEAST_EXPECT(result.has_value());
                 BEAST_EXPECT(*result == leafID);
             }
@@ -321,7 +319,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 protocol::TMLedgerNode node;
                 node.set_nodedata(leafData);
                 node.set_depth(leafDepth);
-                auto result = getSHAMapNodeID(node, leafNode);
+                auto const result = getSHAMapNodeID(node, leafNode);
                 BEAST_EXPECT(result.has_value());
                 BEAST_EXPECT(*result == leafID);
             }
@@ -339,7 +337,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 protocol::TMLedgerNode ledgerNode;
                 ledgerNode.set_nodedata(otherData);
                 ledgerNode.set_nodeid(otherID.getRawString());
-                auto result = getSHAMapNodeID(ledgerNode, leafNode);
+                auto const result = getSHAMapNodeID(ledgerNode, leafNode);
                 BEAST_EXPECT(!result.has_value());
             }
         }

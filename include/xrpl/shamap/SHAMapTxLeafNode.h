@@ -26,7 +26,7 @@ public:
     {
     }
 
-    intr_ptr::SharedPtr<SHAMapTreeNode>
+    SHAMapTreeNodePtr
     clone(std::uint32_t cowid) const final
     {
         return intr_ptr::make_shared<SHAMapTxLeafNode>(item_, cowid, hash_);

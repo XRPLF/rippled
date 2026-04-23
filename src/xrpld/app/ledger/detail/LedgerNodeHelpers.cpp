@@ -1,6 +1,5 @@
 #include <xrpld/app/ledger/detail/LedgerNodeHelpers.h>
 
-#include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -18,19 +17,19 @@
 namespace xrpl {
 
 bool
-validateLedgerNode(protocol::TMLedgerNode const& ledger_node)
+validateLedgerNode(protocol::TMLedgerNode const& ledgerNode)
 {
-    if (!ledger_node.has_nodedata())
+    if (!ledgerNode.has_nodedata())
         return false;
 
-    if (ledger_node.has_nodeid())
-        return !ledger_node.has_id() && !ledger_node.has_depth();
+    if (ledgerNode.has_nodeid())
+        return !ledgerNode.has_id() && !ledgerNode.has_depth();
 
-    return ledger_node.has_id() ||
-        (ledger_node.has_depth() && ledger_node.depth() <= SHAMap::leafDepth);
+    return ledgerNode.has_id() ||
+        (ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::leafDepth);
 }
 
-std::optional<intr_ptr::SharedPtr<SHAMapTreeNode>>
+std::optional<SHAMapTreeNodePtr>
 getTreeNode(std::string_view data)
 {
     auto const slice = makeSlice(data);
@@ -48,38 +47,36 @@ getTreeNode(std::string_view data)
 }
 
 std::optional<SHAMapNodeID>
-getSHAMapNodeID(
-    protocol::TMLedgerNode const& ledger_node,
-    intr_ptr::SharedPtr<SHAMapTreeNode> const& treeNode)
+getSHAMapNodeID(protocol::TMLedgerNode const& ledgerNode, SHAMapTreeNodePtr const& treeNode)
 {
-    if (ledger_node.has_id() || ledger_node.has_depth())
+    if (ledgerNode.has_id() || ledgerNode.has_depth())
     {
         if (treeNode->isInner())
         {
-            if (!ledger_node.has_id())
+            if (!ledgerNode.has_id())
                 return std::nullopt;
 
-            return deserializeSHAMapNodeID(ledger_node.id());
+            return deserializeSHAMapNodeID(ledgerNode.id());
         }
 
         if (treeNode->isLeaf())
         {
-            if (!ledger_node.has_depth())
+            if (!ledgerNode.has_depth())
                 return std::nullopt;
 
             auto const key =
                 safe_downcast<SHAMapLeafNode const*>(treeNode.get())->peekItem()->key();
-            return SHAMapNodeID::createID(ledger_node.depth(), key);
+            return SHAMapNodeID::createID(ledgerNode.depth(), key);
         }
 
         UNREACHABLE("xrpl::getSHAMapNodeID : tree node is neither inner nor leaf");
         return std::nullopt;
     }
 
-    if (!ledger_node.has_nodeid())
+    if (!ledgerNode.has_nodeid())
         return std::nullopt;
 
-    auto nodeID = deserializeSHAMapNodeID(ledger_node.nodeid());
+    auto nodeID = deserializeSHAMapNodeID(ledgerNode.nodeid());
     if (!nodeID.has_value())
         return std::nullopt;
 

@@ -66,7 +66,7 @@ SHAMap::visitNodes(std::function<bool(SHAMapTreeNode&)> const& function) const
         {
             if (!node->isEmptyBranch(pos))
             {
-                intr_ptr::SharedPtr<SHAMapTreeNode> const child = descendNoStore(*node, pos);
+                SHAMapTreeNodePtr const child = descendNoStore(*node, pos);
                 if (!function(*child))
                     return;
 
@@ -204,8 +204,7 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
                 branch,
                 mn.filter_,
                 pending,
-                [node, nodeID, branch, &mn](
-                    intr_ptr::SharedPtr<SHAMapTreeNode> found, SHAMapHash const&) {
+                [node, nodeID, branch, &mn](SHAMapTreeNodePtr found, SHAMapHash const&) {
                     // a read completed asynchronously
                     std::unique_lock<std::mutex> const lock{mn.deferLock_};
                     mn.finishedReads_.emplace_back(node, nodeID, branch, std::move(found));
@@ -268,8 +267,7 @@ SHAMap::gmn_ProcessDeferredReads(MissingNodes& mn)
     int complete = 0;
     while (complete != mn.deferred_)
     {
-        std::tuple<SHAMapInnerNode*, SHAMapNodeID, int, intr_ptr::SharedPtr<SHAMapTreeNode>>
-            deferredNode;
+        std::tuple<SHAMapInnerNode*, SHAMapNodeID, int, SHAMapTreeNodePtr> deferredNode;
         {
             std::unique_lock<std::mutex> lock{mn.deferLock_};
 
@@ -417,7 +415,7 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
 bool
 SHAMap::getNodeFat(
     SHAMapNodeID const& wanted,
-    std::vector<std::tuple<SHAMapNodeID, Blob, bool>>& data,
+    std::vector<SHAMapNodeData>& data,
     bool fatLeaves,
     std::uint32_t depth) const
 {
@@ -463,7 +461,7 @@ SHAMap::getNodeFat(
         // Add this node to the reply
         s.erase();
         node->serializeForWire(s);
-        data.emplace_back(nodeID, s.getData(), node->isLeaf());
+        data.push_back({nodeID, s.getData(), node->isLeaf()});
 
         if (node->isInner())
         {
@@ -493,7 +491,7 @@ SHAMap::getNodeFat(
                             // Just include this node
                             s.erase();
                             childNode->serializeForWire(s);
-                            data.emplace_back(childID, s.getData(), childNode->isLeaf());
+                            data.push_back({childID, s.getData(), childNode->isLeaf()});
                         }
                     }
                 }
@@ -513,7 +511,7 @@ SHAMap::serializeRoot(Serializer& s) const
 SHAMapAddNode
 SHAMap::addRootNode(
     SHAMapHash const& hash,
-    intr_ptr::SharedPtr<SHAMapTreeNode> rootNode,
+    SHAMapTreeNodePtr rootNode,
     SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(rootNode, "xrpl::SHAMap::addRootNode : non-null root node");
@@ -560,7 +558,7 @@ SHAMap::addRootNode(
 SHAMapAddNode
 SHAMap::addKnownNode(
     SHAMapNodeID const& nodeID,
-    intr_ptr::SharedPtr<SHAMapTreeNode> treeNode,
+    SHAMapTreeNodePtr treeNode,
     SHAMapSyncFilter const* filter)
 {
     XRPL_ASSERT(!nodeID.isRoot(), "xrpl::SHAMap::addKnownNode : valid node input");

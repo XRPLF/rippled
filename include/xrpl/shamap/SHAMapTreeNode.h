@@ -166,4 +166,6 @@ private:
     makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid);
 };
 
+using SHAMapTreeNodePtr = intr_ptr::SharedPtr<SHAMapTreeNode>;
+
 }  // namespace xrpl
