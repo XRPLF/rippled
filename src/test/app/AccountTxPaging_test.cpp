@@ -10,8 +10,6 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstdlib>
-
 namespace xrpl {
 
 class AccountTxPaging_test : public beast::unit_test::suite

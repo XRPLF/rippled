@@ -321,6 +321,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
         // Price the slot was purchased at.
         STAmount const pricePurchased = auctionSlot[sfPrice];
         XRPL_ASSERT(timeSlot, "xrpl::applyBid : timeSlot is set");
+        // NOLINTBEGIN(bugprone-unchecked-optional-access)
         auto const fractionUsed = (Number(*timeSlot) + 1) / AUCTION_SLOT_TIME_INTERVALS;
         auto const fractionRemaining = Number(1) - fractionUsed;
         auto const computedPrice = [&]() -> Number {
@@ -331,6 +332,7 @@ applyBid(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jour
             // Other intervals slot price
             return pricePurchased * p1_05 * (1 - power(fractionUsed, 60)) + minSlotPrice;
         }();
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         auto const payPrice = getPayPrice(computedPrice);
 
