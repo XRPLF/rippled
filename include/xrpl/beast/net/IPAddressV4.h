@@ -4,7 +4,8 @@
 
 #include <boost/asio/ip/address_v4.hpp>
 
-namespace beast::IP {
+namespace beast {
+namespace IP {
 
 using AddressV4 = boost::asio::ip::address_v4;
 
@@ -22,4 +23,5 @@ is_public(AddressV4 const& addr);
 char
 get_class(AddressV4 const& address);
 
-}  // namespace beast::IP
+}  // namespace IP
+}  // namespace beast

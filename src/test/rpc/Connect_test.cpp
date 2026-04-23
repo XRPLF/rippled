@@ -1,7 +1,5 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Env.h>
-
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {

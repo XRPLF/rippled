@@ -31,7 +31,7 @@ CountedObjects::getCounts(int minimumThreshold) const
             counts.emplace_back(ctr->getName(), ctr->getCount());
     }
 
-    std::ranges::sort(counts);
+    std::sort(counts.begin(), counts.end());
 
     return counts;
 }

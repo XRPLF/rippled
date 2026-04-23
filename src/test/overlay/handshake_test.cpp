@@ -1,8 +1,10 @@
 #include <xrpld/overlay/detail/Handshake.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 
-namespace xrpl::test {
+namespace xrpl {
+
+namespace test {
 
 class handshake_test : public beast::unit_test::suite
 {
@@ -40,4 +42,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(handshake, overlay, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

@@ -12,7 +12,8 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** Stores IP addresses useful for gaining initial connections.
 
@@ -54,7 +55,9 @@ private:
         friend bool
         operator<(Entry const& lhs, Entry const& rhs)
         {
-            return lhs.valence() > rhs.valence();
+            if (lhs.valence() > rhs.valence())
+                return true;
+            return false;
         }
 
     private:
@@ -168,4 +171,5 @@ private:
     flagForUpdate();
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

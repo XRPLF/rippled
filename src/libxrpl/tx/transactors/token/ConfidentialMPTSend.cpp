@@ -1,22 +1,13 @@
-#include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
-
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <memory>
-#include <optional>
-#include <utility>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/token/ConfidentialMPTSend.h>
 
 namespace xrpl {
 
@@ -94,12 +85,9 @@ verifySendProofs(
 
     std::optional<ConfidentialRecipient> auditor;
     if (hasAuditor)
-    {
         auditor.emplace(
             ConfidentialRecipient{
-                .publicKey = (*sleIssuance)[sfAuditorEncryptionKey],
-                .encryptedAmount = ctx.tx[sfAuditorEncryptedAmount]});
-    }
+                (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
 
     auto const contextHash = getSendContextHash(
         ctx.tx[sfAccount],
@@ -110,12 +98,9 @@ verifySendProofs(
 
     return verifySendProof(
         ctx.tx[sfZKProof],
-        {.publicKey = (*sleSenderMPToken)[sfHolderEncryptionKey],
-         .encryptedAmount = ctx.tx[sfSenderEncryptedAmount]},
-        {.publicKey = (*sleDestinationMPToken)[sfHolderEncryptionKey],
-         .encryptedAmount = ctx.tx[sfDestinationEncryptedAmount]},
-        {.publicKey = (*sleIssuance)[sfIssuerEncryptionKey],
-         .encryptedAmount = ctx.tx[sfIssuerEncryptedAmount]},
+        {(*sleSenderMPToken)[sfHolderEncryptionKey], ctx.tx[sfSenderEncryptedAmount]},
+        {(*sleDestinationMPToken)[sfHolderEncryptionKey], ctx.tx[sfDestinationEncryptedAmount]},
+        {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
         auditor,
         (*sleSenderMPToken)[sfConfidentialBalanceSpending],
         ctx.tx[sfAmountCommitment],
@@ -324,25 +309,6 @@ ConfidentialMPTSend::doApply()
     view().update(sleSenderMPToken);
     view().update(sleDestinationMPToken);
     return tesSUCCESS;
-}
-
-void
-ConfidentialMPTSend::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
-{
-}
-
-bool
-ConfidentialMPTSend::finalizeInvariants(
-    STTx const&,
-    TER,
-    XRPAmount,
-    ReadView const&,
-    beast::Journal const&)
-{
-    return true;
 }
 
 }  // namespace xrpl

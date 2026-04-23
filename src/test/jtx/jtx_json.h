@@ -4,7 +4,9 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Inject raw JSON. */
 class json
@@ -35,4 +37,6 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

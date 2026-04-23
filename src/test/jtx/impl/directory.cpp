@@ -1,25 +1,11 @@
 #include <test/jtx/directory.h>
 
-#include <test/jtx/Env.h>
-
-#include <xrpl/basics/Expected.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/Sandbox.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SField.h>
 
-#include <cstdint>
-#include <functional>
-#include <memory>
+namespace xrpl::test::jtx {
 
 /** Directory operations. */
-namespace xrpl::test::jtx::directory {
+namespace directory {
 
 auto
 bumpLastPage(
@@ -136,4 +122,6 @@ adjustOwnerNode(ApplyView& view, uint256 key, std::uint64_t page)
     return false;
 }
 
-}  // namespace xrpl::test::jtx::directory
+}  // namespace directory
+
+}  // namespace xrpl::test::jtx

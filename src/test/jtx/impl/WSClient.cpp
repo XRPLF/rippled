@@ -1,48 +1,23 @@
+#include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
-#include <xrpld/core/Config.h>
-
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/asio/bind_executor.hpp>
-#include <boost/asio/buffer.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address_v4.hpp>
-#include <boost/asio/ip/address_v6.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/post.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
-#include <boost/beast/websocket/error.hpp>
-#include <boost/beast/websocket/rfc6455.hpp>
-#include <boost/beast/websocket/stream.hpp>
-#include <boost/beast/websocket/stream_base.hpp>
-#include <boost/system/detail/error_code.hpp>
-#include <boost/system/system_error.hpp>
+#include <boost/beast/websocket.hpp>
 
-#include <chrono>
-#include <condition_variable>
-#include <exception>
-#include <functional>
 #include <iostream>
-#include <list>
-#include <memory>
-#include <mutex>
-#include <optional>
-#include <stdexcept>
 #include <string>
-#include <thread>
 #include <unordered_map>
-#include <utility>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class WSClientImpl : public WSClient
 {
@@ -334,4 +309,5 @@ makeWSClient(
     return std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
 }
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

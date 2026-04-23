@@ -1,18 +1,9 @@
 #include <xrpl/conditions/Condition.h>
-
-#include <xrpl/basics/Buffer.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/conditions/detail/PreimageSha256.h>
-#include <xrpl/conditions/detail/error.h>
 #include <xrpl/conditions/detail/utils.h>
 
-#include <cstddef>
-#include <cstdint>
-#include <memory>
-#include <system_error>
-#include <utility>
-
-namespace xrpl::cryptoconditions {
+namespace xrpl {
+namespace cryptoconditions {
 
 namespace detail {
 // The binary encoding of conditions differs based on their
@@ -219,4 +210,5 @@ Condition::deserialize(Slice s, std::error_code& ec)
     return c;
 }
 
-}  // namespace xrpl::cryptoconditions
+}  // namespace cryptoconditions
+}  // namespace xrpl

@@ -151,9 +151,7 @@ operator bool() const noexcept
 inline int
 IOUAmount::signum() const noexcept
 {
-    if (mantissa_ < 0)
-        return -1;
-    return (mantissa_ != 0) ? 1 : 0;
+    return (mantissa_ < 0) ? -1 : (mantissa_ ? 1 : 0);
 }
 
 inline IOUAmount::exponent_type

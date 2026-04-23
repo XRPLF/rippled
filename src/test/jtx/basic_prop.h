@@ -2,7 +2,9 @@
 
 #include <memory>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 struct basic_prop
 {
@@ -36,4 +38,6 @@ struct prop_type : basic_prop
     }
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

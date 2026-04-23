@@ -11,7 +11,8 @@
 #include <mutex>
 #include <string>
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 /** Unit test runner interface.
 
@@ -197,10 +198,8 @@ runner::run_if(FwdIter first, FwdIter last, Pred pred)
 {
     bool failed(false);
     for (; first != last; ++first)
-    {
         if (pred(*first))
             failed = run(*first) || failed;
-    }
     return failed;
 }
 
@@ -220,10 +219,8 @@ runner::run_each_if(SequenceContainer const& c, Pred pred)
 {
     bool failed(false);
     for (auto const& s : c)
-    {
         if (pred(s))
             failed = run(s) || failed;
-    }
     return failed;
 }
 
@@ -276,4 +273,5 @@ runner::log(std::string const& s)
     on_log(s);
 }
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast

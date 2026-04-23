@@ -8,12 +8,15 @@
 
 #include <limits>
 
+namespace xrpl {
+namespace cryptoconditions {
+
 // A collection of functions to decode binary blobs
 // encoded with X.690 Distinguished Encoding Rules.
 //
 // This is a very trivial decoder and only implements
 // the bare minimum needed to support PreimageSha256.
-namespace xrpl::cryptoconditions::der {
+namespace der {
 
 // The preamble encapsulates the DER identifier and
 // length octets:
@@ -86,7 +89,7 @@ parsePreamble(Slice& s, std::error_code& ec)
     p.length = s[0];
     s += 1;
 
-    if ((p.length & 0x80) != 0u)
+    if (p.length & 0x80)
     {  // Long form length:
         std::size_t const cnt = p.length & 0x7F;
 
@@ -201,4 +204,6 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
     return v;
 }
 
-}  // namespace xrpl::cryptoconditions::der
+}  // namespace der
+}  // namespace cryptoconditions
+}  // namespace xrpl

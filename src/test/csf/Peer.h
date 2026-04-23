@@ -1,6 +1,5 @@
 #pragma once
 
-#include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
 #include <test/csf/Scheduler.h>
 #include <test/csf/TrustGraph.h>
@@ -20,7 +19,9 @@
 
 #include <algorithm>
 
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 
 namespace bc = boost::container;
 
@@ -61,8 +62,8 @@ struct Peer
             return proposal_.getJson();
         }
 
-        static std::string
-        render()
+        std::string
+        render() const
         {
             return "";
         }
@@ -294,13 +295,9 @@ struct Peer
         using namespace std::chrono_literals;
 
         if (when == 0ns)
-        {
             what();
-        }
         else
-        {
             scheduler.in(when, std::forward<T>(what));
-        }
     }
 
     // Issue a new event to the collectors
@@ -343,10 +340,8 @@ struct Peer
     trusts(PeerID const& oId)
     {
         for (auto const p : trustGraph.trustedPeers(this))
-        {
             if (p->id == oId)
                 return true;
-        }
         return false;
     }
 
@@ -491,7 +486,7 @@ struct Peer
     Result
     onClose(Ledger const& prevLedger, NetClock::time_point closeTime, ConsensusMode mode)
     {
-        issue(CloseLedger{.prevLedger = prevLedger, .txs = openTxs});
+        issue(CloseLedger{prevLedger, openTxs});
 
         return Result(
             TxSet{openTxs},
@@ -531,14 +526,15 @@ struct Peer
                 prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
             ledgers[newLedger.id()] = newLedger;
 
-            issue(AcceptLedger{.ledger = newLedger, .prior = lastClosedLedger});
+            issue(AcceptLedger{newLedger, lastClosedLedger});
             prevProposers = result.proposers;
             prevRoundTime = result.roundTime.read();
             lastClosedLedger = newLedger;
 
-            auto const removed = std::ranges::remove_if(
-                openTxs, [&](Tx const& tx) { return acceptedTxs.exists(tx.id()); });
-            openTxs.erase(removed.begin(), removed.end());
+            auto const it = std::remove_if(openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
+                return acceptedTxs.exists(tx.id());
+            });
+            openTxs.erase(it, openTxs.end());
 
             // Only send validation if the new ledger is compatible with our
             // fully validated ledger
@@ -592,7 +588,7 @@ struct Peer
         if (netLgr != ledgerID)
         {
             JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
-            issue(WrongPrevLedger{.wrong = ledgerID, .right = netLgr});
+            issue(WrongPrevLedger{ledgerID, netLgr});
         }
 
         return netLgr;
@@ -665,7 +661,7 @@ struct Peer
         quorum = static_cast<std::size_t>(std::ceil(numTrustedPeers * 0.8));
         if (count >= quorum && ledger.isAncestor(fullyValidatedLedger))
         {
-            issue(FullyValidateLedger{.ledger = ledger, .prior = fullyValidatedLedger});
+            issue(FullyValidateLedger{ledger, fullyValidatedLedger});
             fullyValidatedLedger = ledger;
         }
     }
@@ -754,7 +750,7 @@ struct Peer
         // TODO: This always suppresses relay of peer positions already seen
         // Should it allow forwarding if for a recent ledger ?
         auto& dest = peerPositions[p.prevLedger()];
-        if (std::ranges::find(dest, p) != dest.end())
+        if (std::find(dest.begin(), dest.end(), p) != dest.end())
             return false;
 
         dest.push_back(p);
@@ -778,7 +774,7 @@ struct Peer
     {
         // Ignore and suppress relay of transactions already in last ledger
         TxSetType const& lastClosedTxs = lastClosedLedger.txs();
-        if (lastClosedTxs.contains(tx))
+        if (lastClosedTxs.find(tx) != lastClosedTxs.end())
             return false;
 
         // only relay if it was new to our open ledger
@@ -834,8 +830,8 @@ struct Peer
     {
     }
 
-    static bool
-    validating()
+    bool
+    validating() const
     {
         // does not matter
         return false;
@@ -875,7 +871,7 @@ struct Peer
         if (bestLCL == Ledger::ID{0})
             bestLCL = lastClosedLedger.id();
 
-        issue(StartRound{.bestLedger = bestLCL, .prevLedger = lastClosedLedger});
+        issue(StartRound{bestLCL, lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
         hash_set<PeerID> const nowUntrusted;
@@ -945,4 +941,6 @@ struct Peer
     }
 };
 
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

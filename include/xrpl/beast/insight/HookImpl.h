@@ -3,7 +3,8 @@
 #include <functional>
 #include <memory>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 class HookImpl : public std::enable_shared_from_this<HookImpl>
 {
@@ -13,4 +14,5 @@ public:
     virtual ~HookImpl() = 0;
 };
 
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

@@ -8,8 +8,6 @@
 
 #include <boost/container/flat_map.hpp>
 
-#include <utility>
-
 namespace xrpl {
 
 /** A transaction discovered to be in dispute during consensus.
@@ -40,8 +38,8 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(Tx_t tx, bool ourVote, std::size_t numPeers, beast::Journal j)
-        : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
+    DisputedTx(Tx_t const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
+        : ourVote_(ourVote), tx_(tx), j_(j)
     {
         votes_.reserve(numPeers);
     }
@@ -100,11 +98,9 @@ public:
         // Compute the percentage of nodes voting 'yes' (possibly including us)
         int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
         int const total = nays_ + yays_ + (proposing ? 1 : 0);
-        if (total == 0)
-        {
+        if (!total)
             // There are no votes, so we know nothing
             return false;
-        }
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
@@ -214,7 +210,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         return true;
     }
     // changes vote to yes
-    if (votesYes && !it->second)
+    else if (votesYes && !it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
         --nays_;
@@ -223,7 +219,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         return true;
     }
     // changes vote to no
-    if (!votesYes && it->second)
+    else if (!votesYes && it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
         ++nays_;
@@ -244,13 +240,9 @@ DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)
     if (it != votes_.end())
     {
         if (it->second)
-        {
             --yays_;
-        }
         else
-        {
             --nays_;
-        }
 
         votes_.erase(it);
     }

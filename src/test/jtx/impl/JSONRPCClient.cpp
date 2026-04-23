@@ -1,37 +1,21 @@
 #include <test/jtx/JSONRPCClient.h>
 
-#include <test/jtx/AbstractClient.h>
-
-#include <xrpld/core/Config.h>
-
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address_v4.hpp>
-#include <boost/asio/ip/address_v6.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/asio.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/string_body.hpp>
-#include <boost/beast/http/verb.hpp>
 #include <boost/beast/http/write.hpp>
 
-#include <iostream>
-#include <memory>
-#include <sstream>
-#include <stdexcept>
 #include <string>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class JSONRPCClient : public AbstractClient
 {
@@ -47,7 +31,7 @@ class JSONRPCClient : public AbstractClient
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if (not pp.protocol.contains("http"))
+            if (pp.protocol.count("http") == 0)
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
@@ -88,6 +72,12 @@ public:
         : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpc_version)
     {
         stream_.connect(ep_);
+    }
+
+    ~JSONRPCClient() override
+    {
+        // stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
+        // stream_.close();
     }
 
     /*
@@ -158,4 +148,5 @@ makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
     return std::make_unique<JSONRPCClient>(cfg, rpc_version);
 }
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

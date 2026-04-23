@@ -1,38 +1,12 @@
-#include <xrpl/ledger/detail/ApplyStateTable.h>
-
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>  // IWYU pragma: keep
-#include <xrpl/ledger/OpenView.h>
-#include <xrpl/ledger/RawView.h>
-#include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxMeta.h>
-#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/detail/ApplyStateTable.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/st.h>
 
-#include <cstddef>
-#include <cstdint>
-#include <functional>
-#include <memory>
-#include <optional>
-#include <stdexcept>
-#include <tuple>
-#include <utility>
-
-namespace xrpl::detail {
+namespace xrpl {
+namespace detail {
 
 void
 ApplyStateTable::apply(RawView& to) const
@@ -400,14 +374,14 @@ ApplyStateTable::erase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
-        Throw<std::logic_error>("ApplyStateTable::erase: missing key");
+        LogicError("ApplyStateTable::erase: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        Throw<std::logic_error>("ApplyStateTable::erase: unknown SLE");
+        LogicError("ApplyStateTable::erase: unknown SLE");
     switch (item.first)
     {
         case Action::erase:
-            Throw<std::logic_error>("ApplyStateTable::erase: double erase");
+            LogicError("ApplyStateTable::erase: double erase");
             break;
         case Action::insert:
             items_.erase(iter);
@@ -431,7 +405,7 @@ ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
     switch (item.first)
     {
         case Action::erase:
-            Throw<std::logic_error>("ApplyStateTable::rawErase: double erase");
+            LogicError("ApplyStateTable::rawErase: double erase");
             break;
         case Action::insert:
             items_.erase(result.first);
@@ -462,11 +436,11 @@ ApplyStateTable::insert(ReadView const& base, std::shared_ptr<SLE> const& sle)
     switch (item.first)
     {
         case Action::cache:
-            Throw<std::logic_error>("ApplyStateTable::insert: already cached");
+            LogicError("ApplyStateTable::insert: already cached");
         case Action::insert:
-            Throw<std::logic_error>("ApplyStateTable::insert: already inserted");
+            LogicError("ApplyStateTable::insert: already inserted");
         case Action::modify:
-            Throw<std::logic_error>("ApplyStateTable::insert: already modified");
+            LogicError("ApplyStateTable::insert: already modified");
         case Action::erase:
             break;
     }
@@ -492,7 +466,7 @@ ApplyStateTable::replace(ReadView const& base, std::shared_ptr<SLE> const& sle)
     switch (item.first)
     {
         case Action::erase:
-            Throw<std::logic_error>("ApplyStateTable::replace: already erased");
+            LogicError("ApplyStateTable::replace: already erased");
         case Action::cache:
             item.first = Action::modify;
             break;
@@ -508,14 +482,14 @@ ApplyStateTable::update(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
-        Throw<std::logic_error>("ApplyStateTable::update: missing key");
+        LogicError("ApplyStateTable::update: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        Throw<std::logic_error>("ApplyStateTable::update: unknown SLE");
+        LogicError("ApplyStateTable::update: unknown SLE");
     switch (item.first)
     {
         case Action::erase:
-            Throw<std::logic_error>("ApplyStateTable::update: erased");
+            LogicError("ApplyStateTable::update: erased");
             break;
         case Action::cache:
             item.first = Action::modify;
@@ -668,4 +642,5 @@ ApplyStateTable::threadOwners(
     }
 }
 
-}  // namespace xrpl::detail
+}  // namespace detail
+}  // namespace xrpl

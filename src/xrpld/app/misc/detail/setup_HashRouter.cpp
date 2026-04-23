@@ -1,14 +1,7 @@
 #include <xrpld/app/misc/setup_HashRouter.h>
-
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/core/HashRouter.h>
-
-#include <chrono>
-#include <cstdint>
-#include <stdexcept>
 
 namespace xrpl {
 

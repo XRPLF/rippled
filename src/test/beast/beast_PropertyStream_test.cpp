@@ -1,7 +1,5 @@
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/PropertyStream.h>
-
-#include <string>
 
 namespace beast {
 

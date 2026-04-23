@@ -1,55 +1,23 @@
-
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
+#include <test/jtx.h>
 
 #include <xrpld/app/misc/ValidatorList.h>
-#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base64.h>
-#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/strHex.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/tokens.h>
-#include <xrpl/server/Manifest.h>
+#include <xrpl/protocol/messages.h>
 
-#include <boost/asio/buffer.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
-#include <boost/system/detail/error_code.hpp>
 
-#include <xrpl.pb.h>
-
-#include <algorithm>
-#include <array>
-#include <chrono>
-#include <cmath>
-#include <cstddef>
-#include <cstdint>
-#include <initializer_list>
-#include <limits>
-#include <map>
-#include <memory>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class ValidatorList_test : public beast::unit_test::suite
 {
@@ -124,9 +92,9 @@ private:
         auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
         auto const signingKeys = randomKeyPair(KeyType::secp256k1);
         return {
-            .masterPublic = masterPublic,
-            .signingPublic = signingKeys.first,
-            .manifest = base64_encode(makeManifestString(
+            masterPublic,
+            signingKeys.first,
+            base64_encode(makeManifestString(
                 masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
     }
 
@@ -1898,11 +1866,11 @@ private:
                 auto const sig2 = signList(blob2, pubSigningKeys);
 
                 return PreparedList{
-                    .publisherPublic = publisherPublic,
-                    .manifest = manifest,
-                    .blobs = {{blob1, sig1, {}}, {blob2, sig2, {}}},
-                    .version = version,
-                    .expirations = {expiration1, expiration2}};
+                    publisherPublic,
+                    manifest,
+                    {{blob1, sig1, {}}, {blob2, sig2, {}}},
+                    version,
+                    {expiration1, expiration2}};
             };
 
             // Configure two publishers and prepare 2 lists
@@ -3949,4 +3917,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ValidatorList, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

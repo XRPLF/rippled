@@ -1,27 +1,21 @@
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
+#include <test/jtx.h>
 #include <test/jtx/utility.h>
 
-#include <xrpld/core/Config.h>
+#include <xrpld/rpc/RPCCall.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/ErrorCodes.h>
 
-#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string.hpp>
 
-#include <cstdint>
-#include <cstring>
 #include <functional>
 #include <initializer_list>
-#include <memory>
-#include <string>
-#include <typeinfo>
 #include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 struct RPCCallTestData
 {
@@ -5933,4 +5927,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RPCCall, rpc, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

@@ -1,7 +1,8 @@
 #pragma once
 #include <xrpl/ledger/View.h>
 
-namespace xrpl::permissioned_dex {
+namespace xrpl {
+namespace permissioned_dex {
 
 // Check if an account is in a permissioned domain
 [[nodiscard]] bool
@@ -15,4 +16,6 @@ offerInDomain(
     Domain const& domainID,
     beast::Journal j);
 
-}  // namespace xrpl::permissioned_dex
+}  // namespace permissioned_dex
+
+}  // namespace xrpl

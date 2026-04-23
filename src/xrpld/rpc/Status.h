@@ -4,7 +4,8 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TER.h>
 
-namespace xrpl::RPC {
+namespace xrpl {
+namespace RPC {
 
 /** Status represents the results of an operation that might fail.
 
@@ -27,7 +28,7 @@ public:
     Status() = default;
 
     // The enable_if allows only integers (not enums).  Prevents enum narrowing.
-    template <typename T, typename = std::enable_if_t<std::is_integral_v<T>>>
+    template <typename T, typename = std::enable_if_t<std::is_integral<T>::value>>
     Status(T code, Strings d = {}) : code_(code), messages_(std::move(d))
     {
     }
@@ -92,13 +93,9 @@ public:
         if (auto ec = toErrorCode())
         {
             if (messages_.empty())
-            {
                 inject_error(ec, object);
-            }
             else
-            {
                 inject_error(ec, message(), object);
-            }
         }
     }
 
@@ -133,4 +130,5 @@ private:
     Strings messages_;
 };
 
-}  // namespace xrpl::RPC
+}  // namespace RPC
+}  // namespace xrpl

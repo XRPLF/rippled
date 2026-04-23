@@ -1,21 +1,12 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
-
-#include <xrpld/core/Config.h>
-
-#include <xrpl/basics/LocalValue.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 
-#include <array>
 #include <chrono>
-#include <condition_variable>
-#include <memory>
 #include <mutex>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class Coroutine_test : public beast::unit_test::suite
 {
@@ -174,4 +165,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Coroutine, core, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

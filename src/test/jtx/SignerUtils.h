@@ -2,11 +2,11 @@
 
 #include <test/jtx/Account.h>
 
-#include <algorithm>
-#include <utility>
 #include <vector>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 struct Reg
 {
@@ -17,7 +17,7 @@ struct Reg
     {
     }
 
-    Reg(Account acct_, Account regularSig) : acct(std::move(acct_)), sig(std::move(regularSig))
+    Reg(Account const& acct_, Account const& regularSig) : acct(acct_), sig(regularSig)
     {
     }
 
@@ -40,7 +40,11 @@ struct Reg
 inline void
 sortSigners(std::vector<Reg>& signers)
 {
-    std::ranges::sort(signers, [](Reg const& lhs, Reg const& rhs) { return lhs.acct < rhs.acct; });
+    std::sort(signers.begin(), signers.end(), [](Reg const& lhs, Reg const& rhs) {
+        return lhs.acct < rhs.acct;
+    });
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

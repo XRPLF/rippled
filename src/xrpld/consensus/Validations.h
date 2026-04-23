@@ -369,9 +369,7 @@ private:
                 it = acquiring_.erase(it);
             }
             else
-            {
                 ++it;
-            }
         }
     }
 
@@ -433,13 +431,9 @@ private:
         else
         {
             if (std::optional<Ledger> ledger = adaptor_.acquire(val.ledgerID()))
-            {
                 updateTrie(lock, nodeID, *ledger);
-            }
             else
-            {
                 acquiring_[valPair].insert(nodeID);
-            }
         }
     }
 
@@ -660,9 +654,7 @@ public:
                         updateTrie(lock, nodeID, val, old);
                 }
                 else
-                {
                     return ValStatus::stale;
-                }
             }
             else if (val.trusted())
             {
@@ -925,11 +917,9 @@ public:
 
         // Use trie if ledger is the right one
         if (ledger.id() == ledgerID)
-        {
             return withTrie(lock, [&ledger](LedgerTrie<Ledger>& trie) {
                 return trie.branchSupport(ledger) - trie.tipSupport(ledger);
             });
-        }
 
         // Count parent ledgers as fallback
         return std::count_if(lastLedger_.begin(), lastLedger_.end(), [&ledgerID](auto const& it) {
@@ -1038,13 +1028,9 @@ public:
                 {
                     std::optional<std::uint32_t> loadFee = v.loadFee();
                     if (loadFee)
-                    {
                         res.push_back(*loadFee);
-                    }
                     else
-                    {
                         res.push_back(baseFee);
-                    }
                 }
             });
         return res;

@@ -2,7 +2,8 @@
 
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** Metadata for a Fixed slot. */
 class Fixed
@@ -42,4 +43,5 @@ private:
     std::size_t m_failures{0};
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

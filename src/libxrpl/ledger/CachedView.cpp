@@ -1,17 +1,8 @@
+#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/ledger/CachedView.h>
 
-#include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-
-#include <memory>
-#include <mutex>
-#include <optional>
-
-namespace xrpl::detail {
+namespace xrpl {
+namespace detail {
 
 bool
 CachedViewImpl::exists(Keylet const& k) const
@@ -74,4 +65,5 @@ CachedViewImpl::read(Keylet const& k) const
     return sle;
 }
 
-}  // namespace xrpl::detail
+}  // namespace detail
+}  // namespace xrpl

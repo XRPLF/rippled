@@ -3,7 +3,8 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 // A Journal::Sink intended for use with the beast unit test framework.
 class SuiteJournalSink : public beast::Journal::Sink
@@ -21,7 +22,7 @@ public:
     }
 
     // For unit testing, always generate logging text.
-    bool
+    inline bool
     active(beast::severities::Severity level) const override
     {
         return true;
@@ -113,7 +114,7 @@ public:
         writeAlways(level, text);
     }
 
-    void
+    inline void
     writeAlways(beast::severities::Severity level, std::string const& text) override
     {
         strm_ << text << std::endl;
@@ -126,4 +127,5 @@ public:
     }
 };
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

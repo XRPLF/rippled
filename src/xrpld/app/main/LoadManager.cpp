@@ -1,18 +1,11 @@
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/LoadManager.h>
 
-#include <xrpld/app/main/Application.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/json/to_string.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <chrono>
-#include <exception>
 #include <memory>
 #include <mutex>
 #include <thread>

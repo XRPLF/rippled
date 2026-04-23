@@ -4,7 +4,8 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/nodestore/Database.h>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+namespace NodeStore {
 
 class DatabaseNodeImp : public Database
 {
@@ -28,7 +29,7 @@ public:
             "backend");
     }
 
-    ~DatabaseNodeImp() override
+    ~DatabaseNodeImp()
     {
         stop();
     }
@@ -91,4 +92,5 @@ private:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

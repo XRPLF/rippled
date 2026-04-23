@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpld/core/Config.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 

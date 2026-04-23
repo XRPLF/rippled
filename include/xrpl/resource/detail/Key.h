@@ -4,9 +4,8 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/detail/Kind.h>
 
-#include <utility>
-
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 // The consumer key
 struct Key
@@ -16,7 +15,7 @@ struct Key
 
     Key() = delete;
 
-    Key(Kind k, beast::IP::Endpoint addr) : kind(k), address(std::move(addr))
+    Key(Kind k, beast::IP::Endpoint const& addr) : kind(k), address(addr)
     {
     }
 
@@ -46,4 +45,5 @@ struct Key
     };
 };
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

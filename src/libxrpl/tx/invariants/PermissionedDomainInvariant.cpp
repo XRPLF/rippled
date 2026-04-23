@@ -1,22 +1,10 @@
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/ReadView.h>
+//
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/XRPAmount.h>
-
-#include <memory>
-#include <vector>
 
 namespace xrpl {
 
@@ -35,11 +23,7 @@ ValidPermissionedDomain::visitEntry(
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
-        SleStatus ss{
-            .credentialsSize_ = credentials.size(),
-            .isSorted_ = false,
-            .isUnique_ = !sorted.empty(),
-            .isDelete_ = isDel};
+        SleStatus ss{credentials.size(), false, !sorted.empty(), isDel};
 
         // If array have duplicates then all the other checks are invalid
         if (ss.isUnique_)

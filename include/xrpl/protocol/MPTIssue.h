@@ -47,14 +47,14 @@ public:
     friend constexpr std::weak_ordering
     operator<=>(MPTIssue const& lhs, MPTIssue const& rhs);
 
-    static bool
-    native()
+    bool
+    native() const
     {
         return false;
     }
 
-    static bool
-    integral()
+    bool
+    integral() const
     {
         return true;
     }
@@ -94,9 +94,9 @@ getMPTIssuer(MPTID const& mptid)
 }
 
 // Disallow temporary
-AccountID const&
+inline AccountID const&
 getMPTIssuer(MPTID const&&) = delete;
-AccountID const&
+inline AccountID const&
 getMPTIssuer(MPTID&&) = delete;
 
 inline MPTID

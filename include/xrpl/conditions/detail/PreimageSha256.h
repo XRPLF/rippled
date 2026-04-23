@@ -9,7 +9,8 @@
 
 #include <memory>
 
-namespace xrpl::cryptoconditions {
+namespace xrpl {
+namespace cryptoconditions {
 
 class PreimageSha256 final : public Fulfillment
 {
@@ -126,4 +127,5 @@ public:
     }
 };
 
-}  // namespace xrpl::cryptoconditions
+}  // namespace cryptoconditions
+}  // namespace xrpl

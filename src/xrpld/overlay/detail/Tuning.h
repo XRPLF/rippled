@@ -2,7 +2,9 @@
 
 #include <chrono>
 
-namespace xrpl::Tuning {
+namespace xrpl {
+
+namespace Tuning {
 
 enum {
     /** How many ledgers off a server can be and we will
@@ -42,4 +44,6 @@ enum {
 /** Size of buffer used to read from the socket. */
 std::size_t constexpr readBufferBytes = 16384;
 
-}  // namespace xrpl::Tuning
+}  // namespace Tuning
+
+}  // namespace xrpl

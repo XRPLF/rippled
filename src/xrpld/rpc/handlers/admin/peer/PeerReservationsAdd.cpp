@@ -1,13 +1,11 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 
-#include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/tokens.h>
 
 #include <optional>
 #include <string>
@@ -56,8 +54,8 @@ doPeerReservationsAdd(RPC::JsonContext& context)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    auto const previous = context.app.getPeerReservations().insert_or_assign(
-        PeerReservation{.nodeId = nodeId, .description = desc});
+    auto const previous =
+        context.app.getPeerReservations().insert_or_assign(PeerReservation{nodeId, desc});
 
     Json::Value result{Json::objectValue};
     if (previous)

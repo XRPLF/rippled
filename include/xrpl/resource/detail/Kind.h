@@ -1,6 +1,7 @@
 #pragma once
 
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 /**
  * Kind of consumer.
@@ -12,4 +13,5 @@ namespace xrpl::Resource {
  */
 enum Kind { kindInbound, kindOutbound, kindUnlimited };
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

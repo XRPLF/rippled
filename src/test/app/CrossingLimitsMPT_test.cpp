@@ -1,22 +1,10 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/tags.h>
-#include <test/jtx/ter.h>
-
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TER.h>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class CrossingLimitsMPT_test : public beast::unit_test::suite
 {
@@ -439,4 +427,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimitsMPT, tx, xrpl, 10);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

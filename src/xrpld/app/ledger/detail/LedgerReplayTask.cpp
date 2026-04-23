@@ -1,23 +1,8 @@
-#include <xrpld/app/ledger/LedgerReplayTask.h>
-
-#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
+#include <xrpld/app/ledger/LedgerReplayTask.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
-#include <xrpld/app/ledger/detail/TimeoutCounter.h>
-#include <xrpld/app/main/Application.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/Job.h>
-
-#include <algorithm>
-#include <cstdint>
-#include <memory>
-#include <stdexcept>
-#include <vector>
 
 namespace xrpl {
 
@@ -67,7 +52,7 @@ LedgerReplayTask::TaskParameter::canMergeInto(TaskParameter const& existingTask)
         if (existingTask.full_)
         {
             auto const& exList = existingTask.skipList_;
-            if (auto i = std::ranges::find(exList, finishHash_); i != exList.end())
+            if (auto i = std::find(exList.begin(), exList.end(), finishHash_); i != exList.end())
             {
                 return existingTask.totalLedgers_ >= totalLedgers_ + (exList.end() - i) - 1;
             }
@@ -87,9 +72,7 @@ LedgerReplayTask::LedgerReplayTask(
           app,
           parameter.finishHash_,
           LedgerReplayParameters::TASK_TIMEOUT,
-          {.jobType = jtREPLAY_TASK,
-           .jobName = "LedReplTask",
-           .jobLimit = LedgerReplayParameters::MAX_QUEUED_TASKS},
+          {jtREPLAY_TASK, "LedReplTask", LedgerReplayParameters::MAX_QUEUED_TASKS},
           app.getJournal("LedgerReplayTask"))
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)

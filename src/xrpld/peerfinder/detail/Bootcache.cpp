@@ -1,22 +1,13 @@
 #include <xrpld/peerfinder/detail/Bootcache.h>
-
-#include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/Store.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 #include <xrpld/peerfinder/detail/iosformat.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/PropertyStream.h>
-#include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
-#include <cstdint>
-#include <cstdlib>
-#include <vector>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
     : m_store(store), m_clock(clock), m_journal(journal), m_whenUpdate(m_clock.now())
@@ -261,4 +252,5 @@ Bootcache::flagForUpdate()
     checkUpdate();
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

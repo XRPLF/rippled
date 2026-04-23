@@ -15,7 +15,8 @@
 
 #include <mutex>
 
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 class Logic
 {
@@ -351,9 +352,7 @@ public:
                 iter = importTable_.erase(iter);
             }
             else
-            {
                 ++iter;
-            }
         }
     }
 
@@ -507,7 +506,7 @@ public:
 
     //--------------------------------------------------------------------------
 
-    static void
+    void
     writeList(
         clock_type::time_point const now,
         beast::PropertyStream::Set& items,
@@ -554,4 +553,5 @@ public:
     }
 };
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

@@ -1,6 +1,5 @@
-#include <xrpl/basics/make_SSLContext.h>
-
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/make_SSLContext.h>
 
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
@@ -9,9 +8,8 @@
 
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
-#include <openssl/crypto.h>
 #include <openssl/evp.h>
-#include <openssl/objects.h>  // IWYU pragma: keep
+#include <openssl/objects.h>
 #include <openssl/ossl_typ.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
@@ -27,8 +25,8 @@
 #include <string>
 
 namespace xrpl {
-
-namespace openssl::detail {
+namespace openssl {
+namespace detail {
 
 /** The default strength of self-signed RSA certificates.
 
@@ -346,7 +344,8 @@ get_context(std::string cipherList)
     return c;
 }
 
-}  // namespace openssl::detail
+}  // namespace detail
+}  // namespace openssl
 
 //------------------------------------------------------------------------------
 std::shared_ptr<boost::asio::ssl::context>

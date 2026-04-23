@@ -1,5 +1,4 @@
 #include <xrpl/protocol/InnerObjectFormats.h>
-
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/SOTemplate.h>
 

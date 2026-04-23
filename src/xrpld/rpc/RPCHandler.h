@@ -3,7 +3,8 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 
-namespace xrpl::RPC {
+namespace xrpl {
+namespace RPC {
 
 struct JsonContext;
 
@@ -14,4 +15,5 @@ doCommand(RPC::JsonContext&, Json::Value&);
 Role
 roleRequired(unsigned int version, bool betaEnabled, std::string const& method);
 
-}  // namespace xrpl::RPC
+}  // namespace RPC
+}  // namespace xrpl

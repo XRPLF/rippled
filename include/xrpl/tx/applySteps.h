@@ -27,7 +27,7 @@ struct ApplyResult
 inline bool
 isTecClaimHardFail(TER ter, ApplyFlags flags)
 {
-    return isTecClaim(ter) && ((flags & tapRETRY) == 0u);
+    return isTecClaim(ter) && !(flags & tapRETRY);
 }
 
 /** Class describing the consequences to the account

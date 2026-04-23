@@ -382,12 +382,11 @@ private:
             , targetTxnCount_(
                   setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
                                                              : setup.targetTxnInLedger)
-            , maximumTxnCount_([&]() -> std::optional<std::size_t> {
-                if (!setup.maximumTxnInLedger)
-                    return std::nullopt;
-                return *setup.maximumTxnInLedger < targetTxnCount_ ? targetTxnCount_
-                                                                   : *setup.maximumTxnInLedger;
-            }())
+            , maximumTxnCount_(
+                  setup.maximumTxnInLedger ? *setup.maximumTxnInLedger < targetTxnCount_
+                          ? targetTxnCount_
+                          : *setup.maximumTxnInLedger
+                                           : std::optional<std::size_t>(std::nullopt))
             , txnsExpected_(minimumTxnCount_)
             , recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
@@ -425,7 +424,7 @@ private:
         Snapshot
         getSnapshot() const
         {
-            return {.txnsExpected = txnsExpected_, .escalationMultiplier = escalationMultiplier_};
+            return {txnsExpected_, escalationMultiplier_};
         }
 
         /** Use the number of transactions in the current open ledger
@@ -673,7 +672,7 @@ private:
         bool
         empty() const
         {
-            return getTxnCount() == 0u;
+            return !getTxnCount();
         }
 
         /// Find the entry in transactions that precedes seqProx, if one does.

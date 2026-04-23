@@ -1,19 +1,11 @@
-#include <xrpl/tx/transactors/token/ConfidentialMPTClawback.h>
-
-#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <memory>
-#include <utility>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/token/ConfidentialMPTClawback.h>
 
 namespace xrpl {
 
@@ -173,24 +165,4 @@ ConfidentialMPTClawback::doApply()
 
     return tesSUCCESS;
 }
-
-void
-ConfidentialMPTClawback::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
-{
-}
-
-bool
-ConfidentialMPTClawback::finalizeInvariants(
-    STTx const&,
-    TER,
-    XRPAmount,
-    ReadView const&,
-    beast::Journal const&)
-{
-    return true;
-}
-
 }  // namespace xrpl

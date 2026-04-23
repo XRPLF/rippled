@@ -137,7 +137,7 @@ public:
     ConnectAttempt(
         Application& app,
         boost::asio::io_context& io_context,
-        endpoint_type remote_endpoint,
+        endpoint_type const& remote_endpoint,
         Resource::Consumer usage,
         shared_context const& context,
         Peer::id_t id,
@@ -145,7 +145,7 @@ public:
         beast::Journal journal,
         OverlayImpl& overlay);
 
-    ~ConnectAttempt() override;
+    virtual ~ConnectAttempt();
 
     /**
      * @brief Stop the connection attempt

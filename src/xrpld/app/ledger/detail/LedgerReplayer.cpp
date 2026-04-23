@@ -1,28 +1,6 @@
 #include <xrpld/app/ledger/LedgerReplayer.h>
-
-#include <xrpld/app/ledger/InboundLedger.h>
-#include <xrpld/app/ledger/LedgerReplayTask.h>
 #include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
-#include <xrpld/app/main/Application.h>
-#include <xrpld/overlay/PeerSet.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/LedgerHeader.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/shamap/SHAMapItem.h>
-
-#include <boost/smart_ptr/intrusive_ptr.hpp>
-
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <map>
-#include <memory>
-#include <mutex>
-#include <utility>
 
 namespace xrpl {
 
@@ -119,7 +97,8 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
     JLOG(j_.trace()) << "Creating " << parameter.totalLedgers_ - 1 << " deltas";
     if (parameter.totalLedgers_ > 1)
     {
-        auto skipListItem = std::ranges::find(parameter.skipList_, parameter.startHash_);
+        auto skipListItem =
+            std::find(parameter.skipList_.begin(), parameter.skipList_.end(), parameter.startHash_);
         auto const wasLast = skipListItem == parameter.skipList_.end();
         if (not wasLast)
             ++skipListItem;
@@ -218,9 +197,9 @@ LedgerReplayer::sweep()
                          << skipLists_.size() << " skipLists, and " << deltas_.size() << " deltas.";
 
         tasks_.erase(
-            std::ranges::remove_if(
-                tasks_,
-
+            std::remove_if(
+                tasks_.begin(),
+                tasks_.end(),
                 [this](auto const& t) -> bool {
                     if (t->finished())
                     {
@@ -228,8 +207,7 @@ LedgerReplayer::sweep()
                         return true;
                     }
                     return false;
-                })
-                .begin(),
+                }),
             tasks_.end());
 
         auto removeCannotLocked = [](auto& subTasks) {
@@ -261,7 +239,7 @@ LedgerReplayer::stop()
     JLOG(j_.info()) << "Stopping...";
     {
         std::lock_guard<std::mutex> const lock(mtx_);
-        std::ranges::for_each(tasks_, [](auto& i) { i->cancel(); });
+        std::for_each(tasks_.begin(), tasks_.end(), [](auto& i) { i->cancel(); });
         tasks_.clear();
         auto lockAndCancel = [](auto& i) {
             if (auto sptr = i.second.lock(); sptr)
@@ -269,9 +247,9 @@ LedgerReplayer::stop()
                 sptr->cancel();
             }
         };
-        std::ranges::for_each(skipLists_, lockAndCancel);
+        std::for_each(skipLists_.begin(), skipLists_.end(), lockAndCancel);
         skipLists_.clear();
-        std::ranges::for_each(deltas_, lockAndCancel);
+        std::for_each(deltas_.begin(), deltas_.end(), lockAndCancel);
         deltas_.clear();
     }
 

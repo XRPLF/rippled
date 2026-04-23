@@ -1,19 +1,16 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
-
-#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/format/free_funcs.hpp>
+#include <boost/format.hpp>
 
-#include <memory>
+namespace xrpl {
 
-namespace xrpl::test {
+namespace test {
 
 namespace validator_data {
 static auto const public_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
@@ -160,4 +157,5 @@ admin = 127.0.0.1
 
 BEAST_DEFINE_TESTSUITE(ServerInfo, rpc, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

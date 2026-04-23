@@ -2,7 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 struct last_ledger_seq
 {
@@ -18,4 +20,6 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

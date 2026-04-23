@@ -171,7 +171,7 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
         return Number::minExponent - 1;  // LCOV_EXCL_LINE
-    return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
+    return STAmount{vaultSle->at(sfAsset), vaultSle->at(sfAssetsTotal)}.exponent();
 }
 
 TER

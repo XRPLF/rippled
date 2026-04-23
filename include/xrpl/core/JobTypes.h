@@ -33,7 +33,8 @@ private:
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
             XRPL_ASSERT(
-                !m_map.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
+                m_map.find(jt) == m_map.end(),
+                "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
                 m_map

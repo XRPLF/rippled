@@ -1,21 +1,12 @@
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
+#include <test/jtx.h>
 #include <test/jtx/WSClient.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/escrow.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/trust.h>
 
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class GatewayBalances_test : public beast::unit_test::suite
 {
@@ -288,4 +279,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(GatewayBalances, rpc, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

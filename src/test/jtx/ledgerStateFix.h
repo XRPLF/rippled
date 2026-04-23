@@ -3,11 +3,20 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
+namespace xrpl {
+namespace test {
+namespace jtx {
+
 /** LedgerStateFix operations. */
-namespace xrpl::test::jtx::ledgerStateFix {
+namespace ledgerStateFix {
 
 /** Repair the links in an NFToken directory. */
 Json::Value
 nftPageLinks(jtx::Account const& acct, jtx::Account const& owner);
 
-}  // namespace xrpl::test::jtx::ledgerStateFix
+}  // namespace ledgerStateFix
+
+}  // namespace jtx
+
+}  // namespace test
+}  // namespace xrpl

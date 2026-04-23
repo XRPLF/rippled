@@ -25,19 +25,19 @@ public:
     operator=(SHAMapLeafNode const&) = delete;
 
     bool
-    isLeaf() const final
+    isLeaf() const final override
     {
         return true;
     }
 
     bool
-    isInner() const final
+    isInner() const final override
     {
         return false;
     }
 
     void
-    invariants(bool is_root = false) const final;
+    invariants(bool is_root = false) const final override;
 
 public:
     boost::intrusive_ptr<SHAMapItem const> const&
@@ -53,7 +53,7 @@ public:
     setItem(boost::intrusive_ptr<SHAMapItem const> i);
 
     std::string
-    getString(SHAMapNodeID const&) const final;
+    getString(SHAMapNodeID const&) const final override;
 };
 
 }  // namespace xrpl

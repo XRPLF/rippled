@@ -7,10 +7,10 @@
 #include <xrpl/beast/unit_test/detail/const_container.h>
 
 #include <string>
-#include <utility>
 #include <vector>
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 /** Holds a set of test condition outcomes in a testcase. */
 class case_results
@@ -23,7 +23,7 @@ public:
         {
         }
 
-        test(bool pass_, std::string reason_) : pass(pass_), reason(std::move(reason_))
+        test(bool pass_, std::string const& reason_) : pass(pass_), reason(reason_)
         {
         }
 
@@ -38,7 +38,9 @@ private:
         std::size_t failed_{0};
 
     public:
-        tests_t() = default;
+        tests_t()
+        {
+        }
 
         /** Returns the total number of test conditions. */
         std::size_t
@@ -84,7 +86,7 @@ private:
     std::string name_;
 
 public:
-    explicit case_results(std::string name = "") : name_(std::move(name))
+    explicit case_results(std::string const& name = "") : name_(name)
     {
     }
 
@@ -113,7 +115,7 @@ private:
     std::size_t failed_ = 0;
 
 public:
-    explicit suite_results(std::string name = "") : name_(std::move(name))
+    explicit suite_results(std::string const& name = "") : name_(name)
     {
     }
 
@@ -143,9 +145,9 @@ public:
     void
     insert(case_results&& r)
     {
+        cont().emplace_back(std::move(r));
         total_ += r.tests.total();
         failed_ += r.tests.failed();
-        cont().emplace_back(std::move(r));
     }
 
     void
@@ -170,7 +172,9 @@ private:
     std::size_t failed_{0};
 
 public:
-    results() = default;
+    results()
+    {
+    }
 
     /** Returns the total number of test cases. */
     std::size_t
@@ -215,4 +219,5 @@ public:
     /** @} */
 };
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast

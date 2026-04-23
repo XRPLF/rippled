@@ -1,12 +1,11 @@
-#include <xrpl/json/Writer.h>
-
 #include <xrpl/basics/ToString.h>
 #include <xrpl/json/Output.h>
+#include <xrpl/json/Writer.h>
 
 #include <cstddef>
 #include <map>
 #include <memory>
-#include <set>  // IWYU pragma: keep
+#include <set>
 #include <stack>
 #include <string>
 #include <utility>
@@ -63,7 +62,7 @@ lengthWithoutTrailingZeros(std::string const& s)
 class Writer::Impl
 {
 public:
-    explicit Impl(Output output) : output_(std::move(output))
+    explicit Impl(Output const& output) : output_(output)
     {
     }
     ~Impl() = default;
@@ -83,7 +82,8 @@ public:
     {
         char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
-        stack_.emplace(Collection{.type = ct});
+        stack_.push(Collection());
+        stack_.top().type = ct;
     }
 
     void
@@ -197,6 +197,8 @@ private:
     // JSON collections are either arrays, or objects.
     struct Collection
     {
+        explicit Collection() = default;
+
         /** What type of collection are we in? */
         Writer::CollectionType type = Writer::CollectionType::array;
 
@@ -206,7 +208,7 @@ private:
 
 #ifndef NDEBUG
         /** What tags have we already seen in this collection? */
-        std::set<std::string> tags{};  // NOLINT(readability-redundant-member-init)
+        std::set<std::string> tags;
 #endif
     };
 

@@ -1,16 +1,6 @@
 #include <xrpld/app/main/CollectorManager.h>
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/beast/insight/Collector.h>
-#include <xrpl/beast/insight/Group.h>
-#include <xrpl/beast/insight/Groups.h>
-#include <xrpl/beast/insight/NullCollector.h>
-#include <xrpl/beast/insight/StatsDCollector.h>
-#include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/utility/Journal.h>
-
 #include <memory>
-#include <string>
 
 namespace xrpl {
 
@@ -41,7 +31,7 @@ public:
         m_groups = beast::insight::make_Groups(m_collector);
     }
 
-    ~CollectorManagerImp() override = default;
+    ~CollectorManagerImp() = default;
 
     beast::insight::Collector::ptr const&
     collector() override

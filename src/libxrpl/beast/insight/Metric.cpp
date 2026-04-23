@@ -3,7 +3,8 @@
 #include <xrpl/beast/insight/GaugeImpl.h>
 #include <xrpl/beast/insight/MeterImpl.h>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 CounterImpl::~CounterImpl() = default;
 
@@ -12,4 +13,5 @@ EventImpl::~EventImpl() = default;
 GaugeImpl::~GaugeImpl() = default;
 
 MeterImpl::~MeterImpl() = default;
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

@@ -6,7 +6,9 @@ namespace Json {
 class Value;
 }  // namespace Json
 
-namespace xrpl::RPC {
+namespace xrpl {
+
+namespace RPC {
 
 /**
    Copy `Amount` field to `DeliverMax` field in transaction output JSON.
@@ -22,4 +24,5 @@ insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion);
 
 /** @} */
 
-}  // namespace xrpl::RPC
+}  // namespace RPC
+}  // namespace xrpl

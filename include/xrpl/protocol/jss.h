@@ -2,7 +2,8 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl::jss {
+namespace xrpl {
+namespace jss {
 
 // JSON static strings
 
@@ -713,4 +714,5 @@ JSS(write_load);                  // out: GetCounts
 
 #undef JSS
 
-}  // namespace xrpl::jss
+}  // namespace jss
+}  // namespace xrpl

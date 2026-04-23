@@ -1,5 +1,4 @@
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/core/Job.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>

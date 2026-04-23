@@ -23,7 +23,6 @@
 #include <cstdint>
 #include <optional>
 #include <queue>
-#include <utility>
 
 namespace xrpl {
 
@@ -191,7 +190,7 @@ private:
     struct ChargeWithContext
     {
         Resource::Charge fee = Resource::feeTrivialPeer;
-        std::string context{};  // NOLINT(readability-redundant-member-init)
+        std::string context = {};
 
         void
         update(Resource::Charge f, std::string const& add)
@@ -314,7 +313,7 @@ public:
         id_t id,
         OverlayImpl& overlay);
 
-    ~PeerImp() override;
+    virtual ~PeerImp();
 
     beast::Journal const&
     pJournal() const
@@ -362,8 +361,9 @@ public:
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <
         class FwdIt,
-        class = typename std::enable_if_t<
-            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>>>
+        class = typename std::enable_if_t<std::is_same<
+            typename std::iterator_traits<FwdIt>::value_type,
+            PeerFinder::Endpoint>::value>>
     void
     sendEndpoints(FwdIt first, FwdIt last);
 
@@ -826,7 +826,7 @@ PeerImp::PeerImp(
     , remote_address_(slot->remote_endpoint())
     , overlay_(overlay)
     , inbound_(false)
-    , protocol_(std::move(protocol))
+    , protocol_(protocol)
     , tracking_(Tracking::unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
@@ -834,7 +834,7 @@ PeerImp::PeerImp(
     , creationTime_(clock_type::now())
     , squelch_(app_.getJournal("Squelch"))
     , usage_(usage)
-    , fee_{.fee = Resource::feeTrivialPeer}
+    , fee_{Resource::feeTrivialPeer}
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)

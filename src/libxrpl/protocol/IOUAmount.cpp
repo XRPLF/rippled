@@ -1,10 +1,13 @@
 #include <xrpl/protocol/IOUAmount.h>
-
+// Do not remove. Forces IOUAmount.h to stay first, to verify it can compile
+// without any hidden dependencies
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/STAmount.h>
+
+#include <boost/multiprecision/cpp_int.hpp>
 
 #include <algorithm>
 #include <cstdint>
@@ -12,7 +15,6 @@
 #include <limits>
 #include <stdexcept>
 #include <string>
-#include <tuple>
 #include <vector>
 
 namespace xrpl {
@@ -207,7 +209,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
     static auto log10Floor = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l = std::ranges::lower_bound(powerTable, v);
+        auto const l = std::lower_bound(powerTable.begin(), powerTable.end(), v);
         int index = std::distance(powerTable.begin(), l);
         // If we're not equal, subtract to get the floor
         if (*l != v)
@@ -219,7 +221,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
     static auto log10Ceil = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l = std::ranges::lower_bound(powerTable, v);
+        auto const l = std::lower_bound(powerTable.begin(), powerTable.end(), v);
         return int(std::distance(powerTable.begin(), l));
     };
 

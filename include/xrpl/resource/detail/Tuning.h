@@ -2,7 +2,8 @@
 
 #include <chrono>
 
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 /** Tunable constants. */
 enum {
@@ -29,4 +30,5 @@ std::chrono::seconds constexpr secondsUntilExpiration{300};
 // Number of seconds until imported gossip expires
 std::chrono::seconds constexpr gossipExpirationSeconds{30};
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

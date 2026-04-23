@@ -1,21 +1,14 @@
 #include <test/jtx/escrow.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstdint>
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Escrow operations. */
-namespace xrpl::test::jtx::escrow {
+namespace escrow {
 
 Json::Value
 create(AccountID const& account, AccountID const& to, STAmount const& amount)
@@ -62,4 +55,9 @@ rate(Env& env, Account const& account, std::uint32_t const& seq)
     return Rate{0};
 }
 
-}  // namespace xrpl::test::jtx::escrow
+}  // namespace escrow
+
+}  // namespace jtx
+
+}  // namespace test
+}  // namespace xrpl

@@ -20,7 +20,9 @@ class ValidAMM
 public:
     enum class ZeroAllowed : bool { No = false, Yes = true };
 
-    ValidAMM() = default;
+    ValidAMM()
+    {
+    }
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 

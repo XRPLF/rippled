@@ -1,6 +1,5 @@
 #include <xrpl/protocol/Book.h>
-
-#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
 
 #include <ostream>
 #include <string>

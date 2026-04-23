@@ -4,20 +4,10 @@
 #include <xrpld/overlay/Cluster.h>
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/tokens.h>
 
-#include <algorithm>
-#include <chrono>
-#include <cstdint>
-#include <memory>
-#include <vector>
-
-namespace xrpl::tests {
+namespace xrpl {
+namespace tests {
 
 class cluster_test : public xrpl::TestSuite
 {
@@ -91,7 +81,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::ranges::find(cluster, n);
+                auto found = std::find(cluster.begin(), cluster.end(), n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
@@ -108,7 +98,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::ranges::find(cluster, n);
+                auto found = std::find(cluster.begin(), cluster.end(), n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
@@ -253,4 +243,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(cluster, overlay, xrpl);
 
-}  // namespace xrpl::tests
+}  // namespace tests
+}  // namespace xrpl

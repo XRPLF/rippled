@@ -3,23 +3,15 @@
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
-#include <xrpl/nodestore/Types.h>
 
-#include <cstddef>
-#include <exception>
 #include <memory>
 #include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+namespace NodeStore {
 
 class NuDBFactory_test : public TestBase
 {
@@ -446,4 +438,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NuDBFactory, xrpl_core, xrpl);
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

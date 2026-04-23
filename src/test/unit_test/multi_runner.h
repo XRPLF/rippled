@@ -252,7 +252,7 @@ public:
     operator=(multi_runner_child const&) = delete;
 
     multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log);
-    ~multi_runner_child() override;
+    ~multi_runner_child();
 
     std::size_t
     tests() const;
@@ -268,25 +268,25 @@ public:
     run_multi(Pred pred);
 
 private:
-    void
+    virtual void
     on_suite_begin(beast::unit_test::suite_info const& info) override;
 
-    void
+    virtual void
     on_suite_end() override;
 
-    void
+    virtual void
     on_case_begin(std::string const& name) override;
 
-    void
+    virtual void
     on_case_end() override;
 
-    void
+    virtual void
     on_pass() override;
 
-    void
+    virtual void
     on_fail(std::string const& reason) override;
 
-    void
+    virtual void
     on_log(std::string const& s) override;
 };
 

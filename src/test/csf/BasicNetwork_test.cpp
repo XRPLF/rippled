@@ -1,12 +1,13 @@
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/Scheduler.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 
 #include <set>
 #include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class BasicNetwork_test : public beast::unit_test::suite
 {
@@ -131,4 +132,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(BasicNetwork, csf, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

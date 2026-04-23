@@ -4,7 +4,10 @@
 
 #include <date/date.h>
 
-namespace xrpl::test::jtx::oracle {
+namespace xrpl {
+namespace test {
+namespace jtx {
+namespace oracle {
 
 using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
 using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
@@ -55,7 +58,7 @@ struct UpdateArg
 {
     std::optional<AccountID> owner = std::nullopt;
     std::optional<AnyValue> documentID = std::nullopt;
-    DataSeries series = {};  // NOLINT(readability-redundant-member-init)
+    DataSeries series = {};
     std::optional<AnyValue> assetClass = std::nullopt;
     std::optional<AnyValue> provider = std::nullopt;
     std::optional<AnyValue> uri = "URI";
@@ -174,4 +177,7 @@ public:
     }
 };
 
-}  // namespace xrpl::test::jtx::oracle
+}  // namespace oracle
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

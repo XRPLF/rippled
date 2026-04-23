@@ -1,34 +1,13 @@
-#include <xrpl/tx/transactors/dex/AMMClawback.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
-#include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/AmountConversions.h>
-#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
+#include <xrpl/protocol/st.h>
+#include <xrpl/tx/transactors/dex/AMMClawback.h>
 #include <xrpl/tx/transactors/dex/AMMWithdraw.h>
 
-#include <cstdint>
-#include <memory>
-#include <optional>
 #include <tuple>
 
 namespace xrpl {
@@ -126,9 +105,7 @@ AMMClawback::preclaim(PreclaimContext const& ctx)
         // permission
         if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
             ((issuerFlagsIn & lsfNoFreeze) != 0u))
-        {
-            return tecNO_PERMISSION;
-        }
+            return tesSUCCESS;
     }
 
     auto const checkClawAsset = [&](Asset const asset) -> bool {
@@ -385,20 +362,6 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         WithdrawAll::No,
         preFeeBalance_,
         ctx_.journal);
-}
-
-void
-AMMClawback::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
-{
-}
-
-bool
-AMMClawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
-{
-    return true;
 }
 
 }  // namespace xrpl

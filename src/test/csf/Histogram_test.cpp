@@ -1,8 +1,9 @@
 #include <test/csf/Histogram.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class Histogram_test : public beast::unit_test::suite
 {
@@ -63,4 +64,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Histogram, csf, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

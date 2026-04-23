@@ -1,10 +1,8 @@
-#include <xrpl/resource/Consumer.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
@@ -12,7 +10,8 @@
 #include <ostream>
 #include <string>
 
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 Consumer::Consumer(Logic& logic, Entry& entry) : m_logic(&logic), m_entry(&entry)
 {
@@ -142,4 +141,5 @@ operator<<(std::ostream& os, Consumer const& v)
     return os;
 }
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

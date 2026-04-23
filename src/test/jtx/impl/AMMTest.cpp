@@ -1,34 +1,19 @@
-#include <test/jtx/AMMTest.h>
-
 #include <test/jtx/AMM.h>
-#include <test/jtx/Account.h>
+#include <test/jtx/AMMTest.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/envconfig.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/ter.h>
 
-#include <xrpld/core/Config.h>
+#include <xrpld/rpc/RPCHandler.h>
 
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/resource/Fees.h>
 
-#include <cstdint>
-#include <functional>
-#include <memory>
-#include <optional>
-#include <utility>
-#include <vector>
-
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 [[maybe_unused]] std::vector<STAmount>
 fund(
@@ -219,4 +204,6 @@ AMMTest::pathTestEnv()
         return cfg;
     }));
 }
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

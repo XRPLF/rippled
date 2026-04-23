@@ -3,7 +3,9 @@
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
 
-namespace xrpl::compression {
+namespace xrpl {
+
+namespace compression {
 
 std::size_t constexpr headerBytes = 6;
 std::size_t constexpr headerBytesCompressed = 10;
@@ -34,20 +36,20 @@ decompress(
     try
     {
         if (algorithm == Algorithm::LZ4)
-        {
             return xrpl::compression_algorithms::lz4Decompress(
                 in, inSize, decompressed, decompressedSize);
+        else
+        {
+            // LCOV_EXCL_START
+            JLOG(debugLog().warn())
+                << "decompress: invalid compression algorithm " << static_cast<int>(algorithm);
+            UNREACHABLE(
+                "xrpl::compression::decompress : invalid compression "
+                "algorithm");
+            // LCOV_EXCL_STOP
         }
-
-        // LCOV_EXCL_START
-        JLOG(debugLog().warn()) << "decompress: invalid compression algorithm "
-                                << static_cast<int>(algorithm);
-        UNREACHABLE(
-            "xrpl::compression::decompress : invalid compression "
-            "algorithm");
-        // LCOV_EXCL_STOP
     }
-    catch (...)  // NOLINT(bugprone-empty-catch)
+    catch (...)
     {
     }
     return 0;
@@ -73,22 +75,24 @@ compress(
     try
     {
         if (algorithm == Algorithm::LZ4)
-        {
             return xrpl::compression_algorithms::lz4Compress(
                 in, inSize, std::forward<BufferFactory>(bf));
+        else
+        {
+            // LCOV_EXCL_START
+            JLOG(debugLog().warn())
+                << "compress: invalid compression algorithm" << static_cast<int>(algorithm);
+            UNREACHABLE(
+                "xrpl::compression::compress : invalid compression "
+                "algorithm");
+            // LCOV_EXCL_STOP
         }
-
-        // LCOV_EXCL_START
-        JLOG(debugLog().warn()) << "compress: invalid compression algorithm"
-                                << static_cast<int>(algorithm);
-        UNREACHABLE(
-            "xrpl::compression::compress : invalid compression "
-            "algorithm");
-        // LCOV_EXCL_STOP
     }
-    catch (...)  // NOLINT(bugprone-empty-catch)
+    catch (...)
     {
     }
     return 0;
 }
-}  // namespace xrpl::compression
+}  // namespace compression
+
+}  // namespace xrpl

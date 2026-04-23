@@ -8,7 +8,9 @@
 #include <chrono>
 #include <mutex>
 
-namespace xrpl::metrics {
+namespace xrpl {
+
+namespace metrics {
 
 /** Run single metrics rolling average. Can be either average of a value
     per second or average of a value's sample per second. For instance,
@@ -109,4 +111,6 @@ struct TxMetrics
     json() const;
 };
 
-}  // namespace xrpl::metrics
+}  // namespace metrics
+
+}  // namespace xrpl

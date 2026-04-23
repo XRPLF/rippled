@@ -1,71 +1,25 @@
-#include <xrpld/app/rdb/backend/detail/Node.h>
-
 #include <xrpld/app/ledger/AcceptedLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/core/Config.h>
+#include <xrpld/app/rdb/backend/detail/Node.h>
 
-#include <xrpl/basics/Blob.h>
-#include <xrpl/basics/ByteUtilities.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/RangeSet.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/core/NetworkIDService.h>
-#include <xrpl/core/StartUpType.h>
-#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/PendingSaves.h>
-#include <xrpl/nodestore/NodeObject.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/LedgerHeader.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/TxMeta.h>
-#include <xrpl/protocol/TxSearched.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/format/free_funcs.hpp>
-#include <boost/optional/optional.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <boost/range/adaptor/transformed.hpp>
 
-#include <soci/blob.h>
-#include <soci/into.h>
-#include <soci/soci-backend.h>
-#include <soci/statement.h>
-#include <soci/transaction.h>
-#include <soci/use.h>
+#include <soci/sqlite3/soci-sqlite3.h>
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <exception>
-#include <functional>
-#include <limits>
-#include <map>
-#include <memory>
-#include <optional>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <variant>
-#include <vector>
-
-namespace xrpl::detail {
+namespace xrpl {
+namespace detail {
 
 /**
  * @brief to_string Returns the name of a table according to its TableType.
@@ -137,16 +91,15 @@ makeLedgerDBs(
             {
                 if (pk == 1)
                 {
-                    return {
-                        .ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = false};
+                    return {std::move(lgr), std::move(tx), false};
                 }
             }
         }
 
-        return {.ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = true};
+        return {std::move(lgr), std::move(tx), true};
     }
 
-    return {.ledgerDb = std::move(lgr), .transactionDb = {}, .valid = true};
+    return {std::move(lgr), {}, true};
 }
 
 std::optional<LedgerIndex>
@@ -1139,8 +1092,7 @@ accountTxPage(
             else if (numberOfResults == 0)
             {
                 newmarker = {
-                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
-                    .txnSeq = txnSeq.value_or(0)};
+                    rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)), txnSeq.value_or(0)};
                 break;
             }
 
@@ -1347,4 +1299,5 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     return true;
 }
 
-}  // namespace xrpl::detail
+}  // namespace detail
+}  // namespace xrpl

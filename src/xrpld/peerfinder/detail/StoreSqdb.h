@@ -5,7 +5,8 @@
 
 #include <xrpl/rdb/SociDB.h>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** Database persistence for PeerFinder using SQLite */
 class StoreSqdb : public Store
@@ -25,7 +26,9 @@ public:
     {
     }
 
-    ~StoreSqdb() override = default;
+    ~StoreSqdb()
+    {
+    }
 
     void
     open(BasicConfig const& config)
@@ -82,4 +85,5 @@ private:
     }
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

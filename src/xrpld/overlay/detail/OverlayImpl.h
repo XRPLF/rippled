@@ -119,7 +119,7 @@ private:
 public:
     OverlayImpl(
         Application& app,
-        Setup setup,
+        Setup const& setup,
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,

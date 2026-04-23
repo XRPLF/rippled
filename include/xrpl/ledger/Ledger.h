@@ -82,12 +82,12 @@ public:
     */
     Ledger(
         create_genesis_t,
-        Rules rules,
+        Rules const& rules,
         Fees const& fees,
         std::vector<uint256> const& amendments,
         Family& family);
 
-    Ledger(LedgerHeader const& info, Rules rules, Family& family);
+    Ledger(LedgerHeader const& info, Rules const& rules, Family& family);
 
     /** Used for ledgers loaded from JSON files
 
@@ -100,7 +100,7 @@ public:
         LedgerHeader const& info,
         bool& loaded,
         bool acquire,
-        Rules rules,
+        Rules const& rules,
         Fees const& fees,
         Family& family,
         beast::Journal j);
@@ -117,11 +117,11 @@ public:
     Ledger(
         std::uint32_t ledgerSeq,
         NetClock::time_point closeTime,
-        Rules rules,
+        Rules const& rules,
         Fees const& fees,
         Family& family);
 
-    ~Ledger() override = default;
+    ~Ledger() = default;
 
     //
     // ReadView

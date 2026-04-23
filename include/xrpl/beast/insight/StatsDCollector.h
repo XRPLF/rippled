@@ -4,7 +4,8 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 /** A Collector that reports metrics to a StatsD server.
     Reference:
@@ -24,4 +25,5 @@ public:
     New(IP::Endpoint const& address, std::string const& prefix, Journal journal);
 };
 
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

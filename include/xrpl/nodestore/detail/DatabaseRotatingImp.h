@@ -4,7 +4,8 @@
 
 #include <mutex>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+namespace NodeStore {
 
 class DatabaseRotatingImp : public DatabaseRotating
 {
@@ -22,7 +23,7 @@ public:
         Section const& config,
         beast::Journal j);
 
-    ~DatabaseRotatingImp() override
+    ~DatabaseRotatingImp()
     {
         stop();
     }
@@ -68,4 +69,5 @@ private:
     for_each(std::function<void(std::shared_ptr<NodeObject>)> f) override;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

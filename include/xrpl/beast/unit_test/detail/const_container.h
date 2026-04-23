@@ -4,7 +4,9 @@
 
 #pragma once
 
-namespace beast::unit_test::detail {
+namespace beast {
+namespace unit_test {
+namespace detail {
 
 /** Adapter to constrain a container interface.
     The interface allows for limited read only operations. Derived classes
@@ -80,4 +82,6 @@ public:
     /** @} */
 };
 
-}  // namespace beast::unit_test::detail
+}  // namespace detail
+}  // namespace unit_test
+}  // namespace beast

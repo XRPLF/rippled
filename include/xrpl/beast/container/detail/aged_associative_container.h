@@ -1,6 +1,7 @@
 #pragma once
 
-namespace beast::detail {
+namespace beast {
+namespace detail {
 
 // Extracts the key portion of value
 template <bool maybe_map>
@@ -25,8 +26,9 @@ struct aged_associative_container_extract_t<false>
     Value const&
     operator()(Value const& value) const
     {
-        return value;  // NOLINT(bugprone-return-const-ref-from-parameter)
+        return value;
     }
 };
 
-}  // namespace beast::detail
+}  // namespace detail
+}  // namespace beast

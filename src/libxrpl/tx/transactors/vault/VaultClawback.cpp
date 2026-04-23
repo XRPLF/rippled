@@ -1,35 +1,18 @@
-#include <xrpl/tx/transactors/vault/VaultClawback.h>
-
-#include <xrpl/basics/Expected.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/vault/VaultClawback.h>
 
-#include <cstdint>
-#include <memory>
 #include <optional>
-#include <stdexcept>
 #include <utility>
 
 namespace xrpl {
@@ -468,25 +451,6 @@ VaultClawback::doApply()
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
-}
-
-void
-VaultClawback::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
-{
-}
-
-bool
-VaultClawback::finalizeInvariants(
-    STTx const&,
-    TER,
-    XRPAmount,
-    ReadView const&,
-    beast::Journal const&)
-{
-    return true;
 }
 
 }  // namespace xrpl

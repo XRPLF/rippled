@@ -100,13 +100,9 @@ operator==(PathAsset const& lhs, PathAsset const& rhs)
     return std::visit(
         []<ValidPathAsset TLhs, ValidPathAsset TRhs>(TLhs const& lhs_, TRhs const& rhs_) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
-            {
                 return lhs_ == rhs_;
-            }
             else
-            {
                 return false;
-            }
         },
         lhs.value(),
         rhs.value());

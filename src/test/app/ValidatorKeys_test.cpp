@@ -1,5 +1,4 @@
 #include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
 #include <test/unit_test/utils.h>
 
 #include <xrpld/app/misc/ValidatorKeys.h>
@@ -7,20 +6,13 @@
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/base64.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Seed.h>
-#include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/tokens.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/server/Manifest.h>
 
 #include <string>
-#include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class ValidatorKeys_test : public beast::unit_test::suite
 {
@@ -175,4 +167,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

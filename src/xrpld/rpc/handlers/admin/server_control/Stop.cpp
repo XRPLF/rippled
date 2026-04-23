@@ -2,7 +2,6 @@
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/SystemParameters.h>
 
 namespace xrpl {
 

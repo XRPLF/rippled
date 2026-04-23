@@ -6,9 +6,11 @@
 
 namespace xrpl {
 
-namespace path::detail {
+namespace path {
+namespace detail {
 struct FlowDebugInfo;
-}  // namespace path::detail
+}  // namespace detail
+}  // namespace path
 
 /**
   Make a payment from the src account to the dst account

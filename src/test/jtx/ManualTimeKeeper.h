@@ -4,12 +4,13 @@
 
 #include <atomic>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class ManualTimeKeeper : public TimeKeeper
 {
 private:
-    std::atomic<time_point> now_;
+    std::atomic<time_point> now_{};
 
 public:
     ManualTimeKeeper() = default;
@@ -27,4 +28,5 @@ public:
     }
 };
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

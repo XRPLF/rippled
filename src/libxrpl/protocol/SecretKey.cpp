@@ -1,5 +1,3 @@
-#include <xrpl/protocol/SecretKey.h>
-
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -10,6 +8,7 @@
 #include <xrpl/crypto/secure_erase.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
@@ -18,7 +17,6 @@
 #include <boost/utility/string_view.hpp>
 
 #include <ed25519.h>
-#include <secp256k1.h>
 
 #include <algorithm>
 #include <array>
@@ -77,7 +75,7 @@ deriveDeterministicRootKey(Seed const& seed)
     //      |      seed      | seq|
 
     std::array<std::uint8_t, 20> buf{};
-    std::ranges::copy(seed, buf.begin());
+    std::copy(seed.begin(), seed.end(), buf.begin());
 
     // The odds that this loop executes more than once are negligible
     // but *just* in case someone managed to generate a key that required
@@ -136,7 +134,7 @@ private:
         //      |            generator            | seq| cnt|
 
         std::array<std::uint8_t, 41> buf{};
-        std::ranges::copy(generator_, buf.begin());
+        std::copy(generator_.begin(), generator_.end(), buf.begin());
         copy_uint32(buf.data() + 33, seq);
 
         // The odds that this loop executes more than once are negligible

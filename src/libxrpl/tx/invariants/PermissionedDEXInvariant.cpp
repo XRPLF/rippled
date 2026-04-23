@@ -1,20 +1,11 @@
 #include <xrpl/tx/invariants/PermissionedDEXInvariant.h>
-
+//
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/XRPAmount.h>
-
-#include <memory>
 
 namespace xrpl {
 
@@ -41,17 +32,11 @@ ValidPermissionedDEX::visitEntry(
             regularOffers_ = true;
         }
 
-        // pre-fixSecurity3_1_3: hybrid offer missing domain, missing
-        // sfAdditionalBooks, or sfAdditionalBooks has more than one entry
+        // if a hybrid offer is missing domain or additional book, there's
+        // something wrong
         if (after->isFlag(lsfHybrid) &&
             (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() > 1))
-            badHybridsOld_ = true;
-
-        // post-fixSecurity3_1_3: same as above but also catches size == 0
-        if (after->isFlag(lsfHybrid) &&
-            (!after->isFieldPresent(sfDomainID) || !after->isFieldPresent(sfAdditionalBooks) ||
-             after->getFieldArray(sfAdditionalBooks).size() != 1))
             badHybrids_ = true;
     }
 }
@@ -70,8 +55,7 @@ ValidPermissionedDEX::finalize(
 
     // For each offercreate transaction, check if
     // permissioned offers are valid
-    bool const isMalformed = view.rules().enabled(fixSecurity3_1_3) ? badHybrids_ : badHybridsOld_;
-    if (txType == ttOFFER_CREATE && isMalformed)
+    if (txType == ttOFFER_CREATE && badHybrids_)
     {
         JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
         return false;

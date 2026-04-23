@@ -4,9 +4,9 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 
-#include <utility>
-
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Check operations. */
 namespace check {
@@ -19,7 +19,7 @@ cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);
 struct DeliverMin
 {
     STAmount value;
-    explicit DeliverMin(STAmount deliverMin) : value(std::move(deliverMin))
+    explicit DeliverMin(STAmount const& deliverMin) : value(deliverMin)
     {
     }
 };
@@ -37,4 +37,7 @@ cancel(jtx::Account const& dest, uint256 const& checkId);
 /** Match the number of checks on the account. */
 using checks = owner_count<ltCHECK>;
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+
+}  // namespace test
+}  // namespace xrpl

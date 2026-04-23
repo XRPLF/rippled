@@ -1,13 +1,10 @@
 #include <test/jtx/fee.h>
 
-#include <test/jtx/Env.h>
-#include <test/jtx/JTx.h>
+#include <xrpl/protocol/jss.h>
 
-#include <xrpl/protocol/SField.h>
-
-#include <cassert>
-
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 void
 fee::operator()(Env& env, JTx& jt) const
@@ -26,4 +23,6 @@ fee::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

@@ -27,7 +27,7 @@ struct Zero
 };
 
 namespace {
-constexpr Zero zero{};
+static constexpr Zero zero{};
 }  // namespace
 
 /** Default implementation of signum calls the method on the class. */
@@ -38,7 +38,8 @@ signum(T const& t)
     return t.signum();
 }
 
-namespace detail::zero_helper {
+namespace detail {
+namespace zero_helper {
 
 // For argument dependent lookup to function properly, calls to signum must
 // be made from a namespace that does not include overloads of the function..
@@ -49,7 +50,8 @@ call_signum(T const& t)
     return signum(t);
 }
 
-}  // namespace detail::zero_helper
+}  // namespace zero_helper
+}  // namespace detail
 
 // Handle operators where T is on the left side using signum.
 

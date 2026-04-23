@@ -1,20 +1,15 @@
 #include <xrpl/basics/Expected.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/TER.h>
 
-#include <boost/json/value.hpp>
-#include <boost/version.hpp>
-
-#include <cstddef>
-#include <stdexcept>
-#include <string>
-#include <utility>
-
 #if BOOST_VERSION >= 107500
-#endif  // BOOST_VERSION
+#include <boost/json.hpp>  // Not part of boost before version 1.75
+#endif                     // BOOST_VERSION
+#include <array>
 #include <cstdint>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 struct Expected_test : beast::unit_test::suite
 {
@@ -218,4 +213,5 @@ struct Expected_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(Expected, basics, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

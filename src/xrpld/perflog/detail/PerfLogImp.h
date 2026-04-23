@@ -16,7 +16,8 @@
 #include <unordered_map>
 #include <vector>
 
-namespace xrpl::perf {
+namespace xrpl {
+namespace perf {
 
 /** A box coupling data with a mutex for locking access to it. */
 template <typename T>
@@ -122,7 +123,7 @@ class PerfLogImp : public PerfLog
 
 public:
     PerfLogImp(
-        Setup setup,
+        Setup const& setup,
         Application& app,
         beast::Journal journal,
         std::function<void()>&& signalStop);
@@ -176,4 +177,5 @@ public:
     stop() override;
 };
 
-}  // namespace xrpl::perf
+}  // namespace perf
+}  // namespace xrpl

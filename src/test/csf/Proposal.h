@@ -6,10 +6,14 @@
 
 #include <xrpld/consensus/ConsensusProposal.h>
 
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 /** Proposal is a position taken in the consensus process and is represented
     directly from the generic types.
 */
 using Proposal = ConsensusProposal<PeerID, Ledger::ID, TxSet::ID>;
 
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

@@ -1,9 +1,9 @@
 #include <xrpld/app/misc/DeliverMax.h>
 
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl::RPC {
+namespace xrpl {
+namespace RPC {
 
 void
 insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
@@ -19,4 +19,5 @@ insertDeliverMax(Json::Value& tx_json, TxType txnType, unsigned int apiVersion)
     }
 }
 
-}  // namespace xrpl::RPC
+}  // namespace RPC
+}  // namespace xrpl

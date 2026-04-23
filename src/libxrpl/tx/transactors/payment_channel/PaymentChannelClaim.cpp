@@ -1,30 +1,13 @@
-#include <xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h>
-
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PayChan.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <cstdint>
-#include <memory>
-#include <optional>
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelClaim.h>
 
 namespace xrpl {
 
@@ -201,22 +184,4 @@ PaymentChannelClaim::doApply()
     return tesSUCCESS;
 }
 
-void
-PaymentChannelClaim::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
-{
-}
-
-bool
-PaymentChannelClaim::finalizeInvariants(
-    STTx const&,
-    TER,
-    XRPAmount,
-    ReadView const&,
-    beast::Journal const&)
-{
-    return true;
-}
 }  // namespace xrpl

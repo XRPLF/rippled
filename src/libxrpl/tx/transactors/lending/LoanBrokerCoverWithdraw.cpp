@@ -1,25 +1,11 @@
 #include <xrpl/tx/transactors/lending/LoanBrokerCoverWithdraw.h>
-
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/Number.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/ledger/View.h>
+//
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/Units.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
-
-#include <memory>
+#include <xrpl/tx/transactors/payment/Payment.h>
 
 namespace xrpl {
 
@@ -137,7 +123,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
         return roundToAsset(
             vaultAsset,
             tenthBipsOfValue(currentDebtTotal, TenthBips32(sleBroker->at(sfCoverRateMinimum))),
-            scale(currentDebtTotal, vaultAsset));
+            currentDebtTotal.exponent());
     }();
     if (coverAvail < amount)
         return tecINSUFFICIENT_FUNDS;
@@ -184,25 +170,6 @@ LoanBrokerCoverWithdraw::doApply()
     associateAsset(*broker, vaultAsset);
 
     return doWithdraw(view(), tx, account_, dstAcct, brokerPseudoID, preFeeBalance_, amount, j_);
-}
-
-void
-LoanBrokerCoverWithdraw::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
-{
-}
-
-bool
-LoanBrokerCoverWithdraw::finalizeInvariants(
-    STTx const&,
-    TER,
-    XRPAmount,
-    ReadView const&,
-    beast::Journal const&)
-{
-    return true;
 }
 
 //------------------------------------------------------------------------------

@@ -1,19 +1,8 @@
 #include <xrpl/server/Vacuum.h>
 
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/rdb/DBInit.h>
-#include <xrpl/rdb/DatabaseCon.h>
+#include <boost/format.hpp>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-#include <boost/format.hpp>  // IWYU pragma: keep
-
-#include <soci/into.h>
-
-#include <cstdint>
 #include <iostream>
-#include <memory>
 
 namespace xrpl {
 

@@ -40,12 +40,12 @@ public:
     std::string
     print() const;
 
-    bool
+    inline bool
     isRelease() const noexcept
     {
         return preReleaseIdentifiers.empty();
     }
-    bool
+    inline bool
     isPreRelease() const noexcept
     {
         return !isRelease();

@@ -1,16 +1,14 @@
-#include <test/jtx/Env.h>
+#include <test/jtx.h>
 #include <test/jtx/WSClient.h>
-#include <test/jtx/envconfig.h>
 
-#include <xrpl/beast/unit_test/suite.h>
-
-#include <boost/asio/ip/address.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <xrpl/beast/unit_test.h>
 
 #include <string>
 #include <unordered_map>
 
-namespace xrpl::test {
+namespace xrpl {
+
+namespace test {
 
 class Roles_test : public beast::unit_test::suite
 {
@@ -347,4 +345,6 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Roles, rpc, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+
+}  // namespace xrpl

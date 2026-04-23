@@ -20,7 +20,8 @@ require_args(test::jtx::requires_t& vec, Cond const& cond, Args const&... args)
 
 }  // namespace detail
 
-namespace test::jtx {
+namespace test {
+namespace jtx {
 
 /** Compose many condition functors into one */
 template <class... Args>
@@ -59,6 +60,6 @@ public:
     }
 };
 
-}  // namespace test::jtx
-
+}  // namespace jtx
+}  // namespace test
 }  // namespace xrpl
