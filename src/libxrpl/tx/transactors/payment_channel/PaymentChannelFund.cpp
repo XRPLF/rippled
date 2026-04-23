@@ -1,8 +1,24 @@
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/tx/transactors/payment_channel/PaymentChannelFund.h>
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -90,4 +106,22 @@ PaymentChannelFund::doApply()
     return tesSUCCESS;
 }
 
+void
+PaymentChannelFund::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+PaymentChannelFund::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
 }  // namespace xrpl

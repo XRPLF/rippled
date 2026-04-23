@@ -3,6 +3,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/owners.h>
 #include <test/jtx/tag.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
@@ -12,11 +13,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-#include <cstdint>
-
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class MPTTester;
 
@@ -118,7 +115,7 @@ struct MPTCreate
 
 struct MPTInit
 {
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::optional<Account> auditor = std::nullopt;
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
@@ -133,7 +130,7 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::optional<Account> auditor = std::nullopt;
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
@@ -357,11 +354,11 @@ public:
         AUDITOR_ENCRYPTED_BALANCE,
     };
 
-    MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
+    MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
     MPTTester(
         Env& env,
-        Account const& issuer,
+        Account issuer,
         MPTID const& id,
         std::vector<Account> const& holders = {},
         bool close = true);
@@ -583,7 +580,7 @@ public:
     std::uint32_t
     getMPTokenVersion(Account const account) const;
 
-    Buffer
+    static Buffer
     getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor);
 
     friend BookSpec
@@ -619,20 +616,31 @@ private:
             dstTag = arg.destinationTag;
 
         if (ticketSeq && delegateAcct)
+        {
             env_(
                 jv,
                 expectedFlags,
                 expectedTer,
                 ticket::use(*ticketSeq),
                 delegate::as(*delegateAcct));
+        }
         else if (ticketSeq)
+        {
             env_(jv, expectedFlags, expectedTer, ticket::use(*ticketSeq));
+        }
         else if (delegateAcct)
+        {
             env_(jv, expectedFlags, expectedTer, delegate::as(*delegateAcct));
+        }
         else if (dstTag)
+        {
             env_(jv, expectedFlags, expectedTer, dtag(*dstTag));
+        }
         else
+        {
             env_(jv, expectedFlags, expectedTer);
+        }
+
         auto const err = env_.ter();
         if (close_)
             env_.close();
@@ -663,6 +671,4 @@ private:
         Buffer& blindingFactor) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

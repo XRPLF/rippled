@@ -1,13 +1,35 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-#include <boost/format.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_replace.hpp>
+#include <boost/regex/v5/regex_search.hpp>
+#include <boost/regex/v5/regex_token_iterator.hpp>
 
-namespace xrpl {
-namespace test {
+#include <cstdint>
+#include <exception>
+#include <iostream>
+#include <map>
+#include <optional>
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
 
 /** AMM Calculator. Uses AMM formulas to simulate the payment engine
  * expected results. Assuming the formulas are correct some unit-tests can
@@ -435,5 +457,4 @@ class AMMCalc_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_MANUAL(AMMCalc, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
