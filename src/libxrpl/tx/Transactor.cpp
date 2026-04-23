@@ -183,11 +183,11 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         auto const txType = ctx.tx.getTxnType();
 
         // If the transaction is not delegable and does not have granular permissions, fail earlier
-        // with temMALFORMED. This is to prevent transactions that are not delegable at all from
+        // with temINVALID. This is to prevent transactions that are not delegable at all from
         // being processed further in the invokeCheckPermission function.
         if (!perm.isDelegable(Permission::txToPermissionType(txType), ctx.rules) &&
             !perm.hasGranularPermissions(txType))
-            return temMALFORMED;
+            return temINVALID;
     }
 
     if (auto const ret = preflight0(ctx, flagMask))

@@ -2205,38 +2205,38 @@ class Delegate_test : public beast::unit_test::suite
         env.close();
 
         // Transactions that are notDelegable and have no granular permissions
-        // will be rejected with temMALFORMED at preflight.
+        // will be rejected with temINVALID at preflight.
         // Note: pseudo-transactions (EnableAmendment, SetFee and UNLModify) are also
         // notDelegable but are excluded here — passesLocalChecks() blocks them
         // before preflight1 is ever reached.
         {
             // SetRegularKey, SignerListSet, AccountDelete, DelegateSet.
-            env(regkey(alice, bob), delegate::as(bob), ter(temMALFORMED));
-            env(signers(alice, 1, {{bob, 1}}), delegate::as(bob), ter(temMALFORMED));
-            env(acctdelete(alice, bob), delegate::as(bob), ter(temMALFORMED));
-            env(delegate::set(alice, bob, {"Payment"}), delegate::as(bob), ter(temMALFORMED));
+            env(regkey(alice, bob), delegate::as(bob), ter(temINVALID));
+            env(signers(alice, 1, {{bob, 1}}), delegate::as(bob), ter(temINVALID));
+            env(acctdelete(alice, bob), delegate::as(bob), ter(temINVALID));
+            env(delegate::set(alice, bob, {"Payment"}), delegate::as(bob), ter(temINVALID));
 
             // SAV transactions.
             {
                 Vault const vault{env};
                 auto [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
-                env(createTx, delegate::as(bob), ter(temMALFORMED));
+                env(createTx, delegate::as(bob), ter(temINVALID));
 
                 env(vault.set({.owner = alice, .id = keylet.key}),
                     delegate::as(bob),
-                    ter(temMALFORMED));
+                    ter(temINVALID));
                 env(vault.del({.owner = alice, .id = keylet.key}),
                     delegate::as(bob),
-                    ter(temMALFORMED));
+                    ter(temINVALID));
                 env(vault.deposit({.depositor = alice, .id = keylet.key, .amount = XRP(1)}),
                     delegate::as(bob),
-                    ter(temMALFORMED));
+                    ter(temINVALID));
                 env(vault.withdraw({.depositor = alice, .id = keylet.key, .amount = XRP(1)}),
                     delegate::as(bob),
-                    ter(temMALFORMED));
+                    ter(temINVALID));
                 env(vault.clawback({.issuer = alice, .id = keylet.key, .holder = bob}),
                     delegate::as(bob),
-                    ter(temMALFORMED));
+                    ter(temINVALID));
             }
 
             // Batch transaction
@@ -2246,7 +2246,7 @@ class Delegate_test : public beast::unit_test::suite
                 batchTx[jss::Account] = alice.human();
                 batchTx[jss::RawTransactions] = Json::Value{Json::arrayValue};
                 batchTx[jss::Flags] = 0;
-                env(batchTx, delegate::as(bob), ter(temMALFORMED));
+                env(batchTx, delegate::as(bob), ter(temINVALID));
             }
 
             // Lending protocol transactions
@@ -2255,22 +2255,20 @@ class Delegate_test : public beast::unit_test::suite
                 auto [createTx, keylet] = vault.create({.owner = alice, .asset = xrpIssue()});
                 env(createTx);
 
-                env(loanBroker::set(alice, keylet.key), delegate::as(bob), ter(temMALFORMED));
-                env(loanBroker::del(alice, keylet.key), delegate::as(bob), ter(temMALFORMED));
+                env(loanBroker::set(alice, keylet.key), delegate::as(bob), ter(temINVALID));
+                env(loanBroker::del(alice, keylet.key), delegate::as(bob), ter(temINVALID));
                 env(loanBroker::coverDeposit(alice, keylet.key, XRP(1)),
                     delegate::as(bob),
-                    ter(temMALFORMED));
+                    ter(temINVALID));
                 env(loanBroker::coverWithdraw(alice, keylet.key, XRP(1)),
                     delegate::as(bob),
-                    ter(temMALFORMED));
-                env(loanBroker::coverClawback(alice), delegate::as(bob), ter(temMALFORMED));
+                    ter(temINVALID));
+                env(loanBroker::coverClawback(alice), delegate::as(bob), ter(temINVALID));
 
-                env(loan::set(alice, keylet.key, Number(100)),
-                    delegate::as(bob),
-                    ter(temMALFORMED));
-                env(loan::manage(alice, keylet.key, 0), delegate::as(bob), ter(temMALFORMED));
-                env(loan::del(alice, keylet.key), delegate::as(bob), ter(temMALFORMED));
-                env(loan::pay(alice, keylet.key, XRP(1)), delegate::as(bob), ter(temMALFORMED));
+                env(loan::set(alice, keylet.key, Number(100)), delegate::as(bob), ter(temINVALID));
+                env(loan::manage(alice, keylet.key, 0), delegate::as(bob), ter(temINVALID));
+                env(loan::del(alice, keylet.key), delegate::as(bob), ter(temINVALID));
+                env(loan::pay(alice, keylet.key, XRP(1)), delegate::as(bob), ter(temINVALID));
             }
         }
 
