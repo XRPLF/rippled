@@ -62,6 +62,10 @@ class PerfLog_test : public beast::unit_test::suite
             // self-hosted CI runners the temp directory persists between
             // runs, so the "nasty file" test may have left a regular file
             // (or a non-empty directory) at the logDir path.
+            //
+            // The error code is intentionally ignored: if the path doesn't
+            // exist (the common case on a clean runner) remove_all returns
+            // an error, and that's fine — there's nothing to clean up.
             using namespace boost::filesystem;
             boost::system::error_code ec;
             remove_all(logDir(), ec);

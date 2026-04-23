@@ -3537,8 +3537,7 @@ public:
         bool drainCompleted = false;
         while (std::chrono::steady_clock::now() < drainDeadline)
         {
-            if (!wsc->findMsg(
-                    1s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }))
+            if (!wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }))
             {
                 drainCompleted = true;
                 break;
