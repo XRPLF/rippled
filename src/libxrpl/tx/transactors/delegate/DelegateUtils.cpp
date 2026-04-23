@@ -35,7 +35,7 @@ getGranularPermission(std::shared_ptr<SLE const> const& delegate, TxType const& 
 {
     std::unordered_set<GranularPermissionType> granularPermissions;
     if (!delegate)
-        return granularPermissions;  // LCOV_EXCL_LINE
+        return granularPermissions;
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
     for (auto const& permission : permissionArray)
