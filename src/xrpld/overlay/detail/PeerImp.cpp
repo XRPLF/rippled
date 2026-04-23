@@ -2257,6 +2257,7 @@ PeerImp::onValidatorListMessage(
                 applyResult.publisherKey,
                 "xrpl::PeerImp::onValidatorListMessage : publisher key is "
                 "set");
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
             auto const& pubKey = *applyResult.publisherKey;
 #ifndef NDEBUG
             if (auto const iter = publisherListSequences_.find(pubKey);
@@ -2598,9 +2599,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
         reply.set_query(false);
 
-        if (packet.has_seq())
-            reply.set_seq(packet.seq());
-
         reply.set_type(packet.type());
 
         if (packet.has_ledgerhash())
@@ -2637,8 +2635,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                         newObj.set_index(obj.nodeid());
                     if (obj.has_ledgerseq())
                         newObj.set_ledgerseq(obj.ledgerseq());
-
-                    // VFALCO NOTE "seq" in the message is obsolete
 
                     // Check if by adding this object, reply has reached its
                     // limit
@@ -3474,6 +3470,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
 
             try
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) nodeids checked in onGetLedger
                 if (map->getNodeFat(*shaMapNodeId, data, fatLeaves, queryDepth))
                 {
                     JLOG(p_journal_.trace())

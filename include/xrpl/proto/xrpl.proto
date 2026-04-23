@@ -234,9 +234,11 @@ message TMGetObjectByHash {
     otTRANSACTIONS = 7;
   }
 
+  // Previously used - don't reuse.
+  reserved 3;
+
   required ObjectType type = 1;
   required bool query = 2;               // is this a query or a reply?
-  optional uint32 seq = 3;               // used to match replies to queries
   optional bytes ledgerHash = 4;         // the hash of the ledger these queries are for
   optional bool fat = 5;                 // return related nodes
   repeated TMIndexedObject objects = 6;  // the specific objects requested
