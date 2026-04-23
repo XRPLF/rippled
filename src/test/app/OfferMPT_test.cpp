@@ -3005,6 +3005,92 @@ public:
             }
         };
         testHelper2TokensMix(test);
+
+        // Payment trIn: MPT transfer fee must be charged when the payment
+        // destination is the MPT issuer and MPT crosses the DEX (1-hop).
+        // Bug: rate() returned parity because strandDst_ == MPT issuer.
+        // Fix: parity only when this asset IS the final delivered asset.
+        {
+            auto const gw = Account("gw_tr1");
+            auto const alice = Account("alice_tr1");
+            auto const bob = Account("bob_tr1");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gw, alice, bob);
+            env.close();
+
+            MPT const USD = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, bob}, .transferFee = 25'000});
+
+            // alice needs MPT(1250): MPT(1000) to bob's offer + MPT(250) transfer fee (25%)
+            env(pay(gw, alice, USD(1'250)));
+            // bob's offer: give XRP(1000), want MPT(1000)
+            env(offer(bob, USD(1'000), XRP(1'000)));
+            env.close();
+
+            // alice pays gw (MPT issuer) XRP(1000) using MPT as source
+            // strand: alice -> [MPT/XRP BookStep] -> gw
+            // strandDst_ = gw = MPT issuer, strandDeliver_ = XRP
+            // trIn = rate(MPT, gw): fix charges 25% (MPT != strandDeliver_)
+            env(pay(alice, gw, XRP(1'000)), path(~XRP), sendmax(USD(1'250)));
+            env.close();
+
+            // alice consumed all MPT(1250): MPT(1000) to bob + MPT(250) fee
+            BEAST_EXPECT(env.balance(alice, USD) == USD(0));
+            // bob received MPT(1000) net
+            BEAST_EXPECT(env.balance(bob, USD) == USD(1'000));
+        }
+
+        // Payment trIn (2-hop): MPT transfer fee must be charged when MPT is
+        // intermediate and the destination is the MPT issuer.
+        // BookStep2(MPT/XRP) prevStep=BookStep1 returns redeems direction
+        // (ownerPaysTransferFee_=false for Payment), so trIn applies.
+        // Bug: parity because strandDst_ == MPT issuer.
+        // Fix: 25% fee because MPT != strandDeliver_(XRP).
+        {
+            auto const gw = Account("gw_tr2");
+            auto const gw2 = Account("gw2_tr2");
+            auto const alice = Account("alice_tr2");
+            auto const bob = Account("bob_tr2");
+            auto const carol = Account("carol_tr2");
+
+            Env env{*this, features};
+            env.fund(XRP(10'000), gw, gw2, alice, bob, carol);
+            env.close();
+
+            MPT const MUSD = MPTTester(
+                {.env = env, .issuer = gw, .holders = {bob, carol}, .transferFee = 25'000});
+            auto const GUSD = gw2["USD"];
+
+            env(trust(alice, GUSD(10'000)));
+            env(trust(bob, GUSD(10'000)));
+            env.close();
+
+            env(pay(gw2, alice, GUSD(1'000)));
+            env(pay(gw, bob, MUSD(1'000)));
+            env.close();
+
+            // bob's offer: give MPT(1000), want GUSD(1000)
+            env(offer(bob, GUSD(1'000), MUSD(1'000)));
+            // carol's offer: give XRP(800), want MPT(800)
+            env(offer(carol, MUSD(800), XRP(800)));
+            env.close();
+
+            // Payment: alice GUSD -> [BookStep1: GUSD/MUSD] -> [BookStep2: MUSD/XRP] -> gw XRP
+            // strandDst_ = gw = MPT issuer, strandDeliver_ = XRP
+            // BookStep2 trIn: fix = 1.25 -> upstream needs MUSD(1000) for carol's MUSD(800) offer
+            // => alice must provide full GUSD(1000) to bob's offer; without fix alice only pays
+            // GUSD(800)
+            env(pay(alice, gw, XRP(800)), path(~MUSD), sendmax(GUSD(1'000)));
+            env.close();
+
+            // alice spent all GUSD(1000); bug would leave GUSD(200) unspent
+            BEAST_EXPECT(env.balance(alice, GUSD) == GUSD(0));
+            // bob gave MPT(1000) and received GUSD(1000)
+            BEAST_EXPECT(env.balance(bob, MUSD) == MUSD(0));
+            // carol received MPT(800) net (MPT(200) went to gw as fee)
+            BEAST_EXPECT(env.balance(carol, MUSD) == MUSD(800));
+        }
     }
 
     void
