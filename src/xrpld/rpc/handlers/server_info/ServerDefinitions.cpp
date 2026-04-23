@@ -149,18 +149,6 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     defs_[jss::FIELDS] = Json::arrayValue;
 
     uint32_t i = 0;
-    {
-        Json::Value a = Json::arrayValue;
-        a[0U] = "Generic";
-        Json::Value v = Json::objectValue;
-        v[jss::nth] = 0;
-        v[jss::isVLEncoded] = false;
-        v[jss::isSerialized] = false;
-        v[jss::isSigningField] = false;
-        v[jss::type] = "Unknown";
-        a[1U] = v;
-        defs_[jss::FIELDS][i++] = a;
-    }
 
     {
         Json::Value a = Json::arrayValue;
@@ -227,21 +215,29 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
         defs_[jss::FIELDS][i++] = a;
     }
 
-    for (auto const& [code, field] : xrpl::SField::getKnownCodeToField())
+    // copy into a sorted map to ensure deterministic output order (sorted by fieldCode)
+    static std::map<int, SField const*> const sortedFields(
+        xrpl::SField::getKnownCodeToField().begin(), xrpl::SField::getKnownCodeToField().end());
+
+    // track manually-added field names to avoid duplicates
+    static std::set<std::string> const manualFields{
+        "Invalid", "ObjectEndMarker", "ArrayEndMarker", "taker_gets_funded", "taker_pays_funded"};
+
+    for (auto const& [code, field] : sortedFields)
     {
-        if (field->fieldName.empty())
+        if (field->fieldName.empty() || manualFields.contains(field->fieldName))
             continue;
 
         Json::Value innerObj = Json::objectValue;
 
-        uint32_t type = field->fieldType;
+        uint32_t const type = field->fieldType;
 
         innerObj[jss::nth] = field->fieldValue;
 
         // whether the field is variable-length encoded this means that the length is included
         // before the content
         innerObj[jss::isVLEncoded] =
-            (type == 7U /* Blob */ || type == 8U /* AccountID */ || type == 19U /* Vector256 */);
+            (type == STI_VL || type == STI_ACCOUNT || type == STI_VECTOR256);
 
         // whether the field is included in serialization
         innerObj[jss::isSerialized] =
