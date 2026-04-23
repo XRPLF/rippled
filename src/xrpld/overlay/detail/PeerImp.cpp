@@ -2595,9 +2595,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
         reply.set_query(false);
 
-        if (packet.has_seq())
-            reply.set_seq(packet.seq());
-
         reply.set_type(packet.type());
 
         if (packet.has_ledgerhash())
@@ -2634,8 +2631,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
                         newObj.set_index(obj.nodeid());
                     if (obj.has_ledgerseq())
                         newObj.set_ledgerseq(obj.ledgerseq());
-
-                    // VFALCO NOTE "seq" in the message is obsolete
 
                     // Check if by adding this object, reply has reached its
                     // limit
