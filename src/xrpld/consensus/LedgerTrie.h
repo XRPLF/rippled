@@ -470,7 +470,7 @@ public:
 
             // Loc truncates to prefix and newNode is its child
             XRPL_ASSERT(prefix, "xrpl::LedgerTrie::insert : prefix is set");
-            loc->span = *prefix;
+            loc->span = *prefix;  // NOLINT(bugprone-unchecked-optional-access) assert above
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));
             loc->tipSupport = 0;
@@ -703,7 +703,11 @@ public:
                 // We did not consume the entire span, so we have found the
                 // preferred ledger
                 if (nextSeq < curr->span.end())
+                {
+                    // nextSeq within span guarantees before() is set
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                     return curr->span.before(nextSeq)->tip();
+                }
             }
 
             // We have reached the end of the current span, so we need to

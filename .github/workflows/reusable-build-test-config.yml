@@ -210,6 +210,22 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
+      - name: Export server definitions
+        if: ${{ runner.os != 'Windows' && !inputs.build_only && env.VOIDSTAR_ENABLED != 'true' }}
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          set -o pipefail
+          ./xrpld --definitions | python3 -m json.tool > server_definitions.json
+
+      - name: Upload server definitions
+        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-bookworm-gcc-13-amd64-release' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: server-definitions
+          path: ${{ env.BUILD_DIR }}/server_definitions.json
+          retention-days: 3
+          if-no-files-found: error
+
       - name: Check linking (Linux)
         if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
         working-directory: ${{ env.BUILD_DIR }}
