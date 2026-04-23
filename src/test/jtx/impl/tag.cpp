@@ -1,8 +1,9 @@
 #include <test/jtx/tag.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+namespace xrpl::test::jtx {
 
 void
 dtag::operator()(Env&, JTx& jt) const
@@ -16,6 +17,4 @@ stag::operator()(Env&, JTx& jt) const
     jt.jv["SourceTag"] = value_;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

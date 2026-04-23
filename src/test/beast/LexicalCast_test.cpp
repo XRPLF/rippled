@@ -1,6 +1,11 @@
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
+
+#include <cstdint>
+#include <limits>
+#include <sstream>
+#include <string>
 
 namespace beast {
 

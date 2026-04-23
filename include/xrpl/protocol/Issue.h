@@ -12,8 +12,8 @@ namespace xrpl {
 class Issue
 {
 public:
-    Currency currency{};
-    AccountID account{};
+    Currency currency;
+    AccountID account;
 
     Issue() = default;
 
@@ -68,7 +68,7 @@ hash_append(Hasher& h, Issue const& r)
 
 /** Equality comparison. */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(Issue const& lhs, Issue const& rhs)
 {
     return (lhs.currency == rhs.currency) && (isXRP(lhs.currency) || lhs.account == rhs.account);

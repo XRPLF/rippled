@@ -1,16 +1,19 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
+
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
-#include <boost/format.hpp>
+#include <boost/format/free_funcs.hpp>
 
-namespace xrpl {
+#include <memory>
 
-namespace test {
+namespace xrpl::test {
 
 namespace validator_data {
 static auto const public_key = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
@@ -33,7 +36,7 @@ public:
     makeValidatorConfig()
     {
         auto p = std::make_unique<Config>();
-        boost::format toLoad(R"rippleConfig(
+        boost::format toLoad(R"xrpldConfig(
 [validator_token]
 %1%
 
@@ -49,7 +52,7 @@ ip = 0.0.0.0
 port = 50052
 protocol = wss2
 admin = 127.0.0.1
-)rippleConfig");
+)xrpldConfig");
 
         p->loadFromString(boost::str(toLoad % validator_data::token % validator_data::public_key));
 
@@ -157,5 +160,4 @@ admin = 127.0.0.1
 
 BEAST_DEFINE_TESTSUITE(ServerInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

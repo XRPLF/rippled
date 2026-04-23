@@ -1,9 +1,12 @@
+#include <xrpl/protocol/STLedgerEntry.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Keylet.h>
@@ -11,7 +14,6 @@
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>

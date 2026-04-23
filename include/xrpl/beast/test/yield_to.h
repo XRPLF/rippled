@@ -15,8 +15,7 @@
 #include <thread>
 #include <vector>
 
-namespace beast {
-namespace test {
+namespace beast::test {
 
 /** Mix-in to support tests using asio coroutines.
 
@@ -45,7 +44,9 @@ public:
     {
         threads_.reserve(concurrency);
         for (std::size_t i = 0; i < concurrency; ++i)
+        {
             threads_.emplace_back([&] { ios_.run(); });
+        }
     }
 
     ~enable_yield_to()
@@ -125,5 +126,4 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
     spawn(fn...);
 }
 
-}  // namespace test
-}  // namespace beast
+}  // namespace beast::test

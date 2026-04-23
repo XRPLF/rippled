@@ -1,14 +1,35 @@
 #include <xrpl/tx/transactors/lending/LoanPay.h>
-//
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/lending/LendingHelpers.h>
 #include <xrpl/tx/transactors/lending/LoanManage.h>
 
+#include <algorithm>
 #include <bit>
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -155,7 +176,7 @@ LoanPay::preclaim(PreclaimContext const& ctx)
     if (tx.isFlag(tfLoanOverpayment) && !loanSle->isFlag(lsfLoanOverpayment))
     {
         JLOG(ctx.j.warn()) << "Requested overpayment on a loan that doesn't allow it";
-        return temINVALID_FLAG;
+        return ctx.view.rules().enabled(fixSecurity3_1_3) ? TER{tecNO_PERMISSION} : temINVALID_FLAG;
     }
 
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
@@ -622,6 +643,20 @@ LoanPay::doApply()
 #endif
 
     return tesSUCCESS;
+}
+
+void
+LoanPay::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+LoanPay::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 //------------------------------------------------------------------------------

@@ -1,4 +1,27 @@
 #include <xrpl/tx/applySteps.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <utility>
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
@@ -16,8 +39,6 @@
 
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/TxFormats.h>
-
-#include <stdexcept>
 
 namespace xrpl {
 
@@ -95,7 +116,6 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
 // For Transactor::Normal
 //
 
-// Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
 template <class T>
     requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences
@@ -291,6 +311,18 @@ invoke_apply(ApplyContext& ctx)
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
+}
+
+// Test-only factory — not part of the public API.
+// The returned Transactor holds a raw reference to ctx; the caller must ensure
+// the ApplyContext outlives the Transactor.
+std::unique_ptr<Transactor>
+makeTransactor(ApplyContext& ctx)
+{
+    return with_txn_type(
+        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
+            return std::make_unique<T>(ctx);
+        });
 }
 
 PreflightResult

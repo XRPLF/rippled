@@ -1,7 +1,15 @@
-#include <test/jtx.h>
 
-#include <xrpl/protocol/Feature.h>
 
+#include <test/jtx/Env.h>  // IWYU pragma: keep
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
+
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -11,7 +19,7 @@ class Hooks_test : public beast::unit_test::suite
 {
     /**
      * This unit test was requested here:
-     * https://github.com/ripple/rippled/pull/4089#issuecomment-1050274539
+     * https://github.com/XRPLF/rippled/pull/4089#issuecomment-1050274539
      * These are tests that exercise facilities that are reserved for when Hooks
      * is merged in the future.
      **/

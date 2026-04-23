@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <ostream>
+#include <utility>
 
 namespace xrpl {
 
@@ -29,7 +30,7 @@ struct TAmounts
     {
     }
 
-    TAmounts(In const& in_, Out const& out_) : in(in_), out(out_)
+    TAmounts(In in_, Out out_) : in(std::move(in_)), out(std::move(out_))
     {
     }
 
@@ -78,7 +79,7 @@ operator!=(TAmounts<In, Out> const& lhs, TAmounts<In, Out> const& rhs) noexcept
 
 //------------------------------------------------------------------------------
 
-// Ripple specific constant used for parsing qualities and other things
+// XRPL specific constant used for parsing qualities and other things
 #define QUALITY_ONE 1'000'000'000
 
 /** Represents the logical ratio of output currency to input currency.
@@ -281,7 +282,7 @@ public:
 
         double const minVD = static_cast<double>(minVMantissa);
         double const maxVD =
-            expDiff ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
+            (expDiff != 0) ? maxVMantissa * pow(10, expDiff) : static_cast<double>(maxVMantissa);
 
         // maxVD and minVD are scaled so they have the same exponents. Dividing
         // cancels out the exponents, so we only need to deal with the (scaled)

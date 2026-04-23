@@ -1,14 +1,46 @@
-#include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/app/misc/detail/Work.h>
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SlabAllocator.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
+#include <boost/asio/error.hpp>
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/impl/serializer.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/detail/generic_category.hpp>
+#include <boost/system/system_error.hpp>
+
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <iterator>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -190,9 +222,8 @@ ValidatorSite::setTimer(
     std::lock_guard<std::mutex> const& site_lock,
     std::lock_guard<std::mutex> const& state_lock)
 {
-    auto next = std::min_element(sites_.begin(), sites_.end(), [](Site const& a, Site const& b) {
-        return a.nextRefresh < b.nextRefresh;
-    });
+    auto next = std::ranges::min_element(
+        sites_, [](Site const& a, Site const& b) { return a.nextRefresh < b.nextRefresh; });
 
     if (next != sites_.end())
     {
@@ -405,7 +436,10 @@ ValidatorSite::parseJsonResponse(
         app_.getOPs());
 
     sites_[siteIdx].lastRefreshStatus.emplace(
-        Site::Status{clock_type::now(), applyResult.bestDisposition(), ""});
+        Site::Status{
+            .refreshed = clock_type::now(),
+            .disposition = applyResult.bestDisposition(),
+            .message = ""});
 
     for (auto const& [disp, count] : applyResult.dispositions)
     {
@@ -517,7 +551,10 @@ ValidatorSite::onSiteFetch(
                          << endpoint;
         auto onError = [&](std::string const& errMsg, bool retry) {
             sites_[siteIdx].lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::invalid, errMsg});
+                Site::Status{
+                    .refreshed = clock_type::now(),
+                    .disposition = ListDisposition::invalid,
+                    .message = errMsg});
             if (retry)
                 sites_[siteIdx].nextRefresh = clock_type::now() + error_retry_interval;
 
@@ -610,7 +647,10 @@ ValidatorSite::onTextFetch(
         {
             JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
             sites_[siteIdx].lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::invalid, ex.what()});
+                Site::Status{
+                    .refreshed = clock_type::now(),
+                    .disposition = ListDisposition::invalid,
+                    .message = ex.what()});
         }
         sites_[siteIdx].activeResource.reset();
     }
