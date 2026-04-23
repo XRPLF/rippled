@@ -1,13 +1,30 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+#include <exception>
+#include <optional>
+#include <string>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class AMMInfo_test : public jtx::AMMTestBase
 {
@@ -359,5 +376,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

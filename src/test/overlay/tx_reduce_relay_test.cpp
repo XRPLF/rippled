@@ -1,16 +1,49 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/noop.h>
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
+#include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
+#include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/make_SSLContext.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/Handoff.h>
 
-namespace xrpl {
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 
-namespace test {
+#include <xrpl.pb.h>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <set>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
 
 class tx_reduce_relay_test : public beast::unit_test::suite
 {
@@ -108,7 +141,7 @@ private:
         {
             sid_++;
         }
-        ~PeerTest() = default;
+        ~PeerTest() override = default;
 
         void
         run() override
@@ -264,5 +297,4 @@ private:
 };
 
 BEAST_DEFINE_TESTSUITE(tx_reduce_relay, overlay, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

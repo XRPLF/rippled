@@ -1,9 +1,31 @@
+#include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -34,17 +56,35 @@ struct MPTMutabilityFlags
 };
 
 static constexpr std::array<MPTMutabilityFlags, 7> mptMutabilityFlags = {
-    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lsmfMPTCanMutateCanLock, lsfMPTCanLock},
-     {tmfMPTSetRequireAuth, tmfMPTClearRequireAuth, lsmfMPTCanMutateRequireAuth, lsfMPTRequireAuth},
-     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lsmfMPTCanMutateCanEscrow, lsfMPTCanEscrow},
-     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade, lsfMPTCanTrade},
-     {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lsmfMPTCanMutateCanTransfer, lsfMPTCanTransfer},
-     {tmfMPTSetCanClawback, tmfMPTClearCanClawback, lsmfMPTCanMutateCanClawback, lsfMPTCanClawback},
-     {tmfMPTSetCanConfidentialAmount,
-      tmfMPTClearCanConfidentialAmount,
-      lsmfMPTCannotMutateCanConfidentialAmount,
-      lsfMPTCanConfidentialAmount,
-      true}}};
+    {{.setFlag = tmfMPTSetCanLock,
+      .clearFlag = tmfMPTClearCanLock,
+      .mutabilityFlag = lsmfMPTCanMutateCanLock,
+      .targetFlag = lsfMPTCanLock},
+     {.setFlag = tmfMPTSetRequireAuth,
+      .clearFlag = tmfMPTClearRequireAuth,
+      .mutabilityFlag = lsmfMPTCanMutateRequireAuth,
+      .targetFlag = lsfMPTRequireAuth},
+     {.setFlag = tmfMPTSetCanEscrow,
+      .clearFlag = tmfMPTClearCanEscrow,
+      .mutabilityFlag = lsmfMPTCanMutateCanEscrow,
+      .targetFlag = lsfMPTCanEscrow},
+     {.setFlag = tmfMPTSetCanTrade,
+      .clearFlag = tmfMPTClearCanTrade,
+      .mutabilityFlag = lsmfMPTCanMutateCanTrade,
+      .targetFlag = lsfMPTCanTrade},
+     {.setFlag = tmfMPTSetCanTransfer,
+      .clearFlag = tmfMPTClearCanTransfer,
+      .mutabilityFlag = lsmfMPTCanMutateCanTransfer,
+      .targetFlag = lsfMPTCanTransfer},
+     {.setFlag = tmfMPTSetCanClawback,
+      .clearFlag = tmfMPTClearCanClawback,
+      .mutabilityFlag = lsmfMPTCanMutateCanClawback,
+      .targetFlag = lsfMPTCanClawback},
+     {.setFlag = tmfMPTSetCanConfidentialAmount,
+      .clearFlag = tmfMPTClearCanConfidentialAmount,
+      .mutabilityFlag = lsmfMPTCannotMutateCanConfidentialAmount,
+      .targetFlag = lsfMPTCanConfidentialAmount,
+      .isCannotMutate = true}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -58,7 +98,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const txFlags = ctx.tx.getFlags();
 
     auto const mutatePrivacy = mutableFlags &&
-        ((*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount)));
+        (((*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount))) !=
+         0u);
 
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
@@ -116,12 +157,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
-            if (std::any_of(
-                    mptMutabilityFlags.begin(),
-                    mptMutabilityFlags.end(),
-                    [mutableFlags](auto const& f) {
-                        return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
-                    }))
+            if (std::ranges::any_of(mptMutabilityFlags, [mutableFlags](auto const& f) {
+                    return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
+                }))
                 return temINVALID_FLAG;
 
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
@@ -139,7 +177,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
     // Cannot set keys while clearing confidential amount
     if ((hasIssuerElGamalKey || hasAuditorElGamalKey) && mutableFlags &&
-        (*mutableFlags & tmfMPTClearCanConfidentialAmount))
+        ((*mutableFlags & tmfMPTClearCanConfidentialAmount) != 0u))
         return temINVALID_FLAG;
 
     if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerEncryptionKey]))
@@ -247,18 +285,21 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
     if (mutableFlags)
     {
-        if (std::any_of(
-                mptMutabilityFlags.begin(),
-                mptMutabilityFlags.end(),
-                [mutableFlags, &isMutableFlag](auto const& f) {
-                    bool const canMutate = f.isCannotMutate ? isMutableFlag(f.mutabilityFlag)
-                                                            : !isMutableFlag(f.mutabilityFlag);
-                    return canMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
-                }))
+        if (std::ranges::any_of(mptMutabilityFlags, [mutableFlags, &isMutableFlag](auto const& f) {
+                bool const canMutate = f.isCannotMutate ? isMutableFlag(f.mutabilityFlag)
+                                                        : !isMutableFlag(f.mutabilityFlag);
+                return canMutate && (*mutableFlags & (f.setFlag | f.clearFlag));
+            }))
             return tecNO_PERMISSION;
 
-        if ((*mutableFlags & tmfMPTSetCanConfidentialAmount) ||
-            (*mutableFlags & tmfMPTClearCanConfidentialAmount))
+        // Clearing lsfMPTRequireAuth is invalid when the issuance already has
+        // a DomainID set, because a DomainID requires RequireAuth to be active.
+        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
+            sleMptIssuance->isFieldPresent(sfDomainID))
+            return tecNO_PERMISSION;
+
+        if (((*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u) ||
+            ((*mutableFlags & tmfMPTClearCanConfidentialAmount) != 0u))
         {
             std::uint64_t const confidentialOA =
                 (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
@@ -302,7 +343,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // Check if the transaction is enabling confidential amounts
     bool const enablesConfidentialAmount =
-        mutableFlags && (*mutableFlags & tmfMPTSetCanConfidentialAmount);
+        mutableFlags && ((*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u);
 
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it
@@ -456,6 +497,25 @@ MPTokenIssuanceSet::doApply()
     view().update(sle);
 
     return tesSUCCESS;
+}
+
+void
+MPTokenIssuanceSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+MPTokenIssuanceSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

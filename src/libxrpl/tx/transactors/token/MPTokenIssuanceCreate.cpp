@@ -1,9 +1,27 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -24,11 +42,8 @@ MPTokenIssuanceCreate::checkExtraFeatures(PreflightContext const& ctx)
 
     // can not set tmfMPTCannotMutateCanConfidentialAmount without featureConfidentialTransfer
     auto const mutableFlags = ctx.tx[~sfMutableFlags];
-    if (mutableFlags && (*mutableFlags & tmfMPTCannotMutateCanConfidentialAmount) &&
-        !ctx.rules.enabled(featureConfidentialTransfer))
-        return false;
-
-    return true;
+    return !mutableFlags || ((*mutableFlags & tmfMPTCannotMutateCanConfidentialAmount) == 0u) ||
+        ctx.rules.enabled(featureConfidentialTransfer);
 }
 
 std::uint32_t
@@ -162,6 +177,25 @@ MPTokenIssuanceCreate::doApply()
             .mutableFlags = tx[~sfMutableFlags],
         });
     return result ? tesSUCCESS : result.error();
+}
+
+void
+MPTokenIssuanceCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+MPTokenIssuanceCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

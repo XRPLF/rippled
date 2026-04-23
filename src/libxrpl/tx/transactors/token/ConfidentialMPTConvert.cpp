@@ -1,12 +1,21 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -156,15 +165,17 @@ ConfidentialMPTConvert::preclaim(PreclaimContext const& ctx)
     {
         auditor.emplace(
             ConfidentialRecipient{
-                (*sleIssuance)[sfAuditorEncryptionKey], ctx.tx[sfAuditorEncryptedAmount]});
+                .publicKey = (*sleIssuance)[sfAuditorEncryptionKey],
+                .encryptedAmount = ctx.tx[sfAuditorEncryptedAmount]});
     }
 
     auto const blindingFactor = ctx.tx[sfBlindingFactor];
     if (auto const ter = verifyRevealedAmount(
             amount,
             Slice(blindingFactor.data(), blindingFactor.size()),
-            {holderPubKey, ctx.tx[sfHolderEncryptedAmount]},
-            {(*sleIssuance)[sfIssuerEncryptionKey], ctx.tx[sfIssuerEncryptedAmount]},
+            {.publicKey = holderPubKey, .encryptedAmount = ctx.tx[sfHolderEncryptedAmount]},
+            {.publicKey = (*sleIssuance)[sfIssuerEncryptionKey],
+             .encryptedAmount = ctx.tx[sfIssuerEncryptedAmount]},
             auditor);
         !isTesSuccess(ter))
     {
@@ -277,6 +288,25 @@ ConfidentialMPTConvert::doApply()
     view().update(sleIssuance);
     view().update(sleMptoken);
     return tesSUCCESS;
+}
+
+void
+ConfidentialMPTConvert::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+ConfidentialMPTConvert::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

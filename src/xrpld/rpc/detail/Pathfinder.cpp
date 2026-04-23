@@ -1,17 +1,46 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/Pathfinder.h>
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/RippleLineCache.h>
+#include <xrpld/rpc/detail/TrustLine.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/join.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
-#include <tuple>
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
 
 /*
 
@@ -535,10 +564,8 @@ Pathfinder::rankPaths(
     //    width of path
     //    length of path
     // A better PathRank is lower, best are sorted to the beginning.
-    std::sort(
-        rankedPaths.begin(),
-        rankedPaths.end(),
-        [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b) {
+    std::ranges::sort(
+        rankedPaths, [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b) {
             // 1) Higher quality (lower cost) is better
             if (!convert_all_ && a.quality != b.quality)
                 return a.quality < b.quality;
@@ -1131,9 +1158,9 @@ Pathfinder::addLink(
 
                 if (!candidates.empty())
                 {
-                    std::sort(
-                        candidates.begin(),
-                        candidates.end(),
+                    std::ranges::sort(
+                        candidates,
+
                         std::bind(
                             compareAccountCandidate,
                             mLedger->seq(),

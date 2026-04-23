@@ -382,11 +382,12 @@ private:
             , targetTxnCount_(
                   setup.targetTxnInLedger < minimumTxnCount_ ? minimumTxnCount_
                                                              : setup.targetTxnInLedger)
-            , maximumTxnCount_(
-                  setup.maximumTxnInLedger ? *setup.maximumTxnInLedger < targetTxnCount_
-                          ? targetTxnCount_
-                          : *setup.maximumTxnInLedger
-                                           : std::optional<std::size_t>(std::nullopt))
+            , maximumTxnCount_([&]() -> std::optional<std::size_t> {
+                if (!setup.maximumTxnInLedger)
+                    return std::nullopt;
+                return *setup.maximumTxnInLedger < targetTxnCount_ ? targetTxnCount_
+                                                                   : *setup.maximumTxnInLedger;
+            }())
             , txnsExpected_(minimumTxnCount_)
             , recentTxnCounts_(setup.ledgersInQueue)
             , escalationMultiplier_(setup.minimumEscalationMultiplier)
@@ -414,7 +415,7 @@ private:
             // Number of transactions expected per ledger.
             // One more than this value will be accepted
             // before escalation kicks in.
-            std::size_t const txnsExpected;
+            std::size_t const txnsExpected{};
             // Based on the median fee of the LCL. Used
             // when fee escalation kicks in.
             FeeLevel64 const escalationMultiplier;
@@ -424,7 +425,7 @@ private:
         Snapshot
         getSnapshot() const
         {
-            return {txnsExpected_, escalationMultiplier_};
+            return {.txnsExpected = txnsExpected_, .escalationMultiplier = escalationMultiplier_};
         }
 
         /** Use the number of transactions in the current open ledger
@@ -672,7 +673,7 @@ private:
         bool
         empty() const
         {
-            return !getTxnCount();
+            return getTxnCount() == 0u;
         }
 
         /// Find the entry in transactions that precedes seqProx, if one does.

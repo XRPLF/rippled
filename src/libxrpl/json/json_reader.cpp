@@ -1,5 +1,6 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
+
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 
 #include <algorithm>
@@ -364,8 +365,7 @@ Reader::readNumber()
         {
             if (std::isdigit(static_cast<unsigned char>(*current_)) == 0)
             {
-                auto ret =
-                    std::find(std::begin(extended_tokens), std::end(extended_tokens), *current_);
+                auto ret = std::ranges::find(extended_tokens, *current_);
 
                 if (ret == std::end(extended_tokens))
                     break;

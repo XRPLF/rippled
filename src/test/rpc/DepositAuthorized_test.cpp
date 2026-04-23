@@ -1,9 +1,24 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/flags.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <cassert>
+#include <cstdint>
+#include <string>
+#include <string_view>
+#include <vector>
+
+namespace xrpl::test {
 
 class DepositAuthorized_test : public beast::unit_test::suite
 {
@@ -530,5 +545,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DepositAuthorized, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -33,22 +33,37 @@ public:
     TER
     doApply() override;
 
-    static constexpr auto disabledTxTypes = std::to_array<TxType>(
-        {ttVAULT_CREATE,
-         ttVAULT_SET,
-         ttVAULT_DELETE,
-         ttVAULT_DEPOSIT,
-         ttVAULT_WITHDRAW,
-         ttVAULT_CLAWBACK,
-         ttLOAN_BROKER_SET,
-         ttLOAN_BROKER_DELETE,
-         ttLOAN_BROKER_COVER_DEPOSIT,
-         ttLOAN_BROKER_COVER_WITHDRAW,
-         ttLOAN_BROKER_COVER_CLAWBACK,
-         ttLOAN_SET,
-         ttLOAN_DELETE,
-         ttLOAN_MANAGE,
-         ttLOAN_PAY});
+    void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+
+    static constexpr auto disabledTxTypes = std::to_array<TxType>({
+        ttVAULT_CREATE,
+        ttVAULT_SET,
+        ttVAULT_DELETE,
+        ttVAULT_DEPOSIT,
+        ttVAULT_WITHDRAW,
+        ttVAULT_CLAWBACK,
+        ttLOAN_BROKER_SET,
+        ttLOAN_BROKER_DELETE,
+        ttLOAN_BROKER_COVER_DEPOSIT,
+        ttLOAN_BROKER_COVER_WITHDRAW,
+        ttLOAN_BROKER_COVER_CLAWBACK,
+        ttLOAN_SET,
+        ttLOAN_DELETE,
+        ttLOAN_MANAGE,
+        ttLOAN_PAY,
+    });
 };
 
 }  // namespace xrpl
