@@ -3,6 +3,7 @@
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/SlabAllocator.h>
@@ -13,6 +14,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/server/Vacuum.h>
@@ -376,12 +378,12 @@ run(int argc, char** argv)
         "nodeid", po::value<std::string>(), "Specify the node identity for this server.")(
         "quorum", po::value<std::size_t>(), "Override the minimum validation quorum.")(
         "silent", "No output to the console after startup.")("standalone,a", "Run with no peers.")(
-        "verbose,v", "Verbose logging.")
-
-        ("force_ledger_present_range",
-         po::value<std::string>(),
-         "Specify the range of present ledgers for testing purposes. Min and "
-         "max values are comma separated.")("version", "Display the build version.");
+        "verbose,v", "Verbose logging.")(
+        "definitions", "Output server definitions as JSON and exit.")(
+        "force_ledger_present_range",
+        po::value<std::string>(),
+        "Specify the range of present ledgers for testing purposes. Min and "
+        "max values are comma separated.")("version", "Display the build version.");
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
@@ -503,10 +505,20 @@ run(int argc, char** argv)
 
     if (vm.contains("version"))
     {
+        // LCOV_EXCL_START
         std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
+        // LCOV_EXCL_STOP
+    }
+
+    if (vm.contains("definitions"))
+    {
+        // LCOV_EXCL_START
+        std::cout << Json::FastWriter().write(getServerDefinitionsJson());
+        return 0;
+        // LCOV_EXCL_STOP
     }
 
 #ifndef ENABLE_TESTS

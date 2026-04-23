@@ -284,7 +284,7 @@ class SlabAllocatorSet
 {
 private:
     // The list of allocators that belong to this set
-    boost::container::static_vector<SlabAllocator<Type>, 64> allocators_;
+    boost::container::static_vector<SlabAllocator<Type>, 64> allocators_{};
 
     std::size_t maxSize_ = 0;
 
