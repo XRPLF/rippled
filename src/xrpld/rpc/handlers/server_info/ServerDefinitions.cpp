@@ -1,3 +1,5 @@
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
+
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -369,7 +371,20 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     }
 }
 
+ServerDefinitions const&
+getDefinitions()
+{
+    static ServerDefinitions const defs{};
+    return defs;
+}
+
 }  // namespace detail
+
+Json::Value const&
+getServerDefinitionsJson()
+{
+    return detail::getDefinitions().get();
+}
 
 Json::Value
 doServerDefinitions(RPC::JsonContext& context)
@@ -383,7 +398,7 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    static detail::ServerDefinitions const defs{};
+    auto const& defs = detail::getDefinitions();
     if (defs.hashMatches(hash))
     {
         Json::Value jv = Json::objectValue;
