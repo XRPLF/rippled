@@ -494,7 +494,11 @@ ManifestCache::applyManifest(Manifest m)
             logMftAct(stream, "AcceptedNew", m.masterKey, m.sequence);
 
         if (!revoked)
-            signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
+        {
+            signingToMasterKeys_.emplace(
+                *m.signingKey, m.masterKey);  // NOLINT(bugprone-unchecked-optional-access)
+                                              // non-revoked manifest always has signingKey
+        }
 
         auto masterKey = m.masterKey;
         map_.emplace(std::move(masterKey), std::move(m));
@@ -510,10 +514,16 @@ ManifestCache::applyManifest(Manifest m)
     if (auto stream = j_.info())
         logMftAct(stream, "AcceptedUpdate", m.masterKey, m.sequence, iter->second.sequence);
 
-    signingToMasterKeys_.erase(*iter->second.signingKey);
+    signingToMasterKeys_.erase(
+        *iter->second.signingKey);  // NOLINT(bugprone-unchecked-optional-access) prewriteCheck
+                                    // ensures old manifest is not revoked
 
     if (!revoked)
-        signingToMasterKeys_.emplace(*m.signingKey, m.masterKey);
+    {
+        signingToMasterKeys_.emplace(
+            *m.signingKey, m.masterKey);  // NOLINT(bugprone-unchecked-optional-access) non-revoked
+                                          // manifest always has signingKey
+    }
 
     iter->second = std::move(m);
 
