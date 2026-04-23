@@ -1,34 +1,18 @@
-%global _opt_prefix    /opt/xrpld
-%global ver_base       %(v=%{xrpld_version}; echo ${v%%-*})
-%global _has_dash      %(v=%{xrpld_version}; [ "${v#*-}" != "$v" ] && echo 1 || echo 0)
-%if 0%{?_has_dash}
-  %global ver_suffix   %(v=%{xrpld_version}; printf %s "${v#*-}")
-%endif
 Name:     xrpld
-Version:  %{ver_base}
-Release:  %{?ver_suffix:0.%{ver_suffix}.}%{pkg_release}%{?dist}
+Version:  %{xrpld_version}
+Release:  %{xrpld_release}%{?dist}
 Summary:  XRP Ledger daemon
 
 License:  ISC
 URL:      https://github.com/XRPLF/rippled
 
-Source0:  xrpld
-Source1:  xrpld.cfg
-Source2:  validators.txt
-Source3:  xrpld.service
-Source4:  xrpld.sysusers
-Source5:  xrpld.tmpfiles
-Source6:  xrpld.logrotate
-Source7:  update-xrpld.sh
-Source8:  update-xrpld-cron
-Source9:  LICENSE.md
-Source10: README.md
-
-ExclusiveArch: x86_64
+ExclusiveArch: x86_64 aarch64
 BuildRequires: systemd-rpm-macros
 
 %undefine _debugsource_packages
 %debug_package
+
+%build_mtime_policy clamp_to_source_date_epoch
 
 %{?systemd_requires}
 %{?sysusers_requires_compat}
@@ -38,73 +22,81 @@ xrpld is the reference implementation of the XRP Ledger protocol. It
 participates in the peer-to-peer XRP Ledger network, processes
 transactions, and maintains the ledger database.
 
+%prep
+:
+
 %install
 rm -rf %{buildroot}
 
-# Suppress debugsource subpackage — no source files in the build tree.
-touch %{_builddir}/debugsourcefiles.list
+SRC=%{_sourcedir}
 
-# Install binary and config files.
-install -Dm0755 %{SOURCE0} %{buildroot}%{_opt_prefix}/bin/xrpld
-install -Dm0644 %{SOURCE1} %{buildroot}%{_opt_prefix}/etc/xrpld.cfg
-install -Dm0644 %{SOURCE2} %{buildroot}%{_opt_prefix}/etc/validators.txt
+install -Dm0755 ${SRC}/xrpld           %{buildroot}/opt/xrpld/bin/xrpld
+install -Dm0644 ${SRC}/xrpld.cfg       %{buildroot}/opt/xrpld/etc/xrpld.cfg
+install -Dm0644 ${SRC}/validators.txt  %{buildroot}/opt/xrpld/etc/validators.txt
 
-mkdir -p %{buildroot}/etc/opt %{buildroot}/usr/bin %{buildroot}/usr/local/bin
-ln -s %{_opt_prefix}/etc       %{buildroot}/etc/opt/xrpld
-ln -s %{_opt_prefix}/bin/xrpld %{buildroot}/usr/bin/xrpld
+mkdir -p %{buildroot}/etc/opt  %{buildroot}/usr/bin %{buildroot}/usr/local/bin
+ln -s /opt/xrpld/etc           %{buildroot}/etc/opt/xrpld
+ln -s /opt/xrpld/bin/xrpld     %{buildroot}/usr/bin/xrpld
 
-## remove when "rippled" deprecated
-ln -s xrpld                     %{buildroot}%{_opt_prefix}/bin/rippled
-ln -s %{_opt_prefix}/bin/xrpld  %{buildroot}/usr/local/bin/rippled
-ln -s xrpld.cfg                 %{buildroot}%{_opt_prefix}/etc/rippled.cfg
-ln -s %{_opt_prefix}            %{buildroot}/opt/ripple
-ln -s /etc/opt/xrpld            %{buildroot}/etc/opt/ripple
+# TODO: remove when rippled deprecated
+ln -s xrpld                 %{buildroot}/opt/xrpld/bin/rippled
+ln -s /opt/xrpld/bin/xrpld  %{buildroot}/usr/local/bin/rippled
+ln -s xrpld.cfg             %{buildroot}/opt/xrpld/etc/rippled.cfg
+ln -s /opt/xrpld            %{buildroot}/opt/ripple
+ln -s /etc/opt/xrpld        %{buildroot}/etc/opt/ripple
 
-# Install systemd/sysusers/tmpfiles support files.
-install -Dm0644 %{SOURCE3} %{buildroot}%{_unitdir}/xrpld.service
-install -Dm0644 %{SOURCE4} %{buildroot}%{_sysusersdir}/xrpld.conf
-install -Dm0644 %{SOURCE5} %{buildroot}%{_tmpfilesdir}/xrpld.conf
-install -Dm0644 %{SOURCE6} %{buildroot}%{_opt_prefix}/bin/xrpld.logrotate
-install -Dm0755 %{SOURCE7} %{buildroot}%{_opt_prefix}/bin/update-xrpld.sh
-install -Dm0644 %{SOURCE8} %{buildroot}%{_opt_prefix}/bin/update-xrpld-cron
+install -Dm0644 ${SRC}/xrpld.service        %{buildroot}%{_unitdir}/xrpld.service
+install -Dm0644 ${SRC}/update-xrpld.service %{buildroot}%{_unitdir}/update-xrpld.service
+install -Dm0644 ${SRC}/update-xrpld.timer   %{buildroot}%{_unitdir}/update-xrpld.timer
 
-# Install doc/license files.
-install -Dm0644 %{SOURCE9}  %{buildroot}%{_opt_prefix}/share/LICENSE.md
-install -Dm0644 %{SOURCE10} %{buildroot}%{_opt_prefix}/share/README.md
+install -Dm0644 ${SRC}/xrpld.sysusers %{buildroot}%{_sysusersdir}/xrpld.conf
+install -Dm0644 ${SRC}/xrpld.tmpfiles %{buildroot}%{_tmpfilesdir}/xrpld.conf
+
+install -Dm0644 ${SRC}/50-xrpld.preset %{buildroot}%{_presetdir}/50-xrpld.preset
+
+install -Dm0755 ${SRC}/update-xrpld.sh    %{buildroot}/opt/xrpld/bin/update-xrpld.sh
+install -Dm0644 ${SRC}/update-xrpld-cron  %{buildroot}/opt/xrpld/bin/update-xrpld-cron
+install -Dm0644 ${SRC}/xrpld.logrotate    %{buildroot}/opt/xrpld/bin/xrpld.logrotate
+
+install -Dm0644 ${SRC}/LICENSE.md %{buildroot}/opt/xrpld/share/LICENSE.md
+install -Dm0644 ${SRC}/README.md  %{buildroot}/opt/xrpld/share/README.md
 
 %pre
-%sysusers_create_compat %{SOURCE4}
+%sysusers_create_package xrpld %{_sourcedir}/xrpld.sysusers
 
 %post
 systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
-%systemd_post xrpld.service
+%systemd_post xrpld.service update-xrpld.timer
 
 %preun
-%systemd_preun xrpld.service
+%systemd_preun xrpld.service update-xrpld.timer
 
 %postun
 %systemd_postun_with_restart xrpld.service
 
 %files
-%license %{_opt_prefix}/share/LICENSE.md
-%doc %{_opt_prefix}/share/README.md
+%license /opt/xrpld/share/LICENSE.md
+%doc /opt/xrpld/share/README.md
 
-%dir %{_opt_prefix}
-%dir %{_opt_prefix}/bin
-%dir %{_opt_prefix}/etc
+%dir /opt/xrpld
+%dir /opt/xrpld/bin
+%dir /opt/xrpld/etc
 
-%{_opt_prefix}/bin/xrpld
-%{_opt_prefix}/bin/xrpld.logrotate
-%{_opt_prefix}/bin/update-xrpld.sh
-%{_opt_prefix}/bin/update-xrpld-cron
+/opt/xrpld/bin/xrpld
+/opt/xrpld/bin/xrpld.logrotate
+/opt/xrpld/bin/update-xrpld.sh
+/opt/xrpld/bin/update-xrpld-cron
 
 /usr/bin/xrpld
 /etc/opt/xrpld
 
-%config(noreplace) %{_opt_prefix}/etc/xrpld.cfg
-%config(noreplace) %{_opt_prefix}/etc/validators.txt
+%config(noreplace) /opt/xrpld/etc/xrpld.cfg
+%config(noreplace) /opt/xrpld/etc/validators.txt
 
 %{_unitdir}/xrpld.service
+%{_unitdir}/update-xrpld.service
+%{_unitdir}/update-xrpld.timer
+%{_presetdir}/50-xrpld.preset
 %{_sysusersdir}/xrpld.conf
 %{_tmpfilesdir}/xrpld.conf
 
@@ -112,8 +104,8 @@ systemd-tmpfiles --create %{_tmpfilesdir}/xrpld.conf || :
 %ghost %dir /var/log/xrpld
 
 # TODO: remove when rippled deprecated
-%{_opt_prefix}/bin/rippled
+/opt/xrpld/bin/rippled
 /usr/local/bin/rippled
-%{_opt_prefix}/etc/rippled.cfg
+/opt/xrpld/etc/rippled.cfg
 /etc/opt/ripple
 /opt/ripple

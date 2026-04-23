@@ -37,7 +37,7 @@ if systemctl is-system-running >/dev/null 2>&1; then
 fi
 
 # binary accessible via all expected paths
-/opt/xrpld/bin/xrpld    --version
+/opt/xrpld/bin/xrpld     --version
 /opt/xrpld/bin/rippled   --version
 /opt/ripple/bin/xrpld    --version
 /opt/ripple/bin/rippled  --version

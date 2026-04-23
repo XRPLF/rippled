@@ -19,17 +19,16 @@ override_dh_auto_install:
 	install -Dm0644 README.md          debian/tmp/usr/share/doc/xrpld/README.md
 	install -Dm0644 LICENSE.md         debian/tmp/usr/share/doc/xrpld/LICENSE.md
 
+# update-xrpld.service is a Type=oneshot fired by update-xrpld.timer; installing
+# it without --no-start would run the update on package install.
 override_dh_installsystemd:
-	dh_installsystemd
+	dh_installsystemd xrpld.service
+	dh_installsystemd --name=update-xrpld --no-enable --no-start update-xrpld.service update-xrpld.timer
 
-override_dh_installsysusers:
+execute_before_dh_installtmpfiles:
 	dh_installsysusers
 
-override_dh_installtmpfiles:
-	dh_installtmpfiles
-
-override_dh_install:
-	dh_install
+override_dh_installsysusers:
 
 override_dh_dwz:
 	@:

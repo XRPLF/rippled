@@ -8,7 +8,7 @@ This directory contains all files needed to build RPM and Debian packages for `x
 package/
   build_pkg.sh      Staging and build script (called by CMake targets and CI)
   rpm/
-    xrpld.spec.in   RPM spec template (substitutes @xrpld_version@, @pkg_release@)
+    xrpld.spec      RPM spec (xrpld_version/pkg_release passed via rpmbuild --define)
   deb/
     debian/         Debian control files (control, rules, install, links, conffiles, ...)
   shared/
@@ -73,15 +73,6 @@ IMAGE=$(jq -r --arg pkg "$PKG_TYPE" '
   "ghcr.io/xrplf/ci/\(.distro_name)-\(.distro_version):\(.compiler_name)-\(.compiler_version)-sha-\(.image_sha)"
 ' .github/scripts/strategy-matrix/linux.json)
 
-# RPM only: generate the spec from the template (CMake does this automatically
-# during configure; this mirrors the CI step for direct invocations).
-if [ "$PKG_TYPE" = "rpm" ] && [ ! -f build/package/rpm/xrpld.spec ]; then
-  mkdir -p build/package/rpm
-  sed -e "s|@xrpld_version@|$VERSION|" \
-      -e "s|@pkg_release@|$PKG_RELEASE|" \
-    package/rpm/xrpld.spec.in > build/package/rpm/xrpld.spec
-fi
-
 # Run the packaging in the container.
 docker run --rm \
   -v "$(pwd):/src" \
@@ -128,8 +119,8 @@ config files, and shared support files into the staging area.
 ### RPM
 
 1. Creates the standard `rpmbuild/{BUILD,BUILDROOT,RPMS,SOURCES,SPECS,SRPMS}` tree inside the build directory.
-2. Copies the generated `xrpld.spec` and all source files (binary, configs, service files) into `SOURCES/`.
-3. Runs `rpmbuild -bb`. The spec uses manual `install` commands to place files.
+2. Copies `xrpld.spec` and all source files (binary, configs, service files) into `SOURCES/`.
+3. Runs `rpmbuild -bb --define "xrpld_version ..." --define "pkg_release ..."`. The spec uses manual `install` commands to place files.
 4. Output: `rpmbuild/RPMS/x86_64/xrpld-*.rpm`
 
 ### DEB
