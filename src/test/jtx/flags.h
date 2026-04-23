@@ -6,13 +6,15 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <utility>
+
 namespace xrpl {
 namespace detail {
 
 class FlagsHelper
 {
 protected:
-    std::uint32_t mask_;
+    std::uint32_t mask_{0};
 
 private:
     void
@@ -87,8 +89,7 @@ protected:
 
 }  // namespace detail
 
-namespace test {
-namespace jtx {
+namespace test::jtx {
 
 // JSON generators
 
@@ -104,7 +105,7 @@ fclear(Account const& account, std::uint32_t off)
 }
 
 /** Match set account flags */
-class Flags : private detail::FlagsHelper
+class Flags : private xrpl::detail::FlagsHelper
 {
 private:
     Account account_;
@@ -120,7 +121,7 @@ public:
 };
 
 /** Match clear account flags */
-class Nflags : private detail::FlagsHelper
+class Nflags : private xrpl::detail::FlagsHelper
 {
 private:
     Account account_;
@@ -135,6 +136,6 @@ public:
     operator()(Env& env) const;
 };
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl

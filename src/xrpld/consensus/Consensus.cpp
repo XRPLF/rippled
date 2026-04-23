@@ -1,6 +1,16 @@
 #include <xrpld/consensus/Consensus.h>
 
+#include <xrpld/consensus/ConsensusParms.h>
+#include <xrpld/consensus/ConsensusTypes.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <memory>
+#include <sstream>
 
 namespace xrpl {
 
@@ -132,7 +142,7 @@ checkConsensusReached(
         CLOG(clog) << "agreeing and total adjusted: " << agreeing << ',' << total << ". ";
     }
 
-    std::size_t currentPercentage = (agreeing * 100) / total;
+    std::size_t const currentPercentage = (agreeing * 100) / total;
 
     CLOG(clog) << "currentPercentage: " << currentPercentage;
     bool const ret = currentPercentage >= minConsensusPct;

@@ -5,6 +5,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/StartUpType.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
 #include <xrpl/rdb/DatabaseCon.h>
 
@@ -57,6 +58,13 @@ struct FeeSetup
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
+
+    /** Convert to a Fees object for use with Ledger construction. */
+    Fees
+    toFees() const
+    {
+        return Fees{reference_fee, account_reserve, owner_reserve};
+    }
 };
 
 //  This entire derived class is deprecated.
@@ -136,10 +144,6 @@ public:
 
     // Network parameters
     uint32_t NETWORK_ID = 0;
-
-    // DEPRECATED - Fee units for a reference transaction.
-    // Only provided for backwards compatibility in a couple of places
-    static constexpr std::uint32_t FEE_UNITS_DEPRECATED = 10;
 
     // Note: The following parameters do not relate to the UNL or trust at all
     // Minimum number of nodes to consider the network present
@@ -269,10 +273,10 @@ public:
 
     // First, attempt to load the latest ledger directly from disk.
     bool FAST_LOAD = false;
-    // When starting rippled with existing database it do not know it has those
+    // When starting xrpld with existing database it do not know it has those
     // ledgers locally until the server naturally tries to backfill. This makes
     // is difficult to test some functionality (in particular performance
-    // testing sidechains). With this variable the user is able to force rippled
+    // testing sidechains). With this variable the user is able to force xrpld
     // to consider the ledger range to be present. It should be used for testing
     // only.
     std::optional<std::pair<std::uint32_t, std::uint32_t>> FORCED_LEDGER_RANGE_PRESENT;

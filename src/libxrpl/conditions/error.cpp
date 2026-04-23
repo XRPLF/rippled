@@ -1,10 +1,12 @@
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/conditions/detail/error.h>
 
-#include <string>
+#include <xrpl/basics/safe_cast.h>
 
-namespace xrpl {
-namespace cryptoconditions {
+#include <string>
+#include <system_error>
+#include <type_traits>
+
+namespace xrpl::cryptoconditions {
 namespace detail {
 
 class CryptoconditionsErrorCategory : public std::error_category
@@ -113,5 +115,4 @@ make_error_code(error ev)
         detail::getCryptoconditionsErrorCategory()};
 }
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

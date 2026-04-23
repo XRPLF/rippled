@@ -1,6 +1,17 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/memo.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/rpc.h>
 
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/SField.h>
+
+#include <string_view>
 
 namespace xrpl {
 
@@ -13,7 +24,7 @@ public:
         testcase("Test memos");
 
         using namespace test::jtx;
-        Account alice{"alice"};
+        Account const alice{"alice"};
 
         Env env(*this);
         env.fund(XRP(10000), alice);

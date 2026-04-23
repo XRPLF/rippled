@@ -1,10 +1,13 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
+
+namespace xrpl::test {
 
 class WSClient_test : public beast::unit_test::suite
 {
@@ -29,5 +32,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(WSClient, jtx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -4,8 +4,7 @@
 
 #include <boost/asio.hpp>
 
-namespace beast {
-namespace IP {
+namespace beast::IP {
 
 /** Convert to Endpoint.
     The port is set to zero.
@@ -27,8 +26,7 @@ toAsioAddress(Endpoint const& endpoint);
 boost::asio::ip::tcp::endpoint
 toAsioEndpoint(Endpoint const& endpoint);
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP
 
 namespace beast {
 

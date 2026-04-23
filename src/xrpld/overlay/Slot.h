@@ -19,9 +19,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace xrpl {
-
-namespace reduce_relay {
+namespace xrpl::reduce_relay {
 
 template <typename ClockType>
 class Slots;
@@ -52,9 +50,7 @@ epoch(TP const& t)
 class SquelchHandler
 {
 public:
-    virtual ~SquelchHandler()
-    {
-    }
+    virtual ~SquelchHandler() = default;
     /** Squelch handler
      * @param validator Public key of the source validator
      * @param id Peer's id to squelch
@@ -324,7 +320,7 @@ Slot<ClockType>::update(
         // idled peers.
         std::unordered_set<id_t> selected;
         auto const consideredPoolSize = considered_.size();
-        while (selected.size() != maxSelectedPeers_ && considered_.size() != 0)
+        while (selected.size() != maxSelectedPeers_ && !considered_.empty())
         {
             auto i = considered_.size() == 1 ? 0 : rand_int(considered_.size() - 1);
             auto it = std::next(considered_.begin(), i);
@@ -374,7 +370,7 @@ Slot<ClockType>::update(
                 if (journal_.trace())
                     str << k << " ";
                 v.state = PeerState::Squelched;
-                std::chrono::seconds duration =
+                std::chrono::seconds const duration =
                     getSquelchDuration(peers_.size() - maxSelectedPeers_);
                 v.expire = now + duration;
                 handler_.squelch(validator, k, duration.count());
@@ -430,7 +426,7 @@ Slot<ClockType>::deletePeer(PublicKey const& validator, id_t id, bool erase)
             reachedThreshold_ = 0;
             state_ = SlotState::Counting;
         }
-        else if (considered_.find(id) != considered_.end())
+        else if (considered_.contains(id))
         {
             if (it->second.count > kMAX_MESSAGE_THRESHOLD)
                 --reachedThreshold_;
@@ -540,14 +536,14 @@ class Slots final
 
 public:
     /**
-     * @param logs reference to the logger
+     * @param registry The service registry.
      * @param handler Squelch/unsquelch implementation
      * @param config reference to the global config
      */
-    Slots(Logs& logs, SquelchHandler const& handler, Config const& config)
+    Slots(ServiceRegistry& registry, SquelchHandler const& handler, Config const& config)
         : handler_(handler)
-        , logs_(logs)
-        , journal_(logs.journal("Slots"))
+        , logs_(registry.getLogs())
+        , journal_(registry.getJournal("Slots"))
         , baseSquelchEnabled_(config.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
         , maxSelectedPeers_(config.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)
     {
@@ -764,7 +760,9 @@ Slots<clock_type>::updateSlotAndSquelch(
         it->second.update(validator, id, type, callback);
     }
     else
+    {
         it->second.update(validator, id, type, callback);
+    }
 }
 
 template <typename clock_type>
@@ -790,10 +788,10 @@ Slots<clock_type>::deleteIdlePeers()
             it = slots_.erase(it);
         }
         else
+        {
             ++it;
+        }
     }
 }
 
-}  // namespace reduce_relay
-
-}  // namespace xrpl
+}  // namespace xrpl::reduce_relay

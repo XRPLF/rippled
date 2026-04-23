@@ -1,15 +1,19 @@
+#include <xrpl/basics/ResolverAsio.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
-#include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/bind_executor.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/strand.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
@@ -22,6 +26,7 @@
 #include <locale>
 #include <memory>
 #include <mutex>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
@@ -152,7 +157,7 @@ public:
     void
     asyncHandlersComplete()
     {
-        std::unique_lock<std::mutex> lk{mut};
+        std::unique_lock<std::mutex> const lk{mut};
         asyncHandlersCompleted = true;
         cv.notify_all();
     }
@@ -172,7 +177,7 @@ public:
         if (stopped.exchange(false))
         {
             {
-                std::lock_guard lk{mut};
+                std::lock_guard const lk{mut};
                 asyncHandlersCompleted = false;
             }
             addReference();
@@ -326,7 +331,7 @@ public:
             return;
 
         std::string const name(work.front().names.back());
-        HandlerType handler(work.front().handler);
+        HandlerType const handler(work.front().handler);
 
         work.front().names.pop_back();
 

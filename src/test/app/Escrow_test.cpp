@@ -1,17 +1,38 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/tag.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Dir.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/applySteps.h>
 
 #include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstring>
 #include <iterator>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Escrow_test : public beast::unit_test::suite
 {
@@ -29,7 +50,7 @@ struct Escrow_test : public beast::unit_test::suite
         env(escrow::create("alice", "bob", XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
         env.close();
 
-        auto const seq1 = env.seq("alice");
+        auto const seq1 = env.Seq("alice");
 
         env(escrow::create("alice", "bob", XRP(1000)),
             escrow::kCONDITION(escrow::kCB1),
@@ -41,7 +62,7 @@ struct Escrow_test : public beast::unit_test::suite
             escrow::kFULFILLMENT(escrow::kFB1),
             Fee(baseFee * 150));
 
-        auto const seq2 = env.seq("alice");
+        auto const seq2 = env.Seq("alice");
 
         env(escrow::create("alice", "bob", XRP(1000)),
             escrow::kCONDITION(escrow::kCB2),
@@ -68,7 +89,7 @@ struct Escrow_test : public beast::unit_test::suite
             // We create an escrow that can be finished in the future
             auto const ts = env.now() + 97s;
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "bob", XRP(1000)), escrow::kFINISH_TIME(ts));
 
             // Advance the ledger, verifying that the finish won't complete
@@ -89,7 +110,7 @@ struct Escrow_test : public beast::unit_test::suite
             // We create an escrow that can be cancelled in the future
             auto const ts = env.now() + 117s;
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "bob", XRP(1000)),
                 escrow::kCONDITION(escrow::kCB1),
                 escrow::kCANCEL_TIME(ts));
@@ -121,7 +142,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const fts = env.now() + 117s;
             auto const cts = env.now() + 192s;
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "bob", XRP(1000)),
                 escrow::kFINISH_TIME(fts),
                 escrow::kCANCEL_TIME(cts));
@@ -152,7 +173,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const fts = env.now() + 109s;
             auto const cts = env.now() + 184s;
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "bob", XRP(1000)),
                 escrow::kFINISH_TIME(fts),
                 escrow::kCANCEL_TIME(cts));
@@ -202,7 +223,7 @@ struct Escrow_test : public beast::unit_test::suite
             Ter(tecDST_TAG_NEEDED));
 
         // set source and dest tags
-        auto const seq = env.seq(alice);
+        auto const seq = env.Seq(alice);
 
         env(escrow::create(alice, bob, XRP(1000)),
             escrow::kFINISH_TIME(env.now() + 1s),
@@ -263,7 +284,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         // Creating an escrow with only a cancel time and a kCONDITION is
         // allowed:
-        auto const seq = env.seq("alice");
+        auto const seq = env.Seq("alice");
         env(escrow::create("alice", "bob", XRP(100)),
             escrow::kCANCEL_TIME(env.now() + 90s),
             escrow::kCONDITION(escrow::kCB1),
@@ -273,11 +294,11 @@ struct Escrow_test : public beast::unit_test::suite
             escrow::kCONDITION(escrow::kCB1),
             escrow::kFULFILLMENT(escrow::kFB1),
             Fee(baseFee * 150));
-        BEAST_EXPECT(env.balance("bob") == XRP(5100));
+        BEAST_EXPECT(env.Balance("bob") == XRP(5100));
 
         // Creating an escrow with only a cancel time and a finish time is
         // allowed:
-        auto const seqFt = env.seq("alice");
+        auto const seqFt = env.Seq("alice");
         env(escrow::create("alice", "bob", XRP(100)),
             escrow::kFINISH_TIME(env.now()),  // Set finish time to now so that
                                               // we can call finish immediately.
@@ -285,7 +306,7 @@ struct Escrow_test : public beast::unit_test::suite
             Fee(baseFee * 150));
         env.close();
         env(escrow::finish("carol", "alice", seqFt), Fee(150 * baseFee));
-        BEAST_EXPECT(env.balance("bob") == XRP(5200));  // 5100 (from last transaction) + 100
+        BEAST_EXPECT(env.Balance("bob") == XRP(5200));  // 5100 (from last transaction) + 100
     }
 
     void
@@ -408,7 +429,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {  // Specify incorrect sequence number
             env.fund(XRP(5000), "hannah");
-            auto const seq = env.seq("hannah");
+            auto const seq = env.Seq("hannah");
             env(escrow::create("hannah", "hannah", XRP(10)),
                 escrow::kFINISH_TIME(env.now() + 1s),
                 Fee(150 * baseFee));
@@ -418,7 +439,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {  // Try to specify a kCONDITION for a non-conditional payment
             env.fund(XRP(5000), "ivan");
-            auto const seq = env.seq("ivan");
+            auto const seq = env.Seq("ivan");
 
             env(escrow::create("ivan", "ivan", XRP(10)), escrow::kFINISH_TIME(env.now() + 1s));
             env.close();
@@ -443,9 +464,9 @@ struct Escrow_test : public beast::unit_test::suite
             Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob");
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "alice", XRP(1000)), escrow::kFINISH_TIME(env.now() + 5s));
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
 
             // Not enough time has elapsed for a finish and canceling isn't
             // possible.
@@ -458,7 +479,7 @@ struct Escrow_test : public beast::unit_test::suite
 
             // Finish should succeed. Verify funds.
             env(escrow::finish("bob", "alice", seq));
-            env.require(Balance("alice", XRP(5000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(5000) - drops(baseFee)));
         }
         {
             // Unconditionally pay from Alice to Bob.  Zelda (neither source nor
@@ -467,9 +488,9 @@ struct Escrow_test : public beast::unit_test::suite
             Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "zelda");
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "bob", XRP(1000)), escrow::kFINISH_TIME(env.now() + 5s));
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
 
             // Not enough time has elapsed for a finish and canceling isn't
             // possible.
@@ -484,9 +505,9 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow::finish("zelda", "alice", seq));
             env.close();
 
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
-            env.require(Balance("bob", XRP(6000)));
-            env.require(Balance("zelda", XRP(5000) - drops(4 * baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("bob", XRP(6000)));
+            env.Require(Balance("zelda", XRP(5000) - drops(4 * baseFee)));
         }
         {
             // Bob sets DepositAuth so only Bob can finish the escrow.
@@ -497,9 +518,9 @@ struct Escrow_test : public beast::unit_test::suite
             env(fset("bob", asfDepositAuth));
             env.close();
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "bob", XRP(1000)), escrow::kFINISH_TIME(env.now() + 5s));
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
 
             // Not enough time has elapsed for a finish and canceling isn't
             // possible.
@@ -521,9 +542,9 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow::finish("bob", "alice", seq));
             env.close();
 
-            env.require(Balance("alice", XRP(4000) - (baseFee * 5)));
-            env.require(Balance("bob", XRP(6000) - (baseFee * 5)));
-            env.require(Balance("zelda", XRP(5000) - (baseFee * 4)));
+            env.Require(Balance("alice", XRP(4000) - (baseFee * 5)));
+            env.Require(Balance("bob", XRP(6000) - (baseFee * 5)));
+            env.Require(Balance("zelda", XRP(5000) - (baseFee * 4)));
         }
         {
             // Bob sets DepositAuth but preauthorizes Zelda, so Zelda can
@@ -537,9 +558,9 @@ struct Escrow_test : public beast::unit_test::suite
             env(deposit::auth("bob", "zelda"));
             env.close();
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "bob", XRP(1000)), escrow::kFINISH_TIME(env.now() + 5s));
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
             env.close();
 
             // DepositPreauth allows Finish to succeed for either Zelda or
@@ -549,20 +570,20 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow::finish("zelda", "alice", seq));
             env.close();
 
-            env.require(Balance("alice", XRP(4000) - (baseFee * 2)));
-            env.require(Balance("bob", XRP(6000) - (baseFee * 2)));
-            env.require(Balance("zelda", XRP(5000) - (baseFee * 1)));
+            env.Require(Balance("alice", XRP(4000) - (baseFee * 2)));
+            env.Require(Balance("bob", XRP(6000) - (baseFee * 2)));
+            env.Require(Balance("zelda", XRP(5000) - (baseFee * 1)));
         }
         {
             // Conditional
             Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob");
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "alice", XRP(1000)),
                 escrow::kCONDITION(escrow::kCB2),
                 escrow::kFINISH_TIME(env.now() + 5s));
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
 
             // Not enough time has elapsed for a finish and canceling isn't
             // possible.
@@ -601,11 +622,11 @@ struct Escrow_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(5000), "alice", "bob");
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "alice", XRP(1000)),
                 escrow::kCONDITION(escrow::kCB3),
                 escrow::kFINISH_TIME(env.now() + 5s));
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
             env.close();
 
             // Finish is now possible but requires the cryptocondition.
@@ -638,11 +659,11 @@ struct Escrow_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(5000), "alice", "bob", "zelda");
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "alice", XRP(1000)),
                 escrow::kCONDITION(escrow::kCB3),
                 escrow::kFINISH_TIME(env.now() + 5s));
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
             env.close();
 
             // Alice preauthorizes Zelda for deposit, even though Alice has not
@@ -689,14 +710,14 @@ struct Escrow_test : public beast::unit_test::suite
             Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env(escrow::create("alice", "carol", XRP(1000)),
                 escrow::kCONDITION(escrow::kCB1),
                 escrow::kCANCEL_TIME(env.now() + 1s));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
-            env.require(Balance("carol", XRP(5000)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("carol", XRP(5000)));
             env(escrow::cancel("bob", "alice", seq), Ter(tecNO_PERMISSION));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
 
@@ -754,7 +775,7 @@ struct Escrow_test : public beast::unit_test::suite
             // SLE removed on finish
             BEAST_EXPECT(!env.le(keylet::escrow(Account("alice").id(), seq)));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
-            env.require(Balance("carol", XRP(6000)));
+            env.Require(Balance("carol", XRP(6000)));
             env(escrow::cancel("bob", "alice", seq), Ter(tecNO_TARGET));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env(escrow::cancel("bob", "carol", 1), Ter(tecNO_TARGET));
@@ -763,16 +784,16 @@ struct Escrow_test : public beast::unit_test::suite
             Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
             env(escrow::create("alice", "carol", XRP(1000)),
                 escrow::kCONDITION(escrow::kCB2),
                 escrow::kCANCEL_TIME(env.now() + 1s));
             env.close();
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
             // balance restored on cancel
             env(escrow::cancel("bob", "alice", seq));
-            env.require(Balance("alice", XRP(5000) - drops(baseFee)));
+            env.Require(Balance("alice", XRP(5000) - drops(baseFee)));
             // SLE removed on cancel
             BEAST_EXPECT(!env.le(keylet::escrow(Account("alice").id(), seq)));
         }
@@ -781,7 +802,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             env(escrow::create("alice", "carol", XRP(1000)),
                 escrow::kCONDITION(escrow::kCB3),
                 escrow::kCANCEL_TIME(env.now() + 1s));
@@ -797,7 +818,7 @@ struct Escrow_test : public beast::unit_test::suite
                 Fee(150 * baseFee),
                 Ter(tecNO_PERMISSION));
             BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env.require(Balance("carol", XRP(5000)));
+            env.Require(Balance("carol", XRP(5000)));
         }
         {  // Test long & short conditions during creation
             Env env(*this, features);
@@ -843,7 +864,7 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::kCANCEL_TIME(ts),
                 Ter(temMALFORMED));
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             auto const baseFee = env.current()->fees().base;
             env(escrow::create("alice", "carol", XRP(1000)),
                 escrow::kCONDITION(Slice{p + 1, s - 2}),
@@ -853,9 +874,9 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::kCONDITION(escrow::kCB1),
                 escrow::kFULFILLMENT(escrow::kFB1),
                 Fee(150 * baseFee));
-            env.require(Balance("alice", XRP(4000) - drops(10 * baseFee)));
-            env.require(Balance("bob", XRP(5000) - drops(150 * baseFee)));
-            env.require(Balance("carol", XRP(6000)));
+            env.Require(Balance("alice", XRP(4000) - drops(10 * baseFee)));
+            env.Require(Balance("bob", XRP(5000) - drops(150 * baseFee)));
+            env.Require(Balance("carol", XRP(6000)));
         }
         {  // Test long and short conditions & fulfillments during finish
             Env env(*this, features);
@@ -908,7 +929,7 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::kCANCEL_TIME(ts),
                 Ter(temMALFORMED));
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             auto const baseFee = env.current()->fees().base;
             env(escrow::create("alice", "carol", XRP(1000)),
                 escrow::kCONDITION(Slice{cp + 1, cs - 2}),
@@ -1000,8 +1021,8 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::kCONDITION(escrow::kCB2),
                 escrow::kFULFILLMENT(escrow::kFB2),
                 Fee(150 * baseFee));
-            env.require(Balance("alice", XRP(4000) - drops(10 * baseFee)));
-            env.require(Balance("carol", XRP(6000)));
+            env.Require(Balance("alice", XRP(4000) - drops(10 * baseFee)));
+            env.Require(Balance("carol", XRP(6000)));
         }
         {  // Test empty kCONDITION during creation and
            // empty kCONDITION & kFULFILLMENT during finish
@@ -1013,7 +1034,7 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::kCANCEL_TIME(env.now() + 1s),
                 Ter(temMALFORMED));
 
-            auto const seq = env.seq("alice");
+            auto const seq = env.Seq("alice");
             auto const baseFee = env.current()->fees().base;
             env(escrow::create("alice", "carol", XRP(1000)),
                 escrow::kCONDITION(escrow::kCB3),
@@ -1049,15 +1070,15 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::kCONDITION(escrow::kCB3),
                 escrow::kFULFILLMENT(escrow::kFB3),
                 Fee(150 * baseFee));
-            env.require(Balance("carol", XRP(6000)));
-            env.require(Balance("alice", XRP(4000) - drops(baseFee)));
+            env.Require(Balance("carol", XRP(6000)));
+            env.Require(Balance("alice", XRP(4000) - drops(baseFee)));
         }
         {  // Test a kCONDITION other than PreimageSha256, which
            // would require a separate amendment
             Env env(*this, features);
             env.fund(XRP(5000), "alice", "bob");
 
-            std::array<std::uint8_t, 45> cb = {
+            std::array<std::uint8_t, 45> const cb = {
                 {0xA2, 0x2B, 0x80, 0x20, 0x42, 0x4A, 0x70, 0x49, 0x49, 0x52, 0x92, 0x67,
                  0xB6, 0x21, 0xB3, 0xD7, 0x91, 0x19, 0xD7, 0x29, 0xB2, 0x38, 0x2C, 0xED,
                  0x8B, 0x29, 0x6C, 0x3C, 0x02, 0x8F, 0xA9, 0x7D, 0x35, 0x0F, 0x6D, 0x07,
@@ -1087,8 +1108,8 @@ struct Escrow_test : public beast::unit_test::suite
 
             Env env(*this, features);
             env.fund(XRP(5000), alice, bruce, carol);
-            auto const aseq = env.seq(alice);
-            auto const bseq = env.seq(bruce);
+            auto const aseq = env.Seq(alice);
+            auto const bseq = env.Seq(bruce);
 
             env(escrow::create(alice, alice, XRP(1000)),
                 escrow::kFINISH_TIME(env.now() + 1s),
@@ -1100,9 +1121,11 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(aa);
 
             {
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
-                BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) != aod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), aa) != aod.end());
             }
 
             env(escrow::create(bruce, bruce, XRP(1000)),
@@ -1115,9 +1138,11 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(bb);
 
             {
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) != bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) != bod.end());
             }
 
             env.close(5s);
@@ -1127,13 +1152,17 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
-                BEAST_EXPECT(std::find(aod.begin(), aod.end(), aa) == aod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), aa) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) != bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) != bod.end());
             }
 
             env.close(5s);
@@ -1143,9 +1172,11 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] == static_cast<std::uint8_t>(tesSUCCESS));
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bb) == bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bb) == bod.end());
             }
         }
         {
@@ -1153,8 +1184,8 @@ struct Escrow_test : public beast::unit_test::suite
 
             Env env(*this, features);
             env.fund(XRP(5000), alice, bruce, carol);
-            auto const aseq = env.seq(alice);
-            auto const bseq = env.seq(bruce);
+            auto const aseq = env.Seq(alice);
+            auto const bseq = env.Seq(bruce);
 
             env(escrow::create(alice, bruce, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
             BEAST_EXPECT(
@@ -1174,18 +1205,26 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(bc);
 
             {
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
-                BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) != aod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) != aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) != bod.end());
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) != bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
-                BEAST_EXPECT(std::find(cod.begin(), cod.end(), bc) != cod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(cod.begin(), cod.end(), bc) != cod.end());
             }
 
             env.close(5s);
@@ -1194,16 +1233,22 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(env.le(keylet::escrow(bruce.id(), bseq)));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
-                BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) != bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) == bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) != bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
             }
 
@@ -1213,16 +1258,22 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
 
-                xrpl::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
+                xrpl::Dir const aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
-                BEAST_EXPECT(std::find(aod.begin(), aod.end(), ab) == aod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(aod.begin(), aod.end(), ab) == aod.end());
 
-                xrpl::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
+                xrpl::Dir const bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), ab) == bod.end());
-                BEAST_EXPECT(std::find(bod.begin(), bod.end(), bc) == bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), ab) == bod.end());
+                BEAST_EXPECT(
+                    // NOLINTNEXTLINE(modernize-use-ranges)
+                    std::find(bod.begin(), bod.end(), bc) == bod.end());
 
-                xrpl::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
+                xrpl::Dir const cod(*env.current(), keylet::ownerDir(carol.id()));
                 BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 0);
             }
         }
@@ -1295,7 +1346,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             // alice creates a ticket.
-            std::uint32_t const aliceTicket{env.seq(alice) + 1};
+            std::uint32_t const aliceTicket{env.Seq(alice) + 1};
             env(ticket::create(alice, 1));
 
             // bob creates a bunch of tickets because he will be burning
@@ -1304,14 +1355,14 @@ struct Escrow_test : public beast::unit_test::suite
             constexpr static std::uint32_t kBOB_TICKET_COUNT{20};
             env(ticket::create(bob, kBOB_TICKET_COUNT));
             env.close();
-            std::uint32_t bobTicket{env.seq(bob)};
-            env.require(tickets(alice, 1));
-            env.require(tickets(bob, kBOB_TICKET_COUNT));
+            std::uint32_t bobTicket{env.Seq(bob)};
+            env.Require(tickets(alice, 1));
+            env.Require(tickets(bob, kBOB_TICKET_COUNT));
 
             // Note that from here on all transactions use tickets.  No account
             // root sequences should change.
-            std::uint32_t const aliceRootSeq{env.seq(alice)};
-            std::uint32_t const bobRootSeq{env.seq(bob)};
+            std::uint32_t const aliceRootSeq{env.Seq(alice)};
+            std::uint32_t const bobRootSeq{env.Seq(bob)};
 
             // alice creates an escrow that can be finished in the future
             auto const ts = env.now() + 97s;
@@ -1320,9 +1371,9 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow::create(alice, bob, XRP(1000)),
                 escrow::kFINISH_TIME(ts),
                 ticket::use(aliceTicket));
-            BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
-            env.require(tickets(alice, 0));
-            env.require(tickets(bob, kBOB_TICKET_COUNT));
+            BEAST_EXPECT(env.Seq(alice) == aliceRootSeq);
+            env.Require(tickets(alice, 0));
+            env.Require(tickets(bob, kBOB_TICKET_COUNT));
 
             // Advance the ledger, verifying that the finish won't complete
             // prematurely.  Note that each tec consumes one of bob's tickets.
@@ -1332,7 +1383,7 @@ struct Escrow_test : public beast::unit_test::suite
                     Fee(150 * baseFee),
                     ticket::use(--bobTicket),
                     Ter(tecNO_PERMISSION));
-                BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+                BEAST_EXPECT(env.Seq(bob) == bobRootSeq);
             }
 
             // bob tries to re-use a ticket, which is rejected.
@@ -1346,7 +1397,7 @@ struct Escrow_test : public beast::unit_test::suite
                 Fee(150 * baseFee),
                 ticket::use(--bobTicket));
             env.close();
-            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+            BEAST_EXPECT(env.Seq(bob) == bobRootSeq);
         }
         {
             // Create escrow and cancel using tickets.
@@ -1356,22 +1407,22 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             // alice creates a ticket.
-            std::uint32_t const aliceTicket{env.seq(alice) + 1};
+            std::uint32_t const aliceTicket{env.Seq(alice) + 1};
             env(ticket::create(alice, 1));
 
             // bob creates a bunch of tickets because he will be burning
             // through them with tec transactions.
             constexpr std::uint32_t kBOB_TICKET_COUNT{20};
-            std::uint32_t bobTicket{env.seq(bob) + 1};
+            std::uint32_t bobTicket{env.Seq(bob) + 1};
             env(ticket::create(bob, kBOB_TICKET_COUNT));
             env.close();
-            env.require(tickets(alice, 1));
-            env.require(tickets(bob, kBOB_TICKET_COUNT));
+            env.Require(tickets(alice, 1));
+            env.Require(tickets(bob, kBOB_TICKET_COUNT));
 
             // Note that from here on all transactions use tickets.  No account
             // root sequences should change.
-            std::uint32_t const aliceRootSeq{env.seq(alice)};
-            std::uint32_t const bobRootSeq{env.seq(bob)};
+            std::uint32_t const aliceRootSeq{env.Seq(alice)};
+            std::uint32_t const bobRootSeq{env.Seq(bob)};
 
             // alice creates an escrow that can be finished in the future.
             auto const ts = env.now() + 117s;
@@ -1381,9 +1432,9 @@ struct Escrow_test : public beast::unit_test::suite
                 escrow::kCONDITION(escrow::kCB1),
                 escrow::kCANCEL_TIME(ts),
                 ticket::use(aliceTicket));
-            BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
-            env.require(tickets(alice, 0));
-            env.require(tickets(bob, kBOB_TICKET_COUNT));
+            BEAST_EXPECT(env.Seq(alice) == aliceRootSeq);
+            env.Require(tickets(alice, 0));
+            env.Require(tickets(bob, kBOB_TICKET_COUNT));
 
             // Advance the ledger, verifying that the cancel won't complete
             // prematurely.
@@ -1393,7 +1444,7 @@ struct Escrow_test : public beast::unit_test::suite
                     Fee(150 * baseFee),
                     ticket::use(bobTicket++),
                     Ter(tecNO_PERMISSION));
-                BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+                BEAST_EXPECT(env.Seq(bob) == bobRootSeq);
             }
 
             // Verify that a finish won't work anymore.
@@ -1403,17 +1454,17 @@ struct Escrow_test : public beast::unit_test::suite
                 Fee(150 * baseFee),
                 ticket::use(bobTicket++),
                 Ter(tecNO_PERMISSION));
-            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+            BEAST_EXPECT(env.Seq(bob) == bobRootSeq);
 
             // Verify that the cancel succeeds.
             env(escrow::cancel(bob, alice, escrowSeq),
                 Fee(150 * baseFee),
                 ticket::use(bobTicket++));
             env.close();
-            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
+            BEAST_EXPECT(env.Seq(bob) == bobRootSeq);
 
             // Verify that bob actually consumed his tickets.
-            env.require(tickets(bob, env.seq(bob) - bobTicket));
+            env.Require(tickets(bob, env.Seq(bob) - bobTicket));
         }
     }
 
@@ -1439,7 +1490,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, bob);
             env.close();
 
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             env(escrow::create(alice, bob, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
             env.close();
 
@@ -1465,7 +1516,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const jv = credentials::ledgerEntry(env, carol, zelda, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             env(escrow::create(alice, bob, XRP(1000)), escrow::kFINISH_TIME(env.now() + 50s));
             env.close();
 
@@ -1518,7 +1569,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const jv = credentials::ledgerEntry(env, carol, zelda, credType);
             std::string const credIdx = jv[jss::result][jss::index].asString();
 
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             env(escrow::create(alice, bob, XRP(1000)), escrow::kFINISH_TIME(env.now() + 50s));
             // time advance
             env.close();
@@ -1543,7 +1594,7 @@ struct Escrow_test : public beast::unit_test::suite
                     credentials::ledgerEntry(env, bob, zelda, credType2)[jss::result][jss::index]
                         .asString();
 
-                auto const seq = env.seq(alice);
+                auto const seq = env.Seq(alice);
                 env(escrow::create(alice, bob, XRP(1000)), escrow::kFINISH_TIME(env.now() + 1s));
                 env.close();
 
@@ -1591,5 +1642,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Escrow, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

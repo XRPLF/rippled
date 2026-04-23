@@ -1,11 +1,11 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/ledger/Ledger.h>
 
 #include <mutex>
 #include <set>
@@ -36,7 +36,7 @@ public:
         clock_type&,
         std::unique_ptr<PeerSet> peerSet);
 
-    ~InboundLedger();
+    ~InboundLedger() override;
 
     // Called when another attempt is made to fetch this same ledger
     void

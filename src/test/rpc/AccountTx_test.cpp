@@ -1,17 +1,54 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/check.h>
+#include <test/jtx/deposit.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
 
-namespace xrpl {
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <initializer_list>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <utility>
 
-namespace test {
+namespace xrpl::test {
 
 class AccountTx_test : public beast::unit_test::suite
 {
@@ -97,7 +134,7 @@ class AccountTx_test : public beast::unit_test::suite
             cfg->FEES.reference_fee = 10;
             return cfg;
         }));
-        Account a1{"A1"};
+        Account const a1{"A1"};
         env.fund(XRP(10000), a1);
         env.close();
 
@@ -482,7 +519,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Trust and Offers
         env(trust(alice, usd(200)), Sig(alie));
-        std::uint32_t const offerSeq{env.seq(alice)};
+        std::uint32_t const offerSeq{env.Seq(alice)};
         env(offer(alice, usd(50), XRP(150)), Sig(alie));
         env.close();
 
@@ -509,14 +546,14 @@ class AccountTx_test : public beast::unit_test::suite
             Json::Value escrowWithFinish{escrow(alice, alice, XRP(500))};
             escrowWithFinish[sfFinishAfter.jsonName] = nextTime.time_since_epoch().count();
 
-            std::uint32_t const escrowFinishSeq{env.seq(alice)};
+            std::uint32_t const escrowFinishSeq{env.Seq(alice)};
             env(escrowWithFinish, Sig(alie));
 
             Json::Value escrowWithCancel{escrow(alice, alice, XRP(500))};
             escrowWithCancel[sfFinishAfter.jsonName] = nextTime.time_since_epoch().count();
             escrowWithCancel[sfCancelAfter.jsonName] = nextTime.time_since_epoch().count() + 1;
 
-            std::uint32_t const escrowCancelSeq{env.seq(alice)};
+            std::uint32_t const escrowCancelSeq{env.Seq(alice)};
             env(escrowWithCancel, Sig(alie));
             env.close();
 
@@ -541,7 +578,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // PayChan
         {
-            std::uint32_t payChanSeq{env.seq(alice)};
+            std::uint32_t const payChanSeq{env.Seq(alice)};
             Json::Value payChanCreate;
             payChanCreate[jss::TransactionType] = jss::PaymentChannelCreate;
             payChanCreate[jss::Account] = alice.human();
@@ -577,10 +614,10 @@ class AccountTx_test : public beast::unit_test::suite
 
         // Check
         {
-            auto const aliceCheckId = keylet::check(alice, env.seq(alice)).key;
+            auto const aliceCheckId = keylet::check(alice, env.Seq(alice)).key;
             env(check::create(alice, gw, XRP(300)), Sig(alie));
 
-            auto const gwCheckId = keylet::check(gw, env.seq(gw)).key;
+            auto const gwCheckId = keylet::check(gw, env.Seq(gw)).key;
             env(check::create(gw, alice, XRP(200)));
             env.close();
 
@@ -590,7 +627,7 @@ class AccountTx_test : public beast::unit_test::suite
         }
         {
             // Deposit pre-authorization with a Ticket.
-            std::uint32_t const tktSeq{env.seq(alice) + 1};
+            std::uint32_t const tktSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 1), Sig(alie));
             env.close();
 
@@ -675,12 +712,12 @@ class AccountTx_test : public beast::unit_test::suite
         env(noop(becky));
 
         // Close enough ledgers to be able to delete becky's account.
-        std::uint32_t const ledgerCount{env.current()->seq() + 257 - env.seq(becky)};
+        std::uint32_t const ledgerCount{env.current()->seq() + 257 - env.Seq(becky)};
 
         for (std::uint32_t i = 0; i < ledgerCount; ++i)
             env.close();
 
-        auto const beckyPreDelBalance{env.balance(becky)};
+        auto const beckyPreDelBalance{env.Balance(becky)};
 
         auto const acctDelFee{drops(env.current()->fees().increment)};
         env(acctdelete(becky, alice), Fee(acctDelFee));
@@ -747,7 +784,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // becky's account root should be back.
         BEAST_EXPECT(env.closed()->exists(beckyAcctKey));
-        BEAST_EXPECT(env.balance(becky) == XRP(45));
+        BEAST_EXPECT(env.Balance(becky) == XRP(45));
 
         // becky pays alice.
         env(pay(becky, alice, XRP(20)));
@@ -863,5 +900,4 @@ public:
 };
 BEAST_DEFINE_TESTSUITE(AccountTx, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

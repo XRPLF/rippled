@@ -1,0 +1,7111 @@
+#include <test/jtx/AMM.h>
+#include <test/jtx/AMMTest.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/transactors/dex/AMMBid.h>
+
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
+
+/**
+ * Basic tests of AMM functionality involving MPT assets, excluding those that
+ * use offers. Tests incorporating offers are in `AMMExtended_test`.
+ */
+struct AMMMPT_test : public jtx::AMMTest
+{
+private:
+    void
+    testInstanceCreate()
+    {
+        testcase("Instance Create");
+
+        using namespace jtx;
+
+        // XRP to MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'000), IOUAmount{10'000'000}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // IOU to MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    USD(20'000), MPT(ammAlice[1])(20'000), IOUAmount{20'000}));
+            },
+            {{USD(20'000), AMMMPT(20'000)}});
+
+        // MPT to MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(20'000), MPT(ammAlice[1])(20'000), IOUAmount{20'000}));
+            },
+            {{AMMMPT(20'000), AMMMPT(20'000)}});
+
+        // IOU to MPT + transfer fee
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_}, {USD(20'000)}, Fund::All);
+            env(rate(gw_, 1.25));
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .transferFee = 1'500,
+                 .pay = 30'000});
+            // no transfer fee on create
+            AMM const ammAlice(env, alice_, USD(20'000), BTC(20'000));
+            BEAST_EXPECT(ammAlice.expectBalances(USD(20'000), BTC(20'000), IOUAmount{20'000, 0}));
+            BEAST_EXPECT(expectHolding(env, alice_, USD(0)));
+            // alice initially had 30'000
+            BEAST_EXPECT(expectMPT(env, alice_, BTC(10'000)));
+        }
+
+        // Require authorization is set, account is authorized
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            env.close();
+            env(fset(gw_, asfRequireAuth));
+            env(trust(alice_, gw_["USD"](30'000), 0));
+            env(trust(gw_, alice_["USD"](0), tfSetfAuth));
+            env(pay(gw_, alice_, USD(10'000)));
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .authHolder = true});
+            AMM const ammAlice(env, alice_, USD(10'000), BTC(10'000));
+        }
+
+        // Cleared global freeze
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            MPTTester USD(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+            USD.set({.flags = tfMPTLock});
+            AMM const ammAliceFail(env, alice_, XRP(10'000), USD(10'000), Ter(tecFROZEN));
+            USD.set({.flags = tfMPTUnlock});
+            AMM const ammAlice(env, alice_, XRP(10'000), USD(10'000));
+        }
+    }
+
+    void
+    testInvalidInstance()
+    {
+        testcase("Invalid Instance");
+
+        using namespace jtx;
+
+        // Can't have both tokens the same MPT
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), alice_, gw_);
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .transferFee = 1'500,
+                 .pay = 40'000});
+            AMM const ammAlice(env, alice_, BTC(20'000), BTC(10'000), Ter(temBAD_AMM_TOKENS));
+        }
+
+        // MPTCanTrade is not set and AMM creator is not the issuer of MPT
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), alice_, gw_);
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 40'000,
+                 .flags = tfMPTCanLock});
+            AMM const ammAlice(env, alice_, BTC(20'000), XRP(10'000), Ter(tecNO_PERMISSION));
+        }
+
+        // MPTokenIssuance doesn't exist
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), alice_, gw_);
+            env.close();
+            AMM const ammAlice(
+                env, alice_, MPT(gw_, 1'000)(20'000), XRP(10'000), Ter(tecOBJECT_NOT_FOUND));
+        }
+
+        // MPToken doesn't exist and amm creator is not the issuer
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), alice_, gw_);
+            env.close();
+            MPT const BTC = MPTTester({
+                .env = env,
+                .issuer = gw_,
+            });
+            AMM const ammAlice(env, alice_, BTC(20'000), XRP(10'000), Ter(tecNO_AUTH));
+        }
+
+        // Can't have zero or negative amounts
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_}, {USD(20'000)}, Fund::All);
+            env(rate(gw_, 1.25));
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .transferFee = 1'500,
+                 .pay = 30'000});
+
+            AMM const ammAlice(env, alice_, XRP(0), BTC(10'000), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(!ammAlice.ammExists());
+            AMM const ammAlice1(env, alice_, XRP(10'000), BTC(0), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(!ammAlice1.ammExists());
+            AMM const ammAlice2(env, alice_, USD(0), BTC(10'000), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(!ammAlice2.ammExists());
+            AMM const ammAlice3(env, alice_, USD(10'000), BTC(0), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(!ammAlice3.ammExists());
+            AMM const ammAlice4(env, alice_, XRP(-10'0000), BTC(10'000), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(!ammAlice4.ammExists());
+            AMM const ammAlice5(env, alice_, XRP(10'000), BTC(-10'000), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(!ammAlice5.ammExists());
+            AMM const ammAlice6(env, alice_, USD(-10'000), BTC(10'000), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(!ammAlice6.ammExists());
+            AMM const ammAlice7(env, alice_, USD(10'000), BTC(-10'000), Ter(temBAD_AMOUNT));
+            BEAST_EXPECT(!ammAlice7.ammExists());
+        }
+
+        // Bad MPT
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_}, {USD(20'000)}, Fund::All);
+
+            AMM const ammAlice(env, alice_, XRP(10'000), MPT(badMPT())(100), Ter(temBAD_MPT));
+
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+
+        // Insufficient MPT balance
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_}, {USD(30'000)}, Fund::All);
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .transferFee = 1'500,
+                 .pay = 30'000});
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(40'000), Ter(tecUNFUNDED_AMM));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+
+        // Invalid trading fee
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_}, {USD(20'000)}, Fund::All);
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .transferFee = 1'500,
+                 .pay = 30'000});
+            AMM const ammAlice(
+                env,
+                alice_,
+                USD(10'000),
+                BTC(10'000),
+                false,
+                65'001,
+                10,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                Ter(temBAD_FEE));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+
+        // AMM already exists XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Account bob1("bob1");
+                env.fund(XRP(30'000), bob_);
+                env.close();
+                AMM const ammBob(env, bob_, XRP(1'000), MPT(ammAlice[1])(1'000), Ter(tecDUPLICATE));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // AMM already exists IOU/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env.fund(XRP(30'000), bob_);
+                env.close();
+                env.trust(USD(10000), bob_);
+                env(pay(gw_, bob_, USD(100)));
+
+                AMM const ammBob(env, bob_, USD(1'000), MPT(ammAlice[1])(1'000), Ter(tecDUPLICATE));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // AMM already exists MPT/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                AMM const ammCarol(
+                    env,
+                    carol_,
+                    MPT(ammAlice[0])(1'000),
+                    MPT(ammAlice[1])(2'000),
+                    Ter(tecDUPLICATE));
+            },
+            {{AMMMPT(20'000), AMMMPT(10'000)}});
+
+        // MPTRequireAuth flag is set and AMM creator is not authorized
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            env.close();
+            env(fset(gw_, asfRequireAuth));
+            env(trust(alice_, gw_["USD"](30'000), 0));
+            env(trust(gw_, alice_["USD"](0), tfSetfAuth));
+            env.close();
+            env(pay(gw_, alice_, USD(10'000)));
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env, .issuer = gw_, .holders = {alice_}, .flags = tfMPTRequireAuth});
+            AMM const ammAlice(env, alice_, USD(10'000), BTC(10'000), Ter(tecNO_AUTH));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+
+        // MPTLocked flag is set
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_}, {USD(20'000)}, Fund::All);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+            BTC.set({.flags = tfMPTLock});
+            AMM const ammAlice(env, alice_, USD(10'000), BTC(10'000), Ter(tecFROZEN));
+            BEAST_EXPECT(!ammAlice.ammExists());
+        }
+
+        // MPT individually locked
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_, bob_}, {USD(20'000)}, Fund::All);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+            BTC.set({.holder = alice_, .flags = tfMPTLock});
+
+            // alice's token is locked
+            AMM const ammAlice(env, alice_, USD(10'000), BTC(10'000), Ter(tecFROZEN));
+            BEAST_EXPECT(!ammAlice.ammExists());
+
+            // bob can create
+            AMM const ammBob(env, bob_, USD(10'000), BTC(10'000));
+            BEAST_EXPECT(ammBob.ammExists());
+        }
+
+        // OutstandingAmount > MaximumAmount
+        {
+            Env env{*this};
+            env.fund(XRP(1'000), gw_, alice_);
+
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = {alice_}, .maxAmt = 100});
+
+            // OutstandingAmount is 0, issuer issues 10 over MaximumAmount
+            AMM const amm(env, gw_, XRP(100), BTC(110), Ter(tecUNFUNDED_AMM));
+
+            env(pay(gw_, alice_, BTC(100)));
+
+            // OutstandingAmount is 100, issuer issues 100 over MaximumAmount
+            AMM const amm1(env, gw_, XRP(100), BTC(100), Ter(tecUNFUNDED_AMM));
+            // This is fine - alice transfers 100 to AMM. OutstandingAmount
+            // is 100.
+            AMM const ammAlice(env, alice_, XRP(100), BTC(100));
+        }
+    }
+
+    void
+    testInvalidDeposit(FeatureBitset features)
+    {
+        testcase("Invalid Deposit");
+
+        using namespace jtx;
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // LPTokenOut can not be zero
+                ammAlice.deposit(alice_, 0, std::nullopt, std::nullopt, Ter(temBAD_AMM_TOKENS));
+
+                // LPTokenOut can not be negative
+                ammAlice.deposit(
+                    alice_, IOUAmount{-1}, std::nullopt, std::nullopt, Ter(temBAD_AMM_TOKENS));
+
+                // LPTokenOut can not be MPT
+                {
+                    Json::Value jv = Json::objectValue;
+                    jv[jss::Account] = alice_.human();
+                    jv[jss::TransactionType] = jss::AMMDeposit;
+                    jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::kNONE);
+                    jv[jss::Asset2] =
+                        STIssue(sfAsset, MPT(ammAlice[1])).getJson(JsonOptions::kNONE);
+                    jv[jss::LPTokenOut] = MPT(ammAlice[1])(100).value().getJson(JsonOptions::kNONE);
+                    jv[jss::Flags] = tfLPToken;
+                    env(jv, Ter(telENV_RPC_FAILED));
+                }
+
+                // Provided LPTokenOut does not match AMM pool's LPToken
+                // asset
+                {
+                    Json::Value jv = Json::objectValue;
+                    jv[jss::Account] = alice_.human();
+                    jv[jss::TransactionType] = jss::AMMDeposit;
+                    jv[jss::Asset] = STIssue(sfAsset, XRP).getJson(JsonOptions::kNONE);
+                    jv[jss::Asset2] =
+                        STIssue(sfAsset, MPT(ammAlice[1])).getJson(JsonOptions::kNONE);
+                    jv[jss::LPTokenOut] = USD(100).value().getJson(JsonOptions::kNONE);
+                    jv[jss::Flags] = tfLPToken;
+                    env(jv, Ter(temBAD_AMM_TOKENS));
+                }
+
+                // Invalid trading fee
+                ammAlice.deposit(
+                    carol_,
+                    std::nullopt,
+                    XRP(200),
+                    MPT(ammAlice[1])(200),
+                    std::nullopt,
+                    tfTwoAssetIfEmpty,
+                    std::nullopt,
+                    std::nullopt,
+                    10'000,
+                    Ter(temBAD_FEE));
+
+                // Invalid tokens
+                {
+                    auto const mpt1 = MPTIssue{MPTID(0xabc)};
+                    auto const mpt2 = MPTIssue{MPTID(0xdef)};
+                    ammAlice.deposit(
+                        alice_,
+                        1'000,
+                        std::nullopt,
+                        std::nullopt,
+                        std::nullopt,
+                        std::nullopt,
+                        {{mpt1, mpt2}},
+                        std::nullopt,
+                        std::nullopt,
+                        Ter(terNO_AMM));
+                }
+
+                // invalid MPT
+                ammAlice.deposit(
+                    alice_, badMPT(), std::nullopt, std::nullopt, std::nullopt, Ter(temBAD_MPT));
+                ammAlice.deposit(
+                    alice_, XRP(100), badMPT(), std::nullopt, std::nullopt, Ter(temBAD_MPT));
+
+                // MPTokenIssuance object doesn't exist
+                ammAlice.deposit(
+                    alice_,
+                    XRP(100),
+                    MPT(gw_, 1'000)(100),
+                    std::nullopt,
+                    tfTwoAsset,
+                    Ter(temBAD_AMM_TOKENS));
+
+                // MPToken object doesn't exist
+                env.fund(XRP(1'000), bob_);
+                ammAlice.deposit(
+                    bob_,
+                    XRP(100),
+                    MPT(ammAlice[1])(200),
+                    std::nullopt,
+                    tfTwoAsset,
+                    Ter(tecNO_AUTH));
+
+                MPTTester const BTC(
+                    {.env = env,
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                     .authHolder = true});
+
+                // Depositing mismatched token, invalid Asset1In.issue
+                ammAlice.deposit(
+                    alice_,
+                    BTC(100),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(temBAD_AMM_TOKENS));
+
+                // Depositing mismatched token, invalid Asset2In.issue
+                ammAlice.deposit(
+                    alice_, XRP(100), BTC(100), std::nullopt, std::nullopt, Ter(temBAD_AMM_TOKENS));
+
+                // Assets can not be the same
+                ammAlice.deposit(
+                    alice_,
+                    MPT(ammAlice[1])(100),
+                    MPT(ammAlice[1])(200),
+                    std::nullopt,
+                    tfTwoAsset,
+                    Ter(temBAD_AMM_TOKENS));
+
+                // Invalid amount value
+                ammAlice.deposit(
+                    alice_,
+                    MPT(ammAlice[1])(0),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(temBAD_AMOUNT));
+                ammAlice.deposit(
+                    alice_,
+                    MPT(ammAlice[1])(-1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(temBAD_AMOUNT));
+
+                // Invalid Account
+                {
+                    Account bad("bad");
+                    env.memoize(bad);
+                    ammAlice.deposit(
+                        bad,
+                        std::nullopt,
+                        MPT(ammAlice[1])(1'000),
+                        std::nullopt,
+                        std::nullopt,
+                        std::nullopt,
+                        std::nullopt,
+                        Seq(1),
+                        std::nullopt,
+                        Ter(terNO_ACCOUNT));
+                }
+
+                // Invalid AMM
+                ammAlice.deposit(
+                    alice_,
+                    1'000,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    {{MPT(BTC), MPT(ammAlice[1])}},
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(terNO_AMM));
+
+                // Single deposit: 100000 tokens worth of MPT
+                // Amount to deposit exceeds Max
+                ammAlice.deposit(
+                    carol_,
+                    100'000,
+                    MPT(ammAlice[1])(200),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_FAILED));
+
+                // Single deposit: 100000 tokens worth of XRP
+                // Amount to deposit exceeds Max
+                ammAlice.deposit(
+                    carol_,
+                    100'000,
+                    XRP(200),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_FAILED));
+
+                // Deposit amount is invalid
+                ammAlice.deposit(
+                    alice_,
+                    MPT(ammAlice[1])(0),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 1, -1},
+                    std::nullopt,
+                    Ter(tecUNFUNDED_AMM));
+                // Calculated amount is 0
+                ammAlice.deposit(
+                    alice_,
+                    MPT(ammAlice[1])(0),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 2'000, -6},
+                    std::nullopt,
+                    Ter(tecAMM_FAILED));
+
+                // Tiny deposit
+                ammAlice.deposit(
+                    carol_,
+                    IOUAmount{1, -10},
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_INVALID_TOKENS));
+
+                // Deposit non-empty AMM
+                ammAlice.deposit(
+                    carol_,
+                    XRP(100),
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    tfTwoAssetIfEmpty,
+                    Ter(tecAMM_NOT_EMPTY));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Tiny deposit
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const enabledV1_3 = env.current()->rules().enabled(fixAMMv1_3);
+                auto const err = !enabledV1_3 ? Ter(temBAD_AMOUNT) : Ter(tesSUCCESS);
+                // Pre-amendment XRP deposit side is rounded to 0
+                // and deposit fails.
+                ammAlice.deposit(carol_, IOUAmount{1, -1}, std::nullopt, std::nullopt, err);
+            },
+            {{XRP(10'000), AMMMPT(10'000)}},
+            0,
+            std::nullopt,
+            {features, features - fixAMMv1_3});
+
+        // Invalid AMM
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.withdrawAll(alice_);
+                ammAlice.deposit(alice_, 10'000, std::nullopt, std::nullopt, Ter(terNO_AMM));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit MPT with eprice
+        // the calculated amount to deposit is negative.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 1, -1},
+                    tfLimitLPToken,
+                    Ter(tecAMM_FAILED));
+
+                // although we should use lptoken unit for eprice,
+                // we don't check the currency any more, we just use
+                // the value
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    STAmount{USD, 1, -1},
+                    tfLimitLPToken,
+                    Ter(tecAMM_FAILED));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // Globally locked MPT
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_, carol_}, {USD(20'000)}, Fund::All);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM ammAlice(env, alice_, USD(10'000), BTC(10'000));
+            BTC.set({.flags = tfMPTLock});
+
+            ammAlice.deposit(
+                carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            ammAlice.deposit(
+                carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            ammAlice.deposit(
+                carol_, USD(100), BTC(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
+        }
+
+        // Individually lock MPT or freeze IOU (AMM) with IOU/MPT AMM
+        {
+            Env env{*this, features};
+            fund(env, gw_, {alice_, carol_}, {USD(20'000)}, Fund::All);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM ammAlice(env, alice_, USD(10'000), BTC(10'000));
+
+            // Carol's mpt is locked
+            BTC.set({.holder = carol_, .flags = tfMPTLock});
+
+            // Carol can not deposit locked mpt
+            ammAlice.deposit(
+                carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            if (!features[featureAMMClawback])
+            {
+                ammAlice.deposit(
+                    carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecLOCKED));
+            }
+            else
+            {
+                // Carol can not deposit non-forzen token either
+                ammAlice.deposit(
+                    carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            }
+
+            // Alice can deposit because she's not individually locked
+            ammAlice.deposit(alice_, BTC(100), std::nullopt, std::nullopt, std::nullopt);
+            ammAlice.deposit(alice_, 1'000, std::nullopt, std::nullopt);
+            ammAlice.deposit(alice_, USD(100), std::nullopt, std::nullopt, std::nullopt);
+
+            // Unlock
+            BTC.set({.holder = carol_, .flags = tfMPTUnlock});
+            // Carol can deposit after unlock
+            ammAlice.deposit(carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt);
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt);
+
+            // Individually frozen AMM
+            env(trust(
+                gw_, STAmount{Issue{gw_["USD"].currency, ammAlice.ammAccount()}, 0}, tfSetFreeze));
+            env.close();
+
+            // Can deposit non-frozen token
+            ammAlice.deposit(carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt);
+
+            // Cannot deposit frozen token
+            ammAlice.deposit(carol_, 1'000'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.deposit(
+                carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // unfreeze IOU
+            env(trust(
+                gw_,
+                STAmount{Issue{gw_["USD"].currency, ammAlice.ammAccount()}, 0},
+                tfClearFreeze));
+            env.close();
+            // Can deposit
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt);
+
+            // Individually lock AMM
+            BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
+
+            // Can deposit non-frozen token
+            ammAlice.deposit(carol_, USD(100), std::nullopt, std::nullopt, std::nullopt);
+
+            // Can not deposit locked token
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.deposit(
+                carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // Unlock AMM MPT
+            BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTUnlock});
+            // can deposit
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt);
+            ammAlice.deposit(carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt);
+        }
+
+        // Individually lock MPT (AMM) account with MPT/MPT AMM
+        {
+            Env env{*this};
+            env.fund(XRP(10'000), gw_, alice_, carol_);
+            env.close();
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+            MPTTester USD(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 40'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM ammAlice(env, alice_, USD(10'000), BTC(10'000));
+
+            // Carol's BTC is locked
+            BTC.set({.holder = carol_, .flags = tfMPTLock});
+            ammAlice.deposit(
+                carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            ammAlice.deposit(
+                carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // Unlock carol's BTC
+            BTC.set({.holder = carol_, .flags = tfMPTUnlock});
+
+            // Can deposit
+            ammAlice.deposit(carol_, USD(100), std::nullopt, std::nullopt, std::nullopt);
+            ammAlice.deposit(carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt);
+
+            // Individually lock MPT BTC (AMM) account
+            BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
+
+            // Can deposit non-locked token USD
+            ammAlice.deposit(carol_, USD(100), std::nullopt, std::nullopt, std::nullopt);
+
+            // Can not deposit locked token BTC
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.deposit(
+                carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // Unlock AMM MPT BTC
+            BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTUnlock});
+            // Can deposit BTC
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt);
+            ammAlice.deposit(carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt);
+
+            // Individually Lock MPT USD (AMM) account
+            USD.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
+
+            // Can deposit non-locked token BTC
+            ammAlice.deposit(carol_, BTC(100), std::nullopt, std::nullopt, std::nullopt);
+
+            // Can not deposit locked token USD
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.deposit(
+                carol_, USD(100), std::nullopt, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // Unlock AMM MPT USD
+            USD.set({.holder = ammAlice.ammAccount(), .flags = tfMPTUnlock});
+            // Can deposit USD
+            ammAlice.deposit(carol_, 1'000, std::nullopt, std::nullopt);
+            ammAlice.deposit(carol_, USD(100), std::nullopt, std::nullopt, std::nullopt);
+        }
+
+        // Deposit unauthorized token
+        {
+            Env env{*this, features};
+            Account const gw_("gateway"), alice_{"alice"}, carol_{"carol"};
+            env.fund(XRP(30'000), alice_, carol_, gw_);
+            env.close();
+
+            MPTTester BTC(env, gw_, {.holders = {alice_, carol_}, .fund = false});
+            BTC.create(
+                {.maxAmt = 1'000'000,
+                 .authorize = {{alice_}},
+                 .pay = {{{alice_}, 10'000}},
+                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .authHolder = true});
+
+            AMM amm(env, alice_, XRP(10'000), BTC(10'000));
+            env.close();
+
+            if (!features[featureAMMClawback])
+            {
+                amm.deposit(carol_, XRP(10), std::nullopt, std::nullopt, std::nullopt);
+            }
+            else
+            {
+                amm.deposit(
+                    carol_, XRP(10), std::nullopt, std::nullopt, std::nullopt, Ter(tecNO_AUTH));
+            }
+        }
+
+        // MPTCanTransfer is not set and the account is not the issuer of MPT
+        {
+            Env env{*this, features};
+            Account const gw_("gateway"), alice_{"alice"}, carol_{"carol"};
+            env.fund(XRP(30'000), alice_, carol_, gw_);
+            env.close();
+
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 1'000,
+                 .flags = tfMPTCanTrade});
+
+            AMM amm(env, gw_, XRP(10'000), BTC(10'000));
+
+            amm.deposit({.account = alice_, .asset1In = BTC(10), .err = Ter(tecNO_PERMISSION)});
+        }
+
+        // Insufficient XRP balance
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env.fund(XRP(1'000), bob_);
+                env.close();
+                ammAlice.deposit(bob_, XRP(10));
+                ammAlice.deposit(
+                    bob_,
+                    XRP(1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecUNFUNDED_AMM));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Insufficient MPT balance
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(450'000),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecUNFUNDED_AMM));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Insufficient IOU balance
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                fund(env, gw_, {bob_}, {USD(1'000)}, Fund::Acct);
+                ammAlice.deposit(
+                    bob_,
+                    USD(1'001),
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecUNFUNDED_AMM));
+            },
+            {{USD(1000), AMMMPT(1000)}});
+
+        // Insufficient MPT balance by tokens
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), alice_, bob_, gw_);
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_},
+                 .transferFee = 1'500,
+                 .pay = 1000});
+            AMM ammAlice(env, alice_, XRP(20'000), BTC(1000));
+            ammAlice.deposit(
+                bob_,
+                10'000'000,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                Ter(tecUNFUNDED_AMM));
+        }
+
+        // Insufficient reserve, XRP/MPT
+        {
+            Env env(*this);
+            auto const starting_xrp = reserve(env, 4) + env.current()->fees().base * 4;
+            env.fund(XRP(10'000), gw_);
+            env.fund(XRP(10'000), alice_);
+            env.fund(starting_xrp, carol_);
+
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .transferFee = 1'500,
+                 .pay = 40'000});
+
+            env(offer(carol_, XRP(100), BTC(101)));
+            AMM ammAlice(env, alice_, XRP(1000), BTC(1000));
+            ammAlice.deposit(
+                carol_,
+                XRP(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                Ter(tecINSUF_RESERVE_LINE));
+
+            env(offer(carol_, XRP(100), BTC(102)));
+            ammAlice.deposit(
+                carol_,
+                BTC(100),
+                std::nullopt,
+                std::nullopt,
+                std::nullopt,
+                Ter(tecINSUF_RESERVE_LINE));
+        }
+
+        // Invalid min
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // min tokens can't be <= zero
+                ammAlice.deposit(carol_, 0, XRP(100), tfSingleAsset, Ter(temBAD_AMM_TOKENS));
+                ammAlice.deposit(carol_, -1, XRP(100), tfSingleAsset, Ter(temBAD_AMM_TOKENS));
+                ammAlice.deposit(
+                    carol_,
+                    0,
+                    XRP(100),
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    tfTwoAsset,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(temBAD_AMM_TOKENS));
+
+                // min amounts can't be <= zero
+                ammAlice.deposit(
+                    carol_,
+                    1'000,
+                    XRP(0),
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    tfTwoAsset,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(temBAD_AMOUNT));
+                ammAlice.deposit(
+                    carol_,
+                    1'000,
+                    XRP(100),
+                    MPT(ammAlice[1])(-1),
+                    std::nullopt,
+                    tfTwoAsset,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(temBAD_AMOUNT));
+                ammAlice.deposit(
+                    carol_,
+                    1'000,
+                    XRP(100),
+                    badMPT(),
+                    std::nullopt,
+                    tfTwoAsset,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(temBAD_MPT));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Min deposit
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Equal deposit by tokens
+                ammAlice.deposit(
+                    carol_,
+                    1'000'000,
+                    XRP(1'000),
+                    MPT(ammAlice[1])(1'001),
+                    std::nullopt,
+                    tfLPToken,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_FAILED));
+                ammAlice.deposit(
+                    carol_,
+                    1'000'000,
+                    XRP(1'001),
+                    MPT(ammAlice[1])(1'000),
+                    std::nullopt,
+                    tfLPToken,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_FAILED));
+                // Equal deposit by asset
+                ammAlice.deposit(
+                    carol_,
+                    100'001,
+                    XRP(100),
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    tfTwoAsset,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_FAILED));
+                // Single deposit by asset
+                ammAlice.deposit(
+                    carol_,
+                    488'090,
+                    XRP(1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_FAILED));
+            },
+            {{XRP(1000), AMMMPT(1000)}});
+
+        // OutstandingAmount > MaximumAmount
+        {
+            Env env{*this};
+            env.fund(XRP(1'000), gw_, alice_);
+
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = {alice_}, .maxAmt = 100});
+
+            AMM amm(env, gw_, XRP(100), BTC(90));
+            // OutstandingAmount is 90, issuer issues 1 over MaximumAmount
+            amm.deposit(
+                DepositArg{.account = gw_, .asset1In = BTC(11), .err = Ter(tecUNFUNDED_AMM)});
+
+            env(pay(gw_, alice_, BTC(10)));
+
+            // OutstandingAmount is 100, issuer issues 10 over MaximumAmount
+            amm.deposit(
+                DepositArg{.account = gw_, .asset1In = BTC(10), .err = Ter(tecUNFUNDED_AMM)});
+            // This is fine - alice transfers 10 to AMM. OutstandingAmount
+            // is 100.
+            amm.deposit(DepositArg{.account = alice_, .asset1In = BTC(10)});
+        }
+    }
+
+    void
+    testDeposit()
+    {
+        testcase("Deposit");
+
+        using namespace jtx;
+
+        // Equal deposit: 1000000 tokens. XRP/MPT AMM.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(carol_, 1'000'000);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{11'000'000, 0}));
+
+                // carol deposited 1000 XRP and pays the transaction fee
+                env.Require(Balance(carol_, carolXRP - XRP(1000) - drops(baseFee)));
+                // carol deposited 1000 MPT
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[1])(1000)));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // single deposit MPT with eprice
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 1, -1},
+                    tfLimitLPToken);
+
+                // although we should use lptoken unit for eprice,
+                // we don't check the currency any more, we just use
+                // the value
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    STAmount{USD, 1, -1},
+                    tfLimitLPToken);
+            },
+            {{USD(10'000'000), AMMMPT(10'000)}});
+
+        // Equal deposit: 1000000 tokens. IOU/MPT combination
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, carol_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto carolUSD = env.Balance(carol_, USD);
+
+                ammAlice.deposit(carol_, 1'000);
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(11'000), USD(11'000), IOUAmount(11'000)));
+
+                env.Require(Balance(carol_, carolBTC - BTC(1000)));
+                env.Require(Balance(carol_, carolUSD - USD(1000)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Deposit 100MPT/100XRP. XRP/MPT AMM.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(100), XRP(100));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), MPT(ammAlice[1])(10'100), IOUAmount{10'100'000, 0}));
+
+                env.Require(Balance(carol_, carolXRP - XRP(100) - drops(baseFee)));
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[1])(100)));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Deposit MPT/IOU combination
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, carol_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto carolUSD = env.Balance(carol_, USD);
+                ammAlice.deposit(carol_, BTC(100), USD(100));
+
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(10'100), USD(10'100), IOUAmount(10'100)));
+
+                env.Require(Balance(carol_, carolBTC - BTC(100)));
+                env.Require(Balance(carol_, carolUSD - USD(100)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Equal limit deposit.
+        // Try to deposit 200MPT/100XRP. Is truncated to 100MPT/100XRP.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(200), XRP(100));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), MPT(ammAlice[1])(10'100), IOUAmount{10'100'000, 0}));
+
+                env.Require(Balance(carol_, carolXRP - XRP(100) - drops(baseFee)));
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[1])(100)));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal limit deposit. MPT/IOU combination.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, carol_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto carolUSD = env.Balance(carol_, USD);
+                ammAlice.deposit(carol_, BTC(200), USD(100));
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(10'100), USD(10'100), IOUAmount(10'100)));
+
+                env.Require(Balance(carol_, carolBTC - BTC(100)));
+                env.Require(Balance(carol_, carolUSD - USD(100)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        //  Single deposit: 1000 MPT into MPT/XRP
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(11'000), IOUAmount{10'488'088'48170151, -8}));
+
+                env.Require(Balance(carol_, carolXRP - drops(baseFee)));
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[1])(1000)));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        //  Single deposit: 1000 XRP into MPT/XRP
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(carol_, XRP(1000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(10'000), IOUAmount{10'488'088'48170151, -8}));
+
+                env.Require(Balance(carol_, carolXRP - XRP(1000) - drops(baseFee)));
+                env.Require(Balance(carol_, carolMPT));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit: 1000 MPT0 into MPT/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto carolMPT0 = env.Balance(carol_, MPT(ammAlice[0]));
+                auto carolMPT1 = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(carol_, MPT(ammAlice[0])(1000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(11'000),
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{10'488'08848170151, -11}));
+
+                env.Require(Balance(carol_, carolMPT0 - MPT(ammAlice[0])(1000)));
+                env.Require(Balance(carol_, carolMPT1));
+            },
+            {{AMMMPT(10'000), AMMMPT(10'000)}});
+
+        // Single deposit: 1000 MPT into MPT/IOU
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[0]));
+                auto carolUSD = env.Balance(carol_, USD);
+
+                ammAlice.deposit(carol_, MPT(ammAlice[0])(1000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(11'000), USD(10'000), IOUAmount{10'488'08848170151, -11}));
+
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[0])(1000)));
+                env.Require(Balance(carol_, carolUSD));
+            },
+            {{AMMMPT(10'000), USD(10'000)}});
+
+        // Single deposit: 1000 IOU into MPT/IOU
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[0]));
+                auto carolUSD = env.Balance(carol_, USD);
+
+                ammAlice.deposit(carol_, USD(1000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000),
+                    STAmount{USD, UINT64_C(10999'99999999999), -11},
+                    IOUAmount{10'488'08848170151, -11}));
+
+                env.Require(Balance(carol_, carolMPT));
+                env.Require(
+                    Balance(carol_, carolUSD - STAmount{USD, UINT64_C(999'99999999999), -11}));
+            },
+            {{AMMMPT(10'000), USD(10'000)}});
+
+        // Single deposit: 100000 tokens worth of MPT into XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(carol_, 100'000, MPT(ammAlice[1])(205));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'201), IOUAmount{10'100'000, 0}));
+
+                env.Require(Balance(carol_, carolXRP - drops(baseFee)));
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[1])(201)));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit: 100000 tokens worth of XRP into XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(carol_, 100'000, XRP(205));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'201), MPT(ammAlice[1])(10'000), IOUAmount{10'100'000, 0}));
+
+                env.Require(Balance(carol_, carolXRP - XRP(201) - drops(baseFee)));
+                env.Require(Balance(carol_, carolMPT));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit: 100 tokens worth of MPT/IOU into pool of MPT/IOU
+        // combination
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, carol_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto carolUSD = env.Balance(carol_, USD);
+
+                ammAlice.deposit(carol_, 100, USD(205));
+                auto deltaUSD = [&]() {
+                    if constexpr (std::is_same_v<MPT, std::decay_t<decltype(USD)>>)
+                        return USD(202);
+                    return USD(201);
+                }();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    BTC(10'000), USD(10'000) + deltaUSD, IOUAmount{10'100, 0}));
+
+                env.Require(Balance(carol_, carolBTC));
+                env.Require(Balance(carol_, carolUSD - deltaUSD));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Single deposit with EP not exceeding specified:
+        // 100 MPT with EP not to exceed 0.1 (AssetIn/TokensOut)
+        // for XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 1, -1});
+
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10100), IOUAmount{10'049'875'62112089, -8}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit with EP not exceeding specified:
+        // 100 MPT with EP not to exceed 0.002004 (AssetIn/TokensOut)
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 2004, -6});
+
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'081), IOUAmount{10'039'920'31840891, -8}));
+
+                env.Require(Balance(carol_, carolXRP - drops(baseFee)));
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[1])(81)));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit with EP not exceeding specified:
+        // 0 MPT with EP not to exceed 0.002004 (AssetIn/TokensOut)
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(0),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 2004, -6});
+
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'081), IOUAmount{10'039'920'31840891, -8}));
+
+                env.Require(Balance(carol_, carolXRP - drops(baseFee)));
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[1])(81)));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit with EP not exceeding specified:
+        // 100 MPT with EP not to exceed 0.1 (AssetIn/TokensOut)
+        // for IOU/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 1, -1});
+
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    USD(10'000'000'000),
+                    MPT(ammAlice[1])(10100),
+                    IOUAmount{10'049'875'62112089, -8}));
+            },
+            {{USD(10'000'000'000), AMMMPT(10'000)}});
+
+        // Single deposit with EP not exceeding specified:
+        // 100 IOU with EP not to exceed 0.1 (AssetIn/TokensOut)
+        // for IOU/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, USD(100), std::nullopt, STAmount{USD, 1, -1});
+
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[1])(10'000'000'000),
+                    USD(10100),
+                    IOUAmount{10'049'875'62112089, -8}));
+            },
+            {{USD(10'000), AMMMPT(10'000'000'000)}});
+
+        // Single deposit with EP not exceeding specified:
+        // 100 IOU with EP not to exceed 0.1 (AssetIn/TokensOut)
+        // for MPT/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[0])(100),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 1, -1});
+
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[1])(10'000'000'000),
+                    MPT(ammAlice[0])(10100),
+                    IOUAmount{10'049'875'62112089, -8}));
+            },
+            {{AMMMPT(10'000), AMMMPT(10'000'000'000)}});
+
+        // MPT/MPT with transfer fee
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            env.close();
+
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .transferFee = 25'000,
+                 .pay = 400'000});
+
+            MPT const USD = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .transferFee = 25'000,
+                 .pay = 400'000});
+
+            AMM ammAlice(env, alice_, USD(200'000), BTC(5));
+            BEAST_EXPECT(ammAlice.expectBalances(USD(200'000), BTC(5), IOUAmount{1000, 0}));
+
+            ammAlice.deposit(carol_, 100, std::nullopt, std::nullopt);
+            BEAST_EXPECT(ammAlice.expectBalances(USD(220'000), BTC(6), IOUAmount{1100, 0}));
+        }
+
+        // IOU/MPT with transfer fee
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
+            env.close();
+
+            env(rate(gw_, 1.25));
+            env.close();
+
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .transferFee = 25'000,
+                 .pay = 400'000});
+
+            auto const USD = gw_["USD"];
+            env.trust(USD(1000000), alice_);
+            env(pay(gw_, alice_, USD(1000000)));
+            env.trust(USD(1000000), bob_);
+            env(pay(gw_, bob_, USD(1000000)));
+            env.trust(USD(1000000), carol_);
+            env(pay(gw_, carol_, USD(1000000)));
+            env.close();
+
+            // IOU/MPT
+            AMM ammAlice(env, alice_, USD(200'000), BTC(5));
+            BEAST_EXPECT(ammAlice.expectBalances(USD(200'000), BTC(5), IOUAmount{1000, 0}));
+            ammAlice.deposit(carol_, 100, std::nullopt, std::nullopt);
+            BEAST_EXPECT(ammAlice.expectBalances(USD(220'000), BTC(6), IOUAmount{1100, 0}));
+
+            MPT const ETH = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .transferFee = 25'000,
+                 .pay = 400'000});
+
+            // MPT/IOU
+            AMM ammBob(env, bob_, ETH(20'000), USD(0.5));
+            BEAST_EXPECT(ammBob.expectBalances(ETH(20'000), USD(0.5), IOUAmount{100, 0}));
+            ammBob.deposit(carol_, 10);
+            BEAST_EXPECT(ammBob.expectBalances(ETH(22'000), USD(0.55), IOUAmount{110, 0}));
+        }
+
+        // Tiny deposits for IOU/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // tiny amount causes MPT to deposit rounded to 0
+                ammAlice.deposit(carol_, IOUAmount{1, -3}, std::nullopt, std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(10'000'001), -3},
+                    MPT(ammAlice[1])(10'001),
+                    IOUAmount{10'000'001, -3}));
+
+                ammAlice.deposit(carol_, IOUAmount{1});
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(10'001'001), -3},
+                    MPT(ammAlice[1])(10'003),
+                    IOUAmount{10'001'001, -3}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, STAmount{USD, 1, -10});
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(10'000'00000000008), -11},
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{1'000'000'000000004, -11}));
+
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(10'000'00000000008), -11},
+                    MPT(ammAlice[1])(10'001),
+                    IOUAmount{10'000'49998750066, -11}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // Tiny deposits for XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, XRPAmount{1});
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount{10'000'000'001},
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{1'000'000'000049999, -8}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'001), IOUAmount{10'000'499'98750062, -8}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Tiny deposits for MPT/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1));
+
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000),
+                    MPT(ammAlice[1])(10'001),
+                    IOUAmount{1'000'049'998750062, -11}));
+            },
+            {{AMMMPT(10'000), AMMMPT(10'000)}});
+
+        // MPT Issuer create/deposit
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_);
+            env.close();
+
+            MPT const BTC = MPTTester({.env = env, .issuer = gw_, .holders = {}});
+
+            AMM ammGw(env, gw_, XRP(10'000), BTC(10'000'000'000));
+            BEAST_EXPECT(
+                ammGw.expectBalances(XRP(10'000), BTC(10'000'000'000), IOUAmount{10'000'000'000}));
+
+            ammGw.deposit(gw_, 1'000'000);
+            BEAST_EXPECT(
+                ammGw.expectBalances(XRP(10'001), BTC(10'001000000), IOUAmount{10'001000000}));
+
+            ammGw.deposit(gw_, BTC(1'000000000));
+            BEAST_EXPECT(ammGw.expectBalances(
+                XRP(10'001), BTC(11'001000000), IOUAmount{1048'908'961731188, -5}));
+        }
+
+        // Issuer deposit in MPT/MPT pool
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(gw_, 1'000'000);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(1'010'000),
+                    MPT(ammAlice[1])(1'010'000),
+                    IOUAmount{1'010'000}));
+
+                ammAlice.deposit(gw_, MPT(ammAlice[0])(1000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(1'010'999),
+                    MPT(ammAlice[1])(1'010'000),
+                    IOUAmount{1'010'499'376546071, -9}));
+            },
+            {{AMMMPT(10'000), AMMMPT(10'000)}});
+
+        // Issuer deposit in MPT/XRP pool
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(gw_, 1'000'000);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{11'000'000}));
+                ammAlice.deposit(gw_, MPT(ammAlice[1])(1'000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(12'000), IOUAmount{11'489'125'29307605, -8}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal deposit by tokens MPT/XRP
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    1'000'000,
+                    XRP(1'000),
+                    MPT(ammAlice[1])(1'000),
+                    std::nullopt,
+                    tfLPToken,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{11'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal deposit by tokens MPT/IOU combination
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, carol_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto carolUSD = env.Balance(carol_, USD);
+
+                ammAlice.deposit(
+                    carol_,
+                    1'000,
+                    USD(1'000),
+                    BTC(1'000),
+                    std::nullopt,
+                    tfLPToken,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(USD(11'000), BTC(11'000), IOUAmount{11'000}));
+
+                env.Require(Balance(carol_, carolBTC - BTC(1000)));
+                env.Require(Balance(carol_, carolUSD - USD(1000)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Equal deposit by asset XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    1'000'000,
+                    XRP(1'000),
+                    MPT(ammAlice[1])(1'000),
+                    std::nullopt,
+                    tfTwoAsset,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{11'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal deposit by asset IOU/MPT combination
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, carol_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto carolUSD = env.Balance(carol_, USD);
+
+                ammAlice.deposit(
+                    carol_,
+                    1'000,
+                    USD(1'000),
+                    BTC(1'000),
+                    std::nullopt,
+                    tfTwoAsset,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(USD(11'000), BTC(11'000), IOUAmount{11'000, 0}));
+
+                env.Require(Balance(carol_, carolBTC - BTC(1000)));
+                env.Require(Balance(carol_, carolUSD - USD(1000)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Single deposit XRP by asset MPT/XRP
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    488'088,
+                    XRP(1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(10'000), IOUAmount{10'488'088'48170151, -8}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit MPT by asset MPT/XRP
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    488'088,
+                    MPT(ammAlice[1])(1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(11'000), IOUAmount{10'488'088'48170151, -8}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit IOU by asset MPT/IOU
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    488,
+                    USD(1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(10'999'99999999999), -11},
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{10'488'08848170151, -11}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // Single deposit MPT by asset MPT/IOU
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    488,
+                    MPT(ammAlice[1])(1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    USD(10'000), MPT(ammAlice[1])(11'000), IOUAmount{10'488'088'48170151, -11}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // Single deposit MPT by asset MPT/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(
+                    carol_,
+                    488,
+                    MPT(ammAlice[1])(1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    tfSingleAsset,
+                    std::nullopt,
+                    std::nullopt);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000),
+                    MPT(ammAlice[1])(11'000),
+                    IOUAmount{10'488'088'48170151, -11}));
+            },
+            {{AMMMPT(10'000), AMMMPT(10'000)}});
+    }
+
+    void
+    testInvalidWithdraw()
+    {
+        testcase("Invalid AMMWithdraw");
+
+        using namespace jtx;
+        auto const all = testableAmendments();
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                WithdrawArg const args{
+                    .asset1Out = XRP(100),
+                    .err = Ter(tecAMM_BALANCE),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(99), AMMMPT(99)}});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                WithdrawArg const args{
+                    .asset1Out = MPT(ammAlice[1])(100),
+                    .err = Ter(tecAMM_BALANCE),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(99), AMMMPT(99)}});
+
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_, bob_);
+            env.close();
+            // alice is authorized to hold gw MPT, bob is not authorized
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .authHolder = true});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            WithdrawArg const args{
+                .account = bob_,
+                .asset1Out = BTC(100),
+                .err = Ter(tecNO_AUTH),
+            };
+            ammAlice.withdraw(args);
+        }
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                MPTTester const BTC(
+                    {.env = env,
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .pay = 2'000,
+                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+                // Invalid tokens
+                ammAlice.withdraw(alice_, 0, std::nullopt, std::nullopt, Ter(temBAD_AMM_TOKENS));
+                ammAlice.withdraw(
+                    alice_, IOUAmount{-1}, std::nullopt, std::nullopt, Ter(temBAD_AMM_TOKENS));
+
+                // Mismatched token, invalid Asset1Out issue
+                ammAlice.withdraw(
+                    alice_, BTC(100), std::nullopt, std::nullopt, Ter(temBAD_AMM_TOKENS));
+                ammAlice.withdraw(
+                    alice_, MPT(badMPT())(100), std::nullopt, std::nullopt, Ter(temBAD_MPT));
+
+                // Mismatched token, invalid Asset2Out issue
+                ammAlice.withdraw(alice_, XRP(100), BTC(100), std::nullopt, Ter(temBAD_AMM_TOKENS));
+
+                // Mismatched token, Asset1Out.issue == Asset2Out.issue
+                ammAlice.withdraw(
+                    alice_,
+                    MPT(ammAlice[1])(100),
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    Ter(temBAD_AMM_TOKENS));
+
+                // Invalid amount value
+                ammAlice.withdraw(
+                    alice_, MPT(ammAlice[1])(0), std::nullopt, std::nullopt, Ter(temBAD_AMOUNT));
+                ammAlice.withdraw(
+                    alice_, MPT(ammAlice[1])(-100), std::nullopt, std::nullopt, Ter(temBAD_AMOUNT));
+                ammAlice.withdraw(
+                    alice_, MPT(ammAlice[1])(10), std::nullopt, IOUAmount{-1}, Ter(temBAD_AMOUNT));
+
+                // Invalid amount/token value, withdraw all tokens from one side
+                // of the pool.
+                ammAlice.withdraw(
+                    alice_,
+                    MPT(ammAlice[1])(10'000),
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_BALANCE));
+                ammAlice.withdraw(
+                    alice_, XRP(10'000), std::nullopt, std::nullopt, Ter(tecAMM_BALANCE));
+                ammAlice.withdraw(
+                    alice_,
+                    std::nullopt,
+                    MPT(ammAlice[1])(0),
+                    std::nullopt,
+                    std::nullopt,
+                    tfOneAssetWithdrawAll,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_BALANCE));
+
+                // Bad MPT
+                ammAlice.withdraw(
+                    alice_, XRP(100), MPT(badMPT())(100), std::nullopt, Ter(temBAD_MPT));
+
+                // Specified MPToken doesn't match the pool assets
+                ammAlice.withdraw(
+                    alice_, XRP(100), MPT(noMPT())(100), std::nullopt, Ter(temBAD_AMM_TOKENS));
+
+                // Invalid Account
+                Account bad("bad");
+                env.memoize(bad);
+                ammAlice.withdraw(
+                    bad,
+                    1'000'000,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Seq(1),
+                    Ter(terNO_ACCOUNT));
+
+                // Invalid AMM
+                ammAlice.withdraw(
+                    alice_,
+                    1'000,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    {{MPT(ammAlice[1]), GBP}},
+                    std::nullopt,
+                    Ter(terNO_AMM));
+
+                // Carol is not a Liquidity Provider
+                ammAlice.withdraw(carol_, 10'000, std::nullopt, std::nullopt, Ter(tecAMM_BALANCE));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Withdraw entire one side of the pool.
+                // Pre-fixAMMv1_3:
+                // Equal withdraw but due to MPT precision limit,
+                // this results in full withdraw of MPT pool only,
+                // while leaving a tiny amount in USD pool.
+                // Post-fixAMMv1_3:
+                // Most of the pool is withdrawn with remaining tiny amounts
+                auto err = env.enabled(fixAMMv1_3) ? Ter(tesSUCCESS) : Ter(tecAMM_BALANCE);
+                ammAlice.withdraw(
+                    alice_, IOUAmount{9'999'999'9999, -4}, std::nullopt, std::nullopt, err);
+                if (env.enabled(fixAMMv1_3))
+                {
+                    BEAST_EXPECT(ammAlice.expectBalances(
+                        MPT(ammAlice[0])(1), STAmount{USD, 1, -7}, IOUAmount{1, -4}));
+                }
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}},
+            0,
+            std::nullopt,
+            {all, all - fixAMMv1_3});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Similar to above with even smaller remaining amount
+                // Pre-fixAMMv1_3: results in full withdraw of MPT pool only,
+                // returning tecAMM_BALANCE. Post-fixAMMv1_3: most of the pool
+                // is withdrawn with remaining tiny amounts
+                auto err = env.enabled(fixAMMv1_3) ? Ter(tesSUCCESS) : Ter(tecAMM_BALANCE);
+                ammAlice.withdraw(
+                    alice_, IOUAmount{9'999'999'999999999, -9}, std::nullopt, std::nullopt, err);
+                if (env.enabled(fixAMMv1_3))
+                {
+                    BEAST_EXPECT(ammAlice.expectBalances(
+                        MPT(ammAlice[0])(1), STAmount{USD, 1, -11}, IOUAmount{1, -8}));
+                }
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}},
+            0,
+            std::nullopt,
+            {all, all - fixAMMv1_3});
+
+        // Invalid AMM
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.withdrawAll(alice_);
+                ammAlice.withdraw(alice_, 10'000, std::nullopt, std::nullopt, Ter(terNO_AMM));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // MPTokenIssuance object doesn't exist
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            env.close();
+            MPT const BTC =
+                MPTTester({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 30'000});
+
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+
+            ammAlice.withdraw(
+                WithdrawArg{
+                    .account = alice_,
+                    .asset1Out = MPT(gw_, 1'000)(10),
+                    .assets = {{XRP, MPT(gw_, 1'000)}},
+                    .err = Ter(terNO_AMM)});
+        }
+
+        // MPTRequireAuth flag is set and the account is not authorized
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            env.close();
+            auto BTCM = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTRequireAuth | kMPT_DEX_FLAGS,
+                 .authHolder = true});
+            MPT const BTC = BTCM;
+
+            AMM amm(env, alice_, XRP(10'000), BTC(10'000));
+
+            BTCM.authorize({.account = gw_, .holder = alice_, .flags = tfMPTUnauthorize});
+
+            amm.withdraw(
+                WithdrawArg{
+                    .account = alice_,
+                    .asset1Out = BTC(100),
+                    .assets = {{XRP, BTC}},
+                    .err = Ter(tecNO_AUTH)});
+        }
+
+        // MPTCanTransfer is not set and the account is not the issuer of MPT
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            env.close();
+            auto BTCM = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanTrade,
+                 .authHolder = true});
+            MPT const BTC = BTCM;
+
+            AMM amm(env, gw_, XRP(10'000), BTC(10'000));
+
+            amm.withdraw(
+                WithdrawArg{
+                    .account = alice_,
+                    .asset1Out = BTC(100),
+                    .assets = {{XRP, BTC}},
+                    .err = Ter(tecNO_PERMISSION)});
+        }
+
+        // Globally locked MPT
+        // MPTLocked flag is set and the account is not the issuer of MPT
+        {
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            env.close();
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS,
+                 .authHolder = true});
+
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            BTC.set({.flags = tfMPTLock});
+
+            ammAlice.withdraw(
+                alice_, MPT(ammAlice[1])(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // can single withdraw the other asset
+            ammAlice.withdraw({.account = alice_, .asset1Out = XRP(100)});
+        }
+
+        // Individually frozen (AMM) account with MPT/MPT AMM
+        {
+            Env env{*this};
+            env.fund(XRP(10'000), gw_, alice_);
+            env.close();
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+            MPTTester const USD(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 40'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM ammAlice(env, alice_, USD(10'000), BTC(10'000));
+
+            // Alice's BTC is locked
+            BTC.set({.holder = alice_, .flags = tfMPTLock});
+            ammAlice.withdraw(alice_, 1000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.withdraw(alice_, BTC(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // can withdraw the other asset
+            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt);
+
+            // Unlock and then alice can withdraw
+            BTC.set({.holder = alice_, .flags = tfMPTUnlock});
+            ammAlice.withdraw(alice_, 1000, std::nullopt, std::nullopt);
+            ammAlice.withdraw(alice_, BTC(100), std::nullopt, std::nullopt);
+            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt);
+        }
+
+        // Individually lock MPT or freeze IOU (AMM)
+        {
+            Env env{*this};
+            fund(env, gw_, {alice_}, {USD(20'000)}, Fund::All);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM ammAlice(env, alice_, USD(10'000), BTC(10'000));
+
+            // Alice's BTC is locked
+            BTC.set({.holder = alice_, .flags = tfMPTLock});
+
+            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.withdraw(alice_, BTC(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
+            // can still single withdraw the unlocked other asset
+            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt);
+
+            // Unlock alice's BTC
+            BTC.set({.holder = alice_, .flags = tfMPTUnlock});
+
+            // Now alice can withdraw
+            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt);
+            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt);
+            ammAlice.withdraw(alice_, BTC(100), std::nullopt, std::nullopt);
+
+            // Individually lock MPT BTC (AMM) account
+            BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
+
+            // Can withdraw non-frozen token USD
+            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt);
+
+            // Can not withdraw locked token BTC
+            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.withdraw(alice_, BTC(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // Unlock AMM MPT
+            BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTUnlock});
+            // Can withdraw
+            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt);
+            ammAlice.withdraw(alice_, BTC(100), std::nullopt, std::nullopt);
+
+            // Individually frozen AMM
+            env(trust(
+                gw_, STAmount{Issue{gw_["USD"].currency, ammAlice.ammAccount()}, 0}, tfSetFreeze));
+            env.close();
+
+            // Can withdraw non-locked token BTC
+            ammAlice.withdraw(alice_, BTC(100), std::nullopt, std::nullopt);
+
+            // Can not withdraw frozen token USD
+            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt, Ter(tecFROZEN));
+            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt, Ter(tecFROZEN));
+
+            // Unfreeze
+            env(trust(
+                gw_,
+                STAmount{Issue{gw_["USD"].currency, ammAlice.ammAccount()}, 0},
+                tfClearFreeze));
+            env.close();
+
+            // Can withdraw
+            ammAlice.withdraw(alice_, 1'000, std::nullopt, std::nullopt);
+            ammAlice.withdraw(alice_, USD(100), std::nullopt, std::nullopt);
+        }
+
+        // Carol withdraws more than she owns
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // Single deposit of 100000 worth of tokens
+                // which is 10% of the pool. Carol is LP now.
+                ammAlice.deposit(carol_, 1'000'000);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{11'000'000, 0}));
+
+                ammAlice.withdraw(
+                    carol_, 2'000'000, std::nullopt, std::nullopt, Ter(tecAMM_INVALID_TOKENS));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{11'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
+        // to withdraw are 0.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, 1'000'000);
+                auto const err =
+                    env.enabled(fixAMMv1_3) ? Ter(tecAMM_INVALID_TOKENS) : Ter(tecAMM_FAILED);
+                ammAlice.withdraw(
+                    carol_, MPT(ammAlice[1])(100), std::nullopt, IOUAmount{500, 0}, err);
+            },
+            {{XRP(10'000), AMMMPT(10'000)}},
+            0,
+            std::nullopt,
+            {all, all - fixAMMv1_3});
+
+        // Withdraw with EPrice limit. Fails to withdraw, calculated tokens
+        // to withdraw are greater than the LP shares.
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, 1'000'000);
+                ammAlice.withdraw(
+                    carol_,
+                    MPT(ammAlice[1])(100),
+                    std::nullopt,
+                    IOUAmount{600, 0},
+                    Ter(tecAMM_INVALID_TOKENS));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Withdraw with EPrice limit. Fails to withdraw, amount1
+        // to withdraw is less than 1700 MPT.
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, 1'000'000);
+                ammAlice.withdraw(
+                    carol_,
+                    MPT(ammAlice[1])(1'700),
+                    std::nullopt,
+                    IOUAmount{520, 0},
+                    Ter(tecAMM_FAILED));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Deposit/Withdraw the same amount with the trading fee
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1'000));
+                ammAlice.withdraw(
+                    carol_,
+                    MPT(ammAlice[1])(1'000),
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_INVALID_TOKENS));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}},
+            1'000);
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, XRP(1'000));
+                ammAlice.withdraw(
+                    carol_, XRP(1'000), std::nullopt, std::nullopt, Ter(tecAMM_INVALID_TOKENS));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}},
+            1'000);
+
+        // Deposit/Withdraw the same amount fails due to the tokens adjustment
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, STAmount{USD, 1, -6});
+                ammAlice.withdraw(
+                    carol_,
+                    STAmount{USD, 1, -6},
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_INVALID_TOKENS));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+
+        // Withdraw close to one side of the pool. Account's LP tokens
+        // are rounded to all LP tokens.
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(
+                    alice_,
+                    STAmount{MPT(ammAlice[1]), UINT64_C(9'999'999999999999), -12},
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_BALANCE));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Tiny withdraw
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // XRP amount to withdraw is 0
+                ammAlice.withdraw(
+                    alice_, IOUAmount{1, -5}, std::nullopt, std::nullopt, Ter(tecAMM_FAILED));
+                // Calculated tokens to withdraw are 0
+                ammAlice.withdraw(
+                    alice_,
+                    std::nullopt,
+                    STAmount{USD, 1, -11},
+                    std::nullopt,
+                    Ter(tecAMM_INVALID_TOKENS));
+                ammAlice.deposit(carol_, STAmount{USD, 1, -10});
+                ammAlice.withdraw(
+                    carol_,
+                    std::nullopt,
+                    STAmount{USD, 1, -9},
+                    std::nullopt,
+                    Ter(tecAMM_INVALID_TOKENS));
+                ammAlice.withdraw(
+                    carol_,
+                    std::nullopt,
+                    MPT(ammAlice[0])(1),
+                    std::nullopt,
+                    Ter(tecAMM_INVALID_TOKENS));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+    }
+
+    void
+    testWithdraw()
+    {
+        testcase("Withdraw");
+
+        using namespace jtx;
+
+        // Equal withdrawal by Carol: 1'000'000 of tokens, 10% of the current
+        // pool
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // XRP/MPT
+                XRPAmount const baseFee{env.current()->fees().base};
+                auto carolXRP = env.Balance(carol_, XRP);
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+
+                // Single deposit of 1'000'000 worth of tokens,
+                // which is 10% of the pool. Carol is LP now.
+                ammAlice.deposit(carol_, 1'000'000);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{11'000'000, 0}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{1'000'000, 0}));
+                env.Require(Balance(carol_, carolMPT - MPT(ammAlice[1])(1'000)));
+                env.Require(Balance(carol_, carolXRP - XRP(1'000) - drops(baseFee)));
+
+                // Carol withdraws all tokens
+                ammAlice.withdraw(carol_, 1'000'000);
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount(beast::Zero())));
+                env.Require(Balance(carol_, carolMPT));
+                env.Require(Balance(carol_, carolXRP - drops(2 * baseFee)));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal withdrawal by tokens 1000000, 10%
+        // of the current pool, XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // XRP/MPT
+                ammAlice.withdraw(alice_, 1'000'000);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(9'000), MPT(ammAlice[1])(9'000), IOUAmount{9'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal withdrawal by tokens, 10% of the current pool, IOU/MPT
+        // combination
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env.close();
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto aliceBTC = env.Balance(alice_, BTC);
+                auto aliceUSD = env.Balance(alice_, USD);
+                ammAlice.withdraw(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(9'000), USD(9'000), IOUAmount(9'000)));
+                env.Require(Balance(alice_, aliceBTC + BTC(1000)));
+                env.Require(Balance(alice_, aliceUSD + USD(1000)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Equal withdrawal with a limit. Withdraw XRP200.
+        // If proportional withdraw of MPT is less than 100
+        // then withdraw that amount, otherwise withdraw MPT100
+        // and proportionally withdraw XRP. It's the latter
+        // in this case - XRP100/MPT100.
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // XRP/MPT
+                ammAlice.withdraw(alice_, XRP(200), MPT(ammAlice[1])(100));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(9'900), MPT(ammAlice[1])(9'900), IOUAmount{9'900'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal withdrawal with a limit. XRP100/MPT200 truncated to
+        // XRP100/MPT100
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // XRP/MPT
+                ammAlice.withdraw(alice_, XRP(100), MPT(ammAlice[1])(200));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(9'900), MPT(ammAlice[1])(9'900), IOUAmount{9'900'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal withdrawal with a limit. IOU/MPT combination.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env.close();
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto aliceBTC = env.Balance(alice_, BTC);
+                auto aliceUSD = env.Balance(alice_, USD);
+                ammAlice.withdraw(alice_, BTC(200), USD(100));
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(9'900), USD(9'900), IOUAmount(9'900)));
+                env.Require(Balance(alice_, aliceBTC + BTC(100)));
+                env.Require(Balance(alice_, aliceUSD + USD(100)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Single withdrawal by amount
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // single withdraw XRP from XRP/MPT
+                ammAlice.withdraw(alice_, XRP(1'000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount(9000'000001),
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{9'486'832'98050514, -8}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // single withdraw MPT from XRP/MPT
+                ammAlice.withdraw(alice_, MPT(ammAlice[1])(1'000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10000), MPT(ammAlice[1])(9001), IOUAmount{9'486'832'98050514, -8}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // single withdraw IOU from IOU/MPT
+                ammAlice.withdraw(alice_, USD(1'000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(9000'000000000004), -12},
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{9486'83298050514, -11}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // single withdraw MPT from IOU/MPT
+                ammAlice.withdraw(alice_, MPT(ammAlice[1])(1'000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    USD(10'000), MPT(ammAlice[1])(9001), IOUAmount{9486'83298050514, -11}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // single withdraw MPT from MPT/MPT
+                ammAlice.withdraw(alice_, MPT(ammAlice[0])(1'000));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(9001),
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{9486'83298050514, -11}));
+            },
+            {{AMMMPT(10'000), AMMMPT(10'000)}});
+
+        // Single withdrawal MPT by tokens 10000. XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, 10'000, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(9981), IOUAmount{9'990'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single withdrawal XRP by tokens 10000. XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, 10'000, XRP(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount(9980010000), MPT(ammAlice[1])(10'000), IOUAmount{9'990'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single withdrawal by tokens 10000. MPT/IOU combination.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env.close();
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto aliceBTC = env.Balance(alice_, BTC);
+                auto aliceUSD = env.Balance(alice_, USD);
+                ammAlice.withdraw(alice_, 1000, BTC(0));
+                BEAST_EXPECT(ammAlice.expectBalances(USD(10'000), BTC(8100), IOUAmount{9000, 0}));
+                env.Require(Balance(alice_, aliceBTC + BTC(1900)));
+                env.Require(Balance(alice_, aliceUSD));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Withdraw all tokens.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(trust(carol_, STAmount{ammAlice.lptIssue(), 10'000}));
+                // Can SetTrust only for AMM LP tokens
+                env(trust(carol_, STAmount{Issue{EUR.currency, ammAlice.ammAccount()}, 10'000}),
+                    Ter(tecNO_PERMISSION));
+                env.close();
+                ammAlice.withdrawAll(alice_);
+                BEAST_EXPECT(!ammAlice.ammExists());
+
+                BEAST_EXPECT(!env.le(keylet::ownerDir(ammAlice.ammAccount())));
+
+                // Can create AMM for the XRP/MPT pair
+                AMM const ammCarol(env, carol_, XRP(10'000), MPT(ammAlice[1])(10'000));
+                BEAST_EXPECT(ammCarol.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'000), IOUAmount{10'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit 1000MPT, withdraw all tokens in MPT from XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1'000));
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'001), IOUAmount{10'000'000, 0}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount(beast::Zero())));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit 1000MPT, withdraw all tokens in XRP from XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1'000));
+                ammAlice.withdrawAll(carol_, XRP(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount(9'090'909'091), MPT(ammAlice[1])(11000), IOUAmount{10'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit 1000MPT, withdraw all tokens in MPT from USD/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // USD/MPT
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1'000));
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    USD(10'000), MPT(ammAlice[1])(10'001), IOUAmount{10'000, 0}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount(beast::Zero())));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // Single deposit 1000USD, withdraw all tokens in USD from USD/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // USD/MPT
+                ammAlice.deposit(carol_, USD(1'000));
+                ammAlice.withdrawAll(carol_, USD(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    USD(10'000), MPT(ammAlice[1])(10'000), IOUAmount{10'000, 0}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount(beast::Zero())));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // Single deposit 1000MPT, withdraw all tokens in MPT from MPT/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // MPT/MPT
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1'000));
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000), MPT(ammAlice[1])(10'001), IOUAmount{10'000, 0}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount(beast::Zero())));
+            },
+            {{AMMMPT(10'000), AMMMPT(10'000)}});
+
+        // Single deposit 1000MPT, withdraw all tokens in MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1'000));
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10001), IOUAmount{10'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit 1000MPT, withdraw all tokens in USD
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(1'000));
+                ammAlice.withdrawAll(carol_, USD(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(9'090'9090909091), -10},
+                    MPT(ammAlice[1])(11000),
+                    IOUAmount{10'000, 0}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // Single deposit 1000USD, withdraw all tokens in MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, USD(1'000));
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(10'999'99999999999), -11},
+                    MPT(ammAlice[1])(9091),
+                    IOUAmount{10'000, 0}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+
+        // Single deposit/withdraw by the same account
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                auto lpTokens = ammAlice.deposit(carol_, USD(1'000));
+                ammAlice.withdraw(carol_, lpTokens, USD(0));
+                lpTokens = ammAlice.deposit(carol_, STAmount(USD, 1, -6));
+                ammAlice.withdraw(carol_, lpTokens, USD(0));
+                lpTokens = ammAlice.deposit(carol_, MPT(ammAlice[0])(1));
+                ammAlice.withdraw(carol_, lpTokens, MPT(ammAlice[0])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000'000'001), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                auto const& BTC = MPT(ammAlice[1]);
+                auto lpTokens = ammAlice.deposit(carol_, BTC(1'000));
+                ammAlice.withdraw(carol_, lpTokens, BTC(0));
+                lpTokens = ammAlice.deposit(carol_, BTC(1));
+                ammAlice.withdraw(carol_, lpTokens, BTC(0));
+                lpTokens = ammAlice.deposit(carol_, BTC(1));
+                ammAlice.withdraw(carol_, lpTokens, BTC(0));
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(10'003), XRP(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Single deposit by different accounts and then withdraw
+        // in reverse.
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                auto const carolTokens = ammAlice.deposit(carol_, MPT(ammAlice[1])(1'000));
+                auto const aliceTokens = ammAlice.deposit(alice_, MPT(ammAlice[1])(1'000));
+                ammAlice.withdraw(alice_, aliceTokens, MPT(ammAlice[1])(0));
+                ammAlice.withdraw(carol_, carolTokens, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'001), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(alice_, ammAlice.tokens()));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal deposit 10%, withdraw all tokens. XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, 1'000'000);
+                ammAlice.withdrawAll(carol_);
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'000), IOUAmount{10'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+        // Equal deposit 10%, withdraw all tokens. IOU/MPT combination.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, carol_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .limit = 1'000'000});
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto carolUSD = env.Balance(carol_, USD);
+                ammAlice.deposit(carol_, 1'000);
+                ammAlice.withdrawAll(carol_);
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(USD(10'000), BTC(10'000), IOUAmount{10'000, 0}));
+                env.Require(Balance(carol_, carolBTC));
+                env.Require(Balance(carol_, carolUSD));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Equal deposit 10%, withdraw all tokens in MPT from XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, 1'000'000);
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000),
+                    STAmount{MPT(ammAlice[1]), UINT64_C(9'090'909090909092), -12},
+                    IOUAmount{10'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal deposit 10%, withdraw all tokens in XRP from XRP/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, 1'000'000);
+                ammAlice.withdrawAll(carol_, XRP(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount(9'090'909'091), MPT(ammAlice[1])(11'000), IOUAmount{10'000'000, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Equal deposit 10%, withdraw all tokens in USD from USD/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, 1'000);
+                ammAlice.withdrawAll(carol_, USD(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    STAmount{USD, UINT64_C(9'090'909090909092), -12},
+                    MPT(ammAlice[1])(11'000),
+                    IOUAmount{10'000}));
+            },
+            {{USD(10'000), AMMMPT(10'000)}});
+        // Equal deposit 10%, withdraw all tokens in MPT from MPT/MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.deposit(carol_, 1'000);
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(11'000), MPT(ammAlice[1])(9'091), IOUAmount{10'000}));
+            },
+            {{AMMMPT(10'000), AMMMPT(10'000)}});
+
+        auto const all = testableAmendments();
+
+        // Withdraw with EPrice limit.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, 1'000'000'000'000);
+                ammAlice.withdraw(
+                    carol_, MPT(ammAlice[1])(100'000000), std::nullopt, IOUAmount{520, 0});
+                if (!env.enabled(fixAMMv1_1) && !env.enabled(fixAMMv1_3))
+                {
+                    BEAST_EXPECT(
+                        ammAlice.expectBalances(
+                            XRP(11'000'000000),
+                            MPT(ammAlice[1])(9372781065),
+                            IOUAmount{10'153'846'15384616, -2}) &&
+                        ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
+                }
+                else if (env.enabled(fixAMMv1_1) && !env.enabled(fixAMMv1_3))
+                {
+                    BEAST_EXPECT(
+                        ammAlice.expectBalances(
+                            XRP(11'000'000000),
+                            MPT(ammAlice[1])(9372781065),
+                            IOUAmount{10'153'846'15384616, -2}) &&
+                        ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
+                }
+                else if (env.enabled(fixAMMv1_3))
+                {
+                    BEAST_EXPECT(
+                        ammAlice.expectBalances(
+                            XRP(11'000'000000),
+                            MPT(ammAlice[1])(9372781066),
+                            IOUAmount{10'153'846'15384616, -2}) &&
+                        ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
+                }
+                ammAlice.withdrawAll(carol_);
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+            },
+            {{XRP(10'000'000'000), AMMMPT(10'000'000'000)}},
+            0,
+            std::nullopt,
+            {all, all - fixAMMv1_3, all - fixAMMv1_1 - fixAMMv1_3});
+
+        // Withdraw with EPrice limit. AssetOut is 0.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, 1'000'000'000'000);
+                ammAlice.withdraw(carol_, MPT(ammAlice[1])(0), std::nullopt, IOUAmount{520, 0});
+                if (!env.enabled(fixAMMv1_1) && !env.enabled(fixAMMv1_3))
+                {
+                    BEAST_EXPECT(
+                        ammAlice.expectBalances(
+                            XRP(11'000'000000),
+                            MPT(ammAlice[1])(9372781065),
+                            IOUAmount{10'153'846'15384616, -2}) &&
+                        ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
+                }
+                else if (env.enabled(fixAMMv1_1) && !env.enabled(fixAMMv1_3))
+                {
+                    BEAST_EXPECT(
+                        ammAlice.expectBalances(
+                            XRP(11'000'000000),
+                            MPT(ammAlice[1])(9372781065),
+                            IOUAmount{10'153'846'15384616, -2}) &&
+                        ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
+                }
+                else if (env.enabled(fixAMMv1_3))
+                {
+                    BEAST_EXPECT(
+                        ammAlice.expectBalances(
+                            XRP(11'000'000000),
+                            MPT(ammAlice[1])(9372781066),
+                            IOUAmount{10'153'846'15384616, -2}) &&
+                        ammAlice.expectLPTokens(carol_, IOUAmount{153'846'15384616, -2}));
+                }
+                ammAlice.withdrawAll(carol_);
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+            },
+            {{XRP(10'000'000'000), AMMMPT(10'000'000'000)}},
+            0,
+            std::nullopt,
+            {all, all - fixAMMv1_3, all - fixAMMv1_1 - fixAMMv1_3});
+
+        // IOU/MPT combination + transfer fee
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
+                env.close();
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000,
+                     .transferFee = 25'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000,
+                     .transferFee = 25'000});
+                env(pay(gw_, alice_, BTC(10000)));
+                env(pay(gw_, bob_, BTC(10000)));
+                env(pay(gw_, carol_, BTC(10000)));
+                env(pay(gw_, alice_, USD(10000)));
+                env(pay(gw_, bob_, USD(10000)));
+                env(pay(gw_, carol_, USD(10000)));
+                env.close();
+                // no transfer fee on create
+                AMM ammAlice(env, alice_, BTC(2'000), USD(5));
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(2'000), USD(5), IOUAmount{100, 0}));
+                env.Require(Balance(alice_, BTC(8000)));
+                env.Require(Balance(alice_, USD(9995)));
+
+                // no transfer fee on deposit
+                ammAlice.deposit(carol_, 100);
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(4000), USD(10), IOUAmount{200, 0}));
+                env.Require(Balance(carol_, BTC(8000)));
+                env.Require(Balance(carol_, USD(9995)));
+
+                // no transfer fee on withdraw
+                ammAlice.withdraw(carol_, 100);
+                BEAST_EXPECT(ammAlice.expectBalances(BTC(2'000), USD(5), IOUAmount{100, 0}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0, 0}));
+                env.Require(Balance(carol_, BTC(10000)));
+                env.Require(Balance(carol_, USD(10000)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Tiny withdraw
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // By tokens
+                ammAlice.withdraw(alice_, IOUAmount{1, -3});
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(9'999'999'999),
+                    STAmount{USD, UINT64_C(9'999'999999), -6},
+                    IOUAmount{9'999'999'999, -3}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // Single withdraw MPT from MPT/IOU
+                ammAlice.withdraw(alice_, std::nullopt, MPT(ammAlice[0])(1));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10000'000000), USD(10'000), IOUAmount{9'999'999'9995, -4}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // Single withdraw IOU from MPT/IOU
+                ammAlice.withdraw(alice_, std::nullopt, STAmount{USD, 1, -10});
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000'000'000),
+                    STAmount{USD, UINT64_C(9'999'9999999999), -10},
+                    IOUAmount{9'999'999'99999995, -8}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                // Single withdraw XRP from MPT/XRP
+                ammAlice.withdraw(alice_, std::nullopt, XRPAmount(1));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[1])(10'000), XRP(10'000), IOUAmount{9999999'9995, -4}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Withdraw close to entire pool
+        // Equal by tokens
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, IOUAmount{9'999'999'999, -3});
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(1), STAmount{USD, 1, -6}, IOUAmount{1, -3}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        // USD by tokens
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, IOUAmount{9'999'999}, USD(0));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000'000'000), STAmount{USD, 1, -10}, IOUAmount{1}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        // MPT by tokens
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, IOUAmount{9'999'900}, MPT(ammAlice[0])(0));
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(MPT(ammAlice[0])(1), USD(10'000), IOUAmount{100}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        // XRP by tokens
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, IOUAmount{9'999'900}, XRP(0));
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(MPT(ammAlice[1])(10000), XRPAmount(1), IOUAmount{100}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+        // USD
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, STAmount{USD, UINT64_C(9'999'99999999999), -11});
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000'000'000),
+                    STAmount{USD, 1, -11},
+                    IOUAmount{316227765, -9}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        // XRP
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, XRPAmount{9'999'999'999});
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(MPT(ammAlice[1])(10000), XRPAmount(1), IOUAmount{100}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+        // MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, MPT(ammAlice[0])(9'999'999'999));
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(MPT(ammAlice[0])(1), USD(10'000), IOUAmount{100}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                ammAlice.withdraw(alice_, MPT(ammAlice[1])(9'999));
+                BEAST_EXPECT(
+                    ammAlice.expectBalances(MPT(ammAlice[1])(1), XRP(10'000), IOUAmount{100000}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+    }
+
+    void
+    testInvalidFeeVote()
+    {
+        testcase("Invalid Fee Vote");
+        using namespace jtx;
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Invalid Account
+                Account bad("bad");
+                env.memoize(bad);
+                ammAlice.vote(bad, 1'000, std::nullopt, Seq(1), std::nullopt, Ter(terNO_ACCOUNT));
+
+                // Invalid AMM
+                ammAlice.vote(
+                    alice_,
+                    1'000,
+                    std::nullopt,
+                    std::nullopt,
+                    {{MPT(ammAlice[1]), GBP}},
+                    Ter(terNO_AMM));
+
+                // Account is not LP
+                ammAlice.vote(
+                    carol_,
+                    1'000,
+                    std::nullopt,
+                    std::nullopt,
+                    std::nullopt,
+                    Ter(tecAMM_INVALID_TOKENS));
+
+                // Invalid asset pair
+                ammAlice.vote(
+                    alice_,
+                    1'000,
+                    std::nullopt,
+                    std::nullopt,
+                    {{MPT(ammAlice[1]), MPT(ammAlice[1])}},
+                    Ter(temBAD_AMM_TOKENS));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Invalid AMM
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.withdrawAll(alice_);
+                ammAlice.vote(
+                    alice_, 1'000, std::nullopt, std::nullopt, std::nullopt, Ter(terNO_AMM));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // MPTokenInstance object doesn't exist
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), alice_);
+            env(AMM::voteJv({.account = alice_, .tfee = 1'000, .assets = {{XRP, MPT(alice_, 0)}}}),
+                Ter(terNO_AMM));
+        }
+    }
+
+    void
+    testFeeVote()
+    {
+        testcase("Fee Vote");
+        using namespace jtx;
+
+        // One vote sets fee to 1%.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{0}));
+                ammAlice.vote({}, 1'000);
+                BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                // Discounted fee is 1/10 of trading fee.
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, IOUAmount{0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        auto vote = [&](AMM& ammAlice,
+                        Env& env,
+                        int i,
+                        std::uint32_t tokens = 10'000'000,
+                        std::vector<Account>* accounts = nullptr) {
+            Account a(std::to_string(i));
+            ammAlice.deposit(a, tokens);
+            ammAlice.vote(a, 50 * (i + 1));
+            if (accounts)
+                accounts->push_back(std::move(a));
+        };
+
+        {
+            // Eight votes fill all voting slots, set fee 0.175%.
+            // New vote, same account, sets fee 0.225%
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            std::vector<Account> holders = {alice_};
+            for (int i = 0; i <= 7; ++i)
+            {
+                Account const a(std::to_string(i));
+                holders.push_back(a);
+                env.fund(XRP(30'000), a);
+            }
+            env.close();
+            // create MPT and pay 30'000 to all the accounts
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = holders, .pay = 30'000});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            for (int i = 0; i < 7; ++i)
+                vote(ammAlice, env, i);
+            BEAST_EXPECT(ammAlice.expectTradingFee(175));
+            Account const a("0");
+            ammAlice.vote(a, 450);
+            BEAST_EXPECT(ammAlice.expectTradingFee(225));
+        }
+
+        {
+            // Eight votes fill all voting slots, set fee 0.175%.
+            // New vote, new account, higher vote weight, set higher fee 0.244%
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            std::vector<Account> holders = {alice_};
+            for (int i = 0; i < 8; ++i)
+            {
+                Account const a(std::to_string(i));
+                holders.push_back(a);
+                env.fund(XRP(30'000), a);
+            }
+            env.close();
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = holders, .pay = 30'000});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            for (int i = 0; i < 7; ++i)
+                vote(ammAlice, env, i);
+            BEAST_EXPECT(ammAlice.expectTradingFee(175));
+            vote(ammAlice, env, 7, 20'000'000);
+            BEAST_EXPECT(ammAlice.expectTradingFee(244));
+        }
+
+        {
+            // Eight votes fill all voting slots, set fee 0.219%.
+            // New vote, new account, higher vote weight, set smaller fee 0.206%
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_);
+            std::vector<Account> holders = {alice_};
+            for (int i = 0; i < 8; ++i)
+            {
+                Account const a(std::to_string(i));
+                holders.push_back(a);
+                env.fund(XRP(30'000), a);
+            }
+            env.close();
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = holders, .pay = 30'000});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            for (int i = 7; i > 0; --i)
+                vote(ammAlice, env, i);
+            BEAST_EXPECT(ammAlice.expectTradingFee(219));
+            vote(ammAlice, env, 0, 20'000'000);
+            BEAST_EXPECT(ammAlice.expectTradingFee(206));
+        }
+
+        {
+            // Eight votes fill all voting slots. The accounts then withdraw all
+            // tokens. An account sets a new fee and the previous slots are
+            // deleted.
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            std::vector<Account> holders = {alice_, carol_};
+            for (int i = 0; i < 7; ++i)
+            {
+                Account const a(std::to_string(i));
+                holders.push_back(a);
+                env.fund(XRP(30'000), a);
+            }
+            env.close();
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = holders, .pay = 30'000});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            std::vector<Account> accounts;
+            for (int i = 0; i < 7; ++i)
+                vote(ammAlice, env, i, 10'000'000, &accounts);
+            BEAST_EXPECT(ammAlice.expectTradingFee(175));
+            for (int i = 0; i < 7; ++i)
+                ammAlice.withdrawAll(accounts[i]);
+            ammAlice.deposit(carol_, 10'000'000);
+            ammAlice.vote(carol_, 1'000);
+            // The initial LP set the fee to 1000. Carol gets 50% voting
+            // power, and the new fee is 500.
+            BEAST_EXPECT(ammAlice.expectTradingFee(500));
+        }
+        {
+            // Eight votes fill all voting slots. The accounts then withdraw
+            // some tokens. The new vote doesn't get the voting power but the
+            // slots are refreshed and the fee is updated.
+            Env env{*this};
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            std::vector<Account> holders = {alice_, carol_};
+            for (int i = 0; i < 7; ++i)
+            {
+                Account const a(std::to_string(i));
+                holders.push_back(a);
+                env.fund(XRP(30'000), a);
+            }
+            env.close();
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = holders, .pay = 30'000});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            std::vector<Account> accounts;
+            for (int i = 0; i < 7; ++i)
+                vote(ammAlice, env, i, 10'000'000, &accounts);
+            BEAST_EXPECT(ammAlice.expectTradingFee(175));
+            for (int i = 0; i < 7; ++i)
+                ammAlice.withdraw(accounts[i], 9'000'000);
+            ammAlice.deposit(carol_, 1'000);
+            // The vote is not added to the slots
+            ammAlice.vote(carol_, 1'000);
+            auto const info = ammAlice.ammRpcInfo()[jss::amm][jss::vote_slots];
+            for (auto i = 0; i < info.size(); ++i)
+                BEAST_EXPECT(info[i][jss::account] != carol_.human());
+            // But the slots are refreshed and the fee is changed
+            BEAST_EXPECT(ammAlice.expectTradingFee(82));
+        }
+    }
+
+    void
+    testInvalidBid()
+    {
+        testcase("Invalid Bid");
+        using namespace jtx;
+        using namespace std::chrono;
+
+        // burn all the LPTokens through a AMMBid transaction
+        {
+            Env env(*this);
+            env.fund(XRP(2'000), gw_, alice_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 2'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM amm(env, gw_, XRP(1'000), BTC(1'000), false, 1'000);
+
+            // auction slot is owned by the creator of the AMM i.e. gw
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
+
+            // gw attempts to burn all her LPTokens through a bid transaction
+            // this transaction fails because AMMBid transaction can not burn
+            // all the outstanding LPTokens
+            env(amm.bid({
+                    .account = gw_,
+                    .bidMin = 1'000'000,
+                }),
+                Ter(tecAMM_INVALID_TOKENS));
+        }
+
+        // burn all the LPTokens through a AMMBid transaction
+        {
+            Env env(*this);
+            env.fund(XRP(2'000), gw_, alice_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 2'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM amm(env, gw_, XRP(1'000), BTC(1'000), false, 1'000);
+
+            // auction slot is owned by the creator of the AMM i.e. gw
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
+
+            // gw burns all but one of its LPTokens through a bid transaction
+            // this transaction succeeds because the bid price is less than
+            // the total outstanding LPToken balance
+            env(amm.bid({
+                    .account = gw_,
+                    .bidMin = STAmount{amm.lptIssue(), UINT64_C(999'999)},
+                }),
+                Ter(tesSUCCESS))
+                .close();
+
+            // gw must own the auction slot
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{999'999}));
+
+            // 999'999 tokens are burned, only 1 LPToken is owned by gw
+            BEAST_EXPECT(amm.expectBalances(XRP(1'000), BTC(1'000), IOUAmount{1}));
+
+            // gw owns only 1 LPToken in its balance
+            BEAST_EXPECT(Number{amm.getLPTokensBalance(gw_)} == 1);
+
+            // gw attempts to burn the last of its LPTokens in an AMMBid
+            // transaction. This transaction fails because it would burn all
+            // the remaining LPTokens
+            env(amm.bid({
+                    .account = gw_,
+                    .bidMin = 1,
+                }),
+                Ter(tecAMM_INVALID_TOKENS));
+        }
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, 1'000'000);
+                // Invlaid Min/Max combination
+                env(ammAlice.bid({
+                        .account = carol_,
+                        .bidMin = 200,
+                        .bidMax = 100,
+                    }),
+                    Ter(tecAMM_INVALID_TOKENS));
+
+                // Invalid Account
+                Account bad("bad");
+                env.memoize(bad);
+                env(ammAlice.bid({
+                        .account = bad,
+                        .bidMax = 100,
+                    }),
+                    Seq(1),
+                    Ter(terNO_ACCOUNT));
+
+                // Account is not LP
+                Account const dan("dan");
+                env.fund(XRP(1'000), dan);
+                env(ammAlice.bid({
+                        .account = dan,
+                        .bidMin = 100,
+                    }),
+                    Ter(tecAMM_INVALID_TOKENS));
+                env(ammAlice.bid({
+                        .account = dan,
+                    }),
+                    Ter(tecAMM_INVALID_TOKENS));
+
+                // Auth account is invalid.
+                env(ammAlice.bid({
+                        .account = carol_,
+                        .bidMin = 100,
+                        .authAccounts = {bob_},
+                    }),
+                    Ter(terNO_ACCOUNT));
+
+                // Invalid Assets
+                env(ammAlice.bid({
+                        .account = alice_,
+                        .bidMax = 100,
+                        .assets = {{MPT(ammAlice[1]), GBP}},
+                    }),
+                    Ter(terNO_AMM));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Invalid AMM
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.withdrawAll(alice_);
+                env(ammAlice.bid({
+                        .account = alice_,
+                        .bidMax = 100,
+                    }),
+                    Ter(terNO_AMM));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Bid price exceeds LP owned tokens
+        {
+            Env env(*this);
+            fund(env, gw_, {alice_, bob_, carol_}, XRP(1'000), {USD(30'000)}, Fund::All);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_, bob_},
+                 .pay = 30'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            AMM ammAlice(env, alice_, BTC(10'000'000'000), USD(10'000));
+            ammAlice.deposit(carol_, 1'000'000);
+            ammAlice.deposit(bob_, 10);
+            env(ammAlice.bid({
+                    .account = carol_,
+                    .bidMin = 1'000'001,
+                }),
+                Ter(tecAMM_INVALID_TOKENS));
+            env(ammAlice.bid({
+                    .account = carol_,
+                    .bidMax = 1'000'001,
+                }),
+                Ter(tecAMM_INVALID_TOKENS));
+            env(ammAlice.bid({
+                .account = carol_,
+                .bidMin = 1'000,
+            }));
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{1'000}));
+            // Slot purchase price is more than 1000 but bob only has 10 tokens
+            env(ammAlice.bid({
+                    .account = bob_,
+                }),
+                Ter(tecAMM_INVALID_TOKENS));
+        }
+
+        // Bid all tokens, still own the slot
+        {
+            Env env(*this);
+            env.fund(XRP(1'000), gw_, alice_, bob_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_},
+                 .pay = 1'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM amm(env, gw_, XRP(10), BTC(1'000));
+            auto const lpIssue = amm.lptIssue();
+            env.trust(STAmount{lpIssue, 100}, alice_);
+            env.trust(STAmount{lpIssue, 50}, bob_);
+            env(pay(gw_, alice_, STAmount{lpIssue, 100}));
+            env(pay(gw_, bob_, STAmount{lpIssue, 50}));
+            env(amm.bid({.account = alice_, .bidMin = 100}));
+            // Alice doesn't have any more tokens, but
+            // she still owns the slot.
+            env(amm.bid({
+                    .account = bob_,
+                    .bidMax = 50,
+                }),
+                Ter(tecAMM_FAILED));
+        }
+    }
+
+    void
+    testBid(FeatureBitset features)
+    {
+        testcase("Bid");
+        using namespace jtx;
+        using namespace std::chrono;
+
+        // Auction slot initially is owned by AMM creator, who pays 0 price.
+
+        // Bid 110 tokens. Pay bidMin.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, 1'000'000);
+                env(ammAlice.bid({.account = carol_, .bidMin = 110}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
+                // 110 tokens are burned.
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{10'999'890, 0}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Bid with min/max when the pay price is less than min.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, 1'000'000);
+                // Bid exactly 110. Pay 110 because the pay price is < 110.
+                env(ammAlice.bid({.account = carol_, .bidMin = 110, .bidMax = 110}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{10'999'890}));
+                // Bid exactly 180-200. Pay 180 because the pay price is < 180.
+                env(ammAlice.bid({.account = alice_, .bidMin = 180, .bidMax = 200}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{180}));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(11'000), MPT(ammAlice[1])(11'000), IOUAmount{10'999'814'5, -1}));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Start bid at bidMin 110.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_, bob_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_, bob_},
+                 .pay = 30'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+
+            ammAlice.deposit(carol_, 1'000'000);
+            // Bid, pay bidMin.
+            env(ammAlice.bid({.account = carol_, .bidMin = 110}));
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
+
+            ammAlice.deposit(bob_, 1'000'000);
+            // Bid, pay the computed price.
+            env(ammAlice.bid({.account = bob_}));
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount(1155, -1)));
+
+            // Bid bidMax fails because the computed price is higher.
+            env(ammAlice.bid({
+                    .account = carol_,
+                    .bidMax = 120,
+                }),
+                Ter(tecAMM_FAILED));
+            // Bid MaxSlotPrice succeeds - pay computed price
+            env(ammAlice.bid({.account = carol_, .bidMax = 600}));
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{121'275, -3}));
+
+            // Bid Min/MaxSlotPrice fails because the computed price is not
+            // in range
+            env(ammAlice.bid({
+                    .account = carol_,
+                    .bidMin = 10,
+                    .bidMax = 100,
+                }),
+                Ter(tecAMM_FAILED));
+            // Bid Min/MaxSlotPrice succeeds - pay computed price
+            env(ammAlice.bid({.account = carol_, .bidMin = 100, .bidMax = 600}));
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{127'33875, -5}));
+        }
+
+        // Slot states.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_, bob_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_, bob_},
+                 .pay = 30'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+
+            ammAlice.deposit(carol_, 1'000'000);
+            ammAlice.deposit(bob_, 1'000'000);
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount(12'000'000001), BTC(12'001), IOUAmount{12'000'000, 0}));
+
+            // Initial state. Pay bidMin.
+            env(ammAlice.bid({.account = carol_, .bidMin = 110})).close();
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{110}));
+
+            // 1st Interval after close, price for 0th interval.
+            env(ammAlice.bid({.account = bob_}));
+            env.close(seconds(AUCTION_SLOT_INTERVAL_DURATION + 1));
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 1, IOUAmount{1'155, -1}));
+
+            // 10th Interval after close, price for 1st interval.
+            env(ammAlice.bid({.account = carol_}));
+            env.close(seconds((10 * AUCTION_SLOT_INTERVAL_DURATION) + 1));
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 10, IOUAmount{121'275, -3}));
+
+            // 20th Interval (expired) after close, price for 10th interval.
+            env(ammAlice.bid({.account = bob_}));
+            env.close(seconds((AUCTION_SLOT_TIME_INTERVALS * AUCTION_SLOT_INTERVAL_DURATION) + 1));
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, std::nullopt, IOUAmount{127'33875, -5}));
+
+            // 0 Interval.
+            env(ammAlice.bid({.account = carol_, .bidMin = 110})).close();
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(0, std::nullopt, IOUAmount{110}));
+            // ~321.09 tokens burnt on bidding fees.
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount(12'000'000001), BTC(12'001), IOUAmount{11'999'678'91000001, -8}));
+        }
+
+        // Pool's fee 1%. Bid bidMin.
+        // Auction slot owner and auth account trade at discounted fee -
+        // 1/10 of the trading fee.
+        // Other accounts trade at 1% fee.
+        {
+            Env env(*this);
+            Account const dan("dan");
+            Account const ed("ed");
+            env.fund(XRP(2'000), gw_, alice_, bob_, carol_, dan, ed);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, dan, ed},
+                 .pay = 30'000'000'000});
+            fund(env, gw_, {alice_, carol_}, {USD(30'000)}, Fund::TokenOnly);
+            fund(env, gw_, {bob_, dan, ed}, {USD(20'000)}, Fund::TokenOnly);
+
+            AMM ammAlice(env, alice_, BTC(10'000'000'000), USD(10'000), CreateArg{.tfee = 1'000});
+            ammAlice.deposit(bob_, 1'000'000);
+            ammAlice.deposit(ed, 1'000'000);
+            ammAlice.deposit(carol_, 500'000);
+            ammAlice.deposit(dan, 500'000);
+            auto ammTokens = ammAlice.getLPTokensBalance();
+            env(ammAlice.bid({
+                .account = carol_,
+                .bidMin = 120,
+                .authAccounts = {bob_, ed},
+            }));
+            auto const slotPrice = IOUAmount{5'200};
+            ammTokens -= slotPrice;
+            BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, slotPrice));
+            BEAST_EXPECT(ammAlice.expectBalances(BTC(13'000'000'003), USD(13'000), ammTokens));
+            // Discounted trade
+            for (int i = 0; i < 10; ++i)
+            {
+                auto tokens = ammAlice.deposit(carol_, USD(100));
+                ammAlice.withdraw(carol_, tokens, USD(0));
+                tokens = ammAlice.deposit(bob_, USD(100));
+                ammAlice.withdraw(bob_, tokens, USD(0));
+                tokens = ammAlice.deposit(ed, USD(100));
+                ammAlice.withdraw(ed, tokens, USD(0));
+            }
+            // carol, bob, and ed pay ~0.99USD in fees.
+            BEAST_EXPECT(
+                env.Balance(carol_, USD) == STAmount(USD, UINT64_C(29'499'00572620545), -11));
+            BEAST_EXPECT(
+                env.Balance(bob_, USD) == STAmount(USD, UINT64_C(18'999'00572616195), -11));
+            BEAST_EXPECT(env.Balance(ed, USD) == STAmount(USD, UINT64_C(18'999'00572611841), -11));
+            // USD pool is slightly higher because of the fees.
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(13'000'000'003), STAmount(USD, UINT64_C(13'002'98282151419), -11), ammTokens));
+
+            ammTokens = ammAlice.getLPTokensBalance();
+            // Trade with the fee
+            for (int i = 0; i < 10; ++i)
+            {
+                auto const tokens = ammAlice.deposit(dan, USD(100));
+                ammAlice.withdraw(dan, tokens, USD(0));
+            }
+            // dan pays ~9.94USD, which is ~10 times more in fees than
+            // carol, bob, ed. the discounted fee is 10 times less
+            // than the trading fee.
+
+            BEAST_EXPECT(env.Balance(dan, USD) == STAmount(USD, UINT64_C(19'490'05672274398), -11));
+            // USD pool gains more in dan's fees.
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(13'000'000'003), STAmount{USD, UINT64_C(13'012'92609877021), -11}, ammTokens));
+            // Discounted fee payment
+            ammAlice.deposit(carol_, USD(100));
+            ammTokens = ammAlice.getLPTokensBalance();
+            BEAST_EXPECT(ammAlice.expectBalances(
+                MPT(ammAlice[0])(13'000'000'003),
+                STAmount{USD, UINT64_C(13'112'92609877019), -11},
+                ammTokens));
+            env(pay(carol_, bob_, USD(100)), Path(~USD), sendmax(BTC(110'000'000)));
+            env.close();
+            // carol pays 100000 drops in fees
+            // 99900668MPT swapped in for 100USD
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(13'100'000'671), STAmount{USD, UINT64_C(13'012'92609877019), -11}, ammTokens));
+
+            // Payment with the trading fee
+            env(pay(alice_, carol_, BTC(100'000'000)), Path(~MPT(ammAlice[0])), sendmax(USD(110)));
+            env.close();
+            // alice pays ~1.011USD in fees, which is ~10 times more
+            // than carol's fee
+            // 100.099431529USD swapped in for 100MPT
+
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(13'000'000'671), STAmount{USD, UINT64_C(13'114'03663044931), -11}, ammTokens));
+
+            // Auction slot expired, no discounted fee
+            env.close(seconds(TOTAL_TIME_SLOT_SECS + 1));
+            // clock is parent's based
+            env.close();
+
+            BEAST_EXPECT(
+                env.Balance(carol_, USD) == STAmount(USD, UINT64_C(29'399'00572620547), -11));
+            ammTokens = ammAlice.getLPTokensBalance();
+            for (int i = 0; i < 10; ++i)
+            {
+                auto const tokens = ammAlice.deposit(carol_, USD(100));
+                ammAlice.withdraw(carol_, tokens, USD(0));
+            }
+            // carol pays ~9.94USD in fees, which is ~10 times more in
+            // trading fees vs discounted fee.
+
+            BEAST_EXPECT(
+                env.Balance(carol_, USD) == STAmount(USD, UINT64_C(29'389'06197177122), -11));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(13'000'000'671), STAmount{USD, UINT64_C(13'123'98038488356), -11}, ammTokens));
+
+            env(pay(carol_, bob_, USD(100)), Path(~USD), sendmax(BTC(110'000'000)));
+            env.close();
+            // carol pays ~1.008MPT in trading fee, which is
+            // ~10 times more than the discounted fee.
+            // 99.815876MPT is swapped in for 100USD
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(13'100'824'793), STAmount{USD, UINT64_C(13'023'98038488356), -11}, ammTokens));
+        }
+
+        // Bid tiny amount
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // Bid a tiny amount
+                auto const tiny = Number{STAmount::cMinValue, STAmount::cMinOffset};
+                env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{tiny}}));
+                // Auction slot purchase price is equal to the tiny amount
+                // since the minSlotPrice is 0 with no trading fee.
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny}));
+                // The purchase price is too small to affect the total tokens
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000'000'000), USD(10'000), ammAlice.tokens()));
+                // Bid the tiny amount
+                env(ammAlice.bid({
+                    .account = alice_,
+                    .bidMin = IOUAmount{STAmount::cMinValue, STAmount::cMinOffset},
+                }));
+                // Pay slightly higher price
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{tiny * Number{105, -2}}));
+                // The purchase price is still too small to affect the total
+                // tokens
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(10'000'000'000), USD(10'000), ammAlice.tokens()));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+
+        // Reset auth account
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(ammAlice.bid({
+                    .account = alice_,
+                    .bidMin = IOUAmount{100},
+                    .authAccounts = {carol_},
+                }));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot({carol_}));
+                env(ammAlice.bid({.account = alice_, .bidMin = IOUAmount{100}}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot({}));
+                Account bob_("bob");
+                Account dan("dan");
+                fund(env, {bob_, dan}, XRP(1'000));
+                env(ammAlice.bid({
+                    .account = alice_,
+                    .bidMin = IOUAmount{100},
+                    .authAccounts = {bob_, dan},
+                }));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot({bob_, dan}));
+            },
+            {{AMMMPT(10'000'000'000), USD(10'000)}});
+
+        // Bid all tokens, still own the slot and trade at a discount
+        {
+            Env env(*this);
+            env.fund(XRP(2'000), gw_, alice_, bob_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_},
+                 .pay = 2'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            fund(env, gw_, {alice_, bob_}, {USD(2'000)}, Fund::TokenOnly);
+            AMM amm(env, gw_, BTC(1'000'000'000), USD(1'010), false, 1'000);
+            auto const lpIssue = amm.lptIssue();
+            env.trust(STAmount{lpIssue, 500}, alice_);
+            env.trust(STAmount{lpIssue, 50}, bob_);
+            env(pay(gw_, alice_, STAmount{lpIssue, 500}));
+            env(pay(gw_, bob_, STAmount{lpIssue, 50}));
+            // Alice doesn't have anymore lp tokens
+            env(amm.bid({.account = alice_, .bidMin = 500}));
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{500}));
+            BEAST_EXPECT(expectHolding(env, alice_, STAmount{lpIssue, 0}));
+            // But trades with the discounted fee since she still owns the slot.
+            // Alice pays ~10011 MPT in fees
+            env(pay(alice_, bob_, USD(10)), Path(~USD), sendmax(BTC(11'000'000)));
+            BEAST_EXPECT(amm.expectBalances(
+                BTC(1'010'010'011), USD(1'000), IOUAmount{1'004'487'562112089, -9}));
+
+            // Bob pays the full fee ~0.1USD
+            env(pay(bob_, alice_, BTC(10'000'000)), Path(~MPT(BTC)), sendmax(USD(11)));
+
+            BEAST_EXPECT(amm.expectBalances(
+                BTC(1'000'010'011),
+                STAmount{USD, UINT64_C(1'010'10090898081), -11},
+                IOUAmount{1'004'487'562112089, -9}));
+        }
+
+        // preflight tests
+        {
+            Env env(*this, features);
+            env.fund(XRP(2'000), gw_, alice_, bob_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_},
+                 .pay = 2'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM amm(env, gw_, XRP(1'000), BTC(1'010), false, 1'000);
+            Json::Value const tx = amm.bid({.account = alice_, .bidMin = 500});
+
+            {
+                auto jtx = env.jt(tx, Seq(1), Fee(10));
+                env.app().config().features.erase(featureMPTokensV2);
+                PreflightContext const pfctx(
+                    env.app(), *jtx.stx, env.current()->rules(), tapNONE, env.journal);
+                auto pf = AMMBid::checkExtraFeatures(pfctx);
+                BEAST_EXPECT(pf == false);
+                env.app().config().features.insert(featureMPTokensV2);
+            }
+
+            {
+                auto jtx = env.jt(tx, Seq(1), Fee(10));
+                jtx.jv["Asset2"]["currency"] = "XRP";
+                jtx.jv["Asset2"].removeMember("mpt_issuance_id");
+                jtx.stx = env.ust(jtx);
+                PreflightContext const pfctx(
+                    env.app(), *jtx.stx, env.current()->rules(), tapNONE, env.journal);
+                auto pf = AMMBid::preflight(pfctx);
+                BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
+            }
+        }
+    }
+
+    void
+    testClawback()
+    {
+        testcase("Clawback");
+        using namespace jtx;
+
+        Env env(*this);
+        env.fund(XRP(2'000), gw_, alice_);
+        MPT const BTC = MPTTester(
+            {.env = env, .issuer = gw_, .holders = {alice_}, .transferFee = 1'500, .pay = 40'000});
+
+        // alice creates AMM
+        AMM const amm(env, alice_, XRP(1'000), BTC(1'000));
+
+        // gw owns MPTIssuance, not allowed to set asfAllowTrustLineClawback
+        env(fset(gw_, asfAllowTrustLineClawback), Ter(tecOWNERS));
+    }
+
+    void
+    testClawbackFromAMMAccount(FeatureBitset features)
+    {
+        testcase("test clawback from AMM account");
+        using namespace jtx;
+
+        Env env(*this, features);
+        env.fund(XRP(1'000), gw_);
+        env(fset(gw_, asfAllowTrustLineClawback));
+        fund(env, gw_, {alice_}, XRP(1'000), {USD(1'000)}, Fund::Acct);
+
+        MPTTester const BTC(
+            {.env = env,
+             .issuer = gw_,
+             .holders = {alice_},
+             .pay = 30'000,
+             .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+        // to clawback from AMM account, must use AMMClawback instead of
+        // Clawback
+        auto const err = features[featureSingleAssetVault] ? tecPSEUDO_ACCOUNT : tecAMM_ACCOUNT;
+        AMM const amm(env, gw_, XRP(100), BTC(100));
+        auto amount = amountFromString(amm.lptIssue(), "10");
+        env(claw(gw_, amount), Ter(err));
+
+        AMM const amm1(env, alice_, USD(100), BTC(200));
+        auto amount1 = amountFromString(amm1.lptIssue(), "10");
+        env(claw(gw_, amount1), Ter(err));
+    }
+
+    void
+    testInvalidAMMPayment()
+    {
+        testcase("Invalid AMM Payment");
+        using namespace jtx;
+        using namespace jtx::paychan;
+        using namespace std::chrono;
+        using namespace std::literals::chrono_literals;
+
+        // Can't pay into AMM account.
+        // Can't pay out since there is no keys
+        for (auto const& acct : {gw_, alice_})
+        {
+            {
+                Env env(*this);
+                fund(env, gw_, {alice_, carol_}, XRP(1'000));
+                MPTTester const BTC(
+                    {.env = env,
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .pay = 100,
+                     .flags = kMPT_DEX_FLAGS});
+                // XRP balance is below reserve
+                AMM const ammAlice(env, acct, XRP(10), BTC(10));
+                // Pay below reserve
+                env(pay(carol_, ammAlice.ammAccount(), XRP(10)), Ter(tecNO_PERMISSION));
+                // Pay above reserve
+                env(pay(carol_, ammAlice.ammAccount(), XRP(300)), Ter(tecNO_PERMISSION));
+                // Pay MPT
+                env(pay(carol_, ammAlice.ammAccount(), BTC(10)), Ter(tecNO_PERMISSION));
+            }
+
+            {
+                Env env(*this);
+                fund(env, gw_, {alice_, carol_}, XRP(10'000'000));
+                MPTTester const BTC(
+                    {.env = env,
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .pay = 20'000,
+                     .flags = kMPT_DEX_FLAGS});
+                // XRP balance is above reserve
+                AMM const ammAlice(env, acct, XRP(1'000'000), BTC(10'000));
+                // Pay below reserve
+                env(pay(carol_, ammAlice.ammAccount(), XRP(10)), Ter(tecNO_PERMISSION));
+                // Pay above reserve
+                env(pay(carol_, ammAlice.ammAccount(), XRP(1'000'000)), Ter(tecNO_PERMISSION));
+                // Pay MPT
+                env(pay(carol_, ammAlice.ammAccount(), BTC(1'000)), Ter(tecNO_PERMISSION));
+            }
+        }
+
+        // Can't pay into AMM with escrow.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(escrow::create(carol_, ammAlice.ammAccount(), MPT(ammAlice[1])(1)),
+                    escrow::kCONDITION(escrow::kCB1),
+                    escrow::kFINISH_TIME(env.now() + 1s),
+                    escrow::kCANCEL_TIME(env.now() + 2s),
+                    Fee(1'500),
+                    Ter(tecNO_PERMISSION));
+
+                env(escrow::create(carol_, ammAlice.ammAccount(), XRP(1)),
+                    escrow::kCONDITION(escrow::kCB1),
+                    escrow::kFINISH_TIME(env.now() + 1s),
+                    escrow::kCANCEL_TIME(env.now() + 2s),
+                    Fee(1'500),
+                    Ter(tecNO_PERMISSION));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Can't pay into AMM with paychan.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const pk = carol_.pk();
+                auto const settleDelay = 10s;
+                NetClock::time_point const cancelAfter =
+                    env.current()->header().parentCloseTime + 20s;
+                env(create(
+                        carol_,
+                        ammAlice.ammAccount(),
+                        MPT(ammAlice[1])(1'000),
+                        settleDelay,
+                        pk,
+                        cancelAfter),
+                    Ter(telENV_RPC_FAILED));
+
+                env(create(carol_, ammAlice.ammAccount(), XRP(1'000), settleDelay, pk, cancelAfter),
+                    Ter(tecNO_PERMISSION));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Can't pay into AMM with checks.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env(check::create(env.master.id(), ammAlice.ammAccount(), XRP(100)),
+                    Ter(tecNO_PERMISSION));
+
+                env(check::create(env.master.id(), ammAlice.ammAccount(), MPT(ammAlice[1])(100)),
+                    Ter(tecNO_PERMISSION));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        // Pay amounts close to one side of the pool
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const& BTC = MPT(ammAlice[1]);
+                // Can't consume whole pool
+                env(pay(alice_, carol_, USD(100)),
+                    Path(~USD),
+                    sendmax(BTC(1'000'000'000)),
+                    Ter(tecPATH_PARTIAL));
+                env(pay(alice_, carol_, BTC(100'000'000)),
+                    Path(~BTC),
+                    sendmax(USD(1'000'000'000)),
+                    Ter(tecPATH_PARTIAL));
+                // Overflow
+                env(pay(alice_, carol_, STAmount{USD, UINT64_C(99'999999999), -9}),
+                    Path(~USD),
+                    sendmax(BTC(1'000'000'000)),
+                    Ter(tecPATH_PARTIAL));
+                env(pay(alice_, carol_, STAmount{USD, UINT64_C(999'99999999), -8}),
+                    Path(~USD),
+                    sendmax(BTC(1'000'000'000)),
+                    Ter(tecPATH_PARTIAL));
+                env(pay(alice_, carol_, BTC(99'999'999)),
+                    Path(~BTC),
+                    sendmax(USD(1'000'000'000)),
+                    Ter(tecPATH_PARTIAL));
+                // Sender doesn't have enough funds
+                env(pay(alice_, carol_, USD(99.99)),
+                    Path(~USD),
+                    sendmax(BTC(1'000'000'000)),
+                    Ter(tecPATH_PARTIAL));
+                env(pay(alice_, carol_, BTC(99'990'000)),
+                    Path(~BTC),
+                    sendmax(USD(1'000'000'000)),
+                    Ter(tecPATH_PARTIAL));
+            },
+            {{USD(100), AMMMPT(100'000'000)}});
+
+        // Globally locked MPT.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            BTC.set({.flags = tfMPTLock});
+
+            env(pay(alice_, carol_, BTC(1)),
+                Path(~static_cast<MPT>(BTC)),
+                txflags(tfPartialPayment | tfNoRippleDirect),
+                sendmax(XRP(10)),
+                Ter(tecPATH_DRY));
+            env(pay(alice_, carol_, XRP(1)),
+                Path(~XRP),
+                txflags(tfPartialPayment | tfNoRippleDirect),
+                sendmax(BTC(10)),
+                Ter(tecPATH_DRY));
+        }
+
+        // Individually locked MPT destination account.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            BTC.set({.holder = carol_, .flags = tfMPTLock});
+
+            env(pay(alice_, carol_, BTC(1)),
+                Path(~static_cast<MPT>(BTC)),
+                txflags(tfPartialPayment | tfNoRippleDirect),
+                sendmax(XRP(10)),
+                Ter(tecPATH_DRY));
+        }
+
+        // Individually locked MPT source account
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            BTC.set({.holder = alice_, .flags = tfMPTLock});
+
+            env(pay(alice_, carol_, XRP(1)),
+                Path(~XRP),
+                txflags(tfPartialPayment | tfNoRippleDirect),
+                sendmax(BTC(10)),
+                Ter(tecPATH_DRY));
+        }
+
+        // lock on both sides
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM const ammAlice(env, alice_, ETH(10'000), BTC(10'000));
+            BTC.set({.holder = carol_, .flags = tfMPTLock});
+            BTC.set({.holder = alice_, .flags = tfMPTLock});
+            ETH.set({.holder = carol_, .flags = tfMPTLock});
+            ETH.set({.holder = alice_, .flags = tfMPTLock});
+
+            env(pay(alice_, carol_, ETH(1)),
+                Path(~MPT(ETH)),
+                txflags(tfPartialPayment | tfNoRippleDirect),
+                sendmax(BTC(10)),
+                Ter(tecPATH_DRY));
+
+            env(pay(alice_, carol_, BTC(1)),
+                Path(~MPT(BTC)),
+                txflags(tfPartialPayment | tfNoRippleDirect),
+                sendmax(ETH(10)),
+                Ter(tecPATH_DRY));
+        }
+
+        // Individually locked AMM MPT
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+            BTC.set({.holder = ammAlice.ammAccount(), .flags = tfMPTLock});
+
+            env(pay(alice_, carol_, XRP(1)),
+                Path(~XRP),
+                txflags(tfPartialPayment | tfNoRippleDirect),
+                sendmax(BTC(10)),
+                Ter(tecPATH_DRY));
+        }
+    }
+
+    void
+    testBasicPaymentEngine()
+    {
+        testcase("Basic Payment");
+        using namespace jtx;
+
+        // Payment 100MPT for 100XRP.
+        // Force one path with tfNoRippleDirect.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+                env.fund(XRP(30'000), bob_);
+                env.close();
+                env(pay(bob_, carol_, MPT(ammAlice[1])(100)),
+                    Path(~MPT(ammAlice[1])),
+                    sendmax(XRP(100)),
+                    txflags(tfNoRippleDirect));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), MPT(ammAlice[1])(10'000), ammAlice.tokens()));
+                // Initial balance + 100
+                env.Require(Balance(carol_, carolMPT + MPT(ammAlice[1])(100)));
+                // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
+                BEAST_EXPECT(
+                    expectLedgerEntryRoot(env, bob_, XRP(30'000) - XRP(100) - txFee(env, 1)));
+            },
+            {{XRP(10'000), AMMMPT(10'100)}});
+
+        // Payment 100IOU/MPT for 100IOU/MPT. Test IOU/MPT mix.
+        // Force one path with tfNoRippleDirect.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
+                env.close();
+
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, bob_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, bob_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10100));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto bobUSD = env.Balance(bob_, USD);
+                env(pay(bob_, carol_, BTC(100)),
+                    Path(~BTC),
+                    sendmax(USD(100)),
+                    txflags(tfNoRippleDirect | tfPartialPayment));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(USD(10'100), BTC(10'000), ammAlice.tokens()));
+                env.Require(Balance(carol_, carolBTC + BTC(100)));
+                env.Require(Balance(bob_, bobUSD - USD(100)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Payment 100MPT for 100XRP, use default path.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+                env.fund(XRP(30'000), bob_);
+                env.close();
+                env(pay(bob_, carol_, MPT(ammAlice[1])(100)), sendmax(XRP(100)));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), MPT(ammAlice[1])(10'000), ammAlice.tokens()));
+                // Initial balance + 100
+                env.Require(Balance(carol_, carolMPT + MPT(ammAlice[1])(100)));
+                // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
+                BEAST_EXPECT(
+                    expectLedgerEntryRoot(env, bob_, XRP(30'000) - XRP(100) - txFee(env, 1)));
+            },
+            {{XRP(10'000), AMMMPT(10'100)}});
+
+        // Payment 100IOU/MPT for 100IOU/MPT using default path.
+        // Test IOU/MPT mix.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
+                env.close();
+
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, bob_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, bob_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10100));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto bobUSD = env.Balance(bob_, USD);
+                env(pay(bob_, carol_, BTC(100)), sendmax(USD(100)));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(USD(10'100), BTC(10'000), ammAlice.tokens()));
+                env.Require(Balance(carol_, carolBTC + BTC(100)));
+                env.Require(Balance(bob_, bobUSD - USD(100)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // This payment is identical to above. While it has
+        // both default path and path, activeStrands has one path.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+                env.fund(XRP(30'000), bob_);
+                env.close();
+                env(pay(bob_, carol_, MPT(ammAlice[1])(100)),
+                    Path(~MPT(ammAlice[1])),
+                    sendmax(XRP(100)));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'100), MPT(ammAlice[1])(10'000), ammAlice.tokens()));
+                // Initial balance + 100
+                env.Require(Balance(carol_, carolMPT + MPT(ammAlice[1])(100)));
+                // Initial balance 30,000 - 100(sendmax) - 10(tx fee)
+                BEAST_EXPECT(
+                    expectLedgerEntryRoot(env, bob_, XRP(30'000) - XRP(100) - txFee(env, 1)));
+            },
+            {{XRP(10'000), AMMMPT(10'100)}});
+
+        // Test MPT/IOU combination for the case above.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
+                env.close();
+
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, bob_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, bob_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10100));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto bobUSD = env.Balance(bob_, USD);
+                env(pay(bob_, carol_, BTC(100)), Path(~BTC), sendmax(USD(100)));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(USD(10'100), BTC(10'000), ammAlice.tokens()));
+                env.Require(Balance(carol_, carolBTC + BTC(100)));
+                env.Require(Balance(bob_, bobUSD - USD(100)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Payment with limitQuality set.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto carolMPT = env.Balance(carol_, MPT(ammAlice[1]));
+                env.fund(jtx::XRP(30'000), bob_);
+                env.close();
+                // Pays 10MPT for 10XRP. A larger payment of ~99.11MPT/100XRP
+                // would have been sent has it not been for limitQuality.
+                env(pay(bob_, carol_, MPT(ammAlice[1])(100)),
+                    Path(~MPT(ammAlice[1])),
+                    sendmax(XRP(100)),
+                    txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'010), MPT(ammAlice[1])(10'000), ammAlice.tokens()));
+                // Initial balance + 10(limited by limitQuality)
+                env.Require(Balance(carol_, carolMPT + MPT(ammAlice[1])(10)));
+                // Initial balance 30,000 - 10(limited by limitQuality) - 10(tx
+                // fee)
+                BEAST_EXPECT(
+                    expectLedgerEntryRoot(env, bob_, XRP(30'000) - XRP(10) - txFee(env, 1)));
+
+                // Fails because of limitQuality. Would have sent
+                // ~98.91MPT/110XRP has it not been for limitQuality.
+                env(pay(bob_, carol_, MPT(ammAlice[1])(100)),
+                    Path(~MPT(ammAlice[1])),
+                    sendmax(XRP(100)),
+                    txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
+                    Ter(tecPATH_DRY));
+                env.close();
+            },
+            {{XRP(10'000), AMMMPT(10'010)}});
+
+        // Payment with limitQuality set. MPT/IOU combination.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
+                env.close();
+
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, bob_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, bob_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10010));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto bobUSD = env.Balance(bob_, USD);
+                env(pay(bob_, carol_, BTC(100)),
+                    Path(~BTC),
+                    sendmax(USD(100)),
+                    txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(USD(10'010), BTC(10'000), ammAlice.tokens()));
+                env.Require(Balance(carol_, carolBTC + BTC(10)));
+                env.Require(Balance(bob_, bobUSD - USD(10)));
+
+                env(pay(bob_, carol_, BTC(100)),
+                    Path(~BTC),
+                    sendmax(USD(100)),
+                    txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality),
+                    Ter(tecPATH_DRY));
+                env.close();
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Payment with limitQuality and transfer fee set.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
+            env.close();
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .transferFee = 10'000,
+                 .pay = 30'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            auto ammAlice = AMM(env, alice_, XRP(10'000), BTC(10'010'000'000'000'000));
+            env.close();
+            auto carolMPT = env.Balance(carol_, MPT(BTC));
+            // Pays 10'000'000'000'000MPT for 10XRP. A larger payment of
+            // ~99'110'000'000'000MPT/100XRP would have been sent has it not
+            // been for limitQuality and the transfer fee.
+            env(pay(bob_, carol_, BTC(100'000'000'000'000)),
+                Path(~MPT(BTC)),
+                sendmax(XRP(110)),
+                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+            env.close();
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10'010), BTC(10'000'000'000'000'000), ammAlice.tokens()));
+            // 10'000'000'000'000MPT - 10% transfer fee
+            env.Require(Balance(carol_, carolMPT + BTC(9'090'909'090'909)));
+            BEAST_EXPECT(expectLedgerEntryRoot(env, bob_, XRP(30'000) - XRP(10) - txFee(env, 1)));
+        }
+
+        // Payment with limitQuality and transfer fee set. MPT/IOU combination.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
+                env.close();
+
+                auto const USD = issue1({
+                    .env = env,
+                    .token = "USD",
+                    .issuer = gw_,
+                    .holders = {alice_, bob_, carol_},
+                    .limit = 1'000'000
+                    //.transferFee = 10'000
+                });
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 300'000'000'000'000'000,
+                     .transferFee = 10'000});
+
+                env(pay(gw_, alice_, BTC(30'000'000'000'000'000)));
+                env(pay(gw_, bob_, BTC(30'000'000'000'000'000)));
+                env(pay(gw_, carol_, BTC(30'000'000'000'000'000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, bob_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10'000), BTC(10'010'000'000'000'000));
+                auto carolBTC = env.Balance(carol_, BTC);
+                auto bobUSD = env.Balance(bob_, USD);
+                env(pay(bob_, carol_, BTC(100'000'000'000'000)),
+                    Path(~BTC),
+                    sendmax(USD(110)),
+                    txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                env.close();
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    USD(10'010), BTC(10'000'000'000'000'000), ammAlice.tokens()));
+                env.Require(Balance(carol_, carolBTC + BTC(9'090'909'090'909)));
+                env.Require(Balance(bob_, bobUSD - USD(10)));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Fail when partial payment is not set.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                env.fund(jtx::XRP(30'000), bob_);
+                env.close();
+                env(pay(bob_, carol_, MPT(ammAlice[1])(100)),
+                    Path(~MPT(ammAlice[1])),
+                    sendmax(XRP(100)),
+                    txflags(tfNoRippleDirect),
+                    Ter(tecPATH_PARTIAL));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+        // Fail when partial payment is not set. MPT/IOU combination.
+        {
+            auto test = [&](auto&& issue1, auto&& issue2) {
+                Env env(*this);
+                env.fund(XRP(30'000), alice_, bob_, carol_, gw_);
+                env.close();
+
+                auto const USD = issue1(
+                    {.env = env,
+                     .token = "USD",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+                auto const BTC = issue2(
+                    {.env = env,
+                     .token = "BTC",
+                     .issuer = gw_,
+                     .holders = {alice_, bob_, carol_},
+                     .limit = 1'000'000});
+
+                env(pay(gw_, alice_, BTC(50000)));
+                env(pay(gw_, bob_, BTC(50000)));
+                env(pay(gw_, carol_, BTC(50000)));
+                env(pay(gw_, alice_, USD(50000)));
+                env(pay(gw_, bob_, USD(50000)));
+                env(pay(gw_, carol_, USD(50000)));
+                env.close();
+
+                auto ammAlice = AMM(env, alice_, USD(10000), BTC(10000));
+                env(pay(bob_, carol_, BTC(100)),
+                    Path(~BTC),
+                    sendmax(USD(100)),
+                    txflags(tfNoRippleDirect),
+                    Ter(tecPATH_PARTIAL));
+            };
+            testHelper2TokensMix(test);
+        }
+
+        // Non-default path (with AMM) has a better quality than default path.
+        // The max possible liquidity is taken out of non-default
+        // path ~29.9e14XRP/29.9e14ETH, ~29.9e14ETH/~29.99e14btc. The rest
+        // is taken from the offer.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 3'000'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 3'000'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            env.fund(XRP(1'000), bob_);
+            env.close();
+            auto ammETH_XRP = AMM(env, alice_, XRP(10'000), ETH(1'000'000'000'000'000'000));
+            auto ammBTC_ETH =
+                AMM(env, alice_, ETH(1'000'000'000'000'000'000), BTC(1'000'000'000'000'000'000));
+            env(offer(alice_, XRP(101), BTC(10'000'000'000'000'000)), txflags(tfPassive));
+            env.close();
+            env(pay(bob_, carol_, BTC(10'000'000'000'000'000)),
+                Path(~MPT(ETH), ~MPT(BTC)),
+                sendmax(XRP(102)),
+                txflags(tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(ammETH_XRP.expectBalances(
+                XRPAmount(10'030'082'730), ETH(9'970'00749812546872), ammETH_XRP.tokens()));
+
+            BEAST_EXPECT(ammBTC_ETH.expectBalances(
+                BTC(9'970'09727766213961), ETH(10'029'99250187453128), ammBTC_ETH.tokens()));
+
+            Amounts const expectedAmounts = Amounts{XRPAmount(30'201'749), BTC(29'90272233786039)};
+
+            BEAST_EXPECT(expectOffers(env, alice_, 1, {{expectedAmounts}}));
+
+            // Initial (30,000 + 100)e14
+            env.Require(Balance(carol_, BTC(3'010'000'000'000'000'000)));
+            // Initial 1,000 - 30082730(AMM pool) - 70798251(offer) - 10(tx fee)
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env,
+                bob_,
+                XRP(1'000) - XRPAmount{30'082'730} - XRPAmount{70'798'251} - txFee(env, 1)));
+        }
+
+        // Default path (with AMM) has a better quality than a
+        // non-default path.
+        // The max possible liquidity is taken out of default
+        // path ~49XRP/49e14BTC. The rest is taken from the offer.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 3'000'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 1'000'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            auto ammAlice = AMM(env, alice_, XRP(10'000), BTC(1'000'000'000'000'000'000));
+            env.fund(XRP(1'000), bob_);
+            env.close();
+            env(offer(alice_, XRP(101), ETH(10'000'000'000'000'000)), txflags(tfPassive));
+            env.close();
+            env(offer(alice_, ETH(10'000'000'000'000'000), BTC(10'000'000'000'000'000)),
+                txflags(tfPassive));
+            env.close();
+            env(pay(bob_, carol_, BTC(10'000'000'000'000'000)),
+                Path(~MPT(ETH), ~MPT(BTC)),
+                sendmax(XRP(102)),
+                txflags(tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount(10'050'238'637), BTC(9'950'01249687578120), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(
+                env,
+                alice_,
+                2,
+                {{Amounts{XRPAmount(50'487'378), ETH(49'98750312421880)},
+                  Amounts{ETH(49'98750312421880), BTC(49'98750312421880)}}}));
+            // Initial (30,000 + 100)e14
+            env.Require(Balance(carol_, BTC(30'100'00000000000000)));
+            // Initial 1,000 - 50238637(AMM pool) - 50512622(offer) - 10(tx
+            // fee)
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env,
+                bob_,
+                XRP(1'000) - XRPAmount{50'238'637} - XRPAmount{50'512'622} - txFee(env, 1)));
+        }
+
+        // Default path with AMM and Order Book offer. AMM is consumed first,
+        // remaining amount is consumed by the offer.
+        {
+            Env env(*this);
+            fund(env, gw_, {alice_, bob_, carol_}, XRP(30'000));
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 30'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'100'000'000'000'000));
+            env(offer(bob_, XRP(100), MPT(ammAlice[1])(100'000'000'000'000)), txflags(tfPassive));
+            env.close();
+            env(pay(alice_, carol_, MPT(ammAlice[1])(200'000'000'000'000)),
+                sendmax(XRP(200)),
+                txflags(tfPartialPayment));
+            env.close();
+
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRP(10'100), MPT(ammAlice[1])(10'000'000000000001), ammAlice.tokens()));
+            env.Require(Balance(carol_, MPT(ammAlice[1])(30'199'999999999999)));
+
+            // Initial 30,000 - 10000(AMM pool LP) - 100(AMMoffer) -
+            // - 100(offer) - 10(tx fee) - 10(tx fee of MPTTester init as
+            // holder) - one reserve
+            BEAST_EXPECT(expectLedgerEntryRoot(
+                env,
+                alice_,
+                XRP(30'000) - XRP(10'000) - XRP(100) - XRP(100) - ammCrtFee(env) -
+                    2 * txFee(env, 1)));
+            BEAST_EXPECT(expectOffers(env, bob_, 0));
+        }
+
+        // Default path with AMM and Order Book offer.
+        // Order Book offer is consumed first.
+        // Remaining amount is consumed by AMM.
+        {
+            Env env(*this);
+            fund(env, gw_, {alice_, bob_, carol_}, XRP(20'000));
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 2'000,
+                 .flags = kMPT_DEX_FLAGS});
+            env(offer(bob_, XRP(50), BTC(150)), txflags(tfPassive));
+            env.close();
+            AMM const ammAlice(env, alice_, XRP(1'000), BTC(1'050));
+            env(pay(alice_, carol_, BTC(200)), sendmax(XRP(200)), txflags(tfPartialPayment));
+            BEAST_EXPECT(ammAlice.expectBalances(XRP(1'050), BTC(1'000), ammAlice.tokens()));
+            env.Require(Balance(carol_, BTC(2'200)));
+            BEAST_EXPECT(expectOffers(env, bob_, 0));
+        }
+
+        // Offer crossing XRP/MPT
+        {
+            Env env(*this);
+            fund(env, gw_, {alice_, bob_, carol_}, XRP(30'000));
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 30'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM ammAlice(env, alice_, XRP(10'000), BTC(10'100));
+            env(offer(bob_, MPT(ammAlice[1])(100), XRP(100)));
+            env.close();
+            BEAST_EXPECT(
+                ammAlice.expectBalances(XRP(10'100), MPT(ammAlice[1])(10'000), ammAlice.tokens()));
+            // Initial 30,000 + 100
+            env.Require(Balance(bob_, MPT(ammAlice[1])(30'100)));
+            // Initial 30,000 - 100(offer) - 10(tx fee) - 1(tx fee for MPTTester
+            // holder)
+            BEAST_EXPECT(
+                expectLedgerEntryRoot(env, bob_, XRP(30'000) - XRP(100) - 2 * txFee(env, 1)));
+            BEAST_EXPECT(expectOffers(env, bob_, 0));
+        }
+
+        // Offer crossing MPT/MPT and transfer rate
+        // Single path AMM offer
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .transferFee = 25'000,
+                 .pay = 30'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .transferFee = 25'000,
+                 .pay = 30'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const ammAlice(env, alice_, BTC(1'000'000'000'000'000), ETH(1'100'000'000'000'000));
+            // This offer succeeds to cross pre- and post-amendment
+            // because the strand's out amount is small enough to match
+            // limitQuality value and limitOut() function in StrandFlow
+            // doesn't require an adjustment to out value.
+            env(offer(carol_, ETH(100'000'000'000'000), BTC(100'000'000'000'000)));
+            env.close();
+            // No transfer fee
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(1'100'000'000'000'000), ETH(1'000'000'000'000'000), ammAlice.tokens()));
+            // Initial 30,000'000'000'000'000 - 100'000'000'000'000(offer)-25 %
+            // transfer fee
+            env.Require(Balance(carol_, BTC(29'875'000'000'000'000)));
+            // Initial 30,000'000'000'000'000 + 100'000'000'000'000(offer)
+            env.Require(Balance(carol_, ETH(30'100'000'000'000'000)));
+            BEAST_EXPECT(expectOffers(env, carol_, 0));
+        }
+
+        // Single-path AMM offer
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .transferFee = 100,
+                 .pay = 30'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const amm(env, alice_, XRP(1'000), BTC(500'000'000'000'000));
+            env(offer(carol_, XRP(100), BTC(55'000'000'000'000)));
+            env.close();
+
+            BEAST_EXPECT(
+                amm.expectBalances(XRPAmount(909'090'909), BTC(550'000000055001), amm.tokens()));
+            // Offer ~91XRP/49.99e12BTC
+            BEAST_EXPECT(expectOffers(
+                env, carol_, 1, {{Amounts{XRPAmount{9'090'909}, BTC(4'999999950000)}}}));
+            // Carol pays 0.1% fee on 50'000000055000BTC = 50'000000055BTC
+            env.Require(Balance(carol_, BTC(29'949'949'999'944'943)));
+        }
+
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .transferFee = 100,
+                 .pay = 3'000'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const amm(env, alice_, XRP(1'000), BTC(50'000'000'000'000'000));
+            env(offer(carol_, XRP(10), BTC(5'500'000'000'000'000)));
+            env.close();
+
+            BEAST_EXPECT(amm.expectBalances(XRP(990), BTC(505'05050505050506), amm.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 0));
+        }
+
+        // Multi-path AMM offer
+        {
+            Env env(*this);
+            Account const ed("ed");
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_, ed);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .transferFee = 25'000,
+                 .pay = 20'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .transferFee = 25'000,
+                 .pay = 20'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const ammAlice(
+                env, alice_, BTC(10'000'000'000'000'000), ETH(11'000'000'000'000'000));
+
+            env(offer(bob_, BTC(100'000'000'000'000), XRP(10)), txflags(tfPassive));
+            env(offer(ed, XRP(10), ETH(100'000'000'000'000)), txflags(tfPassive));
+            env.close();
+            env(offer(carol_, ETH(1'000'000'000'000'000), BTC(1'000'000'000'000'000)));
+            env.close();
+
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(1'060'6848287928033), ETH(1'037'0658372213574), ammAlice.tokens()));
+            // Consumed offer ~72.93e13ETH/72.93e13BTC
+            BEAST_EXPECT(expectOffers(
+                env, carol_, 1, {Amounts{ETH(27'0658372213574), BTC(27'0658372213575)}}));
+            BEAST_EXPECT(expectOffers(env, bob_, 0));
+            BEAST_EXPECT(expectOffers(env, ed, 0));
+
+            env.Require(Balance(carol_, BTC(19'116'439'640'089'955)));
+            env.Require(Balance(carol_, ETH(20'729'341'627'786'426)));
+            env.Require(Balance(bob_, BTC(20'100'000'000'000'000)));
+            env.Require(Balance(ed, ETH(19'875'000'000'000'000)));
+        }
+
+        // Payment and transfer fee
+        // Scenario:
+        // Bob sends 125BTC to pay 80EUR to Carol
+        // Payment execution:
+        // bob's 125BTC/1.25 = 100BTC
+        // 100BTC/100EUR AMM offer
+        // 100EUR/1.25 = 80EUR paid to carol
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .transferFee = 25'000,
+                 .pay = 30'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .transferFee = 25'000,
+                 .pay = 30'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const ammAlice(env, alice_, BTC(1'000), ETH(1'100));
+            env(rate(gw_, 1.25));
+            env.close();
+            env(pay(bob_, carol_, ETH(100)),
+                Path(~MPT(ETH)),
+                sendmax(BTC(125)),
+                txflags(tfPartialPayment));
+            env.close();
+            BEAST_EXPECT(ammAlice.expectBalances(BTC(1'100), ETH(1'000), ammAlice.tokens()));
+            env.Require(Balance(bob_, BTC(29'875)));
+            env.Require(Balance(carol_, ETH(30'080)));
+        }
+
+        // Payment and transfer fee, multiple steps
+        // Scenario:
+        // Dan's offer 200CAN/200GBP
+        // AMM 1000GBP/10125ETH
+        // Ed's offer 200ETH/BTC
+        // Bob sends 195.3125CAN to pay 100BTC to Carol
+        // Payment execution:
+        // bob's 195.3125CAN/1.25 = 156.25CAN -> dan's offer
+        // 156.25CAN/156.25GBP 156.25GBP/1.25 = 125GBP -> AMM's offer
+        // 125GBP/125ETH 125ETH/1.25 = 100ETH -> ed's offer
+        // 100ETH/100BTC 100BTC/1.25 = 80BTC paid to carol
+        {
+            Env env(*this);
+            Account const dan("dan");
+            Account const ed("ed");
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_, dan, ed);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, dan, ed},
+                 .transferFee = 25'000,
+                 .pay = 30'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, dan, ed},
+                 .transferFee = 25'000,
+                 .pay = 30'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const CAN(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, dan, ed},
+                 .transferFee = 25'000,
+                 .pay = 2'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const GBP(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, dan, ed},
+                 .transferFee = 25'000,
+                 .pay = 3'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const ammAlice(env, alice_, GBP(1'000'000), ETH(10'125));
+            env(pay(gw_, bob_, CAN(1'953'125)));
+            env.close();
+            env(offer(dan, CAN(2'000'000), GBP(20'000)));
+            env(offer(ed, ETH(200), BTC(200)));
+            env.close();
+            env(pay(bob_, carol_, BTC(100)),
+                Path(~MPT(GBP), ~MPT(ETH), ~MPT(BTC)),
+                sendmax(CAN(1'953'125)),
+                txflags(tfPartialPayment));
+            env.close();
+            env.Require(Balance(bob_, CAN(2'000'000)));
+            env.Require(Balance(dan, CAN(3'562'500)));
+            env.Require(Balance(dan, GBP(2'984'375)));
+
+            BEAST_EXPECT(ammAlice.expectBalances(GBP(1'012'500), ETH(10'000), ammAlice.tokens()));
+            env.Require(Balance(ed, ETH(30'100)));
+            env.Require(Balance(ed, BTC(29'900)));
+            env.Require(Balance(carol_, BTC(30'080)));
+        }
+
+        // Pay amounts close to one side of the pool
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const& BTC = MPT(ammAlice[1]);
+                env(pay(alice_, carol_, BTC(9999)),
+                    Path(~BTC),
+                    sendmax(XRP(1)),
+                    txflags(tfPartialPayment),
+                    Ter(tesSUCCESS));
+                env(pay(alice_, carol_, BTC(10'000)),
+                    Path(~BTC),
+                    sendmax(XRP(1)),
+                    txflags(tfPartialPayment),
+                    Ter(tesSUCCESS));
+                env(pay(alice_, carol_, XRP(100)),
+                    Path(~XRP),
+                    sendmax(BTC(100)),
+                    txflags(tfPartialPayment),
+                    Ter(tesSUCCESS));
+                env(pay(alice_, carol_, STAmount{xrpIssue(), 99'999'900}),
+                    Path(~XRP),
+                    sendmax(BTC(100)),
+                    txflags(tfPartialPayment),
+                    Ter(tesSUCCESS));
+            },
+            {{XRP(100), AMMMPT(10'000)}});
+
+        // Multiple paths/steps
+        {
+            Env env(*this);
+            env.fund(XRP(100'000), gw_, alice_);
+            env.fund(XRP(1'000), bob_, carol_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 500'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 500'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const USD(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 500'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const EUR(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 500'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const xrp_eur(env, alice_, XRP(10'100), EUR(100'000'000'000'000'000));
+            AMM const eur_btc(
+                env, alice_, EUR(100'000'000'000'000'000), BTC(102'000'000'000'000'000));
+            AMM const btc_usd(
+                env, alice_, BTC(101'000'000'000'000'000), USD(100'000'000'000'000'000));
+            AMM const xrp_usd(env, alice_, XRP(10'150), USD(102'000'000'000'000'000));
+            AMM const xrp_eth(env, alice_, XRP(10'000), ETH(101'000'000'000'000'000));
+            AMM const eth_eur(
+                env, alice_, ETH(109'000'000'000'000'000), EUR(110'000'000'000'000'000));
+            AMM const eur_usd(
+                env, alice_, EUR(101'000'000'000'000'000), USD(100'000'000'000'000'000));
+            env(pay(bob_, carol_, USD(1'000'000'000'000'000)),
+                Path(~MPT(EUR), ~MPT(BTC), ~MPT(USD)),
+                Path(~MPT(USD)),
+                Path(~MPT(ETH), ~MPT(EUR), ~MPT(USD)),
+                sendmax(XRP(200)));
+
+            BEAST_EXPECT(xrp_eth.expectBalances(
+                XRPAmount(10'026'208'900), ETH(10'073'6577924447994), xrp_eth.tokens()));
+            BEAST_EXPECT(eth_eur.expectBalances(
+                ETH(10'926'3422075552006), EUR(10'973'5423207873690), eth_eur.tokens()));
+            BEAST_EXPECT(eur_usd.expectBalances(
+                EUR(10'126'4576792126310), USD(9'973'9315171207179), eur_usd.tokens()));
+            // XRP-USD path
+            // This path provides ~73.9e12USD/74.1XRP
+            BEAST_EXPECT(xrp_usd.expectBalances(
+                XRPAmount(10'224'106'246), USD(10'126'0684828792821), xrp_usd.tokens()));
+
+            // XRP-EUR-BTC-USD
+            // This path doesn't provide any liquidity due to how
+            // offers are generated in multi-path.
+            // Analytical solution shows a different distribution:
+            // XRP-EUR-BTC-USD 11.6e12USD/11.64XRP,
+            // XRP-USD 60.7e12USD/60.8XRP,
+            // XRP-ETH-EUR-USD 27.6e12USD/27.6XRP
+            BEAST_EXPECT(xrp_eur.expectBalances(
+                XRP(10'100), EUR(100'000'000'000'000'000), xrp_eur.tokens()));
+            BEAST_EXPECT(eur_btc.expectBalances(
+                EUR(100'000'000'000'000'000), BTC(102'000'000'000'000'000), eur_btc.tokens()));
+            BEAST_EXPECT(btc_usd.expectBalances(
+                BTC(101'000'000'000'000'000), USD(100'000'000'000'000'000), btc_usd.tokens()));
+            env.Require(Balance(carol_, USD(501'000'000'000'000'000)));
+        }
+
+        // Dependent AMM
+        {
+            Env env(*this);
+            env.fund(XRP(40'000), gw_, alice_);
+            env.fund(XRP(1'000), bob_, carol_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 50'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 50'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const USD(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 50'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const EUR(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 50'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const xrp_eur(env, alice_, XRP(10'100), EUR(10'000'000'000'000'000));
+            AMM const eur_btc(
+                env, alice_, EUR(10'000'000'000'000'000), BTC(10'200'000'000'000'000));
+            AMM const btc_usd(
+                env, alice_, BTC(10'100'000'000'000'000), USD(10'000'000'000'000'000));
+            AMM const xrp_eth(env, alice_, XRP(10'000), ETH(10'100'000'000'000'000));
+            AMM const eth_eur(
+                env, alice_, ETH(10'900'000'000'000'000), EUR(11'000'000'000'000'000));
+            env(pay(bob_, carol_, USD(100'000'000'000'000)),
+                Path(~MPT(EUR), ~MPT(BTC), ~MPT(USD)),
+                Path(~MPT(ETH), ~MPT(EUR), ~MPT(BTC), ~MPT(USD)),
+                sendmax(XRP(200)));
+
+            BEAST_EXPECT(xrp_eur.expectBalances(
+                XRPAmount(10'118'738'472), EUR(9'981'544436337981), xrp_eur.tokens()));
+            BEAST_EXPECT(eur_btc.expectBalances(
+                EUR(10'101'160967851758), BTC(10'097'914269680647), eur_btc.tokens()));
+            BEAST_EXPECT(btc_usd.expectBalances(
+                BTC(10'202'085730319353), USD(9'900'000'000'000'000), btc_usd.tokens()));
+            BEAST_EXPECT(xrp_eth.expectBalances(
+                XRPAmount(10'082'446'397), ETH(10'017'410727780081), xrp_eth.tokens()));
+            BEAST_EXPECT(eth_eur.expectBalances(
+                ETH(10'982'589272219919), EUR(10'917'294595810261), eth_eur.tokens()));
+            env.Require(Balance(carol_, USD(50'100'000'000'000'000)));
+        }
+
+        // AMM offers limit
+        // Consuming 30 CLOB offers, results in hitting 30 AMM offers limit.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            env.fund(XRP(1'000), bob_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 30'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 400'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'000'000'000'000'000));
+
+            for (int i = 0; i < 30; ++i)
+                env(offer(alice_, ETH(1'000'000'000'000 + (10'000'000'000 * i)), XRP(1)));
+            // This is worse quality offer than 30 offers above.
+            // It will not be consumed because of AMM offers limit.
+            env(offer(alice_, ETH(140'000'000'000'000), XRP(100)));
+            env(pay(bob_, carol_, BTC(100'000'000'000'000)),
+                Path(~XRP, ~MPT(BTC)),
+                sendmax(ETH(400'000'000'000'000)),
+                txflags(tfPartialPayment | tfNoRippleDirect));
+
+            BEAST_EXPECT(
+                ammAlice.expectBalances(XRP(10'030), BTC(9'970'089730807592), ammAlice.tokens()));
+
+            env.Require(Balance(carol_, BTC(30'029'910269192408)));
+            BEAST_EXPECT(expectOffers(env, alice_, 1, {{{ETH(140'000'000'000'000), XRP(100)}}}));
+        }
+
+        // This payment is fulfilled
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            env.fund(XRP(1'000), bob_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 30'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester const ETH(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 400'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'000'000'000'000'000));
+
+            for (int i = 0; i < 29; ++i)
+                env(offer(alice_, ETH(1'000'000'000'000 + (10'000'000'000 * i)), XRP(1)));
+            // This is worse quality offer than 30 offers above.
+            // It will not be consumed because of AMM offers limit.
+            env(offer(alice_, ETH(140'000'000'000'000), XRP(100)));
+            env(pay(bob_, carol_, BTC(100'000'000'000'000)),
+                Path(~XRP, ~MPT(BTC)),
+                sendmax(ETH(400'000'000'000'000)),
+                txflags(tfPartialPayment | tfNoRippleDirect));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{10'101'010'102}, BTC(9'900'000'000'000'000), ammAlice.tokens()));
+
+            env.Require(Balance(carol_, BTC(30'100'000'000'000'000)));
+            BEAST_EXPECT(
+                expectOffers(env, alice_, 1, {{{ETH(39'185857200000), XRPAmount{27'989'898}}}}));
+        }
+
+        // Offer crossing with AMM and another offer.
+        // AMM has a better quality and is consumed first.
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            env.fund(XRP(1'000), bob_);
+            MPTTester const BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 30'000'000'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            env(offer(bob_, XRP(100), BTC(100'001'000'000'000)));
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'100'000'000'000'000));
+            env(offer(carol_, BTC(100'000'000'000'000), XRP(100)));
+
+            BEAST_EXPECT(ammAlice.expectBalances(
+                XRPAmount{10'049'825'372}, BTC(10'049'925870493027), ammAlice.tokens()));
+            BEAST_EXPECT(
+                expectOffers(env, bob_, 1, {{{XRPAmount{50'074'628}, BTC(50'075129506973)}}}));
+
+            env.Require(Balance(carol_, BTC(30'100'000'000'000'000)));
+        }
+
+        // Individually locked MPT destination account
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+
+            BTC.set({.holder = carol_, .flags = tfMPTLock});
+
+            env(pay(alice_, carol_, XRP(1)),
+                Path(~XRP),
+                sendmax(BTC(10)),
+                txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+        }
+
+        // Individually locked MPT source account
+        {
+            Env env(*this);
+            env.fund(XRP(30'000), gw_, alice_, carol_);
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+            AMM const ammAlice(env, alice_, XRP(10'000), BTC(10'000));
+
+            BTC.set({.holder = alice_, .flags = tfMPTLock});
+
+            env(pay(alice_, carol_, BTC(1)),
+                Path(~MPT(BTC)),
+                sendmax(XRP(10)),
+                txflags(tfNoRippleDirect | tfPartialPayment),
+                Ter(tesSUCCESS));
+        }
+    }
+
+    void
+    testAMMTokens()
+    {
+        testcase("AMM Tokens");
+        using namespace jtx;
+
+        // Offer crossing with AMM LPTokens and XRP.
+        // AMM LPTokens come from MPT/XRP pool.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const token1 = ammAlice.lptIssue();
+                auto priceXRP = ammAssetOut(
+                    STAmount{XRPAmount{10'000'000'000}},
+                    STAmount{token1, 10'000'000},
+                    STAmount{token1, 5'000'000},
+                    0);
+                // Carol places an order to buy LPTokens
+                env(offer(carol_, STAmount{token1, 5'000'000}, priceXRP));
+                // Alice places an order to sell LPTokens
+                env(offer(alice_, priceXRP, STAmount{token1, 5'000'000}));
+                // Pool's LPTokens balance doesn't change
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), MPT(ammAlice[1])(10'000), IOUAmount{10'000'000}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{5'000'000}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(alice_, IOUAmount{5'000'000}));
+                // Carol votes
+                ammAlice.vote(carol_, 1'000);
+                BEAST_EXPECT(ammAlice.expectTradingFee(500));
+                ammAlice.vote(carol_, 0);
+                BEAST_EXPECT(ammAlice.expectTradingFee(0));
+                // Carol bids
+                auto const baseFee = env.current()->fees().base;
+                auto const carolXRP = env.Balance(carol_);
+                env(ammAlice.bid({.account = carol_, .bidMin = 100}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{4'999'900}));
+                BEAST_EXPECT(ammAlice.expectAuctionSlot(0, 0, IOUAmount{100}));
+                BEAST_EXPECT(env.Balance(carol_) == (carolXRP - baseFee));
+                priceXRP = ammAssetOut(
+                    STAmount{XRPAmount{10'000'000'000}},
+                    STAmount{token1, 9'999'900},
+                    STAmount{token1, 4'999'900},
+                    0);
+                // Carol withdraws
+                ammAlice.withdrawAll(carol_, XRP(0));
+                BEAST_EXPECT(env.Balance(carol_) == (carolXRP - baseFee * 2 + priceXRP));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRPAmount{10'000'000'000} - priceXRP,
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{5'000'000}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(alice_, IOUAmount{5'000'000}));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+            },
+            {{XRP(10000), AMMMPT(10000)}});
+
+        // Offer crossing with two AMM LPTokens.
+        // token1 comes from MPT/XRP pool.
+        // token2 comes from XRP/IOU pool.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, 1'000'000);
+                fund(env, gw_, {alice_, carol_}, {EUR(10'000)}, Fund::TokenOnly);
+                AMM ammAlice1(env, alice_, XRP(10'000), EUR(10'000));
+                ammAlice1.deposit(carol_, 1'000'000);
+                auto const token1 = ammAlice.lptIssue();
+                auto const token2 = ammAlice1.lptIssue();
+                env(offer(alice_, STAmount{token1, 100}, STAmount{token2, 100}),
+                    txflags(tfPassive));
+                env.close();
+                BEAST_EXPECT(expectOffers(env, alice_, 1));
+                env(offer(carol_, STAmount{token2, 100}, STAmount{token1, 100}));
+                env.close();
+                BEAST_EXPECT(
+                    expectHolding(env, alice_, STAmount{token1, 10'000'100}) &&
+                    expectHolding(env, alice_, STAmount{token2, 9'999'900}));
+                BEAST_EXPECT(
+                    expectHolding(env, carol_, STAmount{token2, 1'000'100}) &&
+                    expectHolding(env, carol_, STAmount{token1, 999'900}));
+                BEAST_EXPECT(expectOffers(env, alice_, 0) && expectOffers(env, carol_, 0));
+            },
+            {{XRP(10000), AMMMPT(10000)}});
+
+        // LPs pay LPTokens directly. Must trust set because the trust line
+        // is checked for the limit, which is 0 in the AMM auto-created
+        // trust line.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const token1 = ammAlice.lptIssue();
+                env.trust(STAmount{token1, 2'000'000}, carol_);
+                env.close();
+                ammAlice.deposit(carol_, 1'000'000);
+                BEAST_EXPECT(
+                    ammAlice.expectLPTokens(alice_, IOUAmount{10'000'000, 0}) &&
+                    ammAlice.expectLPTokens(carol_, IOUAmount{1'000'000, 0}));
+                // Pool balance doesn't change, only tokens moved from
+                // one line to another.
+                env(pay(alice_, carol_, STAmount{token1, 100}));
+                env.close();
+                BEAST_EXPECT(
+                    // Alice initial token1 10,000,000 - 100
+                    ammAlice.expectLPTokens(alice_, IOUAmount{9'999'900, 0}) &&
+                    // Carol initial token1 1,000,000 + 100
+                    ammAlice.expectLPTokens(carol_, IOUAmount{1'000'100, 0}));
+
+                env.trust(STAmount{token1, 20'000'000}, alice_);
+                env.close();
+                env(pay(carol_, alice_, STAmount{token1, 100}));
+                env.close();
+                // Back to the original balance
+                BEAST_EXPECT(
+                    ammAlice.expectLPTokens(alice_, IOUAmount{10'000'000, 0}) &&
+                    ammAlice.expectLPTokens(carol_, IOUAmount{1'000'000, 0}));
+            },
+            {{XRP(10000), AMMMPT(10000)}});
+    }
+
+    void
+    testAmendment()
+    {
+        testcase("Amendment");
+        using namespace jtx;
+        FeatureBitset const feature{testableAmendments() - featureMPTokensV2};
+        Env env{*this, feature};
+
+        env.fund(XRP(30'000), gw_, alice_);
+        env.close();
+        MPT const BTC = MPTTester(
+            {.env = env,
+             .issuer = gw_,
+             .holders = {alice_},
+             .pay = 10'000,
+             .flags = tfMPTCanClawback | tfMPTCanTransfer});
+
+        AMM amm(env, alice_, XRP(1'000), BTC(1'000), Ter(temDISABLED));
+
+        env(amm.bid({.bidMax = 1000}), Ter(temMALFORMED));
+        env(amm.bid({}), Ter(temDISABLED));
+        amm.vote(VoteArg{.tfee = 100, .err = Ter(temDISABLED)});
+        amm.withdraw(WithdrawArg{.tokens = 100, .err = Ter(temMALFORMED)});
+        amm.withdraw(WithdrawArg{.err = Ter(temDISABLED)});
+        amm.deposit(DepositArg{.asset1In = USD(100), .err = Ter(temDISABLED)});
+        amm.ammDelete(alice_, Ter(temDISABLED));
+    }
+
+    void
+    testAMMAndCLOB(FeatureBitset features)
+    {
+        testcase("AMMAndCLOB, offer quality change");
+        using namespace jtx;
+        auto const gw_ = Account("gw");
+        auto const LP1 = Account("LP1");
+        auto const LP2 = Account("LP2");
+
+        auto prep = [&](auto const& offerCb, auto const& expectCb) {
+            Env env(*this, features);
+            env.fund(XRP(30'000'000'000), gw_);
+            env.fund(XRP(10'000), LP1);
+            env.fund(XRP(10'000), LP2);
+            MPTTester const TST(
+                {.env = env, .issuer = gw_, .holders = {LP1, LP2}, .flags = kMPT_DEX_FLAGS});
+
+            env(offer(gw_, XRP(11'500'000'000), TST(1'000'000'000'000'000)));
+
+            env(offer(LP1, TST(25'000'000), XRPAmount(287'500'000)));
+
+            // Either AMM or CLOB offer
+            offerCb(env, TST);
+
+            env(offer(LP2, TST(25'000'000), XRPAmount(287'500'000)));
+
+            expectCb(env, TST);
+        };
+
+        // If we replace AMM with an equivalent CLOB offer, which AMM generates
+        // when it is consumed, then the result must be equivalent, too.
+        STAmount lp2TSTBalance;
+        std::string lp2TakerGets;
+        std::string lp2TakerPays;
+        // Execute with AMM first
+        prep(
+            [&](Env& env, MPTTester TST) { AMM const amm(env, LP1, TST(25'000'000), XRP(250)); },
+            [&](Env& env, MPTTester TST) {
+                lp2TSTBalance = env.Balance(LP2, MPT(TST));
+                auto const offer = getAccountOffers(env, LP2)["offers"][0u];
+                lp2TakerGets = offer["taker_gets"].asString();
+                lp2TakerPays = offer["taker_pays"]["value"].asString();
+            });
+        // Execute with CLOB offer
+        prep(
+            [&](Env& env, MPTTester TST) {
+                env(offer(LP1, XRPAmount{18'095'131}, TST(1'687'379)), txflags(tfPassive));
+            },
+            [&](Env& env, MPTTester TST) {
+                BEAST_EXPECT(lp2TSTBalance == env.Balance(LP2, MPT(TST)));
+                auto const offer = getAccountOffers(env, LP2)["offers"][0u];
+                BEAST_EXPECT(lp2TakerGets == offer["taker_gets"].asString());
+                BEAST_EXPECT(lp2TakerPays == offer["taker_pays"]["value"].asString());
+            });
+    }
+
+    void
+    testTradingFee(FeatureBitset features)
+    {
+        testcase("Trading Fee");
+        using namespace jtx;
+
+        // Single Deposit, 1% fee
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // No fee
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(3'000));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{1'000}));
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(3'000));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{0}));
+                env.Require(Balance(carol_, MPT(ammAlice[1])(30'000)));
+                // Set fee to 1%
+                ammAlice.vote(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+
+                // Carol gets fewer LPToken ~994, because of the single deposit
+                // fee
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(3'000));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{994'981155689671, -12}));
+                env.Require(Balance(carol_, MPT(ammAlice[1])(27'000)));
+
+                // Set fee to 0
+                ammAlice.vote(alice_, 0);
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+
+                // Carol gets back less than the original deposit
+                if (!features[fixAMMv1_3])
+                {
+                    env.Require(Balance(carol_, MPT(ammAlice[1])(29'995)));
+                }
+                else
+                {
+                    env.Require(Balance(carol_, MPT(ammAlice[1])(29'994)));
+                }
+            },
+            {{USD(1000), AMMMPT(1000)}},
+            0,
+            std::nullopt,
+            {features});
+
+        // Single deposit with EP not exceeding specified:
+        // 100MPT with EP not to exceed 0.1 (AssetIn/TokensOut). 1% fee.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                auto const balance = env.Balance(carol_, MPT(ammAlice[1]));
+                auto const tokensFee = ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(1000),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 1, -1});
+                auto const deposit = balance - env.Balance(carol_, MPT(ammAlice[1]));
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                ammAlice.vote(alice_, 0);
+                BEAST_EXPECT(ammAlice.expectTradingFee(0));
+                auto const tokensNoFee = ammAlice.deposit(carol_, deposit);
+                BEAST_EXPECT(tokensFee == IOUAmount(485636'0611129, -7));
+                if (!features[fixAMMv1_3])
+                {
+                    BEAST_EXPECT(tokensNoFee == IOUAmount(487659'8005807, -7));
+                }
+                else
+                {
+                    BEAST_EXPECT(tokensNoFee == IOUAmount(487612'21584827, -8));
+                }
+            },
+            {{XRP(10'000), AMMMPT(10'000)}},
+            1'000,
+            std::nullopt,
+            {features});
+
+        // Single deposit with EP not exceeding specified:
+        // 200MPT with EP not to exceed 0.002020 (AssetIn/TokensOut). 1% fee
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                auto const balance = env.Balance(carol_, MPT(ammAlice[1]));
+                auto const tokensFee = ammAlice.deposit(
+                    carol_,
+                    MPT(ammAlice[1])(200),
+                    std::nullopt,
+                    STAmount{ammAlice.lptIssue(), 2020, -6});
+                auto const deposit = balance - env.Balance(carol_, MPT(ammAlice[1]));
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                ammAlice.vote(alice_, 0);
+                BEAST_EXPECT(ammAlice.expectTradingFee(0));
+                auto const tokensNoFee = ammAlice.deposit(carol_, deposit);
+                if (!features[fixAMMv1_3])
+                {
+                    BEAST_EXPECT(tokensFee == IOUAmount(98'019'80198019, -8));
+                    BEAST_EXPECT(tokensNoFee == IOUAmount(98'495'13933556, -8));
+                }
+                else
+                {
+                    BEAST_EXPECT(tokensFee == IOUAmount(97527'05893345, -8));
+                    BEAST_EXPECT(tokensNoFee == IOUAmount(98000'10293049, -8));
+                }
+            },
+            {{XRP(10'000), AMMMPT(10'000)}},
+            1'000,
+            std::nullopt,
+            {features});
+
+        // Single Withdrawal, 1% fee
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                // No fee
+                ammAlice.deposit(carol_, MPT(ammAlice[1])(3'000));
+                BEAST_EXPECT(ammAlice.expectLPTokens(carol_, IOUAmount{1'000}));
+                env.Require(Balance(carol_, MPT(ammAlice[1])(27'000)));
+                // Set fee to 1%
+                ammAlice.vote(alice_, 1'000);
+                BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
+                // Single withdrawal. Carol gets ~5USD less than deposited.
+                ammAlice.withdrawAll(carol_, MPT(ammAlice[1])(0));
+                if (!features[fixAMMv1_3])
+                {
+                    env.Require(Balance(carol_, MPT(ammAlice[1])(29'995)));
+                }
+                else
+                {
+                    env.Require(Balance(carol_, MPT(ammAlice[1])(29'994)));
+                }
+            },
+            {{USD(1000), AMMMPT(1000)}},
+            0,
+            std::nullopt,
+            {features});
+
+        // Withdraw with EPrice limit, 1% fee.
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                ammAlice.deposit(carol_, 1'000'000);
+                auto const tokensFee = ammAlice.withdraw(
+                    carol_, MPT(ammAlice[1])(100), std::nullopt, IOUAmount{520, 0});
+                env.Require(Balance(carol_, MPT(ammAlice[1])(30443)));
+
+                // Set to original pool size
+                auto const deposit =
+                    env.Balance(carol_, MPT(ammAlice[1])) - MPT(ammAlice[1])(29'000);
+                ammAlice.deposit(carol_, deposit);
+                // fee 0%
+                ammAlice.vote(alice_, 0);
+                BEAST_EXPECT(ammAlice.expectTradingFee(0));
+                auto const tokensNoFee = ammAlice.withdraw(carol_, deposit);
+                if (!features[fixAMMv1_3])
+                {
+                    env.Require(Balance(carol_, MPT(ammAlice[1])(30443)));
+                }
+                else
+                {
+                    env.Require(Balance(carol_, MPT(ammAlice[1])(30442)));
+                }
+                BEAST_EXPECT(tokensNoFee == IOUAmount(746'327'46496649, -8));
+                BEAST_EXPECT(tokensFee == IOUAmount(750'588'23529411, -8));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}},
+            1'000,
+            std::nullopt,
+            {features});
+
+        // Payment, 1% fee
+        {
+            Env env{*this, features};
+            env.fund(XRP(30'000), gw_, alice_, bob_, carol_);
+            env.close();
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_},
+                 .pay = 30'000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            auto const USD = gw_["USD"];
+            env.trust(USD(30'000), alice_);
+            env(pay(gw_, alice_, USD(30'000)));
+            env.trust(USD(30'000), bob_);
+            env(pay(gw_, bob_, USD(1'000)));
+            env.trust(USD(30'000), carol_);
+            env(pay(gw_, carol_, USD(30'000)));
+            env.close();
+
+            AMM amm(env, alice_, BTC(1000), USD(1010));
+
+            env.Require(Balance(alice_, BTC(29'000)));
+            env.Require(Balance(alice_, USD(28'990)));
+            env.Require(Balance(carol_, BTC(30'000)));
+
+            // Carol pays to Alice with no fee
+            env(pay(carol_, alice_, USD(10)),
+                Path(~USD),
+                sendmax(BTC(10)),
+                txflags(tfNoRippleDirect));
+            env.close();
+
+            // Alice has 10USD more and Carol has 10BTC less
+            env.Require(Balance(alice_, BTC(29'000)));
+            env.Require(Balance(alice_, USD(29'000)));
+            env.Require(Balance(carol_, BTC(29'990)));
+
+            // Set fee to 1%
+            amm.vote(alice_, 1'000);
+            BEAST_EXPECT(amm.expectTradingFee(1'000));
+            // Bob pays to Carol with 1% fee
+            env(pay(bob_, carol_, BTC(10)),
+                Path(~BTC),
+                sendmax(USD(15)),
+                txflags(tfNoRippleDirect));
+            env.close();
+            // Bob sends 10.1~USD to pay 10BTC
+            env.Require(Balance(bob_, STAmount{USD, UINT64_C(989'8989898989899), -13}));
+            // Carol got 10BTC
+            env.Require(Balance(carol_, BTC(30'000)));
+            BEAST_EXPECT(amm.expectBalances(
+                BTC(1'000), STAmount{USD, UINT64_C(1'010'10101010101), -11}, amm.tokens()));
+        }
+
+        // Offer crossing, 0.05% fee MPT/XRP
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const BTC = MPT(ammAlice[1]);
+                auto const carolXRP = env.Balance(carol_);
+                auto const baseFee = env.current()->fees().base;
+                env(offer(carol_, BTC(10), XRP(10)));
+                env.close();
+                env.Require(Balance(carol_, BTC(30'010)));
+                env.Require(Balance(carol_, carolXRP - baseFee - XRP(10)));
+
+                // Change pool composition back
+                env(offer(carol_, XRP(10), BTC(10)));
+                env.close();
+                env.Require(Balance(carol_, BTC(30'000)));
+                env.Require(Balance(carol_, carolXRP - baseFee * 2));
+
+                // set fee to 0.05%
+                ammAlice.vote(alice_, 50);
+                BEAST_EXPECT(ammAlice.expectTradingFee(50));
+                env(offer(carol_, BTC(10), XRP(10)));
+                env.close();
+                env.Require(Balance(carol_, BTC(30'009)));
+                env.Require(Balance(carol_, carolXRP - baseFee * 3 - XRPAmount(8'995'507)));
+                BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{BTC(1), XRP(1)}}}));
+            },
+            {{XRP(1000), AMMMPT(1010)}},
+            0,
+            std::nullopt,
+            {features});
+
+        // Offer crossing, 0.5% fee MPT/IOU
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                auto const BTC = MPT(ammAlice[1]);
+                env(offer(carol_, BTC(10'000'000), USD(10)));
+                env.close();
+                env.Require(Balance(carol_, BTC(1'020'001'000)));
+                env.Require(Balance(carol_, USD(29'990)));
+
+                // Change pool composition back
+                env(offer(carol_, USD(10), BTC(10'000'000)));
+                env.close();
+                env.Require(Balance(carol_, BTC(1'010'001'000)));
+                env.Require(Balance(carol_, USD(30'000)));
+
+                // set fee to 0.5%
+                ammAlice.vote(alice_, 500);
+                BEAST_EXPECT(ammAlice.expectTradingFee(500));
+                env(offer(carol_, BTC(10'000'000), USD(10)));
+                env.close();
+                env.Require(Balance(carol_, BTC(1'014'975'874)));
+                env.Require(Balance(carol_, STAmount{USD, UINT64_C(29'995'02512600184), -11}));
+                BEAST_EXPECT(expectOffers(
+                    env,
+                    carol_,
+                    1,
+                    {{Amounts{BTC(5'025126), STAmount{USD, UINT64_C(5'025126), -6}}}}));
+            },
+            {{USD(1000), AMMMPT(1010000000)}},
+            0,
+            std::nullopt,
+            {features});
+
+        // Payment with AMM and CLOB offer, 0 fee
+        // AMM liquidity is consumed first up to CLOB offer quality
+        // CLOB offer is fully consumed next
+        // Remaining amount is consumed via AMM liquidity
+        {
+            Env env{*this, features};
+            Account const ed("ed");
+            fund(env, gw_, {alice_, bob_, carol_, ed}, XRP(30'000), {USD(2'000)});
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .pay = 30'000'000000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            env(offer(carol_, BTC(5'000000), USD(5)));
+            AMM const ammAlice(env, alice_, USD(1'005), BTC(1'000'000000));
+            env(pay(bob_, ed, USD(10)),
+                Path(~USD),
+                sendmax(BTC(15'000000)),
+                txflags(tfNoRippleDirect));
+
+            env.Require(Balance(ed, USD(2'010)));
+            env.Require(Balance(bob_, BTC(29'989'999999)));
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(1'005'000001),
+                STAmount{USD, UINT64_C(999'9999999999999), -13},
+                ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 0));
+        }
+
+        // Payment with AMM and CLOB offer. Same as above but with 0.25%
+        // fee.
+        {
+            Env env{*this, features};
+            Account const ed("ed");
+            fund(env, gw_, {alice_, bob_, carol_, ed}, XRP(30'000), {USD(2'000)});
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .pay = 30'000'000000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            env(offer(carol_, BTC(5'000000), USD(5)));
+            // Set 0.25% fee
+            AMM const ammAlice(env, alice_, USD(1'005), BTC(1'000'000000), false, 250);
+            env(pay(bob_, ed, USD(10)),
+                Path(~USD),
+                sendmax(BTC(15'000000)),
+                txflags(tfNoRippleDirect));
+            env.Require(Balance(ed, USD(2'010)));
+            env.Require(Balance(bob_, BTC(29'989'987453)));
+            BEAST_EXPECT(ammAlice.expectBalances(BTC(1'005'012547), USD(1'000), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 0));
+        }
+
+        // Payment with AMM and CLOB offer. AMM has a better
+        // spot price quality, but 1% fee offsets that. As the result
+        // the entire trade is executed via LOB.
+        {
+            Env env{*this, features};
+            Account const ed("ed");
+            fund(env, gw_, {alice_, bob_, carol_, ed}, XRP(30'000), {USD(2'000)});
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .pay = 30'000'000000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            env(offer(carol_, BTC(10'000000), USD(10)));
+            // Set 1% fee
+            AMM const ammAlice(env, alice_, USD(1'005), BTC(1'000'000000), false, 1'000);
+            env(pay(bob_, ed, USD(10)),
+                Path(~USD),
+                sendmax(BTC(15'000000)),
+                txflags(tfNoRippleDirect));
+            env.Require(Balance(ed, USD(2'010)));
+            env.Require(Balance(bob_, BTC(29'990'000000)));
+            BEAST_EXPECT(ammAlice.expectBalances(BTC(1'000'000000), USD(1'005), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 0));
+        }
+
+        // Payment with AMM and CLOB offer. AMM has a better
+        // spot price quality, but 1% fee offsets that.
+        // The CLOB offer is consumed first and the remaining
+        // amount is consumed via AMM liquidity.
+        {
+            Env env{*this, features};
+            Account const ed("ed");
+            fund(env, gw_, {alice_, bob_, carol_, ed}, XRP(30'000), {USD(2'000)});
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .pay = 30'000'000000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            env(offer(carol_, BTC(9'000000), USD(9)));
+            // Set 1% fee
+            AMM const ammAlice(env, alice_, USD(1'005), BTC(1'000'000000), false, 1'000);
+            env(pay(bob_, ed, USD(10)),
+                Path(~USD),
+                sendmax(BTC(15'000000)),
+                txflags(tfNoRippleDirect));
+            env.Require(Balance(ed, USD(2'010)));
+            env.Require(Balance(bob_, BTC(29'989'993923)));
+            BEAST_EXPECT(ammAlice.expectBalances(BTC(1'001'006077), USD(1'004), ammAlice.tokens()));
+            BEAST_EXPECT(expectOffers(env, carol_, 0));
+        }
+    }
+
+    void
+    testAdjustedTokens(FeatureBitset features)
+    {
+        testcase("Adjusted Deposit/Withdraw Tokens");
+        using namespace jtx;
+
+        // Deposit/Withdraw USD from USD/MPT pool
+        {
+            Env env(*this);
+            Account const gw_{"gateway"};
+            Account const alice_{"alice"};
+            Account const bob_("bob");
+            Account const carol_("carol");
+            Account const ed("ed");
+            Account const paul("paul");
+            Account const dan("dan");
+            Account const chris("chris");
+            Account const simon("simon");
+            Account const ben("ben");
+            Account const natalie("natalie");
+            std::vector<Account> const holders{
+                alice_, bob_, carol_, ed, paul, dan, chris, simon, ben, natalie};
+            env.fund(
+                XRP(100000), gw_, alice_, bob_, carol_, ed, paul, dan, chris, simon, ben, natalie);
+            env.close();
+
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = holders,
+                 .pay = 40'000'000000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            auto const USD = gw_["USD"];
+            for (auto const& holder : holders)
+            {
+                env.trust(USD(1'500'000), holder);
+                env(pay(gw_, holder, USD(1'500'000)));
+            }
+            env.close();
+
+            auto aliceUSD = env.Balance(alice_, USD);
+            auto bobUSD = env.Balance(bob_, USD);
+            auto carolUSD = env.Balance(carol_, USD);
+            auto edUSD = env.Balance(ed, USD);
+            auto paulUSD = env.Balance(paul, USD);
+            auto danUSD = env.Balance(dan, USD);
+            auto chrisUSD = env.Balance(chris, USD);
+            auto simonUSD = env.Balance(simon, USD);
+            auto benUSD = env.Balance(ben, USD);
+            auto natalieUSD = env.Balance(natalie, USD);
+
+            AMM ammAlice(env, alice_, BTC(10'000'000000), USD(10000));
+            BEAST_EXPECT(
+                ammAlice.expectBalances(BTC(10'000'000000), USD(10'000), IOUAmount{10'000'000}));
+
+            for (int i = 0; i < 10; ++i)
+            {
+                ammAlice.deposit(ben, STAmount{USD, 1, -10});
+                ammAlice.withdrawAll(ben, USD(0));
+                ammAlice.deposit(simon, USD(0.1));
+                ammAlice.withdrawAll(simon, USD(0));
+                ammAlice.deposit(chris, USD(1));
+                ammAlice.withdrawAll(chris, USD(0));
+                ammAlice.deposit(dan, USD(10));
+                ammAlice.withdrawAll(dan, USD(0));
+                ammAlice.deposit(bob_, USD(100));
+                ammAlice.withdrawAll(bob_, USD(0));
+                ammAlice.deposit(carol_, USD(1'000));
+                ammAlice.withdrawAll(carol_, USD(0));
+                ammAlice.deposit(ed, USD(10'000));
+                ammAlice.withdrawAll(ed, USD(0));
+                ammAlice.deposit(paul, USD(100'000));
+                ammAlice.withdrawAll(paul, USD(0));
+                ammAlice.deposit(natalie, USD(1'000'000));
+                ammAlice.withdrawAll(natalie, USD(0));
+            }
+
+            BEAST_EXPECT(ammAlice.expectBalances(
+                BTC(10'000'000000),
+                STAmount{USD, UINT64_C(10000'0000000001), -10},
+                IOUAmount{10'000'000}));
+
+            env.Require(Balance(bob_, bobUSD));
+            env.Require(Balance(carol_, carolUSD));
+            env.Require(Balance(ed, edUSD));
+            env.Require(Balance(paul, paulUSD));
+            env.Require(Balance(dan, danUSD));
+            env.Require(Balance(chris, chrisUSD));
+            env.Require(Balance(simon, simonUSD));
+            env.Require(Balance(ben, benUSD));
+            env.Require(Balance(natalie, natalieUSD));
+
+            ammAlice.withdrawAll(alice_);
+            BEAST_EXPECT(!ammAlice.ammExists());
+            env.Require(Balance(alice_, aliceUSD));
+        }
+
+        // Same as above but deposit/withdraw MPT from USD/MPT pool
+        {
+            Env env(*this);
+            Account const gw_{"gateway"};
+            Account const alice_{"alice"};
+            Account const bob_("bob");
+            Account const carol_("carol");
+            Account const ed("ed");
+            Account const paul("paul");
+            Account const dan("dan");
+            Account const chris("chris");
+            Account const simon("simon");
+            Account const ben("ben");
+            Account const natalie("natalie");
+            std::vector<Account> const holders{
+                alice_, bob_, carol_, ed, paul, dan, chris, simon, ben, natalie};
+            env.fund(
+                XRP(100000), gw_, alice_, bob_, carol_, ed, paul, dan, chris, simon, ben, natalie);
+            env.close();
+
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = holders,
+                 .pay = 40'000'000000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            auto const USD = gw_["USD"];
+            for (auto const& holder : holders)
+            {
+                env.trust(USD(1'500'000), holder);
+                env(pay(gw_, holder, USD(1'500'000)));
+            }
+            env.close();
+
+            auto aliceBTC = env.Balance(alice_, BTC);
+            auto bobBTC = env.Balance(bob_, BTC);
+            auto carolBTC = env.Balance(carol_, BTC);
+            auto edBTC = env.Balance(ed, BTC);
+            auto paulBTC = env.Balance(paul, BTC);
+            auto danBTC = env.Balance(dan, BTC);
+            auto chrisBTC = env.Balance(chris, BTC);
+            auto simonBTC = env.Balance(simon, BTC);
+            auto benBTC = env.Balance(ben, BTC);
+            auto natalieBTC = env.Balance(natalie, BTC);
+
+            AMM ammAlice(env, alice_, BTC(10'000'000000), USD(10000));
+            BEAST_EXPECT(
+                ammAlice.expectBalances(BTC(10'000'000000), USD(10'000), IOUAmount{10'000'000}));
+
+            for (int i = 0; i < 10; ++i)
+            {
+                ammAlice.deposit(ben, BTC(1));
+                ammAlice.withdrawAll(ben, BTC(0));
+                ammAlice.deposit(simon, BTC(1'000));
+                ammAlice.withdrawAll(simon, BTC(0));
+                ammAlice.deposit(chris, BTC(1));
+                ammAlice.withdrawAll(chris, BTC(0));
+                ammAlice.deposit(dan, BTC(10));
+                ammAlice.withdrawAll(dan, BTC(0));
+                ammAlice.deposit(bob_, BTC(100));
+                ammAlice.withdrawAll(bob_, BTC(0));
+                ammAlice.deposit(carol_, BTC(1'000));
+                ammAlice.withdrawAll(carol_, BTC(0));
+                ammAlice.deposit(ed, BTC(10'000));
+                ammAlice.withdrawAll(ed, BTC(0));
+                ammAlice.deposit(paul, BTC(100'000));
+                ammAlice.withdrawAll(paul, BTC(0));
+                ammAlice.deposit(natalie, BTC(1'000'000));
+                ammAlice.withdrawAll(natalie, BTC(0));
+            }
+
+            BEAST_EXPECT(
+                ammAlice.expectBalances(BTC(10'000'000090), USD(10'000), IOUAmount{10'000'000}));
+
+            env.Require(Balance(bob_, bobBTC - BTC(10)));
+            env.Require(Balance(carol_, carolBTC - BTC(10)));
+            env.Require(Balance(ed, edBTC - BTC(10)));
+            env.Require(Balance(paul, paulBTC - BTC(10)));
+            env.Require(Balance(dan, danBTC - BTC(10)));
+            env.Require(Balance(chris, chrisBTC - BTC(10)));
+            env.Require(Balance(simon, simonBTC - BTC(10)));
+            env.Require(Balance(ben, benBTC - BTC(10)));
+            env.Require(Balance(natalie, natalieBTC - BTC(10)));
+
+            ammAlice.withdrawAll(alice_);
+            BEAST_EXPECT(!ammAlice.ammExists());
+            env.Require(Balance(alice_, aliceBTC + BTC(90)));
+        }
+    }
+
+    void
+    testAMMID()
+    {
+        testcase("AMMID");
+        using namespace jtx;
+
+        // MPT/XRP
+        testAMM(
+            [&](AMM& amm, Env& env) {
+                amm.setClose(false);
+                auto const info = env.rpc(
+                    "json",
+                    "account_info",
+                    std::string("{\"account\": \"" + to_string(amm.ammAccount()) + "\"}"));
+                try
+                {
+                    BEAST_EXPECT(
+                        info[jss::result][jss::account_data][jss::AMMID].asString() ==
+                        to_string(amm.ammID()));
+                }
+                catch (...)
+                {
+                    fail();
+                }
+
+                amm.deposit(carol_, 1'000);
+
+                auto affected = env.meta()->getJson(JsonOptions::kNONE)[sfAffectedNodes.fieldName];
+                try
+                {
+                    bool found = false;
+                    for (auto const& node : affected)
+                    {
+                        if (node.isMember(sfModifiedNode.fieldName) &&
+                            node[sfModifiedNode.fieldName][sfLedgerEntryType.fieldName]
+                                    .asString() == "AccountRoot" &&
+                            node[sfModifiedNode.fieldName][sfFinalFields.fieldName][jss::Account]
+                                    .asString() == to_string(amm.ammAccount()))
+                        {
+                            found =
+                                node[sfModifiedNode.fieldName][sfFinalFields.fieldName][jss::AMMID]
+                                    .asString() == to_string(amm.ammID());
+                            break;
+                        }
+                    }
+                    BEAST_EXPECT(found);
+                }
+                catch (...)
+                {
+                    fail();
+                }
+            },
+            {{XRP(1000), AMMMPT(1000'000)}});
+    }
+
+    void
+    testSelection(FeatureBitset features)
+    {
+        testcase("Offer/Strand Selection");
+        using namespace jtx;
+        Account const ed("ed");
+        Account const gw1("gw1");
+
+        // These tests are expected to fail if the OwnerPaysFee feature
+        // is ever supported. Updates will need to be made to AMM handling
+        // in the payment engine, and these tests will need to be updated.
+
+        struct MPTList
+        {
+            MPTTester const USD;
+            MPTTester const ETH;
+            MPTTester const CAN;
+        };
+
+        auto prep = [&](Env& env, uint16_t gwTransferFee, uint16_t gw1TransferFee) -> MPTList {
+            env.fund(XRP(2'000), gw_, gw1, alice_, bob_, carol_, ed);
+            MPTTester USD(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .transferFee = gwTransferFee,
+                 .pay = 2'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester ETH(
+                {.env = env,
+                 .issuer = gw1,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .transferFee = gw1TransferFee,
+                 .pay = 2'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            MPTTester CAN(
+                {.env = env,
+                 .issuer = gw1,
+                 .holders = {alice_, bob_, carol_, ed},
+                 .transferFee = gw1TransferFee,
+                 .pay = 2'000'000'000,
+                 .flags = kMPT_DEX_FLAGS});
+            env.close();
+
+            return MPTList{
+                .USD = std::move(USD),
+                .ETH = std::move(ETH),
+                .CAN = std::move(CAN),
+            };
+        };
+
+        std::uint32_t constexpr lowRate = 10'000;
+        std::uint32_t constexpr highRate = 50'000;
+        for (auto const& rates :
+             {std::make_pair(lowRate, highRate), std::make_pair(highRate, lowRate)})
+        {
+            // Offer Selection
+
+            // Cross-currency payment: AMM has the same spot price quality
+            // as CLOB's offer and can't generate a better quality offer.
+            // The transfer fee in this case doesn't change the CLOB quality
+            // because trIn is ignored on adjustment and trOut on payment is
+            // also ignored because ownerPaysTransferFee is false in this
+            // case. Run test for 0) offer, 1) AMM, 2) offer and AMM to
+            // verify that the quality is better in the first case, and CLOB
+            // is selected in the second case.
+            {
+                std::array<Quality, 3> q{};
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this, features);
+                    auto mpts = prep(env, rates.first, rates.second);
+                    auto USD = mpts.USD;
+                    auto ETH = mpts.ETH;
+                    auto CAN = mpts.CAN;
+                    std::optional<AMM> amm;
+
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400'000'000), USD(400'000'000)), txflags(tfPassive));
+                        env.close();
+                    }
+                    if (i > 0)
+                        amm.emplace(env, ed, USD(1'000'000'000), ETH(1'000'000'000));
+                    env(pay(carol_, bob_, USD(100'000'000)),
+                        Path(~MPT(USD)),
+                        sendmax(ETH(500'000'000)));
+                    env.close();
+                    // CLOB and AMM, AMM is not selected
+                    if (i == 2)
+                    {
+                        BEAST_EXPECT(amm->expectBalances(
+                            USD(1'000'000'000), ETH(1'000'000'000), amm->tokens()));
+                    }
+                    env.Require(Balance(bob_, USD(2'100'000'000)));
+                    q[i] = Quality(
+                        Amounts{
+                            ETH(2'000'000'000) - env.Balance(carol_, MPT(ETH)),
+                            env.Balance(bob_, MPT(USD)) - USD(2'000'000'000)});
+                }
+                // CLOB is better quality than AMM
+                BEAST_EXPECT(q[0] > q[1]);
+                // AMM is not selected with CLOB
+                BEAST_EXPECT(q[0] == q[2]);
+            }
+            // Offer crossing: AMM has the same spot price quality
+            // as CLOB's offer and can't generate a better quality offer.
+            // The transfer fee in this case doesn't change the CLOB quality
+            // because the quality adjustment is ignored for the offer
+            // crossing.
+            for (auto i = 0; i < 3; ++i)
+            {
+                Env env(*this, features);
+                auto mpts = prep(env, rates.first, rates.second);
+                auto USD = mpts.USD;
+                auto ETH = mpts.ETH;
+                auto CAN = mpts.CAN;
+                std::optional<AMM> amm;
+                if (i == 0 || i == 2)
+                {
+                    env(offer(ed, ETH(400'000'000), USD(400'000'000)), txflags(tfPassive));
+                    env.close();
+                }
+                if (i > 0)
+                    amm.emplace(env, ed, USD(1'000'000'000), ETH(1'000'000'000));
+                env(offer(alice_, USD(400'000'000), ETH(400'000'000)));
+                env.close();
+                // AMM is not selected
+                if (i > 0)
+                {
+                    BEAST_EXPECT(
+                        amm->expectBalances(USD(1'000'000'000), ETH(1'000'000'000), amm->tokens()));
+                }
+                if (i == 0 || i == 2)
+                {
+                    // Fully crosses
+                    BEAST_EXPECT(expectOffers(env, alice_, 0));
+                }
+                // Fails to cross because AMM is not selected
+                else
+                {
+                    BEAST_EXPECT(expectOffers(
+                        env, alice_, 1, {Amounts{USD(400'000'000), ETH(400'000'000)}}));
+                }
+                BEAST_EXPECT(expectOffers(env, ed, 0));
+            }
+
+            // Show that the CLOB quality reduction
+            // results in AMM offer selection.
+
+            // Same as the payment but reduced offer quality
+            {
+                std::array<Quality, 3> q{};
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this, features);
+                    auto mpts = prep(env, rates.first, rates.second);
+                    auto USD = mpts.USD;
+                    auto ETH = mpts.ETH;
+                    auto CAN = mpts.CAN;
+                    std::optional<AMM> amm;
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400'000'000), USD(330'000'000)), txflags(tfPassive));
+                        env.close();
+                    }
+                    if (i > 0)
+                        amm.emplace(env, ed, USD(1'000'000'000), ETH(1'000'000'000));
+                    env(pay(carol_, bob_, USD(100'000'000)),
+                        Path(~MPT(USD)),
+                        sendmax(ETH(500'000'000)));
+                    env.close();
+                    // AMM and CLOB are selected
+                    if (i > 0)
+                    {
+                        BEAST_EXPECT(!amm->expectBalances(
+                            USD(1'000'000'000), ETH(1'000'000'000), amm->tokens()));
+                    }
+
+                    if (i == 2)
+                    {
+                        if (rates.first == lowRate)
+                        {
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    ETH(377'824'111),
+                                    USD(311'704'892),
+                                }}}));
+                        }
+                        else
+                        {
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                1,
+                                {{Amounts{
+                                    ETH(329'339'263),
+                                    USD(271'704'892),
+                                }}}));
+                        }
+                    }
+                    env.Require(Balance(bob_, USD(2'100'000'000)));
+                    q[i] = Quality(
+                        Amounts{
+                            ETH(2'000'000'000) - env.Balance(carol_, MPT(ETH)),
+                            env.Balance(bob_, MPT(USD)) - USD(2'000'000'000)});
+                }
+                // AMM is better quality
+                BEAST_EXPECT(q[1] > q[0]);
+                // AMM and CLOB produce better quality
+                BEAST_EXPECT(q[2] > q[1]);
+            }
+
+            // Same as the offer-crossing but reduced offer quality
+            for (auto i = 0; i < 3; ++i)
+            {
+                Env env(*this, features);
+                auto mpts = prep(env, rates.first, rates.second);
+                auto USD = mpts.USD;
+                auto ETH = mpts.ETH;
+                auto CAN = mpts.CAN;
+                std::optional<AMM> amm;
+                if (i == 0 || i == 2)
+                {
+                    env(offer(ed, ETH(400'000'000), USD(325'000'002)), txflags(tfPassive));
+                    env.close();
+                }
+                if (i > 0)
+                    amm.emplace(env, ed, USD(1'000'000'000), ETH(1'000'000'000));
+                env(offer(alice_, USD(325'000'000), ETH(400'000'000)));
+                env.close();
+                // AMM is selected in both cases
+                if (i > 0)
+                {
+                    BEAST_EXPECT(!amm->expectBalances(
+                        USD(1'000'000'000), ETH(1'000'000'000), amm->tokens()));
+                }
+                // Partially crosses, AMM is selected, CLOB fails
+                // limitQuality
+                if (i == 2)
+                {
+                    if (rates.first == lowRate)
+                    {
+                        // Ed offer is partially crossed.
+                        // The updated rounding makes limitQuality
+                        // work if both amendments are enabled
+                        BEAST_EXPECT(expectOffers(
+                            env,
+                            ed,
+                            1,
+                            {{Amounts{
+                                ETH(121'368'836),
+                                USD(98'612'180),
+                            }}}));
+                        BEAST_EXPECT(expectOffers(env, alice_, 0));
+                    }
+                    else
+                    {
+                        // Ed offer is partially crossed.
+                        BEAST_EXPECT(expectOffers(
+                            env,
+                            ed,
+                            1,
+                            {{Amounts{
+                                ETH(121'368'836),
+                                USD(98'612'180),
+                            }}}));
+                        BEAST_EXPECT(expectOffers(env, alice_, 0));
+                    }
+                }
+            }
+
+            // Strand selection
+
+            // Two book steps strand quality is 1.
+            // AMM strand's best quality is equal to AMM's spot price
+            // quality, which is 1. Both strands (steps) are adjusted
+            // for the transfer fee in qualityUpperBound. In case
+            // of two strands, AMM offers have better quality and are
+            // consumed first, remaining liquidity is generated by CLOB
+            // offers. Liquidity from two strands is better in this case
+            // than in case of one strand with two book steps. Liquidity
+            // from one strand with AMM has better quality than either one
+            // strand with two book steps or two strands. It may appear
+            // unintuitive, but one strand with AMM is optimized and
+            // generates one AMM offer, while in case of two strands,
+            // multiple AMM offers are generated, which results in slightly
+            // worse overall quality.
+            {
+                std::array<Quality, 3> q{};
+                for (auto i = 0; i < 3; ++i)
+                {
+                    Env env(*this, features);
+                    auto mpts = prep(env, rates.first, rates.second);
+                    auto USD = mpts.USD;
+                    auto ETH = mpts.ETH;
+                    auto CAN = mpts.CAN;
+                    std::optional<AMM> amm;
+
+                    if (i == 0 || i == 2)
+                    {
+                        env(offer(ed, ETH(400'000'000), CAN(375'000'000)), txflags(tfPassive));
+                        env(offer(ed, CAN(375'000'000), USD(338'000'000))), txflags(tfPassive);
+                    }
+
+                    if (i > 0)
+                        amm.emplace(env, ed, ETH(1'000'000'000), USD(1'000'000'000));
+
+                    env(pay(carol_, bob_, USD(100'000'000)),
+                        Path(~MPT(USD)),
+                        Path(~MPT(CAN), ~MPT(USD)),
+                        sendmax(ETH(600'000'000)));
+                    env.close();
+
+                    env.Require(Balance(bob_, USD(2'100'000'000)));
+
+                    if (i == 2)
+                    {
+                        if (rates.first == lowRate)
+                        {
+                            // Liquidity is consumed from AMM strand only
+                            BEAST_EXPECT(amm->expectBalances(
+                                ETH(1'124'584'936), USD(889'999'993), amm->tokens()));
+                        }
+                        else
+                        {
+                            BEAST_EXPECT(amm->expectBalances(
+                                ETH(1'103'723'909), USD(906'023'688), amm->tokens()));
+                            BEAST_EXPECT(expectOffers(
+                                env,
+                                ed,
+                                2,
+                                {{Amounts{
+                                      ETH(327'069'745),
+                                      CAN(306'627'886),
+                                  },
+                                  Amounts{
+                                      CAN(312'843'533),
+                                      USD(281'976'305),
+                                  }}}));
+                        }
+                    }
+                    q[i] = Quality(
+                        Amounts{
+                            ETH(2'000'000'000) - env.Balance(carol_, MPT(ETH)),
+                            env.Balance(bob_, MPT(USD)) - USD(2'000'000'000)});
+                }
+                BEAST_EXPECT(q[1] > q[0]);
+                BEAST_EXPECT(q[2] > q[0] && q[2] < q[1]);
+            }
+        }
+    }
+
+    void
+    testMalformed()
+    {
+        testcase("Malformed");
+        using namespace jtx;
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                WithdrawArg const args{
+                    .flags = tfSingleAsset,
+                    .err = Ter(temMALFORMED),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                WithdrawArg const args{
+                    .flags = tfOneAssetLPToken,
+                    .err = Ter(temMALFORMED),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                WithdrawArg const args{
+                    .flags = tfLimitLPToken,
+                    .err = Ter(temMALFORMED),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                WithdrawArg const args{
+                    .asset1Out = MPT(ammAlice[1])(100),
+                    .asset2Out = MPT(ammAlice[1])(100),
+                    .err = Ter(temBAD_AMM_TOKENS),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                MPTTester const BTC(
+                    {.env = env,
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .pay = 2'000,
+                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                WithdrawArg const args{
+                    .asset1Out = XRP(100),
+                    .asset2Out = BTC(100),
+                    .err = Ter(temBAD_AMM_TOKENS),
+                };
+                ammAlice.withdraw(args);
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+
+        testAMM(
+            [&](AMM& ammAlice, Env& env) {
+                Json::Value jv;
+                jv[jss::TransactionType] = jss::AMMWithdraw;
+                jv[jss::Flags] = tfLimitLPToken;
+                jv[jss::Account] = alice_.human();
+                ammAlice.setTokens(jv);
+                XRP(100).value().setJson(jv[jss::Amount]);
+                MPTTester const BTC(
+                    {.env = env,
+                     .issuer = gw_,
+                     .holders = {alice_, carol_},
+                     .pay = 2'000,
+                     .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+                BTC(100).value().setJson(jv[jss::EPrice]);
+                env(jv, Ter(telENV_RPC_FAILED));
+            },
+            {{XRP(10'000), AMMMPT(10'000)}});
+    }
+
+    void
+    testFixAMMOfferBlockedByLOB(FeatureBitset features)
+    {
+        testcase("AMM Offer Blocked By LOB");
+        using namespace jtx;
+
+        // Low quality LOB offer blocks AMM liquidity
+
+        // USD/MPT crosses AMM despite of low quality LOB
+        {
+            Env env(*this, features);
+
+            fund(env, gw_, {alice_, carol_}, XRP(1'000'000), {USD(1'000'000)});
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 40'000'000000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            env(offer(alice_, BTC(1), USD(0.01)));
+            env.close();
+            AMM const amm(env, gw_, BTC(200'000), USD(100'000));
+            env(offer(carol_, USD(0.49), BTC(1)));
+            env.close();
+
+            if (!features[fixAMMv1_1] && !features[fixAMMv1_3])
+            {
+                BEAST_EXPECT(amm.expectBalances(BTC(200'000), USD(100'000), amm.tokens()));
+                BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{BTC(1), USD(0.01)}}}));
+                BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{USD(0.49), BTC(1)}}}));
+            }
+
+            if (features[fixAMMv1_1] && features[fixAMMv1_3])
+            {
+                BEAST_EXPECT(amm.expectBalances(BTC(200'001), USD(99'999.51), amm.tokens()));
+                BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{BTC(1), USD(0.01)}}}));
+                // Carol's offer crosses AMM
+                BEAST_EXPECT(expectOffers(env, carol_, 0));
+            }
+        }
+
+        // XRP/MPT crosses AMM despite of low quality LOB
+        {
+            Env env(*this, features);
+
+            fund(env, gw_, {alice_, carol_}, XRP(1'000'000), {USD(1'000'000)});
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_, carol_},
+                 .pay = 40'000'000000,
+                 .flags = kMPT_DEX_FLAGS});
+
+            env(offer(alice_, BTC(1), XRP(0.01)));
+            env.close();
+            AMM const amm(env, gw_, BTC(200'000), XRP(100'000));
+            env(offer(carol_, XRP(0.49), BTC(1)));
+            env.close();
+
+            if (!features[fixAMMv1_1] && !features[fixAMMv1_3])
+            {
+                BEAST_EXPECT(amm.expectBalances(BTC(200'000), XRP(100'000), amm.tokens()));
+                BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{BTC(1), XRP(0.01)}}}));
+                BEAST_EXPECT(expectOffers(env, carol_, 1, {{Amounts{XRP(0.49), BTC(1)}}}));
+            }
+
+            if (features[fixAMMv1_1] && features[fixAMMv1_3])
+            {
+                BEAST_EXPECT(amm.expectBalances(BTC(200'001), XRP(99'999.51), amm.tokens()));
+                BEAST_EXPECT(expectOffers(env, alice_, 1, {{Amounts{BTC(1), XRP(0.01)}}}));
+                // Carol's offer crosses AMM
+                BEAST_EXPECT(expectOffers(env, carol_, 0));
+            }
+        }
+    }
+
+    void
+    testLPTokenBalance(FeatureBitset features)
+    {
+        testcase("LPToken Balance");
+        using namespace jtx;
+
+        Env env(*this, features);
+        Account const gw_{"gateway"}, alice_{"alice"}, bob_{"bob"};
+        env.fund(XRP(100000), gw_, alice_, bob_);
+        env.close();
+        env(fset(gw_, asfAllowTrustLineClawback));
+        env.close();
+
+        auto const USD = gw_["USD"];
+        env.trust(USD(100000), alice_);
+        env(pay(gw_, alice_, USD(50000)));
+        env.trust(USD(100000), bob_);
+        env(pay(gw_, bob_, USD(40000)));
+        env.close();
+
+        MPT const BTC = MPTTester(
+            {.env = env,
+             .issuer = gw_,
+             .holders = {alice_, bob_},
+             .pay = 40'000'000000,
+             .flags = tfMPTCanClawback | tfMPTCanLock | kMPT_DEX_FLAGS});
+
+        AMM amm(env, alice_, BTC(2), USD(1));
+        amm.deposit(alice_, IOUAmount{1'876123487565916, -15});
+        amm.deposit(bob_, IOUAmount{1'000});
+        amm.withdraw(alice_, IOUAmount{1'876123487565916, -15});
+        amm.withdrawAll(bob_);
+
+        auto const lpToken =
+            getAccountLines(env, alice_, amm.lptIssue())[jss::lines][0u][jss::balance].asString();
+        auto const lpTokenBalance =
+            amm.ammRpcInfo()[jss::amm][jss::lp_token][jss::value].asString();
+
+        BEAST_EXPECT(lpToken == "1.414213562374011" && lpTokenBalance == "1.4142135623741");
+
+        auto res = isOnlyLiquidityProvider(*env.current(), amm.lptIssue(), alice_);
+        BEAST_EXPECT(res && res.value());
+
+        amm.withdrawAll(alice_);
+        BEAST_EXPECT(!amm.ammExists());
+    }
+
+    void
+    testAMMDepositWithFrozenAssets()
+    {
+        testcase("test AMMDeposit with frozen assets");
+        using namespace jtx;
+
+        // This lambda function is used to create trustline, MPT.
+        // and create an AMM account.
+        // And also test the callback function.
+        auto testAMMDeposit = [&](Env& env, std::function<void(AMM & amm, MPTTester & BTC)> cb) {
+            env.fund(XRP(1'000), gw_, alice_);
+            env.close();
+            MPTTester BTC(
+                {.env = env,
+                 .issuer = gw_,
+                 .holders = {alice_},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | kMPT_DEX_FLAGS});
+
+            AMM amm(env, alice_, BTC(100), XRP(100));
+            env.close();
+            BTC.set({.holder = alice_, .flags = tfMPTLock});
+            cb(amm, BTC);
+        };
+
+        // Deposit two assets, one of which is frozen,
+        // then we should get tecFROZEN error.
+        {
+            Env env(*this);
+            testAMMDeposit(env, [&](AMM& amm, MPTTester& BTC) {
+                amm.deposit(alice_, BTC(100), XRP(100), std::nullopt, tfTwoAsset, Ter(tecFROZEN));
+            });
+        }
+
+        // Deposit one asset, which is the frozen token,
+        // then we should get tecFROZEN error.
+        {
+            Env env(*this);
+            testAMMDeposit(env, [&](AMM& amm, MPTTester& BTC) {
+                amm.deposit(
+                    alice_, BTC(100), std::nullopt, std::nullopt, tfSingleAsset, Ter(tecFROZEN));
+            });
+        }
+
+        // Deposit one asset which is not the frozen token,
+        // but the other asset is frozen. We should get tecFROZEN error
+        // when feature AMMClawback is enabled.
+        {
+            Env env(*this);
+            testAMMDeposit(env, [&](AMM& amm, MPTTester& BTC) {
+                amm.deposit(
+                    alice_, XRP(100), std::nullopt, std::nullopt, tfSingleAsset, Ter(tecFROZEN));
+            });
+        }
+    }
+
+    void
+    testAutoDelete()
+    {
+        testcase("Auto Delete");
+
+        using namespace jtx;
+        FeatureBitset const all{testableAmendments()};
+
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+            env.fund(XRP(1'000), gw_, alice_);
+            MPTTester const USD({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
+            AMM amm(env, gw_, USD(10'000), BTC(10'000));
+            for (auto i = 0; i < maxDeletableAMMTrustLines + 10; ++i)
+            {
+                Account const a{std::to_string(i)};
+                env.fund(XRP(1'000), a);
+                env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+                env.close();
+            }
+            // The trustlines are partially deleted,
+            // AMM is set to an empty state.
+            amm.withdrawAll(gw_);
+            BEAST_EXPECT(amm.ammExists());
+
+            // Bid,Vote,Deposit,Withdraw,SetTrust failing with
+            // tecAMM_EMPTY. Deposit succeeds with tfTwoAssetIfEmpty option.
+            env(amm.bid({
+                    .account = alice_,
+                    .bidMin = 1000,
+                }),
+                Ter(tecAMM_EMPTY));
+            amm.vote({.account = alice_, .tfee = 100, .err = Ter(tecAMM_EMPTY)});
+            amm.withdraw({.account = alice_, .tokens = 100, .err = Ter(tecAMM_EMPTY)});
+            amm.deposit({.account = alice_, .asset1In = USD(100), .err = Ter(tecAMM_EMPTY)});
+            env(trust(alice_, STAmount{amm.lptIssue(), 10'000}), Ter(tecAMM_EMPTY));
+
+            // Can deposit with tfTwoAssetIfEmpty option
+            amm.deposit(
+                {.account = alice_,
+                 .asset1In = USD(1'000),
+                 .asset2In = BTC(1'000),
+                 .flags = tfTwoAssetIfEmpty,
+                 .tfee = 1'000});
+            BEAST_EXPECT(amm.expectBalances(USD(1'000), BTC(1'000), IOUAmount{1'000}));
+            BEAST_EXPECT(amm.expectTradingFee(1'000));
+            BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
+
+            // Withdrawing all tokens deletes AMM since the number
+            // of remaining trustlines is less than max
+            amm.withdrawAll(alice_);
+            BEAST_EXPECT(!amm.ammExists());
+            BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+        }
+
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+            env.fund(XRP(1'000), gw_, alice_);
+            MPTTester const USD({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
+            MPTTester const BTC({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
+            AMM amm(env, gw_, USD(10'000), BTC(10'000));
+            for (auto i = 0; i < (maxDeletableAMMTrustLines * 2) + 10; ++i)
+            {
+                Account const a{std::to_string(i)};
+                env.fund(XRP(1'000), a);
+                env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+                env.close();
+            }
+            // The trustlines are partially deleted.
+            amm.withdrawAll(gw_);
+            BEAST_EXPECT(amm.ammExists());
+
+            // AMMDelete has to be called twice to delete AMM.
+            amm.ammDelete(alice_, Ter(tecINCOMPLETE));
+            BEAST_EXPECT(amm.ammExists());
+            // Deletes remaining trustlines and deletes AMM.
+            amm.ammDelete(alice_);
+            BEAST_EXPECT(!amm.ammExists());
+            BEAST_EXPECT(!env.le(keylet::ownerDir(amm.ammAccount())));
+
+            // Try redundant delete
+            amm.ammDelete(alice_, Ter(terNO_AMM));
+        }
+
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+            env.fund(XRP(1'000), gw_, alice_, carol_);
+            MPTTester const USD(
+                {.env = env, .issuer = gw_, .holders = {alice_, carol_}, .pay = 20'000});
+            MPTTester const BTC(
+                {.env = env, .issuer = gw_, .holders = {alice_, carol_}, .pay = 20'000});
+            AMM amm(env, gw_, USD(10'000), BTC(10'000));
+            amm.deposit({.account = alice_, .tokens = 1'000});
+            amm.deposit({.account = carol_, .tokens = 1'000});
+            amm.withdrawAll(alice_);
+            amm.withdrawAll(carol_);
+            amm.withdrawAll(gw_);
+            BEAST_EXPECT(!amm.ammExists());
+        }
+
+        // This test validates both invariant changes work together for
+        // the specific case of MPT/MPT pools with > maxDeletableAMMTrustLines.
+        {
+            Env env(
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = XRPAmount(1);
+                    return cfg;
+                }),
+                all);
+
+            env.fund(XRP(1'000), gw_, alice_);
+            MPT const USD =
+                MPTTester({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
+            MPT const BTC =
+                MPTTester({.env = env, .issuer = gw_, .holders = {alice_}, .pay = 20'000});
+
+            // MPT/MPT pool with MANY trustlines
+            AMM amm(env, gw_, USD(10'000), BTC(10'000));
+            for (auto i = 0; i < (maxDeletableAMMTrustLines * 2) + 10; ++i)
+            {
+                Account const a{std::to_string(i)};
+                env.fund(XRP(1'000), a);
+                env(trust(a, STAmount{amm.lptIssue(), 10'000}));
+                env.close();
+            }
+
+            amm.withdrawAll(gw_);
+            // AMM is in empty state, but can't be auto-deleted because of the LPTokens trustlines.
+            BEAST_EXPECT(amm.expectBalances(USD(0), BTC(0), IOUAmount(0)));
+            BEAST_EXPECT(amm.ammExists());
+
+            // Critical: MPT/MPT pool + tecINCOMPLETE
+            amm.ammDelete(alice_, Ter(tecINCOMPLETE));
+            BEAST_EXPECT(amm.ammExists());
+
+            amm.ammDelete(alice_);
+            BEAST_EXPECT(!amm.ammExists());
+        }
+    }
+
+    void
+    run() override
+    {
+        FeatureBitset const all{jtx::testableAmendments()};
+        testInstanceCreate();
+        testInvalidInstance();
+        testInvalidDeposit(all);
+        testInvalidDeposit(all - featureAMMClawback);
+        testDeposit();
+        testInvalidWithdraw();
+        testWithdraw();
+        testInvalidFeeVote();
+        testFeeVote();
+        testInvalidBid();
+        testBid(all);
+        testClawback();
+        testClawbackFromAMMAccount(all);
+        testClawbackFromAMMAccount(all - featureSingleAssetVault);
+        testInvalidAMMPayment();
+        testBasicPaymentEngine();
+        testAMMTokens();
+        testAmendment();
+        testAMMAndCLOB(all);
+        testTradingFee(all);
+        testTradingFee(all - fixAMMv1_3);
+        testAdjustedTokens(all);
+        testAMMID();
+        testSelection(all);
+        testMalformed();
+        testFixAMMOfferBlockedByLOB(all - fixAMMv1_1 - fixAMMv1_3);
+        testFixAMMOfferBlockedByLOB(all);
+        testLPTokenBalance(all);
+        testLPTokenBalance(all - fixAMMv1_3);
+        testAMMDepositWithFrozenAssets();
+        testAutoDelete();
+    }
+};
+
+BEAST_DEFINE_TESTSUITE_PRIO(AMMMPT, app, xrpl, 1);
+
+}  // namespace xrpl::test

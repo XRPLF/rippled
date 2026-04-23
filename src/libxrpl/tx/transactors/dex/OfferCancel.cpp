@@ -1,8 +1,16 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
-#include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/dex/OfferCancel.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -54,11 +62,25 @@ OfferCancel::doApply()
     if (auto sleOffer = view().peek(keylet::offer(account_, offerSequence)))
     {
         JLOG(j_.debug()) << "Trying to cancel offer #" << offerSequence;
-        return offerDelete(view(), sleOffer, ctx_.registry.journal("View"));
+        return offerDelete(view(), sleOffer, ctx_.registry.get().getJournal("View"));
     }
 
     JLOG(j_.debug()) << "Offer #" << offerSequence << " can't be found.";
     return tesSUCCESS;
+}
+
+void
+OfferCancel::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+OfferCancel::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

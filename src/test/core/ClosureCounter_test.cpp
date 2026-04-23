@@ -1,14 +1,16 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ClosureCounter.h>
 
 #include <atomic>
-#include <chrono>
+#include <optional>
 #include <thread>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -17,7 +19,7 @@ class ClosureCounter_test : public beast::unit_test::suite
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
     test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j_{env_.app().journal("ClosureCounter_test")};
+    beast::Journal j_{env_.app().getJournal("ClosureCounter_test")};
 
     void
     testConstruction()
@@ -317,5 +319,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ClosureCounter, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -8,12 +8,8 @@
 
 #include <xrpl/protocol/Indexes.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
 /** Escrow operations. */
-namespace escrow {
+namespace xrpl::test::jtx::escrow {
 
 Json::Value
 create(AccountID const& account, AccountID const& to, STAmount const& amount);
@@ -79,9 +75,4 @@ auto const kCONDITION = JTxFieldWrapper<BlobField>(sfCondition);
 
 auto const kFULFILLMENT = JTxFieldWrapper<BlobField>(sfFulfillment);
 
-}  // namespace escrow
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::escrow

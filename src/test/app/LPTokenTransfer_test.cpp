@@ -1,9 +1,26 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/check.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
-namespace xrpl {
-namespace test {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+
+namespace xrpl::test {
 
 class LPTokenTransfer_test : public jtx::AMMTest
 {
@@ -224,7 +241,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         AMM ammAlice1(env, alice_, XRP(10'000), USD(10'000));
         ammAlice1.deposit(carol_, 10'000'000);
 
-        fund(env, gw_, {alice_, carol_}, {EUR(10'000)}, Fund::IOUOnly);
+        fund(env, gw_, {alice_, carol_}, {EUR(10'000)}, Fund::TokenOnly);
         AMM ammAlice2(env, alice_, XRP(10'000), EUR(10'000));
         ammAlice2.deposit(carol_, 10'000'000);
         auto const token1 = ammAlice1.lptIssue();
@@ -293,7 +310,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // carol_ can always create a check with lptoken that has frozen
         // token
-        uint256 const carolChkId{keylet::check(carol_, env.seq(carol_)).key};
+        uint256 const carolChkId{keylet::check(carol_, env.Seq(carol_)).key};
         env(check::create(carol_, bob_, STAmount{lpIssue, 10}));
         env.close();
 
@@ -310,7 +327,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob_ creates a check
-        uint256 const bobChkId{keylet::check(bob_, env.seq(bob_)).key};
+        uint256 const bobChkId{keylet::check(bob_, env.Seq(bob_)).key};
         env(check::create(bob_, carol_, STAmount{lpIssue, 10}));
         env.close();
 
@@ -342,7 +359,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // bob_ creates a sell offer for lptoken
-        uint256 const sellOfferIndex = keylet::nftoffer(bob_, env.seq(bob_)).key;
+        uint256 const sellOfferIndex = keylet::nftoffer(bob_, env.Seq(bob_)).key;
         env(token::createOffer(bob_, nftID, STAmount{lpIssue, 10}), txflags(tfSellNFToken));
         env.close();
 
@@ -403,7 +420,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // bob_ creates a buy offer with lptoken despite bob_'s USD is frozen
-            uint256 const buyOfferIndex = keylet::nftoffer(bob_, env.seq(bob_)).key;
+            uint256 const buyOfferIndex = keylet::nftoffer(bob_, env.Seq(bob_)).key;
             env(token::createOffer(bob_, nftID, STAmount{lpIssue, 10}), token::owner(carol_));
             env.close();
 
@@ -432,5 +449,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

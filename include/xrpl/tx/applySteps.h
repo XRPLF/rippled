@@ -27,7 +27,7 @@ struct ApplyResult
 inline bool
 isTecClaimHardFail(TER ter, ApplyFlags flags)
 {
-    return isTecClaim(ter) && !(flags & tapRETRY);
+    return isTecClaim(ter) && ((flags & tapRETRY) == 0u);
 }
 
 /** Class describing the consequences to the account
@@ -202,7 +202,7 @@ public:
 
     /// Success flag - whether the transaction is likely to
     /// claim a fee
-    bool const likelyToClaimFee;
+    bool const likelyToClaimFee{};
 
     /// Constructor
     template <class Context>

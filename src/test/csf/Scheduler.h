@@ -9,9 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Simulated discrete-event scheduler.
 
@@ -265,7 +263,7 @@ inline Scheduler::QueueType::~QueueType()
         auto e = &*iter;
         ++iter;
         e->~event();
-        alloc_->deallocate(e, sizeof(e));
+        alloc_->deallocate(e, sizeof(e));  // NOLINT(bugprone-sizeof-expression)
     }
 }
 
@@ -427,6 +425,4 @@ Scheduler::stepFor(std::chrono::duration<Period, Rep> const& amount)
     return stepUntil(now() + amount);
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

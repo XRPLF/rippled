@@ -19,7 +19,7 @@ public:
     using value_type = base_uint<Bits>;
 
 private:
-    value_type value_;
+    value_type value_{};
 
 public:
     STBitString() = default;

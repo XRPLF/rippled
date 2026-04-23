@@ -1,10 +1,22 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/delivermin.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class DeliverMin_test : public beast::unit_test::suite
 {
@@ -49,8 +61,8 @@ public:
                 txflags(tfPartialPayment),
                 sendmax(XRP(5)),
                 Ter(tecPATH_PARTIAL));
-            env.require(Balance("alice", XRP(10000) - drops(env.current()->fees().base)));
-            env.require(Balance("bob", XRP(10000)));
+            env.Require(Balance("alice", XRP(10000) - drops(env.current()->fees().base)));
+            env.Require(Balance("bob", XRP(10000)));
         }
 
         {
@@ -66,7 +78,7 @@ public:
                 deliver_min(usd(100)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(100)));
-            env.require(Balance("alice", usd(100)));
+            env.Require(Balance("alice", usd(100)));
         }
 
         {
@@ -90,8 +102,8 @@ public:
                 deliver_min(usd(200)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(1100)));
-            env.require(Balance("bob", usd(0)));
-            env.require(Balance("carol", usd(200)));
+            env.Require(Balance("bob", usd(0)));
+            env.Require(Balance("carol", usd(200)));
         }
 
         {
@@ -110,9 +122,9 @@ public:
                 deliver_min(usd(200)),
                 txflags(tfPartialPayment),
                 sendmax(XRP(200)));
-            env.require(Balance("bob", usd(0)));
-            env.require(Balance("carol", usd(200)));
-            env.require(Balance("dan", usd(0)));
+            env.Require(Balance("bob", usd(0)));
+            env.Require(Balance("carol", usd(200)));
+            env.Require(Balance("dan", usd(0)));
         }
     }
 
@@ -128,5 +140,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DeliverMin, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

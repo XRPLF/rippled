@@ -1,14 +1,23 @@
-#include <test/jtx/flags.h>
 #include <test/jtx/token.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/flags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/nft.h>
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace token {
+#include <cstdint>
+#include <initializer_list>
+#include <vector>
+
+namespace xrpl::test::jtx::token {
 
 Json::Value
 mint(jtx::Account const& account, std::uint32_t nfTokenTaxon)
@@ -68,7 +77,7 @@ getID(
 {
     // We must add issuer's FirstNFTokenSequence to offset the starting NFT
     // sequence number.
-    nftSeq += env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.seq(issuer));
+    nftSeq += env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.Seq(issuer));
     return xrpl::NFTokenMint::createNFTokenID(
         flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
@@ -210,7 +219,4 @@ modify(jtx::Account const& account, uint256 const& nftokenID)
     return jv;
 }
 
-}  // namespace token
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::token

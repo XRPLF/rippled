@@ -1,10 +1,21 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/BookDirs.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 
-namespace xrpl {
-namespace test {
+#include <iterator>
+#include <optional>
+
+namespace xrpl::test {
 
 struct BookDirs_test : public beast::unit_test::suite
 {
@@ -33,14 +44,14 @@ struct BookDirs_test : public beast::unit_test::suite
 
         {
             env(offer("alice", Account("alice")["USD"](50), XRP(10)));
-            auto d = BookDirs(
-                *env.current(), Book(Account("alice")["USD"].issue(), xrpIssue(), std::nullopt));
+            auto d =
+                BookDirs(*env.current(), Book(Account("alice")["USD"], xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
         {
             env(offer("alice", gw["CNY"](50), XRP(10)));
-            auto d = BookDirs(*env.current(), Book(gw["CNY"].issue(), xrpIssue(), std::nullopt));
+            auto d = BookDirs(*env.current(), Book(gw["CNY"], xrpIssue(), std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
@@ -89,5 +100,4 @@ struct BookDirs_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(BookDirs, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

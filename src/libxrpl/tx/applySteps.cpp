@@ -1,4 +1,27 @@
 #include <xrpl/tx/applySteps.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <utility>
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
@@ -16,8 +39,6 @@
 
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/TxFormats.h>
-
-#include <stdexcept>
 
 namespace xrpl {
 
@@ -95,34 +116,31 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 // For Transactor::Normal
 //
 
-// clang-format off
-// Current formatter for rippled is based on clang-10, which does not handle `requires` clauses
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Normal)
+    requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences
-    consequencesHelper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx);
 };
 
 // For Transactor::Blocker
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Blocker)
+    requires(T::ConsequencesFactory == Transactor::Blocker)
 TxConsequences
-    consequencesHelper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
     return TxConsequences(ctx.tx, TxConsequences::Blocker);
 };
 
 // For Transactor::Custom
 template <class T>
-requires(T::ConsequencesFactory == Transactor::Custom)
+    requires(T::ConsequencesFactory == Transactor::Custom)
 TxConsequences
-    consequencesHelper(PreflightContext const& ctx)
+consequencesHelper(PreflightContext const& ctx)
 {
     return T::makeTxConsequences(ctx);
 };
-// clang-format on
 
 static std::pair<NotTEC, TxConsequences>
 invokePreflight(PreflightContext const& ctx)
@@ -293,6 +311,18 @@ invokeApply(ApplyContext& ctx)
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
+}
+
+// Test-only factory — not part of the public API.
+// The returned Transactor holds a raw reference to ctx; the caller must ensure
+// the ApplyContext outlives the Transactor.
+std::unique_ptr<Transactor>
+makeTransactor(ApplyContext& ctx)
+{
+    return withTxnType(
+        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
+            return std::make_unique<T>(ctx);
+        });
 }
 
 PreflightResult

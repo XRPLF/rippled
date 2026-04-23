@@ -7,19 +7,20 @@
 #include <type_traits>
 
 namespace xrpl {
-namespace test {
-namespace jtx {
+class STPath;
+
+namespace test::jtx {
 
 /** Set Paths, SendMax on a JTx. */
 class Paths
 {
 private:
-    Issue in_;
+    Asset in_;
     int depth_;
     unsigned int limit_;
 
 public:
-    Paths(Issue const& in, int depth = 7, unsigned int limit = 4)
+    Paths(Asset const& in, int depth = 7, unsigned int limit = 4)
         : in_(in), depth_(depth), limit_(limit)
     {
     }
@@ -44,6 +45,8 @@ public:
 
     template <class T, class... Args>
     explicit Path(T const& t, Args const&... args);
+
+    Path(STPath const& p);
 
     void
     operator()(Env&, JTx& jt) const;
@@ -91,6 +94,6 @@ Path::append(T const& t, Args const&... args)
         append(args...);
 }
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl

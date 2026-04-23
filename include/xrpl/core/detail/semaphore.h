@@ -55,7 +55,7 @@ public:
     void
     notify()
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         ++count_;
         cond_.notify_one();
     }

@@ -32,7 +32,7 @@ make_seed_pair() noexcept
         // state_t& operator=(state_t const&) = delete;
     };
     static state_t state;
-    std::lock_guard lock(state.mutex);
+    std::lock_guard const lock(state.mutex);
     return {state.dist(state.gen), state.dist(state.gen)};
 }
 
@@ -72,14 +72,12 @@ template <class HashAlgorithm = beast::xxhasher>
 class hardened_hash
 {
 private:
-    detail::seed_pair seeds_;
+    detail::seed_pair seeds_{detail::make_seed_pair<>()};
 
 public:
     using result_type = typename HashAlgorithm::result_type;
 
-    hardened_hash() : seeds_(detail::make_seed_pair<>())
-    {
-    }
+    hardened_hash() = default;
 
     template <class T>
     result_type

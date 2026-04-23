@@ -1,16 +1,21 @@
 #include <test/jtx/TestSuite.h>
 
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/handlers/WalletPropose.h>
+#include <xrpld/rpc/handlers/admin/keygen/WalletPropose.h>
 
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
-namespace xrpl {
+#include <optional>
+#include <string>
 
-namespace RPC {
+namespace xrpl::RPC {
 
 struct KeyStrings
 {
@@ -98,7 +103,7 @@ public:
             params.isMember(jss::key_type) ? params[jss::key_type] : "secp256k1");
         BEAST_EXPECT(!result.isMember(jss::warning));
 
-        std::string seed = result[jss::master_seed].asString();
+        std::string const seed = result[jss::master_seed].asString();
 
         result = walletPropose(params);
 
@@ -685,9 +690,9 @@ public:
     }
 
     void
-    testRippleLibEd25519()
+    testXrplLibEd25519()
     {
-        testcase("ripple-lib encoded Ed25519 keys");
+        testcase("XrplLib encoded Ed25519 keys");
 
         auto test = [this](char const* seed, char const* addr) {
             {
@@ -784,7 +789,7 @@ public:
         testKeypairForSignature(std::string("ed25519"), kED25519_STRINGS);
         testKeypairForSignature(std::string("secp256k1"), kSTRONG_BRAIN_STRINGS);
 
-        testRippleLibEd25519();
+        testXrplLibEd25519();
 
         testKeypairForSignatureErrors();
     }
@@ -792,5 +797,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(WalletPropose, rpc, xrpl);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

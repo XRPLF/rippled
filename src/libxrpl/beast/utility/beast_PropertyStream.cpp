@@ -1,3 +1,4 @@
+#include <xrpl/beast/core/List.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -43,7 +44,7 @@ PropertyStream::Item::operator*() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Proxy::Proxy(Map const& map, std::string const& key) : map_(&map), key_(key)
+PropertyStream::Proxy::Proxy(Map const& map, std::string key) : map_(&map), key_(std::move(key))
 {
 }
 
@@ -151,13 +152,14 @@ PropertyStream::Set::stream() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Source::Source(std::string const& name) : name_(name), item_(this), parent_(nullptr)
+PropertyStream::Source::Source(std::string name)
+    : name_(std::move(name)), item_(this), parent_(nullptr)
 {
 }
 
 PropertyStream::Source::~Source()
 {
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
     if (parent_ != nullptr)
         parent_->remove(*this);
     removeAll();
@@ -173,8 +175,8 @@ void
 PropertyStream::Source::add(Source& source)
 {
     std::lock(lock_, source.lock_);
-    std::lock_guard lk1(lock_, std::adopt_lock);
-    std::lock_guard lk2(source.lock_, std::adopt_lock);
+    std::lock_guard const lk1(lock_, std::adopt_lock);
+    std::lock_guard const lk2(source.lock_, std::adopt_lock);
 
     XRPL_ASSERT(
         source.parent_ == nullptr, "beast::PropertyStream::Source::add : null source parent");
@@ -186,8 +188,8 @@ void
 PropertyStream::Source::remove(Source& child)
 {
     std::lock(lock_, child.lock_);
-    std::lock_guard lk1(lock_, std::adopt_lock);
-    std::lock_guard lk2(child.lock_, std::adopt_lock);
+    std::lock_guard const lk1(lock_, std::adopt_lock);
+    std::lock_guard const lk2(child.lock_, std::adopt_lock);
 
     XRPL_ASSERT(
         child.parent_ == this, "beast::PropertyStream::Source::remove : child parent match");
@@ -198,10 +200,10 @@ PropertyStream::Source::remove(Source& child)
 void
 PropertyStream::Source::removeAll()
 {
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
     for (auto iter = children_.begin(); iter != children_.end();)
     {
-        std::lock_guard cl((*iter)->lock_);
+        std::lock_guard const cl((*iter)->lock_);
         remove(*(*iter));
     }
 }
@@ -221,7 +223,7 @@ PropertyStream::Source::write(PropertyStream& stream)
     Map map(name_, stream);
     onWrite(map);
 
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
 
     for (auto& child : children_)
         child.source().write(stream);
@@ -298,9 +300,9 @@ PropertyStream::Source::peel_name(std::string* path)
     if (path->empty())
         return "";
 
-    std::string::const_iterator first = (*path).begin();
-    std::string::const_iterator last = (*path).end();
-    std::string::const_iterator pos = std::find(first, last, '/');
+    std::string::const_iterator const first = (*path).begin();
+    std::string::const_iterator const last = (*path).end();
+    std::string::const_iterator const pos = std::find(first, last, '/');
     std::string s(first, pos);
 
     if (pos != last)
@@ -323,7 +325,7 @@ PropertyStream::Source::findOneDeep(std::string const& name)
     if (found != nullptr)
         return found;
 
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
     for (auto& s : children_)
     {
         found = s.source().findOneDeep(name);
@@ -354,7 +356,7 @@ PropertyStream::Source::findPath(std::string path)
 PropertyStream::Source*
 PropertyStream::Source::findOne(std::string const& name)
 {
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
     for (auto& s : children_)
     {
         if (s.source().name_ == name)

@@ -1,10 +1,25 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sig.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -84,7 +99,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         setTx[jss::Account] = bob.human();
         setTx[jss::TransactionType] = jss::AccountSet;
         setTx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
-        setTx[jss::Sequence] = env.seq(bob);
+        setTx[jss::Sequence] = env.Seq(bob);
         setTx[jss::SigningPubKey] = "";
 
         Json::Value signFor;
@@ -148,7 +163,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         setTx[jss::Account] = bob.human();
         setTx[jss::TransactionType] = jss::AccountSet;
         setTx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
-        setTx[jss::Sequence] = env.seq(bob);
+        setTx[jss::Sequence] = env.Seq(bob);
         setTx[jss::SigningPubKey] = "";
 
         signFor[jss::tx_json] = setTx;
@@ -199,7 +214,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
-        setTx[jss::Sequence] = env.seq(bob);
+        setTx[jss::Sequence] = env.Seq(bob);
         signFor[jss::tx_json] = setTx;
         jr = env.rpc("json", "sign_for", to_string(signFor))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");

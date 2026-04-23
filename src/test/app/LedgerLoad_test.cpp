@@ -1,17 +1,33 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/core/StartUpType.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/erase.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/system/detail/error_code.hpp>
 
+#include <cassert>
 #include <fstream>
+#include <ios>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -57,7 +73,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         for (auto i = 0; i < 20; ++i)
         {
-            Account acct{"A" + std::to_string(i)};
+            Account const acct{"A" + std::to_string(i)};
             env.fund(XRP(10000), acct);
             env.close();
             if (i > 0 && BEAST_EXPECT(prev.has_value()))
@@ -68,7 +84,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             }
             env(offer(acct, XRP(100), acct["USD"](1)));
             env.close();
-            prev.emplace(std::move(acct));
+            prev.emplace(acct);
         }
 
         retval.ledger = env.rpc("ledger", "current", "full")[jss::result];
@@ -127,7 +143,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // empty path
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(ledgerConfig, sd.dbPath, "", StartUpType::LoadFile, std::nullopt),
                 nullptr,
@@ -136,7 +152,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // file does not exist
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(
                     ledgerConfig, sd.dbPath, "badfile.json", StartUpType::LoadFile, std::nullopt),
@@ -158,7 +174,7 @@ class LedgerLoad_test : public beast::unit_test::suite
             return;
 
         except([&] {
-            Env env(
+            Env const env(
                 *this,
                 envconfig(
                     ledgerConfig,
@@ -257,7 +273,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         {
             // will throw an exception, because we cannot load a ledger for
             // replay when trapTxHash is set to an invalid transaction
-            Env env(
+            Env const env(
                 *this,
                 envconfig(ledgerConfig, sd.dbPath, ledgerHash, StartUpType::REPLAY, ~sd.trapTxHash),
                 nullptr,
@@ -314,7 +330,7 @@ public:
     void
     run() override
     {
-        beast::temp_dir td;
+        beast::temp_dir const td;
         auto sd = setupLedger(td);
 
         // test cases

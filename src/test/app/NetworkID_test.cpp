@@ -1,13 +1,27 @@
 // Copyright (c) 2020 Dev Null Productions
 
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/NetworkIDService.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <cstdint>
+#include <memory>
+
+namespace xrpl::test {
 
 class NetworkID_test : public beast::unit_test::suite
 {
@@ -110,7 +124,7 @@ public:
                 jvn[jss::Account] = alice.human();
                 jvn[jss::TransactionType] = jss::AccountSet;
                 jvn[jss::Fee] = to_string(env.current()->fees().base);
-                jvn[jss::Sequence] = env.seq(alice);
+                jvn[jss::Sequence] = env.Seq(alice);
                 jvn[jss::LastLedgerSequence] = env.current()->header().seq + 2;
                 auto jt = env.jtnofill(jvn);
                 Serializer s;
@@ -141,5 +155,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(NetworkID, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

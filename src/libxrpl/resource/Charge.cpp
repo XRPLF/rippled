@@ -4,11 +4,11 @@
 #include <ostream>
 #include <sstream>
 #include <string>
+#include <utility>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
-Charge::Charge(value_type cost, std::string const& label) : cost_(cost), label_(label)
+Charge::Charge(value_type cost, std::string label) : cost_(cost), label_(std::move(label))
 {
 }
 
@@ -57,5 +57,4 @@ Charge::operator*(value_type m) const
     return Charge(cost_ * m, label_);
 }
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

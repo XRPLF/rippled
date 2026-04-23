@@ -8,6 +8,8 @@
 
 #include <boost/container/flat_map.hpp>
 
+#include <utility>
+
 namespace xrpl {
 
 /** A transaction discovered to be in dispute during consensus.
@@ -97,10 +99,12 @@ public:
 
         // Compute the percentage of nodes voting 'yes' (possibly including us)
         int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
-        int total = nays_ + yays_ + (proposing ? 1 : 0);
-        if (!total)
+        int const total = nays_ + yays_ + (proposing ? 1 : 0);
+        if (total == 0)
+        {
             // There are no votes, so we know nothing
             return false;
+        }
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
@@ -173,8 +177,8 @@ public:
     getJson() const;
 
 private:
-    int yays_;      //< Number of yes votes
-    int nays_;      //< Number of no votes
+    int yays_{0};   //< Number of yes votes
+    int nays_{0};   //< Number of no votes
     bool ourVote_;  //< Our vote (true is yes)
     Tx tx_;         //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
@@ -210,7 +214,7 @@ DisputedTx<Tx, NodeId>::setVote(NodeId const& peer, bool votesYes)
         return true;
     }
     // changes vote to yes
-    else if (votesYes && !it->second)
+    if (votesYes && !it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
         --nays_;
@@ -219,7 +223,7 @@ DisputedTx<Tx, NodeId>::setVote(NodeId const& peer, bool votesYes)
         return true;
     }
     // changes vote to no
-    else if (!votesYes && it->second)
+    if (!votesYes && it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
         ++nays_;
@@ -240,9 +244,13 @@ DisputedTx<Tx, NodeId>::unVote(NodeId const& peer)
     if (it != votes_.end())
     {
         if (it->second)
+        {
             --yays_;
+        }
         else
+        {
             --nays_;
+        }
 
         votes_.erase(it);
     }
@@ -258,8 +266,8 @@ DisputedTx<Tx, NodeId>::updateVote(int percentTime, bool proposing, ConsensusPar
     if (!ourVote_ && (yays_ == 0))
         return false;
 
-    bool newPosition;
-    int weight;
+    bool newPosition = false;
+    int weight = 0;
 
     // When proposing, to prevent avalanche stalls, we increase the needed
     // weight slightly over time. We also need to ensure that the consensus has

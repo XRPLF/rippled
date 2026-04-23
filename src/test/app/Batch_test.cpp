@@ -1,22 +1,78 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/batch.h>
+#include <test/jtx/check.h>
+#include <test/jtx/delegate.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 #include <test/jtx/utility.h>
+#include <test/jtx/vault.h>
 
 #include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
-namespace xrpl {
-namespace test {
+#include <algorithm>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
 
 class Batch_test : public beast::unit_test::suite
 {
@@ -93,6 +149,7 @@ class Batch_test : public beast::unit_test::suite
 
         auto const ids = batchTxn.stx->getBatchTransactionIDs();
         std::vector<std::string> txIDs;
+        txIDs.reserve(ids.size());
         for (auto const& id : ids)
             txIDs.push_back(strHex(id));
         TxID const batchID = batchTxn.stx->getTransactionID();
@@ -160,7 +217,7 @@ class Batch_test : public beast::unit_test::suite
 
             // ttBatch
             {
-                auto const seq = env.seq(alice);
+                auto const seq = env.Seq(alice);
                 auto const batchFee = batch::calcBatchFee(env, 0, 2);
                 auto const txResult = withBatch ? Ter(tesSUCCESS) : Ter(temDISABLED);
                 env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -205,14 +262,14 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_FEE: preflight1
         {
-            env(batch::outer(alice, env.seq(alice), XRP(-1), tfAllOrNothing), Ter(temBAD_FEE));
+            env(batch::outer(alice, env.Seq(alice), XRP(-1), tfAllOrNothing), Ter(temBAD_FEE));
             env.close();
         }
 
         // DEFENSIVE: temINVALID_FLAG: Batch: inner batch flag.
         // ACTUAL: telENV_RPC_FAILED: checkValidity()
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
             env(batch::outer(alice, seq, batchFee, tfInnerBatchTxn), Ter(telENV_RPC_FAILED));
             env.close();
@@ -220,7 +277,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temINVALID_FLAG: Batch: invalid flags.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
             env(batch::outer(alice, seq, batchFee, tfDisallowXRP), Ter(temINVALID_FLAG));
             env.close();
@@ -228,7 +285,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temINVALID_FLAG: Batch: too many flags.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 txflags(tfAllOrNothing | tfOnlyOne),
@@ -238,7 +295,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temARRAY_EMPTY: Batch: txns array must have at least 2 entries.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing), Ter(temARRAY_EMPTY));
             env.close();
@@ -246,7 +303,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temARRAY_EMPTY: Batch: txns array must have at least 2 entries.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
@@ -257,7 +314,7 @@ class Batch_test : public beast::unit_test::suite
         // DEFENSIVE: temARRAY_TOO_LARGE: Batch: txns array exceeds 8 entries.
         // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 9);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
@@ -276,9 +333,9 @@ class Batch_test : public beast::unit_test::suite
         // temREDUNDANT: Batch: duplicate Txn found.
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto jt = env.jtnofill(
-                batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+                batch::outer(alice, env.Seq(alice), batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1));
 
@@ -289,7 +346,7 @@ class Batch_test : public beast::unit_test::suite
         // DEFENSIVE: temINVALID: Batch: batch cannot have inner batch txn.
         // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
@@ -302,7 +359,7 @@ class Batch_test : public beast::unit_test::suite
         // tfInnerBatchTxn flag.
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1[jss::Flags] = 0;
             auto jt = env.jtnofill(
@@ -316,7 +373,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_SIGNATURE: Batch: inner txn cannot include TxnSignature.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto jt = env.jt(pay(alice, bob, XRP(1)));
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -328,7 +385,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_SIGNER: Batch: inner txn cannot include Signers.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = pay(alice, bob, XRP(1));
             tx1[sfSigners.jsonName] = Json::arrayValue;
@@ -347,7 +404,7 @@ class Batch_test : public beast::unit_test::suite
         // temBAD_REGKEY: Batch: inner txn must include empty
         // SigningPubKey.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::SigningPubKey] = strHex(alice.pk());
@@ -362,7 +419,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temINVALID_INNER_BATCH: Batch: inner txn preflight failed.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
@@ -374,7 +431,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_FEE: Batch: inner txn must have a fee of 0.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = to_string(env.current()->fees().base);
@@ -387,7 +444,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_FEE: Inner txn with negative fee
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = "-1";
@@ -400,7 +457,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_FEE: Inner txn with non-integer fee
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = "1.5";
@@ -422,7 +479,7 @@ class Batch_test : public beast::unit_test::suite
         // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
         // and TicketSequence.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto tx1 = batch::inner(pay(alice, bob, XRP(1)), 0, 1);
             tx1[jss::Sequence] = seq + 1;
@@ -436,7 +493,7 @@ class Batch_test : public beast::unit_test::suite
         // temSEQ_AND_TICKET: Batch: inner txn must have either Sequence or
         // TicketSequence.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0),
@@ -447,7 +504,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temREDUNDANT: Batch: duplicate sequence found:
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
@@ -458,7 +515,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temREDUNDANT: Batch: duplicate ticket found:
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0, seq + 1),
@@ -469,7 +526,7 @@ class Batch_test : public beast::unit_test::suite
 
         // temREDUNDANT: Batch: duplicate ticket & sequence found:
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0, seq + 1),
@@ -482,7 +539,7 @@ class Batch_test : public beast::unit_test::suite
         // entries.
         // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 9, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
@@ -494,11 +551,11 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_SIGNER: Batch: signer cannot be the outer account
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 2, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Sig(alice, bob),
                 Ter(temBAD_SIGNER));
             env.close();
@@ -506,11 +563,11 @@ class Batch_test : public beast::unit_test::suite
 
         // temREDUNDANT: Batch: duplicate signer found
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 2, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Sig(bob, bob),
                 Ter(temREDUNDANT));
             env.close();
@@ -519,7 +576,7 @@ class Batch_test : public beast::unit_test::suite
         // temBAD_SIGNER: Batch: no account signature for inner txn.
         // Note: Extra signature by bob
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
@@ -531,11 +588,11 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_SIGNER: Batch: no account signature for inner txn.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Sig(carol),
                 Ter(temBAD_SIGNER));
             env.close();
@@ -543,11 +600,11 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_SIGNATURE: Batch: invalid batch txn signature.
         {
-            auto const seq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
+            auto const seq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto jt = env.jtnofill(
-                batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+                batch::outer(alice, env.Seq(alice), batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq));
 
@@ -567,12 +624,12 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_SIGNER: Batch: invalid batch signers.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 2, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::inner(pay(carol, alice, XRP(5)), env.seq(carol)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
+                batch::inner(pay(carol, alice, XRP(5)), env.Seq(carol)),
                 batch::Sig(bob),
                 Ter(temBAD_SIGNER));
             env.close();
@@ -609,7 +666,7 @@ class Batch_test : public beast::unit_test::suite
 
         // tefBAD_AUTH: Bob is not authorized to sign for Alice
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
@@ -624,11 +681,11 @@ class Batch_test : public beast::unit_test::suite
 
         // tefNOT_MULTI_SIGNING: SignersList not enabled
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {dave, carol}),
                 Ter(tefNOT_MULTI_SIGNING));
             env.close();
@@ -642,11 +699,11 @@ class Batch_test : public beast::unit_test::suite
 
         // tefBAD_SIGNATURE: Account not in SignersList
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol, frank}),
                 Ter(tefBAD_SIGNATURE));
             env.close();
@@ -654,11 +711,11 @@ class Batch_test : public beast::unit_test::suite
 
         // tefBAD_SIGNATURE: Wrong publicKey type
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol, Account("dave", KeyType::ed25519)}),
                 Ter(tefBAD_SIGNATURE));
             env.close();
@@ -668,11 +725,11 @@ class Batch_test : public beast::unit_test::suite
         {
             env(regkey(elsa, frank));
             env(fset(elsa, asfDisableMaster), Sig(elsa));
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol, elsa}),
                 Ter(tefMASTER_DISABLED));
             env.close();
@@ -680,11 +737,11 @@ class Batch_test : public beast::unit_test::suite
 
         // tefBAD_SIGNATURE: Signer does not exist
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol, phantom}),
                 Ter(tefBAD_SIGNATURE));
             env.close();
@@ -692,12 +749,12 @@ class Batch_test : public beast::unit_test::suite
 
         // tefBAD_SIGNATURE: Signer has not enabled RegularKey
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             Account const davo{"davo", KeyType::ed25519};
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol, Reg{dave, davo}}),
                 Ter(tefBAD_SIGNATURE));
             env.close();
@@ -706,12 +763,12 @@ class Batch_test : public beast::unit_test::suite
         // tefBAD_SIGNATURE: Wrong RegularKey Set
         {
             env(regkey(dave, frank));
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             Account const davo{"davo", KeyType::ed25519};
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol, Reg{dave, davo}}),
                 Ter(tefBAD_SIGNATURE));
             env.close();
@@ -719,11 +776,11 @@ class Batch_test : public beast::unit_test::suite
 
         // tefBAD_QUORUM
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 2, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol}),
                 Ter(tefBAD_QUORUM));
             env.close();
@@ -731,11 +788,11 @@ class Batch_test : public beast::unit_test::suite
 
         // tesSUCCESS: BatchSigners.Signers
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol, dave}),
                 Ter(tesSUCCESS));
             env.close();
@@ -743,11 +800,11 @@ class Batch_test : public beast::unit_test::suite
 
         // tesSUCCESS: Multisign + BatchSigners.Signers
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 4, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(5)), env.Seq(bob)),
                 batch::Msig(bob, {carol, dave}),
                 Msig(bob, carol),
                 Ter(tesSUCCESS));
@@ -760,7 +817,7 @@ class Batch_test : public beast::unit_test::suite
         // tefBAD_AUTH: Inner Account is not signer
         {
             auto const ledSeq = env.current()->seq();
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, phantom, XRP(1000)), seq + 1),
@@ -773,7 +830,7 @@ class Batch_test : public beast::unit_test::suite
         // tefBAD_AUTH: Account is not signer
         {
             auto const ledSeq = env.current()->seq();
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1000)), seq + 1),
@@ -786,11 +843,11 @@ class Batch_test : public beast::unit_test::suite
         // tesSUCCESS: Signed With Regular Key
         {
             env(regkey(bob, carol));
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(2)), env.Seq(bob)),
                 batch::Sig(Reg{bob, carol}),
                 Ter(tesSUCCESS));
             env.close();
@@ -798,11 +855,11 @@ class Batch_test : public beast::unit_test::suite
 
         // tesSUCCESS: Signed With Master Key
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(2)), env.Seq(bob)),
                 batch::Sig(bob),
                 Ter(tesSUCCESS));
             env.close();
@@ -812,11 +869,11 @@ class Batch_test : public beast::unit_test::suite
         {
             env(regkey(bob, carol));
             env(fset(bob, asfDisableMaster), Sig(bob));
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
+                batch::inner(pay(bob, alice, XRP(2)), env.Seq(bob)),
                 batch::Sig(bob),
                 Ter(tefMASTER_DISABLED));
             env.close();
@@ -841,7 +898,7 @@ class Batch_test : public beast::unit_test::suite
         // Invalid: sfTransactionType
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::TransactionType);
             auto jt = env.jtnofill(
@@ -856,7 +913,7 @@ class Batch_test : public beast::unit_test::suite
         // Invalid: sfAccount
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::Account);
             auto jt = env.jtnofill(
@@ -871,7 +928,7 @@ class Batch_test : public beast::unit_test::suite
         // Invalid: sfSequence
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::Sequence);
             auto jt = env.jtnofill(
@@ -886,7 +943,7 @@ class Batch_test : public beast::unit_test::suite
         // Invalid: sfFee
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::Fee);
             auto jt = env.jtnofill(
@@ -901,7 +958,7 @@ class Batch_test : public beast::unit_test::suite
         // Invalid: sfSigningPubKey
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::SigningPubKey);
             auto jt = env.jtnofill(
@@ -941,12 +998,12 @@ class Batch_test : public beast::unit_test::suite
 
         // Invalid: Alice Sequence is a past sequence
         {
-            auto const preAliceSeq = env.seq(alice);
-            auto const preAlice = env.balance(alice);
-            auto const preAliceUSD = env.balance(alice, usd.issue());
-            auto const preBobSeq = env.seq(bob);
-            auto const preBob = env.balance(bob);
-            auto const preBobUSD = env.balance(bob, usd.issue());
+            auto const preAliceSeq = env.Seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preAliceUSD = env.Balance(alice, usd.issue());
+            auto const preBobSeq = env.Seq(bob);
+            auto const preBob = env.Balance(bob);
+            auto const preBobUSD = env.Balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const [txIDs, batchID] = submitBatch(
@@ -959,7 +1016,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -968,27 +1025,27 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
             // Alice pays fee & Bob should not be affected.
-            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD);
-            BEAST_EXPECT(env.seq(bob) == preBobSeq);
-            BEAST_EXPECT(env.balance(bob) == preBob);
-            BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD);
+            BEAST_EXPECT(env.Seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.Seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD);
         }
 
         // Invalid: Alice Sequence is a future sequence
         {
-            auto const preAliceSeq = env.seq(alice);
-            auto const preAlice = env.balance(alice);
-            auto const preAliceUSD = env.balance(alice, usd.issue());
-            auto const preBobSeq = env.seq(bob);
-            auto const preBob = env.balance(bob);
-            auto const preBobUSD = env.balance(bob, usd.issue());
+            auto const preAliceSeq = env.Seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preAliceUSD = env.Balance(alice, usd.issue());
+            auto const preBobSeq = env.Seq(bob);
+            auto const preBob = env.Balance(bob);
+            auto const preBobUSD = env.Balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const [txIDs, batchID] = submitBatch(
@@ -1001,7 +1058,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -1010,27 +1067,27 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
             // Alice pays fee & Bob should not be affected.
-            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD);
-            BEAST_EXPECT(env.seq(bob) == preBobSeq);
-            BEAST_EXPECT(env.balance(bob) == preBob);
-            BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD);
+            BEAST_EXPECT(env.Seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.Seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD);
         }
 
         // Invalid: Bob Sequence is a past sequence
         {
-            auto const preAliceSeq = env.seq(alice);
-            auto const preAlice = env.balance(alice);
-            auto const preAliceUSD = env.balance(alice, usd.issue());
-            auto const preBobSeq = env.seq(bob);
-            auto const preBob = env.balance(bob);
-            auto const preBobUSD = env.balance(bob, usd.issue());
+            auto const preAliceSeq = env.Seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preAliceUSD = env.Balance(alice, usd.issue());
+            auto const preBobSeq = env.Seq(bob);
+            auto const preBob = env.Balance(bob);
+            auto const preBobUSD = env.Balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const [txIDs, batchID] = submitBatch(
@@ -1043,7 +1100,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -1052,27 +1109,27 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
             // Alice pays fee & Bob should not be affected.
-            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD);
-            BEAST_EXPECT(env.seq(bob) == preBobSeq);
-            BEAST_EXPECT(env.balance(bob) == preBob);
-            BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD);
+            BEAST_EXPECT(env.Seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.Seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD);
         }
 
         // Invalid: Bob Sequence is a future sequence
         {
-            auto const preAliceSeq = env.seq(alice);
-            auto const preAlice = env.balance(alice);
-            auto const preAliceUSD = env.balance(alice, usd.issue());
-            auto const preBobSeq = env.seq(bob);
-            auto const preBob = env.balance(bob);
-            auto const preBobUSD = env.balance(bob, usd.issue());
+            auto const preAliceSeq = env.Seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preAliceUSD = env.Balance(alice, usd.issue());
+            auto const preBobSeq = env.Seq(bob);
+            auto const preBob = env.Balance(bob);
+            auto const preBobUSD = env.Balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const [txIDs, batchID] = submitBatch(
@@ -1085,7 +1142,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -1094,27 +1151,27 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
             // Alice pays fee & Bob should not be affected.
-            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD);
-            BEAST_EXPECT(env.seq(bob) == preBobSeq);
-            BEAST_EXPECT(env.balance(bob) == preBob);
-            BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD);
+            BEAST_EXPECT(env.Seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.Seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD);
         }
 
         // Invalid: Outer and Inner Sequence are the same
         {
-            auto const preAliceSeq = env.seq(alice);
-            auto const preAlice = env.balance(alice);
-            auto const preAliceUSD = env.balance(alice, usd.issue());
-            auto const preBobSeq = env.seq(bob);
-            auto const preBob = env.balance(bob);
-            auto const preBobUSD = env.balance(bob, usd.issue());
+            auto const preAliceSeq = env.Seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preAliceUSD = env.Balance(alice, usd.issue());
+            auto const preBobSeq = env.Seq(bob);
+            auto const preBob = env.Balance(bob);
+            auto const preBobUSD = env.Balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const [txIDs, batchID] = submitBatch(
@@ -1127,7 +1184,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -1136,17 +1193,17 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
 
             // Alice pays fee & Bob should not be affected.
-            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD);
-            BEAST_EXPECT(env.seq(bob) == preBobSeq);
-            BEAST_EXPECT(env.balance(bob) == preBob);
-            BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD);
+            BEAST_EXPECT(env.Seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.Seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD);
         }
     }
 
@@ -1172,7 +1229,7 @@ class Batch_test : public beast::unit_test::suite
 
             // Bad Fee: Should be batch::calcBatchFee(env, 0, 2)
             auto const batchFee = batch::calcBatchFee(env, 0, 1);
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(15)), aliceSeq + 2),
@@ -1198,7 +1255,7 @@ class Batch_test : public beast::unit_test::suite
 
             // Bad Fee: Should be batch::calcBatchFee(env, 2, 2)
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(15)), aliceSeq + 2),
@@ -1225,8 +1282,8 @@ class Batch_test : public beast::unit_test::suite
 
             // Bad Fee: Should be batch::calcBatchFee(env, 3, 2)
             auto const batchFee = batch::calcBatchFee(env, 2, 2);
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq),
@@ -1257,8 +1314,8 @@ class Batch_test : public beast::unit_test::suite
 
             // Bad Fee: Should be batch::calcBatchFee(env, 4, 2)
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq),
@@ -1282,8 +1339,8 @@ class Batch_test : public beast::unit_test::suite
 
             // Bad Fee: Should be batch::calcBatchFee(env, 1, 2)
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq),
@@ -1314,7 +1371,7 @@ class Batch_test : public beast::unit_test::suite
             };
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(ammCreate(XRP(10), usd(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2),
@@ -1341,7 +1398,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             auto const batchFee = batch::calcBatchFee(env, 0, 9);
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
@@ -1366,7 +1423,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             auto const batchFee = batch::calcBatchFee(env, 0, 9);
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             auto jt = env.jtnofill(
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
@@ -1379,7 +1436,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq));
 
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
@@ -1395,7 +1452,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 9, 2);
             env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
@@ -1415,14 +1472,14 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             auto const batchFee = batch::calcBatchFee(env, 0, 9);
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             auto jt = env.jtnofill(
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
                 batch::Sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob));
 
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 auto const result = xrpl::apply(env.app(), view, *jt.stx, tapNONE, j);
                 BEAST_EXPECT(!result.applied && result.ter == temARRAY_TOO_LARGE);
                 return result.applied;
@@ -1449,11 +1506,11 @@ class Batch_test : public beast::unit_test::suite
 
         // all
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1462,7 +1519,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1470,20 +1527,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 3);
+            BEAST_EXPECT(env.Seq(alice) == seq + 3);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
 
         // tec failure
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
 
             auto const [txIDs, batchID] = submitBatch(
                 env,
@@ -1494,26 +1551,26 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(9999)), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequence
-            BEAST_EXPECT(env.seq(alice) == seq + 1);
+            BEAST_EXPECT(env.Seq(alice) == seq + 1);
 
             // Alice pays Fee; Bob should not be affected
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
         }
 
         // tef failure
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1523,26 +1580,26 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(trust(alice, usd(1000), tfSetfAuth), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequence
-            BEAST_EXPECT(env.seq(alice) == seq + 1);
+            BEAST_EXPECT(env.Seq(alice) == seq + 1);
 
             // Alice pays Fee; Bob should not be affected
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
         }
 
         // ter failure
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1552,17 +1609,17 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(trust(alice, usd(1000), tfSetfAuth), 0, seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequence
-            BEAST_EXPECT(env.seq(alice) == seq + 1);
+            BEAST_EXPECT(env.Seq(alice) == seq + 1);
 
             // Alice pays Fee; Bob should not be affected
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
         }
     }
 
@@ -1587,11 +1644,11 @@ class Batch_test : public beast::unit_test::suite
 
         // all transactions fail
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1604,7 +1661,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(9999)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tecUNFUNDED_PAYMENT", txIDs[0], batchID},
                 {2, "Payment", "tecUNFUNDED_PAYMENT", txIDs[1], batchID},
@@ -1613,20 +1670,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 4);
+            BEAST_EXPECT(env.Seq(alice) == seq + 4);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
         }
 
         // first transaction fails
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1637,7 +1694,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tecUNFUNDED_PAYMENT", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1645,20 +1702,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 3);
+            BEAST_EXPECT(env.Seq(alice) == seq + 3);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(1) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(1));
         }
 
         // tec failure
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1669,27 +1726,27 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
             };
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 2);
+            BEAST_EXPECT(env.Seq(alice) == seq + 2);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(1) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(1));
         }
 
         // tef failure
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1700,27 +1757,27 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[1], batchID},
             };
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 2);
+            BEAST_EXPECT(env.Seq(alice) == seq + 2);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee - XRP(1));
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee - XRP(1));
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(1));
         }
 
         // ter failure
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1731,26 +1788,26 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[1], batchID},
             };
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 2);
+            BEAST_EXPECT(env.Seq(alice) == seq + 2);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee - XRP(1));
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee - XRP(1));
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(1));
         }
 
         // tec (tecKILLED) error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const preCarol = env.balance(carol);
-            auto const seq = env.seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
+            auto const preCarol = env.Balance(carol);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 6);
 
             auto const [txIDs, batchID] = submitBatch(
@@ -1768,7 +1825,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, dave, XRP(100)), seq + 6));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "OfferCreate", "tecKILLED", txIDs[0], batchID},
                 {2, "OfferCreate", "tecKILLED", txIDs[1], batchID},
@@ -1777,9 +1834,9 @@ class Batch_test : public beast::unit_test::suite
             };
             validateClosedLedger(env, testCases);
 
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(100) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(100));
-            BEAST_EXPECT(env.balance(carol) == preCarol);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(100) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(100));
+            BEAST_EXPECT(env.Balance(carol) == preCarol);
         }
     }
 
@@ -1804,11 +1861,11 @@ class Batch_test : public beast::unit_test::suite
 
         // first transaction fails
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1820,27 +1877,27 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tecUNFUNDED_PAYMENT", txIDs[0], batchID},
             };
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 2);
+            BEAST_EXPECT(env.Seq(alice) == seq + 2);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
         }
 
         // all transactions succeed
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1851,7 +1908,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(4)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1861,20 +1918,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 5);
+            BEAST_EXPECT(env.Seq(alice) == seq + 5);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(10) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(10));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(10) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(10));
         }
 
         // tec error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1886,7 +1943,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1895,20 +1952,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 4);
+            BEAST_EXPECT(env.Seq(alice) == seq + 4);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
 
         // tef error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1920,7 +1977,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1928,20 +1985,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 3);
+            BEAST_EXPECT(env.Seq(alice) == seq + 3);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
 
         // ter error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -1953,7 +2010,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1961,19 +2018,19 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 3);
+            BEAST_EXPECT(env.Seq(alice) == seq + 3);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
 
         // tec (tecKILLED) error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const preCarol = env.balance(carol);
-            auto const seq = env.seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
+            auto const preCarol = env.Balance(carol);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
             auto const [txIDs, batchID] = submitBatch(
                 env,
@@ -1986,7 +2043,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, dave, XRP(100)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -1994,9 +2051,9 @@ class Batch_test : public beast::unit_test::suite
             };
             validateClosedLedger(env, testCases);
 
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(200) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(100));
-            BEAST_EXPECT(env.balance(carol) == preCarol + XRP(100));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(200) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(100));
+            BEAST_EXPECT(env.Balance(carol) == preCarol + XRP(100));
         }
     }
 
@@ -2020,11 +2077,11 @@ class Batch_test : public beast::unit_test::suite
 
         // multiple transactions fail
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -2037,7 +2094,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tecUNFUNDED_PAYMENT", txIDs[1], batchID},
@@ -2047,20 +2104,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 5);
+            BEAST_EXPECT(env.Seq(alice) == seq + 5);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(4) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(4));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(4) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(4));
         }
 
         // tec error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -2072,7 +2129,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2082,20 +2139,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 5);
+            BEAST_EXPECT(env.Seq(alice) == seq + 5);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(6) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(6));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(6) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(6));
         }
 
         // tef error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -2107,7 +2164,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2116,20 +2173,20 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 4);
+            BEAST_EXPECT(env.Seq(alice) == seq + 4);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee - XRP(6));
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(6));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee - XRP(6));
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(6));
         }
 
         // ter error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -2141,7 +2198,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(3)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2150,19 +2207,19 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 4);
+            BEAST_EXPECT(env.Seq(alice) == seq + 4);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee - XRP(6));
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(6));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee - XRP(6));
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(6));
         }
 
         // tec (tecKILLED) error
         {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const preCarol = env.balance(carol);
-            auto const seq = env.seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
+            auto const preCarol = env.Balance(carol);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
             auto const [txIDs, batchID] = submitBatch(
                 env,
@@ -2174,7 +2231,7 @@ class Batch_test : public beast::unit_test::suite
                     offer(alice, alice["USD"](100), XRP(100), tfImmediateOrCancel), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2182,9 +2239,9 @@ class Batch_test : public beast::unit_test::suite
             };
             validateClosedLedger(env, testCases);
 
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(200) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(100));
-            BEAST_EXPECT(env.balance(carol) == preCarol + XRP(100));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(200) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(100));
+            BEAST_EXPECT(env.Balance(carol) == preCarol + XRP(100));
         }
     }
 
@@ -2255,7 +2312,7 @@ class Batch_test : public beast::unit_test::suite
         // - has no `Signers` field
         // + has `tfInnerBatchTxn` flag
         {
-            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.Seq(alice));
             txn[sfTxnSignature] = "DEADBEEF";
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
@@ -2269,7 +2326,7 @@ class Batch_test : public beast::unit_test::suite
         // - has no `Signers` field
         // + has `tfInnerBatchTxn` flag
         {
-            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.Seq(alice));
             txn[sfSigningPubKey] = strHex(alice.pk());
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
@@ -2288,7 +2345,7 @@ class Batch_test : public beast::unit_test::suite
         // + has `Signers` field
         // + has `tfInnerBatchTxn` flag
         {
-            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.Seq(alice));
             txn[sfSigners] = Json::arrayValue;
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
@@ -2303,7 +2360,7 @@ class Batch_test : public beast::unit_test::suite
 
         {
             // Fully signed inner batch transaction
-            auto const txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            auto const txn = batch::inner(pay(alice, bob, XRP(1)), env.Seq(alice));
             auto const jt = env.jt(txn.getTxn());
 
             STParsedJSONObject parsed("test", jt.jv);
@@ -2319,7 +2376,7 @@ class Batch_test : public beast::unit_test::suite
         // - has no `Signers` field
         // + has `tfInnerBatchTxn` flag
         {
-            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.Seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -2338,13 +2395,13 @@ class Batch_test : public beast::unit_test::suite
         // - has no `Signers` field
         // + has `tfInnerBatchTxn` flag
         {
-            STTx amendTx(ttAMENDMENT, [seq = env.closed()->header().seq + 1](auto& obj) {
+            STTx const amendTx(ttAMENDMENT, [seq = env.closed()->header().seq + 1](auto& obj) {
                 obj.setAccountID(sfAccount, AccountID());
                 obj.setFieldH256(sfAmendment, fixBatchInnerSigs);
                 obj.setFieldU32(sfLedgerSequence, seq);
                 obj.setFieldU32(sfFlags, tfInnerBatchTxn);
             });
-            auto txn = batch::inner(amendTx.getJson(JsonOptions::kNONE), env.seq(alice));
+            auto txn = batch::inner(amendTx.getJson(JsonOptions::kNONE), env.Seq(alice));
             STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
             parsed.object->add(s);  // NOLINT(bugprone-unchecked-optional-access)
@@ -2383,9 +2440,9 @@ class Batch_test : public beast::unit_test::suite
         env.close();
         env.memoize(bob);
 
-        auto const preAlice = env.balance(alice);
+        auto const preAlice = env.Balance(alice);
         auto const ledSeq = env.current()->seq();
-        auto const seq = env.seq(alice);
+        auto const seq = env.Seq(alice);
         auto const batchFee = batch::calcBatchFee(env, 1, 2);
         auto const [txIDs, batchID] = submitBatch(
             env,
@@ -2396,7 +2453,7 @@ class Batch_test : public beast::unit_test::suite
             batch::Sig(bob));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
             {2, "AccountSet", "tesSUCCESS", txIDs[1], batchID},
@@ -2404,14 +2461,14 @@ class Batch_test : public beast::unit_test::suite
         validateClosedLedger(env, testCases);
 
         // Alice consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(alice) == seq + 2);
+        BEAST_EXPECT(env.Seq(alice) == seq + 2);
 
         // Bob consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(bob) == ledSeq + 1);
+        BEAST_EXPECT(env.Seq(bob) == ledSeq + 1);
 
         // Alice pays XRP & Fee; Bob receives XRP
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1000) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == XRP(1000));
+        BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(1000) - batchFee);
+        BEAST_EXPECT(env.Balance(bob) == XRP(1000));
     }
 
     void
@@ -2429,10 +2486,10 @@ class Batch_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
+        auto const preAlice = env.Balance(alice);
+        auto const preBob = env.Balance(bob);
 
-        auto const seq = env.seq(alice);
+        auto const seq = env.Seq(alice);
         auto const batchFee = batch::calcBatchFee(env, 0, 2);
         auto tx1 = batch::inner(noop(alice), seq + 1);
         std::string domain = "example.com";
@@ -2445,7 +2502,7 @@ class Batch_test : public beast::unit_test::suite
             batch::inner(pay(alice, bob, XRP(1)), seq + 2));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {1, "AccountSet", "tesSUCCESS", txIDs[0], batchID},
             {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -2457,11 +2514,11 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(sle->getFieldVL(sfDomain) == Blob(domain.begin(), domain.end()));
 
         // Alice consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(alice) == seq + 3);
+        BEAST_EXPECT(env.Seq(alice) == seq + 3);
 
         // Alice pays XRP & Fee; Bob receives XRP
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+        BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(1) - batchFee);
+        BEAST_EXPECT(env.Balance(bob) == preBob + XRP(1));
     }
 
     void
@@ -2485,10 +2542,10 @@ class Batch_test : public beast::unit_test::suite
             for (int i = 0; i < 5; ++i)
                 env.close();
 
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2) + env.current()->fees().increment;
             auto const [txIDs, batchID] = submitBatch(
                 env,
@@ -2500,7 +2557,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "AccountDelete", "tesSUCCESS", txIDs[1], batchID},
@@ -2509,7 +2566,7 @@ class Batch_test : public beast::unit_test::suite
 
             // Alice does not exist; Bob receives Alice's XRP
             BEAST_EXPECT(!env.le(keylet::account(alice)));
-            BEAST_EXPECT(env.balance(bob) == preBob + (preAlice - batchFee));
+            BEAST_EXPECT(env.Balance(bob) == preBob + (preAlice - batchFee));
         }
 
         // tfIndependent: account delete fails
@@ -2525,13 +2582,13 @@ class Batch_test : public beast::unit_test::suite
             for (int i = 0; i < 5; ++i)
                 env.close();
 
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             env.trust(bob["USD"](1000), alice);
             env.close();
 
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2) + env.current()->fees().increment;
             auto const [txIDs, batchID] = submitBatch(
                 env,
@@ -2543,7 +2600,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "AccountDelete", "tecHAS_OBLIGATIONS", txIDs[1], batchID},
@@ -2553,7 +2610,7 @@ class Batch_test : public beast::unit_test::suite
 
             // Alice does not exist; Bob receives XRP
             BEAST_EXPECT(env.le(keylet::account(alice)));
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
 
         // tfAllOrNothing: account delete fails
@@ -2569,10 +2626,10 @@ class Batch_test : public beast::unit_test::suite
             for (int i = 0; i < 5; ++i)
                 env.close();
 
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2) + env.current()->fees().increment;
             auto const [txIDs, batchID] = submitBatch(
                 env,
@@ -2584,14 +2641,14 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
 
             // Alice still exists; Bob is unchanged
             BEAST_EXPECT(env.le(keylet::account(alice)));
-            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
         }
     }
 
@@ -2600,10 +2657,9 @@ class Batch_test : public beast::unit_test::suite
     {
         testcase("loan");
 
-        bool const lendingBatchEnabled = !std::any_of(
-            Batch::disabledTxTypes.begin(), Batch::disabledTxTypes.end(), [](auto const& disabled) {
-                return disabled == ttLOAN_BROKER_SET;
-            });
+        bool const lendingBatchEnabled = !std::ranges::any_of(
+            Batch::disabledTxTypes,
+            [](auto const& disabled) { return disabled == ttLOAN_BROKER_SET; });
 
         using namespace test::jtx;
 
@@ -2625,7 +2681,7 @@ class Batch_test : public beast::unit_test::suite
         // Just use an XRP asset
         PrettyAsset const asset{xrpIssue(), 1'000'000};
 
-        Vault vault{env};
+        Vault const vault{env};
 
         auto const deposit = asset(50'000);
         auto const debtMaximumValue = asset(25'000).value();
@@ -2639,7 +2695,7 @@ class Batch_test : public beast::unit_test::suite
         env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = deposit}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.Seq(lender));
 
         {
             using namespace loanBroker;
@@ -2658,7 +2714,7 @@ class Batch_test : public beast::unit_test::suite
             using namespace loan;
             using namespace std::chrono_literals;
 
-            auto const lenderSeq = env.seq(lender);
+            auto const lenderSeq = env.Seq(lender);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
             auto const loanKeylet = keylet::loan(brokerKeylet.key, 1);
@@ -2750,7 +2806,7 @@ class Batch_test : public beast::unit_test::suite
                 // LoanSet normally charges at least 2x base fee, but since the
                 // signature check is done by the batch, it only charges the
                 // base fee.
-                auto const lenderSeq = env.seq(lender);
+                auto const lenderSeq = env.Seq(lender);
                 auto const batchFee = batch::calcBatchFee(env, 1, 2);
                 auto const [txIDs, batchID] = submitBatch(
                     env,
@@ -2802,15 +2858,15 @@ class Batch_test : public beast::unit_test::suite
 
         // success
         {
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const preAliceUSD = env.balance(alice, usd.issue());
-            auto const preBobUSD = env.balance(bob, usd.issue());
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
+            auto const preAliceUSD = env.Balance(alice, usd.issue());
+            auto const preBobUSD = env.Balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+            uint256 const chkID{getCheckIndex(bob, env.Seq(bob))};
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -2820,7 +2876,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::Sig(bob));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "CheckCreate", "tesSUCCESS", txIDs[0], batchID},
                 {2, "CheckCash", "tesSUCCESS", txIDs[1], batchID},
@@ -2828,18 +2884,18 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.Seq(alice) == aliceSeq + 2);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+            BEAST_EXPECT(env.Seq(bob) == bobSeq + 1);
 
             // Alice pays Fee; Bob XRP Unchanged
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
 
             // Alice pays USD & Bob receives USD
-            BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD + usd(10));
-            BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD - usd(10));
+            BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD + usd(10));
+            BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD - usd(10));
         }
 
         // failure
@@ -2847,15 +2903,15 @@ class Batch_test : public beast::unit_test::suite
             env(fset(alice, asfRequireDest));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const preAliceUSD = env.balance(alice, usd.issue());
-            auto const preBobUSD = env.balance(bob, usd.issue());
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
+            auto const preAliceUSD = env.Balance(alice, usd.issue());
+            auto const preBobUSD = env.Balance(bob, usd.issue());
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+            uint256 const chkID{getCheckIndex(bob, env.Seq(bob))};
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
@@ -2866,7 +2922,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::Sig(bob));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "CheckCreate", "tecDST_TAG_NEEDED", txIDs[0], batchID},
                 {2, "CheckCash", "tecNO_ENTRY", txIDs[1], batchID},
@@ -2874,18 +2930,18 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.Seq(alice) == aliceSeq + 2);
 
             // Bob consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+            BEAST_EXPECT(env.Seq(bob) == bobSeq + 1);
 
             // Alice pays Fee; Bob XRP Unchanged
-            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob);
 
             // Alice pays USD & Bob receives USD
-            BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD);
-            BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD);
+            BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD);
         }
     }
 
@@ -2912,12 +2968,12 @@ class Batch_test : public beast::unit_test::suite
         env(pay(gw, bob, usd(100)));
         env.close();
 
-        auto const aliceSeq = env.seq(alice);
-        auto const bobSeq = env.seq(bob);
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-        auto const preAliceUSD = env.balance(alice, usd.issue());
-        auto const preBobUSD = env.balance(bob, usd.issue());
+        auto const aliceSeq = env.Seq(alice);
+        auto const bobSeq = env.Seq(bob);
+        auto const preAlice = env.Balance(alice);
+        auto const preBob = env.Balance(bob);
+        auto const preAliceUSD = env.Balance(alice, usd.issue());
+        auto const preBobUSD = env.Balance(bob, usd.issue());
 
         auto const batchFee = batch::calcBatchFee(env, 1, 3);
         uint256 const chkID{getCheckIndex(bob, bobSeq + 1)};
@@ -2931,7 +2987,7 @@ class Batch_test : public beast::unit_test::suite
             batch::Sig(bob));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {1, "TicketCreate", "tesSUCCESS", txIDs[0], batchID},
             {2, "CheckCreate", "tesSUCCESS", txIDs[1], batchID},
@@ -2939,12 +2995,12 @@ class Batch_test : public beast::unit_test::suite
         };
         validateClosedLedger(env, testCases);
 
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
-        BEAST_EXPECT(env.seq(bob) == bobSeq + 10 + 1);
-        BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob);
-        BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD + usd(10));
-        BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD - usd(10));
+        BEAST_EXPECT(env.Seq(alice) == aliceSeq + 2);
+        BEAST_EXPECT(env.Seq(bob) == bobSeq + 10 + 1);
+        BEAST_EXPECT(env.Balance(alice) == preAlice - batchFee);
+        BEAST_EXPECT(env.Balance(bob) == preBob);
+        BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD + usd(10));
+        BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD - usd(10));
     }
 
     void
@@ -2971,17 +3027,17 @@ class Batch_test : public beast::unit_test::suite
         env(pay(gw, bob, usd(100)));
         env.close();
 
-        auto const aliceSeq = env.seq(alice);
-        auto const bobSeq = env.seq(bob);
-        auto const carolSeq = env.seq(carol);
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-        auto const preCarol = env.balance(carol);
-        auto const preAliceUSD = env.balance(alice, usd.issue());
-        auto const preBobUSD = env.balance(bob, usd.issue());
+        auto const aliceSeq = env.Seq(alice);
+        auto const bobSeq = env.Seq(bob);
+        auto const carolSeq = env.Seq(carol);
+        auto const preAlice = env.Balance(alice);
+        auto const preBob = env.Balance(bob);
+        auto const preCarol = env.Balance(carol);
+        auto const preAliceUSD = env.Balance(alice, usd.issue());
+        auto const preBobUSD = env.Balance(bob, usd.issue());
 
         auto const batchFee = batch::calcBatchFee(env, 2, 2);
-        uint256 const chkID{getCheckIndex(bob, env.seq(bob))};
+        uint256 const chkID{getCheckIndex(bob, env.Seq(bob))};
         auto const [txIDs, batchID] = submitBatch(
             env,
             tesSUCCESS,
@@ -2991,21 +3047,21 @@ class Batch_test : public beast::unit_test::suite
             batch::Sig(alice, bob));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {1, "CheckCreate", "tesSUCCESS", txIDs[0], batchID},
             {2, "CheckCash", "tesSUCCESS", txIDs[1], batchID},
         };
         validateClosedLedger(env, testCases);
 
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
-        BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
-        BEAST_EXPECT(env.seq(carol) == carolSeq + 1);
-        BEAST_EXPECT(env.balance(alice) == preAlice);
-        BEAST_EXPECT(env.balance(bob) == preBob);
-        BEAST_EXPECT(env.balance(carol) == preCarol - batchFee);
-        BEAST_EXPECT(env.balance(alice, usd.issue()) == preAliceUSD + usd(10));
-        BEAST_EXPECT(env.balance(bob, usd.issue()) == preBobUSD - usd(10));
+        BEAST_EXPECT(env.Seq(alice) == aliceSeq + 1);
+        BEAST_EXPECT(env.Seq(bob) == bobSeq + 1);
+        BEAST_EXPECT(env.Seq(carol) == carolSeq + 1);
+        BEAST_EXPECT(env.Balance(alice) == preAlice);
+        BEAST_EXPECT(env.Balance(bob) == preBob);
+        BEAST_EXPECT(env.Balance(carol) == preCarol - batchFee);
+        BEAST_EXPECT(env.Balance(alice, usd.issue()) == preAliceUSD + usd(10));
+        BEAST_EXPECT(env.Balance(bob, usd.issue()) == preBobUSD - usd(10));
     }
 
     void
@@ -3025,13 +3081,13 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const [txIDs, batchID] = submitBatch(
@@ -3043,7 +3099,7 @@ class Batch_test : public beast::unit_test::suite
                 ticket::use(aliceTicketSeq));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3055,9 +3111,9 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 9);
             BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 9);
 
-            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
 
         {
@@ -3074,13 +3130,13 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const [txIDs, batchID] = submitBatch(
@@ -3091,7 +3147,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), 0, aliceTicketSeq + 1));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3103,9 +3159,9 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 8);
             BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 8);
 
-            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
 
         {
@@ -3122,13 +3178,13 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const [txIDs, batchID] = submitBatch(
@@ -3140,7 +3196,7 @@ class Batch_test : public beast::unit_test::suite
                 ticket::use(aliceTicketSeq));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3152,9 +3208,9 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 8);
             BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 8);
 
-            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
     }
 
@@ -3181,8 +3237,8 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
-            auto const carolSeq = env.seq(carol);
+            auto const aliceSeq = env.Seq(alice);
+            auto const carolSeq = env.Seq(carol);
 
             // AccountSet Txn
             auto const noopTxn = env.jt(noop(alice), Seq(aliceSeq + 2));
@@ -3201,7 +3257,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3212,7 +3268,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger contains noop txn
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "AccountSet", "tesSUCCESS", noopTxnID, std::nullopt},
                 };
                 validateClosedLedger(env, testCases);
@@ -3228,7 +3284,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
 
             // AccountSet Txn
             auto const noopTxn = env.jt(noop(alice), Seq(aliceSeq + 1));
@@ -3245,7 +3301,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3256,7 +3312,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3270,7 +3326,7 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const [txIDs, batchID] = submitBatch(
                 env,
@@ -3284,7 +3340,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3295,7 +3351,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3306,8 +3362,8 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
-            auto const carolSeq = env.seq(carol);
+            auto const aliceSeq = env.Seq(alice);
+            auto const carolSeq = env.Seq(carol);
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -3326,7 +3382,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "AccountSet", "tesSUCCESS", noopTxnID, std::nullopt},
                     {1, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {2, "Payment", "tesSUCCESS", txIDs[0], batchID},
@@ -3338,7 +3394,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger contains no transactions
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3364,11 +3420,11 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
 
             // AccountSet Txn
             auto const noopTxn = env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
@@ -3386,7 +3442,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3397,7 +3453,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3411,11 +3467,11 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -3433,7 +3489,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3444,7 +3500,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3472,11 +3528,11 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
 
             // CheckCash Txn
             uint256 const chkID{getCheckIndex(alice, aliceSeq)};
@@ -3496,7 +3552,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "CheckCreate", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3508,7 +3564,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
             {
                 // next ledger is empty
-                std::vector<TestLedgerData> testCases = {};
+                std::vector<TestLedgerData> const testCases = {};
                 validateClosedLedger(env, testCases);
             }
         }
@@ -3519,12 +3575,12 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
 
             // CheckCreate Txn
             uint256 const chkID{getCheckIndex(alice, aliceSeq)};
@@ -3545,7 +3601,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "CheckCreate", "tesSUCCESS", objTxnID, std::nullopt},
                     {1, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {2, "CheckCash", "tesSUCCESS", txIDs[0], batchID},
@@ -3566,11 +3622,11 @@ class Batch_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
 
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t const aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 10));
             env.close();
 
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
 
             // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -3590,7 +3646,7 @@ class Batch_test : public beast::unit_test::suite
 
             env.close();
             {
-                std::vector<TestLedgerData> testCases = {
+                std::vector<TestLedgerData> const testCases = {
                     {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                     {1, "CheckCreate", "tesSUCCESS", txIDs[0], batchID},
                     {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3619,7 +3675,7 @@ class Batch_test : public beast::unit_test::suite
         STTx const stx = STTx(ttAMENDMENT, [&](auto& obj) {
             obj.setAccountID(sfAccount, AccountID());
             obj.setFieldH256(sfAmendment, uint256(2));
-            obj.setFieldU32(sfLedgerSequence, env.seq(alice));
+            obj.setFieldU32(sfLedgerSequence, env.Seq(alice));
             obj.setFieldU32(sfFlags, tfInnerBatchTxn);
         });
 
@@ -3627,7 +3683,7 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(isPseudoTx(stx));
         BEAST_EXPECT(!passesLocalChecks(stx, reason));
         BEAST_EXPECT(reason == "Cannot submit pseudo transactions.");
-        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const result = xrpl::apply(env.app(), view, stx, tapNONE, j);
             BEAST_EXPECT(!result.applied && result.ter == temINVALID_FLAG);
             return result.applied;
@@ -3660,10 +3716,10 @@ class Batch_test : public beast::unit_test::suite
         env(noop(bob), Ter(tesSUCCESS));
         env.close();
 
-        auto const aliceSeq = env.seq(alice);
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-        auto const bobSeq = env.seq(bob);
+        auto const aliceSeq = env.Seq(alice);
+        auto const preAlice = env.Balance(alice);
+        auto const preBob = env.Balance(bob);
+        auto const bobSeq = env.Seq(bob);
 
         // Alice Pays Bob (Open Ledger)
         auto const payTxn1 = env.jt(pay(alice, bob, XRP(10)), Seq(aliceSeq));
@@ -3686,7 +3742,7 @@ class Batch_test : public beast::unit_test::suite
         env(payTxn2, Ter(terPRE_SEQ));
         env.close();
 
-        std::vector<TestLedgerData> testCases = {
+        std::vector<TestLedgerData> const testCases = {
             {0, "Payment", "tesSUCCESS", payTxn1ID, std::nullopt},
             {1, "Batch", "tesSUCCESS", batchID, std::nullopt},
             {2, "Payment", "tesSUCCESS", txIDs[0], batchID},
@@ -3697,21 +3753,21 @@ class Batch_test : public beast::unit_test::suite
         env.close();
         {
             // next ledger includes the payment txn
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Payment", "tesSUCCESS", payTxn2ID, std::nullopt},
             };
             validateClosedLedger(env, testCases);
         }
 
         // Alice consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 3);
+        BEAST_EXPECT(env.Seq(alice) == aliceSeq + 3);
 
         // Alice consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(bob) == bobSeq + 2);
+        BEAST_EXPECT(env.Seq(bob) == bobSeq + 2);
 
         // Alice pays XRP & Fee; Bob receives XRP & pays Fee
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(10) - batchFee - baseFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(10) - baseFee);
+        BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(10) - batchFee - baseFee);
+        BEAST_EXPECT(env.Balance(bob) == preBob + XRP(10) - baseFee);
     }
 
     void
@@ -3750,8 +3806,8 @@ class Batch_test : public beast::unit_test::suite
             env(noop(carol), Ter(terQUEUED));
             checkMetrics(*this, env, 1, std::nullopt, 3, 2);
 
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
             // Queue Batch
@@ -3802,8 +3858,8 @@ class Batch_test : public beast::unit_test::suite
             env(noop(alice));
             checkMetrics(*this, env, 0, std::nullopt, 2, 2);
 
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
 
             // Batch Successful
@@ -3893,11 +3949,11 @@ class Batch_test : public beast::unit_test::suite
             env(delegate::set(alice, bob, {"Payment"}));
             env.close();
 
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
 
             auto tx = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx[jss::Delegate] = bob.human();
@@ -3909,7 +3965,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -3917,11 +3973,11 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 3);
+            BEAST_EXPECT(env.Seq(alice) == seq + 3);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(3));
         }
 
         // delegated atomic inner
@@ -3939,13 +3995,13 @@ class Batch_test : public beast::unit_test::suite
             env(delegate::set(bob, carol, {"Payment"}));
             env.close();
 
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const preCarol = env.balance(carol);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
+            auto const preCarol = env.Balance(carol);
 
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
-            auto const aliceSeq = env.seq(alice);
-            auto const bobSeq = env.seq(bob);
+            auto const aliceSeq = env.Seq(alice);
+            auto const bobSeq = env.Seq(bob);
 
             auto tx = batch::inner(pay(bob, alice, XRP(1)), bobSeq);
             tx[jss::Delegate] = carol.human();
@@ -3958,20 +4014,20 @@ class Batch_test : public beast::unit_test::suite
                 batch::Sig(bob));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
             };
             validateClosedLedger(env, testCases);
 
-            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
-            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+            BEAST_EXPECT(env.Seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.Seq(bob) == bobSeq + 1);
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(1) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(1));
             // NOTE: Carol would normally pay the fee for delegated txns, but
             // because the batch is atomic, the fee is paid by the batch
-            BEAST_EXPECT(env.balance(carol) == preCarol);
+            BEAST_EXPECT(env.Balance(carol) == preCarol);
         }
 
         // delegated non atomic inner (AccountSet)
@@ -3990,11 +4046,11 @@ class Batch_test : public beast::unit_test::suite
             env(delegate::set(alice, bob, {"AccountDomainSet"}));
             env.close();
 
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
+            auto const preAlice = env.Balance(alice);
+            auto const preBob = env.Balance(bob);
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
 
             auto tx = batch::inner(noop(alice), seq + 1);
             std::string const domain = "example.com";
@@ -4008,7 +4064,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "AccountSet", "tesSUCCESS", txIDs[0], batchID},
                 {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
@@ -4016,11 +4072,11 @@ class Batch_test : public beast::unit_test::suite
             validateClosedLedger(env, testCases);
 
             // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 3);
+            BEAST_EXPECT(env.Seq(alice) == seq + 3);
 
             // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
+            BEAST_EXPECT(env.Balance(alice) == preAlice - XRP(2) - batchFee);
+            BEAST_EXPECT(env.Balance(bob) == preBob + XRP(2));
         }
 
         // delegated non atomic inner (MPTokenIssuanceSet)
@@ -4028,12 +4084,12 @@ class Batch_test : public beast::unit_test::suite
         // MPTokenIssuanceSet with granular permission
         {
             test::jtx::Env env{*this, features};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(100000), alice, bob);
             env.close();
 
-            auto const mptID = makeMptID(env.seq(alice), alice);
+            auto const mptID = makeMptID(env.Seq(alice), alice);
             MPTTester mpt(env, alice, {.fund = false});
             env.close();
             mpt.create({.flags = tfMPTCanLock});
@@ -4043,7 +4099,7 @@ class Batch_test : public beast::unit_test::suite
             env(delegate::set(alice, bob, {"MPTokenIssuanceLock", "MPTokenIssuanceUnlock"}));
             env.close();
 
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
             Json::Value jv1;
@@ -4070,7 +4126,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(jv2, seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "MPTokenIssuanceSet", "tesSUCCESS", txIDs[0], batchID},
                 {2, "MPTokenIssuanceSet", "tesSUCCESS", txIDs[1], batchID},
@@ -4083,9 +4139,9 @@ class Batch_test : public beast::unit_test::suite
         // with granular permission
         {
             test::jtx::Env env{*this, features};
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -4095,7 +4151,7 @@ class Batch_test : public beast::unit_test::suite
             env(delegate::set(gw, bob, {"TrustlineAuthorize", "TrustlineFreeze"}));
             env.close();
 
-            auto const seq = env.seq(gw);
+            auto const seq = env.Seq(gw);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
             auto jv1 = trust(gw, gw["USD"](0), alice, tfSetfAuth);
@@ -4111,7 +4167,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(jv2, seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "TrustSet", "tesSUCCESS", txIDs[0], batchID},
                 {2, "TrustSet", "tesSUCCESS", txIDs[1], batchID},
@@ -4122,9 +4178,9 @@ class Batch_test : public beast::unit_test::suite
         // inner transaction not authorized by the delegating account.
         {
             test::jtx::Env env{*this, features};
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -4134,7 +4190,7 @@ class Batch_test : public beast::unit_test::suite
             env(delegate::set(gw, bob, {"TrustlineAuthorize", "TrustlineFreeze"}));
             env.close();
 
-            auto const seq = env.seq(gw);
+            auto const seq = env.Seq(gw);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
 
             auto jv1 = trust(gw, gw["USD"](0), alice, tfSetFreeze);
@@ -4151,11 +4207,15 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(jv2, seq + 2));
             env.close();
 
-            std::vector<TestLedgerData> testCases = {
+            std::vector<TestLedgerData> const testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
                 {1, "TrustSet", "tesSUCCESS", txIDs[0], batchID},
+                // jv2 fails with terNO_DELEGATE_PERMISSION.
             };
             validateClosedLedger(env, testCases);
+
+            // verify jv2 is not present in the closed ledger.
+            BEAST_EXPECT(env.rpc("tx", txIDs[1])[jss::result][jss::error] == "txnNotFound");
         }
     }
 
@@ -4177,7 +4237,7 @@ class Batch_test : public beast::unit_test::suite
         // tes
         {
             auto const baseFee = env.current()->fees().base;
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             auto jtx = env.jt(pay(alice, bob, XRP(1)));
 
             Serializer s;
@@ -4197,7 +4257,7 @@ class Batch_test : public beast::unit_test::suite
         // tec failure
         {
             auto const baseFee = env.current()->fees().base;
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             env(fset(bob, asfRequireDest));
             auto jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq));
 
@@ -4218,7 +4278,7 @@ class Batch_test : public beast::unit_test::suite
         // tem failure
         {
             auto const baseFee = env.current()->fees().base;
-            auto const aliceSeq = env.seq(alice);
+            auto const aliceSeq = env.Seq(alice);
             auto jtx = env.jt(pay(alice, bob, XRP(1)), Seq(aliceSeq + 1));
 
             Serializer s;
@@ -4255,7 +4315,7 @@ class Batch_test : public beast::unit_test::suite
 
         // bad: Inner Batch transaction found
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
             auto jtx = env.jt(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -4267,7 +4327,7 @@ class Batch_test : public beast::unit_test::suite
 
         // bad: Raw Transactions array exceeds max entries.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
 
             auto jtx = env.jt(
@@ -4288,7 +4348,7 @@ class Batch_test : public beast::unit_test::suite
 
         // bad: Signers array exceeds max entries.
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
 
             auto jtx = env.jt(
@@ -4302,7 +4362,7 @@ class Batch_test : public beast::unit_test::suite
 
         // good:
         {
-            auto const seq = env.seq(alice);
+            auto const seq = env.Seq(alice);
             XRPAmount const batchFee = batch::calcBatchFee(env, 0, 2);
             auto jtx = env.jt(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
@@ -4362,5 +4422,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Batch, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

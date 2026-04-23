@@ -145,7 +145,7 @@ public:
         beast::Journal journal,
         OverlayImpl& overlay);
 
-    ~ConnectAttempt();
+    ~ConnectAttempt() override;
 
     /**
      * @brief Stop the connection attempt

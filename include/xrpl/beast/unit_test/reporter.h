@@ -18,8 +18,7 @@
 #include <string>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 namespace detail {
 
@@ -86,7 +85,7 @@ public:
     reporter&
     operator=(reporter const&) = delete;
 
-    ~reporter();
+    ~reporter() override;
 
     explicit reporter(std::ostream& os = std::cout);
 
@@ -118,18 +117,18 @@ private:
 
 //------------------------------------------------------------------------------
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::suite_results::add(case_results const& r)
+reporter<Unused>::suite_results::add(case_results const& r)
 {
     ++cases;
     total += r.total;
     failed += r.failed;
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::results::add(suite_results const& r)
+reporter<Unused>::results::add(suite_results const& r)
 {
     ++suites;
     total += r.total;
@@ -160,13 +159,13 @@ reporter<_>::results::add(suite_results const& r)
 
 //------------------------------------------------------------------------------
 
-template <class _>
-reporter<_>::reporter(std::ostream& os) : os_(os)
+template <class Unused>
+reporter<Unused>::reporter(std::ostream& os) : os_(os)
 {
 }
 
-template <class _>
-reporter<_>::~reporter()
+template <class Unused>
+reporter<Unused>::~reporter()
 {
     if (results_.top.size() > 0)
     {
@@ -180,9 +179,9 @@ reporter<_>::~reporter()
         << Amount{results_.failed, "failure"} << std::endl;
 }
 
-template <class _>
+template <class Unused>
 std::string
-reporter<_>::fmtdur(typename clock_type::duration const& d)
+reporter<Unused>::fmtdur(typename clock_type::duration const& d)
 {
     using namespace std::chrono;
     auto const ms = duration_cast<milliseconds>(d);
@@ -193,46 +192,46 @@ reporter<_>::fmtdur(typename clock_type::duration const& d)
     return ss.str();
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::onSuiteBegin(SuiteInfo const& info)
+reporter<Unused>::onSuiteBegin(SuiteInfo const& info)
 {
     suite_results_ = suite_results{info.fullName()};
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::onSuiteEnd()
+reporter<Unused>::onSuiteEnd()
 {
     results_.add(suite_results_);
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::onCaseBegin(std::string const& name)
+reporter<Unused>::onCaseBegin(std::string const& name)
 {
     case_results_ = case_results(name);
     os_ << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
         << std::endl;
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::onCaseEnd()
+reporter<Unused>::onCaseEnd()
 {
     suite_results_.add(case_results_);
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::onPass()
+reporter<Unused>::onPass()
 {
     ++case_results_.total;
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::onFail(std::string const& reason)
+reporter<Unused>::onFail(std::string const& reason)
 {
     ++case_results_.failed;
     ++case_results_.total;
@@ -240,9 +239,9 @@ reporter<_>::onFail(std::string const& reason)
         << std::endl;
 }
 
-template <class _>
+template <class Unused>
 void
-reporter<_>::onLog(std::string const& s)
+reporter<Unused>::onLog(std::string const& s)
 {
     os_ << s;
 }
@@ -251,5 +250,4 @@ reporter<_>::onLog(std::string const& s)
 
 using reporter = detail::reporter<>;
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

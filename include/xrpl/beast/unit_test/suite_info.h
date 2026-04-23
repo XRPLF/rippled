@@ -9,8 +9,7 @@
 #include <string>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 class runner;
 
@@ -105,5 +104,4 @@ makeSuiteInfo(std::string name, std::string module, std::string library, bool ma
         });
 }
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

@@ -1,8 +1,23 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/core/PerfLog.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/LoadEvent.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
+
+#include <algorithm>
+#include <chrono>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <set>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -26,7 +41,7 @@ JobQueue::JobQueue(
     job_count = collector_->make_gauge("job_count");
 
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
 
         for (auto const& x : JobTypes::instance())
         {
@@ -52,7 +67,7 @@ JobQueue::~JobQueue()
 void
 JobQueue::collect()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     job_count = jobSet_.size();
 }
 
@@ -78,7 +93,7 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
         "requires no threads");
 
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         auto result = jobSet_.emplace(type, name, ++lastJob_, data.load(), func);
         auto const& job = *result.first;
 
@@ -106,9 +121,9 @@ JobQueue::addRefCountedJob(JobType type, std::string const& name, JobFunction co
 int
 JobQueue::getJobCount(JobType t) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
-    JobDataMap::const_iterator c = jobData_.find(t);
+    JobDataMap::const_iterator const c = jobData_.find(t);
 
     return (c == jobData_.end()) ? 0 : c->second.waiting;
 }
@@ -116,9 +131,9 @@ JobQueue::getJobCount(JobType t) const
 int
 JobQueue::getJobCountTotal(JobType t) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
-    JobDataMap::const_iterator c = jobData_.find(t);
+    JobDataMap::const_iterator const c = jobData_.find(t);
 
     return (c == jobData_.end()) ? 0 : (c->second.waiting + c->second.running);
 }
@@ -129,7 +144,7 @@ JobQueue::getJobCountGE(JobType t) const
     // return the number of jobs at this priority level or greater
     int ret = 0;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     for (auto const& x : jobData_)
     {
@@ -143,7 +158,7 @@ JobQueue::getJobCountGE(JobType t) const
 std::unique_ptr<LoadEvent>
 JobQueue::makeLoadEvent(JobType t, std::string const& name)
 {
-    JobDataMap::iterator iter(jobData_.find(t));
+    JobDataMap::iterator const iter(jobData_.find(t));
     XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::makeLoadEvent : valid job type input");
 
     if (iter == jobData_.end())
@@ -158,7 +173,7 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
     if (isStopped())
         LogicError("JobQueue::addLoadEvents() called after JobQueue stopped");
 
-    JobDataMap::iterator iter(jobData_.find(t));
+    JobDataMap::iterator const iter(jobData_.find(t));
     XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::addLoadEvents : valid job type input");
     iter->second.load().addSamples(count, elapsed);
 }
@@ -180,7 +195,7 @@ JobQueue::getJson(int c)
 
     Json::Value priorities = Json::arrayValue;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     for (auto& x : jobData_)
     {
@@ -191,10 +206,10 @@ JobQueue::getJson(int c)
 
         JobTypeData& data(x.second);
 
-        LoadMonitor::Stats stats(data.stats());
+        LoadMonitor::Stats const stats(data.stats());
 
-        int waiting(data.waiting);
-        int running(data.running);
+        int const waiting(data.waiting);
+        int const running(data.running);
 
         if ((stats.count != 0) || (waiting != 0) || (stats.latencyPeak != 0ms) || (running != 0))
         {
@@ -237,7 +252,7 @@ JobQueue::rendezvous()
 JobTypeData&
 JobQueue::getJobTypeData(JobType type)
 {
-    JobDataMap::iterator c(jobData_.find(type));
+    JobDataMap::iterator const c(jobData_.find(type));
     XRPL_ASSERT(c != jobData_.end(), "xrpl::JobQueue::getJobTypeData : valid job type input");
 
     // NIKB: This is ugly and I hate it. We must remove jtINVALID completely
@@ -337,7 +352,7 @@ JobQueue::processTask(int instance)
         {
             Job job;
             {
-                std::lock_guard lock(mutex_);
+                std::lock_guard const lock(mutex_);
                 getNextJob(job);
                 ++processCount_;
             }
@@ -364,7 +379,7 @@ JobQueue::processTask(int instance)
     }
 
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         // Job should be destroyed before stopping
         // otherwise destructors with side effects can access
         // parent objects that are already destroyed.

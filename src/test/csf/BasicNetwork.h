@@ -3,9 +3,7 @@
 #include <test/csf/Digraph.h>
 #include <test/csf/Scheduler.h>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 /** Peer to peer network simulator.
 
     The network is formed from a set of Peer objects representing
@@ -199,7 +197,7 @@ BasicNetwork<Peer>::disconnect(Peer const& peer1, Peer const& peer2)
 {
     if (!links_.disconnect(peer1, peer2))
         return false;
-    bool r = links_.disconnect(peer2, peer1);
+    bool const r = links_.disconnect(peer2, peer1);
     (void)r;
     assert(r);
     return true;
@@ -224,6 +222,4 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
     });
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

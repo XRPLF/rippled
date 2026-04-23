@@ -17,4 +17,4 @@ template <
 using aged_unordered_multiset =
     detail::AgedUnorderedContainer<true, false, Key, void, Clock, Hash, KeyEqual, Allocator>;
 
-}
+}  // namespace beast

@@ -36,10 +36,10 @@ public:
     {
         Stats();
 
-        std::uint64_t count;
+        std::uint64_t count{0};
         std::chrono::milliseconds latencyAvg;
         std::chrono::milliseconds latencyPeak;
-        bool isOverloaded;
+        bool isOverloaded{false};
     };
 
     Stats

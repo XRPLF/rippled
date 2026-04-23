@@ -9,8 +9,7 @@
 #include <map>
 #include <utility>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 // Helper class that buffers raw modifications
 class RawStateTable
@@ -108,5 +107,4 @@ private:
     XRPAmount dropsDestroyed_{0};
 };
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

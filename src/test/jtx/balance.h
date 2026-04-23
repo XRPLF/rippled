@@ -3,9 +3,9 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
+
+namespace xrpl::test::jtx {
 
 /** A balance matches.
 
@@ -41,6 +41,4 @@ public:
     operator()(Env&) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

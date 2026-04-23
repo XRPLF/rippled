@@ -1,4 +1,5 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 #include <test/unit_test/utils.h>
 
 #include <xrpld/app/misc/ValidatorKeys.h>
@@ -6,13 +7,20 @@
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/base64.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Manifest.h>
 
 #include <string>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class ValidatorKeys_test : public beast::unit_test::suite
 {
@@ -59,7 +67,7 @@ public:
         // We're only using Env for its Journal.  That Journal gives better
         // coverage in unit tests.
         test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
-        beast::Journal journal{env.app().journal("ValidatorKeys_test")};
+        beast::Journal const journal{env.app().getJournal("ValidatorKeys_test")};
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
@@ -83,8 +91,8 @@ public:
 
         {
             // No config -> no key but valid
-            Config c;
-            ValidatorKeys k{c, journal};
+            Config const c;
+            ValidatorKeys const k{c, journal};
             BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
             BEAST_EXPECT(!k.configInvalid());
@@ -110,7 +118,7 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append("badseed");
 
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
@@ -135,7 +143,7 @@ public:
             // invalid validator token
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append("badtoken");
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
             BEAST_EXPECT(k.manifest.empty());
@@ -146,7 +154,7 @@ public:
             Config c;
             c.section(SECTION_VALIDATION_SEED).append(seed_);
             c.section(SECTION_VALIDATOR_TOKEN).append(tokenBlob_);
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
@@ -157,7 +165,7 @@ public:
             // Token manifest and private key must match
             Config c;
             c.section(SECTION_VALIDATOR_TOKEN).append(invalidTokenBlob_);
-            ValidatorKeys k{c, journal};
+            ValidatorKeys const k{c, journal};
 
             BEAST_EXPECT(k.configInvalid());
             BEAST_EXPECT(!k.keys);
@@ -168,5 +176,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ValidatorKeys, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

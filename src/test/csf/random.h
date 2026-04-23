@@ -3,9 +3,7 @@
 #include <random>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Return a randomly shuffled copy of vector based on weights w.
 
@@ -25,7 +23,7 @@ random_weighted_shuffle_(std::vector<T> v, std::vector<double> w, G& g)
     for (int i = 0; i < v.size() - 1; ++i)
     {
         // pick a random item weighted by w
-        std::discrete_distribution<> dd(w.begin() + i, w.end());
+        std::discrete_distribution<> dd(w.begin() + i, w.end());  // NOLINT(misc-const-correctness)
         auto idx = dd(g);
         std::swap(v[i], v[idx]);
         std::swap(w[i], w[idx]);
@@ -76,7 +74,7 @@ public:
     {
         using tag = typename std::iterator_traits<RAIter>::iterator_category;
         static_assert(
-            std::is_same<tag, std::random_access_iterator_tag>::value,
+            std::is_same_v<tag, std::random_access_iterator_tag>,
             "Selector only supports random access iterators.");
         // TODO: Allow for forward iterators
     }
@@ -111,7 +109,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator&)
     {
         return t_;
@@ -140,7 +138,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator& g)
     {
         // use inverse transform of CDF to sample
@@ -149,6 +147,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

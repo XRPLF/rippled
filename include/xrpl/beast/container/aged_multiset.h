@@ -15,4 +15,5 @@ template <
     class Allocator = std::allocator<Key>>
 using aged_multiset =
     detail::AgedOrderedContainer<true, false, Key, void, Clock, Compare, Allocator>;
-}
+
+}  // namespace beast

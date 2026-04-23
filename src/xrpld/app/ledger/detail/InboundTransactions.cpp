@@ -1,17 +1,29 @@
-#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
+
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/core/JobQueue.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -54,7 +66,7 @@ public:
         , zeroSet_(map_[uint256()])
         , gotSet_(std::move(gotSet))
         , peerSetBuilder_(std::move(peerSetBuilder))
-        , j_(app_.journal("InboundTransactions"))
+        , j_(app_.getJournal("InboundTransactions"))
     {
         zeroSet_.set =
             std::make_shared<SHAMap>(SHAMapType::TRANSACTION, uint256(), app_.getNodeFamily());
@@ -65,7 +77,7 @@ public:
     getAcquire(uint256 const& hash)
     {
         {
-            std::lock_guard sl(lock_);
+            std::lock_guard const sl(lock_);
 
             auto it = map_.find(hash);
 
@@ -81,7 +93,7 @@ public:
         TransactionAcquire::pointer ta;
 
         {
-            std::lock_guard sl(lock_);
+            std::lock_guard const sl(lock_);
 
             if (auto it = map_.find(hash); it != map_.end())
             {
@@ -124,7 +136,7 @@ public:
         JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
                          << ") for acquiring ledger: " << hash;
 
-        TransactionAcquire::pointer ta = getAcquire(hash);
+        TransactionAcquire::pointer const ta = getAcquire(hash);
 
         if (ta == nullptr)
         {
@@ -151,7 +163,7 @@ public:
                 return;
             }
 
-            data.emplace_back(std::make_pair(*id, makeSlice(node.nodedata())));
+            data.emplace_back(*id, makeSlice(node.nodedata()));
         }
 
         if (!ta->takeNodes(data, peer).isUseful())
@@ -164,7 +176,7 @@ public:
         bool isNew = true;
 
         {
-            std::lock_guard sl(lock_);
+            std::lock_guard const sl(lock_);
 
             auto& inboundSet = map_[hash];
 
@@ -189,7 +201,7 @@ public:
     void
     newRound(std::uint32_t seq) override
     {
-        std::lock_guard lock(lock_);
+        std::lock_guard const lock(lock_);
 
         // Protect zero set from expiration
         zeroSet_.seq = seq;
@@ -201,7 +213,7 @@ public:
             auto it = map_.begin();
 
             std::uint32_t const minSeq = (seq < SetKeepRounds) ? 0 : (seq - SetKeepRounds);
-            std::uint32_t maxSeq = seq + SetKeepRounds;
+            std::uint32_t const maxSeq = seq + SetKeepRounds;
 
             while (it != map_.end())
             {
@@ -220,7 +232,7 @@ public:
     void
     stop() override
     {
-        std::lock_guard lock(lock_);
+        std::lock_guard const lock(lock_);
         stopping_ = true;
         map_.clear();
     }

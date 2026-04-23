@@ -1,8 +1,8 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 

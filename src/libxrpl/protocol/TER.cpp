@@ -156,6 +156,7 @@ transResults()
         MAKE_ERROR(temBAD_FEE,                   "Invalid fee, negative or not XRP."),
         MAKE_ERROR(temBAD_ISSUER,                "Malformed: Bad issuer."),
         MAKE_ERROR(temBAD_LIMIT,                 "Limits must be non-negative."),
+        MAKE_ERROR(temBAD_MPT,                   "Malformed: Bad MPT."),
         MAKE_ERROR(temBAD_OFFER,                 "Malformed: Bad offer."),
         MAKE_ERROR(temBAD_PATH,                  "Malformed: Bad path."),
         MAKE_ERROR(temBAD_PATH_LOOP,             "Malformed: Loop in path."),
@@ -214,6 +215,7 @@ transResults()
         MAKE_ERROR(terNO_AMM,                 "AMM doesn't exist for the asset pair."),
         MAKE_ERROR(terADDRESS_COLLISION,      "Failed to allocate an unique account address."),
         MAKE_ERROR(terNO_DELEGATE_PERMISSION, "Delegated account lacks permission to perform this transaction."),
+        MAKE_ERROR(terLOCKED,                 "Fund is locked."),
 
         MAKE_ERROR(tesSUCCESS,                "The transaction was applied. Only final in a validated ledger."),
     };

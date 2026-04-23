@@ -23,15 +23,15 @@ private:
 
     std::recursive_mutex mutex_;
     std::condition_variable_any cond_;
-    std::size_t count_;
+    std::size_t count_{1};
     duration const period_;
     boost::asio::io_context& ios_;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> timer_;
-    bool cancel_;
+    bool cancel_{false};
 
 public:
     io_latency_probe(duration const& period, boost::asio::io_context& ios)
-        : count_(1), period_(period), ios_(ios), timer_(ios_), cancel_(false)
+        : period_(period), ios_(ios), timer_(ios_)
     {
     }
 
@@ -83,7 +83,7 @@ public:
     void
     sample_one(Handler&& handler)
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         if (cancel_)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
@@ -98,7 +98,7 @@ public:
     void
     sample(Handler&& handler)
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         if (cancel_)
             throw std::logic_error("io_latency_probe is canceled");
         boost::asio::post(
@@ -122,14 +122,14 @@ private:
     void
     addref()
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         ++count_;
     }
 
     void
     release()
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         if (--count_ == 0)
             cond_.notify_all();
     }
@@ -184,7 +184,7 @@ private:
         void
         operator()() const
         {
-            if (!probe_)
+            if (probe_ == nullptr)
                 return;
             typename Clock::time_point const now(Clock::now());
             typename Clock::duration const elapsed(now - start_);
@@ -192,7 +192,7 @@ private:
             handler_(elapsed);
 
             {
-                std::lock_guard lock(probe_->mutex_);
+                std::lock_guard const lock(probe_->mutex_);
                 if (probe_->cancel_)
                     return;
             }
@@ -202,7 +202,7 @@ private:
                 // Calculate when we want to sample again, and
                 // adjust for the expected latency.
                 //
-                typename Clock::time_point const when(now + probe_->period_ - 2 * elapsed);
+                typename Clock::time_point const when(now + probe_->period_ - (2 * elapsed));
 
                 if (when <= now)
                 {
@@ -223,7 +223,7 @@ private:
         void
         operator()(boost::system::error_code const& ec)
         {
-            if (!probe_)
+            if (probe_ == nullptr)
                 return;
             typename Clock::time_point const now(Clock::now());
             boost::asio::post(probe_->ios_, sample_op<Handler>(handler_, now, repeat_, probe_));

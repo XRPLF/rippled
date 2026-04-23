@@ -42,13 +42,13 @@ private:
 public:
     using value_type = STAmount;
 
-    static int const cMinOffset = -96;
-    static int const cMaxOffset = 80;
+    constexpr static int cMinOffset = -96;
+    constexpr static int cMaxOffset = 80;
 
     // Maximum native value supported by the code
     constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
     static_assert(isPowerOfTen(cMinValue));
-    constexpr static std::uint64_t cMaxValue = cMinValue * 10 - 1;
+    constexpr static std::uint64_t cMaxValue = (cMinValue * 10) - 1;
     static_assert(cMaxValue == 9'999'999'999'999'999ull);
     constexpr static std::uint64_t cMaxNative = 9'000'000'000'000'000'000ull;
 
@@ -164,15 +164,18 @@ public:
     constexpr TIss const&
     get() const;
 
-    Issue const&
-    issue() const;
+    template <ValidIssueType TIss>
+    TIss&
+    get();
 
-    // These three are deprecated
     Currency const&
     getCurrency() const;
 
     AccountID const&
     getIssuer() const;
+
+    void
+    setIssuer(AccountID const& uIssuer);
 
     int
     signum() const noexcept;
@@ -224,9 +227,6 @@ public:
     // Zero while copying currency and issuer.
     void
     clear(Asset const& asset);
-
-    void
-    setIssuer(AccountID const& uIssuer);
 
     /** Set the Issue for this amount. */
     void
@@ -407,7 +407,7 @@ amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource);
 inline STAmount const&
 toSTAmount(STAmount const& a)
 {
-    return a;
+    return a;  // NOLINT(bugprone-return-const-ref-from-parameter)
 }
 
 //------------------------------------------------------------------------------
@@ -466,10 +466,11 @@ STAmount::get() const
     return asset_.get<TIss>();
 }
 
-inline Issue const&
-STAmount::issue() const
+template <ValidIssueType TIss>
+TIss&
+STAmount::get()
 {
-    return get<Issue>();
+    return asset_.get<TIss>();
 }
 
 inline Currency const&
@@ -532,7 +533,7 @@ STAmount::fromNumber(A const& a, Number const& number)
 {
     bool const negative = number.mantissa() < 0;
     Number const working{negative ? -number : number};
-    Asset asset{a};
+    Asset const asset{a};
     if (asset.integral())
     {
         std::uint64_t const intValue = static_cast<std::int64_t>(working);
@@ -716,7 +717,7 @@ roundToAsset(
     std::int32_t scale,
     Number::rounding_mode rounding = Number::getround())
 {
-    NumberRoundModeGuard mg(rounding);
+    NumberRoundModeGuard const mg(rounding);
     STAmount const ret{asset, value};
     if (ret.integral())
         return ret;
@@ -738,6 +739,21 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
+
+/** Get the scale of a Number for a given asset.
+ *
+ * "scale" is similar to "exponent", but from the perspective of STAmount, which has different rules
+ * and mantissa ranges for determining the exponent than Number.
+ *
+ * @param number The Number to get the scale of.
+ * @param asset The asset to use for determining the scale.
+ * @return The scale of this Number for the given asset.
+ */
+inline int
+scale(Number const& number, Asset const& asset)
+{
+    return STAmount{asset, number}.exponent();
+}
 
 }  // namespace xrpl
 

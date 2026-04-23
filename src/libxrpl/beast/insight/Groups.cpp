@@ -1,10 +1,11 @@
+#include <xrpl/beast/insight/Groups.h>
+
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
 #include <xrpl/beast/insight/Event.h>
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Group.h>
-#include <xrpl/beast/insight/Groups.h>
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
@@ -14,8 +15,7 @@
 #include <unordered_map>
 #include <utility>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 namespace detail {
 
@@ -30,7 +30,7 @@ public:
     {
     }
 
-    ~GroupImp() = default;
+    ~GroupImp() override = default;
 
     std::string const&
     name() const override
@@ -74,9 +74,8 @@ public:
         return collector_->make_meter(makeName(name));
     }
 
-private:
     GroupImp&
-    operator=(GroupImp const&);
+    operator=(GroupImp const&) = delete;
 };
 
 //------------------------------------------------------------------------------
@@ -93,12 +92,12 @@ public:
     {
     }
 
-    ~GroupsImp() = default;
+    ~GroupsImp() override = default;
 
     Group::ptr const&
     get(std::string const& name) override
     {
-        std::pair<Items::iterator, bool> result(items.emplace(name, Group::ptr()));
+        std::pair<Items::iterator, bool> const result(items.emplace(name, Group::ptr()));
         Group::ptr& group(result.first->second);
         if (result.second)
             group = std::make_shared<GroupImp>(name, collector);
@@ -118,5 +117,4 @@ makeGroups(Collector::ptr const& collector)
     return std::make_unique<detail::GroupsImp>(collector);
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

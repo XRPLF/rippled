@@ -7,13 +7,14 @@
  * file COPYING or http://www.opensource.org/licenses/mit-license.php.
  */
 
+#include <xrpl/protocol/tokens.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/b58_utils.h>
 #include <xrpl/protocol/detail/token_errors.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/tokens.h>
 
 #include <boost/container/small_vector.hpp>
 #include <boost/endian/conversion.hpp>
@@ -281,7 +282,7 @@ decodeBase58(std::string const& s)
         --remain;
     }
     // Skip leading zeroes in b256.
-    auto iter = std::find_if(b256.begin(), b256.end(), [](unsigned char c) { return c != 0; });
+    auto iter = std::ranges::find_if(b256, [](unsigned char c) { return c != 0; });
     std::string result;
     result.reserve(zeroes + (b256.end() - iter));
     result.assign(zeroes, 0x00);
@@ -445,7 +446,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         std::array<std::uint8_t, 10> const b58Be =
             xrpl::b58_fast::detail::b58_10_to_b58_be(base5810Coeff[i]);
         std::size_t toSkip = 0;
-        std::span<std::uint8_t const> b58BeS{b58Be.data(), b58Be.size()};
+        std::span<std::uint8_t const> const b58BeS{b58Be.data(), b58Be.size()};
         if (skipZeros)
         {
             toSkip = countLeadingZeros(b58BeS);
@@ -507,7 +508,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     XRPL_ASSERT(
         numB5810Coeffs <= b5810Coeff.size(),
         "xrpl::b58_fast::detail::b58_to_b256_be : maximum coeff");
-    for (unsigned char c : input.substr(0, partial_coeff_len))
+    for (unsigned char const c : input.substr(0, partial_coeff_len))
     {
         auto curVal = ::xrpl::kALPHABET_REVERSE[c];
         if (curVal < 0)
@@ -521,7 +522,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     {
         for (int j = 0; j < num_full_coeffs; ++j)
         {
-            unsigned char c = input[partial_coeff_len + (j * 10) + i];
+            unsigned char const c = input[partial_coeff_len + (j * 10) + i];
             auto curVal = ::xrpl::kALPHABET_REVERSE[c];
             if (curVal < 0)
             {
@@ -626,7 +627,7 @@ encodeBase58Token(
     size_t const checksumI = input.size() + 1;
     // buf[checksum_i..checksum_i + 4] = checksum
     checksum(buf.data() + checksumI, buf.data(), checksumI);
-    std::span<std::uint8_t const> b58Span(buf.data(), input.size() + 5);
+    std::span<std::uint8_t const> const b58Span(buf.data(), input.size() + 5);
     return detail::b256_to_b58_be(b58Span, out);
 }
 // Convert from base 58 to base 256, largest coefficients first
@@ -680,8 +681,8 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     // over-allocation, this function uses 128 (again, over-allocation assuming
     // 2 base 58 char per byte)
     sr.resize(128);
-    std::span<std::uint8_t> outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
-    std::span<std::uint8_t const> inSp(reinterpret_cast<std::uint8_t const*>(token), size);
+    std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
+    std::span<std::uint8_t const> const inSp(reinterpret_cast<std::uint8_t const*>(token), size);
     auto r = b58_fast::encodeBase58Token(type, inSp, outSp);
     if (!r)
         return {};
@@ -696,7 +697,7 @@ decodeBase58Token(std::string const& s, TokenType type)
     // The largest object encoded as base58 is 33 bytes; 64 is plenty (and
     // there's no benefit making it smaller)
     sr.resize(64);
-    std::span<std::uint8_t> outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
+    std::span<std::uint8_t> const outSp(reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     auto r = b58_fast::decodeBase58Token(type, s, outSp);
     if (!r)
         return {};

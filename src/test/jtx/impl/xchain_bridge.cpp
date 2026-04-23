@@ -1,20 +1,31 @@
-#include <test/jtx/Env.h>
-#include <test/jtx/attester.h>
 #include <test/jtx/xchain_bridge.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/attester.h>
+#include <test/jtx/multisign.h>
+
+#include <xrpl/basics/strHex.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STInteger.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace xrpl::test::jtx {
 
 // use this for creating a bridge for a transaction
 Json::Value
@@ -415,24 +426,24 @@ XChainBridgeObjects::XChainBridgeObjects()
     }())
     , quorum(kUT_XCHAIN_DEFAULT_QUORUM)
     , reward(XRP(1))
-    , split_reward_quorum(divide(reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), reward.issue()))
+    , split_reward_quorum(divide(reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), reward.asset()))
     , split_reward_everyone(
-          divide(reward, STAmount(kUT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.issue()))
+          divide(reward, STAmount(kUT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.asset()))
     , tiny_reward(drops(37))
     , tiny_reward_split(
-          (divide(tiny_reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.issue())))
+          (divide(tiny_reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.asset())))
     , tiny_reward_remainder(
           tiny_reward -
-          multiply(tiny_reward_split, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.issue()))
+          multiply(tiny_reward_split, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.asset()))
     , one_xrp(XRP(1))
-    , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.issue()))
+    , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.get<Issue>()))
 {
 }
 
 void
 XChainBridgeObjects::createMcBridgeObjects(Env& mcEnv)
 {
-    STAmount xrpFunds{XRP(10000)};
+    STAmount const xrpFunds{XRP(10000)};
     mcEnv.fund(xrpFunds, mcDoor, mcAlice, mcBob, mcCarol, mcGw);
 
     // Signer's list must match the attestation signers
@@ -449,7 +460,7 @@ XChainBridgeObjects::createMcBridgeObjects(Env& mcEnv)
 void
 XChainBridgeObjects::createScBridgeObjects(Env& scEnv)
 {
-    STAmount xrpFunds{XRP(10000)};
+    STAmount const xrpFunds{XRP(10000)};
     scEnv.fund(xrpFunds, scDoor, scAlice, scBob, scCarol, scGw, scAttester, scReward);
 
     // Signer's list must match the attestation signers
@@ -469,6 +480,4 @@ XChainBridgeObjects::createBridgeObjects(Env& mcEnv, Env& scEnv)
     createMcBridgeObjects(mcEnv);
     createScBridgeObjects(scEnv);
 }
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

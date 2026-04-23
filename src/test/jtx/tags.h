@@ -1,9 +1,6 @@
 #pragma once
 
-namespace xrpl {
-namespace test {
-
-namespace jtx {
+namespace xrpl::test::jtx {
 
 struct NoneT
 {
@@ -39,7 +36,4 @@ struct IncrementT
 
 static IncrementT const kINCREMENT;
 
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

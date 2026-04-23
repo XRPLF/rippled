@@ -1,9 +1,18 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
 
-namespace xrpl {
-namespace test {
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/TER.h>
+
+#include <cstddef>
+#include <tuple>
+
+namespace xrpl::test {
 
 // Make sure "plump" order books don't have problems
 class PlumpBook_test : public beast::unit_test::suite
@@ -156,7 +165,7 @@ public:
         createOffers(env, usd, n);
         env(pay("alice", gw, usd(billion)));
         env(offer("alice", usd(1), XRP(1)), Ter(std::ignore));
-        return env.ter() == tecOVERSIZE;
+        return env.Ter() == tecOVERSIZE;
     }
 
     void
@@ -169,5 +178,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(FindOversizeCross, app, xrpl, 50);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,8 +1,8 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/consensus/Validations.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STValidation.h>

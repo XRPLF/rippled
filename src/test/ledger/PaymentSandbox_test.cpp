@@ -1,14 +1,34 @@
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-namespace xrpl {
-namespace test {
+#include <cstdint>
+
+namespace xrpl::test {
 
 class PaymentSandbox_test : public beast::unit_test::suite
 {
@@ -65,14 +85,14 @@ class PaymentSandbox_test : public beast::unit_test::suite
         env(offer(snd, usdGw1(2), usdGw2(2)), txflags(tfPassive));
         env(offer(snd, usdGw2(2), usdGw1(2)), txflags(tfPassive));
 
-        PathSet paths(TestPath(gw1, usdGw2, gw2), TestPath(gw2, usdGw1, gw1));
+        PathSet const paths(TestPath(gw1, usdGw2, gw2), TestPath(gw2, usdGw1, gw1));
 
         env(pay(snd, rcv, kANY(usdGw1(4))),
             json(paths.json()),
             txflags(tfNoRippleDirect | tfPartialPayment));
 
-        env.require(Balance("rcv", usdGw1(0)));
-        env.require(Balance("rcv", usdGw2(2)));
+        env.Require(Balance("rcv", usdGw1(0)));
+        env.Require(Balance("rcv", usdGw2(2)));
     }
 
     void
@@ -88,7 +108,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         env.fund(XRP(10000), alice, gw1, gw2);
 
-        auto j = env.app().journal("View");
+        auto j = env.app().getJournal("View");
 
         auto const usdGw1 = gw1["USD"];
         auto const usdGw2 = gw2["USD"];
@@ -125,19 +145,19 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
 
         {
-            // rippleCredit, no deferredCredits
+            // directSendNoFee, no deferredCredits
             ApplyViewImpl av(&*env.current(), tapNONE);
 
             auto const iss = usdGw1.issue();
             auto const startingAmount =
                 accountHolds(av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            rippleCredit(av, gw1, alice, toCredit, true, j);
+            directSendNoFee(av, gw1, alice, toCredit, true, j);
             BEAST_EXPECT(
                 accountHolds(av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
                 startingAmount + toCredit);
 
-            rippleCredit(av, alice, gw1, toDebit, true, j);
+            directSendNoFee(av, alice, gw1, toDebit, true, j);
             BEAST_EXPECT(
                 accountHolds(av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
                 startingAmount + toCredit - toDebit);
@@ -170,7 +190,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         }
 
         {
-            // rippleCredit, w/ deferredCredits
+            // directSendNoFee, w/ deferredCredits
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
@@ -178,7 +198,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             auto const startingAmount =
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
-            rippleCredit(pv, gw1, alice, toCredit, true, j);
+            directSendNoFee(pv, gw1, alice, toCredit, true, j);
             BEAST_EXPECT(
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j) ==
                 startingAmount);
@@ -266,22 +286,22 @@ class PaymentSandbox_test : public beast::unit_test::suite
 
         using namespace jtx;
 
-        Env env(*this, features);
+        Env const env(*this, features);
 
         Account const gw("gw");
         Account const alice("alice");
         auto const usd = gw["USD"];
 
         auto const issue = usd.issue();
-        STAmount tinyAmt(
+        STAmount const tinyAmt(
             issue, STAmount::cMinValue, STAmount::cMinOffset + 1, false, STAmount::unchecked{});
-        STAmount hugeAmt(
+        STAmount const hugeAmt(
             issue, STAmount::cMaxValue, STAmount::cMaxOffset - 1, false, STAmount::unchecked{});
 
         ApplyViewImpl av(&*env.current(), tapNONE);
         PaymentSandbox pv(&av);
-        pv.creditHook(gw, alice, hugeAmt, -tinyAmt);
-        BEAST_EXPECT(pv.balanceHook(alice, gw, hugeAmt) == tinyAmt);
+        pv.creditHookIOU(gw, alice, hugeAmt, -tinyAmt);
+        BEAST_EXPECT(pv.balanceHookIOU(alice, gw, hugeAmt) == tinyAmt);
     }
 
     void
@@ -328,12 +348,12 @@ class PaymentSandbox_test : public beast::unit_test::suite
     void
     testBalanceHook(FeatureBitset features)
     {
-        // Make sure the Issue::Account returned by PAymentSandbox::balanceHook
-        // is correct.
+        // Make sure the Issue::Account returned by
+        // PaymentSandbox::balanceHookIOU is correct.
         testcase("balanceHook");
 
         using namespace jtx;
-        Env env(*this, features);
+        Env const env(*this, features);
 
         Account const gw("gw");
         auto const usd = gw["USD"];
@@ -343,15 +363,16 @@ class PaymentSandbox_test : public beast::unit_test::suite
         PaymentSandbox sb(&av);
 
         // The currency we pass for the last argument mimics the currency that
-        // is typically passed to creditHook, since it comes from a trust line.
+        // is typically passed to creditHookIOU, since it comes from a trust
+        // line.
         Issue tlIssue = noIssue();
         tlIssue.currency = usd.issue().currency;
 
-        sb.creditHook(gw.id(), alice.id(), {usd, 400}, {tlIssue, 600});
-        sb.creditHook(gw.id(), alice.id(), {usd, 100}, {tlIssue, 600});
+        sb.creditHookIOU(gw.id(), alice.id(), {usd, 400}, {tlIssue, 600});
+        sb.creditHookIOU(gw.id(), alice.id(), {usd, 100}, {tlIssue, 600});
 
-        // Expect that the STAmount issuer returned by balanceHook() is correct.
-        STAmount const balance = sb.balanceHook(gw.id(), alice.id(), {usd, 600});
+        // Expect that the STAmount issuer returned by balanceHookIOU() is correct.
+        STAmount const balance = sb.balanceHookIOU(gw.id(), alice.id(), {usd, 600});
         BEAST_EXPECT(balance.getIssuer() == usd.issue().account);
     }
 
@@ -375,5 +396,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PaymentSandbox, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

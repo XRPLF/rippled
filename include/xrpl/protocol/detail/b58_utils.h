@@ -17,8 +17,8 @@ template <class T>
 using Result = boost::outcome_v2::result<T, std::error_code>;
 
 #ifndef _MSC_VER
-namespace b58_fast {
-namespace detail {
+
+namespace b58_fast::detail {
 
 // This optimizes to what hand written asm would do (single divide)
 [[nodiscard]] inline std::tuple<std::uint64_t, std::uint64_t>
@@ -33,7 +33,7 @@ carrying_mul(std::uint64_t a, std::uint64_t b, std::uint64_t carry)
 {
     unsigned __int128 const x = a;
     unsigned __int128 const y = b;
-    unsigned __int128 const c = x * y + carry;
+    unsigned __int128 const c = (x * y) + carry;
     return {c & 0xffff'ffff'ffff'ffff, c >> 64};
 }
 
@@ -59,18 +59,18 @@ inplace_bigint_add(std::span<std::uint64_t> a, std::uint64_t b)
         return TokenCodecErrc::inputTooSmall;
     }
 
-    std::uint64_t carry;
+    std::uint64_t carry = 0;
     std::tie(a[0], carry) = carrying_add(a[0], b);
 
     for (auto& v : a.subspan(1))
     {
-        if (!carry)
+        if (carry == 0u)
         {
             return TokenCodecErrc::success;
         }
         std::tie(v, carry) = carrying_add(v, 1);
     }
-    if (carry)
+    if (carry != 0u)
     {
         return TokenCodecErrc::overflowAdd;
     }
@@ -105,7 +105,7 @@ inplace_bigint_mul(std::span<std::uint64_t> a, std::uint64_t b)
 [[nodiscard]] inline std::uint64_t
 inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 {
-    if (numerator.size() == 0)
+    if (numerator.empty())
     {
         // should never happen, but if it does then it seems natural to define
         // the a null set of numbers to be zero, so the remainder is also zero.
@@ -162,7 +162,7 @@ b58_10_to_b58_be(std::uint64_t input)
     int i = 0;
     while (input > 0)
     {
-        std::uint64_t rem;
+        std::uint64_t rem = 0;
         std::tie(input, rem) = div_rem(input, 58);
         result[resultSize - 1 - i] = rem;
         i += 1;
@@ -170,8 +170,8 @@ b58_10_to_b58_be(std::uint64_t input)
 
     return result;
 }
-}  // namespace detail
-}  // namespace b58_fast
+}  // namespace b58_fast::detail
+
 #endif
 
 }  // namespace xrpl

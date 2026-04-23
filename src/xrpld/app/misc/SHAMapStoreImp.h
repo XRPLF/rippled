@@ -61,7 +61,7 @@ private:
     // minimum # of ledgers required for standalone mode.
     static std::uint32_t const kMINIMUM_DELETION_INTERVAL_SA = 8;
     // minimum ledger to maintain online.
-    std::atomic<LedgerIndex> minimumOnline_{};
+    std::atomic<LedgerIndex> minimumOnline_;
 
     NodeStore::Scheduler& scheduler_;
     beast::Journal const journal_;
@@ -195,7 +195,7 @@ private:
     clearPrior(LedgerIndex lastRotated);
 
     /**
-     * This is a health check for online deletion that waits until rippled is
+     * This is a health check for online deletion that waits until xrpld is
      * stable before returning. It returns an indication of whether the server
      * is stopping.
      *
@@ -209,7 +209,7 @@ public:
     void
     start() override
     {
-        if (deleteInterval_)
+        if (deleteInterval_ != 0u)
             thread_ = std::thread(&SHAMapStoreImp::run, this);
     }
 

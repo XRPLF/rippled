@@ -1,12 +1,28 @@
-#include <xrpld/rpc/RPCCall.h>
 #include <xrpld/rpc/RPCSub.h>
+
+#include <xrpld/rpc/RPCCall.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/server/InfoSub.h>
 
+#include <boost/asio/io_context.hpp>
+
+#include <cstdint>
 #include <deque>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -19,17 +35,17 @@ public:
         boost::asio::io_context& ioContext,
         JobQueue& jobQueue,
         std::string const& strUrl,
-        std::string const& strUsername,
-        std::string const& strPassword,
-        Logs& logs)
+        std::string strUsername,
+        std::string strPassword,
+        ServiceRegistry& registry)
         : RPCSub(source)
         , io_context_(ioContext)
         , jobQueue_(jobQueue)
         , url_(strUrl)
         , username_(strUsername)
         , password_(strPassword)
-        , j_(logs.journal("RPCSub"))
-        , logs_(logs)
+        , j_(registry.getLogs().journal("RPCSub"))
+        , logs_(registry.getLogs())
     {
         parsedURL pUrl;
 
@@ -63,12 +79,12 @@ public:
                         << " ssl= " << (ssl_ ? "yes" : "no") << " path='" << path_ << "'";
     }
 
-    ~RPCSubImp() = default;
+    ~RPCSubImp() override = default;
 
     void
     send(Json::Value const& jvObj, bool broadcast) override
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
 
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
@@ -88,7 +104,7 @@ public:
     void
     setUsername(std::string const& strUsername) override
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
 
         username_ = strUsername;
     }
@@ -96,7 +112,7 @@ public:
     void
     setPassword(std::string const& strPassword) override
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
 
         password_ = strPassword;
     }
@@ -114,7 +130,7 @@ private:
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                std::lock_guard sl(lock_);
+                std::lock_guard const sl(lock_);
 
                 if (deque_.empty())
                 {
@@ -199,7 +215,7 @@ makeRPCSub(
     std::string const& strUrl,
     std::string const& strUsername,
     std::string const& strPassword,
-    Logs& logs)
+    ServiceRegistry& registry)
 {
     return std::make_shared<RPCSubImp>(
         std::ref(source),
@@ -208,7 +224,7 @@ makeRPCSub(
         strUrl,
         strUsername,
         strPassword,
-        logs);
+        registry);
 }
 
 }  // namespace xrpl

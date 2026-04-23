@@ -1,12 +1,29 @@
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+
+#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/spinlock.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/shamap/detail/TaggedPointer.h>
 #include <xrpl/shamap/detail/TaggedPointer.ipp>
+
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -82,7 +99,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     }
 
     Spinlock sl(lock_);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
 
     if (thisIsSparse)
     {
@@ -313,7 +330,7 @@ SHAMapInnerNode::getChildPointer(int branch)
     auto const index = *getChildIndex(branch);
 
     PackedSpinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
     return hashesAndChildren_.getChildren()[index].get();
 }
 
@@ -328,7 +345,7 @@ SHAMapInnerNode::getChild(int branch)
     auto const index = *getChildIndex(branch);
 
     PackedSpinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
     return hashesAndChildren_.getChildren()[index];
 }
 
@@ -361,7 +378,7 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
         "hash do match");
 
     PackedSpinlock sl(lock_, childIndex);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
 
     if (children[childIndex])
     {

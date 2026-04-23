@@ -1,11 +1,14 @@
+#include <xrpl/protocol/STPathSet.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
@@ -45,7 +48,7 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
     std::vector<STPathElement> path;
     for (;;)
     {
-        int iType = sit.get8();
+        int const iType = sit.get8();
 
         if (iType == STPathElement::typeNone || iType == STPathElement::typeBoundary)
         {
@@ -68,24 +71,30 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
         }
         else
         {
-            auto hasAccount = iType & STPathElement::typeAccount;
-            auto hasCurrency = iType & STPathElement::typeCurrency;
-            auto hasIssuer = iType & STPathElement::typeIssuer;
+            auto const hasAccount = (iType & STPathElement::typeAccount) != 0u;
+            auto const hasCurrency = (iType & STPathElement::typeCurrency) != 0u;
+            auto const hasIssuer = (iType & STPathElement::typeIssuer) != 0u;
+            auto const hasMPT = (iType & STPathElement::typeMPT) != 0u;
 
             AccountID account;
-            Currency currency;
+            PathAsset asset;
             AccountID issuer;
 
-            if (hasAccount != 0)
+            if (hasAccount)
                 account = sit.get160();
 
-            if (hasCurrency != 0)
-                currency = sit.get160();
+            XRPL_ASSERT(
+                !(hasCurrency && hasMPT), "xrpl::STPathSet::STPathSet : not has Currency and MPT");
+            if (hasCurrency)
+                asset = static_cast<Currency>(sit.get160());
 
-            if (hasIssuer != 0)
+            if (hasMPT)
+                asset = sit.get192();
+
+            if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, currency, issuer, hasCurrency);
+            path.emplace_back(account, asset, issuer, hasCurrency);
         }
     }
 }
@@ -137,11 +146,11 @@ STPathSet::isDefault() const
 }
 
 bool
-STPath::hasSeen(AccountID const& account, Currency const& currency, AccountID const& issuer) const
+STPath::hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const
 {
     for (auto& p : path_)
     {
-        if (p.getAccountID() == account && p.getCurrency() == currency && p.getIssuerID() == issuer)
+        if (p.getAccountID() == account && p.getPathAsset() == asset && p.getIssuerID() == issuer)
             return true;
     }
 
@@ -163,8 +172,15 @@ STPath::getJson(JsonOptions) const
         if ((iType & STPathElement::typeAccount) != 0u)
             elem[jss::account] = to_string(it.getAccountID());
 
+        XRPL_ASSERT(
+            ((iType & STPathElement::typeCurrency) == 0u) ||
+                ((iType & STPathElement::typeMPT) == 0u),
+            "xrpl::STPath::getJson : not type Currency and MPT");
         if ((iType & STPathElement::typeCurrency) != 0u)
             elem[jss::currency] = to_string(it.getCurrency());
+
+        if ((iType & STPathElement::typeMPT) != 0u)
+            elem[jss::mpt_issuance_id] = to_string(it.getMPTID());
 
         if ((iType & STPathElement::typeIssuer) != 0u)
             elem[jss::issuer] = to_string(it.getIssuerID());
@@ -179,7 +195,7 @@ Json::Value
 STPathSet::getJson(JsonOptions options) const
 {
     Json::Value ret(Json::arrayValue);
-    for (auto it : value)
+    for (auto const& it : value)
         ret.append(it.getJson(options));
 
     return ret;
@@ -205,17 +221,20 @@ STPathSet::add(Serializer& s) const
 
         for (auto const& speElement : spPath)
         {
-            int iType = speElement.getNodeType();
+            int const iType = speElement.getNodeType();
 
             s.add8(iType);
 
-            if ((iType & STPathElement::typeAccount) != 0)
+            if ((iType & STPathElement::typeAccount) != 0u)
                 s.addBitString(speElement.getAccountID());
 
-            if ((iType & STPathElement::typeCurrency) != 0)
+            if ((iType & STPathElement::typeMPT) != 0u)
+                s.addBitString(speElement.getMPTID());
+
+            if ((iType & STPathElement::typeCurrency) != 0u)
                 s.addBitString(speElement.getCurrency());
 
-            if ((iType & STPathElement::typeIssuer) != 0)
+            if ((iType & STPathElement::typeIssuer) != 0u)
                 s.addBitString(speElement.getIssuerID());
         }
 

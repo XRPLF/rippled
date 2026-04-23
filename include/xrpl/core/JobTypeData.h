@@ -4,6 +4,8 @@
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/core/JobTypeInfo.h>
 
+#include <utility>
+
 namespace xrpl {
 
 struct JobTypeData
@@ -19,13 +21,13 @@ public:
     JobTypeInfo const& info;
 
     /* The number of jobs waiting */
-    int waiting;
+    int waiting{0};
 
     /* The number presently running */
-    int running;
+    int running{0};
 
     /* And the number we deferred executing because of job limits */
-    int deferred;
+    int deferred{0};
 
     /* Notification callbacks */
     beast::insight::Event dequeue;
@@ -33,7 +35,7 @@ public:
 
     JobTypeData(
         JobTypeInfo const& info_,
-        beast::insight::Collector::ptr const& collector,
+        beast::insight::Collector::ptr collector,
         Logs& logs) noexcept
         : load_(logs.journal("LoadMonitor"))
         , collector_(collector)

@@ -36,7 +36,7 @@ class STValidation final : public STObject, public CountedObject<STValidation>
     // that use manifests this will be derived from the master public key.
     NodeID const nodeID_;
 
-    NetClock::time_point seenTime_ = {};
+    NetClock::time_point seenTime_;
 
 public:
     /** Construct a STValidation from a peer from serialized data.

@@ -7,7 +7,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/core/HashRouter.h>
@@ -24,6 +23,7 @@
 #include <cstdint>
 #include <optional>
 #include <queue>
+#include <utility>
 
 namespace xrpl {
 
@@ -191,7 +191,7 @@ private:
     struct ChargeWithContext
     {
         Resource::Charge fee = Resource::feeTrivialPeer;
-        std::string context = {};
+        std::string context{};  // NOLINT(readability-redundant-member-init)
 
         void
         update(Resource::Charge f, std::string const& add)
@@ -314,7 +314,7 @@ public:
         id_t id,
         OverlayImpl& overlay);
 
-    virtual ~PeerImp();
+    ~PeerImp() override;
 
     beast::Journal const&
     pJournal() const
@@ -362,9 +362,8 @@ public:
     /** Send a set of PeerFinder endpoints as a protocol message. */
     template <
         class FwdIt,
-        class = typename std::enable_if_t<std::is_same<
-            typename std::iterator_traits<FwdIt>::value_type,
-            PeerFinder::Endpoint>::value>>
+        class = typename std::enable_if_t<
+            std::is_same_v<typename std::iterator_traits<FwdIt>::value_type, PeerFinder::Endpoint>>>
     void
     sendEndpoints(FwdIt first, FwdIt last);
 
@@ -409,7 +408,7 @@ public:
         return publicKey_;
     }
 
-    /** Return the version of rippled that the peer is running, if reported. */
+    /** Return the version of xrpld that the peer is running, if reported. */
     std::string
     getVersion() const;
 
@@ -429,7 +428,7 @@ public:
     std::optional<std::size_t>
     publisherListSequence(PublicKey const& pubKey) const override
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard<std::mutex> const sl(recentLock_);
 
         auto iter = publisherListSequences_.find(pubKey);
         if (iter != publisherListSequences_.end())
@@ -440,7 +439,7 @@ public:
     void
     setPublisherListSequence(PublicKey const& pubKey, std::size_t const seq) override
     {
-        std::lock_guard<std::mutex> sl(recentLock_);
+        std::lock_guard<std::mutex> const sl(recentLock_);
 
         publisherListSequences_[pubKey] = seq;
     }
@@ -815,8 +814,8 @@ PeerImp::PeerImp(
     , id_(id)
     , fingerprint_(getFingerprint(slot->remoteEndpoint(), publicKey, to_string(id_)))
     , prefix_(makePrefix(fingerprint_))
-    , sink_(app_.journal("Peer"), prefix_)
-    , pSink_(app_.journal("Protocol"), prefix_)
+    , sink_(app_.getJournal("Peer"), prefix_)
+    , pSink_(app_.getJournal("Protocol"), prefix_)
     , journal_(sink_)
     , pJournal_(pSink_)
     , streamPtr_(std::move(streamPtr))
@@ -833,9 +832,9 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
-    , squelch_(app_.journal("Squelch"))
+    , squelch_(app_.getJournal("Squelch"))
     , usage_(usage)
-    , fee_{Resource::feeTrivialPeer}
+    , fee_{.fee = Resource::feeTrivialPeer}
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)

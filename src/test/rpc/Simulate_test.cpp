@@ -1,22 +1,46 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/token.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/rpc/CTID.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/serialize.h>
 
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <optional>
-#include <tuple>
+#include <string>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class Simulate_test : public beast::unit_test::suite
 {
@@ -447,9 +471,9 @@ class Simulate_test : public beast::unit_test::suite
         env.close();
 
         auto const batchFee = batch::calcBatchFee(env, 0, 2);
-        auto const seq = env.seq(alice);
+        auto const seq = env.Seq(alice);
         auto jt = env.jtnofill(
-            batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+            batch::outer(alice, env.Seq(alice), batchFee, tfAllOrNothing),
             batch::inner(pay(alice, bob, XRP(10)), seq + 1),
             batch::inner(pay(alice, bob, XRP(10)), seq + 1));
 
@@ -659,7 +683,7 @@ class Simulate_test : public beast::unit_test::suite
                 checkBasicReturnValidity(
                     result,
                     tx,
-                    env.seq(alice),
+                    env.Seq(alice),
                     tx.isMember(jss::Signers) ? env.current()->fees().base * 2
                                               : env.current()->fees().base);
 
@@ -713,7 +737,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = env.seq(alice);
+            tx[sfSequence] = env.Seq(alice);
             // transaction requires a non-base fee
             tx[sfFee] = (env.current()->fees().base * 2).jsonClipped().asString();
             tx[sfSigners][0u][sfSigner][jss::SigningPubKey] = "";
@@ -742,7 +766,7 @@ class Simulate_test : public beast::unit_test::suite
                 [&](Json::Value const& resp, Json::Value const& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(
-                        result, tx, env.seq(env.master), env.current()->fees().base);
+                        result, tx, env.Seq(env.master), env.current()->fees().base);
 
                     BEAST_EXPECT(result[jss::engine_result] == "tefMASTER_DISABLED");
                     BEAST_EXPECT(result[jss::engine_result_code] == -188);
@@ -763,7 +787,7 @@ class Simulate_test : public beast::unit_test::suite
             testTx(env, tx, testSimulation);
 
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = env.seq(env.master);
+            tx[sfSequence] = env.Seq(env.master);
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
@@ -796,7 +820,7 @@ class Simulate_test : public beast::unit_test::suite
                 [&](Json::Value const& resp, Json::Value const& tx) {
                     auto result = resp[jss::result];
                     checkBasicReturnValidity(
-                        result, tx, env.seq(env.master), env.current()->fees().base * 2);
+                        result, tx, env.Seq(env.master), env.current()->fees().base * 2);
 
                     BEAST_EXPECT(result[jss::engine_result] == "temINVALID");
                     BEAST_EXPECT(result[jss::engine_result_code] == -277);
@@ -826,7 +850,7 @@ class Simulate_test : public beast::unit_test::suite
             testTx(env, tx, testSimulation, false);
 
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = env.seq(env.master);
+            tx[sfSequence] = env.Seq(env.master);
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
             tx[sfSigners][0u][sfSigner][jss::SigningPubKey] = strHex(becky.pk().slice());
             tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
@@ -858,7 +882,7 @@ class Simulate_test : public beast::unit_test::suite
             auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
-                    result, tx, env.seq(alice), env.current()->fees().base * 2);
+                    result, tx, env.Seq(alice), env.current()->fees().base * 2);
 
                 BEAST_EXPECTS(
                     result[jss::engine_result] == "tefBAD_SIGNATURE",
@@ -891,7 +915,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = env.seq(alice);
+            tx[sfSequence] = env.Seq(alice);
             // transaction requires a non-base fee
             tx[sfFee] = (env.current()->fees().base * 2).jsonClipped().asString();
             tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
@@ -928,7 +952,7 @@ class Simulate_test : public beast::unit_test::suite
         {
             auto validateOutput = [&](Json::Value const& resp, Json::Value const& tx) {
                 auto result = resp[jss::result];
-                checkBasicReturnValidity(result, tx, env.seq(subject), env.current()->fees().base);
+                checkBasicReturnValidity(result, tx, env.Seq(subject), env.current()->fees().base);
 
                 BEAST_EXPECT(result[jss::engine_result] == "tecEXPIRED");
                 BEAST_EXPECT(result[jss::engine_result_code] == 148);
@@ -979,7 +1003,7 @@ class Simulate_test : public beast::unit_test::suite
 
             tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
-            tx[sfSequence] = env.seq(subject);
+            tx[sfSequence] = env.Seq(subject);
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 
             // test without autofill
@@ -1127,7 +1151,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[jss::TransactionType] = jss::NFTokenMint;
                 tx[sfNFTokenTaxon] = 1;
 
-                Json::Value nftokenId = to_string(token::getNextID(env, alice, 1));
+                Json::Value const nftokenId = to_string(token::getNextID(env, alice, 1));
                 // test nft synthetic
                 testTxJsonMetadataField(env, tx, validateOutput, jss::nftoken_id, nftokenId);
             }
@@ -1137,7 +1161,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::MPTokenIssuanceCreate;
 
-                Json::Value mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
+                Json::Value const mptIssuanceId = to_string(makeMptID(env.Seq(alice), alice));
                 // test mpt issuance id
                 testTxJsonMetadataField(
                     env, tx, validateOutput, jss::mpt_issuance_id, mptIssuanceId);
@@ -1167,6 +1191,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Simulate, rpc, xrpl);
 
-}  // namespace test
-
-}  // namespace xrpl
+}  // namespace xrpl::test

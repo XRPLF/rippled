@@ -143,7 +143,7 @@ struct LoanProperties
     // - A minimum scale required to represent the periodic payment accurately
     // All loan state values (principal, interest, fees) are rounded to this
     // scale.
-    std::int32_t loanScale;
+    std::int32_t loanScale{};
 
     // The principal portion of the first payment.
     Number firstPaymentPrincipal;
@@ -171,7 +171,7 @@ getAssetsTotalScale(SLE::const_ref vaultSle)
 {
     if (!vaultSle)
         return Number::minExponent - 1;  // LCOV_EXCL_LINE
-    return STAmount{vaultSle->at(sfAsset), vaultSle->at(sfAssetsTotal)}.exponent();
+    return scale(vaultSle->at(sfAssetsTotal), vaultSle->at(sfAsset));
 }
 
 TER

@@ -1,9 +1,15 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/pay.h>
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/SField.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+
+#include <thread>
 
 namespace xrpl {
 
@@ -32,8 +38,8 @@ class GetCounts_test : public beast::unit_test::suite
 
         // create some transactions
         env.close();
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(10000), alice, bob);
         env.trust(alice["USD"](1000), bob);
         for (auto i = 0; i < 20; ++i)

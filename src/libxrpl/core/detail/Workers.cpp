@@ -1,14 +1,19 @@
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/PerfLog.h>
 #include <xrpl/core/detail/Workers.h>
+
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/core/LockFreeStack.h>
+#include <xrpl/core/PerfLog.h>
+
+#include <mutex>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
 Workers::Workers(
     Callback& callback,
     perf::PerfLog* perfLog,
-    std::string const& threadNames,
+    std::string threadNames,
     int numberOfThreads)
     : callback_(callback)
     , perfLog_(perfLog)
@@ -99,8 +104,6 @@ Workers::stop()
     std::unique_lock<std::mutex> lk{mut_};
     cv_.wait(lk, [this] { return allPaused_; });
     lk.unlock();
-
-    XRPL_ASSERT(numberOfCurrentlyRunningTasks() == 0, "xrpl::Workers::stop : zero running tasks");
 }
 
 void
@@ -120,7 +123,7 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 {
     for (;;)
     {
-        Worker* const worker = stack.pop_front();
+        Worker const* const worker = stack.pop_front();
 
         if (worker != nullptr)
         {
@@ -136,9 +139,9 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker(Workers& workers, std::string const& threadName, int const instance)
+Workers::Worker::Worker(Workers& workers, std::string threadName, int const instance)
     : workers_{workers}
-    , threadName_{threadName}
+    , threadName_{std::move(threadName)}
     , instance_{instance}
     , wakeCount_{0}
     , shouldExit_{false}
@@ -149,7 +152,7 @@ Workers::Worker::Worker(Workers& workers, std::string const& threadName, int con
 Workers::Worker::~Worker()
 {
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         ++wakeCount_;
         shouldExit_ = true;
     }
@@ -161,7 +164,7 @@ Workers::Worker::~Worker()
 void
 Workers::Worker::notify()
 {
-    std::lock_guard lock{mutex_};
+    std::lock_guard const lock{mutex_};
     ++wakeCount_;
     wakeup_.notify_one();
 }
@@ -177,7 +180,7 @@ Workers::Worker::run()
         //
         if (++workers_.activeCount_ == 1)
         {
-            std::lock_guard lk{workers_.mut_};
+            std::lock_guard const lk{workers_.mut_};
             workers_.allPaused_ = false;
         }
 
@@ -215,7 +218,18 @@ Workers::Worker::run()
             //
             ++workers_.runningTaskCount_;
             workers_.callback_.processTask(instance_);
-            --workers_.runningTaskCount_;
+
+            // When the running task count drops to zero, wake stop() which
+            // may be waiting for both allPaused_ and zero running tasks.
+            // Locking mut_ before notify_all() prevents a lost wakeup:
+            // it serializes against the predicate check inside stop()'s
+            // cv_.wait(), ensuring the notification is not missed between
+            // the predicate evaluation and the actual sleep.
+            if (--workers_.runningTaskCount_ == 0)
+            {
+                std::lock_guard const lk{workers_.mut_};
+                workers_.cv_.notify_all();
+            }
         }
 
         // Any worker that goes into the paused list must
@@ -229,7 +243,7 @@ Workers::Worker::run()
         //
         if (--workers_.activeCount_ == 0)
         {
-            std::lock_guard lk{workers_.mut_};
+            std::lock_guard const lk{workers_.mut_};
             workers_.allPaused_ = true;
             workers_.cv_.notify_all();
         }

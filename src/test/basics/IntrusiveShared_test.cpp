@@ -1,24 +1,29 @@
-#include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
 #include <xrpl/basics/IntrusiveRefCounts.h>
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <algorithm>
 #include <array>
 #include <atomic>
-#include <barrier>
-#include <chrono>
+#include <cassert>
+#include <chrono>  // IWYU pragma: keep
 #include <condition_variable>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <latch>
+#include <mutex>
 #include <optional>
 #include <random>
 #include <string>
 #include <thread>
+#include <utility>
 #include <variant>
+#include <vector>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 /**
 Experimentally, we discovered that using std::barrier performs extremely
@@ -122,7 +127,7 @@ public:
         assert(state.size() > id);
         state[id].store(TrackedState::Alive, std::memory_order_relaxed);
     }
-    ~TIBase()
+    ~TIBase() override
     {
         using enum TrackedState;
 
@@ -191,16 +196,16 @@ public:
         testcase("Basics");
 
         {
-            TIBase::ResetStatesGuard rsg{true};
+            TIBase::ResetStatesGuard const rsg{true};
 
-            TIBase b;
+            TIBase const b;
             BEAST_EXPECT(b.useCount() == 1);
             b.addWeakRef();
             BEAST_EXPECT(b.useCount() == 1);
             auto s = b.releaseStrongRef();
             BEAST_EXPECT(s == ReleaseStrongRefAction::partialDestroy);
             BEAST_EXPECT(b.useCount() == 0);
-            TIBase* pb = &b;
+            TIBase const* pb = &b;
             partialDestructorFinished(&pb);
             BEAST_EXPECT(!pb);
             auto w = b.releaseWeakRef();
@@ -210,7 +215,7 @@ public:
         std::vector<SharedIntrusive<TIBase>> strong;
         std::vector<WeakIntrusive<TIBase>> weak;
         {
-            TIBase::ResetStatesGuard rsg{true};
+            TIBase::ResetStatesGuard const rsg{true};
 
             using enum TrackedState;
             auto b = make_SharedIntrusive<TIBase>();
@@ -251,7 +256,7 @@ public:
             BEAST_EXPECT(TIBase::getState(id) == Deleted);
         }
         {
-            TIBase::ResetStatesGuard rsg{true};
+            TIBase::ResetStatesGuard const rsg{true};
 
             using enum TrackedState;
             auto b = make_SharedIntrusive<TIBase>();
@@ -275,7 +280,7 @@ public:
             BEAST_EXPECT(TIBase::getState(id) == Deleted);
         }
         {
-            TIBase::ResetStatesGuard rsg{true};
+            TIBase::ResetStatesGuard const rsg{true};
 
             using enum TrackedState;
             using swu = SharedWeakUnion<TIBase>;
@@ -309,7 +314,7 @@ public:
         {
             // Testing SharedWeakUnion assignment operator
 
-            TIBase::ResetStatesGuard rsg{true};
+            TIBase::ResetStatesGuard const rsg{true};
 
             auto strong1 = make_SharedIntrusive<TIBase>();
             auto strong2 = make_SharedIntrusive<TIBase>();
@@ -338,7 +343,7 @@ public:
             // 2) Test self-assignment
             BEAST_EXPECT(union1.isStrong());
             BEAST_EXPECT(TIBase::getState(id1) == TrackedState::Alive);
-            int initialRefCount = strong1->useCount();
+            int const initialRefCount = strong1->useCount();
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wself-assign-overloaded"
             union1 = union1;  // Self-assignment
@@ -374,7 +379,7 @@ public:
 
         using enum TrackedState;
 
-        TIBase::ResetStatesGuard rsg{true};
+        TIBase::ResetStatesGuard const rsg{true};
 
         auto strong = make_SharedIntrusive<TIBase>();
         WeakIntrusive<TIBase> weak{strong};
@@ -441,7 +446,7 @@ public:
 
         using enum TrackedState;
 
-        TIBase::ResetStatesGuard rsg{true};
+        TIBase::ResetStatesGuard const rsg{true};
 
         auto strong = make_SharedIntrusive<TIBase>();
         WeakIntrusive<TIBase> weak{strong};
@@ -486,12 +491,12 @@ public:
         // and check that the invariants hold.
 
         using enum TrackedState;
-        TIBase::ResetStatesGuard rsg{true};
+        TIBase::ResetStatesGuard const rsg{true};
 
         std::atomic<int> destructionState{0};
         // returns destructorRan and partialDestructorRan (in that order)
         auto getDestructorState = [&]() -> std::pair<bool, bool> {
-            int s = destructionState.load(std::memory_order_relaxed);
+            int const s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
@@ -525,11 +530,11 @@ public:
             {
                 if (isStrongDist(eng))
                 {
-                    result.push_back(SharedIntrusive<TIBase>(toClone));
+                    result.emplace_back(SharedIntrusive<TIBase>(toClone));
                 }
                 else
                 {
-                    result.push_back(WeakIntrusive<TIBase>(toClone));
+                    result.emplace_back(WeakIntrusive<TIBase>(toClone));
                 }
             }
             return result;
@@ -619,12 +624,12 @@ public:
 
         using enum TrackedState;
 
-        TIBase::ResetStatesGuard rsg{true};
+        TIBase::ResetStatesGuard const rsg{true};
 
         std::atomic<int> destructionState{0};
         // returns destructorRan and partialDestructorRan (in that order)
         auto getDestructorState = [&]() -> std::pair<bool, bool> {
-            int s = destructionState.load(std::memory_order_relaxed);
+            int const s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
@@ -655,7 +660,7 @@ public:
             auto numToCreate = toCreateDist(eng);
             result.reserve(numToCreate);
             for (int i = 0; i < numToCreate; ++i)
-                result.push_back(SharedIntrusive<TIBase>(toClone));
+                result.emplace_back(SharedIntrusive<TIBase>(toClone));
             return result;
         };
         constexpr int kLOOP_ITERS = 2 * 1024;
@@ -759,12 +764,12 @@ public:
 
         using enum TrackedState;
 
-        TIBase::ResetStatesGuard rsg{true};
+        TIBase::ResetStatesGuard const rsg{true};
 
         std::atomic<int> destructionState{0};
         // returns destructorRan and partialDestructorRan (in that order)
         auto getDestructorState = [&]() -> std::pair<bool, bool> {
-            int s = destructionState.load(std::memory_order_relaxed);
+            int const s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
@@ -830,7 +835,7 @@ public:
 
                 // Multiple threads all create a weak pointer from the same
                 // strong pointer
-                WeakIntrusive weak{toLock[threadId]};
+                WeakIntrusive const weak{toLock[threadId]};
                 for (int wi = 0; wi < kLOCK_WEAK_LOOP_ITERS; ++wi)
                 {
                     BEAST_EXPECT(!weak.expired());
@@ -868,5 +873,4 @@ public:
 };  // namespace tests
 
 BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, xrpl);
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

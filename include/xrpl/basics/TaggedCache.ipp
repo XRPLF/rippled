@@ -36,9 +36,6 @@ inline TaggedCache<
     , name_(name)
     , target_size_(size)
     , target_age_(expiration)
-    , cache_count_(0)
-    , hits_(0)
-    , misses_(0)
 {
 }
 

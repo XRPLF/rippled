@@ -11,11 +11,12 @@
 #error "undefined macro: XRPL_RETIRE_FIX"
 #endif
 
-// clang-format off
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 
+XRPL_FIX    (Security3_1_3,              Supported::No,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(MPTokensV2,                 Supported::No,  VoteBehavior::DefaultNo)
 XRPL_FIX   (PermissionedDomainInvariant, Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (ExpiredNFTokenOfferRemoval, Supported::Yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (BatchInnerSigs,             Supported::No, VoteBehavior::DefaultNo)
@@ -143,5 +144,3 @@ XRPL_RETIRE_FEATURE(SortedDirectories)
 XRPL_RETIRE_FEATURE(TicketBatch)
 XRPL_RETIRE_FEATURE(TickSize)
 XRPL_RETIRE_FEATURE(TrustSetAuth)
-
-// clang-format on

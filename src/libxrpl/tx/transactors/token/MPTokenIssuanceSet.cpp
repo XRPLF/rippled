@@ -1,8 +1,30 @@
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/delegate/DelegateUtils.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceSet.h>
+
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -341,6 +363,25 @@ MPTokenIssuanceSet::doApply()
     view().update(sle);
 
     return tesSUCCESS;
+}
+
+void
+MPTokenIssuanceSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+MPTokenIssuanceSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

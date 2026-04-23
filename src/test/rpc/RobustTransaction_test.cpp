@@ -1,12 +1,20 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/flags.h>
+#include <test/jtx/pay.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
+
+namespace xrpl::test {
 
 class RobustTransaction_test : public beast::unit_test::suite
 {
@@ -53,7 +61,7 @@ public:
 
             // Submit past sequence transaction
             payment[jss::tx_json] = pay("alice", "bob", XRP(1));
-            payment[jss::tx_json][sfSequence.fieldName] = env.seq("alice") - 1;
+            payment[jss::tx_json][sfSequence.fieldName] = env.Seq("alice") - 1;
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
@@ -64,7 +72,7 @@ public:
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tefPAST_SEQ");
 
             // Submit future sequence transaction
-            payment[jss::tx_json][sfSequence.fieldName] = env.seq("alice") + 1;
+            payment[jss::tx_json][sfSequence.fieldName] = env.Seq("alice") + 1;
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
@@ -75,7 +83,7 @@ public:
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "terPRE_SEQ");
 
             // Submit transaction to bridge the sequence gap
-            payment[jss::tx_json][sfSequence.fieldName] = env.seq("alice");
+            payment[jss::tx_json][sfSequence.fieldName] = env.Seq("alice");
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
@@ -433,5 +441,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(RobustTransaction, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

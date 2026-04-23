@@ -2,9 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
+
+namespace xrpl::test::jtx {
 
 /** Add a memo to a JTx.
 
@@ -70,6 +70,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

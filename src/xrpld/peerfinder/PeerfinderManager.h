@@ -2,6 +2,7 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
@@ -10,8 +11,7 @@
 
 #include <string_view>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
@@ -27,7 +27,7 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    std::size_t maxPeers;
+    std::size_t maxPeers{Tuning::DefaultMaxPeers};
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
@@ -39,25 +39,25 @@ struct Config
         Inbound connections are only maintained if wantIncoming
         is `true`.
     */
-    std::size_t inPeers;
+    std::size_t inPeers{0};
 
     /** `true` if we want our IP address kept private. */
     bool peerPrivate = true;
 
     /** `true` if we want to accept incoming connections. */
-    bool wantIncoming;
+    bool wantIncoming{true};
 
     /** `true` if we want to establish connections automatically */
-    bool autoConnect;
+    bool autoConnect{true};
 
     /** The listening port number. */
-    std::uint16_t listeningPort;
+    std::uint16_t listeningPort{0};
 
     /** The set of features we advertise. */
     std::string features;
 
     /** Limit how many incoming connections we allow per IP */
-    int ipLimit;
+    int ipLimit{0};
 
     //--------------------------------------------------------------------------
 
@@ -101,7 +101,7 @@ struct Endpoint
 {
     Endpoint() = default;
 
-    Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_);
+    Endpoint(beast::IP::Endpoint ep, std::uint32_t hops_);
 
     std::uint32_t hops = 0;
     beast::IP::Endpoint address;
@@ -167,7 +167,7 @@ public:
         There may be some listener calls made before the
         destructor returns.
     */
-    virtual ~Manager() = default;
+    ~Manager() override = default;
 
     /** Set the configuration for the manager.
         The new settings will be applied asynchronously.
@@ -284,5 +284,4 @@ public:
     once_per_second() = 0;
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

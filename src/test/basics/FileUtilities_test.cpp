@@ -2,7 +2,10 @@
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 namespace xrpl {
 
@@ -17,7 +20,7 @@ public:
 
         constexpr char const* kEXPECTED_CONTENTS = "This file is very short. That's all we need.";
 
-        FileDirGuard file(
+        FileDirGuard const file(
             *this, "test_file", "test.txt", "This is temporary text that should get overwritten");
 
         error_code ec;

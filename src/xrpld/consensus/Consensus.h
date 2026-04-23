@@ -4,12 +4,12 @@
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/consensus/DisputedTx.h>
-#include <xrpld/consensus/LedgerTiming.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
 #include <algorithm>
 #include <chrono>
@@ -554,7 +554,7 @@ private:
     ConsensusParms::AvalancheState closeTimeAvalancheState_ = ConsensusParms::Init;
 
     // Time it took for the last consensus round to converge
-    std::chrono::milliseconds prevRoundTime_;
+    std::chrono::milliseconds prevRoundTime_{};
 
     //-------------------------------------------------------------------------
     // Network time measurements of consensus progress
@@ -779,9 +779,13 @@ Consensus<Adaptor>::peerProposalInternal(
         }
 
         if (peerPosIt != currPeerPositions_.end())
+        {
             peerPosIt->second = newPeerPos;
+        }
         else
+        {
             currPeerPositions_.emplace(peerID, newPeerPos);
+        }
     }
 
     if (newPeerProp.isInitial())
@@ -803,7 +807,9 @@ Consensus<Adaptor>::peerProposalInternal(
             // spawn a request for it and return nullopt/nullptr.  It will call
             // gotTxSet once it arrives
             if (auto set = adaptor_.acquireTxSet(newPeerProp.position()))
+            {
                 gotTxSet(now_, *set);
+            }
             else
                 JLOG(j_.debug()) << "Don't have tx set for peer";
         }
@@ -932,7 +938,9 @@ Consensus<Adaptor>::getJson(bool full) const
         ret["close_granularity"] = static_cast<Int>(closeResolution_.count());
     }
     else
+    {
         ret["synched"] = false;
+    }
 
     ret["phase"] = toString(phase_);
 
@@ -1116,7 +1124,7 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
     using namespace std::chrono;
 
     // it is shortly before ledger close time
-    bool anyTransactions = adaptor_.hasOpenTransactions();
+    bool const anyTransactions = adaptor_.hasOpenTransactions();
     auto proposersClosed = currPeerPositions_.size();
     auto proposersValidated = adaptor_.proposersValidated(prevLedgerID_);
 
@@ -1137,9 +1145,13 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
             : prevCloseTime_;  // use the time we saw internally
 
         if (now_ >= lastCloseTime)
+        {
             sinceClose = duration_cast<milliseconds>(now_ - lastCloseTime);
+        }
         else
+        {
             sinceClose = -duration_cast<milliseconds>(lastCloseTime - now_);
+        }
         CLOG(clog) << "calculating how long since last ledger's close time "
                       "based on mode : "
                    << toString(mode) << ", previous closeAgree: " << closeAgree
@@ -1186,7 +1198,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
         previousLedger_.seq() - std::min(adaptor_.getValidLedgerIndex(), previousLedger_.seq()));
     auto [quorum, trustedKeys] = adaptor_.getQuorumKeys();
     std::size_t const totalValidators = trustedKeys.size();
-    std::size_t laggards = adaptor_.laggards(previousLedger_.seq(), trustedKeys);
+    std::size_t const laggards = adaptor_.laggards(previousLedger_.seq(), trustedKeys);
     std::size_t const offline = trustedKeys.size();
 
     std::stringstream vars;
@@ -1201,7 +1213,7 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
          << "offline: " << offline << ", "
          << "quorum: " << quorum << ")";
 
-    if (!ahead || !laggards || !totalValidators || !adaptor_.validator() ||
+    if ((ahead == 0u) || (laggards == 0u) || (totalValidators == 0u) || !adaptor_.validator() ||
         !adaptor_.haveValidated() || result_->roundTime.read() > parms.ledgerMAX_CONSENSUS)
     {
         j_.debug() << "not pausing (early)" << vars.str();
@@ -1408,7 +1420,7 @@ this.
 inline int
 participantsNeeded(int participants, int percent)
 {
-    int result = ((participants * percent) + (percent / 2)) / 100;
+    int const result = ((participants * percent) + (percent / 2)) / 100;
 
     return (result == 0) ? 1 : result;
 }
@@ -1757,7 +1769,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::string
                 (!inThisSet && !result_->txns.find(txId) && o.find(txId)),
             "xrpl::Consensus::createDisputes : has disputed transactions");
 
-        Tx_t tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
+        Tx_t const tx = inThisSet ? result_->txns.find(txId) : o.find(txId);
         auto txID = tx.id();
 
         if (result_->disputes.find(txID) != result_->disputes.end())

@@ -2,22 +2,19 @@
 
 #include <test/csf/Tx.h>
 
-#include <xrpld/consensus/LedgerTiming.h>
-
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/comparators.h>
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
 #include <boost/bimap/bimap.hpp>
 
 #include <optional>
 #include <set>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** A ledger is a set of observed transactions and a sequence number
     identifying the ledger.
@@ -60,9 +57,7 @@ private:
     // ID by the oracle
     struct Instance
     {
-        Instance()
-        {
-        }
+        Instance() = default;
 
         // Sequence number
         Seq seq{0};
@@ -335,6 +330,4 @@ struct LedgerHistoryHelper
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

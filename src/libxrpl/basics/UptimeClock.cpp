@@ -16,7 +16,7 @@ UptimeClock::UpdateThread::~UpdateThread()
     {
         stop_ = true;
         // This join() may take up to a 1s, but happens only
-        // once at rippled shutdown.
+        // once at xrpld shutdown.
         join();
     }
 }
@@ -40,7 +40,7 @@ UptimeClock::startClock()
     }};
 }
 
-// This actually measures time since first use, instead of since rippled start.
+// This actually measures time since first use, instead of since xrpld start.
 // However the difference between these two epochs is a small fraction of a
 // second and unimportant.
 
@@ -50,7 +50,7 @@ UptimeClock::now()
     // start the update thread on first use
     static auto const kINIT = startClock();
 
-    // Return the number of seconds since rippled start
+    // Return the number of seconds since xrpld start
     return time_point{duration{now_}};
 }
 

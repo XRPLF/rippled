@@ -1,18 +1,55 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/quality.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
-#include <xrpld/core/Config.h>
-
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
-namespace xrpl {
-namespace test {
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <vector>
+
+namespace xrpl::test {
 
 bool
 getNoRippleFlag(
@@ -58,7 +95,7 @@ struct Flow_test : public beast::unit_test::suite
             env.trust(usd(1000), alice, bob);
             env(pay(gw, alice, usd(100)));
             env(pay(alice, bob, usd(10)), Paths(usd));
-            env.require(Balance(bob, usd(10)));
+            env.Require(Balance(bob, usd(10)));
         }
         {
             // XRP transfer
@@ -67,8 +104,8 @@ struct Flow_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob);
             env.close();
             env(pay(alice, bob, XRP(100)));
-            env.require(Balance(bob, XRP(10000 + 100)));
-            env.require(Balance(alice, xrpMinusFee(env, 10000 - 100)));
+            env.Require(Balance(bob, XRP(10000 + 100)));
+            env.Require(Balance(alice, xrpMinusFee(env, 10000 - 100)));
         }
         {
             // Partial payments
@@ -79,9 +116,9 @@ struct Flow_test : public beast::unit_test::suite
             env.trust(usd(1000), alice, bob);
             env(pay(gw, alice, usd(100)));
             env(pay(alice, bob, usd(110)), Paths(usd), Ter(tecPATH_PARTIAL));
-            env.require(Balance(bob, usd(0)));
+            env.Require(Balance(bob, usd(0)));
             env(pay(alice, bob, usd(110)), Paths(usd), txflags(tfPartialPayment));
-            env.require(Balance(bob, usd(100)));
+            env.Require(Balance(bob, usd(100)));
         }
         {
             // Pay by rippling through accounts, use path finder
@@ -93,7 +130,7 @@ struct Flow_test : public beast::unit_test::suite
             env.trust(usdb(10), carol);
             env.trust(usdc(10), dan);
             env(pay(alice, dan, usdc(10)), Paths(usda));
-            env.require(Balance(bob, usda(10)), Balance(carol, usdb(10)), Balance(dan, usdc(10)));
+            env.Require(Balance(bob, usda(10)), Balance(carol, usdb(10)), Balance(dan, usdc(10)));
         }
         {
             // Pay by rippling through accounts, specify path
@@ -113,8 +150,8 @@ struct Flow_test : public beast::unit_test::suite
                 Path(bob, carol),
                 sendmax(usda(6)),
                 txflags(tfNoRippleDirect));
-            env.require(Balance(dan, usdc(5)));
-            env.require(Balance(alice, usdb(0.5)));
+            env.Require(Balance(dan, usdc(5)));
+            env.Require(Balance(alice, usdb(0.5)));
         }
         {
             // Pay by rippling through accounts, specify path and transfer fee
@@ -132,8 +169,8 @@ struct Flow_test : public beast::unit_test::suite
                 Path(bob, carol),
                 sendmax(usda(6)),
                 txflags(tfNoRippleDirect));
-            env.require(Balance(dan, usdc(5)));
-            env.require(Balance(bob, usda(5)));
+            env.Require(Balance(dan, usdc(5)));
+            env.Require(Balance(bob, usda(5)));
         }
         {
             // test best quality path is taken
@@ -156,9 +193,9 @@ struct Flow_test : public beast::unit_test::suite
                 Path(bob, dan),
                 txflags(tfNoRippleDirect));
 
-            env.require(Balance(erin, usdd(5)));
-            env.require(Balance(dan, usdb(5)));
-            env.require(Balance(dan, usdc(0)));
+            env.Require(Balance(erin, usdd(5)));
+            env.Require(Balance(dan, usdb(5)));
+            env.Require(Balance(dan, usdc(0)));
         }
         {
             // Limit quality
@@ -173,10 +210,10 @@ struct Flow_test : public beast::unit_test::suite
                 sendmax(usda(4)),
                 txflags(tfLimitQuality | tfPartialPayment),
                 Ter(tecPATH_DRY));
-            env.require(Balance(carol, usdb(0)));
+            env.Require(Balance(carol, usdb(0)));
 
             env(pay(alice, carol, usdb(5)), sendmax(usda(4)), txflags(tfPartialPayment));
-            env.require(Balance(carol, usdb(4)));
+            env.Require(Balance(carol, usdb(4)));
         }
     }
 
@@ -208,22 +245,22 @@ struct Flow_test : public beast::unit_test::suite
                 env(trust(carol, usda(100)));
 
                 env(pay(alice, bob, usda(100)));
-                env.require(Balance(bob, usda(100)));
+                env.Require(Balance(bob, usda(100)));
                 env(pay(dan, carol, usda(10)),
                     Path(bob),
                     sendmax(usdd(100)),
                     txflags(tfNoRippleDirect));
-                env.require(Balance(bob, usda(90)));
+                env.Require(Balance(bob, usda(90)));
                 if (bobAliceQOut > bobDanQIn)
                 {
-                    env.require(
+                    env.Require(
                         Balance(bob, usdd(10.0 * double(bobAliceQOut) / double(bobDanQIn))));
                 }
                 else
                 {
-                    env.require(Balance(bob, usdd(10)));
+                    env.Require(Balance(bob, usdd(10)));
                 }
-                env.require(Balance(carol, usda(10)));
+                env.Require(Balance(carol, usda(10)));
             }
         }
 
@@ -238,10 +275,10 @@ struct Flow_test : public beast::unit_test::suite
             env(trust(carol, usda(10)), QualityInPercent(carolAliceQIn));
 
             env(pay(alice, bob, usda(10)));
-            env.require(Balance(bob, usda(10)));
+            env.Require(Balance(bob, usda(10)));
             env(pay(bob, carol, usda(5)), sendmax(usda(10)));
             auto const effectiveQ = carolAliceQIn > 100 ? 1.0 : carolAliceQIn / 100.0;
-            env.require(Balance(bob, usda(10.0 - (5.0 / effectiveQ))));
+            env.Require(Balance(bob, usda(10.0 - (5.0 / effectiveQ))));
         }
 
         // bob -> alice -> carol; bobAliceQOut varies.
@@ -254,10 +291,10 @@ struct Flow_test : public beast::unit_test::suite
             env(trust(carol, usda(10)));
 
             env(pay(alice, bob, usda(10)));
-            env.require(Balance(bob, usda(10)));
+            env.Require(Balance(bob, usda(10)));
             env(pay(bob, carol, usda(5)), sendmax(usda(5)));
-            env.require(Balance(carol, usda(5)));
-            env.require(Balance(bob, usda(10 - 5)));
+            env.Require(Balance(carol, usda(5)));
+            env.Require(Balance(bob, usda(10 - 5)));
         }
     }
 
@@ -292,10 +329,10 @@ struct Flow_test : public beast::unit_test::suite
 
             env(pay(alice, carol, usd(50)), Path(~usd), sendmax(btc(50)));
 
-            env.require(Balance(alice, btc(0)));
-            env.require(Balance(bob, btc(50)));
-            env.require(Balance(bob, usd(0)));
-            env.require(Balance(carol, usd(50)));
+            env.Require(Balance(alice, btc(0)));
+            env.Require(Balance(bob, btc(50)));
+            env.Require(Balance(bob, usd(0)));
+            env.Require(Balance(carol, usd(50)));
             BEAST_EXPECT(!isOffer(env, bob, btc(50), usd(50)));
         }
         {
@@ -315,10 +352,10 @@ struct Flow_test : public beast::unit_test::suite
 
             env(pay(alice, carol, usd(50)), Path(~XRP, ~usd), sendmax(btc(50)));
 
-            env.require(Balance(alice, btc(0)));
-            env.require(Balance(bob, btc(50)));
-            env.require(Balance(bob, usd(0)));
-            env.require(Balance(carol, usd(50)));
+            env.Require(Balance(alice, btc(0)));
+            env.Require(Balance(bob, btc(50)));
+            env.Require(Balance(bob, usd(0)));
+            env.Require(Balance(carol, usd(50)));
             BEAST_EXPECT(!isOffer(env, bob, XRP(50), usd(50)));
             BEAST_EXPECT(!isOffer(env, bob, btc(50), XRP(50)));
         }
@@ -337,10 +374,10 @@ struct Flow_test : public beast::unit_test::suite
 
             env(pay(alice, carol, usd(50)), Path(~usd), sendmax(XRP(50)));
 
-            env.require(Balance(alice, xrpMinusFee(env, 10000 - 50)));
-            env.require(Balance(bob, xrpMinusFee(env, 10000 + 50)));
-            env.require(Balance(bob, usd(0)));
-            env.require(Balance(carol, usd(50)));
+            env.Require(Balance(alice, xrpMinusFee(env, 10000 - 50)));
+            env.Require(Balance(bob, xrpMinusFee(env, 10000 + 50)));
+            env.Require(Balance(bob, usd(0)));
+            env.Require(Balance(carol, usd(50)));
             BEAST_EXPECT(!isOffer(env, bob, XRP(50), usd(50)));
         }
         {
@@ -358,10 +395,10 @@ struct Flow_test : public beast::unit_test::suite
 
             env(pay(alice, carol, XRP(50)), Path(~XRP), sendmax(usd(50)));
 
-            env.require(Balance(alice, usd(0)));
-            env.require(Balance(bob, xrpMinusFee(env, 10000 - 50)));
-            env.require(Balance(bob, usd(50)));
-            env.require(Balance(carol, XRP(10000 + 50)));
+            env.Require(Balance(alice, usd(0)));
+            env.Require(Balance(bob, xrpMinusFee(env, 10000 - 50)));
+            env.Require(Balance(bob, usd(50)));
+            env.Require(Balance(carol, XRP(10000 + 50)));
             BEAST_EXPECT(!isOffer(env, bob, usd(50), XRP(50)));
         }
         {
@@ -390,11 +427,11 @@ struct Flow_test : public beast::unit_test::suite
 
             env(pay(alice, carol, usd(50)), Path(~usd), Path(~eur, ~usd), sendmax(btc(60)));
 
-            env.require(Balance(alice, btc(10)));
-            env.require(Balance(bob, btc(50)));
-            env.require(Balance(bob, usd(0)));
-            env.require(Balance(bob, eur(0)));
-            env.require(Balance(carol, usd(50)));
+            env.Require(Balance(alice, btc(10)));
+            env.Require(Balance(bob, btc(50)));
+            env.Require(Balance(bob, usd(0)));
+            env.Require(Balance(bob, eur(0)));
+            env.Require(Balance(carol, usd(50)));
             // used in the payment
             BEAST_EXPECT(!isOffer(env, bob, btc(50), usd(50)));
             // found unfunded
@@ -435,9 +472,9 @@ struct Flow_test : public beast::unit_test::suite
             BEAST_EXPECT(isOffer(env, bob, btc(60), eur(50)));
             BEAST_EXPECT(isOffer(env, carol, btc(1000), eur(1)));
 
-            auto flowJournal = env.app().logs().journal("Flow");
+            auto flowJournal = env.app().getJournal("Flow");
             auto const flowResult = [&] {
-                STAmount deliver(usd(51));
+                STAmount const deliver(usd(51));
                 STAmount smax(btc(61));
                 PaymentSandbox sb(env.current().get(), tapNONE);
                 STPathSet paths;
@@ -474,7 +511,7 @@ struct Flow_test : public beast::unit_test::suite
             }();
 
             BEAST_EXPECT(flowResult.removableOffers.size() == 1);
-            env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 if (flowResult.removableOffers.empty())
                     return false;
                 Sandbox sb(&view, tapNONE);
@@ -511,7 +548,7 @@ struct Flow_test : public beast::unit_test::suite
             env(pay(gw, alice, usd(1000)));
             env(pay(gw, bob, eur(1000)));
 
-            Keylet const bobUsdOffer = keylet::offer(bob, env.seq(bob));
+            Keylet const bobUsdOffer = keylet::offer(bob, env.Seq(bob));
             env(offer(bob, usd(1), drops(2)), txflags(tfPassive));
             env(offer(bob, drops(1), eur(1000)), txflags(tfPassive));
 
@@ -530,9 +567,9 @@ struct Flow_test : public beast::unit_test::suite
 
             if (!reducedOffersV2)
             {
-                env.require(Balance(carol, eur(1)));
-                env.require(Balance(bob, usd(0.4)));
-                env.require(Balance(bob, eur(999)));
+                env.Require(Balance(carol, eur(1)));
+                env.Require(Balance(bob, usd(0.4)));
+                env.Require(Balance(bob, eur(999)));
 
                 // Show that bob's USD offer is now a blocker.
                 std::shared_ptr<SLE const> const usdOffer = env.le(bobUsdOffer);
@@ -582,7 +619,7 @@ struct Flow_test : public beast::unit_test::suite
         env.trust(usd(1000), alice, bob);
         env(offer(gw, XRP(125), usd(125)));
         env(pay(alice, bob, usd(100)), sendmax(XRP(200)));
-        env.require(Balance(alice, xrpMinusFee(env, 10000 - 125)), Balance(bob, usd(100)));
+        env.Require(Balance(alice, xrpMinusFee(env, 10000 - 125)), Balance(bob, usd(100)));
     }
 
     void
@@ -625,7 +662,7 @@ struct Flow_test : public beast::unit_test::suite
             sendmax(eur(500)),
             txflags(tfNoRippleDirect | tfPartialPayment));
 
-        auto const carolUSD = env.balance(carol, usd).value();
+        auto const carolUSD = env.Balance(carol, usd).value();
         BEAST_EXPECT(carolUSD > usd(0) && carolUSD < usd(50));
     }
 
@@ -661,7 +698,7 @@ struct Flow_test : public beast::unit_test::suite
                 sendmax(XRP(100)),
                 txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
 
-            env.require(Balance(carol, usd(50)));
+            env.Require(Balance(carol, usd(50)));
         }
     }
 
@@ -725,9 +762,9 @@ struct Flow_test : public beast::unit_test::suite
         env(offer(alice, usd(500), eur(600)));
         env.close();
 
-        env.require(Owners(alice, 3));
-        env.require(Balance(alice, usd(1)));
-        env.require(Balance(alice, eur(1000)));
+        env.Require(Owners(alice, 3));
+        env.Require(Balance(alice, usd(1)));
+        env.Require(Balance(alice, eur(1000)));
 
         auto aliceOffers = offersOnAccount(env, alice);
         BEAST_EXPECT(aliceOffers.size() == 1);
@@ -742,9 +779,9 @@ struct Flow_test : public beast::unit_test::suite
         env(pay(alice, alice, eur(600)), sendmax(usd(500)), txflags(tfPartialPayment));
         env.close();
 
-        env.require(Owners(alice, 3));
-        env.require(Balance(alice, usd(1)));
-        env.require(Balance(alice, eur(1000)));
+        env.Require(Owners(alice, 3));
+        env.Require(Balance(alice, usd(1)));
+        env.Require(Balance(alice, eur(1000)));
         aliceOffers = offersOnAccount(env, alice);
         BEAST_EXPECT(aliceOffers.size() == 1);
         for (auto const& offerPtr : aliceOffers)
@@ -794,9 +831,9 @@ struct Flow_test : public beast::unit_test::suite
         env(offer(alice, usd(500), eur(600)));
         env.close();
 
-        env.require(Owners(alice, 3));
-        env.require(Balance(alice, usd(500)));
-        env.require(Balance(alice, eur(600)));
+        env.Require(Owners(alice, 3));
+        env.Require(Balance(alice, usd(500)));
+        env.Require(Balance(alice, eur(600)));
 
         auto aliceOffers = offersOnAccount(env, alice);
         BEAST_EXPECT(aliceOffers.size() == 1);
@@ -811,9 +848,9 @@ struct Flow_test : public beast::unit_test::suite
         env(pay(alice, alice, eur(60)), sendmax(usd(50)), txflags(tfPartialPayment));
         env.close();
 
-        env.require(Owners(alice, 3));
-        env.require(Balance(alice, usd(500)));
-        env.require(Balance(alice, eur(600)));
+        env.Require(Owners(alice, 3));
+        env.Require(Balance(alice, usd(500)));
+        env.Require(Balance(alice, eur(600)));
         aliceOffers = offersOnAccount(env, alice);
         BEAST_EXPECT(aliceOffers.size() == 1);
         for (auto const& offerPtr : aliceOffers)
@@ -1218,14 +1255,14 @@ struct Flow_test : public beast::unit_test::suite
         env.close();
 
         // alice creates a ticket for the payment.
-        std::uint32_t const ticketSeq{env.seq(alice) + 1};
+        std::uint32_t const ticketSeq{env.Seq(alice) + 1};
         env(ticket::create(alice, 1));
 
         // Make a payment using the ticket.
         env(pay(alice, bob, XRP(1000)), ticket::use(ticketSeq));
         env.close();
-        env.require(Balance(bob, XRP(1000)));
-        env.require(Balance(alice, XRP(9000) - (env.current()->fees().base * 2)));
+        env.Require(Balance(bob, XRP(1000)));
+        env.Require(Balance(alice, XRP(9000) - (env.current()->fees().base * 2)));
     }
 
     void
@@ -1286,5 +1323,4 @@ struct Flow_manual_test : public Flow_test
 BEAST_DEFINE_TESTSUITE_PRIO(Flow, app, xrpl, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Flow_manual, app, xrpl, 4);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

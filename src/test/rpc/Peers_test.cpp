@@ -1,12 +1,18 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
 
 #include <xrpld/overlay/Cluster.h>
-#include <xrpld/overlay/Overlay.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace xrpl {
 
@@ -31,10 +37,10 @@ class Peers_test : public beast::unit_test::suite
         {
             auto kp = generateKeyPair(KeyType::secp256k1, generateSeed("seed" + std::to_string(i)));
 
-            std::string name = "Node " + std::to_string(i);
+            std::string const name = "Node " + std::to_string(i);
 
             using namespace std::chrono_literals;
-            env.app().cluster().update(kp.first, name, 200, env.timeKeeper().now() - 10s);
+            env.app().getCluster().update(kp.first, name, 200, env.timeKeeper().now() - 10s);
             nodes.insert(std::make_pair(toBase58(TokenType::NodePublic, kp.first), name));
         }
 

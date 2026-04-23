@@ -1,20 +1,45 @@
-#include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+
+#include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
 
+#include <xrpld/core/Config.h>
+#include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <utility>
+#include <vector>
 
-void
+namespace xrpl::test::jtx {
+
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -22,16 +47,17 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how)
 {
-    fund(env, gw, accounts, XRP(30000), amts, how);
+    return fund(env, gw, accounts, XRP(30000), amts, how);
 }
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts,
-    Fund how)
+    Fund how,
+    std::optional<Account> const& mptIssuer)
 {
     for (auto const& account : accounts)
     {
@@ -41,18 +67,37 @@ fund(
         }
     }
     env.close();
+
+    std::vector<STAmount> amtsOut;
     for (auto const& account : accounts)
     {
+        int i = 0;
         for (auto const& amt : amts)
         {
-            env.trust(amt + amt, account);
-            env(pay(amt.issue().account, account, amt));
+            auto amt_ = [&]() {
+                if (amtsOut.size() == amts.size())
+                {
+                    return amtsOut[i++];
+                }
+                if (amt.holds<MPTIssue>() && mptIssuer)
+                {
+                    MPTTester const mpt({.env = env, .issuer = *mptIssuer, .holders = accounts});
+                    return STAmount{mpt.issuanceID(), amt.mpt().value()};
+                }
+                return amt;
+            }();
+            if (amt.holds<Issue>())
+                env.trust(amt_ + amt_, account);
+            if (amtsOut.size() != amts.size())
+                amtsOut.push_back(amt_);
+            env(pay(amt_.getIssuer(), account, amt_));
         }
     }
     env.close();
+    return amtsOut;
 }
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -64,7 +109,7 @@ fund(
     if (how == Fund::All || how == Fund::Gw)
         env.fund(xrp, gw);
     env.close();
-    fund(env, accounts, xrp, amts, how);
+    return fund(env, accounts, xrp, amts, how, gw);
 }
 
 AMMTestBase::AMMTestBase()
@@ -119,15 +164,20 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
                     return defXRP;
                 return a + XRP(1000);
             }
-            auto const defIOU = STAmount{a.issue(), 30000};
-            if (a <= defIOU)
-                return defIOU;
-            return a + STAmount{a.issue(), 1000};
+            auto defAmt = STAmount{a.asset(), 30000};
+            if (a <= defAmt)
+                return defAmt;
+            return a + STAmount{a.asset(), 1000};
         };
         auto const toFund1 = toFund(asset1);
         auto const toFund2 = toFund(asset2);
         BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
+        // asset1/asset2 could be dummy MPT. In this case real MPT
+        // is created by fund(), which returns the funded amounts.
+        // The amounts then can be used to figure out the created
+        // MPT if any.
+        std::vector<STAmount> funded;
         if (!asset1.native() && !asset2.native())
         {
             fund(env, gw_, {alice_, carol_}, {toFund1, toFund2}, Fund::All);
@@ -140,6 +190,9 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
         {
             fund(env, gw_, {alice_, carol_}, toFund2, {toFund1}, Fund::All);
         }
+
+        auto const pool1 = STAmount{funded[0].asset(), static_cast<Number>(asset1)};
+        auto const pool2 = STAmount{funded[1].asset(), static_cast<Number>(asset2)};
 
         AMM ammAlice(
             env, alice_, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
@@ -278,6 +331,4 @@ AMMTest::findPaths(
     return std::make_tuple(std::move(paths), std::move(sa), std::move(da));
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

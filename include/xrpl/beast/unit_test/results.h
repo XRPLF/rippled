@@ -7,10 +7,10 @@
 #include <xrpl/beast/unit_test/detail/const_container.h>
 
 #include <string>
+#include <utility>
 #include <vector>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Holds a set of test condition outcomes in a testcase. */
 class CaseResults
@@ -23,7 +23,7 @@ public:
         {
         }
 
-        test(bool pass_, std::string const& reason_) : pass(pass_), reason(reason_)
+        test(bool pass_, std::string reason_) : pass(pass_), reason(std::move(reason_))
         {
         }
 
@@ -35,7 +35,7 @@ private:
     class TestsT : public detail::ConstContainer<std::vector<test>>
     {
     private:
-        std::size_t failed_;
+        std::size_t failed_{0};
 
     public:
         TestsT() : failed_(0)
@@ -145,9 +145,9 @@ public:
     void
     insert(CaseResults&& r)
     {
-        cont().emplace_back(std::move(r));
         total_ += r.tests.total();
         failed_ += r.tests.failed();
+        cont().emplace_back(std::move(r));
     }
 
     void
@@ -219,5 +219,4 @@ public:
     /** @} */
 };
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

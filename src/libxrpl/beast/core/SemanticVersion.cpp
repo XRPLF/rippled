@@ -1,13 +1,16 @@
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
+
+#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
 #include <cctype>
 #include <limits>
 #include <locale>
+#include <ranges>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace beast {
 
@@ -320,7 +323,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             {
                 XRPL_ASSERT(!isNumeric(right), "beast::compare : both inputs non-numeric");
 
-                int result = left.compare(right);
+                int const result = left.compare(right);
 
                 if (result != 0)
                     return result;

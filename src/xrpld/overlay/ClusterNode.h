@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -15,7 +16,7 @@ public:
 
     ClusterNode(
         PublicKey const& identity,
-        std::string const& name,
+        std::string name,
         std::uint32_t fee = 0,
         NetClock::time_point rtime = NetClock::time_point{})
         : identity_(identity), name_(name), loadFee_(fee), reportTime_(rtime)

@@ -6,9 +6,7 @@
 #include <cmath>
 #include <map>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Basic histogram.
 
@@ -92,7 +90,7 @@ public:
     percentile(float p) const
     {
         assert(p >= 0 && p <= 1);
-        std::size_t pos = std::round(p * samples);
+        std::size_t const pos = std::round(p * samples);
 
         if (counts_.empty())
             return T{};
@@ -108,6 +106,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

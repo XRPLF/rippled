@@ -13,7 +13,7 @@ namespace xrpl {
 
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 /**
  * `Workers` is effectively a thread pool. The constructor takes a "callback"
@@ -93,7 +93,7 @@ public:
     explicit Workers(
         Callback& callback,
         perf::PerfLog* perfLog,
-        std::string const& threadNames = "Worker",
+        std::string threadNames = "Worker",
         int numberOfThreads = static_cast<int>(std::thread::hardware_concurrency()));
 
     ~Workers();
@@ -164,7 +164,7 @@ private:
                    public beast::LockFreeStack<Worker, PausedTag>::Node
     {
     public:
-        Worker(Workers& workers, std::string const& threadName, int const instance);
+        Worker(Workers& workers, std::string threadName, int const instance);
 
         ~Worker();
 
@@ -183,8 +183,8 @@ private:
         std::thread thread_;
         std::mutex mutex_;
         std::condition_variable wakeup_;
-        int wakeCount_;  // how many times to un-pause
-        bool shouldExit_;
+        int wakeCount_{0};  // how many times to un-pause
+        bool shouldExit_{false};
     };
 
 private:

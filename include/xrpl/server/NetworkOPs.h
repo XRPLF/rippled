@@ -63,8 +63,8 @@ enum class OperatingMode {
     needed.
 
     A backend application or local client can trust a local instance of
-    rippled / NetworkOPs. However, client software connecting to non-local
-    instances of rippled will need to be hardened to protect against hostile
+    xrpld / NetworkOPs. However, client software connecting to non-local
+    instances of xrpld will need to be hardened to protect against hostile
     or unreliable servers.
 */
 class NetworkOPs : public InfoSub::Source
@@ -73,7 +73,7 @@ public:
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
     enum class FailHard : unsigned char { no, yes };
-    static inline FailHard
+    static FailHard
     doFailHard(bool noMeansDont)
     {
         return noMeansDont ? FailHard::yes : FailHard::no;

@@ -6,9 +6,7 @@
 #include <algorithm>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** A group of simulation Peers
 
@@ -35,11 +33,11 @@ public:
     }
     PeerGroup(std::vector<Peer*>&& peers) : peers_{std::move(peers)}
     {
-        std::sort(peers_.begin(), peers_.end());
+        std::ranges::sort(peers_);
     }
     PeerGroup(std::vector<Peer*> const& peers) : peers_{peers}
     {
-        std::sort(peers_.begin(), peers_.end());
+        std::ranges::sort(peers_);
     }
 
     PeerGroup(std::set<Peer*> const& peers) : peers_{peers.begin(), peers.end()}
@@ -79,15 +77,14 @@ public:
     bool
     contains(Peer const* p)
     {
-        return std::find(peers_.begin(), peers_.end(), p) != peers_.end();
+        return std::ranges::find(peers_, p) != peers_.end();
     }
 
     bool
     contains(PeerID id)
     {
-        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) {
-                   return p->id == id;
-               }) != peers_.end();
+        return std::ranges::find_if(peers_, [id](Peer const* p) { return p->id == id; }) !=
+            peers_.end();
     }
 
     std::size_t
@@ -215,12 +212,7 @@ public:
     operator+(PeerGroup const& a, PeerGroup const& b)
     {
         PeerGroup res;
-        std::set_union(
-            a.peers_.begin(),
-            a.peers_.end(),
-            b.peers_.begin(),
-            b.peers_.end(),
-            std::back_inserter(res.peers_));
+        std::ranges::set_union(a.peers_, b.peers_, std::back_inserter(res.peers_));
         return res;
     }
 
@@ -230,12 +222,7 @@ public:
     {
         PeerGroup res;
 
-        std::set_difference(
-            a.peers_.begin(),
-            a.peers_.end(),
-            b.peers_.begin(),
-            b.peers_.end(),
-            std::back_inserter(res.peers_));
+        std::ranges::set_difference(a.peers_, b.peers_, std::back_inserter(res.peers_));
 
         return res;
     }
@@ -313,8 +300,8 @@ randomRankedTrust(
     Generator& g)
 {
     std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::uniform_int_distribution<int> u(0, groups.size() - 1);  // NOLINT(misc-const-correctness)
 
-    std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
     {
         for (auto& target : groups[u(g)])
@@ -337,8 +324,8 @@ randomRankedConnect(
     SimDuration delay)
 {
     std::vector<PeerGroup> const groups = randomRankedGroups(peers, ranks, numGroups, sizeDist, g);
+    std::uniform_int_distribution<int> u(0, groups.size() - 1);  // NOLINT(misc-const-correctness)
 
-    std::uniform_int_distribution<int> u(0, groups.size() - 1);
     for (auto& peer : peers)
     {
         for (auto& target : groups[u(g)])
@@ -346,6 +333,4 @@ randomRankedConnect(
     }
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

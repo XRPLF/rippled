@@ -1,9 +1,32 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/ledgerStateFix.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/token.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
+#include <xrpl/protocol/nft.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <vector>
 
 namespace xrpl {
 
@@ -49,7 +72,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
             }();
 
             // We must add FirstNFTokenSequence.
-            tokenSeq += env.le(acct)->at(~sfFirstNFTokenSequence).value_or(env.seq(acct));
+            tokenSeq += env.le(acct)->at(~sfFirstNFTokenSequence).value_or(env.Seq(acct));
 
             return toUInt32(nft::cipheredTaxon(tokenSeq, nft::toTaxon(taxon)));
         };
@@ -71,7 +94,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         // Sort the NFTs so they are listed in storage order, not
         // creation order.
-        std::sort(nfts.begin(), nfts.end());
+        std::ranges::sort(nfts);
 
         // Verify that the owner does indeed have exactly three pages
         // of NFTs with 32 entries in each page.
@@ -121,7 +144,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         Env env{*this, testableAmendments()};
         env.fund(XRP(1000), alice);
-        std::uint32_t const ticketSeq = env.seq(alice);
+        std::uint32_t const ticketSeq = env.Seq(alice);
         env(ticket::create(alice, 1));
 
         // Preflight
@@ -337,7 +360,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         dariaNFTs.reserve(32);
         for (int i = 0; i < 32; ++i)
         {
-            uint256 const offerIndex = keylet::nftoffer(carol, env.seq(carol)).key;
+            uint256 const offerIndex = keylet::nftoffer(carol, env.Seq(carol)).key;
             env(token::createOffer(carol, carolNFTs.back(), XRP(0)), txflags(tfSellNFToken));
             env.close();
 
@@ -371,7 +394,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
         // back from daria.
         for (uint256 const& nft : dariaNFTs)
         {
-            uint256 const offerIndex = keylet::nftoffer(carol, env.seq(carol)).key;
+            uint256 const offerIndex = keylet::nftoffer(carol, env.Seq(carol)).key;
             env(token::createOffer(carol, nft, drops(1)), token::owner(daria));
             env.close();
 

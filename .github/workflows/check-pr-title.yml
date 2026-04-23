@@ -11,4 +11,4 @@ on:
 jobs:
   check_title:
     if: ${{ github.event.pull_request.draft != true }}
-    uses: XRPLF/actions/.github/workflows/check-pr-title.yml@e2c7f400d1e85ae65dad552fd425169fbacca4a3
+    uses: XRPLF/actions/.github/workflows/check-pr-title.yml@a5d8dd35be543365e90a11358447130c8763871d

@@ -1,6 +1,8 @@
 #include <xrpl/json/Writer.h>
 
-#include <google/protobuf/stubs/port.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/json_value.h>
+
 #include <gtest/gtest.h>
 
 #include <memory>

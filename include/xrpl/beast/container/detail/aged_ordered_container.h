@@ -67,7 +67,7 @@ public:
     using duration = typename clock_type::duration;
     using key_type = Key;
     using mapped_type = T;
-    using value_type = typename std::conditional<IsMap, std::pair<Key const, T>, Key>::type;
+    using value_type = std::conditional_t<IsMap, std::pair<Key const, T>, Key>;
     using size_type = std::size_t;
     using difference_type = std::ptrdiff_t;
 
@@ -199,7 +199,7 @@ private:
     using list_type = typename boost::intrusive::
         make_list<Element, boost::intrusive::constant_time_size<false>>::type;
 
-    using cont_type = typename std::conditional<
+    using cont_type = std::conditional_t<
         IsMulti,
         typename boost::intrusive::make_multiset<
             Element,
@@ -208,7 +208,7 @@ private:
         typename boost::intrusive::make_set<
             Element,
             boost::intrusive::constant_time_size<true>,
-            boost::intrusive::compare<KeyValueCompare>>::type>::type;
+            boost::intrusive::compare<KeyValueCompare>>::type>;
 
     using ElementAllocator =
         typename std::allocator_traits<Allocator>::template rebind_alloc<Element>;

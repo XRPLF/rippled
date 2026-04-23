@@ -1,8 +1,14 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
-//
+
 #include <xrpl/basics/Number.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -92,7 +98,7 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
-    XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsDeposit : non-negative shares");
+    XRPL_ASSERT(!shares.negative(), "xrpl::sharesToAssetsWithdraw : non-negative shares");
     XRPL_ASSERT(
         shares.asset() == vault->at(sfShareMPTID),
         "xrpl::sharesToAssetsWithdraw : shares and vault match");

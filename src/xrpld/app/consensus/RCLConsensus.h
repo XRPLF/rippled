@@ -472,7 +472,7 @@ public:
     RCLCxLedger::ID
     prevLedgerID() const
     {
-        std::lock_guard _{mutex_};
+        std::lock_guard const _{mutex_};
         return consensus_.prevLedgerID();
     }
 

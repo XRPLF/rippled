@@ -1,7 +1,17 @@
 #include <xrpl/nodestore/detail/BatchWriter.h>
 
-namespace xrpl {
-namespace NodeStore {
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+
+#include <algorithm>
+#include <chrono>
+#include <memory>
+#include <mutex>
+#include <vector>
+
+namespace xrpl::NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
     : callback_(callback), scheduler_(scheduler), writeLoad_(0), writePending_(false)
@@ -37,7 +47,7 @@ BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 int
 BatchWriter::getWriteLoad()
 {
-    std::lock_guard sl(writeMutex_);
+    std::lock_guard const sl(writeMutex_);
 
     return std::max(writeLoad_, static_cast<int>(writeSet_.size()));
 }
@@ -58,7 +68,7 @@ BatchWriter::writeBatch()
         set.reserve(batchWritePreallocationSize);
 
         {
-            std::lock_guard sl(writeMutex_);
+            std::lock_guard const sl(writeMutex_);
 
             writeSet_.swap(set);
             XRPL_ASSERT(
@@ -97,5 +107,4 @@ BatchWriter::waitForWriting()
         writeCondition_.wait(sl);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

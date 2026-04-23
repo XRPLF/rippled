@@ -1,11 +1,16 @@
-#include <test/jtx/Env.h>
 #include <test/jtx/acctdelete.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
+
+namespace xrpl::test::jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
 Json::Value
@@ -28,16 +33,14 @@ incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
     auto openLedgerSeq = [](jtx::Env& env) -> std::uint32_t { return env.current()->seq(); };
 
     int const delta = [&]() -> int {
-        if (env.seq(acc) + 255 > openLedgerSeq(env))
-            return env.seq(acc) - openLedgerSeq(env) + 255 - margin;
+        if (env.Seq(acc) + 255 > openLedgerSeq(env))
+            return env.Seq(acc) - openLedgerSeq(env) + 255 - margin;
         return 0;
     }();
     env.test.BEAST_EXPECT(margin == 0 || delta >= 0);
     for (int i = 0; i < delta; ++i)
         env.close();
-    env.test.BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
+    env.test.BEAST_EXPECT(openLedgerSeq(env) == env.Seq(acc) + 255 - margin);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

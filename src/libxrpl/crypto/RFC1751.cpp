@@ -1,5 +1,6 @@
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/RFC1751.h>
+
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
@@ -312,8 +313,8 @@ RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
     while (iResult < 0 && iMin != iMax)
     {
         // Have a range to search.
-        int iMid = iMin + ((iMax - iMin) / 2);
-        int iDir = strWord.compare(dictionary_[iMid]);
+        int const iMid = iMin + ((iMax - iMin) / 2);
+        int const iDir = strWord.compare(dictionary_[iMid]);
 
         if (iDir == 0)
         {
@@ -349,7 +350,7 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
 
     for (auto& strWord : vsHuman)
     {
-        int l = strWord.length();
+        int const l = strWord.length();
 
         if (l > 4 || l < 1)
             return -1;

@@ -1,32 +1,68 @@
+#include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/paths/Pathfinder.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/detail/AssetCache.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/detail/TransactionSign.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/mulDiv.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/tx/apply.h>  // Validity::Valid
 #include <xrpl/tx/applySteps.h>
 
 #include <algorithm>
-#include <iterator>
+#include <chrono>
+#include <exception>
+#include <functional>
+#include <memory>
 #include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <utility>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 namespace detail {
 
 // Used to pass extra parameters used when returning a
@@ -207,7 +243,10 @@ checkPayment(
     if (!dstAccountID)
         return RPC::invalid_field_error("tx_json.Destination");
 
-    if (params.isMember(jss::build_path) && ((!doPath) || amount.holds<MPTIssue>()))
+    if (params.isMember(jss::build_path) &&
+        (!doPath ||
+         (!app.getOpenLedger().current()->rules().enabled(featureMPTokensV2) &&
+          amount.holds<MPTIssue>())))
     {
         return RPC::make_error(
             rpcINVALID_PARAMS, "Field 'build_path' not allowed in this context.");
@@ -243,29 +282,31 @@ checkPayment(
         }
         else
         {
-            // If no SendMax, default to Amount with sender as issuer.
+            // If no SendMax, default to Amount with sender as issuer if Issue.
             sendMax = amount;
-            sendMax.setIssuer(srcAddressID);
+            sendMax.asset().visit(
+                [&](Issue const&) { sendMax.get<Issue>().account = srcAddressID; },
+                [](MPTIssue const&) {});
         }
 
         if (sendMax.native() && amount.native())
             return RPC::make_error(rpcINVALID_PARAMS, "Cannot build XRP to XRP paths.");
 
         {
-            LegacyPathFind lpf(isUnlimited(role), app);
+            LegacyPathFind const lpf(isUnlimited(role), app);
             if (!lpf.isOk())
                 return rpcError(rpcTOO_BUSY);
 
             STPathSet result;
 
-            if (auto ledger = app.openLedger().current())
+            if (auto ledger = app.getOpenLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(ledger, app.journal("RippleLineCache")),
+                    std::make_shared<AssetCache>(ledger, app.getJournal("AssetCache")),
                     srcAddressID,
                     *dstAccountID,
-                    sendMax.issue().currency,
-                    sendMax.issue().account,
+                    sendMax.asset(),
+                    sendMax.getIssuer(),
                     amount,
                     std::nullopt,
                     domain,
@@ -275,12 +316,12 @@ checkPayment(
                     // 4 is the maximum paths
                     pf.computePathRanks(4);
                     STPath fullLiquidityPath;
-                    STPathSet paths;
-                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.issue().account);
+                    STPathSet const paths;
+                    result = pf.getBestPaths(4, fullLiquidityPath, paths, sendMax.getIssuer());
                 }
             }
 
-            auto j = app.journal("RPCHandler");
+            auto j = app.getJournal("RPCHandler");
             JLOG(j.debug()) << "transactionSign: build_path: "
                             << result.getJson(JsonOptions::kNONE);
 
@@ -403,7 +444,7 @@ transactionPreProcessImpl(
     std::chrono::seconds validatedLedgerAge,
     Application& app)
 {
-    auto j = app.journal("RPCHandler");
+    auto j = app.getJournal("RPCHandler");
 
     Json::Value jvResult;
     std::optional<std::pair<PublicKey, SecretKey>> keyPair = keypairForSignature(params, jvResult);
@@ -462,7 +503,7 @@ transactionPreProcessImpl(
 
     std::shared_ptr<SLE const> sle;
     if (verify)
-        sle = app.openLedger().current()->read(keylet::account(srcAddressID));
+        sle = app.getOpenLedger().current()->read(keylet::account(srcAddressID));
 
     if (verify && !sle)
     {
@@ -566,7 +607,7 @@ transactionPreProcessImpl(
 
                 auto delegatedAddressID = *ptrDelegatedAddressID;
                 auto delegatedSle =
-                    app.openLedger().current()->read(keylet::account(delegatedAddressID));
+                    app.getOpenLedger().current()->read(keylet::account(delegatedAddressID));
                 if (!delegatedSle)
                     return rpcError(rpcDELEGATE_ACT_NOT_FOUND);
 
@@ -616,7 +657,7 @@ transactionPreProcessImpl(
 
         stTx = std::make_shared<STTx>(std::move(parsed.object.value()));
     }
-    catch (STObject::FieldErr& err)
+    catch (STObject::FieldErr const& err)
     {
         return RPC::make_error(rpcINVALID_PARAMS, err.what());
     }
@@ -633,7 +674,7 @@ transactionPreProcessImpl(
     // If multisign then return multiSignature, else set TxnSignature field.
     if (signingArgs.isMultiSigning())
     {
-        Serializer s = buildMultiSigningData(*stTx, signingArgs.getSigner());
+        Serializer const s = buildMultiSigningData(*stTx, signingArgs.getSigner());
 
         auto multisig = xrpl::sign(pk, sk, s.slice());
 
@@ -675,7 +716,7 @@ transactionConstructImpl(
         {
             Serializer s;
             tpTrans->getSTransaction()->add(s);
-            Blob transBlob = s.getData();
+            Blob const transBlob = s.getData();
             SerialIter sit{makeSlice(transBlob)};
 
             // Check the signature if that's called for.
@@ -766,7 +807,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 [[nodiscard]] static XRPAmount
 getTxFee(Application const& app, Config const& config, Json::Value tx)
 {
-    auto const& ledger = app.openLedger().current();
+    auto const& ledger = app.getOpenLedger().current();
     // autofilling only needed in this function so that the `STParsedJSONObject`
     // parsing works properly it should not be modifying the actual `tx` object
     if (!tx.isMember(jss::Fee))
@@ -828,7 +869,7 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
         if (!passesLocalChecks(stTx, reason))
             return config.FEES.reference_fee;
 
-        return calculateBaseFee(*app.openLedger().current(), stTx);
+        return calculateBaseFee(*app.getOpenLedger().current(), stTx);
     }
     catch (std::exception& e)
     {
@@ -849,7 +890,7 @@ getCurrentNetworkFee(
 {
     XRPAmount const feeDefault = getTxFee(app, config, tx);
 
-    auto ledger = app.openLedger().current();
+    auto ledger = app.getOpenLedger().current();
     // Administrative and identified endpoints are exempt from local fees.
     XRPAmount const loadFee = scaleFeeLoad(feeDefault, feeTrack, ledger->fees(), isUnlimited(role));
     XRPAmount fee = loadFee;
@@ -951,20 +992,20 @@ transactionSign(
 {
     using namespace detail;
 
-    auto j = app.journal("RPCHandler");
+    auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSign: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    TransactionPreProcessResult preprocResult =
+    TransactionPreProcessResult const preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<ReadView const> ledger = app.openLedger().current();
+    std::shared_ptr<ReadView const> const ledger = app.getOpenLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<Json::Value, Transaction::pointer> const txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
 
     if (!txn.second)
@@ -986,13 +1027,13 @@ transactionSubmit(
 {
     using namespace detail;
 
-    auto const& ledger = app.openLedger().current();
-    auto j = app.journal("RPCHandler");
+    auto const& ledger = app.getOpenLedger().current();
+    auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmit: " << jvRequest;
 
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams;
-    TransactionPreProcessResult preprocResult =
+    TransactionPreProcessResult const preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
@@ -1065,15 +1106,14 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
         return RPC::make_param_error("Signers array may not be empty.");
 
     // Signers must be sorted by Account.
-    std::sort(signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
+    std::ranges::sort(signers, [](STObject const& a, STObject const& b) {
         return (a[sfAccount] < b[sfAccount]);
     });
 
     // Signers may not contain any duplicates.
-    auto const dupIter = std::adjacent_find(
-        signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
-            return (a[sfAccount] == b[sfAccount]);
-        });
+    auto const dupIter = std::ranges::adjacent_find(
+        signers,
+        [](STObject const& a, STObject const& b) { return (a[sfAccount] == b[sfAccount]); });
 
     if (dupIter != signers.end())
     {
@@ -1084,8 +1124,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
     }
 
     // An account may not sign for itself.
-    if (signers.end() !=
-        std::find_if(signers.begin(), signers.end(), [&signingForID](STObject const& elem) {
+    if (signers.end() != std::ranges::find_if(signers, [&signingForID](STObject const& elem) {
             return elem[sfAccount] == signingForID;
         }))
     {
@@ -1108,8 +1147,8 @@ transactionSignFor(
     std::chrono::seconds validatedLedgerAge,
     Application& app)
 {
-    auto const& ledger = app.openLedger().current();
-    auto j = app.journal("RPCHandler");
+    auto const& ledger = app.getOpenLedger().current();
+    auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
 
     // Verify presence of the signer's account field.
@@ -1152,7 +1191,7 @@ transactionSignFor(
     // Add and amend fields based on the transaction type.
     SigningForParams signForParams(*signerAccountID);
 
-    TransactionPreProcessResult preprocResult =
+    TransactionPreProcessResult const preprocResult =
         transactionPreProcessImpl(jvRequest, role, signForParams, validatedLedgerAge, app);
 
     if (!preprocResult.second)
@@ -1200,7 +1239,7 @@ transactionSignFor(
     }
 
     // Make sure the STTx makes a legitimate Transaction.
-    std::pair<Json::Value, Transaction::pointer> txn =
+    std::pair<Json::Value, Transaction::pointer> const txn =
         transactionConstructImpl(sttx, ledger->rules(), app);
 
     if (!txn.second)
@@ -1220,8 +1259,8 @@ transactionSubmitMultiSigned(
     Application& app,
     ProcessTransactionFn const& processTransaction)
 {
-    auto const& ledger = app.openLedger().current();
-    auto j = app.journal("RPCHandler");
+    auto const& ledger = app.getOpenLedger().current();
+    auto j = app.getJournal("RPCHandler");
     JLOG(j.debug()) << "transactionSubmitMultiSigned: " << jvRequest;
 
     // When multi-signing, the "Sequence" and "SigningPubKey" fields must
@@ -1247,7 +1286,7 @@ transactionSubmitMultiSigned(
     if (RPC::contains_error(txJsonResult))
         return std::move(txJsonResult);
 
-    std::shared_ptr<SLE const> sle = ledger->read(keylet::account(srcAddressID));
+    std::shared_ptr<SLE const> const sle = ledger->read(keylet::account(srcAddressID));
 
     if (!sle)
     {
@@ -1287,13 +1326,13 @@ transactionSubmitMultiSigned(
         {
             stTx = std::make_shared<STTx>(std::move(parsedTxJson.object.value()));
         }
-        catch (STObject::FieldErr& err)
+        catch (STObject::FieldErr const& err)
         {
             return RPC::make_error(rpcINVALID_PARAMS, err.what());
         }
         catch (std::exception& ex)
         {
-            std::string reason(ex.what());
+            std::string const reason(ex.what());
             return RPC::make_error(
                 rpcINTERNAL, "Exception while serializing transaction: " + reason);
         }
@@ -1349,7 +1388,7 @@ transactionSubmitMultiSigned(
         return RPC::make_param_error("tx_json.Signers array may not be empty.");
 
     // The Signers array may only contain Signer objects.
-    if (std::find_if_not(signers.begin(), signers.end(), [](STObject const& obj) {
+    if (std::ranges::find_if_not(signers, [](STObject const& obj) {
             return (
                 // A Signer object always contains these fields and no
                 // others.
@@ -1386,5 +1425,4 @@ transactionSubmitMultiSigned(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

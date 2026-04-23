@@ -57,7 +57,7 @@ public:
     {
         using iterator_category = std::forward_iterator_tag;
         partition_map_type* map{nullptr};
-        typename partition_map_type::iterator ait_;
+        typename partition_map_type::iterator ait_{};
         typename map_type::iterator mit;
 
         iterator() = default;
@@ -126,7 +126,7 @@ public:
         using iterator_category = std::forward_iterator_tag;
 
         partition_map_type* map{nullptr};
-        typename partition_map_type::iterator ait_;
+        typename partition_map_type::iterator ait_{};
         typename map_type::iterator mit;
 
         const_iterator() = default;
@@ -231,7 +231,8 @@ public:
     {
         // Set partitions to the number of hardware threads if the parameter
         // is either empty or set to 0.
-        partitions_ = partitions && *partitions ? *partitions : std::thread::hardware_concurrency();
+        partitions_ =
+            partitions && (*partitions != 0u) ? *partitions : std::thread::hardware_concurrency();
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,

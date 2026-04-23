@@ -7,8 +7,7 @@
 #include <xrpl/beast/unit_test/results.h>
 #include <xrpl/beast/unit_test/runner.h>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** A test runner that stores the results. */
 class recorder : public runner
@@ -73,5 +72,4 @@ private:
     }
 };
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

@@ -147,7 +147,7 @@ public:
     Handoff
     onHandoff(
         Session& session,
-        http_request_type&& request,
+        http_request_type&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
         boost::asio::ip::tcp::endpoint const& remote_address)
     {
         return onHandoff(session, {}, std::forward<http_request_type>(request), remote_address);

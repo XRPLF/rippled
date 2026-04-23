@@ -6,9 +6,7 @@
 #include <chrono>
 #include <ostream>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 // Timers are classes that schedule repeated events and are mostly independent
 // of simulation-specific details.
@@ -47,11 +45,11 @@ public:
     beat(SimTime when)
     {
         using namespace std::chrono;
-        RealTime realTime = RealClock::now();
-        SimTime simTime = when;
+        RealTime const realTime = RealClock::now();
+        SimTime const simTime = when;
 
-        RealDuration realDuration = realTime - startRealTime_;
-        SimDuration simDuration = simTime - startSimTime_;
+        RealDuration const realDuration = realTime - startRealTime_;
+        SimDuration const simDuration = simTime - startSimTime_;
         out_ << "Heartbeat. Time Elapsed: {sim: " << duration_cast<seconds>(simDuration).count()
              << "s | real: " << duration_cast<seconds>(realDuration).count() << "s}\n"
              << std::flush;
@@ -60,6 +58,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

@@ -1,11 +1,56 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/check.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
+#include <xrpl/protocol/nft.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
 #include <initializer_list>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -98,7 +143,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             Account const alice{"alice"};
             env.fund(XRP(10000), alice);
             env.close();
-            uint256 const aliceOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId1, XRP(1000)), token::owner(master));
             env.close();
 
@@ -144,8 +189,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.fund(acctReserve, alice, minter);
         env.close();
 
-        BEAST_EXPECT(env.balance(alice) == acctReserve);
-        BEAST_EXPECT(env.balance(minter) == acctReserve);
+        BEAST_EXPECT(env.Balance(alice) == acctReserve);
+        BEAST_EXPECT(env.Balance(minter) == acctReserve);
         BEAST_EXPECT(ownerCount(env, alice) == 0);
         BEAST_EXPECT(ownerCount(env, minter) == 0);
 
@@ -399,7 +444,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Note that we're bypassing almost all of the ledger's safety
         // checks with this modify() call.  If you call close() between
         // here and the end of the test all the effort will be lost.
-        env.app().openLedger().modify([&alice](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&alice](OpenView& view, beast::Journal j) {
             // Get the account root we want to hijack.
             auto const sle = view.read(keylet::account(alice.id()));
             if (!sle)
@@ -580,7 +625,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 1);
 
-        uint256 nftNoXferID = token::getNextID(env, alice, 0);
+        uint256 const nftNoXferID = token::getNextID(env, alice, 0);
         env(token::mint(alice, 0));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -816,7 +861,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 1);
 
         // This is the offer we'll try to cancel.
-        uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+        uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
         env(token::createOffer(buyer, nftAlice0ID, XRP(1)), token::owner(alice), Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(ownerCount(env, buyer) == 1);
@@ -849,7 +894,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // List of tokens to delete is too long.
         {
-            std::vector<uint256> offers(maxTokenOfferCancelCount + 1, buyerOfferIndex);
+            std::vector<uint256> const offers(maxTokenOfferCancelCount + 1, buyerOfferIndex);
 
             env(token::cancelOffer(buyer, offers), Ter(temMALFORMED));
             env.close();
@@ -880,7 +925,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         {
             // gw attempts to cancel a Check as through it is an NFTokenOffer.
-            auto const gwCheckId = keylet::check(gw, env.seq(gw)).key;
+            auto const gwCheckId = keylet::check(gw, env.Seq(gw)).key;
             env(check::create(gw, env.master, XRP(300)));
             env.close();
 
@@ -936,38 +981,38 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
-        uint256 nftNoXferID = token::getNextID(env, alice, 0);
+        uint256 const nftNoXferID = token::getNextID(env, alice, 0);
         env(token::mint(alice, 0));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         // alice creates sell offers for her nfts.
-        uint256 const plainOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const plainOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
         env(token::createOffer(alice, nftAlice0ID, XRP(10)), txflags(tfSellNFToken));
         env.close();
         aliceCount++;
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
-        uint256 const audOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const audOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
         env(token::createOffer(alice, nftAlice0ID, gwAUD(30)), txflags(tfSellNFToken));
         env.close();
         aliceCount++;
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
-        uint256 const xrpOnlyOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const xrpOnlyOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
         env(token::createOffer(alice, nftXrpOnlyID, XRP(20)), txflags(tfSellNFToken));
         env.close();
         aliceCount++;
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
-        uint256 const noXferOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const noXferOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
         env(token::createOffer(alice, nftNoXferID, XRP(30)), txflags(tfSellNFToken));
         env.close();
         aliceCount++;
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         // alice creates a sell offer that will expire soon.
-        uint256 const aliceExpOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const aliceExpOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
         env(token::createOffer(alice, nftNoXferID, XRP(40)),
             txflags(tfSellNFToken),
             token::expiration(lastClose(env) + 5));
@@ -976,7 +1021,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == aliceCount);
 
         // buyer creates a Buy offer that will expire soon.
-        uint256 const buyerExpOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+        uint256 const buyerExpOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
         env(token::createOffer(buyer, nftAlice0ID, XRP(40)),
             token::owner(alice),
             token::expiration(lastClose(env) + 5));
@@ -1106,7 +1151,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // corresponding buy and sell offers.
         {
             // buyer creates a buy offer for one of alice's nfts.
-            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftAlice0ID, gwAUD(29)), token::owner(alice));
             env.close();
             buyerCount++;
@@ -1139,7 +1184,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         }
         {
             // buyer creates a buy offer for one of alice's nfts.
-            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftAlice0ID, gwAUD(31)), token::owner(alice));
             env.close();
             buyerCount++;
@@ -1178,7 +1223,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // preclaim buy
         {
             // buyer creates a buy offer for one of alice's nfts.
-            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftAlice0ID, gwAUD(30)), token::owner(alice));
             env.close();
             buyerCount++;
@@ -1198,14 +1243,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // An offer acceptor must have enough funds to pay for the offer.
             env(pay(buyer, gw, gwAUD(30)));
             env.close();
-            BEAST_EXPECT(env.balance(buyer, gwAUD) == gwAUD(0));
+            BEAST_EXPECT(env.Balance(buyer, gwAUD) == gwAUD(0));
             env(token::acceptBuyOffer(alice, buyerOfferIndex), Ter(tecINSUFFICIENT_FUNDS));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
 
             // alice gives her NFT to gw, so alice no longer owns nftAlice0.
             {
-                uint256 const offerIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+                uint256 const offerIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
                 env(token::createOffer(alice, nftAlice0ID, XRP(0)), txflags(tfSellNFToken));
                 env.close();
                 env(token::acceptSellOffer(gw, offerIndex));
@@ -1230,7 +1275,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // preclaim sell
         {
             // buyer creates a buy offer for one of alice's nfts.
-            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftXrpOnlyID, XRP(30)), token::owner(alice));
             env.close();
             buyerCount++;
@@ -1258,7 +1303,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // buyer attempting to accept one of alice's offers with
             // insufficient funds.
             {
-                uint256 const offerIndex = keylet::nftoffer(gw, env.seq(gw)).key;
+                uint256 const offerIndex = keylet::nftoffer(gw, env.Seq(gw)).key;
                 env(token::createOffer(gw, nftAlice0ID, XRP(0)), txflags(tfSellNFToken));
                 env.close();
                 env(token::acceptSellOffer(alice, offerIndex));
@@ -1267,7 +1312,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             }
             env(pay(buyer, gw, gwAUD(30)));
             env.close();
-            BEAST_EXPECT(env.balance(buyer, gwAUD) == gwAUD(0));
+            BEAST_EXPECT(env.Balance(buyer, gwAUD) == gwAUD(0));
             env(token::acceptSellOffer(buyer, audOfferIndex), Ter(tecINSUFFICIENT_FUNDS));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == buyerCount);
@@ -1311,7 +1356,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(minter1, 0u), token::issuer(alice), txflags(flags));
             env.close();
 
-            uint256 const offerIndex = keylet::nftoffer(minter1, env.seq(minter1)).key;
+            uint256 const offerIndex = keylet::nftoffer(minter1, env.Seq(minter1)).key;
             env(token::createOffer(minter1, nftID, XRP(0)), txflags(tfSellNFToken));
             env.close();
 
@@ -1414,13 +1459,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             BEAST_EXPECT(ownerCount(env, alice) == 2);
-            uint256 const aliceOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftIOUsOkayID, gwAUD(50)), txflags(tfSellNFToken));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 3);
 
             BEAST_EXPECT(ownerCount(env, buyer) == 1);
-            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyerOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftIOUsOkayID, gwAUD(50)), token::owner(alice));
             env.close();
             BEAST_EXPECT(ownerCount(env, buyer) == 2);
@@ -1515,7 +1560,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // An nft without flagCreateTrustLines but with a non-zero transfer
             // fee will not allow creating offers that use IOUs for payment.
-            for (std::uint32_t xferFee : {0, 1})
+            for (std::uint32_t const xferFee : {0, 1})
             {
                 uint256 const nftNoAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable, xferFee)};
@@ -1523,7 +1568,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
 
                 // becky buys the nft for 1 drop.
-                uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+                uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
                 env(token::createOffer(becky, nftNoAutoTrustID, drops(1)), token::owner(alice));
                 env.close();
                 env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
@@ -1531,14 +1576,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
                 // becky attempts to sell the nft for AUD.
                 TER const createOfferTER = (xferFee != 0u) ? TER(tecNO_LINE) : TER(tesSUCCESS);
-                uint256 const beckyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+                uint256 const beckyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
                 env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)),
                     txflags(tfSellNFToken),
                     Ter(createOfferTER));
                 env.close();
 
                 // cheri offers to buy the nft for CAD.
-                uint256 const cheriOfferIndex = keylet::nftoffer(cheri, env.seq(cheri)).key;
+                uint256 const cheriOfferIndex = keylet::nftoffer(cheri, env.Seq(cheri)).key;
                 env(token::createOffer(cheri, nftNoAutoTrustID, gwCAD(100)),
                     token::owner(becky),
                     Ter(createOfferTER));
@@ -1552,7 +1597,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // An nft with flagCreateTrustLines but with a non-zero transfer
             // fee allows transfers using IOUs for payment.
             {
-                std::uint16_t transferFee = 10000;  // 10%
+                std::uint16_t const transferFee = 10000;  // 10%
 
                 uint256 const nftAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable | tfTrustLine, transferFee)};
@@ -1576,44 +1621,44 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                         break;
                 }
                 // becky buys the nft for 1 drop.
-                uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+                uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
                 env(token::createOffer(becky, nftAutoTrustID, drops(1)), token::owner(alice));
                 env.close();
                 env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
                 env.close();
 
                 // becky sells the nft for AUD.
-                uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+                uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
                 env(token::createOffer(becky, nftAutoTrustID, gwAUD(100)), txflags(tfSellNFToken));
                 env.close();
                 env(token::acceptSellOffer(cheri, beckySellOfferIndex));
                 env.close();
 
                 // alice should now have a trust line for gwAUD.
-                BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(10));
+                BEAST_EXPECT(env.Balance(alice, gwAUD) == gwAUD(10));
 
                 // becky buys the nft back for CAD.
-                uint256 const beckyBuyBackOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+                uint256 const beckyBuyBackOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
                 env(token::createOffer(becky, nftAutoTrustID, gwCAD(50)), token::owner(cheri));
                 env.close();
                 env(token::acceptBuyOffer(cheri, beckyBuyBackOfferIndex));
                 env.close();
 
                 // alice should now have a trust line for gwAUD and gwCAD.
-                BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(10));
-                BEAST_EXPECT(env.balance(alice, gwCAD) == gwCAD(5));
+                BEAST_EXPECT(env.Balance(alice, gwAUD) == gwAUD(10));
+                BEAST_EXPECT(env.Balance(alice, gwCAD) == gwCAD(5));
             }
             // Now that alice has trust lines preestablished, an nft without
             // flagCreateTrustLines will work for preestablished trust lines.
             {
-                std::uint16_t transferFee = 5000;  // 5%
+                std::uint16_t const transferFee = 5000;  // 5%
                 uint256 const nftNoAutoTrustID{
                     token::getNextID(env, alice, 0u, tfTransferable, transferFee)};
                 env(token::mint(alice, 0u), token::xferFee(transferFee), txflags(tfTransferable));
                 env.close();
 
                 // alice sells the nft using AUD.
-                uint256 const aliceSellOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+                uint256 const aliceSellOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
                 env(token::createOffer(alice, nftNoAutoTrustID, gwAUD(200)),
                     txflags(tfSellNFToken));
                 env.close();
@@ -1623,14 +1668,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // alice should now have AUD(210):
                 //  o 200 for this sale and
                 //  o 10 for the previous sale's fee.
-                BEAST_EXPECT(env.balance(alice, gwAUD) == gwAUD(210));
+                BEAST_EXPECT(env.Balance(alice, gwAUD) == gwAUD(210));
 
                 // cheri can't sell the NFT for EUR, but can for CAD.
                 env(token::createOffer(cheri, nftNoAutoTrustID, gwEUR(50)),
                     txflags(tfSellNFToken),
                     Ter(tecNO_LINE));
                 env.close();
-                uint256 const cheriSellOfferIndex = keylet::nftoffer(cheri, env.seq(cheri)).key;
+                uint256 const cheriSellOfferIndex = keylet::nftoffer(cheri, env.Seq(cheri)).key;
                 env(token::createOffer(cheri, nftNoAutoTrustID, gwCAD(100)),
                     txflags(tfSellNFToken));
                 env.close();
@@ -1640,7 +1685,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // alice should now have CAD(10):
                 //  o 5 from this sale's fee and
                 //  o 5 for the previous sale's fee.
-                BEAST_EXPECT(env.balance(alice, gwCAD) == gwCAD(10));
+                BEAST_EXPECT(env.Balance(alice, gwCAD) == gwCAD(10));
             }
         }
     }
@@ -1677,7 +1722,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 Ter(tefNFTOKEN_IS_NOT_TRANSFERABLE));
 
             // alice offers to sell the nft and becky accepts the offer.
-            uint256 const aliceSellOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceSellOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftAliceNoTransferID, XRP(20)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(becky, aliceSellOfferIndex));
@@ -1705,7 +1750,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // alice offers to buy the nft back from becky.  becky accepts
             // the offer.
-            uint256 const aliceBuyOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceBuyOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftAliceNoTransferID, XRP(22)), token::owner(becky));
             env.close();
             env(token::acceptBuyOffer(becky, aliceBuyOfferIndex));
@@ -1761,7 +1806,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // minter successfully offers their nft for sale.
             BEAST_EXPECT(ownerCount(env, minter) == 1);
-            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftMinterNoTransferID, XRP(22)), txflags(tfSellNFToken));
             env.close();
             BEAST_EXPECT(ownerCount(env, minter) == 2);
@@ -1796,7 +1841,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // alice can create an offer to buy the nft.
             BEAST_EXPECT(ownerCount(env, alice) == 0);
-            uint256 const aliceBuyOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceBuyOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftMinterNoTransferID, XRP(25)), token::owner(becky));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -1811,7 +1856,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Now minter can create an offer to buy the nft.
             BEAST_EXPECT(ownerCount(env, minter) == 0);
-            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftMinterNoTransferID, XRP(26)), token::owner(becky));
             env.close();
             BEAST_EXPECT(ownerCount(env, minter) == 1);
@@ -1850,12 +1895,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, alice) == 1);
 
             // Both alice and becky can make offers for alice's nft.
-            uint256 const aliceSellOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceSellOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftAliceID, XRP(20)), txflags(tfSellNFToken));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 2);
 
-            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftAliceID, XRP(21)), token::owner(alice));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -1867,7 +1912,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, becky) == 2);
 
             // becky offers to sell the nft.
-            uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftAliceID, XRP(22)), txflags(tfSellNFToken));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -1882,7 +1927,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, minter) == 1);
 
             // minter offers to sell the nft.
-            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftAliceID, XRP(23)), txflags(tfSellNFToken));
             env.close();
             BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -1964,49 +2009,49 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // Becky buys the nft for XAU(10).  Check balances.
-            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftID, gwXAU(10)), token::owner(alice));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1000));
 
             env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1010));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(990));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1010));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(990));
 
             // becky sells nft to carol.  alice's balance should not change.
-            uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftID, gwXAU(10)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(carol, beckySellOfferIndex));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1010));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(990));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1010));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(990));
 
             // minter buys nft from carol.  alice's balance should not change.
-            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, gwXAU(10)), token::owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, minterBuyOfferIndex));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1010));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(990));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1010));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(990));
 
             // minter sells the nft to alice.  gwXAU balances should finish
             // where they started.
-            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, gwXAU(10)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(alice, minterSellOfferIndex));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1000));
 
             // alice burns the nft to make later tests easier to think about.
             env(token::burn(alice, nftID));
@@ -2025,51 +2070,51 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // Becky buys the nft for XAU(10).  Check balances.
-            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftID, gwXAU(10)), token::owner(alice));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1000));
 
             env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1010));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(990));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1010));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(990));
 
             // becky sells nft to carol.  alice's balance goes up.
-            uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftID, gwXAU(10)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(carol, beckySellOfferIndex));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1010.0001));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(999.9999));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(990));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1010.0001));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(999.9999));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(990));
 
             // minter buys nft from carol.  alice's balance goes up.
-            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, gwXAU(10)), token::owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, minterBuyOfferIndex));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1010.0002));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(999.9999));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(999.9999));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(990));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1010.0002));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(999.9999));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(999.9999));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(990));
 
             // minter sells the nft to alice.  Because alice is part of the
             // transaction no transfer fee is removed.
-            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, gwXAU(10)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(alice, minterSellOfferIndex));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1000.0002));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(999.9999));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(999.9999));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1000.0002));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(999.9999));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(999.9999));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1000));
 
             // alice pays to becky and carol so subsequent tests are easier
             // to think about.
@@ -2077,10 +2122,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(pay(alice, carol, gwXAU(0.0001)));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1000));
 
             // alice burns the nft to make later tests easier to think about.
             env(token::burn(alice, nftID));
@@ -2106,61 +2151,61 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // Becky buys the nft for XAU(10).  Check balances.
-            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftID, gwXAU(10)), token::owner(alice));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1000));
 
             env(token::acceptBuyOffer(alice, beckyBuyOfferIndex));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1010));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(990));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1010));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(990));
 
             // becky sells nft to minter.  alice's balance goes up.
-            uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckySellOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftID, gwXAU(100)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(minter, beckySellOfferIndex));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1060));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1040));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(900));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1060));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1040));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(900));
 
             // carol buys nft from minter.  alice's balance goes up.
-            uint256 const carolBuyOfferIndex = keylet::nftoffer(carol, env.seq(carol)).key;
+            uint256 const carolBuyOfferIndex = keylet::nftoffer(carol, env.Seq(carol)).key;
             env(token::createOffer(carol, nftID, gwXAU(10)), token::owner(minter));
             env.close();
             env(token::acceptBuyOffer(minter, carolBuyOfferIndex));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1065));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1040));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(905));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(990));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1065));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1040));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(905));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(990));
 
             // carol sells the nft to alice.  Because alice is part of the
             // transaction no transfer fee is removed.
-            uint256 const carolSellOfferIndex = keylet::nftoffer(carol, env.seq(carol)).key;
+            uint256 const carolSellOfferIndex = keylet::nftoffer(carol, env.Seq(carol)).key;
             env(token::createOffer(carol, nftID, gwXAU(10)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(alice, carolSellOfferIndex));
             env.close();
 
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1055));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1040));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(905));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1055));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1040));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(905));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(1000));
 
             // rebalance so subsequent tests are easier to think about.
             env(pay(alice, minter, gwXAU(55)));
             env(pay(becky, minter, gwXAU(40)));
             env.close();
-            BEAST_EXPECT(env.balance(alice, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(becky, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(1000));
-            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == gwXAU(1000));
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1000));
 
             // alice burns the nft to make later tests easier to think about.
             env(token::burn(alice, nftID));
@@ -2191,37 +2236,37 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // minter buys the nft for XRP(1).  Since the transfer involves
             // alice there should be no transfer fee.
-            STAmount aliceBalance = env.balance(alice);
-            STAmount minterBalance = env.balance(minter);
-            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            STAmount aliceBalance = env.Balance(alice);
+            STAmount minterBalance = env.Balance(minter);
+            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, XRP(1)), token::owner(alice));
             env.close();
             env(token::acceptBuyOffer(alice, minterBuyOfferIndex));
             env.close();
             aliceBalance += XRP(1) - baseFee;
             minterBalance -= XRP(1) + baseFee;
-            BEAST_EXPECT(env.balance(alice) == aliceBalance);
-            BEAST_EXPECT(env.balance(minter) == minterBalance);
+            BEAST_EXPECT(env.Balance(alice) == aliceBalance);
+            BEAST_EXPECT(env.Balance(minter) == minterBalance);
 
             // minter sells to carol.  The payment is just small enough that
             // alice does not get any transfer fee.
             auto pmt = numberSwitchOver ? drops(50000) : drops(99999);
-            STAmount carolBalance = env.balance(carol);
-            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            STAmount carolBalance = env.Balance(carol);
+            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, pmt), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(carol, minterSellOfferIndex));
             env.close();
             minterBalance += pmt - baseFee;
             carolBalance -= pmt + baseFee;
-            BEAST_EXPECT(env.balance(alice) == aliceBalance);
-            BEAST_EXPECT(env.balance(minter) == minterBalance);
-            BEAST_EXPECT(env.balance(carol) == carolBalance);
+            BEAST_EXPECT(env.Balance(alice) == aliceBalance);
+            BEAST_EXPECT(env.Balance(minter) == minterBalance);
+            BEAST_EXPECT(env.Balance(carol) == carolBalance);
 
             // carol sells to becky. This is the smallest amount to pay for a
             // transfer that enables a transfer fee of 1 basis point.
-            STAmount beckyBalance = env.balance(becky);
-            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            STAmount beckyBalance = env.Balance(becky);
+            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             pmt = numberSwitchOver ? drops(50001) : drops(100000);
             env(token::createOffer(becky, nftID, pmt), token::owner(carol));
             env.close();
@@ -2231,10 +2276,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             beckyBalance -= pmt + baseFee;
             aliceBalance += drops(1);
 
-            BEAST_EXPECT(env.balance(alice) == aliceBalance);
-            BEAST_EXPECT(env.balance(minter) == minterBalance);
-            BEAST_EXPECT(env.balance(carol) == carolBalance);
-            BEAST_EXPECT(env.balance(becky) == beckyBalance);
+            BEAST_EXPECT(env.Balance(alice) == aliceBalance);
+            BEAST_EXPECT(env.Balance(minter) == minterBalance);
+            BEAST_EXPECT(env.Balance(carol) == carolBalance);
+            BEAST_EXPECT(env.Balance(becky) == beckyBalance);
         }
 
         // See the impact of rounding when the nft is sold for small amounts
@@ -2248,38 +2293,37 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // Due to the floating point nature of IOUs we need to
             // significantly reduce the gwXAU balances of our accounts prior
             // to the iou transfer.  Otherwise no transfers will happen.
-            env(pay(alice, gw, env.balance(alice, gwXAU)));
-            env(pay(minter, gw, env.balance(minter, gwXAU)));
-            env(pay(becky, gw, env.balance(becky, gwXAU)));
+            env(pay(alice, gw, env.Balance(alice, gwXAU)));
+            env(pay(minter, gw, env.Balance(minter, gwXAU)));
+            env(pay(becky, gw, env.Balance(becky, gwXAU)));
             env.close();
 
-            STAmount const startXAUBalance(
-                gwXAU.issue(), STAmount::cMinValue, STAmount::cMinOffset + 5);
+            STAmount const startXAUBalance(gwXAU, STAmount::cMinValue, STAmount::cMinOffset + 5);
             env(pay(gw, alice, startXAUBalance));
             env(pay(gw, minter, startXAUBalance));
             env(pay(gw, becky, startXAUBalance));
             env.close();
 
             // Here is the smallest expressible gwXAU amount.
-            STAmount tinyXAU(gwXAU.issue(), STAmount::cMinValue, STAmount::cMinOffset);
+            STAmount const tinyXAU(gwXAU, STAmount::cMinValue, STAmount::cMinOffset);
 
             // minter buys the nft for tinyXAU.  Since the transfer involves
             // alice there should be no transfer fee.
-            STAmount aliceBalance = env.balance(alice, gwXAU);
-            STAmount minterBalance = env.balance(minter, gwXAU);
-            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            STAmount aliceBalance = env.Balance(alice, gwXAU);
+            STAmount minterBalance = env.Balance(minter, gwXAU);
+            uint256 const minterBuyOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, tinyXAU), token::owner(alice));
             env.close();
             env(token::acceptBuyOffer(alice, minterBuyOfferIndex));
             env.close();
             aliceBalance += tinyXAU;
             minterBalance -= tinyXAU;
-            BEAST_EXPECT(env.balance(alice, gwXAU) == aliceBalance);
-            BEAST_EXPECT(env.balance(minter, gwXAU) == minterBalance);
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == aliceBalance);
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == minterBalance);
 
             // minter sells to carol.
-            STAmount carolBalance = env.balance(carol, gwXAU);
-            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            STAmount carolBalance = env.Balance(carol, gwXAU);
+            uint256 const minterSellOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, tinyXAU), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(carol, minterSellOfferIndex));
@@ -2288,16 +2332,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             minterBalance += tinyXAU;
             carolBalance -= tinyXAU;
             // tiny XAU is so small that alice does not get a transfer fee.
-            BEAST_EXPECT(env.balance(alice, gwXAU) == aliceBalance);
-            BEAST_EXPECT(env.balance(minter, gwXAU) == minterBalance);
-            BEAST_EXPECT(env.balance(carol, gwXAU) == carolBalance);
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == aliceBalance);
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == minterBalance);
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == carolBalance);
 
             // carol sells to becky.  This is the smallest gwXAU amount
             // to pay for a transfer that enables a transfer fee of 1.
-            STAmount const cheapNFT(gwXAU.issue(), STAmount::cMinValue, STAmount::cMinOffset + 5);
+            STAmount const cheapNFT(gwXAU, STAmount::cMinValue, STAmount::cMinOffset + 5);
 
-            STAmount beckyBalance = env.balance(becky, gwXAU);
-            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            STAmount beckyBalance = env.Balance(becky, gwXAU);
+            uint256 const beckyBuyOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftID, cheapNFT), token::owner(carol));
             env.close();
             env(token::acceptBuyOffer(carol, beckyBuyOfferIndex));
@@ -2306,10 +2350,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             aliceBalance += tinyXAU;
             beckyBalance -= cheapNFT;
             carolBalance += cheapNFT - tinyXAU;
-            BEAST_EXPECT(env.balance(alice, gwXAU) == aliceBalance);
-            BEAST_EXPECT(env.balance(minter, gwXAU) == minterBalance);
-            BEAST_EXPECT(env.balance(carol, gwXAU) == carolBalance);
-            BEAST_EXPECT(env.balance(becky, gwXAU) == beckyBalance);
+            BEAST_EXPECT(env.Balance(alice, gwXAU) == aliceBalance);
+            BEAST_EXPECT(env.Balance(minter, gwXAU) == minterBalance);
+            BEAST_EXPECT(env.Balance(carol, gwXAU) == carolBalance);
+            BEAST_EXPECT(env.Balance(becky, gwXAU) == beckyBalance);
         }
     }
 
@@ -2475,9 +2519,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         sortedNFTs.reserve(nfts.size());
         for (std::size_t i = 0; i < nfts.size(); ++i)
             sortedNFTs.push_back(nfts[i]);
-        std::sort(
-            sortedNFTs.begin(),
-            sortedNFTs.end(),
+        std::ranges::sort(
+            sortedNFTs,
+
             [](Json::Value const& lhs, Json::Value const& rhs) {
                 return lhs[jss::nft_serial] < rhs[jss::nft_serial];
             });
@@ -2527,22 +2571,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Test how adding a Destination field to an offer affects permissions
         // for canceling offers.
         {
-            uint256 const offerMinterToIssuer = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterToIssuer = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(issuer),
                 txflags(tfSellNFToken));
 
-            uint256 const offerMinterToBuyer = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterToBuyer = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(buyer),
                 txflags(tfSellNFToken));
 
-            uint256 const offerIssuerToMinter = keylet::nftoffer(issuer, env.seq(issuer)).key;
+            uint256 const offerIssuerToMinter = keylet::nftoffer(issuer, env.Seq(issuer)).key;
             env(token::createOffer(issuer, nftokenID, drops(1)),
                 token::owner(minter),
                 token::destination(minter));
 
-            uint256 const offerIssuerToBuyer = keylet::nftoffer(issuer, env.seq(issuer)).key;
+            uint256 const offerIssuerToBuyer = keylet::nftoffer(issuer, env.Seq(issuer)).key;
             env(token::createOffer(issuer, nftokenID, drops(1)),
                 token::owner(minter),
                 token::destination(buyer));
@@ -2583,7 +2627,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Test how adding a Destination field to a sell offer affects
         // accepting that offer.
         {
-            uint256 const offerMinterSellsToBuyer = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterSellsToBuyer = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(buyer),
                 txflags(tfSellNFToken));
@@ -2611,7 +2655,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Test how adding a Destination field to a buy offer affects
         // accepting that offer.
         {
-            uint256 const offerMinterBuysFromBuyer = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterBuysFromBuyer = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::owner(buyer),
                 token::destination(buyer));
@@ -2638,7 +2682,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // If a destination other than the NFToken owner is set, that
             // destination must act as a broker.  The NFToken owner may not
             // simply accept the offer.
-            uint256 const offerBuyerBuysFromMinter = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerBuyerBuysFromMinter = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID, drops(1)),
                 token::owner(minter),
                 token::destination(broker));
@@ -2661,12 +2705,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Show that a sell offer's Destination can broker that sell offer
         // to another account.
         {
-            uint256 const offerMinterToBroker = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterToBroker = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(broker),
                 txflags(tfSellNFToken));
 
-            uint256 const offerBuyerToMinter = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerBuyerToMinter = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID, drops(1)), token::owner(minter));
 
             env.close();
@@ -2698,15 +2742,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Destination doesn't match, but can complete if the Destination
         // does match.
         {
-            uint256 const offerBuyerToMinter = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerBuyerToMinter = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID, drops(1)),
                 token::destination(minter),
                 txflags(tfSellNFToken));
 
-            uint256 const offerMinterToBuyer = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterToBuyer = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)), token::owner(buyer));
 
-            uint256 const offerIssuerToBuyer = keylet::nftoffer(issuer, env.seq(issuer)).key;
+            uint256 const offerIssuerToBuyer = keylet::nftoffer(issuer, env.Seq(issuer)).key;
             env(token::createOffer(issuer, nftokenID, drops(1)), token::owner(buyer));
 
             env.close();
@@ -2754,12 +2798,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // Show that if a buy and a sell offer both have the same destination,
         // then that destination can broker the offers.
         {
-            uint256 const offerMinterToBroker = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterToBroker = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(broker),
                 txflags(tfSellNFToken));
 
-            uint256 const offerBuyerToBroker = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerBuyerToBroker = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID, drops(1)),
                 token::owner(minter),
                 token::destination(broker));
@@ -2829,7 +2873,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // create offer (allowed now) then cancel
         {
-            uint256 const offerIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
 
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(buyer),
@@ -2842,7 +2886,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // create offer, enable flag, then cancel
         {
-            uint256 const offerIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
 
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(buyer),
@@ -2861,7 +2905,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // create offer then transfer
         {
-            uint256 const offerIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
 
             env(token::createOffer(minter, nftokenID, drops(1)),
                 token::destination(buyer),
@@ -2948,23 +2992,23 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             std::uint32_t const expiration = lastClose(env) + 25;
 
-            uint256 const offerMinterToIssuer = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterToIssuer = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID0, drops(1)),
                 token::destination(issuer),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
 
-            uint256 const offerMinterToAnyone = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offerMinterToAnyone = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID0, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
 
-            uint256 const offerIssuerToMinter = keylet::nftoffer(issuer, env.seq(issuer)).key;
+            uint256 const offerIssuerToMinter = keylet::nftoffer(issuer, env.Seq(issuer)).key;
             env(token::createOffer(issuer, nftokenID0, drops(1)),
                 token::owner(minter),
                 token::expiration(expiration));
 
-            uint256 const offerBuyerToMinter = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerBuyerToMinter = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, drops(1)),
                 token::owner(minter),
                 token::expiration(expiration));
@@ -3024,13 +3068,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             std::uint32_t const expiration = lastClose(env) + 25;
 
-            uint256 const offer0 = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offer0 = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID0, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
             minterCount++;
 
-            uint256 const offer1 = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const offer1 = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID1, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
@@ -3095,7 +3139,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
-            uint256 const offerSellBack = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerSellBack = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, XRP(0)),
                 txflags(tfSellNFToken),
                 token::destination(minter));
@@ -3114,13 +3158,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             std::uint32_t const expiration = lastClose(env) + 25;
 
-            uint256 const offer0 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offer0 = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, drops(1)),
                 token::owner(minter),
                 token::expiration(expiration));
             buyerCount++;
 
-            uint256 const offer1 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offer1 = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID1, drops(1)),
                 token::owner(minter),
                 token::expiration(expiration));
@@ -3183,7 +3227,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
-            uint256 const offerSellBack = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerSellBack = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, XRP(0)),
                 txflags(tfSellNFToken),
                 token::destination(minter));
@@ -3202,23 +3246,23 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             std::uint32_t const expiration = lastClose(env) + 25;
 
-            uint256 const sellOffer0 = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const sellOffer0 = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID0, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
             minterCount++;
 
-            uint256 const sellOffer1 = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const sellOffer1 = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID1, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
             minterCount++;
 
-            uint256 const buyOffer0 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyOffer0 = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, drops(1)), token::owner(minter));
             buyerCount++;
 
-            uint256 const buyOffer1 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyOffer1 = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID1, drops(1)), token::owner(minter));
             buyerCount++;
 
@@ -3277,7 +3321,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
-            uint256 const offerSellBack = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerSellBack = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, XRP(0)),
                 txflags(tfSellNFToken),
                 token::destination(minter));
@@ -3296,18 +3340,18 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             std::uint32_t const expiration = lastClose(env) + 25;
 
-            uint256 const sellOffer0 = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const sellOffer0 = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID0, drops(1)), txflags(tfSellNFToken));
 
-            uint256 const sellOffer1 = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const sellOffer1 = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID1, drops(1)), txflags(tfSellNFToken));
 
-            uint256 const buyOffer0 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyOffer0 = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, drops(1)),
                 token::expiration(expiration),
                 token::owner(minter));
 
-            uint256 const buyOffer1 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyOffer1 = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID1, drops(1)),
                 token::expiration(expiration),
                 token::owner(minter));
@@ -3358,7 +3402,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
-            uint256 const offerSellBack = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerSellBack = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, XRP(0)),
                 txflags(tfSellNFToken),
                 token::destination(minter));
@@ -3377,22 +3421,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         {
             std::uint32_t const expiration = lastClose(env) + 25;
 
-            uint256 const sellOffer0 = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const sellOffer0 = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID0, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
 
-            uint256 const sellOffer1 = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const sellOffer1 = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftokenID1, drops(1)),
                 token::expiration(expiration),
                 txflags(tfSellNFToken));
 
-            uint256 const buyOffer0 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyOffer0 = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, drops(1)),
                 token::expiration(expiration),
                 token::owner(minter));
 
-            uint256 const buyOffer1 = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyOffer1 = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID1, drops(1)),
                 token::expiration(expiration),
                 token::owner(minter));
@@ -3434,7 +3478,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Transfer nftokenID0 back to minter so we start the next test in
             // a simple place.
-            uint256 const offerSellBack = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerSellBack = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftokenID0, XRP(0)),
                 txflags(tfSellNFToken),
                 token::destination(minter));
@@ -3472,7 +3516,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
 
         // Anyone can cancel an expired offer.
-        uint256 const expiredOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const expiredOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
 
         env(token::createOffer(alice, nftokenID, XRP(1000)),
             txflags(tfSellNFToken),
@@ -3494,7 +3538,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Create a couple of offers with a destination.  Those offers
         // should be cancellable by the creator and the destination.
-        uint256 const dest1OfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const dest1OfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
 
         env(token::createOffer(alice, nftokenID, XRP(1000)),
             token::destination(becky),
@@ -3512,7 +3556,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 1);
 
         // alice can cancel her own offer, even if becky is the destination.
-        uint256 const dest2OfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const dest2OfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
 
         env(token::createOffer(alice, nftokenID, XRP(1000)),
             token::destination(becky),
@@ -3531,7 +3575,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env(token::mint(minter, 0), token::issuer(alice), txflags(tfTransferable));
         env.close();
 
-        uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+        uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
 
         env(token::createOffer(minter, mintersNFTokenID, XRP(1000)), txflags(tfSellNFToken));
         env.close();
@@ -3589,7 +3633,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(nftAcct, 0), token::uri(uri), txflags(tfTransferable));
             env.close();
 
-            offerIndexes.push_back(keylet::nftoffer(offerAcct, env.seq(offerAcct)).key);
+            offerIndexes.push_back(keylet::nftoffer(offerAcct, env.Seq(offerAcct)).key);
             env(token::createOffer(offerAcct, nftokenID, drops(1)),
                 token::owner(nftAcct),
                 token::expiration(lastClose(env) + 5));
@@ -3624,7 +3668,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(alice, 0), token::uri(uri), txflags(tfTransferable));
             env.close();
 
-            offerIndexes.push_back(keylet::nftoffer(alice, env.seq(alice)).key);
+            offerIndexes.push_back(keylet::nftoffer(alice, env.Seq(alice)).key);
             env(token::createOffer(alice, nftokenID, drops(1)), txflags(tfSellNFToken));
             env.close();
 
@@ -3702,7 +3746,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     int line) {
                     for (Account const& acct : accounts)
                     {
-                        if (std::uint32_t ownerCount = test::jtx::ownerCount(env, acct);
+                        if (std::uint32_t const ownerCount = test::jtx::ownerCount(env, acct);
                             ownerCount != 1)
                         {
                             std::stringstream ss;
@@ -3735,20 +3779,20 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 uint256 const nftID = mintNFT();
 
                 // minter creates their offer.
-                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
                 env(token::createOffer(minter, nftID, XRP(0)), txflags(tfSellNFToken));
                 env.close();
 
                 // buyer creates their offer.  Note: a buy offer can never
                 // offer zero.
-                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                 env(token::createOffer(buyer, nftID, XRP(1)), token::owner(minter));
                 env.close();
 
-                auto const minterBalance = env.balance(minter);
-                auto const buyerBalance = env.balance(buyer);
-                auto const brokerBalance = env.balance(broker);
-                auto const issuerBalance = env.balance(issuer);
+                auto const minterBalance = env.Balance(minter);
+                auto const buyerBalance = env.Balance(buyer);
+                auto const brokerBalance = env.Balance(broker);
+                auto const issuerBalance = env.Balance(issuer);
 
                 // Broker charges no brokerFee.
                 env(token::brokerOffers(broker, buyOfferIndex, minterOfferIndex));
@@ -3756,10 +3800,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
                 // Note that minter's XRP balance goes up even though they
                 // requested XRP(0).
-                BEAST_EXPECT(env.balance(minter) == minterBalance + XRP(1));
-                BEAST_EXPECT(env.balance(buyer) == buyerBalance - XRP(1));
-                BEAST_EXPECT(env.balance(broker) == brokerBalance - baseFee);
-                BEAST_EXPECT(env.balance(issuer) == issuerBalance);
+                BEAST_EXPECT(env.Balance(minter) == minterBalance + XRP(1));
+                BEAST_EXPECT(env.Balance(buyer) == buyerBalance - XRP(1));
+                BEAST_EXPECT(env.Balance(broker) == brokerBalance - baseFee);
+                BEAST_EXPECT(env.Balance(issuer) == issuerBalance);
 
                 // Burn the NFT so the next test starts with a clean state.
                 env(token::burn(buyer, nftID));
@@ -3777,13 +3821,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 uint256 const nftID = mintNFT();
 
                 // minter creates their offer.
-                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
                 env(token::createOffer(minter, nftID, XRP(0)), txflags(tfSellNFToken));
                 env.close();
 
                 // buyer creates their offer.  Note: a buy offer can never
                 // offer zero.
-                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                 env(token::createOffer(buyer, nftID, XRP(1)), token::owner(minter));
                 env.close();
 
@@ -3793,10 +3837,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     Ter(tecINSUFFICIENT_PAYMENT));
                 env.close();
 
-                auto const minterBalance = env.balance(minter);
-                auto const buyerBalance = env.balance(buyer);
-                auto const brokerBalance = env.balance(broker);
-                auto const issuerBalance = env.balance(issuer);
+                auto const minterBalance = env.Balance(minter);
+                auto const buyerBalance = env.Balance(buyer);
+                auto const brokerBalance = env.Balance(broker);
+                auto const issuerBalance = env.Balance(issuer);
 
                 // Broker charges a 0.5 XRP brokerFee.
                 env(token::brokerOffers(broker, buyOfferIndex, minterOfferIndex),
@@ -3805,10 +3849,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
                 // Note that minter's XRP balance goes up even though they
                 // requested XRP(0).
-                BEAST_EXPECT(env.balance(minter) == minterBalance + XRP(0.5));
-                BEAST_EXPECT(env.balance(buyer) == buyerBalance - XRP(1));
-                BEAST_EXPECT(env.balance(broker) == brokerBalance + XRP(0.5) - baseFee);
-                BEAST_EXPECT(env.balance(issuer) == issuerBalance);
+                BEAST_EXPECT(env.Balance(minter) == minterBalance + XRP(0.5));
+                BEAST_EXPECT(env.Balance(buyer) == buyerBalance - XRP(1));
+                BEAST_EXPECT(env.Balance(broker) == brokerBalance + XRP(0.5) - baseFee);
+                BEAST_EXPECT(env.Balance(issuer) == issuerBalance);
 
                 // Burn the NFT so the next test starts with a clean state.
                 env(token::burn(buyer, nftID));
@@ -3826,20 +3870,20 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 uint256 const nftID = mintNFT(maxTransferFee);
 
                 // minter creates their offer.
-                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
                 env(token::createOffer(minter, nftID, XRP(0)), txflags(tfSellNFToken));
                 env.close();
 
                 // buyer creates their offer.  Note: a buy offer can never
                 // offer zero.
-                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                 env(token::createOffer(buyer, nftID, XRP(1)), token::owner(minter));
                 env.close();
 
-                auto const minterBalance = env.balance(minter);
-                auto const buyerBalance = env.balance(buyer);
-                auto const brokerBalance = env.balance(broker);
-                auto const issuerBalance = env.balance(issuer);
+                auto const minterBalance = env.Balance(minter);
+                auto const buyerBalance = env.Balance(buyer);
+                auto const brokerBalance = env.Balance(broker);
+                auto const issuerBalance = env.Balance(issuer);
 
                 // Broker charges no brokerFee.
                 env(token::brokerOffers(broker, buyOfferIndex, minterOfferIndex));
@@ -3847,10 +3891,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
                 // Note that minter's XRP balance goes up even though they
                 // requested XRP(0).
-                BEAST_EXPECT(env.balance(minter) == minterBalance + XRP(0.5));
-                BEAST_EXPECT(env.balance(buyer) == buyerBalance - XRP(1));
-                BEAST_EXPECT(env.balance(broker) == brokerBalance - baseFee);
-                BEAST_EXPECT(env.balance(issuer) == issuerBalance + XRP(0.5));
+                BEAST_EXPECT(env.Balance(minter) == minterBalance + XRP(0.5));
+                BEAST_EXPECT(env.Balance(buyer) == buyerBalance - XRP(1));
+                BEAST_EXPECT(env.Balance(broker) == brokerBalance - baseFee);
+                BEAST_EXPECT(env.Balance(issuer) == issuerBalance + XRP(0.5));
 
                 // Burn the NFT so the next test starts with a clean state.
                 env(token::burn(buyer, nftID));
@@ -3868,20 +3912,20 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 uint256 const nftID = mintNFT(maxTransferFee);
 
                 // minter creates their offer.
-                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
                 env(token::createOffer(minter, nftID, XRP(0)), txflags(tfSellNFToken));
                 env.close();
 
                 // buyer creates their offer.  Note: a buy offer can never
                 // offer zero.
-                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                 env(token::createOffer(buyer, nftID, XRP(1)), token::owner(minter));
                 env.close();
 
-                auto const minterBalance = env.balance(minter);
-                auto const buyerBalance = env.balance(buyer);
-                auto const brokerBalance = env.balance(broker);
-                auto const issuerBalance = env.balance(issuer);
+                auto const minterBalance = env.Balance(minter);
+                auto const buyerBalance = env.Balance(buyer);
+                auto const brokerBalance = env.Balance(broker);
+                auto const issuerBalance = env.Balance(issuer);
 
                 // Broker charges a 0.75 XRP brokerFee.
                 env(token::brokerOffers(broker, buyOfferIndex, minterOfferIndex),
@@ -3891,10 +3935,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // Note that, with a 50% transfer fee, issuer gets 1/2 of what's
                 // left _after_ broker takes their fee.  minter gets the
                 // remainder after both broker and minter take their cuts
-                BEAST_EXPECT(env.balance(minter) == minterBalance + XRP(0.125));
-                BEAST_EXPECT(env.balance(buyer) == buyerBalance - XRP(1));
-                BEAST_EXPECT(env.balance(broker) == brokerBalance + XRP(0.75) - baseFee);
-                BEAST_EXPECT(env.balance(issuer) == issuerBalance + XRP(0.125));
+                BEAST_EXPECT(env.Balance(minter) == minterBalance + XRP(0.125));
+                BEAST_EXPECT(env.Balance(buyer) == buyerBalance - XRP(1));
+                BEAST_EXPECT(env.Balance(broker) == brokerBalance + XRP(0.75) - baseFee);
+                BEAST_EXPECT(env.Balance(issuer) == issuerBalance + XRP(0.125));
 
                 // Burn the NFT so the next test starts with a clean state.
                 env(token::burn(buyer, nftID));
@@ -3911,7 +3955,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     for (Account const& acct : accounts)
                     {
                         auto const xauAmt = gwXAU(amount);
-                        auto const balance = env.balance(acct, gwXAU);
+                        auto const balance = env.Balance(acct, gwXAU);
                         if (balance < xauAmt)
                         {
                             env(pay(gw, acct, xauAmt - balance));
@@ -3922,7 +3966,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                             env(pay(acct, gw, balance - xauAmt));
                             env.close();
                         }
-                        if (env.balance(acct, gwXAU) != xauAmt)
+                        if (env.Balance(acct, gwXAU) != xauAmt)
                         {
                             std::stringstream ss;
                             ss << "Unable to set " << acct.human() << " account balance to gwXAU("
@@ -3941,14 +3985,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 uint256 const nftID = mintNFT();
 
                 // minter creates their offer.
-                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
                 env(token::createOffer(minter, nftID, gwXAU(1000)), txflags(tfSellNFToken));
                 env.close();
 
                 {
                     // buyer creates an offer for more XAU than they currently
                     // own.
-                    uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                    uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                     env(token::createOffer(buyer, nftID, gwXAU(1001)), token::owner(minter));
                     env.close();
 
@@ -3965,7 +4009,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 {
                     // buyer creates an offer for less that what minter is
                     // asking.
-                    uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                    uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                     env(token::createOffer(buyer, nftID, gwXAU(999)), token::owner(minter));
                     env.close();
 
@@ -3981,7 +4025,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 }
 
                 // buyer creates a large enough offer.
-                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                 env(token::createOffer(buyer, nftID, gwXAU(1000)), token::owner(minter));
                 env.close();
 
@@ -3999,10 +4043,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 BEAST_EXPECT(ownerCount(env, minter) == 1);
                 BEAST_EXPECT(ownerCount(env, buyer) == 2);
                 BEAST_EXPECT(ownerCount(env, broker) == 1);
-                BEAST_EXPECT(env.balance(issuer, gwXAU) == gwXAU(1000));
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(2000));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.Balance(issuer, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(2000));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(broker, gwXAU) == gwXAU(1000));
 
                 // Burn the NFT so the next test starts with a clean state.
                 env(token::burn(buyer, nftID));
@@ -4018,13 +4062,13 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 uint256 const nftID = mintNFT(maxTransferFee);
 
                 // minter creates their offer.
-                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
                 env(token::createOffer(minter, nftID, gwXAU(900)), txflags(tfSellNFToken));
                 env.close();
                 {
                     // buyer creates an offer for more XAU than they currently
                     // own.
-                    uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                    uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                     env(token::createOffer(buyer, nftID, gwXAU(1001)), token::owner(minter));
                     env.close();
 
@@ -4041,7 +4085,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 {
                     // buyer creates an offer for less that what minter is
                     // asking.
-                    uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                    uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                     env(token::createOffer(buyer, nftID, gwXAU(899)), token::owner(minter));
                     env.close();
 
@@ -4056,7 +4100,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     env.close();
                 }
                 // buyer creates a large enough offer.
-                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                 env(token::createOffer(buyer, nftID, gwXAU(1000)), token::owner(minter));
                 env.close();
 
@@ -4077,10 +4121,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 BEAST_EXPECT(ownerCount(env, minter) == 1);
                 BEAST_EXPECT(ownerCount(env, buyer) == 2);
                 BEAST_EXPECT(ownerCount(env, broker) == 1);
-                BEAST_EXPECT(env.balance(issuer, gwXAU) == gwXAU(1450));
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1450));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(1100));
+                BEAST_EXPECT(env.Balance(issuer, gwXAU) == gwXAU(1450));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1450));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(broker, gwXAU) == gwXAU(1100));
 
                 // Burn the NFT so the next test starts with a clean state.
                 env(token::burn(buyer, nftID));
@@ -4096,12 +4140,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 uint256 const nftID = mintNFT(maxTransferFee / 2);  // 25%
 
                 // minter creates their offer.
-                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
                 env(token::createOffer(minter, nftID, gwXAU(900)), txflags(tfSellNFToken));
                 env.close();
 
                 // buyer creates a large enough offer.
-                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                 env(token::createOffer(buyer, nftID, gwXAU(1000)), token::owner(minter));
                 env.close();
 
@@ -4116,10 +4160,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 BEAST_EXPECT(ownerCount(env, minter) == 1);
                 BEAST_EXPECT(ownerCount(env, buyer) == 2);
                 BEAST_EXPECT(ownerCount(env, broker) == 1);
-                BEAST_EXPECT(env.balance(issuer, gwXAU) == gwXAU(1237.5));
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1712.5));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(1050));
+                BEAST_EXPECT(env.Balance(issuer, gwXAU) == gwXAU(1237.5));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1712.5));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(broker, gwXAU) == gwXAU(1050));
 
                 // Burn the NFT so the next test starts with a clean state.
                 env(token::burn(buyer, nftID));
@@ -4133,12 +4177,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 uint256 const nftID = mintNFT(maxTransferFee / 2);  // 25%
 
                 // minter creates their offer.
-                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.seq(minter)).key;
+                uint256 const minterOfferIndex = keylet::nftoffer(minter, env.Seq(minter)).key;
                 env(token::createOffer(minter, nftID, gwXAU(900)), txflags(tfSellNFToken));
                 env.close();
 
                 // buyer creates a large enough offer.
-                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                uint256 const buyOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
                 env(token::createOffer(buyer, nftID, gwXAU(1000)), token::owner(minter));
                 env.close();
 
@@ -4149,10 +4193,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 BEAST_EXPECT(ownerCount(env, minter) == 1);
                 BEAST_EXPECT(ownerCount(env, buyer) == 2);
                 BEAST_EXPECT(ownerCount(env, broker) == 1);
-                BEAST_EXPECT(env.balance(issuer, gwXAU) == gwXAU(1237.5));
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1712.5));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(550));
+                BEAST_EXPECT(env.Balance(issuer, gwXAU) == gwXAU(1237.5));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1712.5));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(broker, gwXAU) == gwXAU(550));
 
                 // Burn the NFT so the next test starts with a clean state.
                 env(token::burn(buyer, nftID));
@@ -4188,9 +4232,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(nftCount(env, buyer2) == 0);
 
         // Both buyer1 and buyer2 create buy offers for nftId.
-        uint256 const buyer1OfferIndex = keylet::nftoffer(buyer1, env.seq(buyer1)).key;
+        uint256 const buyer1OfferIndex = keylet::nftoffer(buyer1, env.Seq(buyer1)).key;
         env(token::createOffer(buyer1, nftId, XRP(100)), token::owner(issuer));
-        uint256 const buyer2OfferIndex = keylet::nftoffer(buyer2, env.seq(buyer2)).key;
+        uint256 const buyer2OfferIndex = keylet::nftoffer(buyer2, env.Seq(buyer2)).key;
         env(token::createOffer(buyer2, nftId, XRP(100)), token::owner(issuer));
         env.close();
 
@@ -4256,16 +4300,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // issuer and buyer grab enough tickets for all of the following
         // transactions.  Note that once the tickets are acquired issuer's
         // and buyer's account sequence numbers should not advance.
-        std::uint32_t issuerTicketSeq{env.seq(issuer) + 1};
+        std::uint32_t issuerTicketSeq{env.Seq(issuer) + 1};
         env(ticket::create(issuer, 10));
         env.close();
-        std::uint32_t const issuerSeq{env.seq(issuer)};
+        std::uint32_t const issuerSeq{env.Seq(issuer)};
         BEAST_EXPECT(ticketCount(env, issuer) == 10);
 
-        std::uint32_t buyerTicketSeq{env.seq(buyer) + 1};
+        std::uint32_t buyerTicketSeq{env.Seq(buyer) + 1};
         env(ticket::create(buyer, 10));
         env.close();
-        std::uint32_t const buyerSeq{env.seq(buyer)};
+        std::uint32_t const buyerSeq{env.Seq(buyer)};
         BEAST_EXPECT(ticketCount(env, buyer) == 10);
 
         // NFTokenMint
@@ -4316,8 +4360,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(ticketCount(env, buyer) == 6);
 
         // Verify that the account sequence numbers did not advance.
-        BEAST_EXPECT(env.seq(issuer) == issuerSeq);
-        BEAST_EXPECT(env.seq(buyer) == buyerSeq);
+        BEAST_EXPECT(env.Seq(issuer) == issuerSeq);
+        BEAST_EXPECT(env.Seq(buyer) == buyerSeq);
     }
 
     void
@@ -4370,7 +4414,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env(token::createOffer(becky, nftId, XRP(2)), token::owner(minter));
         env.close();
 
-        uint256 const carlaOfferIndex = keylet::nftoffer(carla, env.seq(carla)).key;
+        uint256 const carlaOfferIndex = keylet::nftoffer(carla, env.Seq(carla)).key;
         env(token::createOffer(carla, nftId, XRP(3)), token::owner(minter));
         env.close();
 
@@ -4648,25 +4692,25 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             TER const offerCreateTER = temBAD_AMOUNT;
 
             // Make offers with negative amounts for the NFTs
-            uint256 const sellNegXrpOfferIndex = keylet::nftoffer(issuer, env.seq(issuer)).key;
+            uint256 const sellNegXrpOfferIndex = keylet::nftoffer(issuer, env.Seq(issuer)).key;
             env(token::createOffer(issuer, nftID0, XRP(-2)),
                 txflags(tfSellNFToken),
                 Ter(offerCreateTER));
             env.close();
 
-            uint256 const sellNegIouOfferIndex = keylet::nftoffer(issuer, env.seq(issuer)).key;
+            uint256 const sellNegIouOfferIndex = keylet::nftoffer(issuer, env.Seq(issuer)).key;
             env(token::createOffer(issuer, nftID1, gwXAU(-2)),
                 txflags(tfSellNFToken),
                 Ter(offerCreateTER));
             env.close();
 
-            uint256 const buyNegXrpOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyNegXrpOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftID0, XRP(-1)),
                 token::owner(issuer),
                 Ter(offerCreateTER));
             env.close();
 
-            uint256 const buyNegIouOfferIndex = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const buyNegIouOfferIndex = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::createOffer(buyer, nftID1, gwXAU(-1)),
                 token::owner(issuer),
                 Ter(offerCreateTER));
@@ -4760,22 +4804,22 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     // Minter should have XAU 0, XPB 0
                     // Secondary seller should have XAU 0, XPB 0
                     // Broker should have XAU 5000, XPB 0
-                    BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(1000));
-                    BEAST_EXPECT(env.balance(buyer, gwXPB) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(0));
-                    BEAST_EXPECT(env.balance(minter, gwXPB) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(secondarySeller, gwXAU) == gwXAU(0));
-                    BEAST_EXPECT(env.balance(secondarySeller, gwXPB) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(5000));
-                    BEAST_EXPECT(env.balance(broker, gwXPB) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-1000));
-                    BEAST_EXPECT(env.balance(gw, buyer["XPB"]) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(0));
-                    BEAST_EXPECT(env.balance(gw, minter["XPB"]) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(gw, secondarySeller["XAU"]) == gwXAU(0));
-                    BEAST_EXPECT(env.balance(gw, secondarySeller["XPB"]) == gwXPB(0));
-                    BEAST_EXPECT(env.balance(gw, broker["XAU"]) == gwXAU(-5000));
-                    BEAST_EXPECT(env.balance(gw, broker["XPB"]) == gwXPB(0));
+                    BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(1000));
+                    BEAST_EXPECT(env.Balance(buyer, gwXPB) == gwXPB(0));
+                    BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(0));
+                    BEAST_EXPECT(env.Balance(minter, gwXPB) == gwXPB(0));
+                    BEAST_EXPECT(env.Balance(secondarySeller, gwXAU) == gwXAU(0));
+                    BEAST_EXPECT(env.Balance(secondarySeller, gwXPB) == gwXPB(0));
+                    BEAST_EXPECT(env.Balance(broker, gwXAU) == gwXAU(5000));
+                    BEAST_EXPECT(env.Balance(broker, gwXPB) == gwXPB(0));
+                    BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(-1000));
+                    BEAST_EXPECT(env.Balance(gw, buyer["XPB"]) == gwXPB(0));
+                    BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(0));
+                    BEAST_EXPECT(env.Balance(gw, minter["XPB"]) == gwXPB(0));
+                    BEAST_EXPECT(env.Balance(gw, secondarySeller["XAU"]) == gwXAU(0));
+                    BEAST_EXPECT(env.Balance(gw, secondarySeller["XPB"]) == gwXPB(0));
+                    BEAST_EXPECT(env.Balance(gw, broker["XAU"]) == gwXAU(-5000));
+                    BEAST_EXPECT(env.Balance(gw, broker["XPB"]) == gwXPB(0));
                 };
 
             auto reinitializeTrustLineBalances = [&expectInitialState,
@@ -4787,20 +4831,20 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                                                   &gw,
                                                   &gwXAU,
                                                   &gwXPB]() {
-                if (auto const difference = gwXAU(1000) - env.balance(buyer, gwXAU);
+                if (auto const difference = gwXAU(1000) - env.Balance(buyer, gwXAU);
                     difference > gwXAU(0))
                     env(pay(gw, buyer, difference));
-                if (env.balance(buyer, gwXPB) > gwXPB(0))
-                    env(pay(buyer, gw, env.balance(buyer, gwXPB)));
-                if (env.balance(minter, gwXAU) > gwXAU(0))
-                    env(pay(minter, gw, env.balance(minter, gwXAU)));
-                if (env.balance(minter, gwXPB) > gwXPB(0))
-                    env(pay(minter, gw, env.balance(minter, gwXPB)));
-                if (env.balance(secondarySeller, gwXAU) > gwXAU(0))
-                    env(pay(secondarySeller, gw, env.balance(secondarySeller, gwXAU)));
-                if (env.balance(secondarySeller, gwXPB) > gwXPB(0))
-                    env(pay(secondarySeller, gw, env.balance(secondarySeller, gwXPB)));
-                auto brokerDiff = gwXAU(5000) - env.balance(broker, gwXAU);
+                if (env.Balance(buyer, gwXPB) > gwXPB(0))
+                    env(pay(buyer, gw, env.Balance(buyer, gwXPB)));
+                if (env.Balance(minter, gwXAU) > gwXAU(0))
+                    env(pay(minter, gw, env.Balance(minter, gwXAU)));
+                if (env.Balance(minter, gwXPB) > gwXPB(0))
+                    env(pay(minter, gw, env.Balance(minter, gwXPB)));
+                if (env.Balance(secondarySeller, gwXAU) > gwXAU(0))
+                    env(pay(secondarySeller, gw, env.Balance(secondarySeller, gwXAU)));
+                if (env.Balance(secondarySeller, gwXPB) > gwXPB(0))
+                    env(pay(secondarySeller, gw, env.Balance(secondarySeller, gwXPB)));
+                auto brokerDiff = gwXAU(5000) - env.Balance(broker, gwXAU);
                 if (brokerDiff > gwXAU(0))
                 {
                     env(pay(gw, broker, brokerDiff));
@@ -4810,8 +4854,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     brokerDiff.negate();
                     env(pay(broker, gw, brokerDiff));
                 }
-                if (env.balance(broker, gwXPB) > gwXPB(0))
-                    env(pay(broker, gw, env.balance(broker, gwXPB)));
+                if (env.Balance(broker, gwXPB) > gwXPB(0))
+                    env(pay(broker, gw, env.Balance(broker, gwXPB)));
                 env.close();
                 expectInitialState();
             };
@@ -4829,7 +4873,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                                       uint256 const& nftID,
                                       STAmount const& amount,
                                       std::optional<TER const> const terCode = {}) {
-                uint256 const offerID = keylet::nftoffer(offerer, env.seq(offerer)).key;
+                uint256 const offerID = keylet::nftoffer(offerer, env.Seq(offerer)).key;
                 env(token::createOffer(offerer, nftID, amount),
                     token::owner(owner),
                     terCode ? Ter(*terCode) : Ter(static_cast<TER>(tesSUCCESS)));
@@ -4842,7 +4886,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                                        uint256 const& nftID,
                                        STAmount const& amount,
                                        std::optional<TER const> const terCode = {}) {
-                uint256 const offerID = keylet::nftoffer(offerer, env.seq(offerer)).key;
+                uint256 const offerID = keylet::nftoffer(offerer, env.Seq(offerer)).key;
                 env(token::createOffer(offerer, nftID, amount),
                     txflags(tfSellNFToken),
                     terCode ? Ter(*terCode) : Ter(static_cast<TER>(tesSUCCESS)));
@@ -4911,10 +4955,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptSellOffer(buyer, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(900));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(82));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-900));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-82));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(900));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(82));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-900));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(-82));
             }
             {
                 // Buyer attempts to send an amount less than 100% of their
@@ -4927,10 +4971,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptBuyOffer(minter, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(900));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(82));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-900));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-82));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(900));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(82));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-900));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(-82));
             }
             {
                 // Buyer attempts to send an amount less than 100% of their
@@ -4948,10 +4992,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptSellOffer(buyer, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-1000));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-1000));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(0));
             }
             {
                 // Buyer attempts to send an amount less than 100% of their
@@ -4969,10 +5013,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptBuyOffer(minter, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-1000));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-1000));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(0));
             }
             {
                 // Gateway attempts to buy NFT with their own IOU - no
@@ -4985,8 +5029,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptSellOffer(gw, offerID), Ter(sellTER));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-1000));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-1000));
             }
             {
                 // Gateway attempts to buy NFT with their own IOU - no
@@ -5000,8 +5044,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptBuyOffer(minter, offerID), Ter(sellTER));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(1000));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-1000));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(1000));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-1000));
             }
             {
                 // Gateway attempts to buy NFT with their own IOU for more
@@ -5013,8 +5057,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptSellOffer(gw, offerID), Ter(sellTER));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-5000));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(5000));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-5000));
             }
             {
                 // Gateway attempts to buy NFT with their own IOU for more
@@ -5028,8 +5072,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptBuyOffer(minter, offerID), Ter(sellTER));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(5000));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-5000));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(5000));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-5000));
             }
             {
                 // Gateway is the NFT minter and attempts to sell NFT for an
@@ -5041,8 +5085,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptSellOffer(buyer, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(0));
             }
             {
                 // Gateway is the NFT minter and attempts to sell NFT for an
@@ -5055,8 +5099,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptBuyOffer(gw, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(0));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(0));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(0));
             }
             {
                 // Gateway is the NFT minter and attempts to sell NFT for an
@@ -5118,10 +5162,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptSellOffer(buyer, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXPB) == gwXPB(10));
-                BEAST_EXPECT(env.balance(buyer, gwXPB) == gwXPB(89.8));
-                BEAST_EXPECT(env.balance(gw, minter["XPB"]) == gwXPB(-10));
-                BEAST_EXPECT(env.balance(gw, buyer["XPB"]) == gwXPB(-89.8));
+                BEAST_EXPECT(env.Balance(minter, gwXPB) == gwXPB(10));
+                BEAST_EXPECT(env.Balance(buyer, gwXPB) == gwXPB(89.8));
+                BEAST_EXPECT(env.Balance(gw, minter["XPB"]) == gwXPB(-10));
+                BEAST_EXPECT(env.Balance(gw, buyer["XPB"]) == gwXPB(-89.8));
             }
             {
                 // Minter attempts to sell the token for XPB 10 and the buyer
@@ -5136,10 +5180,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptBuyOffer(minter, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXPB) == gwXPB(10));
-                BEAST_EXPECT(env.balance(buyer, gwXPB) == gwXPB(89.8));
-                BEAST_EXPECT(env.balance(gw, minter["XPB"]) == gwXPB(-10));
-                BEAST_EXPECT(env.balance(gw, buyer["XPB"]) == gwXPB(-89.8));
+                BEAST_EXPECT(env.Balance(minter, gwXPB) == gwXPB(10));
+                BEAST_EXPECT(env.Balance(buyer, gwXPB) == gwXPB(89.8));
+                BEAST_EXPECT(env.Balance(gw, minter["XPB"]) == gwXPB(-10));
+                BEAST_EXPECT(env.Balance(gw, buyer["XPB"]) == gwXPB(-89.8));
             }
             {
                 // There is a transfer fee on the NFT and buyer has exact
@@ -5198,12 +5242,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::acceptSellOffer(buyer, offerID));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(27));
-                BEAST_EXPECT(env.balance(secondarySeller, gwXAU) == gwXAU(873));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(82));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-27));
-                BEAST_EXPECT(env.balance(gw, secondarySeller["XAU"]) == gwXAU(-873));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-82));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(27));
+                BEAST_EXPECT(env.Balance(secondarySeller, gwXAU) == gwXAU(873));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(82));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-27));
+                BEAST_EXPECT(env.Balance(gw, secondarySeller["XAU"]) == gwXAU(-873));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(-82));
             }
             {
                 // There is a transfer fee on the NFT and buyer has enough
@@ -5223,14 +5267,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
 
                 // receives 3% of 900 - 27
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(27));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(27));
                 // receives 97% of 900 - 873
-                BEAST_EXPECT(env.balance(secondarySeller, gwXAU) == gwXAU(873));
+                BEAST_EXPECT(env.Balance(secondarySeller, gwXAU) == gwXAU(873));
                 // pays 900 plus 2% transfer fee on XAU - 918
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(82));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-27));
-                BEAST_EXPECT(env.balance(gw, secondarySeller["XAU"]) == gwXAU(-873));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-82));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(82));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-27));
+                BEAST_EXPECT(env.Balance(gw, secondarySeller["XAU"]) == gwXAU(-873));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(-82));
             }
             {
                 // There is a broker fee on the NFT. XAU transfer fee is only
@@ -5256,12 +5300,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::brokerOffers(broker, buyOffer, sellOffer), token::brokerFee(gwXAU(100)));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(400));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(490));
-                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(5100));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-400));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-490));
-                BEAST_EXPECT(env.balance(gw, broker["XAU"]) == gwXAU(-5100));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(400));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(490));
+                BEAST_EXPECT(env.Balance(broker, gwXAU) == gwXAU(5100));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-400));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(-490));
+                BEAST_EXPECT(env.Balance(gw, broker["XAU"]) == gwXAU(-5100));
             }
             {
                 // There is broker and transfer fee on the NFT
@@ -5294,14 +5338,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env(token::brokerOffers(broker, buyOffer, sellOffer), token::brokerFee(gwXAU(100)));
                 env.close();
 
-                BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(12));
-                BEAST_EXPECT(env.balance(buyer, gwXAU) == gwXAU(490));
-                BEAST_EXPECT(env.balance(secondarySeller, gwXAU) == gwXAU(388));
-                BEAST_EXPECT(env.balance(broker, gwXAU) == gwXAU(5100));
-                BEAST_EXPECT(env.balance(gw, minter["XAU"]) == gwXAU(-12));
-                BEAST_EXPECT(env.balance(gw, buyer["XAU"]) == gwXAU(-490));
-                BEAST_EXPECT(env.balance(gw, secondarySeller["XAU"]) == gwXAU(-388));
-                BEAST_EXPECT(env.balance(gw, broker["XAU"]) == gwXAU(-5100));
+                BEAST_EXPECT(env.Balance(minter, gwXAU) == gwXAU(12));
+                BEAST_EXPECT(env.Balance(buyer, gwXAU) == gwXAU(490));
+                BEAST_EXPECT(env.Balance(secondarySeller, gwXAU) == gwXAU(388));
+                BEAST_EXPECT(env.Balance(broker, gwXAU) == gwXAU(5100));
+                BEAST_EXPECT(env.Balance(gw, minter["XAU"]) == gwXAU(-12));
+                BEAST_EXPECT(env.Balance(gw, buyer["XAU"]) == gwXAU(-490));
+                BEAST_EXPECT(env.Balance(gw, secondarySeller["XAU"]) == gwXAU(-388));
+                BEAST_EXPECT(env.Balance(gw, broker["XAU"]) == gwXAU(-5100));
             }
         }
     }
@@ -5355,10 +5399,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // Bob creates a buy offer for 5 XRP.  Alice creates a sell offer
         // for 0 XRP.
-        uint256 const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+        uint256 const bobBuyOfferIndex = keylet::nftoffer(bob, env.Seq(bob)).key;
         env(token::createOffer(bob, nftId, XRP(5)), token::owner(alice));
 
-        uint256 const aliceSellOfferIndex = keylet::nftoffer(alice, env.seq(alice)).key;
+        uint256 const aliceSellOfferIndex = keylet::nftoffer(alice, env.Seq(alice)).key;
         env(token::createOffer(alice, nftId, XRP(0)),
             token::destination(bob),
             txflags(tfSellNFToken));
@@ -5372,15 +5416,15 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         BEAST_EXPECT(env.le(keylet::nftoffer(bobBuyOfferIndex)));
 
         // Bob creates a sell offer for the gift NFT from alice.
-        uint256 const bobSellOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+        uint256 const bobSellOfferIndex = keylet::nftoffer(bob, env.Seq(bob)).key;
         env(token::createOffer(bob, nftId, XRP(4)), txflags(tfSellNFToken));
         env.close();
 
         // bob now has a buy offer and a sell offer on the books.  A broker
         // spots this and swoops in to make a profit.
         BEAST_EXPECT(nftCount(env, bob) == 1);
-        auto const bobPriorBalance = env.balance(bob);
-        auto const brokerPriorBalance = env.balance(broker);
+        auto const bobPriorBalance = env.Balance(bob);
+        auto const brokerPriorBalance = env.Balance(broker);
         env(token::brokerOffers(broker, bobBuyOfferIndex, bobSellOfferIndex),
             token::brokerFee(XRP(1)),
             Ter(tecCANT_ACCEPT_OWN_NFTOKEN_OFFER));
@@ -5389,8 +5433,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // A tec result was returned, so no state should change other
         // than the broker burning their transaction fee.
         BEAST_EXPECT(nftCount(env, bob) == 1);
-        BEAST_EXPECT(env.balance(bob) == bobPriorBalance);
-        BEAST_EXPECT(env.balance(broker) == brokerPriorBalance - baseFee);
+        BEAST_EXPECT(env.Balance(bob) == bobPriorBalance);
+        BEAST_EXPECT(env.Balance(broker) == brokerPriorBalance - baseFee);
     }
 
     void
@@ -5407,14 +5451,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         // the account (no longer within <Sequence + 256>)
         auto incLgrSeqForAcctDel = [&](Env& env, Account const& acct) {
             int const delta = [&]() -> int {
-                if (env.seq(acct) + 255 > openLedgerSeq(env))
-                    return env.seq(acct) - openLedgerSeq(env) + 255;
+                if (env.Seq(acct) + 255 > openLedgerSeq(env))
+                    return env.Seq(acct) - openLedgerSeq(env) + 255;
                 return 0;
             }();
             BEAST_EXPECT(delta >= 0);
             for (int i = 0; i < delta; ++i)
                 env.close();
-            BEAST_EXPECT(openLedgerSeq(env) == env.seq(acct) + 255);
+            BEAST_EXPECT(openLedgerSeq(env) == env.Seq(acct) + 255);
         };
 
         // Close the ledger until the ledger sequence is no longer
@@ -5579,7 +5623,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // The new NFT minted will not have the same ID
             // as any of the NFTs authorized minter minted
-            BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
+            BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
         }
 
         // When an account mints and burns a batch of NFTokens using tickets,
@@ -5595,7 +5639,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // alice grab enough tickets for all of the following
             // transactions.  Note that once the tickets are acquired alice's
             // account sequence number should not advance.
-            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            std::uint32_t aliceTicketSeq{env.Seq(alice) + 1};
             env(ticket::create(alice, 100));
             env.close();
 
@@ -5678,7 +5722,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // The new NFT minted will not have the same ID
             // as any of the NFTs authorized minter minted using tickets
-            BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
+            BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
         }
         // When an authorized minter mints and burns a batch of NFTokens using
         // tickets, issuer's account needs to wait a longer time before it can
@@ -5698,7 +5742,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
 
         // minter creates 100 tickets
-        std::uint32_t minterTicketSeq{env.seq(minter) + 1};
+        std::uint32_t minterTicketSeq{env.Seq(minter) + 1};
         env(ticket::create(minter, 100));
         env.close();
 
@@ -5781,7 +5825,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // The new NFT minted will not have the same ID
         // as one of NFTs authorized minter minted using tickets
-        BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
+        BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
     }
 
     void
@@ -5989,7 +6033,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 token::amount(XRP(10)),
                 token::destination(buyer),
                 token::expiration(lastClose(env) + 25));
-            uint256 const offerAliceSellsToBuyer = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const offerAliceSellsToBuyer = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::cancelOffer(alice, {offerAliceSellsToBuyer}));
             env.close();
 
@@ -5998,7 +6042,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 token::amount(XRP(10)),
                 token::destination(alice),
                 token::expiration(lastClose(env) + 25));
-            uint256 const offerBuyerSellsToAlice = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            uint256 const offerBuyerSellsToAlice = keylet::nftoffer(buyer, env.Seq(buyer)).key;
             env(token::cancelOffer(alice, {offerBuyerSellsToAlice}));
             env.close();
 
@@ -6099,8 +6143,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 });
 
             // Sort both array to prepare for comparison
-            std::sort(metaIDs.begin(), metaIDs.end());
-            std::sort(actualNftIDs.begin(), actualNftIDs.end());
+            std::ranges::sort(metaIDs);
+            std::ranges::sort(actualNftIDs);
 
             // Make sure the expect number of NFTs is correct
             BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
@@ -6146,12 +6190,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // Alice creates one sell offer for each NFT
             // Verify the offer indexes are correct in the NFTokenCreateOffer tx
             // meta
-            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId1, drops(1)), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId2, drops(1)), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -6165,7 +6209,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
-            auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.Seq(bob)).key;
             env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));
             env.close();
             verifyNFTokenOfferID(bobBuyOfferIndex);
@@ -6186,7 +6230,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId, drops(1)),
                 token::destination(broker),
                 txflags(tfSellNFToken));
@@ -6194,7 +6238,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.seq(bob)).key;
+            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.Seq(bob)).key;
             env(token::createOffer(bob, nftId, drops(1)), token::owner(alice));
             env.close();
             verifyNFTokenOfferID(offerBobToBroker);
@@ -6215,12 +6259,12 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
-            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
             env.close();
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -6234,7 +6278,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         if (features[featureNFTokenMintOffer])
         {
-            uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::mint(alice), token::amount(XRP(0)));
             env.close();
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
@@ -6257,7 +6301,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // acct makes an sell offer
-            uint256 const sellOfferIndex = keylet::nftoffer(acct, env.seq(acct)).key;
+            uint256 const sellOfferIndex = keylet::nftoffer(acct, env.Seq(acct)).key;
             env(token::createOffer(acct, nftId, amt), txflags(tfSellNFToken));
             env.close();
 
@@ -6462,7 +6506,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // Bob makes a buy offer for 1 XRP
-            auto const buyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            auto const buyOfferIndex = keylet::nftoffer(bob, env.Seq(bob)).key;
             env(token::createOffer(bob, nftId, XRP(1)), token::owner(alice));
             env.close();
 
@@ -6510,14 +6554,14 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId, XRP(1)),
                 token::destination(broker),
                 txflags(tfSellNFToken));
             env.close();
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.seq(bob)).key;
+            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.Seq(bob)).key;
             env(token::createOffer(bob, nftId, XRP(1)), token::owner(alice));
             env.close();
 
@@ -6596,7 +6640,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
 
             // issuer creates two NFTs: one with and one without AutoTrustLine.
-            std::uint16_t xferFee = 5000;  // 5%
+            std::uint16_t const xferFee = 5000;  // 5%
             uint256 const nftAutoTrustID{
                 token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
             env(token::mint(issuer, 0u),
@@ -6611,10 +6655,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // becky buys the nfts for 1 drop each.
             {
-                uint256 const beckyBuyOfferIndex1 = keylet::nftoffer(becky, env.seq(becky)).key;
+                uint256 const beckyBuyOfferIndex1 = keylet::nftoffer(becky, env.Seq(becky)).key;
                 env(token::createOffer(becky, nftAutoTrustID, drops(1)), token::owner(issuer));
 
-                uint256 const beckyBuyOfferIndex2 = keylet::nftoffer(becky, env.seq(becky)).key;
+                uint256 const beckyBuyOfferIndex2 = keylet::nftoffer(becky, env.Seq(becky)).key;
                 env(token::createOffer(becky, nftNoAutoTrustID, drops(1)), token::owner(issuer));
 
                 env.close();
@@ -6624,7 +6668,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             }
 
             // becky creates offers to sell the nfts for AUD.
-            uint256 const beckyAutoTrustOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyAutoTrustOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftAutoTrustID, gwAUD(100)), txflags(tfSellNFToken));
             env.close();
 
@@ -6642,7 +6686,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env.close();
             BEAST_EXPECT(ownerCount(env, issuer) == 1);
 
-            uint256 const beckyNoAutoTrustOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyNoAutoTrustOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftNoAutoTrustID, gwAUD(100)), txflags(tfSellNFToken));
             env.close();
 
@@ -6659,7 +6703,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // Here's evidence that issuer got the new AUD trust line.
             BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(env.balance(issuer, gwAUD) == gwAUD(5));
+            BEAST_EXPECT(env.Balance(issuer, gwAUD) == gwAUD(5));
 
             // issuer once again removes the trust line for AUD.
             env(pay(issuer, gw, gwAUD(5)));
@@ -6693,7 +6737,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 env.close();
             }
             BEAST_EXPECT(ownerCount(env, issuer) == 1);
-            BEAST_EXPECT(env.balance(issuer, gwAUD) == gwAUD(5));
+            BEAST_EXPECT(env.Balance(issuer, gwAUD) == gwAUD(5));
         }  // for feats
     }
 
@@ -6752,7 +6796,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         env.close();
 
         // issuer creates two NFTs: one with and one without AutoTrustLine.
-        std::uint16_t xferFee = 5000;  // 5%
+        std::uint16_t const xferFee = 5000;  // 5%
         uint256 const nftAutoTrustID{
             token::getNextID(env, issuer, 0u, tfTransferable | tfTrustLine, xferFee)};
         env(token::mint(issuer, 0u),
@@ -6766,10 +6810,10 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // becky buys the nfts for 1 drop each.
         {
-            uint256 const beckyBuyOfferIndex1 = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyBuyOfferIndex1 = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftAutoTrustID, drops(1)), token::owner(issuer));
 
-            uint256 const beckyBuyOfferIndex2 = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyBuyOfferIndex2 = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftNoAutoTrustID, drops(1)), token::owner(issuer));
 
             env.close();
@@ -6796,7 +6840,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // However if the NFToken has the tfTrustLine flag set,
             // then becky can create the offer.
-            uint256 const beckyAutoTrustOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyAutoTrustOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftAutoTrustID, isISU(100)), txflags(tfSellNFToken));
             env.close();
 
@@ -6806,17 +6850,17 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // We verify that issuer got their transfer fee by seeing that
             // ISU(5) has disappeared out of cheri's and becky's balances.
-            BEAST_EXPECT(env.balance(becky, isISU) == isISU(95));
-            BEAST_EXPECT(env.balance(cheri, isISU) == isISU(400));
+            BEAST_EXPECT(env.Balance(becky, isISU) == isISU(95));
+            BEAST_EXPECT(env.Balance(cheri, isISU) == isISU(400));
         }
         else
         {
             // With featureNFTokenMintOffer things go better.
             // becky creates offers to sell the nfts for ISU.
-            uint256 const beckyNoAutoTrustOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyNoAutoTrustOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftNoAutoTrustID, isISU(100)), txflags(tfSellNFToken));
             env.close();
-            uint256 const beckyAutoTrustOfferIndex = keylet::nftoffer(becky, env.seq(becky)).key;
+            uint256 const beckyAutoTrustOfferIndex = keylet::nftoffer(becky, env.Seq(becky)).key;
             env(token::createOffer(becky, nftAutoTrustID, isISU(100)), txflags(tfSellNFToken));
             env.close();
 
@@ -6827,8 +6871,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // We verify that issuer got their transfer fee by seeing that
             // ISU(5) has disappeared out of cheri's and becky's balances.
-            BEAST_EXPECT(env.balance(becky, isISU) == isISU(95));
-            BEAST_EXPECT(env.balance(cheri, isISU) == isISU(400));
+            BEAST_EXPECT(env.Balance(becky, isISU) == isISU(95));
+            BEAST_EXPECT(env.Balance(cheri, isISU) == isISU(400));
 
             env(token::acceptSellOffer(cheri, beckyNoAutoTrustOfferIndex));
             env.close();
@@ -6836,8 +6880,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // We verify that issuer got their transfer fee by seeing that
             // an additional ISU(5) has disappeared out of cheri's and
             // becky's balances.
-            BEAST_EXPECT(env.balance(becky, isISU) == isISU(190));
-            BEAST_EXPECT(env.balance(cheri, isISU) == isISU(300));
+            BEAST_EXPECT(env.Balance(becky, isISU) == isISU(190));
+            BEAST_EXPECT(env.Balance(cheri, isISU) == isISU(300));
         }
     }
 
@@ -7050,7 +7094,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             checkURI(issuer, "uri", __LINE__);
 
             // Account != Owner
-            uint256 const offerID = keylet::nftoffer(issuer, env.seq(issuer)).key;
+            uint256 const offerID = keylet::nftoffer(issuer, env.Seq(issuer)).key;
             env(token::createOffer(issuer, nftId, XRP(0)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(alice, offerID));

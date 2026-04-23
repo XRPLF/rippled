@@ -1,11 +1,37 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/check.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <set>
 
 namespace xrpl {
 
@@ -19,9 +45,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const g1{"G1"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(1000), g1, alice, bob);
         env.close();
@@ -168,8 +194,8 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a1{"A1"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
 
         env.fund(XRP(10000), g1, a1);
         env.close();
@@ -259,8 +285,8 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a1{"A1"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
 
         env.fund(XRP(10000), g1, a1);
         env.close();
@@ -271,21 +297,21 @@ class Freeze_test : public beast::unit_test::suite
             auto const flags = getTrustlineFlags(env, 5u, 3u, false);
             BEAST_EXPECT(flags & lsfLowFreeze);
             env.close();
-            env.require(lines(a1, 1));
+            env.Require(lines(a1, 1));
         }
 
         // Cleanup
         env(trust(g1, a1["USD"](0), tfClearFreeze));
         env.close();
-        env.require(lines(g1, 0));
-        env.require(lines(a1, 0));
+        env.Require(lines(g1, 0));
+        env.Require(lines(a1, 0));
 
         // test: cannot create deep frozen trustline without normal freeze
         if (features[featureDeepFreeze])
         {
             env(trust(g1, a1["USD"](1000), tfSetDeepFreeze), Ter(tecNO_PERMISSION));
             env.close();
-            env.require(lines(a1, 0));
+            env.Require(lines(a1, 0));
         }
 
         // test: can create deep frozen trustline together with normal freeze
@@ -296,7 +322,7 @@ class Freeze_test : public beast::unit_test::suite
             BEAST_EXPECT(flags & lsfLowFreeze);
             BEAST_EXPECT(flags & lsfLowDeepFreeze);
             env.close();
-            env.require(lines(a1, 1));
+            env.Require(lines(a1, 1));
         }
     }
 
@@ -308,8 +334,8 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a1{"A1"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
 
         env.fund(XRP(10000), g1, a1);
         env.close();
@@ -347,11 +373,11 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account a3{"A3"};
-        Account a4{"A4"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const a3{"A3"};
+        Account const a4{"A4"};
 
         env.fund(XRP(12000), g1);
         env.fund(XRP(1000), a1);
@@ -379,15 +405,15 @@ class Freeze_test : public beast::unit_test::suite
         {
             // Is toggled via AccountSet using SetFlag and ClearFlag
             //    test: SetFlag GlobalFreeze
-            env.require(Nflags(g1, asfGlobalFreeze));
+            env.Require(Nflags(g1, asfGlobalFreeze));
             env(fset(g1, asfGlobalFreeze));
-            env.require(Flags(g1, asfGlobalFreeze));
-            env.require(Nflags(g1, asfNoFreeze));
+            env.Require(Flags(g1, asfGlobalFreeze));
+            env.Require(Nflags(g1, asfNoFreeze));
 
             //    test: ClearFlag GlobalFreeze
             env(fclear(g1, asfGlobalFreeze));
-            env.require(Nflags(g1, asfGlobalFreeze));
-            env.require(Nflags(g1, asfNoFreeze));
+            env.Require(Nflags(g1, asfGlobalFreeze));
+            env.Require(Nflags(g1, asfNoFreeze));
         }
 
         {
@@ -444,10 +470,10 @@ class Freeze_test : public beast::unit_test::suite
             // Account with GlobalFreeze
             //  set GlobalFreeze first
             //    test: SetFlag GlobalFreeze will toggle back to freeze
-            env.require(Nflags(g1, asfGlobalFreeze));
+            env.Require(Nflags(g1, asfGlobalFreeze));
             env(fset(g1, asfGlobalFreeze));
-            env.require(Flags(g1, asfGlobalFreeze));
-            env.require(Nflags(g1, asfNoFreeze));
+            env.Require(Flags(g1, asfGlobalFreeze));
+            env.Require(Nflags(g1, asfNoFreeze));
 
             //    test: assets can't be bought on the market
             env(offer(a3, g1["BTC"](1), XRP(1)), Ter(tecFROZEN));
@@ -497,10 +523,10 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account frozenAcc{"A2"};
-        Account deepFrozenAcc{"A3"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const frozenAcc{"A2"};
+        Account const deepFrozenAcc{"A3"};
 
         env.fund(XRP(12000), g1);
         env.fund(XRP(1000), a1);
@@ -539,25 +565,25 @@ class Freeze_test : public beast::unit_test::suite
 
         // TrustSet NoFreeze
         //    test: should set NoFreeze in Flags
-        env.require(Nflags(g1, asfNoFreeze));
+        env.Require(Nflags(g1, asfNoFreeze));
         env(fset(g1, asfNoFreeze));
-        env.require(Flags(g1, asfNoFreeze));
-        env.require(Nflags(g1, asfGlobalFreeze));
+        env.Require(Flags(g1, asfNoFreeze));
+        env.Require(Nflags(g1, asfGlobalFreeze));
 
         //    test: cannot be cleared
         env(fclear(g1, asfNoFreeze));
-        env.require(Flags(g1, asfNoFreeze));
-        env.require(Nflags(g1, asfGlobalFreeze));
+        env.Require(Flags(g1, asfNoFreeze));
+        env.Require(Nflags(g1, asfGlobalFreeze));
 
         //    test: can set GlobalFreeze
         env(fset(g1, asfGlobalFreeze));
-        env.require(Flags(g1, asfNoFreeze));
-        env.require(Flags(g1, asfGlobalFreeze));
+        env.Require(Flags(g1, asfNoFreeze));
+        env.Require(Flags(g1, asfGlobalFreeze));
 
         //    test: cannot unset GlobalFreeze
         env(fclear(g1, asfGlobalFreeze));
-        env.require(Flags(g1, asfNoFreeze));
-        env.require(Flags(g1, asfGlobalFreeze));
+        env.Require(Flags(g1, asfNoFreeze));
+        env.Require(Flags(g1, asfGlobalFreeze));
 
         //    test: trustlines can't be frozen when no freeze enacted
         if (features[featureDeepFreeze])
@@ -608,10 +634,10 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a2{"A2"};
-        Account a3{"A3"};
-        Account a4{"A4"};
+        Account const g1{"G1"};
+        Account const a2{"A2"};
+        Account const a3{"A3"};
+        Account const a4{"A4"};
 
         env.fund(XRP(1000), g1, a3, a4);
         env.fund(XRP(2000), a2);
@@ -705,10 +731,10 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account a3{"A3"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const a3{"A3"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2, a3);
@@ -730,17 +756,17 @@ class Freeze_test : public beast::unit_test::suite
         // Wants to buy 100 USD for 100 XRP
         env(offer(a3, usd(100), XRP(100)), txflags(tfPassive));
         env.close();
-        env.require(offers(a2, 1), offers(a3, 1));
+        env.Require(offers(a2, 1), offers(a3, 1));
 
         // Checking A1 can buy from A2 by crossing it's offer
         env(offer(a1, usd(1), XRP(2)), txflags(tfFillOrKill));
         env.close();
-        env.require(Balance(a1, usd(1001)), Balance(a2, usd(999)));
+        env.Require(Balance(a1, usd(1001)), Balance(a2, usd(999)));
 
         // Checking A1 can sell to A3 by crossing it's offer
         env(offer(a1, XRP(1), usd(1)), txflags(tfFillOrKill));
         env.close();
-        env.require(Balance(a1, usd(1000)), Balance(a3, usd(1)));
+        env.Require(Balance(a1, usd(1000)), Balance(a3, usd(1)));
 
         // Testing aggressive and passive offer placing, trustline frozen by
         // the issuer
@@ -751,26 +777,26 @@ class Freeze_test : public beast::unit_test::suite
             // test: can still make passive buy offer
             env(offer(a1, usd(1), XRP(0.5)), txflags(tfPassive));
             env.close();
-            env.require(Balance(a1, usd(1000)), offers(a1, 1));
+            env.Require(Balance(a1, usd(1000)), offers(a1, 1));
             // Cleanup
-            env(offerCancel(a1, env.seq(a1) - 1));
-            env.require(offers(a1, 0));
+            env(offerCancel(a1, env.Seq(a1) - 1));
+            env.Require(offers(a1, 0));
             env.close();
 
             // test: can still buy from A2
             env(offer(a1, usd(1), XRP(2)), txflags(tfFillOrKill));
             env.close();
-            env.require(Balance(a1, usd(1001)), Balance(a2, usd(998)), offers(a1, 0));
+            env.Require(Balance(a1, usd(1001)), Balance(a2, usd(998)), offers(a1, 0));
 
             // test: cannot create passive sell offer
             env(offer(a1, XRP(2), usd(1)), txflags(tfPassive), Ter(tecUNFUNDED_OFFER));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 0));
+            env.Require(Balance(a1, usd(1001)), offers(a1, 0));
 
             // test: cannot sell to A3
             env(offer(a1, XRP(1), usd(1)), txflags(tfFillOrKill), Ter(tecUNFUNDED_OFFER));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 0));
+            env.Require(Balance(a1, usd(1001)), offers(a1, 0));
 
             env(trust(g1, a1["USD"](0), tfClearFreeze));
             env.close();
@@ -801,32 +827,32 @@ class Freeze_test : public beast::unit_test::suite
 
             env(trust(g1, a1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 0));
+            env.Require(Balance(a1, usd(1001)), offers(a1, 0));
         }
 
         // Testing already existing offers behavior after trustline is frozen by
         // the issuer
         {
-            env.require(Balance(a1, usd(1001)));
+            env.Require(Balance(a1, usd(1001)));
             env(offer(a1, XRP(1.9), usd(1)));
             env(offer(a1, usd(1), XRP(1.1)));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 2));
+            env.Require(Balance(a1, usd(1001)), offers(a1, 2));
 
             env(trust(g1, a1["USD"](0), tfSetFreeze));
             env.close();
 
             // test: A2 wants to sell to A1, must succeed
-            env.require(Balance(a1, usd(1001)), Balance(a2, usd(998)));
+            env.Require(Balance(a1, usd(1001)), Balance(a2, usd(998)));
             env(offer(a2, XRP(1.1), usd(1)), txflags(tfFillOrKill));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 1));
+            env.Require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 1));
 
             // test: A3 wants to buy from A1, must fail
-            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 1));
+            env.Require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 1));
             env(offer(a3, usd(1), XRP(1.9)), txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 0));
+            env.Require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 0));
 
             env(trust(g1, a1["USD"](0), tfClearFreeze));
             env.close();
@@ -836,26 +862,26 @@ class Freeze_test : public beast::unit_test::suite
         // the issuer
         if (features[featureDeepFreeze])
         {
-            env.require(Balance(a1, usd(1002)));
+            env.Require(Balance(a1, usd(1002)));
             env(offer(a1, XRP(1.9), usd(1)));
             env(offer(a1, usd(1), XRP(1.1)));
             env.close();
-            env.require(Balance(a1, usd(1002)), offers(a1, 2));
+            env.Require(Balance(a1, usd(1002)), offers(a1, 2));
 
             env(trust(g1, a1["USD"](0), tfSetFreeze | tfSetDeepFreeze));
             env.close();
 
             // test: A2 wants to sell to A1, must fail
-            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)));
+            env.Require(Balance(a1, usd(1002)), Balance(a2, usd(997)));
             env(offer(a2, XRP(1.1), usd(1)), txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 1));
+            env.Require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 1));
 
             // test: A3 wants to buy from A1, must fail
-            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 1));
+            env.Require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 1));
             env(offer(a3, usd(1), XRP(1.9)), txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 0));
+            env.Require(Balance(a1, usd(1002)), Balance(a3, usd(1)), offers(a1, 0));
 
             env(trust(g1, a1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             env.close();
@@ -870,30 +896,30 @@ class Freeze_test : public beast::unit_test::suite
             // test: A1 can make passive buy offer
             env(offer(a1, usd(1), XRP(0.5)), txflags(tfPassive));
             env.close();
-            env.require(Balance(a1, usd(1002)), offers(a1, 1));
+            env.Require(Balance(a1, usd(1002)), offers(a1, 1));
             //  Cleanup
-            env(offerCancel(a1, env.seq(a1) - 1));
-            env.require(offers(a1, 0));
+            env(offerCancel(a1, env.Seq(a1) - 1));
+            env.Require(offers(a1, 0));
             env.close();
 
             // test: A1 wants to buy, must fail
             env(offer(a1, usd(1), XRP(2)), txflags(tfFillOrKill), Ter(tecKILLED));
             env.close();
-            env.require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 0));
+            env.Require(Balance(a1, usd(1002)), Balance(a2, usd(997)), offers(a1, 0));
 
             // test: A1 can create passive sell offer
             env(offer(a1, XRP(2), usd(1)), txflags(tfPassive));
             env.close();
-            env.require(Balance(a1, usd(1002)), offers(a1, 1));
+            env.Require(Balance(a1, usd(1002)), offers(a1, 1));
             // Cleanup
-            env(offerCancel(a1, env.seq(a1) - 1));
-            env.require(offers(a1, 0));
+            env(offerCancel(a1, env.Seq(a1) - 1));
+            env.Require(offers(a1, 0));
             env.close();
 
             // test: A1 can sell to A3
             env(offer(a1, XRP(1), usd(1)), txflags(tfFillOrKill));
             env.close();
-            env.require(Balance(a1, usd(1001)), offers(a1, 0));
+            env.Require(Balance(a1, usd(1001)), offers(a1, 0));
 
             env(trust(a1, limit, tfClearFreeze));
             env.close();
@@ -934,9 +960,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -1050,8 +1076,8 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         // Cleanup
-        env(offerCancel(a1, env.seq(a1) - 1));
-        env.require(offers(a1, 0));
+        env(offerCancel(a1, env.Seq(a1) - 1));
+        env.Require(offers(a1, 0));
         env.close();
 
         env(offer(a2, usd(100), XRP(100)), txflags(tfPassive));
@@ -1147,8 +1173,8 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         // Cleanup
-        env(offerCancel(a1, env.seq(a1) - 1));
-        env.require(offers(a1, 0));
+        env(offerCancel(a1, env.Seq(a1) - 1));
+        env.Require(offers(a1, 0));
         env.close();
     }
 
@@ -1160,9 +1186,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -1282,9 +1308,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -1300,7 +1326,7 @@ class Freeze_test : public beast::unit_test::suite
 
         // Confirming we can write and cash checks
         {
-            uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
+            uint256 const checkId{getCheckIndex(g1, env.Seq(g1))};
             env(check::create(g1, a1, usd(10)));
             env.close();
             env(check::cash(a1, checkId, usd(10)));
@@ -1308,7 +1334,7 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
+            uint256 const checkId{getCheckIndex(g1, env.Seq(g1))};
             env(check::create(g1, a2, usd(10)));
             env.close();
             env(check::cash(a2, checkId, usd(10)));
@@ -1316,7 +1342,7 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+            uint256 const checkId{getCheckIndex(a1, env.Seq(a1))};
             env(check::create(a1, g1, usd(10)));
             env.close();
             env(check::cash(g1, checkId, usd(10)));
@@ -1324,7 +1350,7 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+            uint256 const checkId{getCheckIndex(a1, env.Seq(a1))};
             env(check::create(a1, a2, usd(10)));
             env.close();
             env(check::cash(a2, checkId, usd(10)));
@@ -1332,7 +1358,7 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
+            uint256 const checkId{getCheckIndex(a2, env.Seq(a2))};
             env(check::create(a2, g1, usd(10)));
             env.close();
             env(check::cash(g1, checkId, usd(10)));
@@ -1340,7 +1366,7 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         {
-            uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
+            uint256 const checkId{getCheckIndex(a2, env.Seq(a2))};
             env(check::create(a2, a1, usd(10)));
             env.close();
             env(check::cash(a1, checkId, usd(10)));
@@ -1355,7 +1381,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: issuer writes check to A1.
             {
-                uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
+                uint256 const checkId{getCheckIndex(g1, env.Seq(g1))};
                 env(check::create(g1, a1, usd(10)));
                 env.close();
                 env(check::cash(a1, checkId, usd(10)), Ter(tecFROZEN));
@@ -1364,7 +1390,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A2 writes check to A1.
             {
-                uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
+                uint256 const checkId{getCheckIndex(a2, env.Seq(a2))};
                 env(check::create(a2, a1, usd(10)));
                 env.close();
                 // Same as previous test
@@ -1390,10 +1416,10 @@ class Freeze_test : public beast::unit_test::suite
             env(trust(g1, a1["USD"](0), tfClearFreeze));
             env.close();
 
-            uint256 const checkId1{getCheckIndex(a1, env.seq(a1))};
+            uint256 const checkId1{getCheckIndex(a1, env.Seq(a1))};
             env(check::create(a1, g1, usd(10)));
             env.close();
-            uint256 const checkId2{getCheckIndex(a1, env.seq(a1))};
+            uint256 const checkId2{getCheckIndex(a1, env.Seq(a1))};
             env(check::create(a1, a2, usd(10)));
             env.close();
 
@@ -1425,7 +1451,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: issuer writes check to A1.
             {
-                uint256 const checkId{getCheckIndex(g1, env.seq(g1))};
+                uint256 const checkId{getCheckIndex(g1, env.Seq(g1))};
                 env(check::create(g1, a1, usd(10)));
                 env.close();
 
@@ -1435,7 +1461,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A2 writes check to A1.
             {
-                uint256 const checkId{getCheckIndex(a2, env.seq(a2))};
+                uint256 const checkId{getCheckIndex(a2, env.Seq(a2))};
                 env(check::create(a2, a1, usd(10)));
                 env.close();
                 // Same as previous test
@@ -1461,10 +1487,10 @@ class Freeze_test : public beast::unit_test::suite
             env(trust(g1, a1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             env.close();
 
-            uint256 const checkId1{getCheckIndex(a1, env.seq(a1))};
+            uint256 const checkId1{getCheckIndex(a1, env.Seq(a1))};
             env(check::create(a1, g1, usd(10)));
             env.close();
-            uint256 const checkId2{getCheckIndex(a1, env.seq(a1))};
+            uint256 const checkId2{getCheckIndex(a1, env.Seq(a1))};
             env(check::create(a1, a2, usd(10)));
             env.close();
 
@@ -1507,7 +1533,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 writes check to issuer
             {
-                uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+                uint256 const checkId{getCheckIndex(a1, env.Seq(a1))};
                 env(check::create(a1, g1, usd(10)));
                 env.close();
                 env(check::cash(g1, checkId, usd(10)));
@@ -1516,7 +1542,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 writes check to A2
             {
-                uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+                uint256 const checkId{getCheckIndex(a1, env.Seq(a1))};
                 env(check::create(a1, a2, usd(10)));
                 env.close();
                 env(check::cash(a2, checkId, usd(10)));
@@ -1548,7 +1574,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 writes check to issuer
             {
-                uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+                uint256 const checkId{getCheckIndex(a1, env.Seq(a1))};
                 env(check::create(a1, g1, usd(10)));
                 env.close();
                 env(check::cash(g1, checkId, usd(10)), Ter(tecPATH_PARTIAL));
@@ -1557,7 +1583,7 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 writes check to A2
             {
-                uint256 const checkId{getCheckIndex(a1, env.seq(a1))};
+                uint256 const checkId{getCheckIndex(a1, env.Seq(a1))};
                 env(check::create(a1, a2, usd(10)));
                 env.close();
                 env(check::cash(a2, checkId, usd(10)), Ter(tecPATH_PARTIAL));
@@ -1576,9 +1602,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -1591,7 +1617,7 @@ class Freeze_test : public beast::unit_test::suite
         env(pay(g1, a2, usd(1000)));
         env.close();
 
-        AMM ammG1(env, g1, XRP(1'000), usd(1'000));
+        AMM const ammG1(env, g1, XRP(1'000), usd(1'000));
         env.close();
 
         // Testing basic payment using AMM when freezing one of the trust lines.
@@ -1666,9 +1692,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -1751,7 +1777,7 @@ class Freeze_test : public beast::unit_test::suite
             env(token::mint(a2, 0), txflags(tfTransferable));
             env.close();
 
-            auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+            auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
             env(token::createOffer(a1, nftID, usd(10)), token::owner(a2));
             env.close();
 
@@ -1827,7 +1853,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing brokered offer acceptance
         if (features[featureDeepFreeze] && features[fixEnforceNFTokenTrustlineV2])
         {
-            Account broker{"broker"};
+            Account const broker{"broker"};
             env.fund(XRP(10000), broker);
             env.close();
             env(trust(g1, broker["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
@@ -1837,10 +1863,10 @@ class Freeze_test : public beast::unit_test::suite
             env(token::mint(a2, 0), txflags(tfTransferable));
             env.close();
 
-            uint256 const sellIdx = keylet::nftoffer(a2, env.seq(a2)).key;
+            uint256 const sellIdx = keylet::nftoffer(a2, env.Seq(a2)).key;
             env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken));
             env.close();
-            auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+            auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
             env(token::createOffer(a1, nftID, usd(11)), token::owner(a2));
             env.close();
 
@@ -1853,7 +1879,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing transfer fee
         if (features[featureDeepFreeze] && features[fixEnforceNFTokenTrustlineV2])
         {
-            Account minter{"minter"};
+            Account const minter{"minter"};
             env.fund(XRP(10000), minter);
             env.close();
             env(trust(g1, minter["USD"](1000)));
@@ -1863,13 +1889,13 @@ class Freeze_test : public beast::unit_test::suite
             env(token::mint(minter, 0), token::xferFee(1u), txflags(tfTransferable));
             env.close();
 
-            uint256 const minterSellIdx = keylet::nftoffer(minter, env.seq(minter)).key;
+            uint256 const minterSellIdx = keylet::nftoffer(minter, env.Seq(minter)).key;
             env(token::createOffer(minter, nftID, drops(1)), txflags(tfSellNFToken));
             env.close();
             env(token::acceptSellOffer(a2, minterSellIdx));
             env.close();
 
-            uint256 const sellIdx = keylet::nftoffer(a2, env.seq(a2)).key;
+            uint256 const sellIdx = keylet::nftoffer(a2, env.Seq(a2)).key;
             env(token::createOffer(a2, nftID, usd(100)), txflags(tfSellNFToken));
             env.close();
             env(trust(g1, minter["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
@@ -1922,7 +1948,7 @@ class Freeze_test : public beast::unit_test::suite
         env(token::mint(account, 0), txflags(tfTransferable));
         env.close();
 
-        uint256 const sellOfferIndex = keylet::nftoffer(account, env.seq(account)).key;
+        uint256 const sellOfferIndex = keylet::nftoffer(account, env.Seq(account)).key;
         env(token::createOffer(account, nftID, currency), txflags(tfSellNFToken));
         env.close();
 

@@ -259,17 +259,46 @@ There is a Continuous Integration job that runs clang-tidy on pull requests. The
 
 This ensures that configuration changes don't introduce new warnings across the codebase.
 
+### Installing clang-tidy
+
+See the [environment setup guide](./docs/build/environment.md#clang-tidy) for platform-specific installation instructions.
+
 ### Running clang-tidy locally
 
 Before running clang-tidy, you must build the project to generate required files (particularly protobuf headers). Refer to [`BUILD.md`](./BUILD.md) for build instructions.
 
+#### Via pre-commit (recommended)
+
+If you have already installed the pre-commit hooks (see above), you can run clang-tidy on your staged files using:
+
+```
+TIDY=1 pre-commit run clang-tidy
+```
+
+This runs clang-tidy locally with the same configuration/flags as CI, scoped to your staged C++ files. The `TIDY=1` environment variable is required to opt in — without it the hook is skipped.
+
+You can also have clang-tidy run automatically on every `git commit` by setting `TIDY=1` in your shell environment:
+
+```
+export TIDY=1
+```
+
+With this set, the hook will run as part of `git commit` alongside the other pre-commit checks.
+
+#### Manually
+
 Then run clang-tidy on your local changes:
 
 ```
-run-clang-tidy -p build src tests
+run-clang-tidy -p build -allow-no-checks src tests
 ```
 
-This will check all source files in the `src` and `tests` directories using the compile commands from your `build` directory.
+This will check all source files in the `src`, `include` and `tests` directories using the compile commands from your `build` directory.
+If you wish to automatically fix whatever clang-tidy finds _and_ is capable of fixing, add `-fix` to the above command:
+
+```
+run-clang-tidy -p build -quiet -fix -allow-no-checks src tests
+```
 
 ## Contracts and instrumentation
 
@@ -524,7 +553,7 @@ All releases, including release candidates and betas, are handled
 differently from typical PRs. Most importantly, never use
 the Github UI to merge a release.
 
-Rippled uses a linear workflow model that can be summarized as:
+Xrpld uses a linear workflow model that can be summarized as:
 
 1. In between releases, developers work against the `develop` branch.
 2. Periodically, a maintainer will build and tag a beta version from

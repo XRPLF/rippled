@@ -1,6 +1,31 @@
-#include <test/jtx.h>
 
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/flags.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <tuple>
 
 namespace xrpl {
 
@@ -18,7 +43,7 @@ class NFTokenAuth_test : public beast::unit_test::suite
         env(token::mint(account, 0), token::xferFee(xfee), txflags(tfTransferable));
         env.close();
 
-        auto const sellIdx = keylet::nftoffer(account, env.seq(account)).key;
+        auto const sellIdx = keylet::nftoffer(account, env.Seq(account)).key;
         env(token::createOffer(account, nftID, currency), txflags(tfSellNFToken));
         env.close();
 
@@ -33,9 +58,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -49,7 +74,7 @@ public:
         env(pay(g1, a1, usd(1000)));
 
         auto const [nftID, _] = mintAndOfferNFT(env, a2, drops(1));
-        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
 
         // It should be possible to create a buy offer even if NFT owner is not
         // authorized
@@ -75,7 +100,7 @@ public:
             env(token::acceptBuyOffer(a2, buyIdx));
             env.close();
 
-            BEAST_EXPECT(env.balance(a2, usd) == usd(10));
+            BEAST_EXPECT(env.Balance(a2, usd) == usd(10));
         }
     }
 
@@ -86,9 +111,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -110,7 +135,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
@@ -132,9 +157,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -154,7 +179,7 @@ public:
         env(pay(g1, a2, usd(10)));
         env.close();
 
-        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
         env(token::createOffer(a1, nftID, usd(10)), token::owner(a2));
         env.close();
 
@@ -173,7 +198,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that offer can't be accepted even with balance
@@ -190,9 +215,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -219,7 +244,7 @@ public:
             // Authorizing trustline to make an offer creation possible
             env(trust(g1, usd(0), a2, tfSetfAuth));
             env.close();
-            auto const sellIdx = keylet::nftoffer(a2, env.seq(a2)).key;
+            auto const sellIdx = keylet::nftoffer(a2, env.Seq(a2)).key;
             env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken));
             env.close();
             //
@@ -243,7 +268,7 @@ public:
         }
         else
         {
-            auto const sellIdx = keylet::nftoffer(a2, env.seq(a2)).key;
+            auto const sellIdx = keylet::nftoffer(a2, env.Seq(a2)).key;
 
             // Old behavior: sell offer can be created without authorization
             env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken));
@@ -254,7 +279,7 @@ public:
             env(token::acceptSellOffer(a1, sellIdx));
             env.close();
 
-            BEAST_EXPECT(env.balance(a2, usd) == usd(10));
+            BEAST_EXPECT(env.Balance(a2, usd) == usd(10));
         }
     }
 
@@ -265,9 +290,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2);
@@ -293,7 +318,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             env(token::acceptSellOffer(a1, sellIdx), Ter(tecNO_AUTH));
@@ -307,10 +332,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account broker{"broker"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2, broker);
@@ -328,7 +353,7 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
         env(token::createOffer(a1, nftID, usd(11)), token::owner(a2));
         env.close();
 
@@ -360,7 +385,7 @@ public:
             env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(usd(1)));
             env.close();
 
-            BEAST_EXPECT(env.balance(broker, usd) == usd(1));
+            BEAST_EXPECT(env.Balance(broker, usd) == usd(1));
         }
     }
 
@@ -373,10 +398,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account broker{"broker"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2, broker);
@@ -397,7 +422,7 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
         env(token::createOffer(a1, nftID, usd(11)), token::owner(a2));
         env.close();
 
@@ -412,7 +437,7 @@ public:
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
@@ -433,10 +458,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account broker{"broker"};
+        Account const g1{"G1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, a1, a2, broker);
@@ -458,7 +483,7 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
         env(token::createOffer(a1, nftID, usd(11)), token::owner(a2));
         env.close();
 
@@ -495,7 +520,7 @@ public:
             env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(usd(1)));
             env.close();
 
-            BEAST_EXPECT(env.balance(a2, usd) == usd(10));
+            BEAST_EXPECT(env.Balance(a2, usd) == usd(10));
             return;
         }
     }
@@ -507,10 +532,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account g1{"G1"};
-        Account minter{"minter"};
-        Account a1{"A1"};
-        Account a2{"A2"};
+        Account const g1{"G1"};
+        Account const minter{"minter"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
         env.fund(XRP(10000), g1, minter, a1, a2);
@@ -534,7 +559,7 @@ public:
         auto const [nftID, minterSellIdx] = mintAndOfferNFT(env, minter, drops(1), 1);
         env(token::acceptSellOffer(a1, minterSellIdx));
 
-        uint256 const sellIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        uint256 const sellIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
         env(token::createOffer(a1, nftID, usd(100)), txflags(tfSellNFToken));
 
         if (features[fixEnforceNFTokenTrustlineV2])
@@ -549,7 +574,7 @@ public:
             env(token::acceptSellOffer(a2, sellIdx));
             env.close();
 
-            BEAST_EXPECT(env.balance(minter, usd) == usd(0.001));
+            BEAST_EXPECT(env.Balance(minter, usd) == usd(0.001));
         }
     }
 

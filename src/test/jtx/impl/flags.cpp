@@ -1,10 +1,15 @@
 #include <test/jtx/flags.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
+
+namespace xrpl::test::jtx {
 
 Json::Value
 fset(Account const& account, std::uint32_t on, std::uint32_t off)
@@ -55,6 +60,4 @@ Nflags::operator()(Env& env) const
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
 #include <test/csf/Scheduler.h>
 #include <test/csf/TrustGraph.h>
@@ -19,9 +20,7 @@
 
 #include <algorithm>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 namespace bc = boost::container;
 
@@ -62,8 +61,8 @@ struct Peer
             return proposal_.getJson();
         }
 
-        std::string
-        render() const
+        static std::string
+        render()
         {
             return "";
         }
@@ -231,7 +230,7 @@ struct Peer
     // Number of proposers in the prior round
     std::size_t prevProposers = 0;
     // Duration of prior round
-    std::chrono::milliseconds prevRoundTime;
+    std::chrono::milliseconds prevRoundTime{};
 
     // Quorum of validations needed for a ledger to be fully validated
     // TODO: Use the logic in ValidatorList to set this dynamically
@@ -295,9 +294,13 @@ struct Peer
         using namespace std::chrono_literals;
 
         if (when == 0ns)
+        {
             what();
+        }
         else
+        {
             scheduler.in(when, std::forward<T>(what));
+        }
     }
 
     // Issue a new event to the collectors
@@ -340,8 +343,10 @@ struct Peer
     trusts(PeerID const& oId)
     {
         for (auto const p : trustGraph.trustedPeers(this))
+        {
             if (p->id == oId)
                 return true;
+        }
         return false;
     }
 
@@ -486,7 +491,7 @@ struct Peer
     Result
     onClose(Ledger const& prevLedger, NetClock::time_point closeTime, ConsensusMode mode)
     {
-        issue(CloseLedger{prevLedger, openTxs});
+        issue(CloseLedger{.prevLedger = prevLedger, .txs = openTxs});
 
         return Result(
             TxSet{openTxs},
@@ -506,16 +511,10 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        Json::Value const& consensusJson)
     {
         onAccept(
-            result,
-            prevLedger,
-            closeResolution,
-            rawCloseTimes,
-            mode,
-            std::move(consensusJson),
-            validating());
+            result, prevLedger, closeResolution, rawCloseTimes, mode, consensusJson, validating());
     }
 
     void
@@ -525,7 +524,7 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson,
+        Json::Value const& consensusJson,
         bool const validating)
     {
         schedule(delays.ledgerAccept, [=, this]() {
@@ -537,15 +536,14 @@ struct Peer
                 prevLedger, acceptedTxs.txs(), closeResolution, result.position.closeTime());
             ledgers[newLedger.id()] = newLedger;
 
-            issue(AcceptLedger{newLedger, lastClosedLedger});
+            issue(AcceptLedger{.ledger = newLedger, .prior = lastClosedLedger});
             prevProposers = result.proposers;
             prevRoundTime = result.roundTime.read();
             lastClosedLedger = newLedger;
 
-            auto const it = std::remove_if(openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
-                return acceptedTxs.exists(tx.id());
-            });
-            openTxs.erase(it, openTxs.end());
+            auto const removed = std::ranges::remove_if(
+                openTxs, [&](Tx const& tx) { return acceptedTxs.exists(tx.id()); });
+            openTxs.erase(removed.begin(), removed.end());
 
             // Only send validation if the new ledger is compatible with our
             // fully validated ledger
@@ -555,9 +553,9 @@ struct Peer
             if (runAsValidator && isCompatible && !consensusFail &&
                 validations.canValidateSeq(newLedger.seq()))
             {
-                bool isFull = proposing;
+                bool const isFull = proposing;
 
-                Validation v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
+                Validation const v{newLedger.id(), newLedger.seq(), now(), now(), key, id, isFull};
                 // share the new validation; it is trusted by the receiver
                 share(v);
                 // we trust ourselves
@@ -599,7 +597,7 @@ struct Peer
         if (netLgr != ledgerID)
         {
             JLOG(j.trace()) << Json::Compact(validations.getJsonTrie());
-            issue(WrongPrevLedger{ledgerID, netLgr});
+            issue(WrongPrevLedger{.wrong = ledgerID, .right = netLgr});
         }
 
         return netLgr;
@@ -672,7 +670,7 @@ struct Peer
         quorum = static_cast<std::size_t>(std::ceil(numTrustedPeers * 0.8));
         if (count >= quorum && ledger.isAncestor(fullyValidatedLedger))
         {
-            issue(FullyValidateLedger{ledger, fullyValidatedLedger});
+            issue(FullyValidateLedger{.ledger = ledger, .prior = fullyValidatedLedger});
             fullyValidatedLedger = ledger;
         }
     }
@@ -761,7 +759,7 @@ struct Peer
         // TODO: This always suppresses relay of peer positions already seen
         // Should it allow forwarding if for a recent ledger ?
         auto& dest = peerPositions[p.prevLedger()];
-        if (std::find(dest.begin(), dest.end(), p) != dest.end())
+        if (std::ranges::find(dest, p) != dest.end())
             return false;
 
         dest.push_back(p);
@@ -785,7 +783,7 @@ struct Peer
     {
         // Ignore and suppress relay of transactions already in last ledger
         TxSetType const& lastClosedTxs = lastClosedLedger.txs();
-        if (lastClosedTxs.find(tx) != lastClosedTxs.end())
+        if (lastClosedTxs.contains(tx))
             return false;
 
         // only relay if it was new to our open ledger
@@ -841,8 +839,8 @@ struct Peer
     {
     }
 
-    bool
-    validating() const
+    static bool
+    validating()
     {
         // does not matter
         return false;
@@ -882,10 +880,10 @@ struct Peer
         if (bestLCL == Ledger::ID{0})
             bestLCL = lastClosedLedger.id();
 
-        issue(StartRound{bestLCL, lastClosedLedger});
+        issue(StartRound{.bestLedger = bestLCL, .prevLedger = lastClosedLedger});
 
         // Not yet modeling dynamic UNL.
-        hash_set<PeerID> nowUntrusted;
+        hash_set<PeerID> const nowUntrusted;
         consensus.startRound(now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 
@@ -952,6 +950,4 @@ struct Peer
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

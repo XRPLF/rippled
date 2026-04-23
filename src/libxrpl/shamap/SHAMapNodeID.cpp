@@ -1,8 +1,15 @@
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
-#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <cstddef>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -87,7 +94,7 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
 
     if (size == 33)
     {
-        unsigned int depth = *(static_cast<unsigned char const*>(data) + 32);
+        unsigned int const depth = *(static_cast<unsigned char const*>(data) + 32);
         if (depth <= SHAMap::leafDepth)
         {
             auto const id = uint256::fromVoid(data);

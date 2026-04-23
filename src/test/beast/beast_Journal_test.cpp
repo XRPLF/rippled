@@ -1,5 +1,7 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+
+#include <string>
 
 namespace beast {
 
@@ -50,7 +52,7 @@ public:
         using namespace beast::severities;
         sink.threshold(kInfo);
 
-        Journal j(sink);
+        Journal const j(sink);
 
         j.trace() << " ";
         BEAST_EXPECT(sink.count() == 0);

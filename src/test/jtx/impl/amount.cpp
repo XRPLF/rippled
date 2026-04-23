@@ -1,9 +1,20 @@
-#include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 
-#include <xrpl/basics/safe_cast.h>
+#include <test/jtx/Account.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/UintTypes.h>
+
+#include <cassert>
+#include <cstdint>
 #include <iomanip>
+#include <ios>
+#include <ostream>
+#include <sstream>
+#include <string>
 
 namespace xrpl {
 namespace test {
@@ -79,8 +90,9 @@ operator<<(std::ostream& os, PrettyAmount const& amount)
     }
     else if (amount.value().holds<Issue>())
     {
-        os << amount.value().getText() << "/" << to_string(amount.value().issue().currency) << "("
-           << amount.name() << ")";
+        os << amount.value().getText() << "/"
+           << to_string(amount.value().asset().get<Issue>().currency) << "(" << amount.name()
+           << ")";
     }
     else
     {
@@ -109,7 +121,14 @@ IOU::operator()(detail::EpsilonMultiple m) const
 std::ostream&
 operator<<(std::ostream& os, IOU const& iou)
 {
-    os << to_string(iou.issue().currency) << "(" << iou.account.name() << ")";
+    os << to_string(iou.currency) << "(" << iou.account.name() << ")";
+    return os;
+}
+
+std::ostream&
+operator<<(std::ostream& os, MPT const& mpt)
+{
+    os << to_string(mpt.issuanceID);
     return os;
 }
 

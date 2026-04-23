@@ -2,9 +2,7 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Sets the literal QualityIn on a trust JTx. */
 class QualityIn
@@ -25,7 +23,7 @@ public:
 class QualityInPercent
 {
 private:
-    std::uint32_t qIn_;
+    std::uint32_t qIn_;  // NOLINT(cppcoreguidelines-use-default-member-init)
 
 public:
     explicit QualityInPercent(double percent);
@@ -53,7 +51,7 @@ public:
 class QualityOutPercent
 {
 private:
-    std::uint32_t qOut_;
+    std::uint32_t qOut_;  // NOLINT(cppcoreguidelines-use-default-member-init)
 
 public:
     explicit QualityOutPercent(double percent);
@@ -62,6 +60,4 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

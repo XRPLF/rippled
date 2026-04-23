@@ -1,13 +1,24 @@
-#include <xrpld/core/Config.h>
-#include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Cluster.h>
+
 #include <xrpld/overlay/ClusterNode.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <mutex>
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
@@ -18,7 +29,7 @@ Cluster::Cluster(beast::Journal j) : j_(j)
 std::optional<std::string>
 Cluster::member(PublicKey const& identity) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto iter = nodes_.find(identity);
     if (iter == nodes_.end())
@@ -29,7 +40,7 @@ Cluster::member(PublicKey const& identity) const
 std::size_t
 Cluster::size() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return nodes_.size();
 }
@@ -41,7 +52,7 @@ Cluster::update(
     std::uint32_t loadFee,
     NetClock::time_point reportTime)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto iter = nodes_.find(identity);
 
@@ -63,7 +74,7 @@ Cluster::update(
 void
 Cluster::forEach(std::function<void(ClusterNode const&)> func) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     for (auto const& ni : nodes_)
         func(ni);
 }

@@ -28,7 +28,7 @@ public:
             LogicError("LedgerHolder::set with nullptr");
         if (!ledger->isImmutable())
             LogicError("LedgerHolder::set with mutable Ledger");
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         heldLedger_ = std::move(ledger);
     }
 
@@ -36,14 +36,14 @@ public:
     std::shared_ptr<Ledger const>
     get()
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         return heldLedger_;
     }
 
     bool
     empty()
     {
-        std::lock_guard sl(lock_);
+        std::lock_guard const sl(lock_);
         return heldLedger_ == nullptr;
     }
 

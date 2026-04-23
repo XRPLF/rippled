@@ -1,22 +1,60 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_dex.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/token.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpld/app/main/LoadManager.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Subscribe_test : public beast::unit_test::suite
 {
@@ -461,7 +499,7 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
-                uint32_t netID = env.app().getNetworkIDService().getNetworkID();
+                uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
                 if (!jv.isMember(jss::network_id) || jv[jss::network_id] != netID)
                     return false;
 
@@ -783,10 +821,10 @@ public:
         using namespace jtx;
         using IdxHashVec = std::vector<std::tuple<int, std::string, bool, int>>;
 
-        Account alice("alice");
-        Account bob("bob");
-        Account carol("carol");
-        Account david("david");
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const david("david");
         ///////////////////////////////////////////////////////////////////
 
         /*
@@ -820,8 +858,8 @@ public:
                         idx = r[jss::account_history_tx_index].asInt();
                     if (r.isMember(jss::account_history_tx_first))
                         firstFlag = true;
-                    bool boundary = r.isMember(jss::account_history_boundary);
-                    int ledgerIdx = r[jss::ledger_index].asInt();
+                    bool const boundary = r.isMember(jss::account_history_boundary);
+                    int const ledgerIdx = r[jss::ledger_index].asInt();
                     if (r.isMember(jss::transaction) && r[jss::transaction].isMember(jss::hash))
                     {
                         auto t{r[jss::transaction]};
@@ -932,7 +970,7 @@ public:
         // (-10, "E5B8B...", true, 4
 
         auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
-            size_t numTx = vec.size();
+            size_t const numTx = vec.size();
             for (size_t i = 0; i < numTx; ++i)
             {
                 auto [idx, hash, boundary, ledger] = vec[i];
@@ -1075,7 +1113,7 @@ public:
             auto wscAccount = makeWSClient(env.app().config());
             auto wscTxHistory = makeWSClient(env.app().config());
 
-            std::array<Account, 2> accounts = {alice, bob};
+            std::array<Account, 2> const accounts = {alice, bob};
             env.fund(XRP(222222), accounts);
             BEAST_EXPECT(env.syncClose());
 
@@ -1143,7 +1181,7 @@ public:
             Env env(*this, singleThreadIo(envconfig()));
             auto const usdA = alice["USD"];
 
-            std::array<Account, 2> accounts = {alice, carol};
+            std::array<Account, 2> const accounts = {alice, carol};
             env.fund(XRP(333333), accounts);
             env.trust(usdA(20000), carol);
             BEAST_EXPECT(env.syncClose());
@@ -1180,7 +1218,7 @@ public:
              * long transaction history
              */
             Env env(*this, singleThreadIo(envconfig()));
-            std::array<Account, 2> accounts = {alice, carol};
+            std::array<Account, 2> const accounts = {alice, carol};
             env.fund(XRP(444444), accounts);
             BEAST_EXPECT(env.syncClose());
 
@@ -1234,7 +1272,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, singleThreadIo(envconfig()), all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
         auto const carol = permDex.carol;
@@ -1331,8 +1369,8 @@ public:
                         return nftID;
                     });
                 // Sort both array to prepare for comparison
-                std::sort(metaIDs.begin(), metaIDs.end());
-                std::sort(actualNftIDs.begin(), actualNftIDs.end());
+                std::ranges::sort(metaIDs);
+                std::ranges::sort(actualNftIDs);
 
                 // Make sure the expect number of NFTs is correct
                 BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
@@ -1372,12 +1410,12 @@ public:
             // Alice creates one sell offer for each NFT
             // Verify the offer indexes are correct in the NFTokenCreateOffer tx
             // meta
-            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId1, drops(1)), txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId2, drops(1)), txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -1391,7 +1429,7 @@ public:
 
             // Bobs creates a buy offer for nftId1
             // Verify the offer id is correct in the NFTokenCreateOffer tx meta
-            auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            auto const bobBuyOfferIndex = keylet::nftoffer(bob, env.Seq(bob)).key;
             env(token::createOffer(bob, nftId1, drops(1)), token::owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(bobBuyOfferIndex);
@@ -1412,7 +1450,7 @@ public:
             verifyNFTokenID(nftId);
 
             // Alice creates sell offer and set broker as destination
-            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const offerAliceToBroker = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId, drops(1)),
                 token::destination(broker),
                 txflags(tfSellNFToken));
@@ -1420,7 +1458,7 @@ public:
             verifyNFTokenOfferID(offerAliceToBroker);
 
             // Bob creates buy offer
-            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.seq(bob)).key;
+            uint256 const offerBobToBroker = keylet::nftoffer(bob, env.Seq(bob)).key;
             env(token::createOffer(bob, nftId, drops(1)), token::owner(alice));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(offerBobToBroker);
@@ -1441,12 +1479,12 @@ public:
             verifyNFTokenID(nftId);
 
             // Alice creates 2 sell offers for the same NFT
-            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex1 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex1);
 
-            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceOfferIndex2 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::createOffer(alice, nftId, drops(1)), txflags(tfSellNFToken));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceOfferIndex2);
@@ -1460,7 +1498,7 @@ public:
 
         if (features[featureNFTokenMintOffer])
         {
-            uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.seq(alice)).key;
+            uint256 const aliceMintWithOfferIndex1 = keylet::nftoffer(alice, env.Seq(alice)).key;
             env(token::mint(alice), token::amount(XRP(0)));
             BEAST_EXPECT(env.syncClose());
             verifyNFTokenOfferID(aliceMintWithOfferIndex1);
@@ -1493,5 +1531,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Subscribe, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

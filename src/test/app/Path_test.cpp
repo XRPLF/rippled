@@ -1,30 +1,62 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
 #include <test/jtx/permissioned_dex.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 
 #include <chrono>
 #include <condition_variable>
+#include <cstdint>
+#include <memory>
 #include <mutex>
 #include <optional>
 #include <string>
-#include <thread>
+#include <tuple>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -100,7 +132,7 @@ public:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::lock_guard const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }
@@ -123,16 +155,16 @@ public:
         Resource::Consumer c;
 
         RPC::JsonContext context{
-            {env.journal,
-             app,
-             loadType,
-             app.getOPs(),
-             app.getLedgerMaster(),
-             c,
-             Role::USER,
-             {},
-             {},
-             RPC::apiVersionIfUnspecified},
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiVersionIfUnspecified},
             {},
             {}};
 
@@ -234,16 +266,16 @@ public:
         Resource::Consumer c;
 
         RPC::JsonContext context{
-            {env.journal,
-             app,
-             loadType,
-             app.getOPs(),
-             app.getLedgerMaster(),
-             c,
-             Role::USER,
-             {},
-             {},
-             RPC::apiVersionIfUnspecified},
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiVersionIfUnspecified},
             {},
             {}};
         Json::Value result;
@@ -336,10 +368,10 @@ public:
         env.trust(usd(700), "bob");
         env(pay(gw, "alice", usd(70)));
         env(pay("alice", "bob", usd(24)));
-        env.require(Balance("alice", usd(46)));
-        env.require(Balance(gw, Account("alice")["USD"](-46)));
-        env.require(Balance("bob", usd(24)));
-        env.require(Balance(gw, Account("bob")["USD"](-24)));
+        env.Require(Balance("alice", usd(46)));
+        env.Require(Balance(gw, Account("alice")["USD"](-46)));
+        env.Require(Balance("bob", usd(24)));
+        env.Require(Balance(gw, Account("bob")["USD"](-24)));
     }
 
     void
@@ -523,14 +555,14 @@ public:
             env(pay("alice", "bob", Account("bob")["USD"](140)), Paths(Account("alice")["USD"]));
         }
 
-        env.require(Balance("alice", usd(0)));
-        env.require(Balance("alice", gw2Usd(0)));
-        env.require(Balance("bob", usd(70)));
-        env.require(Balance("bob", gw2Usd(70)));
-        env.require(Balance(gw, Account("alice")["USD"](0)));
-        env.require(Balance(gw, Account("bob")["USD"](-70)));
-        env.require(Balance(gw2, Account("alice")["USD"](0)));
-        env.require(Balance(gw2, Account("bob")["USD"](-70)));
+        env.Require(Balance("alice", usd(0)));
+        env.Require(Balance("alice", gw2Usd(0)));
+        env.Require(Balance("bob", usd(70)));
+        env.Require(Balance("bob", gw2Usd(70)));
+        env.Require(Balance(gw, Account("alice")["USD"](0)));
+        env.Require(Balance(gw, Account("bob")["USD"](-70)));
+        env.Require(Balance(gw2, Account("alice")["USD"](0)));
+        env.Require(Balance(gw2, Account("bob")["USD"](-70)));
     }
 
     void
@@ -567,14 +599,14 @@ public:
             env(pay(gw2, "alice", gw2Usd(70)));
             env(pay("alice", "bob", usd(70)));
         }
-        env.require(Balance("alice", usd(0)));
-        env.require(Balance("alice", gw2Usd(70)));
-        env.require(Balance("bob", usd(70)));
-        env.require(Balance("bob", gw2Usd(0)));
-        env.require(Balance(gw, Account("alice")["USD"](0)));
-        env.require(Balance(gw, Account("bob")["USD"](-70)));
-        env.require(Balance(gw2, Account("alice")["USD"](-70)));
-        env.require(Balance(gw2, Account("bob")["USD"](0)));
+        env.Require(Balance("alice", usd(0)));
+        env.Require(Balance("alice", gw2Usd(70)));
+        env.Require(Balance("bob", usd(70)));
+        env.Require(Balance("bob", gw2Usd(0)));
+        env.Require(Balance(gw, Account("alice")["USD"](0)));
+        env.Require(Balance(gw, Account("bob")["USD"](-70)));
+        env.Require(Balance(gw2, Account("alice")["USD"](-70)));
+        env.Require(Balance(gw2, Account("bob")["USD"](0)));
     }
 
     void
@@ -599,14 +631,14 @@ public:
         env(pay("alice", "bob", Account("bob")["USD"](77)),
             sendmax(Account("alice")["USD"](100)),
             Paths(Account("alice")["USD"]));
-        env.require(Balance("alice", usd(0)));
-        env.require(Balance("alice", gw2Usd(62.3)));
-        env.require(Balance("bob", usd(70)));
-        env.require(Balance("bob", gw2Usd(7)));
-        env.require(Balance(gw, Account("alice")["USD"](0)));
-        env.require(Balance(gw, Account("bob")["USD"](-70)));
-        env.require(Balance(gw2, Account("alice")["USD"](-62.3)));
-        env.require(Balance(gw2, Account("bob")["USD"](-7)));
+        env.Require(Balance("alice", usd(0)));
+        env.Require(Balance("alice", gw2Usd(62.3)));
+        env.Require(Balance("bob", usd(70)));
+        env.Require(Balance("bob", gw2Usd(7)));
+        env.Require(Balance(gw, Account("alice")["USD"](0)));
+        env.Require(Balance(gw, Account("bob")["USD"](-70)));
+        env.Require(Balance(gw2, Account("alice")["USD"](-62.3)));
+        env.Require(Balance(gw2, Account("bob")["USD"](-7)));
     }
 
     void
@@ -666,8 +698,8 @@ public:
         env.trust(Account("alice")["USD"](100), "dan");
         env.trust(Account("carol")["USD"](100), "dan");
         env(pay("bob", "carol", Account("bob")["USD"](75)));
-        env.require(Balance("bob", Account("carol")["USD"](-75)));
-        env.require(Balance("carol", Account("bob")["USD"](75)));
+        env.Require(Balance("bob", Account("carol")["USD"](-75)));
+        env.Require(Balance("carol", Account("bob")["USD"](75)));
         env.close();
 
         std::optional<uint256> domainID;
@@ -687,16 +719,16 @@ public:
             env, "alice", "bob", Account("alice")["USD"](25), std::nullopt, std::nullopt, domainID);
         BEAST_EXPECT(std::get<0>(result).empty());
 
-        env.require(Balance("alice", Account("bob")["USD"](0)));
-        env.require(Balance("alice", Account("dan")["USD"](0)));
-        env.require(Balance("bob", Account("alice")["USD"](0)));
-        env.require(Balance("bob", Account("carol")["USD"](-75)));
-        env.require(Balance("bob", Account("dan")["USD"](0)));
-        env.require(Balance("carol", Account("bob")["USD"](75)));
-        env.require(Balance("carol", Account("dan")["USD"](0)));
-        env.require(Balance("dan", Account("alice")["USD"](0)));
-        env.require(Balance("dan", Account("bob")["USD"](0)));
-        env.require(Balance("dan", Account("carol")["USD"](0)));
+        env.Require(Balance("alice", Account("bob")["USD"](0)));
+        env.Require(Balance("alice", Account("dan")["USD"](0)));
+        env.Require(Balance("bob", Account("alice")["USD"](0)));
+        env.Require(Balance("bob", Account("carol")["USD"](-75)));
+        env.Require(Balance("bob", Account("dan")["USD"](0)));
+        env.Require(Balance("carol", Account("bob")["USD"](75)));
+        env.Require(Balance("carol", Account("dan")["USD"](0)));
+        env.Require(Balance("dan", Account("alice")["USD"](0)));
+        env.Require(Balance("dan", Account("bob")["USD"](0)));
+        env.Require(Balance("dan", Account("carol")["USD"](0)));
     }
 
     // alice_ -- limit 40 --> bob_
@@ -715,8 +747,8 @@ public:
         env.trust(Account("alice")["USD"](20), "carol");
         env.trust(Account("carol")["USD"](20), "dan");
         env(pay("alice", "bob", Account("bob")["USD"](55)), Paths(Account("alice")["USD"]));
-        env.require(Balance("bob", Account("alice")["USD"](40)));
-        env.require(Balance("bob", Account("dan")["USD"](15)));
+        env.Require(Balance("bob", Account("alice")["USD"](40)));
+        env.Require(Balance("bob", Account("dan")["USD"](15)));
     }
 
     // alice_ -120 USD-> edward -25 USD-> bob_
@@ -735,14 +767,14 @@ public:
         env.trust(Account("alice")["USD"](25), "carol");
         env.trust(Account("carol")["USD"](75), "dan");
         env(pay("alice", "bob", Account("bob")["USD"](50)), Paths(Account("alice")["USD"]));
-        env.require(Balance("alice", Account("edward")["USD"](-25)));
-        env.require(Balance("alice", Account("carol")["USD"](-25)));
-        env.require(Balance("bob", Account("edward")["USD"](25)));
-        env.require(Balance("bob", Account("dan")["USD"](25)));
-        env.require(Balance("carol", Account("alice")["USD"](25)));
-        env.require(Balance("carol", Account("dan")["USD"](-25)));
-        env.require(Balance("dan", Account("carol")["USD"](25)));
-        env.require(Balance("dan", Account("bob")["USD"](-25)));
+        env.Require(Balance("alice", Account("edward")["USD"](-25)));
+        env.Require(Balance("alice", Account("carol")["USD"](-25)));
+        env.Require(Balance("bob", Account("edward")["USD"](25)));
+        env.Require(Balance("bob", Account("dan")["USD"](25)));
+        env.Require(Balance("carol", Account("alice")["USD"](25)));
+        env.Require(Balance("carol", Account("dan")["USD"](-25)));
+        env.Require(Balance("dan", Account("carol")["USD"](25)));
+        env.Require(Balance("dan", Account("bob")["USD"](-25)));
     }
 
     // carol_ holds gateway AUD, sells gateway AUD for XRP
@@ -782,8 +814,8 @@ public:
             env.close();
         }
 
-        env.require(Balance("bob", aud(10)));
-        env.require(Balance("carol", aud(39)));
+        env.Require(Balance("bob", aud(10)));
+        env.Require(Balance("carol", aud(39)));
 
         auto const result = findPaths(
             env, "alice", "bob", Account("bob")["USD"](25), std::nullopt, std::nullopt, domainID);
@@ -897,8 +929,7 @@ public:
 
         env.trust(Account("bob")["USD"](0), "alice");
         env.trust(Account("alice")["USD"](0), "bob");
-        BEAST_EXPECT(
-            env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue())) == nullptr);
+        BEAST_EXPECT(env.le(keylet::line(Account("bob").id(), Account("alice")["USD"])) == nullptr);
     }
 
     void
@@ -947,8 +978,7 @@ public:
             BEAST_EXPECT(*it == jvL[it.memberName()]);
 
         env(pay("alice", "bob", Account("alice")["USD"](50)));
-        BEAST_EXPECT(
-            env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue())) == nullptr);
+        BEAST_EXPECT(env.le(keylet::line(Account("alice").id(), Account("bob")["USD"])) == nullptr);
     }
 
     void
@@ -959,13 +989,13 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account a3{"A3"};
-        Account g1{"G1"};
-        Account g2{"G2"};
-        Account g3{"G3"};
-        Account m1{"M1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const a3{"A3"};
+        Account const g1{"G1"};
+        Account const g2{"G2"};
+        Account const g3{"G3"};
+        Account const m1{"M1"};
 
         env.fund(XRP(100000), a1);
         env.fund(XRP(10000), a2);
@@ -1060,10 +1090,10 @@ public:
             "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account g3{"G3"};
-        Account m1{"M1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const g3{"G3"};
+        Account const m1{"M1"};
 
         env.fund(XRP(1000), a1, a2, g3);
         env.fund(XRP(11000), m1);
@@ -1120,11 +1150,11 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account g1Bs{"G1BS"};
-        Account g2Sw{"G2SW"};
-        Account m1{"M1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const g1Bs{"G1BS"};
+        Account const g2Sw{"G2SW"};
+        Account const m1{"M1"};
 
         env.fund(XRP(1000), g1Bs, g2Sw, a1, a2);
         env.fund(XRP(11000), m1);
@@ -1206,16 +1236,16 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account a3{"A3"};
-        Account a4{"A4"};
-        Account g1{"G1"};
-        Account g2{"G2"};
-        Account g3{"G3"};
-        Account g4{"G4"};
-        Account m1{"M1"};
-        Account m2{"M2"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const a3{"A3"};
+        Account const a4{"A4"};
+        Account const g1{"G1"};
+        Account const g2{"G2"};
+        Account const g3{"G3"};
+        Account const g4{"G4"};
+        Account const m1{"M1"};
+        Account const m2{"M2"};
 
         env.fund(XRP(1000), a1, a2, a3, g1, g2, g3, g4);
         env.fund(XRP(10000), a4);
@@ -1349,12 +1379,12 @@ public:
             (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
-        Account a1{"A1"};
-        Account a2{"A2"};
-        Account a3{"A3"};
-        Account g1{"G1"};
-        Account g2{"G2"};
-        Account m1{"M1"};
+        Account const a1{"A1"};
+        Account const a2{"A2"};
+        Account const a3{"A3"};
+        Account const g1{"G1"};
+        Account const g2{"G2"};
+        Account const m1{"M1"};
 
         env.fund(XRP(11000), m1);
         env.fund(XRP(1000), a1, a2, a3, g1, g2);
@@ -1539,16 +1569,16 @@ public:
         // lambda param that creates different types of offers
         auto testPathfind = [&](auto func, bool const domainEnabled = false) {
             Env env = pathTestEnv();
-            Account a1{"A1"};
-            Account a2{"A2"};
-            Account a3{"A3"};
-            Account a4{"A4"};
-            Account g1{"G1"};
-            Account g2{"G2"};
-            Account g3{"G3"};
-            Account g4{"G4"};
-            Account m1{"M1"};
-            Account m2{"M2"};
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            Account const a3{"A3"};
+            Account const a4{"A4"};
+            Account const g1{"G1"};
+            Account const g2{"G2"};
+            Account const g3{"G3"};
+            Account const g4{"G4"};
+            Account const m1{"M1"};
+            Account const m2{"M2"};
 
             env.fund(XRP(1000), a1, a2, a3, g1, g2, g3, g4);
             env.fund(XRP(10000), a4);
@@ -1815,9 +1845,9 @@ public:
         testcase("AMM not used in domain path");
         using namespace jtx;
         Env env = pathTestEnv();
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const& [gw_, domainOwner, alice_, bob_, carol_, USD, domainID, credType] = permDex;
-        AMM amm(env, alice_, XRP(10), USD(50));
+        AMM const amm(env, alice_, XRP(10), USD(50));
 
         STPathSet st;
         STAmount sa, da;
@@ -1882,5 +1912,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Path, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

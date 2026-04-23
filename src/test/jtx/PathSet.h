@@ -6,8 +6,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /** Count offer
  */
@@ -15,13 +14,13 @@ inline std::size_t
 countOffers(
     jtx::Env& env,
     jtx::Account const& account,
-    Issue const& takerPays,
-    Issue const& takerGets)
+    Asset const& takerPays,
+    Asset const& takerGets)
 {
     size_t count = 0;
     forEachItem(*env.current(), account, [&](std::shared_ptr<SLE const> const& sle) {
-        if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).issue() == takerPays &&
-            sle->getFieldAmount(sfTakerGets).issue() == takerGets)
+        if (sle->getType() == ltOFFER && sle->getFieldAmount(sfTakerPays).asset() == takerPays &&
+            sle->getFieldAmount(sfTakerGets).asset() == takerGets)
             ++count;
     });
     return count;
@@ -58,7 +57,7 @@ isOffer(
 /** An offer exists
  */
 inline bool
-isOffer(jtx::Env& env, jtx::Account const& account, Issue const& takerPays, Issue const& takerGets)
+isOffer(jtx::Env& env, jtx::Account const& account, Asset const& takerPays, Asset const& takerGets)
 {
     return countOffers(env, account, takerPays, takerGets) > 0;
 }
@@ -83,6 +82,8 @@ public:
     }
     TestPath&
     push_back(Issue const& iss);
+    TestPath&
+    push_back(MPTIssue const& iss);
     TestPath&
     push_back(jtx::Account const& acc);
     TestPath&
@@ -115,9 +116,20 @@ TestPath::push_back(Issue const& iss)
 }
 
 inline TestPath&
+TestPath::push_back(MPTIssue const& iss)
+{
+    path.emplace_back(
+        STPathElement::typeMPT | STPathElement::typeIssuer,
+        beast::zero,
+        iss.getMptID(),
+        iss.getIssuer());
+    return *this;
+}
+
+inline TestPath&
 TestPath::push_back(jtx::Account const& account)
 {
-    path.emplace_back(account.id(), beast::zero, beast::zero);
+    path.emplace_back(account.id(), Currency{beast::zero}, beast::zero);
     return *this;
 }
 
@@ -173,5 +185,4 @@ private:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

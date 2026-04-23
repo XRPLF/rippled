@@ -3,11 +3,19 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
 
+#include <boost/beast/core/string_type.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
 #include <algorithm>
+#include <cstdint>
 #include <functional>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <vector>
 
 namespace xrpl {
 
@@ -21,9 +29,8 @@ namespace xrpl {
 constexpr ProtocolVersion const kSUPPORTED_PROTOCOL_LIST[]
 {
     {2, 1},
-    {2, 2}
+    {2, 2},
 };
-// clang-format on
 
 // This ugly construct ensures that supportedProtocolList is sorted in strictly
 // ascending order and doesn't contain any duplicates.
@@ -61,7 +68,7 @@ toString(ProtocolVersion const& p)
 std::vector<ProtocolVersion>
 parseProtocolVersions(boost::beast::string_view const& value)
 {
-    static boost::regex kRE(
+    static boost::regex const kRE(
         "^"                        // start of line
         "XRPL/"                    // The string "XRPL/"
         "([2-9]|(?:[1-9][0-9]+))"  // a number (greater than 2 with no leading
@@ -99,8 +106,9 @@ parseProtocolVersions(boost::beast::string_view const& value)
     }
 
     // We guarantee that the returned list is sorted and contains no duplicates:
-    std::sort(result.begin(), result.end());
-    result.erase(std::unique(result.begin(), result.end()), result.end());
+    std::ranges::sort(result);
+    auto const uniq = std::ranges::unique(result);
+    result.erase(uniq.begin(), uniq.end());
 
     return result;
 }
@@ -115,9 +123,8 @@ negotiateProtocolVersion(std::vector<ProtocolVersion> const& versions)
     // output of std::set_intersection is sorted, that item is always going
     // to be the last one. So we get a little clever and avoid the need for
     // a container:
-    std::function<void(ProtocolVersion const&)> pickVersion = [&result](ProtocolVersion const& v) {
-        result = v;
-    };
+    std::function<void(ProtocolVersion const&)> const pickVersion =
+        [&result](ProtocolVersion const& v) { result = v; };
 
     std::set_intersection(
         std::begin(versions),

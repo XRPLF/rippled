@@ -3,6 +3,8 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -16,7 +18,7 @@ class STPathElement final : public CountedObject<STPathElement>
 {
     unsigned int type_;
     AccountID accountID_;
-    Currency currencyID_;
+    PathAsset assetID_;
     AccountID issuerID_;
 
     bool is_offer_;
@@ -28,8 +30,10 @@ public:
         typeAccount = 0x01,   // Rippling through an account (vs taking an offer).
         typeCurrency = 0x10,  // Currency follows.
         typeIssuer = 0x20,    // Issuer follows.
+        typeMPT = 0x40,       // MPT follows.
         typeBoundary = 0xFF,  // Boundary between alternate paths.
-        typeAll = typeAccount | typeCurrency | typeIssuer,
+        typeAsset = typeCurrency | typeMPT,
+        typeAll = typeAccount | typeCurrency | typeIssuer | typeMPT,
         // Combination of all types.
     };
 
@@ -40,19 +44,19 @@ public:
 
     STPathElement(
         std::optional<AccountID> const& account,
-        std::optional<Currency> const& currency,
+        std::optional<PathAsset> const& asset,
         std::optional<AccountID> const& issuer);
 
     STPathElement(
         AccountID const& account,
-        Currency const& currency,
+        PathAsset const& asset,
         AccountID const& issuer,
-        bool forceCurrency = false);
+        bool forceAsset = false);
 
     STPathElement(
         unsigned int uType,
         AccountID const& account,
-        Currency const& currency,
+        PathAsset const& asset,
         AccountID const& issuer);
 
     auto
@@ -71,6 +75,12 @@ public:
     hasCurrency() const;
 
     bool
+    hasMPT() const;
+
+    bool
+    hasAsset() const;
+
+    bool
     isNone() const;
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
@@ -78,11 +88,20 @@ public:
     AccountID const&
     getAccountID() const;
 
+    PathAsset const&
+    getPathAsset() const;
+
     Currency const&
     getCurrency() const;
 
+    MPTID const&
+    getMPTID() const;
+
     AccountID const&
     getIssuerID() const;
+
+    bool
+    isType(Type const& pe) const;
 
     bool
     operator==(STPathElement const& t) const;
@@ -118,7 +137,7 @@ public:
     emplace_back(Args&&... args);
 
     bool
-    hasSeen(AccountID const& account, Currency const& currency, AccountID const& issuer) const;
+    hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const;
 
     Json::Value getJson(JsonOptions) const;
 
@@ -221,7 +240,7 @@ inline STPathElement::STPathElement() : type_(typeNone), is_offer_(true)
 
 inline STPathElement::STPathElement(
     std::optional<AccountID> const& account,
-    std::optional<Currency> const& currency,
+    std::optional<PathAsset> const& asset,
     std::optional<AccountID> const& issuer)
     : type_(typeNone)
 {
@@ -238,10 +257,10 @@ inline STPathElement::STPathElement(
             accountID_ != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
     }
 
-    if (currency)
+    if (asset)
     {
-        currencyID_ = *currency;
-        type_ |= typeCurrency;
+        assetID_ = *asset;
+        type_ |= assetID_.holds<Currency>() ? typeCurrency : typeMPT;
     }
 
     if (issuer)
@@ -256,20 +275,20 @@ inline STPathElement::STPathElement(
 
 inline STPathElement::STPathElement(
     AccountID const& account,
-    Currency const& currency,
+    PathAsset const& asset,
     AccountID const& issuer,
-    bool forceCurrency)
+    bool forceAsset)
     : type_(typeNone)
     , accountID_(account)
-    , currencyID_(currency)
+    , assetID_(asset)
     , issuerID_(issuer)
     , is_offer_(isXRP(accountID_))
 {
     if (!is_offer_)
         type_ |= typeAccount;
 
-    if (forceCurrency || !isXRP(currency))
-        type_ |= typeCurrency;
+    if (forceAsset || !isXRP(assetID_))
+        type_ |= asset.holds<Currency>() ? typeCurrency : typeMPT;
 
     if (!isXRP(issuer))
         type_ |= typeIssuer;
@@ -280,14 +299,17 @@ inline STPathElement::STPathElement(
 inline STPathElement::STPathElement(
     unsigned int uType,
     AccountID const& account,
-    Currency const& currency,
+    PathAsset const& asset,
     AccountID const& issuer)
     : type_(uType)
     , accountID_(account)
-    , currencyID_(currency)
+    , assetID_(asset)
     , issuerID_(issuer)
     , is_offer_(isXRP(accountID_))
 {
+    assetID_.visit(
+        [&](Currency const&) { type_ = type_ & (~Type::typeMPT); },
+        [&](MPTID const&) { type_ = type_ & (~Type::typeCurrency); });
     hash_value_ = getHash(*this);
 }
 
@@ -310,15 +332,33 @@ STPathElement::isAccount() const
 }
 
 inline bool
+STPathElement::isType(Type const& pe) const
+{
+    return (type_ & pe) != 0u;
+}
+
+inline bool
 STPathElement::hasIssuer() const
 {
-    return getNodeType() & STPathElement::typeIssuer;
+    return isType(STPathElement::typeIssuer);
 }
 
 inline bool
 STPathElement::hasCurrency() const
 {
-    return getNodeType() & STPathElement::typeCurrency;
+    return isType(STPathElement::typeCurrency);
+}
+
+inline bool
+STPathElement::hasMPT() const
+{
+    return isType(STPathElement::typeMPT);
+}
+
+inline bool
+STPathElement::hasAsset() const
+{
+    return isType(STPathElement::typeAsset);
 }
 
 inline bool
@@ -335,10 +375,22 @@ STPathElement::getAccountID() const
     return accountID_;
 }
 
+inline PathAsset const&
+STPathElement::getPathAsset() const
+{
+    return assetID_;
+}
+
 inline Currency const&
 STPathElement::getCurrency() const
 {
-    return currencyID_;
+    return assetID_.get<Currency>();
+}
+
+inline MPTID const&
+STPathElement::getMPTID() const
+{
+    return assetID_.get<MPTID>();
 }
 
 inline AccountID const&
@@ -351,7 +403,7 @@ inline bool
 STPathElement::operator==(STPathElement const& t) const
 {
     return (type_ & typeAccount) == (t.type_ & typeAccount) && hash_value_ == t.hash_value_ &&
-        accountID_ == t.accountID_ && currencyID_ == t.currencyID_ && issuerID_ == t.issuerID_;
+        accountID_ == t.accountID_ && assetID_ == t.assetID_ && issuerID_ == t.issuerID_;
 }
 
 inline bool

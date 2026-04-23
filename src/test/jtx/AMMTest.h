@@ -7,13 +7,11 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class AMM;
 
-enum class Fund { All, Acct, Gw, IOUOnly };
+enum class Fund { All, Acct, Gw, TokenOnly };
 
 struct TestAMMArg
 {
@@ -28,7 +26,13 @@ struct TestAMMArg
     bool noLog = false;
 };
 
-void
+// A hint to testAMM() or fund() to create/fund MPT.
+// A distinct MPT is created if both AMM assets
+// are MPT. The actual MPT asset can be accessed
+// via AMM::operator[](0|1).
+inline static auto AMMMPT = MPT("AMM");
+
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw_,
@@ -36,7 +40,7 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how);
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw_,
@@ -45,13 +49,14 @@ fund(
     std::vector<STAmount> const& amts = {},
     Fund how = Fund::All);
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts = {},
-    Fund how = Fund::All);
+    Fund how = Fund::All,
+    std::optional<Account> const& mptIssuer = std::nullopt);
 
 class AMMTestBase : public beast::unit_test::suite
 {
@@ -127,7 +132,7 @@ protected:
         void
         signal()
         {
-            std::lock_guard lk(mutex_);
+            std::lock_guard const lk(mutex_);
             signaled_ = true;
             cv_.notify_all();
         }
@@ -155,6 +160,4 @@ protected:
         std::optional<Currency> const& saSrcCurrency = std::nullopt);
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

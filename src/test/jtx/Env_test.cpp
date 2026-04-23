@@ -1,21 +1,69 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/memo.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/prop.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/require.h>
+#include <test/jtx/rpc.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
 
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/hash/uhash.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/NetworkOPs.h>
 
 #include <boost/lexical_cast.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <ostream>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <unordered_set>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Env_test : public beast::unit_test::suite
 {
@@ -37,7 +85,7 @@ public:
             Account b(a);
             a = b;
             a = std::move(b);
-            Account c(std::move(a));
+            Account const c(std::move(a));
         }
         Account("alice");                      // NOLINT(bugprone-unused-raii)
         Account("alice", KeyType::secp256k1);  // NOLINT(bugprone-unused-raii)
@@ -61,10 +109,10 @@ public:
         PrettyAmount(0u);  // NOLINT(bugprone-unused-raii)
         PrettyAmount(1u);  // NOLINT(bugprone-unused-raii)
         PrettyAmount(-1);  // NOLINT(bugprone-unused-raii)
-        static_assert(!std::is_trivially_constructible<PrettyAmount, char>::value, "");
-        static_assert(!std::is_trivially_constructible<PrettyAmount, unsigned char>::value, "");
-        static_assert(!std::is_trivially_constructible<PrettyAmount, short>::value, "");
-        static_assert(!std::is_trivially_constructible<PrettyAmount, unsigned short>::value, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, char>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned char>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, short>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned short>, "");
 
         try
         {
@@ -149,9 +197,9 @@ public:
 
             // flags
             env.fund(n, noripple("xavier"));
-            env.require(Nflags("xavier", asfDefaultRipple));
+            env.Require(Nflags("xavier", asfDefaultRipple));
             env.fund(n, "zachary");
-            env.require(Flags("zachary", asfDefaultRipple));
+            env.Require(Flags("zachary", asfDefaultRipple));
         }
 
         // trust
@@ -165,32 +213,32 @@ public:
         // balance
         {
             Env env(*this);
-            BEAST_EXPECT(env.balance(alice) == 0);
-            BEAST_EXPECT(env.balance(alice, usd) != 0);
-            BEAST_EXPECT(env.balance(alice, usd) == usd(0));
+            BEAST_EXPECT(env.Balance(alice) == 0);
+            BEAST_EXPECT(env.Balance(alice, usd) != 0);
+            BEAST_EXPECT(env.Balance(alice, usd) == usd(0));
             env.fund(n, alice, gw);
             env.close();
-            BEAST_EXPECT(env.balance(alice) == n);
-            BEAST_EXPECT(env.balance(gw) == n);
+            BEAST_EXPECT(env.Balance(alice) == n);
+            BEAST_EXPECT(env.Balance(gw) == n);
             env.trust(usd(1000), alice);
             env(pay(gw, alice, usd(10)));
-            BEAST_EXPECT(toString(env.balance("alice", usd)) == "10/USD(gw)");
-            BEAST_EXPECT(toString(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
+            BEAST_EXPECT(toString(env.Balance("alice", usd)) == "10/USD(gw)");
+            BEAST_EXPECT(toString(env.Balance(gw, alice["USD"])) == "-10/USD(alice)");
         }
 
         // seq
         {
             Env env(*this);
             env.fund(n, noripple("alice", gw));
-            BEAST_EXPECT(env.seq("alice") == 3);
-            BEAST_EXPECT(env.seq(gw) == 3);
+            BEAST_EXPECT(env.Seq("alice") == 3);
+            BEAST_EXPECT(env.Seq(gw) == 3);
         }
 
         // autofill
         {
             Env env(*this);
             env.fund(n, "alice");
-            env.require(Balance("alice", n));
+            env.Require(Balance("alice", n));
             env(noop("alice"), Fee(1), Ter(telINSUF_FEE_P));
             env(noop("alice"), Seq(kNONE), Ter(temMALFORMED));
             env(noop("alice"), Seq(kNONE), Fee(10), Ter(temMALFORMED));
@@ -210,17 +258,17 @@ public:
         Env env(*this);
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
-        env.require(Balance("alice", kNONE));
-        env.require(Balance("alice", XRP(kNONE)));
+        env.Require(Balance("alice", kNONE));
+        env.Require(Balance("alice", XRP(kNONE)));
         env.fund(XRP(10000), "alice", gw);
         env.close();
-        env.require(Balance("alice", usd(kNONE)));
+        env.Require(Balance("alice", usd(kNONE)));
         env.trust(usd(100), "alice");
-        env.require(Balance("alice", XRP(10000)));  // fee refunded
-        env.require(Balance("alice", usd(0)));
+        env.Require(Balance("alice", XRP(10000)));  // fee refunded
+        env.Require(Balance("alice", usd(0)));
         env(pay(gw, "alice", usd(10)), Require(Balance("alice", usd(10))));
 
-        env.require(Nflags("alice", asfRequireDest));
+        env.Require(Nflags("alice", asfRequireDest));
         env(fset("alice", asfRequireDest), Require(Flags("alice", asfRequireDest)));
         env(fclear("alice", asfRequireDest), Require(Nflags("alice", asfRequireDest)));
     }
@@ -271,10 +319,10 @@ public:
         auto const usd = gw["USD"];
 
         env.fund(XRP(10000), "alice", "bob", "carol", gw);
-        env.require(Balance("alice", XRP(10000)));
-        env.require(Balance("bob", XRP(10000)));
-        env.require(Balance("carol", XRP(10000)));
-        env.require(Balance(gw, XRP(10000)));
+        env.Require(Balance("alice", XRP(10000)));
+        env.Require(Balance("bob", XRP(10000)));
+        env.Require(Balance("carol", XRP(10000)));
+        env.Require(Balance(gw, XRP(10000)));
 
         env(pay(env.master, "alice", XRP(1000)), Fee(kNONE), Ter(temMALFORMED));
         env(pay(env.master, "alice", XRP(1000)), Fee(1), Ter(telINSUF_FEE_P));
@@ -286,19 +334,19 @@ public:
         env(pay(env.master, "dilbert", XRP(1000)), Sig(env.master));
 
         env.trust(usd(100), "alice", "bob", "carol");
-        env.require(Owners("alice", 1), lines("alice", 1));
+        env.Require(Owners("alice", 1), lines("alice", 1));
         env(rate(gw, 1.05));
 
         env(pay(gw, "carol", usd(50)));
-        env.require(Balance("carol", usd(50)));
-        env.require(Balance(gw, Account("carol")["USD"](-50)));
+        env.Require(Balance("carol", usd(50)));
+        env.Require(Balance(gw, Account("carol")["USD"](-50)));
 
         env(offer("carol", XRP(50), usd(50)), Require(Owners("carol", 2)));
         env(pay("alice", "bob", kANY(usd(10))), Ter(tecPATH_DRY));
         env(pay("alice", "bob", kANY(usd(10))), Paths(XRP), sendmax(XRP(10)), Ter(tecPATH_PARTIAL));
         env(pay("alice", "bob", kANY(usd(10))), Paths(XRP), sendmax(XRP(20)));
-        env.require(Balance("bob", usd(10)));
-        env.require(Balance("carol", usd(39.5)));
+        env.Require(Balance("bob", usd(10)));
+        env.Require(Balance("carol", usd(39.5)));
 
         env.memoize("eric");
         env(regkey("alice", "eric"));
@@ -308,9 +356,9 @@ public:
         env(noop("alice"), Sig("bob"), Ter(tefBAD_AUTH));
         env(fset("alice", asfDisableMaster), Ter(tecNEED_MASTER_KEY));
         env(fset("alice", asfDisableMaster), Sig("eric"), Ter(tecNEED_MASTER_KEY));
-        env.require(Nflags("alice", asfDisableMaster));
+        env.Require(Nflags("alice", asfDisableMaster));
         env(fset("alice", asfDisableMaster), Sig("alice"));
-        env.require(Flags("alice", asfDisableMaster));
+        env.Require(Flags("alice", asfDisableMaster));
         env(regkey("alice", kDISABLED), Ter(tecNO_ALTERNATIVE_KEY));
         env(noop("alice"));
         env(noop("alice"), Sig("alice"), Ter(tefMASTER_DISABLED));
@@ -319,7 +367,7 @@ public:
         env(fclear("alice", asfDisableMaster), Sig("bob"), Ter(tefBAD_AUTH));
         env(fclear("alice", asfDisableMaster), Sig("alice"), Ter(tefMASTER_DISABLED));
         env(fclear("alice", asfDisableMaster));
-        env.require(Nflags("alice", asfDisableMaster));
+        env.Require(Nflags("alice", asfDisableMaster));
         env(regkey("alice", kDISABLED));
         env(noop("alice"), Sig("eric"), Ter(tefBAD_AUTH));
         env(noop("alice"));
@@ -632,12 +680,12 @@ public:
 
         env.fund(XRP(10000), "alice");
         auto const baseFee = env.current()->fees().base;
-        std::uint32_t const aliceSeq = env.seq("alice");
+        std::uint32_t const aliceSeq = env.Seq("alice");
 
         // Sign jsonNoop.
         Json::Value jsonNoop = env.json(noop("alice"), Fee(baseFee), Seq(aliceSeq), Sig("alice"));
         // Re-sign jsonNoop.
-        JTx jt = env.jt(jsonNoop);
+        JTx const jt = env.jt(jsonNoop);
         env(jt);
     }
 
@@ -753,7 +801,7 @@ public:
             Env env{*this, missingSomeFeatures};
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -772,7 +820,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
 
             foreachFeature(supported, [&](uint256 const& f) {
-                bool has = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
@@ -788,7 +836,7 @@ public:
             BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2 + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
+                bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -812,7 +860,7 @@ public:
     testExceptionalShutdown()
     {
         except([this] {
-            jtx::Env env{
+            jtx::Env const env{
                 *this,
                 jtx::envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -854,5 +902,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Env, jtx, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

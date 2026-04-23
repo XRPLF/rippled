@@ -1,11 +1,37 @@
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+#include <chrono>
+#include <cstdint>
+#include <optional>
+
+namespace xrpl::test::jtx::oracle {
 
 struct Oracle_test : public beast::unit_test::suite
 {
@@ -23,7 +49,7 @@ private:
             Env env(*this);
             Account const bad("bad");
             env.memoize(bad);
-            Oracle oracle(
+            Oracle const oracle(
                 env,
                 {.owner = bad,
                  .seq = Seq(1),
@@ -35,7 +61,7 @@ private:
         {
             Env env(*this);
             env.fund(env.current()->fees().accountReserve(0), owner);
-            Oracle oracle(
+            Oracle const oracle(
                 env,
                 {.owner = owner,
                  .fee = static_cast<int>(env.current()->fees().base.drops()),
@@ -302,7 +328,7 @@ private:
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
-            Oracle oracle(
+            Oracle const oracle(
                 env,
                 {.owner = owner,
                  .series = {{"USD", "USD", 740, 1}},
@@ -315,7 +341,7 @@ private:
             Env env(*this);
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
-            Oracle oracle(
+            Oracle const oracle(
                 env,
                 {.owner = owner,
                  .series = {{"USD", "BTC", 740, maxPriceScale + 1}},
@@ -354,7 +380,7 @@ private:
             Env env(*this);
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = -1, .err = Ter(temBAD_FEE)});
-            Oracle oracle1(
+            Oracle const oracle1(
                 env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
             oracle.set(UpdateArg{.owner = owner, .fee = -1, .err = Ter(temBAD_FEE)});
         }
@@ -371,7 +397,7 @@ private:
             auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             auto const count = ownerCount(env, owner);
-            Oracle oracle(env, {.owner = owner, .series = series, .fee = baseFee});
+            Oracle const oracle(env, {.owner = owner, .series = series, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
             BEAST_EXPECT(ownerCount(env, owner) == (count + adj));
             auto const entry = oracle.ledgerEntry();
@@ -506,9 +532,9 @@ private:
             auto const acctDelFee{drops(env.current()->fees().increment)};
             env.fund(XRP(1'000), owner);
             env.fund(XRP(1'000), alice);
-            Oracle oracle(
+            Oracle const oracle(
                 env, {.owner = owner, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
-            Oracle oracle1(
+            Oracle const oracle1(
                 env,
                 {.owner = owner,
                  .documentID = 2,
@@ -693,7 +719,7 @@ private:
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}, {ed, 2}}), Sig(alie));
         env.close();
 
-        env.require(Owners(alice, 1));
+        env.Require(Owners(alice, 1));
 
         // Create
         // Force close (true) and time advancement because the close time
@@ -724,7 +750,7 @@ private:
         // remove the signer list
         env(signers(alice, jtx::kNONE), Sig(alie));
         env.close();
-        env.require(Owners(alice, 1));
+        env.Require(Owners(alice, 1));
         // create new signer list
         env(signers(alice, 2, {{zelda, 1}, {bob, 1}, {ed, 2}}), Sig(alie));
         env.close();
@@ -764,7 +790,7 @@ private:
 
         env.fund(XRP(1'000), owner);
         {
-            Oracle oracle(env, {.owner = owner, .fee = baseFee, .err = Ter(temDISABLED)});
+            Oracle const oracle(env, {.owner = owner, .fee = baseFee, .err = Ter(temDISABLED)});
         }
 
         {
@@ -792,10 +818,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Oracle, app, xrpl);
 
-}  // namespace oracle
-
-}  // namespace jtx
-
-}  // namespace test
-
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

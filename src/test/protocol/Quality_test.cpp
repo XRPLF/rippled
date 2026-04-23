@@ -1,6 +1,12 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
 #include <type_traits>
 
 namespace xrpl {
@@ -16,17 +22,17 @@ public:
 
     template <class Integer>
     static STAmount
-    amount(Integer integer, std::enable_if_t<std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral<Integer>::value, "");
+        static_assert(std::is_integral_v<Integer>, "");
         return STAmount(integer, false);
     }
 
     template <class Integer>
     static STAmount
-    amount(Integer integer, std::enable_if_t<!std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<!std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral<Integer>::value, "");
+        static_assert(std::is_integral_v<Integer>, "");
         if (integer < 0)
             return STAmount(-integer, true);
         return STAmount(integer, false);
@@ -66,7 +72,7 @@ public:
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
             ceilIn(
                 q,
@@ -95,7 +101,7 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
             ceilIn(
                 q,
@@ -124,7 +130,7 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
             ceilIn(
                 q,
@@ -159,7 +165,7 @@ public:
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
             ceilOut(
                 q,
@@ -188,7 +194,7 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
             ceilOut(
                 q,
@@ -217,7 +223,7 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
             ceilOut(
                 q,
@@ -251,7 +257,7 @@ public:
         testcase("raw");
 
         {
-            Quality q(0x5d048191fb9130daull);  // 126836389.7680090
+            Quality const q(0x5d048191fb9130daull);  // 126836389.7680090
             Amounts const value(
                 amount(349469768),                             // 349.469768 XRP
                 raw(2755280000000000ull, -15));                // 2.75528
@@ -266,7 +272,7 @@ public:
     {
         testcase("round");
 
-        Quality q(0x59148191fb913522ull);  // 57719.63525051682
+        Quality const q(0x59148191fb913522ull);  // 57719.63525051682
         BEAST_EXPECT(q.round(3).rate().getText() == "57800");
         BEAST_EXPECT(q.round(4).rate().getText() == "57720");
         BEAST_EXPECT(q.round(5).rate().getText() == "57720");

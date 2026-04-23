@@ -1,20 +1,42 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/make_SSLContext.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/Handoff.h>
 
-namespace xrpl {
-namespace test {
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <memory>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
 
 using namespace jtx;
 
@@ -59,7 +81,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         {
         }
 
-        ~PeerTest() = default;
+        ~PeerTest() override = default;
 
         void
         run() override
@@ -95,15 +117,15 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
     std::shared_ptr<PeerTest>
     createPeer(jtx::Env& env)
     {
-        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().overlay());
+        auto& overlay = dynamic_cast<OverlayImpl&>(env.app().getOverlay());
         boost::beast::http::request<boost::beast::http::dynamic_body> request;
         auto streamPtr =
             std::make_unique<stream_type>(socket_type(env.app().getIOContext()), *context_);
 
-        beast::IP::Endpoint local(boost::asio::ip::make_address("172.1.1.1"), 51235);
-        beast::IP::Endpoint remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
+        beast::IP::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
+        beast::IP::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
 
-        PublicKey key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
         auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
 
@@ -132,7 +154,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         hashes.reserve(numObjects);
         for (int i = 0; i < numObjects; ++i)
         {
-            uint256 hash(xrpl::sha512Half(i));
+            uint256 const hash(xrpl::sha512Half(i));
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));
@@ -199,5 +221,4 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(TMGetObjectByHash, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

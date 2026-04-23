@@ -4,9 +4,7 @@
 
 #include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Set the expected result code for a JTx
     The test will fail if the code doesn't match.
@@ -32,6 +30,4 @@ public:
     }
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

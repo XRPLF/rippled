@@ -1,29 +1,29 @@
-#include <xrpld/app/ledger/InboundLedgers.h>
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/rpc/RPCHandler.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-#include <xrpl/server/InfoSub.h>
-#include <xrpl/server/NetworkOPs.h>
 
 #include <atomic>
 #include <chrono>
+#include <cstdint>
+#include <exception>
+#include <string>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 namespace {
 
@@ -129,7 +129,7 @@ fillHandler(JsonContext& context, Handler const*& result)
             return rpcUNKNOWN_COMMAND;
     }
 
-    std::string strCommand = context.params.isMember(jss::command)
+    std::string const strCommand = context.params.isMember(jss::command)
         ? context.params[jss::command].asString()
         : context.params[jss::method].asString();
 
@@ -143,7 +143,7 @@ fillHandler(JsonContext& context, Handler const*& result)
     if (handler->role_ == Role::ADMIN && context.role != Role::ADMIN)
         return rpcNO_PERMISSION;
 
-    error_code_i res = conditionMet(handler->condition_, context);
+    error_code_i const res = conditionMet(handler->condition_, context);
     if (res != rpcSUCCESS)
     {
         return res;
@@ -234,5 +234,4 @@ roleRequired(unsigned int version, bool betaEnabled, std::string const& method)
     return handler->role_;
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

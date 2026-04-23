@@ -1,23 +1,46 @@
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/rocksdb.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/nodestore/detail/codec.h>
 
 #include <boost/beast/core/string.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
-#include <nudb/create.hpp>
+#include <nudb/create.hpp>  // IWYU pragma: keep
+#include <nudb/detail/bucket.hpp>
+#include <nudb/detail/buffer.hpp>
+#include <nudb/detail/bulkio.hpp>
+#include <nudb/detail/field.hpp>
 #include <nudb/detail/format.hpp>
+#include <nudb/detail/stream.hpp>
+#include <nudb/error.hpp>
+#include <nudb/file.hpp>
+#include <nudb/native_file.hpp>
 #include <nudb/xxhasher.hpp>
+#include <rocksdb/db.h>
+#include <rocksdb/iterator.h>
+#include <rocksdb/options.h>
+#include <rocksdb/status.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <iomanip>
+#include <ios>
 #include <map>
+#include <memory>
+#include <ostream>
+#include <ratio>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 /*
 
@@ -71,7 +94,7 @@ template <class Rep, class Period>
 std::ostream&
 prettyTime(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
-    SaveStreamState _(os);
+    SaveStreamState const _(os);
     using namespace std::chrono;
     if (d < microseconds{1})
     {
@@ -332,7 +355,7 @@ public:
             options.create_if_missing = false;
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
-            rocksdb::Status status = rocksdb::DB::OpenForReadOnly(options, fromPath, &pdb);
+            rocksdb::Status const status = rocksdb::DB::OpenForReadOnly(options, fromPath, &pdb);
             if (!status.ok() || (pdb == nullptr))
                 Throw<std::runtime_error>("Can't open '" + fromPath + "': " + status.ToString());
             db.reset(pdb);
@@ -374,7 +397,7 @@ public:
                 void const* const key = it->key().data();
                 void const* const data = it->value().data();
                 auto const size = it->value().size();
-                std::unique_ptr<char[]> clean(new char[size]);
+                std::unique_ptr<char[]> const clean(new char[size]);
                 std::memcpy(clean.get(), data, size);
                 filter_inner(clean.get(), size);
                 auto const out = nodeobject_compress(clean.get(), size, buf);
@@ -458,7 +481,7 @@ public:
             // Create empty buckets
             for (std::size_t i = 0; i < bn; ++i)
             {
-                bucket b(kh.block_size, buf.get() + (i * kh.block_size), empty);
+                bucket const b(kh.block_size, buf.get() + (i * kh.block_size), empty);
             }
             // Insert all keys into buckets
             // Iterate Data File

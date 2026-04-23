@@ -1,11 +1,30 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/flags.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/require.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
+#include <cstdint>
+#include <limits>
 
-namespace test {
+namespace xrpl::test {
 
 class TrustSet_test : public beast::unit_test::suite
 {
@@ -34,8 +53,8 @@ public:
         // alice and becky, both of them will be charged an owner reserve
         // Irrespective of whether the issuer or the customer initiated
         // the trust-line creation, both will be charged
-        env.require(lines(alice, 1));
-        env.require(lines(becky, 1));
+        env.Require(lines(alice, 1));
+        env.Require(lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
         Json::Value jv;
@@ -55,8 +74,8 @@ public:
         // the reset of the trust line limits deletes the trust-line
         // this occurs despite the authorization of the trust-line by the
         // issuer(alice, in this unit test)
-        env.require(lines(becky, 0));
-        env.require(lines(alice, 0));
+        env.Require(lines(becky, 0));
+        env.Require(lines(alice, 0));
 
         // second verification check via RPC calls
         jv["account"] = becky.human();
@@ -112,8 +131,8 @@ public:
         // alice and becky, both of them will be charged an owner reserve
         // Irrespective of whether the issuer or the customer initiated
         // the trust-line creation, both will be charged
-        env.require(lines(alice, 1));
-        env.require(lines(becky, 1));
+        env.Require(lines(alice, 1));
+        env.Require(lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
         Json::Value jv;
@@ -133,8 +152,8 @@ public:
         // the reset of the trust line limits deletes the trust-line
         // this occurs despite the authorization of the trust-line by the
         // issuer(alice, in this unit test)
-        env.require(lines(becky, 0));
-        env.require(lines(alice, 0));
+        env.Require(lines(becky, 0));
+        env.Require(lines(alice, 0));
 
         // second verification check via RPC calls
         jv["account"] = becky.human();
@@ -247,7 +266,7 @@ public:
         env.close();
 
         // Create a ticket.
-        std::uint32_t const ticketSeq{env.seq(alice) + 1};
+        std::uint32_t const ticketSeq{env.Seq(alice) + 1};
         env(ticket::create(alice, 1));
         env.close();
 
@@ -600,5 +619,4 @@ public:
     }
 };
 BEAST_DEFINE_TESTSUITE(TrustSet, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -182,8 +182,7 @@ private:
             : hook(collector->make_hook(handler))
             , size(collector->make_gauge(prefix, "size"))
             , hit_rate(collector->make_gauge(prefix, "hit_rate"))
-            , hits(0)
-            , misses(0)
+
         {
         }
 
@@ -191,8 +190,8 @@ private:
         beast::insight::Gauge size;
         beast::insight::Gauge hit_rate;
 
-        std::size_t hits;
-        std::size_t misses;
+        std::size_t hits{0};
+        std::size_t misses{0};
     };
 
     class KeyOnlyEntry
@@ -252,7 +251,7 @@ private:
         }
     };
 
-    typedef typename std::conditional<IsKeyCache, KeyOnlyEntry, ValueEntry>::type Entry;
+    using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
 
     using KeyOnlyCacheType = hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
 
@@ -294,10 +293,10 @@ private:
     clock_type::duration const target_age_;
 
     // Number of items cached
-    int cache_count_;
+    int cache_count_{0};
     cache_type cache_;  // Hold strong reference to recent objects
-    std::uint64_t hits_;
-    std::uint64_t misses_;
+    std::uint64_t hits_{0};
+    std::uint64_t misses_{0};
 };
 
 }  // namespace xrpl

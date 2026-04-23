@@ -1,24 +1,71 @@
-#include <xrpld/app/ledger/AcceptedLedger.h>
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/ledger/PendingSaves.h>
-#include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 
-#include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpld/app/ledger/AcceptedLedger.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
+#include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/NetworkIDService.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/core/StartUpType.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/range/adaptor/transformed.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/format/free_funcs.hpp>
+#include <boost/optional/optional.hpp>
+#include <boost/system/detail/error_code.hpp>
 
-#include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/blob.h>
+#include <soci/into.h>
+#include <soci/soci-backend.h>
+#include <soci/statement.h>
+#include <soci/transaction.h>
+#include <soci/use.h>
 
-namespace xrpl {
-namespace detail {
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <variant>
+#include <vector>
+
+namespace xrpl::detail {
 
 /**
  * @brief to_string Returns the name of a table according to its TableType.
@@ -90,21 +137,22 @@ makeLedgerDBs(
             {
                 if (pk == 1)
                 {
-                    return {std::move(lgr), std::move(tx), false};
+                    return {
+                        .ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = false};
                 }
             }
         }
 
-        return {std::move(lgr), std::move(tx), true};
+        return {.ledgerDb = std::move(lgr), .transactionDb = std::move(tx), .valid = true};
     }
 
-    return {std::move(lgr), {}, true};
+    return {.ledgerDb = std::move(lgr), .transactionDb = {}, .valid = true};
 }
 
 std::optional<LedgerIndex>
 getMinLedgerSeq(soci::session& session, TableType type)
 {
-    std::string query = "SELECT MIN(LedgerSeq) FROM " + toString(type) + ";";
+    std::string const query = "SELECT MIN(LedgerSeq) FROM " + toString(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -114,7 +162,7 @@ getMinLedgerSeq(soci::session& session, TableType type)
 std::optional<LedgerIndex>
 getMaxLedgerSeq(soci::session& session, TableType type)
 {
-    std::string query = "SELECT MAX(LedgerSeq) FROM " + toString(type) + ";";
+    std::string const query = "SELECT MAX(LedgerSeq) FROM " + toString(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -168,7 +216,7 @@ saveValidatedLedger(
     std::shared_ptr<Ledger const> const& ledger,
     bool current)
 {
-    auto j = app.journal("Ledger");
+    auto j = app.getJournal("Ledger");
     auto seq = ledger->header().seq;
 
     // TODO(tom): Fix this hard-coded SQL!
@@ -221,7 +269,7 @@ saveValidatedLedger(
         app.getLedgerMaster().failedSave(seq, ledger->header().hash);
         // Clients can now trust the database for information about this
         // ledger sequence.
-        app.pendingSaves().finishWork(seq);
+        app.getPendingSaves().finishWork(seq);
         return false;
     }
 
@@ -330,7 +378,7 @@ saveValidatedLedger(
         }
 
         {
-            static std::string kADD_LEDGER(
+            static std::string const kADD_LEDGER(
                 R"sql(INSERT OR REPLACE INTO Ledgers
                 (LedgerHash,LedgerSeq,PrevHash,TotalCoins,ClosingTime,PrevClosingTime,
                 CloseTimeRes,CloseFlags,AccountSetHash,TransSetHash)
@@ -576,7 +624,7 @@ getHashesByIndex(soci::session& session, LedgerIndex minSeq, LedgerIndex maxSeq,
 std::pair<std::vector<std::shared_ptr<Transaction>>, int>
 getTxHistory(soci::session& session, Application& app, LedgerIndex startIndex, int quantity)
 {
-    std::string sql = boost::str(
+    std::string const sql = boost::str(
         boost::format(
             "SELECT LedgerSeq, Status, RawTxn "
             "FROM Transactions ORDER BY LedgerSeq DESC LIMIT %u,%u;") %
@@ -675,16 +723,16 @@ transactionsSQL(
     std::string maxClause;
     std::string minClause;
 
-    if (options.maxLedger != 0u)
+    if (options.ledgerRange.max != 0u)
     {
         maxClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.maxLedger);
+            boost::format("AND AccountTransactions.LedgerSeq <= '%u'") % options.ledgerRange.max);
     }
 
-    if (options.minLedger != 0u)
+    if (options.ledgerRange.min != 0u)
     {
         minClause = boost::str(
-            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.minLedger);
+            boost::format("AND AccountTransactions.LedgerSeq >= '%u'") % options.ledgerRange.min);
     }
 
     std::string sql;
@@ -749,7 +797,7 @@ getAccountTxs(
 {
     RelationalDatabase::AccountTxs ret;
 
-    std::string sql = transactionsSQL(
+    std::string const sql = transactionsSQL(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
@@ -873,7 +921,7 @@ getAccountTxsB(
 {
     std::vector<RelationalDatabase::txnMetaLedgerType> ret;
 
-    std::string sql = transactionsSQL(
+    std::string const sql = transactionsSQL(
         app,
         "AccountTransactions.LedgerSeq,Status,RawTxn,TxnMeta",
         options,
@@ -1021,14 +1069,14 @@ accountTxPage(
              ORDER BY AccountTransactions.LedgerSeq %s,
              AccountTransactions.TxnSeq %s
              LIMIT %u;)")) %
-            toBase58(options.account) % options.minLedger % options.maxLedger % order % order %
-            queryLimit);
+            toBase58(options.account) % options.ledgerRange.min % options.ledgerRange.max % order %
+            order % queryLimit);
     }
     else
     {
         char const* const compare = forward ? ">=" : "<=";
-        std::uint32_t const minLedger = forward ? findLedger + 1 : options.minLedger;
-        std::uint32_t const maxLedger = forward ? options.maxLedger : findLedger - 1;
+        std::uint32_t const minLedger = forward ? findLedger + 1 : options.ledgerRange.min;
+        std::uint32_t const maxLedger = forward ? options.ledgerRange.max : findLedger - 1;
 
         auto b58acct = toBase58(options.account);
         sql = boost::str(
@@ -1092,7 +1140,8 @@ accountTxPage(
             else if (numberOfResults == 0)
             {
                 newmarker = {
-                    rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)), txnSeq.value_or(0)};
+                    .ledgerSeq = rangeCheckedCast<std::uint32_t>(ledgerSeq.value_or(0)),
+                    .txnSeq = txnSeq.value_or(0)};
                 break;
             }
 
@@ -1192,7 +1241,7 @@ getTransaction(
         auto const gotData = session.got_data();
 
         if ((!gotData || txn != soci::i_ok || meta != soci::i_ok) && !range)
-            return TxSearched::unknown;
+            return TxSearched::Unknown;
 
         if (!gotData)
         {
@@ -1205,10 +1254,10 @@ getTransaction(
                 soci::into(count, rti);
 
             if (!session.got_data() || rti != soci::i_ok)
-                return TxSearched::some;
+                return TxSearched::Some;
 
-            return count == (range->last() - range->first() + 1) ? TxSearched::all
-                                                                 : TxSearched::some;
+            return count == (range->last() - range->first() + 1) ? TxSearched::All
+                                                                 : TxSearched::Some;
         }
 
         convert(sociRawTxnBlob, rawTxn);
@@ -1222,7 +1271,7 @@ getTransaction(
         if (!ledgerSeq)
             return std::pair{std::move(txn), nullptr};
 
-        std::uint32_t inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
+        std::uint32_t const inLedger = rangeCheckedCast<std::uint32_t>(ledgerSeq.value());
 
         auto txMeta = std::make_shared<TxMeta>(id, inLedger, rawMeta);
 
@@ -1230,19 +1279,20 @@ getTransaction(
     }
     catch (std::exception& e)
     {
-        JLOG(app.journal("Ledger").warn())
+        JLOG(app.getJournal("Ledger").warn())
             << "Unable to deserialize transaction from raw SQL value. Error: " << e.what();
 
         ec = rpcDB_DESERIALIZATION;
     }
 
-    return TxSearched::unknown;
+    return TxSearched::Unknown;
 }
 
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 {
-    boost::filesystem::space_info space = boost::filesystem::space(config.legacy("database_path"));
+    boost::filesystem::space_info const space =
+        boost::filesystem::space(config.legacy("database_path"));
 
     if (space.available < megabytes(512))
     {
@@ -1252,8 +1302,8 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 
     if (config.useTxTables())
     {
-        DatabaseCon::Setup dbSetup = setup_DatabaseCon(config);
-        boost::filesystem::path dbPath = dbSetup.dataDir / kTX_DB_NAME;
+        DatabaseCon::Setup const dbSetup = setup_DatabaseCon(config);
+        boost::filesystem::path const dbPath = dbSetup.dataDir / kTX_DB_NAME;
         boost::system::error_code ec;
         std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
         if (ec)
@@ -1274,8 +1324,8 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
         }();
         std::uint32_t pageCount = 0;
         session << "PRAGMA page_count;", soci::into(pageCount);
-        std::uint32_t freePages = kMAX_PAGES - pageCount;
-        std::uint64_t freeSpace = safe_cast<std::uint64_t>(freePages) * kPAGE_SIZE;
+        std::uint32_t const freePages = kMAX_PAGES - pageCount;
+        std::uint64_t const freeSpace = safe_cast<std::uint64_t>(freePages) * kPAGE_SIZE;
         JLOG(j.info()) << "Transaction DB pathname: " << dbPath.string()
                        << "; file size: " << dbSize.value_or(-1) << " bytes"
                        << "; SQLite page size: " << kPAGE_SIZE << " bytes"
@@ -1287,7 +1337,7 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
         if (freeSpace < megabytes(512))
         {
             JLOG(j.fatal()) << "Free SQLite space for transaction db is less than "
-                               "512MB. To fix this, rippled must be executed with the "
+                               "512MB. To fix this, xrpld must be executed with the "
                                "vacuum parameter before restarting. "
                                "Note that this activity can take multiple days, "
                                "depending on database size.";
@@ -1298,5 +1348,4 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
     return true;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

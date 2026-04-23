@@ -1,12 +1,13 @@
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace xrpl {
+#include <xrpl.pb.h>
 
-namespace test {
+#include <algorithm>
+#include <cstdint>
+
+namespace xrpl::test {
 
 class traffic_count_test : public beast::unit_test::suite
 {
@@ -125,5 +126,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(traffic_count, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

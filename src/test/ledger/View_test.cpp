@@ -1,20 +1,55 @@
-#include <test/jtx.h>
 
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/core/ConfigSections.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+
+#include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <type_traits>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class View_test : public beast::unit_test::suite
 {
@@ -37,14 +72,14 @@ class View_test : public beast::unit_test::suite
     // Return payload for SLE
     template <class T>
     static std::uint32_t
-    seq(std::shared_ptr<T> const& le)
+    Seq(std::shared_ptr<T> const& le)
     {
         return le->getFieldU32(sfSequence);
     }
 
     // Set payload on SLE
     static void
-    seq(std::shared_ptr<SLE> const& le, std::uint32_t seq)
+    Seq(std::shared_ptr<SLE> const& le, std::uint32_t seq)
     {
         le->setFieldU32(sfSequence, seq);
     }
@@ -114,26 +149,31 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
+        Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
         wipe(*ledger);
-        ReadView& v = *ledger;
+        ReadView const& v = *ledger;
         succ(v, 0, std::nullopt);
         ledger->rawInsert(sle(1, 1));
         BEAST_EXPECT(v.exists(k(1)));
-        BEAST_EXPECT(seq(v.read(k(1))) == 1);
+        BEAST_EXPECT(Seq(v.read(k(1))) == 1);
         succ(v, 0, 1);
         succ(v, 1, std::nullopt);
         ledger->rawInsert(sle(2, 2));
-        BEAST_EXPECT(seq(v.read(k(2))) == 2);
+        BEAST_EXPECT(Seq(v.read(k(2))) == 2);
         ledger->rawInsert(sle(3, 3));
-        BEAST_EXPECT(seq(v.read(k(3))) == 3);
+        BEAST_EXPECT(Seq(v.read(k(3))) == 3);
         auto s = copy(v.read(k(2)));
-        seq(s, 4);
+        Seq(s, 4);
         ledger->rawReplace(s);
-        BEAST_EXPECT(seq(v.read(k(2))) == 4);
+        BEAST_EXPECT(Seq(v.read(k(2))) == 4);
         ledger->rawErase(sle(2));
         BEAST_EXPECT(!v.exists(k(2)));
         BEAST_EXPECT(v.exists(k(1)));
@@ -147,25 +187,25 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v(&*open, tapNONE);
         succ(v, 0, std::nullopt);
         v.insert(sle(1));
         BEAST_EXPECT(v.exists(k(1)));
-        BEAST_EXPECT(seq(v.read(k(1))) == 1);
-        BEAST_EXPECT(seq(v.peek(k(1))) == 1);
+        BEAST_EXPECT(Seq(v.read(k(1))) == 1);
+        BEAST_EXPECT(Seq(v.peek(k(1))) == 1);
         succ(v, 0, 1);
         succ(v, 1, std::nullopt);
         v.insert(sle(2, 2));
-        BEAST_EXPECT(seq(v.read(k(2))) == 2);
+        BEAST_EXPECT(Seq(v.read(k(2))) == 2);
         v.insert(sle(3, 3));
         auto s = v.peek(k(3));
-        BEAST_EXPECT(seq(s) == 3);
+        BEAST_EXPECT(Seq(s) == 3);
         s = v.peek(k(2));
-        seq(s, 4);
+        Seq(s, 4);
         v.update(s);
-        BEAST_EXPECT(seq(v.read(k(2))) == 4);
+        BEAST_EXPECT(Seq(v.read(k(2))) == 4);
         v.erase(s);
         BEAST_EXPECT(!v.exists(k(2)));
         BEAST_EXPECT(v.exists(k(1)));
@@ -180,7 +220,7 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v0(&*open, tapNONE);
         v0.insert(sle(1));
@@ -246,7 +286,7 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        wipe(env.app().openLedger());
+        wipe(env.app().getOpenLedger());
         auto const open = env.current();
         ApplyViewImpl v0(&*open, tapNONE);
         v0.rawInsert(sle(1, 1));
@@ -258,50 +298,50 @@ class View_test : public beast::unit_test::suite
             v1.erase(v1.peek(k(2)));
             v1.insert(sle(3, 3));
             auto s = v1.peek(k(4));
-            seq(s, 5);
+            Seq(s, 5);
             v1.update(s);
-            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(Seq(v1.read(k(1))) == 1);
             BEAST_EXPECT(!v1.exists(k(2)));
-            BEAST_EXPECT(seq(v1.read(k(3))) == 3);
-            BEAST_EXPECT(seq(v1.read(k(4))) == 5);
+            BEAST_EXPECT(Seq(v1.read(k(3))) == 3);
+            BEAST_EXPECT(Seq(v1.read(k(4))) == 5);
             {
                 Sandbox v2(&v1);
                 auto s2 = v2.peek(k(3));
-                seq(s2, 6);
+                Seq(s2, 6);
                 v2.update(s2);
                 v2.erase(v2.peek(k(4)));
-                BEAST_EXPECT(seq(v2.read(k(1))) == 1);
+                BEAST_EXPECT(Seq(v2.read(k(1))) == 1);
                 BEAST_EXPECT(!v2.exists(k(2)));
-                BEAST_EXPECT(seq(v2.read(k(3))) == 6);
+                BEAST_EXPECT(Seq(v2.read(k(3))) == 6);
                 BEAST_EXPECT(!v2.exists(k(4)));
                 // discard v2
             }
-            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(Seq(v1.read(k(1))) == 1);
             BEAST_EXPECT(!v1.exists(k(2)));
-            BEAST_EXPECT(seq(v1.read(k(3))) == 3);
-            BEAST_EXPECT(seq(v1.read(k(4))) == 5);
+            BEAST_EXPECT(Seq(v1.read(k(3))) == 3);
+            BEAST_EXPECT(Seq(v1.read(k(4))) == 5);
 
             {
                 Sandbox v2(&v1);
                 auto s2 = v2.peek(k(3));
-                seq(s2, 6);
+                Seq(s2, 6);
                 v2.update(s2);
                 v2.erase(v2.peek(k(4)));
-                BEAST_EXPECT(seq(v2.read(k(1))) == 1);
+                BEAST_EXPECT(Seq(v2.read(k(1))) == 1);
                 BEAST_EXPECT(!v2.exists(k(2)));
-                BEAST_EXPECT(seq(v2.read(k(3))) == 6);
+                BEAST_EXPECT(Seq(v2.read(k(3))) == 6);
                 BEAST_EXPECT(!v2.exists(k(4)));
                 v2.apply(v1);
             }
-            BEAST_EXPECT(seq(v1.read(k(1))) == 1);
+            BEAST_EXPECT(Seq(v1.read(k(1))) == 1);
             BEAST_EXPECT(!v1.exists(k(2)));
-            BEAST_EXPECT(seq(v1.read(k(3))) == 6);
+            BEAST_EXPECT(Seq(v1.read(k(3))) == 6);
             BEAST_EXPECT(!v1.exists(k(4)));
             v1.apply(v0);
         }
-        BEAST_EXPECT(seq(v0.read(k(1))) == 1);
+        BEAST_EXPECT(Seq(v0.read(k(1))) == 1);
         BEAST_EXPECT(!v0.exists(k(2)));
-        BEAST_EXPECT(seq(v0.read(k(3))) == 6);
+        BEAST_EXPECT(Seq(v0.read(k(3))) == 6);
         BEAST_EXPECT(!v0.exists(k(4)));
     }
 
@@ -315,7 +355,7 @@ class View_test : public beast::unit_test::suite
         using namespace std::chrono;
         {
             Env env(*this);
-            wipe(env.app().openLedger());
+            wipe(env.app().getOpenLedger());
             auto const open = env.current();
             OpenView v0(open.get());
             BEAST_EXPECT(v0.seq() != 98);
@@ -333,7 +373,7 @@ class View_test : public beast::unit_test::suite
                 BEAST_EXPECT(v2.seq() == v1.seq());
                 BEAST_EXPECT(v2.flags() == tapRETRY);
 
-                Sandbox v3(&v2);
+                Sandbox const v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() == v2.parentCloseTime());
                 BEAST_EXPECT(v3.flags() == tapRETRY);
@@ -344,7 +384,7 @@ class View_test : public beast::unit_test::suite
                 BEAST_EXPECT(v2.seq() == v0.seq());
                 BEAST_EXPECT(v2.parentCloseTime() == v0.parentCloseTime());
                 BEAST_EXPECT(v2.flags() == tapRETRY);
-                PaymentSandbox v3(&v2);
+                PaymentSandbox const v3(&v2);
                 BEAST_EXPECT(v3.seq() == v2.seq());
                 BEAST_EXPECT(v3.parentCloseTime() == v2.parentCloseTime());
                 BEAST_EXPECT(v3.flags() == v2.flags());
@@ -377,10 +417,15 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
+        Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
 
         auto setup = [&ledger](std::vector<int> const& vec) {
             wipe(*ledger);
@@ -581,10 +626,15 @@ class View_test : public beast::unit_test::suite
 
         using namespace jtx;
         Env env(*this);
-        Config config;
+        Config const config;
         std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-            create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
-        auto const ledger = std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+            create_genesis,
+            Rules{config.features},
+            config.FEES.toFees(),
+            std::vector<uint256>{},
+            env.app().getNodeFamily());
+        auto const ledger =
+            std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
         auto setup123 = [&ledger, this]() {
             // erase middle element
             wipe(*ledger);
@@ -671,9 +721,9 @@ class View_test : public beast::unit_test::suite
             view.rawReplace(sle(1, 10));
             view.rawReplace(sle(3, 30));
             BEAST_EXPECT(sles(view) == list(1, 2, 3));
-            BEAST_EXPECT(seq(view.read(k(1))) == 10);
-            BEAST_EXPECT(seq(view.read(k(2))) == 1);
-            BEAST_EXPECT(seq(view.read(k(3))) == 30);
+            BEAST_EXPECT(Seq(view.read(k(1))) == 10);
+            BEAST_EXPECT(Seq(view.read(k(2))) == 1);
+            BEAST_EXPECT(Seq(view.read(k(3))) == 30);
 
             view.rawErase(sle(3));
             BEAST_EXPECT(sles(view) == list(1, 2));
@@ -927,14 +977,18 @@ class View_test : public beast::unit_test::suite
         // erase the item, apply.
         {
             Env env(*this);
-            Config config;
+            Config const config;
             std::shared_ptr<Ledger const> const genesis = std::make_shared<Ledger>(
-                create_genesis, config, std::vector<uint256>{}, env.app().getNodeFamily());
+                create_genesis,
+                Rules{config.features},
+                config.FEES.toFees(),
+                std::vector<uint256>{},
+                env.app().getNodeFamily());
             auto const ledger =
-                std::make_shared<Ledger>(*genesis, env.app().timeKeeper().closeTime());
+                std::make_shared<Ledger>(*genesis, env.app().getTimeKeeper().closeTime());
             wipe(*ledger);
             ledger->rawInsert(sle(1));
-            ReadView& v0 = *ledger;
+            ReadView const& v0 = *ledger;
             ApplyViewImpl v1(&v0, tapNONE);
             {
                 Sandbox v2(&v1);
@@ -947,9 +1001,9 @@ class View_test : public beast::unit_test::suite
         // Make sure OpenLedger::empty works
         {
             Env env(*this);
-            BEAST_EXPECT(env.app().openLedger().empty());
+            BEAST_EXPECT(env.app().getOpenLedger().empty());
             env.fund(XRP(10000), Account("test"));
-            BEAST_EXPECT(!env.app().openLedger().empty());
+            BEAST_EXPECT(!env.app().getOpenLedger().empty());
         }
     }
 
@@ -1029,5 +1083,4 @@ class GetAmendments_test : public beast::unit_test::suite
 BEAST_DEFINE_TESTSUITE(View, ledger, xrpl);
 BEAST_DEFINE_TESTSUITE(GetAmendments, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

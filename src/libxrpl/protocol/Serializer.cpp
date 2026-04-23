@@ -1,3 +1,5 @@
+#include <xrpl/protocol/Serializer.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -5,7 +7,6 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/endian/conversion.hpp>
@@ -23,7 +24,7 @@ namespace xrpl {
 int
 Serializer::add16(std::uint16_t i)
 {
-    int ret = data_.size();
+    int const ret = data_.size();
     data_.push_back(static_cast<unsigned char>(i >> 8));
     data_.push_back(static_cast<unsigned char>(i & 0xff));
     return ret;
@@ -73,7 +74,7 @@ Serializer::addInteger(std::int32_t i)
 int
 Serializer::addRaw(Blob const& vector)
 {
-    int ret = data_.size();
+    int const ret = data_.size();
     data_.insert(data_.end(), vector.begin(), vector.end());
     return ret;
 }
@@ -81,7 +82,7 @@ Serializer::addRaw(Blob const& vector)
 int
 Serializer::addRaw(Slice slice)
 {
-    int ret = data_.size();
+    int const ret = data_.size();
     data_.insert(data_.end(), slice.begin(), slice.end());
     return ret;
 }
@@ -89,7 +90,7 @@ Serializer::addRaw(Slice slice)
 int
 Serializer::addRaw(Serializer const& s)
 {
-    int ret = data_.size();
+    int const ret = data_.size();
     data_.insert(data_.end(), s.begin(), s.end());
     return ret;
 }
@@ -97,7 +98,7 @@ Serializer::addRaw(Serializer const& s)
 int
 Serializer::addRaw(void const* ptr, int len)
 {
-    int ret = data_.size();
+    int const ret = data_.size();
     data_.insert(data_.end(), (char const*)ptr, ((char const*)ptr) + len);
     return ret;
 }
@@ -105,7 +106,7 @@ Serializer::addRaw(void const* ptr, int len)
 int
 Serializer::addFieldID(int type, int name)
 {
-    int ret = data_.size();
+    int const ret = data_.size();
     XRPL_ASSERT(
         (type > 0) && (type < 256) && (name > 0) && (name < 256),
         "xrpl::Serializer::addFieldID : inputs inside range");
@@ -144,7 +145,7 @@ Serializer::addFieldID(int type, int name)
 int
 Serializer::add8(unsigned char byte)
 {
-    int ret = data_.size();
+    int const ret = data_.size();
     data_.push_back(byte);
     return ret;
 }
@@ -178,7 +179,7 @@ Serializer::getSHA512Half() const
 int
 Serializer::addVL(Blob const& vector)
 {
-    int ret = addEncoded(vector.size());
+    int const ret = addEncoded(vector.size());
     addRaw(vector);
     XRPL_ASSERT(
         data_.size() == (ret + vector.size() + encodeLengthLength(vector.size())),
@@ -189,7 +190,7 @@ Serializer::addVL(Blob const& vector)
 int
 Serializer::addVL(Slice const& slice)
 {
-    int ret = addEncoded(slice.size());
+    int const ret = addEncoded(slice.size());
     if (!slice.empty())
         addRaw(slice.data(), slice.size());
     return ret;
@@ -198,7 +199,7 @@ Serializer::addVL(Slice const& slice)
 int
 Serializer::addVL(void const* ptr, int len)
 {
-    int ret = addEncoded(len);
+    int const ret = addEncoded(len);
 
     if (len != 0)
         addRaw(ptr, len);
@@ -344,7 +345,7 @@ SerialIter::get8()
 {
     if (remain_ < 1)
         Throw<std::runtime_error>("invalid SerialIter get8");
-    unsigned char t = *p_;
+    unsigned char const t = *p_;
     ++p_;
     ++used_;
     --remain_;
@@ -443,7 +444,7 @@ template <class T>
 T
 SerialIter::getRawHelper(int size)
 {
-    static_assert(std::is_same<T, Blob>::value || std::is_same<T, Buffer>::value, "");
+    static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>, "");
     if (remain_ < size)
         Throw<std::runtime_error>("invalid SerialIter getRaw");
     T result(size);
@@ -470,23 +471,23 @@ SerialIter::getRaw(int size)
 int
 SerialIter::getVLDataLength()
 {
-    int b1 = get8();
+    int const b1 = get8();
     int datLen = 0;
-    int lenLen = Serializer::decodeLengthLength(b1);
+    int const lenLen = Serializer::decodeLengthLength(b1);
     if (lenLen == 1)
     {
         datLen = Serializer::decodeVLLength(b1);
     }
     else if (lenLen == 2)
     {
-        int b2 = get8();
+        int const b2 = get8();
         datLen = Serializer::decodeVLLength(b1, b2);
     }
     else
     {
         XRPL_ASSERT(lenLen == 3, "xrpl::SerialIter::getVLDataLength : lenLen is 3");
-        int b2 = get8();
-        int b3 = get8();
+        int const b2 = get8();
+        int const b3 = get8();
         datLen = Serializer::decodeVLLength(b1, b2, b3);
     }
     return datLen;
@@ -497,7 +498,7 @@ SerialIter::getSlice(std::size_t bytes)
 {
     if (bytes > remain_)
         Throw<std::runtime_error>("invalid SerialIter getSlice");
-    Slice s(p_, bytes);
+    Slice const s(p_, bytes);
     p_ += bytes;
     used_ += bytes;
     remain_ -= bytes;

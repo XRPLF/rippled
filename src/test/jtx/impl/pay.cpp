@@ -1,11 +1,14 @@
 #include <test/jtx/pay.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/amount.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 pay(AccountID const& account, AccountID const& to, AnyAmount amount)
@@ -25,6 +28,4 @@ pay(Account const& account, Account const& to, AnyAmount amount)
     return pay(account.id(), to.id(), amount);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -1,12 +1,34 @@
+#include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
+
 #include <xrpld/app/ledger/BuildLedger.h>
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
-#include <xrpld/app/ledger/detail/LedgerDeltaAcquire.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
+
+#include <xrpl.pb.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -21,7 +43,7 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           ledgerHash,
           LedgerReplayParameters::kSUB_TASK_TIMEOUT,
           {jtREPLAY_TASK, "LedReplDelta", LedgerReplayParameters::kMAX_QUEUED_TASKS},
-          app.journal("LedgerReplayDelta"))
+          app.getJournal("LedgerReplayDelta"))
     , inboundLedgers_(inboundLedgers)
     , ledgerSeq_(ledgerSeq)
     , peerSet_(std::move(peerSet))
@@ -124,7 +146,8 @@ LedgerDeltaAcquire::processData(
     if (info.seq == ledgerSeq_)
     {
         // create a temporary ledger for building a LedgerReplay object later
-        replayTemp_ = std::make_shared<Ledger>(info, app_.config(), app_.getNodeFamily());
+        Rules const rules{app_.config().features};
+        replayTemp_ = std::make_shared<Ledger>(info, rules, app_.getNodeFamily());
         if (replayTemp_)
         {
             complete_ = true;
@@ -177,7 +200,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         parent->header().hash == replayTemp_->header().parentHash,
         "xrpl::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
-    LedgerReplay replayData(parent, replayTemp_, std::move(orderedTxns_));
+    LedgerReplay const replayData(parent, replayTemp_, std::move(orderedTxns_));
     fullLedger_ = buildLedger(replayData, tapNONE, app_, journal_);
     if (fullLedger_ && fullLedger_->header().hash == hash_)
     {

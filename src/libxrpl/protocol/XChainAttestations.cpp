@@ -1,3 +1,5 @@
+#include <xrpl/protocol/XChainAttestations.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
@@ -11,7 +13,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 #include <xrpl/protocol/jss.h>
 
@@ -30,14 +31,14 @@ AttestationBase::AttestationBase(
     PublicKey const& publicKey,
     Buffer signature,
     AccountID const& sendingAccount,
-    STAmount const& sendingAmount,
+    STAmount sendingAmount,
     AccountID const& rewardAccount,
     bool wasLockingChainSend)
     : attestationSignerAccount{attestationSignerAccount}
     , publicKey{publicKey}
     , signature{std::move(signature)}
     , sendingAccount{sendingAccount}
-    , sendingAmount{sendingAmount}
+    , sendingAmount{std::move(sendingAmount)}
     , rewardAccount{rewardAccount}
     , wasLockingChainSend{wasLockingChainSend}
 {
@@ -74,7 +75,7 @@ AttestationBase::sameEventHelper(AttestationBase const& lhs, AttestationBase con
 bool
 AttestationBase::verify(STXChainBridge const& bridge) const
 {
-    std::vector<std::uint8_t> msg = message(bridge);
+    std::vector<std::uint8_t> const msg = message(bridge);
     return xrpl::verify(publicKey, makeSlice(msg), signature);
 }
 
@@ -260,7 +261,7 @@ AttestationCreateAccount::AttestationCreateAccount(
     Buffer signature,
     AccountID const& sendingAccount,
     STAmount const& sendingAmount,
-    STAmount const& rewardAmount,
+    STAmount rewardAmount,
     AccountID const& rewardAccount,
     bool wasLockingChainSend,
     std::uint64_t createCount,
@@ -275,7 +276,7 @@ AttestationCreateAccount::AttestationCreateAccount(
           wasLockingChainSend)
     , createCount{createCount}
     , toCreate{toCreate}
-    , rewardAmount{rewardAmount}
+    , rewardAmount{std::move(rewardAmount)}
 {
 }
 

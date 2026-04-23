@@ -27,7 +27,7 @@ public:
     explicit UptimeClock() = default;
 
     static time_point
-    now();  // seconds since rippled program start
+    now();  // seconds since xrpld program start
 
 private:
     static std::atomic<rep> now_;

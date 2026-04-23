@@ -1,12 +1,13 @@
 #include <test/csf/Digraph.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <sstream>
 #include <string>
+#include <tuple>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Digraph_test : public beast::unit_test::suite
 {
@@ -57,7 +58,7 @@ public:
 
         // only 'a' has out edges
         BEAST_EXPECT(graph.outVertices().size() == 1);
-        std::vector<char> expected = {'b', 'c'};
+        std::vector<char> const expected = {'b', 'c'};
 
         BEAST_EXPECT((graph.outVertices('a') == expected));
         BEAST_EXPECT(graph.outVertices('b').size() == 0);
@@ -66,7 +67,7 @@ public:
 
         std::stringstream ss;
         graph.saveDot(ss, [](char v) { return v; });
-        std::string expectedDot =
+        std::string const expectedDot =
             "digraph {\n"
             "a -> b;\n"
             "a -> c;\n"
@@ -77,5 +78,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Digraph, csf, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

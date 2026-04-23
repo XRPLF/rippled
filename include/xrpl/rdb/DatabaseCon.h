@@ -1,6 +1,7 @@
 #pragma once
 
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/core/StartUpType.h>
 #include <xrpl/rdb/DBInit.h>
 #include <xrpl/rdb/SociDB.h>
@@ -13,7 +14,7 @@
 
 namespace soci {
 class session;
-}
+}  // namespace soci
 
 namespace xrpl {
 
@@ -93,8 +94,8 @@ public:
 
     struct CheckpointerSetup
     {
-        JobQueue* jobQueue;
-        Logs* logs;
+        JobQueue* jobQueue{};
+        std::reference_wrapper<ServiceRegistry> registry;
     };
 
     template <std::size_t N, std::size_t M>
@@ -128,7 +129,7 @@ public:
         beast::Journal journal)
         : DatabaseCon(setup, dbName, pragma, initSQL, journal)
     {
-        setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
+        setupCheckpointing(checkpointerSetup.jobQueue, checkpointerSetup.registry.get());
     }
 
     template <std::size_t N, std::size_t M>
@@ -153,7 +154,7 @@ public:
         beast::Journal journal)
         : DatabaseCon(dataDir, dbName, pragma, initSQL, journal)
     {
-        setupCheckpointing(checkpointerSetup.jobQueue, *checkpointerSetup.logs);
+        setupCheckpointing(checkpointerSetup.jobQueue, checkpointerSetup.registry.get());
     }
 
     ~DatabaseCon();
@@ -176,7 +177,7 @@ public:
 
 private:
     void
-    setupCheckpointing(JobQueue*, Logs&);
+    setupCheckpointing(JobQueue*, ServiceRegistry&);
 
     template <std::size_t N, std::size_t M>
     DatabaseCon(

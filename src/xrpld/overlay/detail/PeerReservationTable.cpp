@@ -1,13 +1,15 @@
 #include <xrpl/core/PeerReservationTable.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
 
 #include <algorithm>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -30,15 +32,15 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 {
     std::vector<PeerReservation> list;
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         list.reserve(table_.size());
-        std::copy(table_.begin(), table_.end(), std::back_inserter(list));
+        std::ranges::copy(table_, std::back_inserter(list));
     }
-    std::sort(list.begin(), list.end());
+    std::sort(list.begin(), list.end());  // NOLINT(modernize-use-ranges)
     return list;
 }
 
-// See `ripple/app/main/DBInit.cpp` for the `CREATE TABLE` statement.
+// See `include/xrpl/rdb/DBInit.h` for the `CREATE TABLE` statement.
 // It is unfortunate that we do not get to define a function for it.
 
 // We choose a `bool` return type to fit in with the error handling scheme
@@ -47,7 +49,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
 bool
 PeerReservationTable::load(DatabaseCon& connection)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     connection_ = &connection;
     auto db = connection.checkoutDb();
@@ -62,7 +64,7 @@ PeerReservationTable::insertOrAssign(PeerReservation const& reservation)
 {
     std::optional<PeerReservation> previous;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto hint = table_.find(reservation);
     if (hint != table_.end())
@@ -96,9 +98,9 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 {
     std::optional<PeerReservation> previous;
 
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
-    auto const it = table_.find({nodeId});
+    auto const it = table_.find({.nodeId = nodeId});
     if (it != table_.end())
     {
         previous = *it;
