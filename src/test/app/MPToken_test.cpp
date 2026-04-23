@@ -3546,50 +3546,77 @@ class MPToken_test : public beast::unit_test::suite
             env(offer(alice, BTC(10), ETH(10)), ter(tecUNFUNDED_OFFER));
         }
 
-        // MPTLock flag is set and the account is not the issuer of MPT
+        // MPTLock flag is set: MPT/MPT offer crossing with independent issuers.
+        // gw2 issues BTC and gw issues ETH so each asset can be frozen independently.
+        // Passive setup: bob sells BTC (offer(bob, ETH, BTC)); dan sells ETH (offer(dan, BTC,
+        // ETH)).
         {
+            Account const gw2 = Account("gw2");
             Account const bob = Account("bob");
             Account const dan = Account("dan");
             Env env(*this);
-            env.fund(XRP(1'000), gw, alice, carol, bob, dan);
+            env.fund(XRP(1'000), gw, gw2, alice, carol, bob, dan);
             MPTTester BTC(
                 {.env = env,
-                 .issuer = gw,
-                 .holders = {alice, carol, bob, dan},
+                 .issuer = gw2,
+                 .holders = {alice, carol, bob, dan, gw},
                  .pay = 100,
                  .flags = tfMPTCanLock | MPTDEXFlags});
             MPTTester ETH(
                 {.env = env,
                  .issuer = gw,
-                 .holders = {alice, carol, bob, dan},
+                 .holders = {alice, carol, bob, dan, gw2},
                  .pay = 100,
                  .flags = tfMPTCanLock | MPTDEXFlags});
 
+            // bob sells BTC (takerGets=BTC); dan sells ETH (takerGets=ETH)
             env(offer(bob, ETH(10), BTC(10)), txflags(tfPassive));
             env(offer(dan, BTC(10), ETH(10)), txflags(tfPassive));
+            env.close();
 
-            auto test = [&](auto const& flag, bool gwOwner = false) {
-                BTC.set({.holder = carol, .flags = flag});
-                BTC.set({.holder = alice, .flags = flag});
+            // --- Individual lock on BTC ---
+            // alice sells locked BTC (takerGets): balance zeroed, offer unfunded
+            BTC.set({.holder = alice, .flags = tfMPTLock});
+            env(offer(alice, ETH(1), BTC(1)), ter(tecUNFUNDED_OFFER));
+            BTC.set({.holder = alice, .flags = tfMPTUnlock});
+            // carol buys locked BTC (takerPays): locked MPToken cannot receive
+            BTC.set({.holder = carol, .flags = tfMPTLock});
+            env(offer(carol, BTC(1), ETH(1)), ter(tecLOCKED));
+            BTC.set({.holder = carol, .flags = tfMPTUnlock});
+            // gw2 is BTC issuer: individual lock on holders does not affect issuer
+            env(offer(gw2, ETH(1), BTC(1)));
 
-                if (gwOwner)
-                {
-                    // Succeeds if the account is the issuer
-                    env(offer(gw, ETH(1), BTC(1)));
-                    env(offer(gw, BTC(1), ETH(1)));
-                }
-                else
-                {
-                    auto const err = flag == tfMPTLock ? ter(tecUNFUNDED_OFFER) : ter(tesSUCCESS);
-                    auto const err1 = flag == tfMPTLock ? ter(tecLOCKED) : ter(tesSUCCESS);
-                    env(offer(alice, ETH(1), BTC(1)), err);
-                    env(offer(carol, BTC(1), ETH(1)), err1);
-                }
-            };
+            // --- Individual lock on ETH ---
+            // alice sells locked ETH (takerGets): balance zeroed, offer unfunded
+            ETH.set({.holder = alice, .flags = tfMPTLock});
+            env(offer(alice, BTC(1), ETH(1)), ter(tecUNFUNDED_OFFER));
+            ETH.set({.holder = alice, .flags = tfMPTUnlock});
+            // carol buys locked ETH (takerPays): locked MPToken cannot receive
+            ETH.set({.holder = carol, .flags = tfMPTLock});
+            env(offer(carol, ETH(1), BTC(1)), ter(tecLOCKED));
+            ETH.set({.holder = carol, .flags = tfMPTUnlock});
+            // gw is ETH issuer: individual lock on holders does not affect issuer
+            env(offer(gw, BTC(1), ETH(1)));
 
-            test(tfMPTLock);
-            test(tfMPTLock, true);
-            test(tfMPTUnlock);
+            // --- Global lock on BTC ---
+            // All accounts fail regardless of role: global lock is checked in OfferCreate
+            // before offer crossing, so it applies even to the issuer.
+            BTC.set({.flags = tfMPTLock});
+            env(offer(alice, ETH(1), BTC(1)), ter(tecLOCKED));  // alice sells BTC
+            env(offer(alice, BTC(1), ETH(1)), ter(tecLOCKED));  // alice buys BTC
+            env(offer(gw2, ETH(1), BTC(1)), ter(tecLOCKED));    // gw2 is BTC issuer, still fails
+            BTC.set({.flags = tfMPTUnlock});
+
+            // --- Global lock on ETH ---
+            ETH.set({.flags = tfMPTLock});
+            env(offer(alice, BTC(1), ETH(1)), ter(tecLOCKED));  // alice sells ETH
+            env(offer(alice, ETH(1), BTC(1)), ter(tecLOCKED));  // alice buys ETH
+            env(offer(gw, BTC(1), ETH(1)), ter(tecLOCKED));     // gw is ETH issuer, still fails
+            ETH.set({.flags = tfMPTUnlock});
+
+            // --- After all locks cleared: normal crossing succeeds ---
+            env(offer(alice, ETH(1), BTC(1)));
+            env(offer(carol, BTC(1), ETH(1)));
         }
 
         // MPTRequireAuth flag is set and the account is not authorized
@@ -3804,6 +3831,7 @@ class MPToken_test : public beast::unit_test::suite
         testcase("Cross Asset Payment");
         using namespace test::jtx;
         Account const gw = Account("gw");
+        Account const gw2 = Account("gw2");
         Account const alice = Account("alice");
         Account const carol = Account("carol");
         Account const bob = Account("bob");
@@ -3994,13 +4022,11 @@ class MPToken_test : public beast::unit_test::suite
             env(pay(carol, ed, BTC(10)), path(~BTC), sendmax(ETH(10)), ter(tecPATH_PARTIAL));
             env(pay(ed, carol, ETH(10)), path(~ETH), sendmax(BTC(10)), ter(tecPATH_PARTIAL));
             env(pay(carol, ed, ETH(10)), path(~ETH), sendmax(BTC(10)), ter(tecPATH_PARTIAL));
-            // Fail because BTC, which has CanTransfer disabled, is sent to
-            // bob
+            // Fail because BTC, which has CanTransfer disabled, is sent to bob
             env(pay(ed, gw, ETH(10)), path(~ETH), sendmax(BTC(10)), ter(tecPATH_PARTIAL));
             env(pay(ed, gw, BTC(10)), path(~BTC), sendmax(ETH(10)), ter(tesSUCCESS));
             env(pay(gw, ed, ETH(10)), path(~ETH), sendmax(BTC(10)), ter(tesSUCCESS));
-            // Fail because BTC, which has CanTransfer disabled, is sent to
-            // ed
+            // Fail because BTC, which has CanTransfer disabled, is sent to ed
             env(pay(gw, ed, BTC(10)), path(~BTC), sendmax(ETH(10)), ter(tecPATH_PARTIAL));
             env.close();
             env(offer(gw, ETH(100), BTC(100)), txflags(tfPassive));
@@ -4175,7 +4201,17 @@ class MPToken_test : public beast::unit_test::suite
             env(pay(gw, carol, USD(1)),
                 path(~BTC, ~ETH, ~USD),
                 sendmax(XRP(1)),
-                ter(tecPATH_PARTIAL));
+                txflags(tfPartialPayment | tfNoRippleDirect),
+                ter(tecNO_PERMISSION));
+            env.close();
+            BEAST_EXPECT(expectOffers(env, bob, 3));
+
+            env(pay(carol, bob, BTC(10)), sendmax(XRP(10)), ter(tecNO_PERMISSION));
+            env(pay(carol, bob, XRP(10)), sendmax(BTC(10)), ter(tecNO_PERMISSION));
+            env(pay(gw, bob, BTC(10)), sendmax(XRP(10)), ter(tecNO_PERMISSION));
+            env(pay(gw, bob, XRP(10)), sendmax(BTC(10)), ter(tecNO_PERMISSION));
+            env(pay(carol, gw, BTC(10)), sendmax(XRP(10)), ter(tecNO_PERMISSION));
+            env(pay(carol, gw, XRP(10)), sendmax(BTC(10)), ter(tecNO_PERMISSION));
             env.close();
             BEAST_EXPECT(expectOffers(env, bob, 3));
         }
@@ -4210,31 +4246,36 @@ class MPToken_test : public beast::unit_test::suite
             auto getMPT = [&](Env& env) {
                 MPTTester const BTC(
                     {.env = env,
-                     .issuer = gw,
-                     .holders = {alice, carol, bob},
+                     .issuer = gw2,
+                     .holders = {alice, carol, bob, gw},
                      .pay = 100,
                      .flags = tfMPTCanLock | MPTDEXFlags});
                 MPTTester const ETH(
                     {.env = env,
                      .issuer = gw,
-                     .holders = {alice, carol, bob},
+                     .holders = {alice, carol, bob, gw2},
                      .pay = 100,
                      .flags = tfMPTCanLock | MPTDEXFlags});
                 return std::make_pair(BTC, ETH);
             };
             auto getIOU = [&](Env& env) {
-                for (auto const& iou : {gw["BTC"], gw["ETH"]})
+                for (auto const& a : {alice, carol, bob})
                 {
-                    for (auto const& a : {alice, carol, bob})
-                    {
-                        env(fset(a, asfDefaultRipple));
-                        env.close();
-                        env(trust(a, iou(200)));
-                        env(pay(gw, a, iou(100)));
-                        env.close();
-                    }
+                    env(fset(a, asfDefaultRipple));
+                    env.close();
+                    env(trust(a, gw["ETH"](200)));
+                    env(pay(gw, a, gw["ETH"](100)));
+                    env(trust(a, gw2["BTC"](200)));
+                    env(pay(gw2, a, gw2["BTC"](100)));
+                    env.close();
                 }
-                return std::make_pair(gw["BTC"], gw["ETH"]);
+                // gw2 needs an ETH trust line to receive ETH when its offers fill
+                // gw needs BTC to sell BTC
+                env(trust(gw2, gw["ETH"](200)));
+                env(trust(gw, gw2["BTC"](200)));
+                env(pay(gw2, gw, gw2["BTC"](100)));
+                env.close();
+                return std::make_pair(gw2["BTC"], gw["ETH"]);
             };
             auto lock = [&]<typename Token>(
                             Env& env, Account const& account, Token& token, LockType lock) {
@@ -4244,12 +4285,12 @@ class MPToken_test : public beast::unit_test::suite
                 {
                     if (lock == Global)
                     {
-                        env(fset(gw, asfGlobalFreeze));
+                        env(fset(token.account, asfGlobalFreeze));
                     }
                     else
                     {
                         IOU const iou{account, token.currency};
-                        env(trust(gw, iou(0), tfSetFreeze));
+                        env(trust(token.account, iou(0), tfSetFreeze));
                     }
                 }
                 else if constexpr (std::is_same_v<Token, MPTTester>)
@@ -4266,7 +4307,7 @@ class MPToken_test : public beast::unit_test::suite
             };
             auto test = [&](auto&& getTokens, TestArg const& arg) {
                 Env env(*this);
-                env.fund(XRP(1'000), gw, alice, carol, bob);
+                env.fund(XRP(1'000), gw, gw2, alice, carol, bob);
 
                 auto [BTC, ETH] = getTokens(env);
 
@@ -4284,7 +4325,7 @@ class MPToken_test : public beast::unit_test::suite
                 }
                 if (arg.globalFlagSell != LockType::None)
                 {
-                    lock(env, gw, BTC, LockType::Global);
+                    lock(env, gw2, BTC, LockType::Global);
                 }
                 else
                 {
@@ -4302,34 +4343,58 @@ class MPToken_test : public beast::unit_test::suite
             };
             // clang-format off
             std::vector<TestArg> const tests = {
-                    // src, dst, offer's owner are a holder
-                    {.src = alice, .dst = carol, .offerOwner = bob, .srcFlag = Individual, .err = tecPATH_DRY},
-                    // dst can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = bob, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagBuy = Global, .err = tecPATH_DRY},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagSell = Global, .err = tecPATH_DRY},
-                    // offer's owner can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagBuy = Individual, .err =
-                    tecPATH_PARTIAL, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
-                    // src, dst are a holder, offer's owner is an issuer
-                    {.src = alice, .dst = carol, .offerOwner = gw, .srcFlag = Individual, .err = tecPATH_DRY},
-                    // dst can receive IOU even if the account is frozen
-                    {.src = alice, .dst = carol, .offerOwner = gw, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagBuy = Global, .err = tecPATH_DRY},
-                    {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagSell = Global, .err = tecPATH_DRY},
-                    // src is issuer, dst and offer's owner are a holder
-                    // dst can receive IOU even if the account is frozen
-                    {.src = gw, .dst = carol, .offerOwner = bob, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
-                    // offer's owner can receive IOU from an issuer even if takerBuys is frozen, MPT offer is unfunded in this case
-                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
-                    {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
-                    // dst is issuer, src and offer's owner are a holder
-                    {.src = alice, .dst = gw, .offerOwner = bob, .srcFlag = Individual, .err = tecPATH_DRY},
-                    // offer's owner can receive IOU even if the account is frozen
-                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL,
-                     .errIOU = tesSUCCESS},
-                    {.src = alice, .dst = gw, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                // ----- src=alice (holder), dst=carol (holder), offerOwner=bob (holder) -----
+                // alice's ETH locked: caught in check()
+                {.src = alice, .dst = carol, .offerOwner = bob, .srcFlag = Individual, .err = tecPATH_DRY},
+                // carol's BTC locked: caught in MPT check(); IOU dst can still receive when frozen
+                {.src = alice, .dst = carol, .offerOwner = bob, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                // ETH globally locked: caught in check()
+                {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagBuy = Global, .err = tecPATH_DRY},
+                // BTC globally locked: bob's offer unfunded in OfferStream
+                {.src = alice, .dst = carol, .offerOwner = bob, .globalFlagSell = Global, .err = tecPATH_PARTIAL},
+                // bob's ETH (takerPays) locked: MPT offer unfunded in OfferStream (locked holder cannot receive); IOU can still receive
+                {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
+                // bob's BTC (takerGets) locked: offer unfunded in OfferStream
+                {.src = alice, .dst = carol, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                // ----- src=alice (holder), dst=carol (holder), offerOwner=gw2 (BTC issuer) -----
+                // alice's ETH locked: caught in check()
+                {.src = alice, .dst = carol, .offerOwner = gw2, .srcFlag = Individual, .err = tecPATH_DRY},
+                // carol's BTC locked: caught in MPT check(); IOU dst can still receive when frozen
+                {.src = alice, .dst = carol, .offerOwner = gw2, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                // ETH globally locked: caught in check()
+                {.src = alice, .dst = carol, .offerOwner = gw2, .globalFlagBuy = Global, .err = tecPATH_DRY},
+                // BTC globally locked: gw2 is the BTC issuer, offer always permitted regardless of global freeze
+                {.src = alice, .dst = carol, .offerOwner = gw2, .globalFlagSell = Global, .err = tesSUCCESS},
+                // ----- src=alice (holder), dst=carol (holder), offerOwner=gw (ETH issuer, BTC holder) -----
+                // alice's ETH locked: caught in check()
+                {.src = alice, .dst = carol, .offerOwner = gw, .srcFlag = Individual, .err = tecPATH_DRY},
+                // carol's BTC locked: caught in MPT check(); IOU dst can still receive when frozen
+                {.src = alice, .dst = carol, .offerOwner = gw, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                // ETH globally locked: caught in check()
+                {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagBuy = Global, .err = tecPATH_DRY},
+                // BTC globally locked: gw holds BTC as a holder (not BTC issuer), offer unfunded in OfferStream
+                {.src = alice, .dst = carol, .offerOwner = gw, .globalFlagSell = Global, .err = tecPATH_PARTIAL},
+                // ----- src=gw (ETH issuer), dst=carol (holder), offerOwner=bob (holder) -----
+                // ETH globally locked, src is ETH issuer: no first MPTEndpointStep so check() passes;
+                // MPT offer unfunded in OfferStream (globally-locked ETH cannot flow to holder via DEX); IOU issuer can still issue
+                {.src = gw, .dst = carol, .offerOwner = bob, .srcFlag = Global, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
+                // BTC globally locked: last MPTEndpointStep only checks individual freeze, check() passes; offer unfunded in OfferStream
+                {.src = gw, .dst = carol, .offerOwner = bob, .dstFlag = Global, .err = tecPATH_PARTIAL},
+                // carol's BTC locked: caught in MPT check(); IOU dst can still receive when frozen
+                {.src = gw, .dst = carol, .offerOwner = bob, .dstFlag = Individual, .err = tecPATH_DRY, .errIOU = tesSUCCESS},
+                // bob's ETH (takerPays) locked: MPT offer unfunded in OfferStream (locked holder cannot receive); IOU can still receive
+                {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
+                // bob's BTC (takerGets) locked: offer unfunded in OfferStream
+                {.src = gw, .dst = carol, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
+                // ----- src=alice (holder), dst=gw2 (BTC issuer), offerOwner=bob (holder) -----
+                // alice's ETH locked: caught in check()
+                {.src = alice, .dst = gw2, .offerOwner = bob, .srcFlag = Individual, .err = tecPATH_DRY},
+                // BTC globally locked, dst is BTC issuer: no last MPTEndpointStep so check() passes; offer unfunded in OfferStream
+                {.src = alice, .dst = gw2, .offerOwner = bob, .dstFlag = Global, .err = tecPATH_PARTIAL},
+                // bob's ETH (takerPays) locked: MPT offer unfunded in OfferStream (locked holder cannot receive); IOU can still receive
+                {.src = alice, .dst = gw2, .offerOwner = bob, .offerFlagBuy = Individual, .err = tecPATH_PARTIAL, .errIOU = tesSUCCESS},
+                // bob's BTC (takerGets) locked: offer unfunded in OfferStream
+                {.src = alice, .dst = gw2, .offerOwner = bob, .offerFlagSell = Individual, .err = tecPATH_PARTIAL},
             };
             // clang-format on
 
