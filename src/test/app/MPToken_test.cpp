@@ -3173,7 +3173,7 @@ class MPToken_test : public beast::unit_test::suite
     void
     testEscrowFinishCanTransfer(FeatureBitset features)
     {
-        // BUG-G005: EscrowFinish must re-check canTransfer. If the issuer
+        // EscrowFinish must re-check canTransfer. If the issuer
         // disables lsfMPTCanTransfer after escrow creation, finishing the
         // escrow should fail for holder-to-holder transfers.
         testcase("EscrowFinish re-checks canTransfer");
