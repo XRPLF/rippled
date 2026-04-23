@@ -103,7 +103,8 @@ public:
     TOut
     ownerFunds() const
     {
-        return *ownerFunds_;
+        return *ownerFunds_;  // NOLINT(bugprone-unchecked-optional-access) always set after step()
+                              // is called
     }
 };
 

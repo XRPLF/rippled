@@ -275,7 +275,6 @@ public:
         getObject->set_type(
             protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
         getObject->set_query(true);
-        getObject->set_seq(123456789);
         uint256 hash(xrpl::sha512Half(123456789));
         getObject->set_ledgerhash(hash.data(), hash.size());
         getObject->set_fat(true);
