@@ -138,11 +138,142 @@ public:
     }
 
     void
+    testNoAccountIssuerRpc()
+    {
+        testcase("noAccount issuer rejected via RPC sign");
+
+        using namespace jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString("[signing_support]\ntrue");
+                    return cfg;
+                })};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        Json::Value txJson;
+        txJson[jss::TransactionType] = "AMMDelete";
+        txJson[jss::Account] = alice.human();
+        txJson[jss::Asset][jss::currency] = "USD";
+        txJson[jss::Asset][jss::issuer] = to_string(noAccount());
+        txJson[jss::Asset2][jss::currency] = "XRP";
+
+        Json::Value req;
+        req[jss::tx_json] = txJson;
+        req[jss::secret] = alice.name();
+
+        auto const result = env.rpc("json", "sign", to_string(req))[jss::result];
+
+        BEAST_EXPECT(result[jss::status] == "error");
+        BEAST_EXPECT(result.isMember(jss::error));
+    }
+
+    void
+    testNoAccountIssuer()
+    {
+        testcase("noAccount issuer rejection");
+
+        {
+            Json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = to_string(noAccount());
+
+            try
+            {
+                issueFromJson(sfAsset, jv);
+                fail("issueFromJson accepted noAccount() as IOU issuer");
+            }
+            catch (...)
+            {
+                pass();
+            }
+        }
+
+        {
+            Serializer s;
+            s.addBitString(to_currency("USD"));
+            s.addBitString(noAccount());
+            SerialIter iter(s.slice());
+
+            try
+            {
+                STIssue const stissue(iter, sfAsset);
+                fail(
+                    "STIssue deserialization of [USD][noAccount()] should "
+                    "throw");
+            }
+            catch (...)
+            {
+                pass();
+            }
+        }
+    }
+
+    void
+    testXrpAccountIssuerRpc()
+    {
+        testcase("xrpAccount issuer rejected via RPC sign");
+
+        using namespace jtx;
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->loadFromString("[signing_support]\ntrue");
+                    return cfg;
+                })};
+
+        Account const alice{"alice"};
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        Json::Value txJson;
+        txJson[jss::TransactionType] = "AMMDelete";
+        txJson[jss::Account] = alice.human();
+        txJson[jss::Asset][jss::currency] = "USD";
+        txJson[jss::Asset][jss::issuer] = to_string(xrpAccount());
+        txJson[jss::Asset2][jss::currency] = "XRP";
+
+        Json::Value req;
+        req[jss::tx_json] = txJson;
+        req[jss::secret] = alice.name();
+
+        auto const result = env.rpc("json", "sign", to_string(req))[jss::result];
+
+        BEAST_EXPECT(result[jss::status] == "error");
+        BEAST_EXPECT(result.isMember(jss::error));
+    }
+
+    void
+    testXrpAccountIssuer()
+    {
+        testcase("xrpAccount issuer rejection");
+
+        {
+            Json::Value jv;
+            jv[jss::currency] = "USD";
+            jv[jss::issuer] = to_string(xrpAccount());
+
+            try
+            {
+                issueFromJson(sfAsset, jv);
+                fail("issueFromJson accepted xrpAccount() as IOU issuer");
+            }
+            catch (...)
+            {
+                pass();
+            }
+        }
+    }
+
+    void
     run() override
     {
         // compliments other unit tests to ensure complete coverage
         testConstructor();
         testCompare();
+        testNoAccountIssuerRpc();
+        testNoAccountIssuer();
+        testXrpAccountIssuerRpc();
+        testXrpAccountIssuer();
     }
 };
 
