@@ -63,6 +63,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
     if (authPresent != 0)
     {
         // Make sure that the passed account is valid.
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) authPresent != 0 guarantees one is set
         AccountID const& target(optAuth ? *optAuth : *optUnauth);
         if (!target)
         {

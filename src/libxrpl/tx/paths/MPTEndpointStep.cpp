@@ -556,6 +556,8 @@ MPTEndpointStep<TDerived>::setCacheLimiting(
     MPTAmount const& fwdOut,
     DebtDirection srcDebtDir)
 {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) cache_ always set before setCacheLimiting is
+    // called
     if (cache_->in < fwdIn)
     {
         MPTAmount const smallDiff(1);
@@ -585,6 +587,7 @@ MPTEndpointStep<TDerived>::setCacheLimiting(
     if (fwdOut < cache_->out)
         cache_->out = fwdOut;
     cache_->srcDebtDir = srcDebtDir;
+    // NOLINTEND(bugprone-unchecked-optional-access)
 };
 
 template <class TDerived>
@@ -596,6 +599,7 @@ MPTEndpointStep<TDerived>::fwdImp(
     MPTAmount const& in)
 {
     XRPL_ASSERT(cache_, "MPTEndpointStep<TDerived>::fwdImp : valid cache");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
     auto const [maxSrcToDst, srcDebtDir] = static_cast<TDerived const*>(this)->maxPaymentFlow(sb);
 
@@ -669,6 +673,7 @@ MPTEndpointStep<TDerived>::fwdImp(
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
     }
     return {cache_->in, cache_->out};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class TDerived>
@@ -698,6 +703,7 @@ MPTEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
         return {false, EitherAmount(MPTAmount(beast::zero))};
     }
 
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success
     if (maxSrcToDst < cache_->srcToDst)
     {
         JLOG(j_.warn()) << "MPTEndpointStep: Strand re-execute check failed."
@@ -717,6 +723,7 @@ MPTEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
         return {false, EitherAmount(cache_->out)};
     }
     return {true, EitherAmount(cache_->out)};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 // Returns srcQOut, dstQIn

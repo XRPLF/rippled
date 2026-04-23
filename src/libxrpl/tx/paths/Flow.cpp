@@ -27,7 +27,7 @@ finishFlow(PaymentSandbox& sb, Asset const& srcAsset, Asset const& dstAsset, Flo
     path::RippleCalc::Output result;
     if (isTesSuccess(f.ter))
     {
-        f.sandbox->apply(sb);
+        f.sandbox->apply(sb);  // NOLINT(bugprone-unchecked-optional-access) sandbox set on success
     }
     else
     {
