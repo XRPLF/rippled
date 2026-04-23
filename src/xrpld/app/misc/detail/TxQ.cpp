@@ -876,7 +876,7 @@ TxQ::apply(
         //
         // We only need to check if txIter->first is a blocker because we
         // require that a blocker be alone in the account's queue.
-        // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount > 0 implies txIter is set
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount == 1 implies txIter is set
         if (acctTxCount == 1 && txIter->first->second.consequences().isBlocker() &&
             (txIter->first->first != txSeqProx))
         // NOLINTEND(bugprone-unchecked-optional-access)
