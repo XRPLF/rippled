@@ -7066,7 +7066,7 @@ protected:
     void
     testYieldTheftRounding(std::uint32_t flags)
     {
-        testcase("Yield Theft via Rounding Manipulation");
+        testcase("Rounding manipulation does not permit yield theft");
         using namespace jtx;
         using namespace loan;
 
