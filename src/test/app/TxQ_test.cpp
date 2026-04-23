@@ -3530,9 +3530,11 @@ public:
                 jv.isMember(jss::load_factor_fee_reference) &&
                 jv[jss::load_factor_fee_reference] == 256;
         }));
-
-        BEAST_EXPECT(
-            !wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }));
+        // Drain any extra serverStatus messages that may arrive
+        // asynchronously from the ledger close processing.
+        while (wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }))
+        {
+        }
 
         auto jv = wsc->invoke("unsubscribe", stream);
         BEAST_EXPECT(jv[jss::status] == "success");

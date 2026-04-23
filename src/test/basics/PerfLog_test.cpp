@@ -58,6 +58,13 @@ class PerfLog_test : public beast::unit_test::suite
 
         explicit Fixture(Application& app, beast::Journal j) : app_(app), j_(j)
         {
+            // Clean up any stale state from a previous test run.  On
+            // self-hosted CI runners the temp directory persists between
+            // runs, so the "nasty file" test may have left a regular file
+            // (or a non-empty directory) at the logDir path.
+            using namespace boost::filesystem;
+            boost::system::error_code ec;
+            remove_all(logDir(), ec);
         }
 
         ~Fixture()
