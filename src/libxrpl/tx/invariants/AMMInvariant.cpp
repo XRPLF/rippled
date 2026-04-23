@@ -214,7 +214,10 @@ ValidAMM::generalInvariant(
     bool const nonNegativeBalances =
         validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
     bool const strongInvariantCheck = poolProductMean >= *lptAMMBalanceAfter_;
-    // Allow for a small relative error if strongInvariantCheck fails
+    // Allow for a small relative error if strongInvariantCheck fails.
+    // With fixCleanup_320, the "both fail" case is caught earlier in the
+    // transaction layer (tecPRECISION_LOSS), so this invariant is only
+    // reached when the strong check passes or the weak check saves it.
     auto weakInvariantCheck = [&]() {
         return *lptAMMBalanceAfter_ != beast::zero &&
             withinRelativeDistance(poolProductMean, Number{*lptAMMBalanceAfter_}, Number{1, -11});

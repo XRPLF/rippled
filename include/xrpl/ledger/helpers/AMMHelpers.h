@@ -734,6 +734,19 @@ ammPoolHolds(
     AuthHandling authHandling,
     beast::Journal const j);
 
+/** Check AMM pool product invariant after deposit or withdraw.
+ * Returns tecPRECISION_LOSS if sqrt(asset1 * asset2) < newLPTokenBalance,
+ * tesSUCCESS otherwise. Skips check when newLPTokenBalance is zero (last withdrawal).
+ */
+TER
+checkAMMPrecisionLoss(
+    ReadView const& view,
+    AccountID const& ammAccountID,
+    Asset const& asset1,
+    Asset const& asset2,
+    STAmount const& newLPTokenBalance,
+    beast::Journal j);
+
 /** Get AMM pool and LP token balances. If both optIssue are
  * provided then they are used as the AMM token pair issues.
  * Otherwise the missing issues are fetched from ammSle.

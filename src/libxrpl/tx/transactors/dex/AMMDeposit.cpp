@@ -470,6 +470,15 @@ AMMDeposit::applyGuts(Sandbox& sb)
         XRPL_ASSERT(
             newLPTokenBalance > beast::zero,
             "xrpl::AMMDeposit::applyGuts : valid new LP token balance");
+        if (sb.rules().enabled(fixCleanup_320) && sb.rules().enabled(fixAMMv1_3))
+        {
+            if (auto const ter = checkAMMPrecisionLoss(
+                    sb, ammAccountID, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], newLPTokenBalance, j_);
+                !isTesSuccess(ter))
+            {
+                return {ter, false};
+            }
+        }
         ammSle->setFieldAmount(sfLPTokenBalance, newLPTokenBalance);
         // LP depositing into AMM empty state gets the auction slot
         // and the voting
