@@ -28,4 +28,4 @@ Responsible investigation includes, but isn't limited to, the following:
 
 This program allows us to recognize and reward individuals or groups that identify and report bugs.
 
-We have partnered with Bugcrowd to manage this program. It is a private program, and security researchers can participate based on invitation. However, if you plan to submit a bug, please email bugs@ripple.com with your Bugcrowd handle or Bugcrowd registered email. We will get you added to the program. The detailed bug bounty policy is available on the Bugcrowd website.
+We have partnered with [Bugcrowd](https://bugcrowd.com/) to manage this program. It is a private program, and security researchers can participate based on invitation. However, if you plan to submit a bug, please email bugs@ripple.com with your Bugcrowd handle or Bugcrowd registered email. We will get you added to the program. The detailed bug bounty policy is available on the Bugcrowd website.
