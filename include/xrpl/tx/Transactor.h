@@ -253,6 +253,22 @@ public:
     static NotTEC
     invokeCheckPermission(ReadView const& view, STTx const& tx)
     {
+        // heldGranularPermissions is passed by reference into checkPermission.
+        // It is populated with the sender’s granular permissions only when the sender
+        // lacks tx-level permission but has granular permissions that satisfy the
+        // granular permission template.
+        //
+        // - result is terNO_DELEGATE_PERMISSION: return immediately.
+        // - result is tesSUCCESS and heldGranularPermissions is empty: tx-level permission was
+        // granted, so we returned success before populating it.
+        // - result is tesSUCCESS and heldGranularPermissions is not empty: tx-level permission was
+        // not granted, but the held granular permissions passed checkGranularSandbox, so we proceed
+        // to checkGranularSemantics.
+        //
+        // WARNING: Do not simplify checkPermission to return only
+        // heldGranularPermissions or the ter code. Both the result and the
+        // populated set are required to enforce the strict permission hierarchy
+        // described above.
         std::unordered_set<GranularPermissionType> heldGranularPermissions;
         if (NotTEC const result = checkPermission(view, tx, heldGranularPermissions);
             !isTesSuccess(result) || heldGranularPermissions.empty())
