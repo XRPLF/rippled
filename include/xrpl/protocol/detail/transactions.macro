@@ -1236,8 +1236,6 @@ TRANSACTION(ttCONTRACT_USER_DELETE, 89, ContractUserDelete,
     Emittance::notEmitable,
     ({
     {sfContractAccount, soeREQUIRED},
-    {sfFunctionName, soeREQUIRED},
-    {sfParameters, soeOPTIONAL},
     {sfComputationAllowance, soeREQUIRED},
 }))
 
