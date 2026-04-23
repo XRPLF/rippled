@@ -58,13 +58,14 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
     return view_->apply(base_, tx, ter, parentBatchId_, (flags_ & tapDRY_RUN) != 0u, journal);
 }
 
 std::size_t
 ApplyContext::size()
 {
-    return view_->size();
+    return view_->size();  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 void
@@ -75,7 +76,7 @@ ApplyContext::visit(
         std::shared_ptr<SLE const> const&,
         std::shared_ptr<SLE const> const&)> const& func)
 {
-    view_->visit(base_, func);
+    view_->visit(base_, func);  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 TER
@@ -116,8 +117,8 @@ ApplyContext::checkInvariantsHelper(
         // short-circuits). While the logic is still correct, the log
         // message won't be. Every failed invariant should write to the log,
         // not just the first one.
-        std::array<bool, sizeof...(Is)> const finalizers{
-            {std::get<Is>(checkers).finalize(tx, result, fee, *view_, journal)...}};
+        std::array<bool, sizeof...(Is)> const finalizers{{std::get<Is>(checkers).finalize(
+            tx, result, fee, *view_, journal)...}};  // NOLINT(bugprone-unchecked-optional-access)
 
         // call each check's finalizer to see that it passes
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
