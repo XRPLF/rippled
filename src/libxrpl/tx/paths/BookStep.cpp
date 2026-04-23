@@ -610,7 +610,13 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
 
     // CLOB
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, *(res->quality()), prevStepDir, WaiveTransferFee::No, OfferType::CLOB, v.rules());
+        v,
+        *(res->quality()),  // NOLINT(bugprone-unchecked-optional-access) CLOB QualityFunction
+                            // always has quality set
+        prevStepDir,
+        WaiveTransferFee::No,
+        OfferType::CLOB,
+        v.rules());
     return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
@@ -1285,6 +1291,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
         return {false, EitherAmount(TOut(beast::zero))};
     }
 
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success
     if (!(checkNear(savCache.in, cache_->in) && checkNear(savCache.out, cache_->out)))
     {
         JLOG(j_.warn()) << "Strand re-execute check failed."
@@ -1295,6 +1302,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
         return {false, EitherAmount(cache_->out)};
     }
     return {true, EitherAmount(cache_->out)};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class TIn, class TOut, class TDerived>
