@@ -189,6 +189,18 @@ escrowFinishPreclaimHelper<MPTIssue>(
     if (isFrozen(ctx.view, dest, mptIssue))
         return tecLOCKED;
 
+    if (ctx.view.rules().enabled(featureDynamicMPT))
+    {
+        // Re-check canTransfer at finish time. EscrowCreate validates this at
+        // creation, but the issuer may have disabled lsfMPTCanTransfer (via
+        // DynamicMPT) while the escrow was pending. Without this check, a
+        // holder-to-holder transfer could complete despite transfers being
+        // blocked.
+        if (auto const ter = canTransfer(ctx.view, mptIssue, ctx.tx[sfOwner], dest);
+            !isTesSuccess(ter))
+            return ter;
+    }
+
     return tesSUCCESS;
 }
 

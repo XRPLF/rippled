@@ -3171,6 +3171,82 @@ class MPToken_test : public beast::unit_test::suite
     }
 
     void
+    testEscrowFinishCanTransfer(FeatureBitset features)
+    {
+        // BUG-G005: EscrowFinish must re-check canTransfer. If the issuer
+        // disables lsfMPTCanTransfer after escrow creation, finishing the
+        // escrow should fail for holder-to-holder transfers.
+        testcase("EscrowFinish re-checks canTransfer");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // Always start with DynamicMPT enabled so MPTokenIssuanceCreate
+        // with sfMutableFlags succeeds. Disable it later for the
+        // pre-amendment path.
+        Env env{*this, features | featureDynamicMPT};
+        auto const baseFee = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+
+        MPTTester mptAlice(env, alice, {.holders = {carol, bob}});
+        mptAlice.create(
+            {.ownerCount = 1,
+             .holderCount = 0,
+             .flags = tfMPTCanTransfer | tfMPTCanEscrow,
+             .mutableFlags = tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanEscrow});
+        mptAlice.authorize({.account = carol});
+        mptAlice.authorize({.account = bob});
+
+        auto const MPT = mptAlice["MPT"];
+        env(pay(alice, carol, MPT(10'000)));
+        env(pay(alice, bob, MPT(10'000)));
+        env.close();
+
+        // Create escrow from carol to bob while canTransfer is enabled
+        auto const seq = env.seq(carol);
+        env(escrow::create(carol, bob, MPT(3)),
+            escrow::condition(escrow::cb1),
+            escrow::finish_time(env.now() + 1s),
+            fee(baseFee * 150));
+        env.close();
+
+        // Issuer disables canTransfer
+        mptAlice.set({.account = alice, .mutableFlags = tmfMPTClearCanTransfer});
+
+        if (features[featureDynamicMPT])
+        {
+            // Post-amendment: EscrowFinish re-checks canTransfer and fails
+            env(escrow::finish(bob, carol, seq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tecNO_AUTH));
+
+            env.close();
+
+            // Re-enable canTransfer — EscrowFinish succeeds
+            mptAlice.set({.account = alice, .mutableFlags = tmfMPTSetCanTransfer});
+
+            env(escrow::finish(bob, carol, seq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150));
+        }
+        else
+        {
+            // Pre-amendment: disable DynamicMPT so the re-check is skipped.
+            // EscrowFinish succeeds despite canTransfer being disabled.
+            env.disableFeature(featureDynamicMPT);
+            env.close();
+            env(escrow::finish(bob, carol, seq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150));
+        }
+    }
+
+    void
     testMutateCanTransfer(FeatureBitset features)
     {
         testcase("Mutate MPTCanTransfer");
@@ -6788,6 +6864,8 @@ public:
         testMutateCanEscrow(all);
         testMutateCanTransfer(all);
         testMutateCanTransfer(all - featureMPTokensV2);
+        testEscrowFinishCanTransfer(all);
+        testEscrowFinishCanTransfer(all - featureDynamicMPT);
         testMutateCanClawback(all);
 
         // Test offer crossing
