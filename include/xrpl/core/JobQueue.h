@@ -11,7 +11,7 @@
 // Avoid `boost/coroutine2/all.hpp` because it transitively pulls in
 // `boost/context/pooled_fixedsize_stack.hpp`, whose `.malloc()` / `.free()`
 // member calls on `boost::pool` collide with MSVC's `_CRTDBG_MAP_ALLOC` macros
-// in non-CI Debug builds (see cmake/XrplCompiler.cmake).
+// in Debug builds (see cmake/XrplCompiler.cmake).
 #include <boost/context/protected_fixedsize_stack.hpp>
 #include <boost/coroutine2/coroutine.hpp>
 #include <boost/coroutine2/protected_fixedsize_stack.hpp>
