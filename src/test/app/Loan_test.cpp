@@ -7197,6 +7197,405 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
+    // Reproduction of overpay_valid_overpayment.pdf.
+    // An overpayment whose residual amount is NOT rounded to loanScale
+    // fires the isRounded(asset, overpayment, loanScale) assertion in
+    // computeOverpaymentComponents.
+    void
+    testBugOverpayUnroundedAmount()
+    {
+        testcase("bug: computeOverpaymentComponents isRounded assertion");
+
+        using namespace jtx;
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const vaultOwner{"vaultOwner"};
+        Account const depositor{"depositor"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, vaultOwner, depositor, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const iouAsset = issuer["USD"];
+        STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
+        env(trust(vaultOwner, iouLimit));
+        env(trust(depositor, iouLimit));
+        env(trust(borrower, iouLimit));
+        env.close();
+        env(pay(issuer, vaultOwner, iouAsset(1'000'000)));
+        env(pay(issuer, depositor, iouAsset(1'000'000)));
+        env(pay(issuer, borrower, iouAsset(1'000'000)));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = vaultOwner, .asset = iouAsset});
+        vaultTx[sfScale] = 1;
+        env(vaultTx);
+        env.close();
+        env(vault.deposit(
+            {.depositor = depositor, .id = vaultKeylet.key, .amount = iouAsset(100'000)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(vaultOwner.id(), env.seq(vaultOwner));
+        {
+            using namespace loanBroker;
+            env(set(vaultOwner, vaultKeylet.key),
+                managementFeeRate(TenthBips16{1000}),
+                debtMaximum(Number{5000}),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        auto const brokerStateBefore = env.le(brokerKeylet);
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+
+        using namespace loan;
+        auto createJson = env.json(
+            set(borrower, brokerKeylet.key, Number{1000}, tfLoanOverpayment),
+            fee(env.current()->fees().base * 2),
+            json(sfCounterpartySignature, Json::objectValue));
+
+        createJson["InterestRate"] = 10000;
+        createJson["PaymentTotal"] = 12;
+        createJson["PaymentInterval"] = 60;
+        createJson["GracePeriod"] = 60;
+        createJson["OverpaymentFee"] = 1000;
+        createJson["OverpaymentInterestRate"] = 1000;
+        createJson = env.json(createJson, sig(sfCounterpartySignature, vaultOwner));
+        env(createJson, ter(tesSUCCESS));
+        env.close();
+
+        // periodic * 1.5 at 15-sig-digit precision: 125.000154585042. This
+        // has too many digits to round cleanly to loanScale=-10, so the
+        // overpayment residual fails the isRounded check.
+        STAmount const payAmount{iouAsset.raw(), Number{125'000'154'585'042LL, -12}};
+        env(pay(borrower, loanKeylet.key, payAmount), txflags(tfLoanOverpayment), ter(tesSUCCESS));
+        env.close();
+    }
+
+    // Reproduction of overpay_interest_paid_agrees.pdf.
+    // An overpayment larger than the periodic payment enters the overpayment
+    // path with a residual rounded to loanScale (13 sig digits). The
+    // re-amortization then fires the "interest paid agrees" assertion in
+    // doOverpayment because the value change formula includes a
+    // management-fee delta that the independent derivation doesn't.
+    void
+    testBugOverpayInterestPaidAgrees()
+    {
+        testcase("bug: doOverpayment 'interest paid agrees' assertion");
+
+        using namespace jtx;
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const vaultOwner{"vaultOwner"};
+        Account const depositor{"depositor"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, vaultOwner, depositor, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const iouAsset = issuer["USD"];
+        STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
+        env(trust(vaultOwner, iouLimit));
+        env(trust(depositor, iouLimit));
+        env(trust(borrower, iouLimit));
+        env.close();
+        env(pay(issuer, vaultOwner, iouAsset(1'000'000)));
+        env(pay(issuer, depositor, iouAsset(1'000'000)));
+        env(pay(issuer, borrower, iouAsset(1'000'000)));
+        env.close();
+
+        // Vault with Scale=1
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = vaultOwner, .asset = iouAsset});
+        vaultTx[sfScale] = 1;
+        env(vaultTx);
+        env.close();
+        env(vault.deposit(
+            {.depositor = depositor, .id = vaultKeylet.key, .amount = iouAsset(100'000)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(vaultOwner.id(), env.seq(vaultOwner));
+        {
+            using namespace loanBroker;
+            env(set(vaultOwner, vaultKeylet.key),
+                managementFeeRate(TenthBips16{1000}),  // 0.1%
+                debtMaximum(Number{5000}),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        auto const brokerStateBefore = env.le(brokerKeylet);
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+
+        // Loan with overpayment allowed.
+        using namespace loan;
+        auto createJson = env.json(
+            set(borrower, brokerKeylet.key, Number{1000}, tfLoanOverpayment),
+            fee(env.current()->fees().base * 2),
+            json(sfCounterpartySignature, Json::objectValue));
+
+        createJson["InterestRate"] = 10000;  // 1%
+        createJson["PaymentTotal"] = 12;
+        createJson["PaymentInterval"] = 60;
+        createJson["GracePeriod"] = 60;
+        createJson["OverpaymentFee"] = 1000;
+        createJson["OverpaymentInterestRate"] = 1000;
+        createJson = env.json(createJson, sig(sfCounterpartySignature, vaultOwner));
+        env(createJson, ter(tesSUCCESS));
+        env.close();
+
+        // PeriodicPayment ~= 83.33343639002831971; overpay = periodic * 1.5
+        // rounded to 13 sig digits: 125.000154585.
+        STAmount const payAmount{iouAsset.raw(), Number{125'000'154'585LL, -9}};
+        env(pay(borrower, loanKeylet.key, payAmount), txflags(tfLoanOverpayment), ter(tesSUCCESS));
+        env.close();
+    }
+
+    // Reproduction of late_payment_precision.pdf.
+    // A late loan payment sums up regular payment + late interest + late
+    // fee + management fee on late interest. Each STAmount transfer is
+    // rounded individually, so the sum can lose a sub-0.00001 fractional
+    // part differently on the before- and after-sum. The debug-only
+    // "funds are conserved" assertion in LoanPay::doApply fires.
+    void
+    testBugLatePaymentFundConservation()
+    {
+        testcase("bug: LoanPay fund-conservation assertion on late IOU payment");
+
+        using namespace jtx;
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const iouAsset = issuer["USD"];
+        STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
+        env(trust(lender, iouLimit));
+        env(trust(borrower, iouLimit));
+        env.close();
+        env(pay(issuer, lender, iouAsset(9'999'999'999LL)));
+        env(pay(issuer, borrower, iouAsset(9'999'999'999LL)));
+        env.close();
+
+        // Broker: 0.5% management fee on interest.
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 5'000'000'000LL,
+            .debtMax = 1'000'000'000,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{5000},
+            .coverRateLiquidation = TenthBips32{0}};
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
+
+        using namespace loan;
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+
+        auto createJson = env.json(
+            set(borrower, broker.brokerID, Number{1'000'000}),
+            fee(loanSetFee),
+            json(sfCounterpartySignature, Json::objectValue));
+
+        createJson["InterestRate"] = 50000;
+        createJson["LateInterestRate"] = 100000;
+        createJson["PaymentTotal"] = 4;
+        createJson["PaymentInterval"] = 60;
+        createJson["GracePeriod"] = 60;
+        createJson["LoanServiceFee"] = "0.01";
+        createJson["LatePaymentFee"] = "0.01";
+
+        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(broker.brokerID, loanSequence);
+
+        createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
+        env(createJson, ter(tesSUCCESS));
+        env.close();
+
+        auto const loanSle = env.le(loanKeylet);
+        BEAST_EXPECT(loanSle);
+        if (!loanSle)
+            return;
+        Number const tvo = loanSle->at(sfTotalValueOutstanding);
+        log << "TVO=" << tvo << " NextDue=" << loanSle->at(sfNextPaymentDueDate)
+            << " PeriodicPayment=" << loanSle->at(sfPeriodicPayment) << std::endl;
+
+        // Advance past payment due date + grace period so the payment is
+        // late enough that late interest + late fee are charged. The bug
+        // report advances 1000 ledger accepts (each advances 1 second).
+        for (int i = 0; i < 1000; ++i)
+            env.close(std::chrono::seconds(1));
+
+        // Huge late payment — tfLoanLatePayment triggers the
+        // late-interest + late-fee path that loses precision. Use
+        // max(50*TVO, 50M) per the bug report.
+        Number const amount = std::max(tvo * Number{50}, Number{50'000'000});
+        STAmount const payAmount{iouAsset.raw(), amount};
+        env(loan::pay(borrower, loanKeylet.key, payAmount, tfLoanLatePayment));
+        env.close();
+    }
+
+    // Reproduction of do_payment_partial_principal.pdf.
+    // An integer-scale MPT loan with principal=1 and high interest causes
+    // the second LoanPay to compute a principal delta equal to the full
+    // outstanding (1), but the code still classifies this as a non-final
+    // payment because TVO > roundedPeriodicPayment. The strict > assertion
+    // in doPayment fires.
+    void
+    testBugDoPaymentPartialPrincipal()
+    {
+        testcase("bug: doPayment asserts partial principal on integer MPT");
+
+        using namespace jtx;
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, lender, borrower);
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create({.maxAmt = 100'000, .flags = tfMPTCanTransfer});
+        PrettyAsset const asset{mptt.issuanceID()};  // scale = 1
+
+        mptt.authorize({.account = lender});
+        mptt.authorize({.account = borrower});
+
+        env(pay(issuer, lender, asset(10'000)));
+        env(pay(issuer, borrower, asset(10'000)));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = asset});
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = asset(5000)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        {
+            using namespace loanBroker;
+            env(set(lender, vaultKeylet.key),
+                debtMaximum(Number{100}),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        auto const brokerStateBefore = env.le(brokerKeylet);
+        BEAST_EXPECT(brokerStateBefore);
+        if (!brokerStateBefore)
+            return;
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+
+        // Loan: principal=1, interest=5% (50000 tenth-bips),
+        // 3 payments, 1 year interval.
+        {
+            using namespace loan;
+            env(set(borrower, brokerKeylet.key, Number{1}),
+                sig(sfCounterpartySignature, lender),
+                interestRate(TenthBips32{50'000}),
+                paymentTotal(3),
+                paymentInterval(31'536'000),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        // LoanPay 2 MPT — the second computePaymentComponents call inside
+        // doPayment fires the "Partial principal payment" assertion.
+        env(loan::pay(borrower, loanKeylet.key, asset(2)), ter(tesSUCCESS));
+        env.close();
+    }
+
+    // Reproduction of compute_payment_components_interest_due_delta.pdf.
+    // A near-zero interest rate (1 TenthBips = 0.0001%) on a 100 USD loan
+    // produces total interest of ~6 units at loanScale -9. Numerical error
+    // in the amortization formula pushes the theoretical principal above
+    // the theoretical value, producing a negative theoretical interest.
+    // The payment delta then exceeds the actual outstanding interest,
+    // violating XRPL_ASSERT_PARTS in computePaymentComponents.
+    void
+    testBugInterestDueDeltaCrash()
+    {
+        testcase("bug: LoanPay asserts 'interest due delta' on near-zero rate");
+
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, lender, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const iouAsset = issuer["USD"];
+        env(trust(lender, iouAsset(1'000'000'000)));
+        env(trust(borrower, iouAsset(1'000'000'000)));
+        env(pay(issuer, lender, iouAsset(5'000'000)));
+        env(pay(issuer, borrower, iouAsset(5'000'000)));
+        env.close();
+
+        BrokerParameters const brokerParams{
+            .vaultDeposit = 1'000'000,
+            .debtMax = 1'000'000,
+            .coverRateMin = TenthBips32{0},
+            .coverDeposit = 0,
+            .managementFeeRate = TenthBips16{0},
+            .coverRateLiquidation = TenthBips32{0}};
+
+        BrokerInfo const broker{createVaultAndBroker(env, iouAsset, lender, brokerParams)};
+
+        using namespace loan;
+
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        Number const principalRequest{100};
+
+        auto createJson = env.json(
+            set(borrower, broker.brokerID, principalRequest),
+            fee(loanSetFee),
+            json(sfCounterpartySignature, Json::objectValue));
+
+        createJson["InterestRate"] = 1;  // minimum non-zero rate
+        createJson["PaymentTotal"] = 3;
+        createJson["PaymentInterval"] = 600;
+
+        auto const brokerStateBefore = env.le(keylet::loanbroker(broker.brokerID));
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const keylet = keylet::loan(broker.brokerID, loanSequence);
+
+        createJson = env.json(createJson, sig(sfCounterpartySignature, lender));
+        env(createJson, ter(tesSUCCESS));
+        env.close();
+
+        // LoanPay for 35 USD — just over the ~33.33 periodic payment. If the
+        // bug is present, rippled aborts on the assertion; if fixed, the tx
+        // should apply successfully.
+        env(pay(borrower, keylet.key, iouAsset(35)), ter(tesSUCCESS));
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -7253,6 +7652,16 @@ public:
         testLoanPayBrokerOwnerNoPermissionedDomainMPT();
         testLoanSetBrokerOwnerNoPermissionedDomainMPT();
         testSequentialFLCDepletion();
+
+        // Bug reproductions (externally-reported assertion failures).
+        // Each aborts the debug binary when the bug is still present.
+        // testBugAssociateAssetRoundingDeposit() and testBugLastShareholderStuck()
+        // live in Vault_test.
+        testBugInterestDueDeltaCrash();
+        testBugDoPaymentPartialPrincipal();
+        testBugLatePaymentFundConservation();
+        testBugOverpayInterestPaidAgrees();
+        testBugOverpayUnroundedAmount();
     }
 };
 

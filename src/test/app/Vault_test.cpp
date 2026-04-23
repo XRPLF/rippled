@@ -6139,6 +6139,188 @@ class Vault_test : public beast::unit_test::suite
         runTest(amendments);
     }
 
+    // Reproduction of associateasset_rounding_bug.pdf.
+    // Alice deposits 9999999999999999 USD (16-digit IOU max). A 5e15 loan is
+    // issued so the vault's trust line drops to 4999999999999999. Bob then
+    // deposits 2 USD. sfAssetsTotal would become 10000000000000001 (17 digits);
+    // associateAsset() rounds it to 10000000000000000, so the invariant
+    // "deposit and assets outstanding must add up" fires.
+    void
+    testBugAssociateAssetRoundingDeposit()
+    {
+        using namespace test::jtx;
+        testcase("bug: associateAsset rounding fires deposit invariant");
+
+        Env env(*this);
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, alice, bob, borrower);
+        env.close();
+
+        env(fset(issuer, asfDefaultRipple));
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const usd{issuer["USD"]};
+
+        STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+        STAmount const aliceFund{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+        env(trust(alice, trustLimit));
+        env(trust(bob, trustLimit));
+        env(trust(borrower, trustLimit));
+        env.close();
+
+        env(pay(issuer, alice, aliceFund));
+        env(pay(issuer, bob, usd(1000)));
+        env.close();
+
+        Vault const vault{env};
+
+        // Scale=0 so sfAssetsTotal stores whole USD
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = alice, .asset = usd});
+        vaultTx[sfScale] = 0;
+        env(vaultTx);
+        env.close();
+
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = aliceFund}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        {
+            using namespace loanBroker;
+            env(set(alice, vaultKeylet.key),
+                debtMaximum(Number{9, 15}),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        // 5e15 principal — disburses 5000000000000000 from vault to borrower.
+        {
+            using namespace loan;
+            env(set(borrower, brokerKeylet.key, Number{5, 15}),
+                sig(sfCounterpartySignature, alice),
+                paymentTotal(4),
+                paymentInterval(600),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = usd(2)}),
+            ter(tecINVARIANT_FAILED));
+        env.close();
+    }
+
+    // Reproduction of last_shareholder_stuck.pdf.
+    // After a loan is impaired, the vault has LossUnrealized > 0. Bob withdraws
+    // all his shares successfully, but when the Lender tries to burn the final
+    // shares, AssetsTotal would not drop to zero (it still includes the
+    // impaired LossUnrealized), violating the zero-sized-vault invariant.
+    void
+    testBugLastShareholderStuck()
+    {
+        using namespace test::jtx;
+        testcase("bug: last shareholder stuck after loan impairment");
+
+        Env env(*this);
+
+        Account const issuer{"issuer"};
+        Account const lender{"lender"};
+        Account const bob{"bob"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(100'000), issuer, lender, bob, borrower);
+        env.close();
+
+        env(fset(issuer, asfDefaultRipple));
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+
+        PrettyAsset const usd{issuer["USD"]};
+        STAmount const trustLimit{usd.raw(), Number{9'999'999'999'999'999LL}};
+
+        env(trust(lender, trustLimit));
+        env(trust(bob, trustLimit));
+        env(trust(borrower, trustLimit));
+        env.close();
+
+        env(pay(issuer, lender, usd(5000)));
+        env(pay(issuer, bob, usd(100'000)));
+        env.close();
+
+        Vault const vault{env};
+
+        // Scale=1 per the bug report — gives 10 shares per 1 USD unit.
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = lender, .asset = usd});
+        vaultTx[sfScale] = 1;
+        env(vaultTx);
+        env.close();
+
+        auto const vaultSle = env.le(vaultKeylet);
+        BEAST_EXPECT(vaultSle);
+        if (!vaultSle)
+            return;
+        auto const shareMptID = vaultSle->at(sfShareMPTID);
+        MPTIssue const shares(shareMptID);
+        PrettyAsset const share{shares};
+
+        env(vault.deposit({.depositor = lender, .id = vaultKeylet.key, .amount = usd(5000)}));
+        env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = usd(5000)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(lender.id(), env.seq(lender));
+        {
+            using namespace loanBroker;
+            env(set(lender, vaultKeylet.key),
+                debtMaximum(Number{5000}),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        // Capture the loan sequence *before* LoanSet — the new loan gets that id.
+        auto const brokerSleBefore = env.le(brokerKeylet);
+        BEAST_EXPECT(brokerSleBefore);
+        if (!brokerSleBefore)
+            return;
+        auto const loanSequence = brokerSleBefore->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+
+        // 3333 principal, 4 payments, 600s interval — matches report.
+        {
+            using namespace loan;
+            env(set(borrower, brokerKeylet.key, Number{3333}),
+                sig(sfCounterpartySignature, lender),
+                paymentTotal(4),
+                paymentInterval(600),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        // Impair the loan.
+        {
+            using namespace loan;
+            env(manage(lender, loanKeylet.key, tfLoanImpair), fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        // Bob withdraws all 50000 shares — succeeds.
+        env(vault.withdraw(
+            {.depositor = bob, .id = vaultKeylet.key, .amount = STAmount(share, 50'000)}));
+        env.close();
+
+        // Lender tries to withdraw the remaining 50000 shares. Burning the
+        // last shares would leave sfAssetsTotal == sfLossUnrealized != 0,
+        // violating "updated zero sized vault must have no assets outstanding".
+        env(vault.withdraw(
+                {.depositor = lender, .id = vaultKeylet.key, .amount = STAmount(share, 50'000)}),
+            ter(tecINVARIANT_FAILED));
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -6162,6 +6344,8 @@ public:
         testAssetsMaximum();
         testBug6_LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
+        testBugAssociateAssetRoundingDeposit();
+        testBugLastShareholderStuck();
     }
 };
 
