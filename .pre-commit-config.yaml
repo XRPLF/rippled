@@ -20,6 +20,22 @@ repos:
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
+  - repo: local
+    hooks:
+      - id: clang-tidy
+        name: "clang-tidy (enable with: TIDY=1)"
+        entry: ./bin/pre-commit/clang_tidy_check.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen
+        pass_filenames: false # script determines the staged files itself
+      - id: fix-include-style
+        name: fix include style
+        entry: ./bin/pre-commit/fix_include_style.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
+
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: cd481d7b0bfb5c7b3090c21846317f9a8262e891 # frozen: v22.1.0
     hooks:
@@ -67,14 +83,6 @@ repos:
 
   - repo: local
     hooks:
-      - id: clang-tidy
-        name: "clang-tidy (enable with: TIDY=1)"
-        entry: ./bin/pre-commit/clang_tidy_check.py
-        language: python
-        types_or: [c++, c]
-        exclude: ^include/xrpl/protocol_autogen
-        pass_filenames: false # script determines the staged files itself
-
       - id: nix-fmt
         name: Format Nix files
         entry: |
