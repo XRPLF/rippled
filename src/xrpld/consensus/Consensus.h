@@ -1224,8 +1224,8 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
          << "offline: " << offline << ", "
          << "quorum: " << quorum << ")";
 
-    if ((ahead == 0u) or (laggards == 0u) or (totalValidators == 0u) or not adaptor_.validator() or
-        not adaptor_.haveValidated() or
+    if ((ahead == 0u) || (laggards == 0u) || (totalValidators == 0u) || !adaptor_.validator() ||
+        !adaptor_.haveValidated() ||
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) result_ set as shouldPause called
         result_->roundTime.read() > parms.ledgerMAX_CONSENSUS)
     {
