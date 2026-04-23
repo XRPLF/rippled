@@ -51,7 +51,7 @@ Permission::Permission()
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
-#define GRANULAR_PERMISSION(type, txType, value, flags, fields) {#type, type},
+#define GRANULAR_PERMISSION(type, ...) {#type, type},
 
 #include <xrpl/protocol/detail/permissions.macro>
 
@@ -63,7 +63,7 @@ Permission::Permission()
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
-#define GRANULAR_PERMISSION(type, txType, value, flags, fields) {type, #type},
+#define GRANULAR_PERMISSION(type, ...) {type, #type},
 
 #include <xrpl/protocol/detail/permissions.macro>
 
@@ -75,7 +75,7 @@ Permission::Permission()
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
-#define GRANULAR_PERMISSION(type, txType, value, flags, fields) {type, txType},
+#define GRANULAR_PERMISSION(type, txType, ...) {type, txType},
 
 #include <xrpl/protocol/detail/permissions.macro>
 

@@ -24,7 +24,7 @@ enum GranularPermissionType : std::uint32_t {
 #pragma push_macro("GRANULAR_PERMISSION")
 #undef GRANULAR_PERMISSION
 
-#define GRANULAR_PERMISSION(name, txType, value, allowedFlags, allowedFields) name = (value),
+#define GRANULAR_PERMISSION(name, txType, value, ...) name = (value),
 
 #include <xrpl/protocol/detail/permissions.macro>
 
