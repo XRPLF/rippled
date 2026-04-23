@@ -144,6 +144,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
     // Charge one base fee per paymentsPerFeeIncrement payments, rounding up.
+    // This set round is safe because there's a mode guard just above
     Number::setround(Number::upward);
     auto const feeIncrements = std::max(
         std::int64_t(1),
@@ -699,6 +700,10 @@ LoanPay::doApply()
         // if the scales are not already all the same.
         return std::min(min == max ? max : max + 1, STAmount::cMaxOffset);
     }();
+
+    // No object changes are made below this point
+    XRPL_ASSERT(Number::getround() == Number::to_nearest);
+    NumberRoundModeGuard mg(Number::to_nearest);
 
     auto const accountBalanceBeforeRounded = roundToScale(accountBalanceBefore, balanceScale);
     auto const vaultBalanceBeforeRounded = roundToScale(vaultBalanceBefore, balanceScale);
