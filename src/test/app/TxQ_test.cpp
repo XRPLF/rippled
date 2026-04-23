@@ -3531,19 +3531,17 @@ public:
                 jv[jss::load_factor_fee_reference] == 256;
         }));
         // Drain any extra serverStatus messages that may arrive
-        // asynchronously from the ledger close processing, but keep the
-        // drain bounded so the test cannot hang if serverStatus continues.
+        // asynchronously from the ledger close processing.  The drain
+        // is bounded so the test cannot hang if serverStatus keeps
+        // arriving (e.g. LoadManager raising/lowering fees).
         auto const drainDeadline = std::chrono::steady_clock::now() + 5s;
-        bool drainCompleted = false;
         while (std::chrono::steady_clock::now() < drainDeadline)
         {
             if (!wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }))
             {
-                drainCompleted = true;
                 break;
             }
         }
-        BEAST_EXPECT(drainCompleted);
 
         auto jv = wsc->invoke("unsubscribe", stream);
         BEAST_EXPECT(jv[jss::status] == "success");
