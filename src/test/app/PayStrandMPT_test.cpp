@@ -1,24 +1,50 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
-namespace xrpl {
-namespace test {
+#include <optional>
+#include <type_traits>
+
+namespace xrpl::test {
 
 struct PayStrandMPT_test : public beast::unit_test::suite
 {
     static jtx::DirectStepInfo
     makeEndpointStep(jtx::Account const& src, jtx::Account const& dst, jtx::IOU const& iou)
     {
-        return jtx::DirectStepInfo{src, dst, iou.currency};
+        return jtx::DirectStepInfo{.src = src, .dst = dst, .currency = iou.currency};
     }
     static jtx::MPTEndpointStepInfo
     makeEndpointStep(jtx::Account const& src, jtx::Account const& dst, jtx::MPT const& mpt)
     {
-        return jtx::MPTEndpointStepInfo{src, dst, mpt.mpt()};
+        return jtx::MPTEndpointStepInfo{.src = src, .dst = dst, .mptid = mpt.mpt()};
     }
 
     void
@@ -623,5 +649,4 @@ struct PayStrandMPT_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PayStrandMPT, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

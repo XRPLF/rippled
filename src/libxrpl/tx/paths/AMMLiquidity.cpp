@@ -1,5 +1,30 @@
 #include <xrpl/tx/paths/AMMLiquidity.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMOffer.h>
+#include <xrpl/tx/transactors/dex/AMMContext.h>
+
+#include <cstdint>
+#include <exception>
+#include <optional>
+#include <stdexcept>
 
 namespace xrpl {
 

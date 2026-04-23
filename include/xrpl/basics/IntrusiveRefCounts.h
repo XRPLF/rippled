@@ -247,7 +247,7 @@ IntrusiveRefCounts::releaseStrongRef() const
 
     using enum ReleaseStrongRefAction;
     auto prevIntVal = refCounts.load(std::memory_order_acquire);
-    while (1)
+    while (true)
     {
         RefCountPair const prevVal{prevIntVal};
         XRPL_ASSERT(
@@ -298,7 +298,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
     // Note: If this becomes a perf bottleneck, the `partialDestroyStartedMask`
     // may be able to be set non-atomically. But it is easier to reason about
     // the code if the flag is set atomically.
-    while (1)
+    while (true)
     {
         RefCountPair const prevVal{prevIntVal};
         // Converted the last strong pointer to a weak pointer.
@@ -343,7 +343,7 @@ IntrusiveRefCounts::releaseWeakRef() const
     RefCountPair prev = prevIntVal;
     if (prev.weak == 1 && prev.strong == 0)
     {
-        if (!prev.partialDestroyStartedBit)
+        if (prev.partialDestroyStartedBit == 0u)
         {
             // This case should only be hit if the partialDestroyStartedBit is
             // set non-atomically (and even then very rarely). The code is kept
@@ -352,7 +352,7 @@ IntrusiveRefCounts::releaseWeakRef() const
             prevIntVal = refCounts.load(std::memory_order_acquire);
             prev = RefCountPair{prevIntVal};
         }
-        if (!prev.partialDestroyFinishedBit)
+        if (prev.partialDestroyFinishedBit == 0u)
         {
             // partial destroy MUST finish before running a full destroy (when
             // using weak pointers)
@@ -372,7 +372,7 @@ IntrusiveRefCounts::checkoutStrongRefFromWeak() const noexcept
     while (!refCounts.compare_exchange_weak(curValue, desiredValue, std::memory_order_acq_rel))
     {
         RefCountPair const prev{curValue};
-        if (!prev.strong)
+        if (prev.strong == 0u)
             return false;
 
         desiredValue = curValue + strongDelta;

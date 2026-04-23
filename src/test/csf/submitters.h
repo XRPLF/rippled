@@ -7,9 +7,7 @@
 
 #include <type_traits>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 // Submitters are classes for simulating submission of transactions to the
 // network
@@ -62,7 +60,7 @@ class Submitter
     }
 
     template <class T>
-    static std::enable_if_t<std::is_arithmetic<T>::value, SimDuration>
+    static std::enable_if_t<std::is_arithmetic_v<T>, SimDuration>
     asDuration(T t)
     {
         return SimDuration{static_cast<SimDuration::rep>(t)};
@@ -105,6 +103,4 @@ makeSubmitter(
     return Submitter<Distribution, Generator, Selector>(dist, start, end, sel, s, g);
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf
