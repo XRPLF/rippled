@@ -327,13 +327,9 @@ qualityUpperBound(ReadView const& v, Strand const& strand)
     for (auto const& step : strand)
     {
         if (std::tie(stepQ, dir) = step->qualityUpperBound(v, dir); stepQ)
-        {
             q = composed_quality(q, *stepQ);
-        }
         else
-        {
             return std::nullopt;
-        }
     }
     return q;
 };
@@ -364,18 +360,12 @@ limitOut(
         if (std::tie(stepQualityFunc, dir) = step->getQualityFunc(v, dir); stepQualityFunc)
         {
             if (!qf)
-            {
                 qf = stepQualityFunc;
-            }
             else
-            {
                 qf->combine(*stepQualityFunc);
-            }
         }
         else
-        {
             return remainingOut;
-        }
     }
 
     // QualityFunction is constant
@@ -383,25 +373,16 @@ limitOut(
         return remainingOut;
 
     auto const out = [&]() {
-        auto const out = qf->outFromAvgQ(limitQuality);
-        if (!out)
+        if (auto const out = qf->outFromAvgQ(limitQuality); !out)
             return remainingOut;
-        if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
-        {
+        else if constexpr (std::is_same_v<TOutAmt, XRPAmount>)
             return XRPAmount{*out};
-        }
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
-        {
             return IOUAmount{*out};
-        }
         else if constexpr (std::is_same_v<TOutAmt, MPTAmount>)
-        {
             return MPTAmount{*out};
-        }
         else
-        {
             return STAmount{remainingOut.asset(), out->mantissa(), out->exponent()};
-        }
     }();
     // A tiny difference could be due to the round off
     if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
@@ -451,7 +432,7 @@ public:
             {
                 for (Strand const* strand : next_)
                 {
-                    if (strand == nullptr)
+                    if (!strand)
                     {
                         // should not happen
                         continue;
@@ -468,14 +449,14 @@ public:
                             // an unusual corner case.
                             continue;
                         }
-                        strandQualities.emplace_back(*qual, strand);
+                        strandQualities.push_back({*qual, strand});
                     }
                 }
                 // must stable sort for deterministic order across different c++
                 // standard library implementations
-                std::ranges::stable_sort(
-                    strandQualities,
-
+                std::stable_sort(
+                    strandQualities.begin(),
+                    strandQualities.end(),
                     [](auto const& lhs, auto const& rhs) {
                         // higher qualities first
                         return std::get<Quality>(lhs) > std::get<Quality>(rhs);
@@ -646,10 +627,8 @@ flow(
         // Limit only if one strand and limitQuality
         auto const limitRemainingOut = [&]() {
             if (activeStrands.size() == 1 && limitQuality)
-            {
                 if (auto const strand = activeStrands.get(0))
                     return limitOut(sb, *strand, remainingOut, *limitQuality);
-            }
             return remainingOut;
         }();
         auto const adjustedRemOut = limitRemainingOut != remainingOut;
@@ -738,10 +717,8 @@ flow(
                 remainingIn = *sendMax - sum(savedIns);
 
             if (flowDebugInfo)
-            {
                 flowDebugInfo->pushPass(
                     EitherAmount(best->in), EitherAmount(best->out), activeStrands.size());
-            }
 
             JLOG(j.trace()) << "Best path: in: " << to_string(best->in)
                             << " out: " << to_string(best->out)

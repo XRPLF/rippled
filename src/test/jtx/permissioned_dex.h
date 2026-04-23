@@ -3,7 +3,9 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 uint256
 setupDomain(
@@ -27,4 +29,6 @@ public:
     PermissionedDEX(Env& env);
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

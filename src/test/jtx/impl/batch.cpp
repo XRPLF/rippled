@@ -1,34 +1,19 @@
 #include <test/jtx/batch.h>
-
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
-#include <xrpl/basics/Number.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/basics/strHex.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Batch.h>
-#include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <cstddef>
-#include <cstdint>
 #include <optional>
-#include <ostream>
-#include <utility>
+#include <sstream>
 
-namespace xrpl::test::jtx::batch {
+namespace xrpl {
+namespace test {
+namespace jtx {
+
+namespace batch {
 
 XRPAmount
 calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns)
@@ -134,4 +119,8 @@ msig::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace xrpl::test::jtx::batch
+}  // namespace batch
+
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

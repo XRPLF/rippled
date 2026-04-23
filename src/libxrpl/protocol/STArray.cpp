@@ -1,9 +1,8 @@
-#include <xrpl/protocol/STArray.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 
@@ -175,7 +174,7 @@ STArray::isDefault() const
 void
 STArray::sort(bool (*compare)(STObject const&, STObject const&))
 {
-    std::ranges::sort(v_, compare);
+    std::sort(v_.begin(), v_.end(), compare);
 }
 
 }  // namespace xrpl

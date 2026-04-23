@@ -1,6 +1,5 @@
-#include <xrpl/crypto/RFC1751.h>
-
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/crypto/RFC1751.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>

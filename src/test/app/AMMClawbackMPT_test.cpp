@@ -1,32 +1,12 @@
+#include <test/jtx.h>
 #include <test/jtx/AMM.h>
-#include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/mpt.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
 
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol/jss.h>
 
-#include <cstdint>
-#include <memory>
-#include <optional>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 class AMMClawbackMPT_test : public beast::unit_test::suite
 {
     void
@@ -1837,4 +1817,5 @@ class AMMClawbackMPT_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(AMMClawbackMPT, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

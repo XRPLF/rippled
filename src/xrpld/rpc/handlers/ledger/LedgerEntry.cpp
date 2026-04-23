@@ -3,34 +3,18 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/handlers/ledger/LedgerEntryHelpers.h>
 
-#include <xrpl/basics/Expected.h>
-#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/strHex.h>
+#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
-
-#include <grpcpp/support/status.h>
-#include <org/xrpl/rpc/v1/get_ledger_entry.pb.h>
-
-#include <array>
-#include <cstdint>
-#include <functional>
-#include <memory>
-#include <string>
-#include <utility>
 
 namespace xrpl {
 
@@ -843,14 +827,10 @@ doLedgerEntry(RPC::JsonContext& context)
 
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")
-        {.fieldName = jss::index, .parseFunction = parseIndex, .expectedType = ltANY},
+        {jss::index, parseIndex, ltANY},
         // aliases
-        {.fieldName = jss::account_root,
-         .parseFunction = parseAccountRoot,
-         .expectedType = ltACCOUNT_ROOT},
-        {.fieldName = jss::ripple_state,
-         .parseFunction = parseRippleState,
-         .expectedType = ltRIPPLE_STATE},
+        {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
+        {jss::ripple_state, parseRippleState, ltRIPPLE_STATE},
     });
 
     auto const hasMoreThanOneMember = [&]() {
@@ -917,7 +897,7 @@ doLedgerEntry(RPC::JsonContext& context)
             return RPC::make_param_error("No ledger_entry params provided.");
         }
     }
-    catch (Json::error const& e)
+    catch (Json::error& e)
     {
         if (context.apiVersion > 1u)
         {

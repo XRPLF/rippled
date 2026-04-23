@@ -1,15 +1,7 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
-
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
-
-#include <algorithm>
-#include <memory>
-#include <string>
 
 namespace xrpl {
 
@@ -53,8 +45,7 @@ class Version_test : public beast::unit_test::suite
             {
                 if (re["error_what"].isString())
                 {
-                    return re["error_what"].asString().starts_with(
-                        jss::invalid_API_version.c_str());
+                    return re["error_what"].asString().find(jss::invalid_API_version.c_str()) == 0;
                 }
             }
             return false;

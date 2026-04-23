@@ -13,12 +13,12 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
-#include <algorithm>
 #include <source_location>
-#include <utility>
 #include <vector>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Generic helper class for helper classes that set a field on a JTx.
 
@@ -40,7 +40,7 @@ protected:
     SV value_;
 
 public:
-    explicit JTxField(SF const& sfield, SV value) : sfield_(sfield), value_(std::move(value))
+    explicit JTxField(SF const& sfield, SV const& value) : sfield_(sfield), value_(value)
     {
     }
 
@@ -68,7 +68,7 @@ protected:
     SV value_;
 
 public:
-    explicit JTxField(SF const& sfield, SV value) : sfield_(sfield), value_(std::move(value))
+    explicit JTxField(SF const& sfield, SV const& value) : sfield_(sfield), value_(value)
     {
     }
 
@@ -367,7 +367,7 @@ void
 stpath_append_one(STPath& st, Account const& account);
 
 template <class T>
-std::enable_if_t<std::is_constructible_v<Account, T>>
+std::enable_if_t<std::is_constructible<Account, T>::value>
 stpath_append_one(STPath& st, T const& t)
 {
     stpath_append_one(st, Account{t});
@@ -424,7 +424,7 @@ same(STPathSet const& st1, Args const&... args)
 
     for (auto const& p : st2)
     {
-        if (std::ranges::find(st1, p) == st1.end())
+        if (std::find(st1.begin(), st1.end(), p) == st1.end())
             return false;
     }
     return true;
@@ -994,9 +994,9 @@ struct IssuerArgs
 {
     jtx::Env& env;
     // 3-letter currency if Issue, ignored if MPT
-    std::string token;
+    std::string token = "";
     jtx::Account issuer;
-    std::vector<jtx::Account> holders = {};  // NOLINT(readability-redundant-member-init)
+    std::vector<jtx::Account> holders = {};
     // trust-limit if Issue, maxAmount if MPT
     std::optional<std::uint64_t> limit = std::nullopt;
     // 0-50'000 (0-50%)
@@ -1035,4 +1035,6 @@ testHelper3TokensMix(TTester&& tester)
     tester(detail::issueHelperIOU, detail::issueHelperIOU, detail::issueHelperMPT);
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

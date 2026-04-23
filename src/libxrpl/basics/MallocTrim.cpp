@@ -1,25 +1,19 @@
-#include <xrpl/basics/MallocTrim.h>
-
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/basics/MallocTrim.h>
 
 #include <boost/predef.h>
 
-#include <string_view>
+#include <chrono>
+#include <cstdint>
+#include <cstdio>
+#include <fstream>
+#include <sstream>
 
 #if defined(__GLIBC__) && BOOST_OS_LINUX
 #include <sys/resource.h>
 
 #include <malloc.h>
 #include <unistd.h>
-
-#include <chrono>
-#include <cstddef>
-#include <cstdint>
-#include <fstream>
-#include <ios>
-#include <sstream>
-#include <string>
 
 // Require RUSAGE_THREAD for thread-scoped page fault tracking
 #ifndef RUSAGE_THREAD

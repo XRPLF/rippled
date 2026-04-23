@@ -4,7 +4,10 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/deposit.h>
 
-namespace xrpl::test::jtx::pdomain {
+namespace xrpl {
+namespace test {
+namespace jtx {
+namespace pdomain {
 
 // Helpers for PermissionedDomains testing
 using Credential = xrpl::test::jtx::deposit::AuthorizeCredentials;
@@ -44,4 +47,7 @@ sortCredentials(Credentials const& input);
 uint256
 getNewDomain(std::shared_ptr<STObject const> const& meta);
 
-}  // namespace xrpl::test::jtx::pdomain
+}  // namespace pdomain
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

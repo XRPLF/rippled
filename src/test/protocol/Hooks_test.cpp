@@ -1,15 +1,7 @@
+#include <test/jtx.h>
 
+#include <xrpl/protocol/Feature.h>
 
-#include <test/jtx/Env.h>  // IWYU pragma: keep
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STObject.h>
-
-#include <cstdint>
 #include <functional>
 #include <vector>
 

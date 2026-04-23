@@ -5,7 +5,9 @@
 
 #include <optional>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Set the sequence number on a JTx. */
 struct seq
@@ -31,4 +33,6 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

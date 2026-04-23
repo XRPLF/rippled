@@ -1,19 +1,17 @@
 // Copyright (c) 2020 Dev Null Productions
 
-#include <test/jtx/Env.h>
-#include <test/jtx/envconfig.h>
+#include <test/jtx.h>
 
-#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
-#include <memory>
 #include <string>
 #include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class ValidatorInfo_test : public beast::unit_test::suite
 {
@@ -91,4 +89,5 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(ValidatorInfo, rpc, xrpl);
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

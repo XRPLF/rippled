@@ -174,7 +174,7 @@ private:
     std::ostringstream mutable m_ostream;
 
 public:
-    Proxy(Map const& map, std::string key);
+    Proxy(Map const& map, std::string const& key);
     Proxy(Proxy const& other);
     ~Proxy();
 
@@ -315,7 +315,7 @@ private:
     List<Item> children_;
 
 public:
-    explicit Source(std::string name);
+    explicit Source(std::string const& name);
     virtual ~Source();
 
     Source(Source const&) = delete;

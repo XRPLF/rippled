@@ -34,9 +34,9 @@ template <typename Ret_t, typename... Args_t>
 class ClosureCounter
 {
 private:
-    std::mutex mutable mutex_;
-    std::condition_variable allClosuresDoneCond_;  // guard with mutex_
-    bool waitForClosures_{false};                  // guard with mutex_
+    std::mutex mutable mutex_{};
+    std::condition_variable allClosuresDoneCond_{};  // guard with mutex_
+    bool waitForClosures_{false};                    // guard with mutex_
     std::atomic<int> closureCount_{0};
 
     // Increment the count.
@@ -75,7 +75,7 @@ private:
         std::remove_reference_t<Closure> closure_;
 
         static_assert(
-            std::is_same_v<decltype(closure_(std::declval<Args_t>()...)), Ret_t>,
+            std::is_same<decltype(closure_(std::declval<Args_t>()...)), Ret_t>::value,
             "Closure arguments don't match ClosureCounter Ret_t or Args_t");
 
     public:
@@ -86,7 +86,7 @@ private:
             ++counter_;
         }
 
-        Substitute(Substitute&& rhs) noexcept(std::is_nothrow_move_constructible_v<Closure>)
+        Substitute(Substitute&& rhs) noexcept(std::is_nothrow_move_constructible<Closure>::value)
             : counter_(rhs.counter_), closure_(std::move(rhs.closure_))
         {
             ++counter_;

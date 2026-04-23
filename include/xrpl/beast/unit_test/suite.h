@@ -14,7 +14,8 @@
 #include <sstream>
 #include <string>
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 namespace detail {
 
@@ -35,7 +36,7 @@ make_reason(String const& reason, char const* file, int line)
 
 }  // namespace detail
 
-class Thread;
+class thread;
 
 enum abort_t { no_abort_on_fail, abort_on_fail };
 
@@ -74,7 +75,7 @@ private:
         {
         }
 
-        ~log_buf() override
+        ~log_buf()
         {
             sync();
         }
@@ -294,7 +295,7 @@ public:
     }
 
 private:
-    friend class Thread;
+    friend class thread;
 
     static suite**
     p_this_suite()
@@ -308,7 +309,7 @@ private:
     run() = 0;
 
     void
-    propagate_abort() const;
+    propagate_abort();
 
     template <class = void>
     void
@@ -485,13 +486,9 @@ suite::unexpected(Condition shouldBeFalse, String const& reason)
 {
     bool const b = static_cast<bool>(shouldBeFalse);
     if (!b)
-    {
         pass();
-    }
     else
-    {
         fail(reason);
-    }
     return !b;
 }
 
@@ -525,7 +522,7 @@ suite::fail(String const& reason, char const* file, int line)
 }
 
 inline void
-suite::propagate_abort() const
+suite::propagate_abort()
 {
     if (abort_ && aborted_)
         BOOST_THROW_EXCEPTION(abort_exception());
@@ -541,7 +538,7 @@ suite::run(runner& r)
     {
         run();
     }
-    catch (abort_exception const&)  // NOLINT(bugprone-empty-catch)
+    catch (abort_exception const&)
     {
         // ends the suite
     }
@@ -572,7 +569,8 @@ suite::run(runner& r)
     ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
 #endif
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast
 
 //------------------------------------------------------------------------------
 

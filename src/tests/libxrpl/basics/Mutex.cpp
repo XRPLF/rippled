@@ -6,8 +6,6 @@
 #include <mutex>
 #include <shared_mutex>
 #include <string>
-#include <type_traits>
-#include <utility>
 #include <vector>
 
 using namespace xrpl;

@@ -1,5 +1,3 @@
-#include <xrpl/beast/insight/NullCollector.h>
-
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Counter.h>
 #include <xrpl/beast/insight/CounterImpl.h>
@@ -11,11 +9,13 @@
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
 #include <xrpl/beast/insight/MeterImpl.h>
+#include <xrpl/beast/insight/NullCollector.h>
 
 #include <memory>
 #include <string>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 namespace detail {
 
@@ -24,8 +24,9 @@ class NullHookImpl : public HookImpl
 public:
     explicit NullHookImpl() = default;
 
+private:
     NullHookImpl&
-    operator=(NullHookImpl const&) = delete;
+    operator=(NullHookImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -40,8 +41,9 @@ public:
     {
     }
 
+private:
     NullCounterImpl&
-    operator=(NullCounterImpl const&) = delete;
+    operator=(NullCounterImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -56,8 +58,9 @@ public:
     {
     }
 
+private:
     NullEventImpl&
-    operator=(NullEventImpl const&) = delete;
+    operator=(NullEventImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -77,8 +80,9 @@ public:
     {
     }
 
+private:
     NullGaugeImpl&
-    operator=(NullGaugeImpl const&) = delete;
+    operator=(NullGaugeImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -93,8 +97,9 @@ public:
     {
     }
 
+private:
     NullMeterImpl&
-    operator=(NullMeterImpl const&) = delete;
+    operator=(NullMeterImpl const&);
 };
 
 //------------------------------------------------------------------------------
@@ -105,7 +110,7 @@ private:
 public:
     NullCollectorImp() = default;
 
-    ~NullCollectorImp() override = default;
+    ~NullCollectorImp() = default;
 
     Hook
     make_hook(HookImpl::HandlerType const&) override
@@ -148,4 +153,5 @@ NullCollector::New()
     return std::make_shared<detail::NullCollectorImp>();
 }
 
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

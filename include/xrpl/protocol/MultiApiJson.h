@@ -74,14 +74,10 @@ struct MultiApiJson
     {
         int count = 0;
         for (auto& a : this->val)
-        {
             if (a.isMember(key))
                 count += 1;
-        }
 
-        if (count == 0)
-            return none;
-        return count < size ? some : all;
+        return (count == 0 ? none : (count < size ? some : all));
     }
 
     static constexpr struct visitor_t final

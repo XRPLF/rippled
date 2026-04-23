@@ -10,10 +10,11 @@
 #include <thread>
 #include <utility>
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 /** Replacement for std::thread that handles exceptions in unit tests. */
-class Thread
+class thread
 {
 private:
     suite* s_ = nullptr;
@@ -23,17 +24,17 @@ public:
     using id = std::thread::id;
     using native_handle_type = std::thread::native_handle_type;
 
-    Thread() = default;
-    Thread(Thread const&) = delete;
-    Thread&
-    operator=(Thread const&) = delete;
+    thread() = default;
+    thread(thread const&) = delete;
+    thread&
+    operator=(thread const&) = delete;
 
-    Thread(Thread&& other) : s_(other.s_), t_(std::move(other.t_))
+    thread(thread&& other) : s_(other.s_), t_(std::move(other.t_))
     {
     }
 
-    Thread&
-    operator=(Thread&& other)
+    thread&
+    operator=(thread&& other)
     {
         s_ = other.s_;
         t_ = std::move(other.t_);
@@ -41,10 +42,10 @@ public:
     }
 
     template <class F, class... Args>
-    explicit Thread(suite& s, F&& f, Args&&... args) : s_(&s)
+    explicit thread(suite& s, F&& f, Args&&... args) : s_(&s)
     {
         std::function<void(void)> b = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
-        t_ = std::thread(&Thread::run, this, std::move(b));
+        t_ = std::thread(&thread::run, this, std::move(b));
     }
 
     bool
@@ -79,7 +80,7 @@ public:
     }
 
     void
-    swap(Thread& other)
+    swap(thread& other)
     {
         std::swap(s_, other.s_);
         std::swap(t_, other.t_);
@@ -93,7 +94,7 @@ private:
         {
             f();
         }
-        catch (suite::abort_exception const&)  // NOLINT(bugprone-empty-catch)
+        catch (suite::abort_exception const&)
         {
         }
         catch (std::exception const& e)
@@ -107,4 +108,5 @@ private:
     }
 };
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast

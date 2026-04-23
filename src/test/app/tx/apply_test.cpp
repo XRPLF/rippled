@@ -2,15 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/tx/apply.h>
-
-#include <functional>
-#include <memory>
 
 namespace xrpl {
 

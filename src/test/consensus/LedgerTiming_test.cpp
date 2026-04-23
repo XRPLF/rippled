@@ -1,12 +1,8 @@
-#include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/LedgerTiming.h>
 
-#include <chrono>
-#include <cstdint>
-#include <utility>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class LedgerTiming_test : public beast::unit_test::suite
 {
@@ -115,4 +111,5 @@ class LedgerTiming_test : public beast::unit_test::suite
 };
 
 BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, xrpl);
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

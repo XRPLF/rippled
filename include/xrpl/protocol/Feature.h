@@ -107,8 +107,8 @@ validFeatureName(auto fn) -> bool
     return true;
 }
 
-enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes = 1 };
-enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported = 1 };
+enum class VoteBehavior : int { Obsolete = -1, DefaultNo = 0, DefaultYes };
+enum class AmendmentSupport : int { Retired = -1, Supported = 0, Unsupported };
 
 /** All amendments libxrpl knows about. */
 std::map<std::string, AmendmentSupport> const&
@@ -125,12 +125,10 @@ namespace detail {
 #pragma push_macro("XRPL_RETIRE_FIX")
 #undef XRPL_RETIRE_FIX
 
-// NOLINTBEGIN(bugprone-macro-parentheses)
 #define XRPL_FEATURE(name, supported, vote) +1
 #define XRPL_FIX(name, supported, vote) +1
 #define XRPL_RETIRE_FEATURE(name) +1
 #define XRPL_RETIRE_FIX(name) +1
-// NOLINTEND(bugprone-macro-parentheses)
 
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how
@@ -375,10 +373,8 @@ void
 foreachFeature(FeatureBitset bs, F&& f)
 {
     for (size_t i = 0; i < bs.size(); ++i)
-    {
         if (bs[i])
             f(bitsetIndexToFeature(i));
-    }
 }
 
 #pragma push_macro("XRPL_FEATURE")

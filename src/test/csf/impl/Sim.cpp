@@ -1,14 +1,8 @@
 #include <test/csf/Sim.h>
 
-#include <test/csf/PeerGroup.h>
-#include <test/csf/SimTime.h>
-
-#include <algorithm>
-#include <cstddef>
-#include <limits>
-#include <set>
-
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 
 void
 Sim::run(int ledgers)
@@ -44,7 +38,7 @@ Sim::synchronized(PeerGroup const& g)
     if (g.size() < 1)
         return true;
     Peer const* ref = g[0];
-    return std::ranges::all_of(g, [&ref](Peer const* p) {
+    return std::all_of(g.begin(), g.end(), [&ref](Peer const* p) {
         return p->lastClosedLedger.id() == ref->lastClosedLedger.id() &&
             p->fullyValidatedLedger.id() == ref->fullyValidatedLedger.id();
     });
@@ -67,4 +61,6 @@ Sim::branches(PeerGroup const& g) const
     return oracle.branches(ledgers);
 }
 
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

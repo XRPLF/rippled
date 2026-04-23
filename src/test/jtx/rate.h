@@ -4,10 +4,14 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Set a transfer rate. */
 Json::Value
 rate(Account const& account, double multiplier);
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

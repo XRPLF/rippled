@@ -6,7 +6,8 @@
 
 #include <memory>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** Create a new Manager. */
 std::unique_ptr<Manager>
@@ -17,4 +18,5 @@ make_Manager(
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector);
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

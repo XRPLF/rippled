@@ -1,15 +1,8 @@
-#include <xrpl/shamap/SHAMapNodeID.h>
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/contract.h>
+#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
-
-#include <cstddef>
-#include <optional>
-#include <stdexcept>
-#include <string>
+#include <xrpl/shamap/SHAMapNodeID.h>
 
 namespace xrpl {
 

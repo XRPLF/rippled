@@ -1,9 +1,8 @@
-#include <xrpl/protocol/Feature.h>
-
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/container_hash/hash.hpp>
@@ -71,8 +70,8 @@ class FeatureCollections
         uint256 feature;
 
         Feature() = delete;
-        explicit Feature(std::string name_, uint256 const& feature_)
-            : name(std::move(name_)), feature(feature_)
+        explicit Feature(std::string const& name_, uint256 const& feature_)
+            : name(name_), feature(feature_)
         {
         }
 
@@ -428,8 +427,6 @@ enforceValidFeatureName(auto fn) -> char const*
 // clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
-
-#include <utility>
 
 #undef XRPL_RETIRE_FEATURE
 #pragma pop_macro("XRPL_RETIRE_FEATURE")

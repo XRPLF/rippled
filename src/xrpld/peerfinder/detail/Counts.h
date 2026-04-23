@@ -6,7 +6,8 @@
 
 #include <xrpl/basics/random.h>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** Manages the count of available connections for the various slots. */
 class Counts
@@ -178,12 +179,15 @@ public:
         //
         // Fixed peers do not count towards the active outgoing total.
 
-        return m_out_max <= 0;
+        if (m_out_max > 0)
+            return false;
+
+        return true;
     }
 
     /** Output statistics. */
     void
-    onWrite(beast::PropertyStream::Map& map) const
+    onWrite(beast::PropertyStream::Map& map)
     {
         map["accept"] = acceptCount();
         map["connect"] = connectCount();
@@ -239,13 +243,9 @@ private:
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
-                    {
                         m_in_active += n;
-                    }
                     else
-                    {
                         m_out_active += n;
-                    }
                 }
                 m_active += n;
                 break;
@@ -298,4 +298,5 @@ private:
     int m_closingCount{0};
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

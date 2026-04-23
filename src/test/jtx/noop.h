@@ -2,7 +2,9 @@
 
 #include <test/jtx/flags.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** The null transaction. */
 inline Json::Value
@@ -11,4 +13,6 @@ noop(Account const& account)
     return fset(account, 0);
 }
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

@@ -6,8 +6,6 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
-#include <exception>
-
 namespace xrpl {
 
 namespace RPC {

@@ -1,5 +1,3 @@
-#include <xrpl/protocol/STXChainBridge.h>
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -8,6 +6,7 @@
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 

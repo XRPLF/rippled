@@ -1,9 +1,8 @@
 #include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/Role.h>
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
-#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
@@ -12,14 +11,9 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string.hpp>
 
-#include <cstddef>
-#include <cstdint>
-#include <map>
 #include <set>
-#include <string>
 #include <string_view>
 #include <unordered_map>
 

@@ -73,7 +73,7 @@ public:
     using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
     enum class FailHard : unsigned char { no, yes };
-    static FailHard
+    static inline FailHard
     doFailHard(bool noMeansDont)
     {
         return noMeansDont ? FailHard::yes : FailHard::no;

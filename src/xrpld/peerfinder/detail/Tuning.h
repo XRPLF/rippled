@@ -2,9 +2,12 @@
 
 #include <array>
 
+namespace xrpl {
+namespace PeerFinder {
+
 /** Heuristically tuned constants. */
 /** @{ */
-namespace xrpl::PeerFinder::Tuning {
+namespace Tuning {
 
 enum {
     //---------------------------------------------------------
@@ -107,5 +110,8 @@ std::chrono::seconds constexpr liveCacheSecondsToLive(30);
 // Note that we ignore the port for purposes of comparison.
 std::chrono::seconds constexpr recentAttemptDuration(60);
 
-}  // namespace xrpl::PeerFinder::Tuning
+}  // namespace Tuning
 /** @} */
+
+}  // namespace PeerFinder
+}  // namespace xrpl

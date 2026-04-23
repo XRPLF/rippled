@@ -3,7 +3,9 @@
 #include <test/csf/Digraph.h>
 #include <test/csf/Scheduler.h>
 
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 /** Peer to peer network simulator.
 
     The network is formed from a set of Peer objects representing
@@ -72,7 +74,7 @@ class BasicNetwork
     {
         bool inbound = false;
         duration delay{};
-        time_point established;
+        time_point established{};
         link_type() = default;
         link_type(bool inbound_, duration delay_, time_point established_)
             : inbound(inbound_), delay(delay_), established(established_)
@@ -222,4 +224,6 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
     });
 }
 
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

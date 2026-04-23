@@ -1,17 +1,10 @@
 #include <test/jtx/Account.h>
 
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/join.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 
-#include <array>
-#include <cstddef>
-#include <initializer_list>
-#include <sstream>
-#include <string>
-#include <vector>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 struct join_test : beast::unit_test::suite
 {
@@ -80,4 +73,5 @@ struct join_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(join, basics, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

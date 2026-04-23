@@ -17,7 +17,7 @@ protected:
     }
 
 public:
-    ~LedgerCleaner() override = default;
+    virtual ~LedgerCleaner() = default;
 
     virtual void
     start() = 0;

@@ -8,7 +8,6 @@
 #include <optional>
 #include <shared_mutex>
 #include <string>
-#include <utility>
 
 namespace xrpl {
 
@@ -81,16 +80,16 @@ struct Manifest
     Manifest() = delete;
 
     Manifest(
-        std::string serialized_,
+        std::string const& serialized_,
         PublicKey const& masterKey_,
         std::optional<PublicKey> const& signingKey_,
         std::uint32_t seq,
-        std::string domain_)
-        : serialized(std::move(serialized_))
+        std::string const& domain_)
+        : serialized(serialized_)
         , masterKey(masterKey_)
         , signingKey(signingKey_)
         , sequence(seq)
-        , domain(std::move(domain_))
+        , domain(domain_)
     {
     }
 
@@ -155,7 +154,7 @@ deserializeManifest(
 
 template <
     class T,
-    class = std::enable_if_t<std::is_same_v<T, char> || std::is_same_v<T, unsigned char>>>
+    class = std::enable_if_t<std::is_same<T, char>::value || std::is_same<T, unsigned char>::value>>
 std::optional<Manifest>
 deserializeManifest(
     std::vector<T> const& v,

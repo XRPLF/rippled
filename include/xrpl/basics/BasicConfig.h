@@ -33,7 +33,7 @@ private:
 
 public:
     /** Create an empty section. */
-    explicit Section(std::string name = "");
+    explicit Section(std::string const& name = "");
 
     /** Returns the name of this section. */
     std::string const&
@@ -67,13 +67,9 @@ public:
     legacy(std::string value)
     {
         if (lines_.empty())
-        {
             lines_.emplace_back(std::move(value));
-        }
         else
-        {
             lines_[0] = std::move(value);
-        }
     }
 
     /**
@@ -88,10 +84,8 @@ public:
         if (lines_.empty())
             return "";
         if (lines_.size() > 1)
-        {
             Throw<std::runtime_error>(
                 "A legacy value must have exactly one line. Section: " + name_);
-        }
         return lines_[0];
     }
 
@@ -275,7 +269,8 @@ public:
     bool
     had_trailing_comments() const
     {
-        return std::ranges::any_of(map_, [](auto s) { return s.second.had_trailing_comments(); });
+        return std::any_of(
+            map_.cbegin(), map_.cend(), [](auto s) { return s.second.had_trailing_comments(); });
     }
 
 protected:
@@ -301,7 +296,7 @@ set(T& target, std::string const& name, Section const& section)
         if ((found_and_valid = val.has_value()))
             target = *val;
     }
-    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
+    catch (boost::bad_lexical_cast&)
     {
     }
     return found_and_valid;
@@ -335,7 +330,7 @@ get(Section const& section, std::string const& name, T const& defaultValue = T{}
     {
         return section.value_or<T>(name, defaultValue);
     }
-    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
+    catch (boost::bad_lexical_cast&)
     {
     }
     return defaultValue;
@@ -350,7 +345,7 @@ get(Section const& section, std::string const& name, char const* defaultValue)
         if (val.has_value())
             return *val;
     }
-    catch (boost::bad_lexical_cast const&)  // NOLINT(bugprone-empty-catch)
+    catch (boost::bad_lexical_cast&)
     {
     }
     return defaultValue;

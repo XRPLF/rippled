@@ -7,14 +7,13 @@
  * file COPYING or http://www.opensource.org/licenses/mit-license.php.
  */
 
-#include <xrpl/protocol/tokens.h>
-
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/b58_utils.h>
 #include <xrpl/protocol/detail/token_errors.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <boost/container/small_vector.hpp>
 #include <boost/endian/conversion.hpp>
@@ -282,7 +281,7 @@ decodeBase58(std::string const& s)
         --remain;
     }
     // Skip leading zeroes in b256.
-    auto iter = std::ranges::find_if(b256, [](unsigned char c) { return c != 0; });
+    auto iter = std::find_if(b256.begin(), b256.end(), [](unsigned char c) { return c != 0; });
     std::string result;
     result.reserve(zeroes + (b256.end() - iter));
     result.assign(zeroes, 0x00);

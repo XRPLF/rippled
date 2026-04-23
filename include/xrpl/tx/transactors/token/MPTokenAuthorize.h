@@ -10,7 +10,7 @@ struct MPTAuthorizeArgs
     MPTID const& mptIssuanceID;
     AccountID const& account;
     std::uint32_t flags{};
-    std::optional<AccountID> holderID;
+    std::optional<AccountID> holderID{};
 };
 
 class MPTokenAuthorize : public Transactor
@@ -33,20 +33,6 @@ public:
 
     TER
     doApply() override;
-
-    void
-    visitInvariantEntry(
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after) override;
-
-    [[nodiscard]] bool
-    finalizeInvariants(
-        STTx const& tx,
-        TER result,
-        XRPAmount fee,
-        ReadView const& view,
-        beast::Journal const& j) override;
 };
 
 }  // namespace xrpl

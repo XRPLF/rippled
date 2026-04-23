@@ -1,31 +1,45 @@
 #pragma once
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+
+namespace jtx {
 
 struct none_t
 {
-    none_t() = default;
+    none_t()
+    {
+    }
 };
 static none_t const none;
 
 struct autofill_t
 {
-    autofill_t() = default;
+    autofill_t()
+    {
+    }
 };
 static autofill_t const autofill;
 
 struct disabled_t
 {
-    disabled_t() = default;
+    disabled_t()
+    {
+    }
 };
 static disabled_t const disabled;
 
 /** Used for fee() calls that use an owner reserve increment */
 struct increment_t
 {
-    increment_t() = default;
+    increment_t()
+    {
+    }
 };
 
 static increment_t const increment;
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+
+}  // namespace test
+}  // namespace xrpl

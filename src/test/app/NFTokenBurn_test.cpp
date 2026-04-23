@@ -1,44 +1,11 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/acctdelete.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/owners.h>  // IWYU pragma: keep
-#include <test/jtx/ter.h>
-#include <test/jtx/token.h>
-#include <test/jtx/txflags.h>
-#include <test/unit_test/SuiteJournal.h>
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/json/json_forwards.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/nft.h>
 #include <xrpl/tx/ApplyContext.h>
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <iostream>
-#include <ostream>
 #include <random>
-#include <vector>
 
 namespace xrpl {
 
@@ -400,7 +367,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
             // Sort the NFTs so they are listed in storage order, not
             // creation order.
-            std::ranges::sort(nfts);
+            std::sort(nfts.begin(), nfts.end());
 
             // Verify that the ledger does indeed contain exactly three pages
             // of NFTs with 32 entries in each page.
@@ -654,7 +621,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
                 return;
 
             // Burn all the tokens in the first page.
-            std::ranges::reverse(nfts);
+            std::reverse(nfts.begin(), nfts.end());
             for (int i = 0; i < 32; ++i)
             {
                 env(token::burn(alice, {nfts.back()}));
@@ -682,7 +649,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
             BEAST_EXPECT(!lastNFTokenPage->isFieldPresent(sfNextPageMin));
 
             // Burn all the tokens in the last page.
-            std::ranges::reverse(nfts);
+            std::reverse(nfts.begin(), nfts.end());
             for (int i = 0; i < 32; ++i)
             {
                 env(token::burn(alice, {nfts.back()}));
@@ -1057,7 +1024,7 @@ class NFTokenBurn_test : public beast::unit_test::suite
 
             // Sort the NFTs so they are listed in storage order, not
             // creation order.
-            std::ranges::sort(nfts);
+            std::sort(nfts.begin(), nfts.end());
 
             // Verify that the ledger does indeed contain exactly three pages
             // of NFTs with 32 entries in each page.

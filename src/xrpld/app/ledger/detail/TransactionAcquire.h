@@ -1,6 +1,5 @@
 #pragma once
 
-#include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/shamap/SHAMap.h>
@@ -17,7 +16,7 @@ public:
     using pointer = std::shared_ptr<TransactionAcquire>;
 
     TransactionAcquire(Application& app, uint256 const& hash, std::unique_ptr<PeerSet> peerSet);
-    ~TransactionAcquire() override = default;
+    ~TransactionAcquire() = default;
 
     SHAMapAddNode
     takeNodes(

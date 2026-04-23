@@ -44,7 +44,7 @@ public:
     }
 
     bool
-    isSecure() const
+    isSecure()
     {
         return mSecure;
     }
@@ -126,9 +126,7 @@ public:
     async_shutdown(ShutdownHandler handler)
     {
         if (isSecure())
-        {
             mSocket->async_shutdown(handler);
-        }
         else
         {
             error_code ec;
@@ -136,7 +134,7 @@ public:
             {
                 lowest_layer().shutdown(plain_socket::shutdown_both);
             }
-            catch (boost::system::system_error const& e)
+            catch (boost::system::system_error& e)
             {
                 ec = e.code();
             }
@@ -149,13 +147,9 @@ public:
     async_read_some(Seq const& buffers, Handler handler)
     {
         if (isSecure())
-        {
             mSocket->async_read_some(buffers, handler);
-        }
         else
-        {
             PlainSocket().async_read_some(buffers, handler);
-        }
     }
 
     template <typename Seq, typename Condition, typename Handler>
@@ -163,13 +157,9 @@ public:
     async_read_until(Seq const& buffers, Condition condition, Handler handler)
     {
         if (isSecure())
-        {
             boost::asio::async_read_until(*mSocket, buffers, condition, handler);
-        }
         else
-        {
             boost::asio::async_read_until(PlainSocket(), buffers, condition, handler);
-        }
     }
 
     template <typename Allocator, typename Handler>
@@ -180,13 +170,9 @@ public:
         Handler handler)
     {
         if (isSecure())
-        {
             boost::asio::async_read_until(*mSocket, buffers, delim, handler);
-        }
         else
-        {
             boost::asio::async_read_until(PlainSocket(), buffers, delim, handler);
-        }
     }
 
     template <typename Allocator, typename MatchCondition, typename Handler>
@@ -197,13 +183,9 @@ public:
         Handler handler)
     {
         if (isSecure())
-        {
             boost::asio::async_read_until(*mSocket, buffers, cond, handler);
-        }
         else
-        {
             boost::asio::async_read_until(PlainSocket(), buffers, cond, handler);
-        }
     }
 
     template <typename Buf, typename Handler>
@@ -211,13 +193,9 @@ public:
     async_write(Buf const& buffers, Handler handler)
     {
         if (isSecure())
-        {
             boost::asio::async_write(*mSocket, buffers, handler);
-        }
         else
-        {
             boost::asio::async_write(PlainSocket(), buffers, handler);
-        }
     }
 
     template <typename Allocator, typename Handler>
@@ -225,13 +203,9 @@ public:
     async_write(boost::asio::basic_streambuf<Allocator>& buffers, Handler handler)
     {
         if (isSecure())
-        {
             boost::asio::async_write(*mSocket, buffers, handler);
-        }
         else
-        {
             boost::asio::async_write(PlainSocket(), buffers, handler);
-        }
     }
 
     template <typename Buf, typename Condition, typename Handler>
@@ -239,13 +213,9 @@ public:
     async_read(Buf const& buffers, Condition cond, Handler handler)
     {
         if (isSecure())
-        {
             boost::asio::async_read(*mSocket, buffers, cond, handler);
-        }
         else
-        {
             boost::asio::async_read(PlainSocket(), buffers, cond, handler);
-        }
     }
 
     template <typename Allocator, typename Condition, typename Handler>
@@ -253,13 +223,9 @@ public:
     async_read(boost::asio::basic_streambuf<Allocator>& buffers, Condition cond, Handler handler)
     {
         if (isSecure())
-        {
             boost::asio::async_read(*mSocket, buffers, cond, handler);
-        }
         else
-        {
             boost::asio::async_read(PlainSocket(), buffers, cond, handler);
-        }
     }
 
     template <typename Buf, typename Handler>
@@ -267,13 +233,9 @@ public:
     async_read(Buf const& buffers, Handler handler)
     {
         if (isSecure())
-        {
             boost::asio::async_read(*mSocket, buffers, handler);
-        }
         else
-        {
             boost::asio::async_read(PlainSocket(), buffers, handler);
-        }
     }
 
     template <typename Seq, typename Handler>
@@ -281,13 +243,9 @@ public:
     async_write_some(Seq const& buffers, Handler handler)
     {
         if (isSecure())
-        {
             mSocket->async_write_some(buffers, handler);
-        }
         else
-        {
             PlainSocket().async_write_some(buffers, handler);
-        }
     }
 
 protected:

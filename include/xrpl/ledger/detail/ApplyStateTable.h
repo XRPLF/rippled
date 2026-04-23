@@ -10,7 +10,8 @@
 
 #include <memory>
 
-namespace xrpl::detail {
+namespace xrpl {
+namespace detail {
 
 // Helper class that buffers modifications
 class ApplyStateTable
@@ -124,4 +125,5 @@ private:
         beast::Journal j);
 };
 
-}  // namespace xrpl::detail
+}  // namespace detail
+}  // namespace xrpl

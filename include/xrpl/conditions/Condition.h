@@ -7,7 +7,8 @@
 #include <cstdint>
 #include <set>
 
-namespace xrpl::cryptoconditions {
+namespace xrpl {
+namespace cryptoconditions {
 
 enum class Type : std::uint8_t {
     preimageSha256 = 0,
@@ -87,4 +88,6 @@ operator!=(Condition const& lhs, Condition const& rhs)
     return !(lhs == rhs);
 }
 
-}  // namespace xrpl::cryptoconditions
+}  // namespace cryptoconditions
+
+}  // namespace xrpl

@@ -1,5 +1,3 @@
-#include <xrpl/protocol/Sign.h>
-
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/KeyType.h>
@@ -9,6 +7,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/Sign.h>
 
 namespace xrpl {
 

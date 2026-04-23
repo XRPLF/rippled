@@ -4,7 +4,8 @@
 
 #include <cstdint>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+namespace NodeStore {
 
 /** A backend used for the NodeStore.
 
@@ -139,4 +140,5 @@ public:
     fdRequired() const = 0;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

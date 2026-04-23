@@ -1,56 +1,11 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/acctdelete.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/balance.h>  // IWYU pragma: keep
-#include <test/jtx/check.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/flags.h>
-#include <test/jtx/noop.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>  // IWYU pragma: keep
-#include <test/jtx/pay.h>
-#include <test/jtx/rate.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
-#include <test/jtx/token.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
-
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/basics/strHex.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/nft.h>
 
-#include <algorithm>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
 #include <initializer_list>
-#include <iterator>
-#include <memory>
-#include <optional>
-#include <set>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -2519,9 +2474,9 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         sortedNFTs.reserve(nfts.size());
         for (std::size_t i = 0; i < nfts.size(); ++i)
             sortedNFTs.push_back(nfts[i]);
-        std::ranges::sort(
-            sortedNFTs,
-
+        std::sort(
+            sortedNFTs.begin(),
+            sortedNFTs.end(),
             [](Json::Value const& lhs, Json::Value const& rhs) {
                 return lhs[jss::nft_serial] < rhs[jss::nft_serial];
             });
@@ -5623,7 +5578,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // The new NFT minted will not have the same ID
             // as any of the NFTs authorized minter minted
-            BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
+            BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
         }
 
         // When an account mints and burns a batch of NFTokens using tickets,
@@ -5722,7 +5677,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
             // The new NFT minted will not have the same ID
             // as any of the NFTs authorized minter minted using tickets
-            BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
+            BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
         }
         // When an authorized minter mints and burns a batch of NFTokens using
         // tickets, issuer's account needs to wait a longer time before it can
@@ -5825,7 +5780,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
 
         // The new NFT minted will not have the same ID
         // as one of NFTs authorized minter minted using tickets
-        BEAST_EXPECT(std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
+        BEAST_EXPECT(std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) == nftIDs.end());
     }
 
     void
@@ -6143,8 +6098,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 });
 
             // Sort both array to prepare for comparison
-            std::ranges::sort(metaIDs);
-            std::ranges::sort(actualNftIDs);
+            std::sort(metaIDs.begin(), metaIDs.end());
+            std::sort(actualNftIDs.begin(), actualNftIDs.end());
 
             // Make sure the expect number of NFTs is correct
             BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());

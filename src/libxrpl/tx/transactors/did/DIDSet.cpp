@@ -1,25 +1,11 @@
-#include <xrpl/tx/transactors/did/DIDSet.h>
-
-#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/ApplyContext.h>
-#include <xrpl/tx/Transactor.h>
-
-#include <cstddef>
-#include <memory>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/tx/transactors/did/DIDSet.h>
 
 namespace xrpl {
 
@@ -147,20 +133,6 @@ DIDSet::doApply()
     }
 
     return addSLE(ctx_, sleDID, account_);
-}
-
-void
-DIDSet::visitInvariantEntry(
-    bool,
-    std::shared_ptr<SLE const> const&,
-    std::shared_ptr<SLE const> const&)
-{
-}
-
-bool
-DIDSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
-{
-    return true;
 }
 
 }  // namespace xrpl

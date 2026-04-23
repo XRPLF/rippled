@@ -1,17 +1,11 @@
 #include <test/jtx/Env.h>
 
-#include <xrpld/core/Config.h>
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/View.h>
 
-#include <iterator>
-#include <memory>
-#include <vector>
-
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class SkipList_test : public beast::unit_test::suite
 {
@@ -80,4 +74,5 @@ class SkipList_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(SkipList, ledger, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

@@ -1,29 +1,24 @@
+#include <test/unit_test/SuiteJournal.h>
 
-#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
-#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/IntrusiveRefCounts.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/Journal.h>
 
-#include <algorithm>
 #include <array>
 #include <atomic>
-#include <cassert>
-#include <chrono>  // IWYU pragma: keep
+#include <barrier>
+#include <chrono>
 #include <condition_variable>
-#include <cstddef>
-#include <cstdint>
-#include <functional>
 #include <latch>
-#include <mutex>
 #include <optional>
 #include <random>
 #include <string>
 #include <thread>
-#include <utility>
 #include <variant>
-#include <vector>
 
-namespace xrpl::tests {
+namespace xrpl {
+namespace tests {
 
 /**
 Experimentally, we discovered that using std::barrier performs extremely
@@ -127,7 +122,7 @@ public:
         assert(state.size() > id_);
         state[id_].store(TrackedState::alive, std::memory_order_relaxed);
     }
-    ~TIBase() override
+    ~TIBase()
     {
         using enum TrackedState;
 
@@ -239,7 +234,7 @@ public:
             BEAST_EXPECT(b->use_count() == 1);
             for (int i = 0; i < 10; ++i)
             {
-                weak.emplace_back(b);
+                weak.push_back(b);
                 BEAST_EXPECT(b->use_count() == 1);
             }
             BEAST_EXPECT(TIBase::getState(id) == alive);
@@ -530,11 +525,11 @@ public:
             {
                 if (isStrongDist(eng))
                 {
-                    result.emplace_back(SharedIntrusive<TIBase>(toClone));
+                    result.push_back(SharedIntrusive<TIBase>(toClone));
                 }
                 else
                 {
-                    result.emplace_back(WeakIntrusive<TIBase>(toClone));
+                    result.push_back(WeakIntrusive<TIBase>(toClone));
                 }
             }
             return result;
@@ -581,7 +576,7 @@ public:
                     toClone.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback_ = tracingCallback;
-                    std::ranges::fill(toClone, strong);
+                    std::fill(toClone.begin(), toClone.end(), strong);
                 }
 
                 // ------ Sync Point ------
@@ -661,7 +656,7 @@ public:
             auto numToCreate = toCreateDist(eng);
             result.reserve(numToCreate);
             for (int i = 0; i < numToCreate; ++i)
-                result.emplace_back(SharedIntrusive<TIBase>(toClone));
+                result.push_back(SharedIntrusive<TIBase>(toClone));
             return result;
         };
         constexpr int loopIters = 2 * 1024;
@@ -708,7 +703,7 @@ public:
                     toClone.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback_ = tracingCallback;
-                    std::ranges::fill(toClone, strong);
+                    std::fill(toClone.begin(), toClone.end(), strong);
                 }
 
                 // ------ Sync Point ------
@@ -829,7 +824,7 @@ public:
                     toLock.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback_ = tracingCallback;
-                    std::ranges::fill(toLock, strong);
+                    std::fill(toLock.begin(), toLock.end(), strong);
                 }
 
                 // ------ Sync Point ------
@@ -876,4 +871,5 @@ public:
 };  // namespace tests
 
 BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, xrpl);
-}  // namespace xrpl::tests
+}  // namespace tests
+}  // namespace xrpl

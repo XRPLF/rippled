@@ -15,7 +15,7 @@ class SHAMapInnerNode final : public SHAMapTreeNode, public CountedObject<SHAMap
 {
 public:
     /** Each inner node has 16 children (the 'radix tree' part of the map) */
-    static constexpr unsigned int branchFactor = 16;
+    static inline constexpr unsigned int branchFactor = 16;
 
 private:
     /** Opaque type that contains the `hashes` array (array of type
@@ -81,7 +81,7 @@ public:
     SHAMapInnerNode(SHAMapInnerNode const&) = delete;
     SHAMapInnerNode&
     operator=(SHAMapInnerNode const&) = delete;
-    ~SHAMapInnerNode() override;
+    ~SHAMapInnerNode();
 
     // Needed to support intrusive weak pointers
     void

@@ -23,7 +23,8 @@
 #include <memory>
 #include <set>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** The Logic for maintaining the list of Slot addresses.
     We keep this in a separate class so it can be instantiated
@@ -253,7 +254,7 @@ public:
         }
 
         // Check for duplicate connection
-        if (slots_.contains(remote_endpoint))
+        if (slots_.find(remote_endpoint) != slots_.end())
         {
             JLOG(m_journal.debug()) << beast::leftw(18) << "Logic dropping " << remote_endpoint
                                     << " as duplicate incoming";
@@ -289,7 +290,7 @@ public:
         std::lock_guard const _(lock_);
 
         // Check for duplicate connection
-        if (slots_.contains(remote_endpoint))
+        if (slots_.find(remote_endpoint) != slots_.end())
         {
             JLOG(m_journal.debug()) << beast::leftw(18) << "Logic dropping " << remote_endpoint
                                     << " as duplicate connect";
@@ -376,7 +377,7 @@ public:
             "xrpl::PeerFinder::Logic::activate : valid slot state");
 
         // Check for duplicate connection by key
-        if (keys_.contains(key))
+        if (keys_.find(key) != keys_.end())
             return Result::duplicatePeer;
 
         // If the peer belongs to a cluster or is reserved,
@@ -417,11 +418,9 @@ public:
         {
             auto iter(fixed_.find(slot->remote_endpoint()));
             if (iter == fixed_.end())
-            {
                 LogicError(
                     "PeerFinder::Logic::activate(): remote_endpoint "
                     "missing from fixed_");
-            }
 
             iter->second.success(m_clock.now());
             JLOG(journal.trace()) << "Logic fixed success";
@@ -517,7 +516,7 @@ public:
                     << ((h.list().size() > 1) ? "endpoints" : "endpoint");
                 return h.list();
             }
-            if (counts_.attempts() > 0)
+            else if (counts_.attempts() > 0)
             {
                 JLOG(m_journal.debug())
                     << beast::leftw(18) << "Logic waiting on " << counts_.attempts() << " attempts";
@@ -628,7 +627,7 @@ public:
                 beast::Journal const journal{sink};
                 JLOG(journal.trace()) << "Logic sending " << list.size()
                                       << ((list.size() == 1) ? " endpoint" : " endpoints");
-                result.emplace_back(slot, list);
+                result.push_back(std::make_pair(slot, list));
             }
 
             m_whenBroadcast = now + Tuning::secondsPerMessage;
@@ -826,11 +825,9 @@ public:
             auto const iter = slots_.find(slot->remote_endpoint());
             // The slot must exist in the table
             if (iter == slots_.end())
-            {
                 LogicError(
                     "PeerFinder::Logic::remove(): remote_endpoint "
                     "missing from slots_");
-            }
 
             // Remove from slot by IP table
             slots_.erase(iter);
@@ -841,11 +838,9 @@ public:
             auto const iter = keys_.find(*slot->public_key());
             // Key must exist
             if (iter == keys_.end())
-            {
                 LogicError(
                     "PeerFinder::Logic::remove(): public_key missing "
                     "from keys_");
-            }
 
             keys_.erase(iter);
         }
@@ -854,11 +849,9 @@ public:
             auto const iter(connectedAddresses_.find(slot->remote_endpoint().address()));
             // Address must exist
             if (iter == connectedAddresses_.end())
-            {
                 LogicError(
                     "PeerFinder::Logic::remove(): remote_endpoint "
                     "address missing from connectedAddresses_");
-            }
 
             connectedAddresses_.erase(iter);
         }
@@ -882,11 +875,9 @@ public:
         {
             auto iter(fixed_.find(slot->remote_endpoint()));
             if (iter == fixed_.end())
-            {
                 LogicError(
                     "PeerFinder::Logic::on_closed(): remote_endpoint "
                     "missing from fixed_");
-            }
 
             iter->second.failure(m_clock.now());
             JLOG(journal.debug()) << "Logic fixed failed";
@@ -948,10 +939,8 @@ public:
     fixed(beast::IP::Endpoint const& endpoint) const
     {
         for (auto const& entry : fixed_)
-        {
             if (entry.first == endpoint)
                 return true;
-        }
         return false;
     }
 
@@ -962,10 +951,8 @@ public:
     fixed(beast::IP::Address const& address) const
     {
         for (auto const& entry : fixed_)
-        {
             if (entry.first.address() == address)
                 return true;
-        }
         return false;
     }
 
@@ -1212,4 +1199,5 @@ Logic<Checker>::onRedirects(
     }
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

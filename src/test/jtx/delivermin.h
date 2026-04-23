@@ -4,9 +4,9 @@
 
 #include <xrpl/protocol/STAmount.h>
 
-#include <utility>
-
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Sets the DeliverMin on a JTx. */
 class deliver_min
@@ -15,7 +15,7 @@ private:
     STAmount amount_;
 
 public:
-    deliver_min(STAmount amount) : amount_(std::move(amount))
+    deliver_min(STAmount const& amount) : amount_(amount)
     {
     }
 
@@ -23,4 +23,6 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

@@ -7,7 +7,9 @@
 
 #include <nudb/store.hpp>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+
+namespace NodeStore {
 
 /** Base class for backend factories. */
 class Factory
@@ -57,4 +59,5 @@ public:
     }
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

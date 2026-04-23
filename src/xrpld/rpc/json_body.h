@@ -69,7 +69,7 @@ struct json_body
         {
         }
 
-        static void
+        void
         init(boost::beast::error_code& ec)
         {
             ec.assign(0, ec.category());

@@ -32,10 +32,6 @@ enum class LineDirection : bool { incoming = false, outgoing = true };
 */
 class TrustLineBase
 {
-public:
-    TrustLineBase&
-    operator=(TrustLineBase const&) = delete;
-
 protected:
     // This class should not be instantiated directly. Use one of the derived
     // classes.
@@ -43,6 +39,8 @@ protected:
 
     ~TrustLineBase() = default;
     TrustLineBase(TrustLineBase const&) = default;
+    TrustLineBase&
+    operator=(TrustLineBase const&) = delete;
     TrustLineBase(TrustLineBase&&) = default;
 
 public:
@@ -71,25 +69,25 @@ public:
     bool
     getAuth() const
     {
-        return (mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth)) != 0u;
+        return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
     bool
     getAuthPeer() const
     {
-        return (mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth)) != 0u;
+        return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
     }
 
     bool
     getNoRipple() const
     {
-        return (mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
+        return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     bool
     getNoRipplePeer() const
     {
-        return (mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
+        return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
     }
 
     LineDirection
@@ -108,28 +106,28 @@ public:
     bool
     getFreeze() const
     {
-        return (mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze)) != 0u;
+        return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
     }
 
     /** Have we set the deep freeze flag on our peer */
     bool
     getDeepFreeze() const
     {
-        return (mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
+        return mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     }
 
     /** Has the peer set the freeze flag on us */
     bool
     getFreezePeer() const
     {
-        return (mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze)) != 0u;
+        return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
     }
 
     /** Has the peer set the deep freeze flag on us */
     bool
     getDeepFreezePeer() const
     {
-        return (mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
+        return mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     }
 
     STAmount const&

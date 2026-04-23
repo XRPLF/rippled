@@ -153,32 +153,6 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
-      - name: Check protocol autogen files are up-to-date
-        working-directory: ${{ env.BUILD_DIR }}
-        env:
-          MESSAGE: |
-
-            The generated protocol wrapper classes are out of date.
-
-            This typically happens when the macro files or generator scripts
-            have changed but the generated files were not regenerated.
-
-            To fix this:
-              1. Run: cmake --build . --target setup_code_gen
-              2. Run: cmake --build . --target code_gen
-              3. Commit and push the regenerated files
-        run: |
-          set -e
-          cmake --build . --target setup_code_gen
-          cmake --build . --target code_gen
-          DIFF=$(git -C .. status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
-          if [ -n "${DIFF}" ]; then
-            echo "::error::Generated protocol files are out of date"
-            git -C .. diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
-            echo "${MESSAGE}"
-            exit 1
-          fi
-
       - name: Build the binary
         working-directory: ${{ env.BUILD_DIR }}
         env:
@@ -192,6 +166,29 @@ jobs:
             --parallel "${BUILD_NPROC}" \
             --target "${CMAKE_TARGET}"
 
+      - name: Check protocol autogen files are up-to-date
+        env:
+          MESSAGE: |
+
+            The generated protocol wrapper classes are out of date.
+
+            This typically happens when your branch is behind develop and
+            the macro files or generator scripts have changed.
+
+            To fix this:
+              1. Update your branch from develop (merge or rebase)
+              2. Build with code generation enabled (XRPL_NO_CODEGEN=OFF)
+              3. Commit and push the regenerated files
+        run: |
+          set -e
+          DIFF=$(git status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
+          if [ -n "${DIFF}" ]; then
+            echo "::error::Generated protocol files are out of date"
+            git diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
+            echo "${MESSAGE}"
+            exit 1
+          fi
+
       - name: Show ccache statistics
         if: ${{ inputs.ccache_enabled }}
         run: |
@@ -203,7 +200,7 @@ jobs:
 
       - name: Upload the binary (Linux)
         if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
-        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
           name: xrpld-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/xrpld

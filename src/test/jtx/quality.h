@@ -2,7 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Sets the literal QualityIn on a trust JTx. */
 class qualityIn
@@ -60,4 +62,6 @@ public:
     operator()(Env&, JTx& jtx) const;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

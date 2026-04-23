@@ -5,7 +5,9 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Disable the regular key. */
 Json::Value
@@ -15,4 +17,6 @@ regkey(Account const& account, disabled_t);
 Json::Value
 regkey(Account const& account, Account const& signer);
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

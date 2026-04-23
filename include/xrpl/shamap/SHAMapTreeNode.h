@@ -40,6 +40,11 @@ protected:
      */
     std::uint32_t cowid_;
 
+protected:
+    SHAMapTreeNode(SHAMapTreeNode const&) = delete;
+    SHAMapTreeNode&
+    operator=(SHAMapTreeNode const&) = delete;
+
     /** Construct a node
 
         @param cowid The identifier of a SHAMap. For more, see #cowid_
@@ -57,11 +62,7 @@ protected:
     /** @} */
 
 public:
-    ~SHAMapTreeNode() noexcept override = default;
-
-    SHAMapTreeNode(SHAMapTreeNode const&) = delete;
-    SHAMapTreeNode&
-    operator=(SHAMapTreeNode const&) = delete;
+    virtual ~SHAMapTreeNode() noexcept = default;
 
     // Needed to support weak intrusive pointers
     virtual void

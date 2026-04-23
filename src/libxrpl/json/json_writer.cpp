@@ -1,8 +1,7 @@
-#include <xrpl/json/json_writer.h>
-
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 
 #include <cstdio>
 #include <cstring>
@@ -253,7 +252,9 @@ FastWriter::writeValue(Value const& value)
 // Class StyledWriter
 // //////////////////////////////////////////////////////////////////
 
-StyledWriter::StyledWriter() = default;
+StyledWriter::StyledWriter()
+{
+}
 
 std::string
 StyledWriter::write(Value const& root)
@@ -485,8 +486,7 @@ StyledWriter::unindent()
 // Class StyledStreamWriter
 // //////////////////////////////////////////////////////////////////
 
-StyledStreamWriter::StyledStreamWriter(std::string indentation)
-    : indentation_(std::move(indentation))
+StyledStreamWriter::StyledStreamWriter(std::string indentation) : indentation_(indentation)
 {
 }
 

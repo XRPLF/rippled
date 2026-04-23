@@ -1,37 +1,7 @@
+#include <xrpl/rdb/DBInit.h>
 #include <xrpl/server/Wallet.h>
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/UnorderedContainers.h>
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/hash/uhash.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/core/PeerReservationTable.h>
-#include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/tokens.h>
-#include <xrpl/rdb/DBInit.h>
-#include <xrpl/rdb/DatabaseCon.h>
-#include <xrpl/rdb/SociDB.h>
-#include <xrpl/server/Manifest.h>
-
-#include <boost/format/free_funcs.hpp>
-#include <boost/optional/optional.hpp>
-
-#include <soci/blob.h>
-#include <soci/into.h>
-#include <soci/session.h>
-#include <soci/statement.h>
-#include <soci/transaction.h>
-#include <soci/use.h>
-
-#include <array>
-#include <functional>
-#include <memory>
-#include <string>
-#include <unordered_set>
-#include <utility>
+#include <boost/format.hpp>
 
 namespace xrpl {
 
@@ -198,7 +168,7 @@ getPeerReservationTable(soci::session& session, beast::Journal j)
             JLOG(j.warn()) << "load: not a public key: " << valPubKey;
             continue;
         }
-        table.insert(PeerReservation{.nodeId = *optNodeId, .description = *valDesc});
+        table.insert(PeerReservation{*optNodeId, *valDesc});
     }
 
     return table;

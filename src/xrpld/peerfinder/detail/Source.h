@@ -4,7 +4,8 @@
 
 #include <boost/system/error_code.hpp>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 /** A static or dynamic source of peer addresses.
     These are used as fallbacks when we are bootstrapping and don't have
@@ -29,7 +30,9 @@ public:
         IPAddresses addresses;
     };
 
-    virtual ~Source() = default;
+    virtual ~Source()
+    {
+    }
     virtual std::string const&
     name() = 0;
     virtual void
@@ -40,4 +43,5 @@ public:
     fetch(Results& results, beast::Journal journal) = 0;
 };
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

@@ -2,7 +2,8 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 /** Log manager that searches for a specific message substring
  */
@@ -54,4 +55,5 @@ public:
     }
 };
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

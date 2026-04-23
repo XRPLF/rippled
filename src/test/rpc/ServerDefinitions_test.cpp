@@ -1,13 +1,14 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Env.h>
-
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl::test {
+namespace xrpl {
+
+namespace test {
 
 class ServerDefinitions_test : public beast::unit_test::suite
 {
@@ -460,4 +461,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ServerDefinitions, rpc, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

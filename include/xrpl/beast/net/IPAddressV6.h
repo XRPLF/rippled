@@ -4,7 +4,8 @@
 
 #include <boost/asio/ip/address_v6.hpp>
 
-namespace beast::IP {
+namespace beast {
+namespace IP {
 
 using AddressV6 = boost::asio::ip::address_v6;
 
@@ -16,4 +17,5 @@ is_private(AddressV6 const& addr);
 bool
 is_public(AddressV6 const& addr);
 
-}  // namespace beast::IP
+}  // namespace IP
+}  // namespace beast

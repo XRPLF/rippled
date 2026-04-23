@@ -78,7 +78,7 @@ struct MantissaRange
     }
 
     rep min;
-    rep max{(min * 10) - 1};
+    rep max{min * 10 - 1};
     int log;
     mantissa_scale scale;
 
@@ -342,9 +342,7 @@ public:
     constexpr int
     signum() const noexcept
     {
-        if (negative_)
-            return -1;
-        return (mantissa_ != 0u) ? 1 : 0;
+        return negative_ ? -1 : (mantissa_ ? 1 : 0);
     }
 
     Number
@@ -404,19 +402,19 @@ public:
     static void
     setMantissaScale(MantissaRange::mantissa_scale scale);
 
-    static internalrep
+    inline static internalrep
     minMantissa()
     {
         return range_.get().min;
     }
 
-    static internalrep
+    inline static internalrep
     maxMantissa()
     {
         return range_.get().max;
     }
 
-    static int
+    inline static int
     mantissaLog()
     {
         return range_.get().log;
@@ -509,12 +507,16 @@ private:
     class Guard;
 };
 
-constexpr Number::Number(bool negative, internalrep mantissa, int exponent, unchecked) noexcept
+inline constexpr Number::Number(
+    bool negative,
+    internalrep mantissa,
+    int exponent,
+    unchecked) noexcept
     : negative_(negative), mantissa_{mantissa}, exponent_{exponent}
 {
 }
 
-constexpr Number::Number(internalrep mantissa, int exponent, unchecked) noexcept
+inline constexpr Number::Number(internalrep mantissa, int exponent, unchecked) noexcept
     : Number(false, mantissa, exponent, unchecked{})
 {
 }
@@ -546,7 +548,7 @@ inline Number::Number(rep mantissa) : Number{mantissa, 0}
  * Please see the "---- External Interface ----" section of the class
  * documentation for an explanation of why the internal value may be modified.
  */
-constexpr Number::rep
+inline constexpr Number::rep
 Number::mantissa() const noexcept
 {
     auto m = mantissa_;
@@ -567,7 +569,7 @@ Number::mantissa() const noexcept
  * Please see the "---- External Interface ----" section of the class
  * documentation for an explanation of why the internal value may be modified.
  */
-constexpr int
+inline constexpr int
 Number::exponent() const noexcept
 {
     auto e = exponent_;
@@ -582,13 +584,13 @@ Number::exponent() const noexcept
     return e;
 }
 
-constexpr Number
+inline constexpr Number
 Number::operator+() const noexcept
 {
     return *this;
 }
 
-constexpr Number
+inline constexpr Number
 Number::operator-() const noexcept
 {
     if (mantissa_ == 0)
@@ -703,19 +705,17 @@ Number::normalizeToRange(T minMantissa, T maxMantissa) const
     int exponent = exponent_;
 
     if constexpr (std::is_unsigned_v<T>)
-    {
         XRPL_ASSERT_PARTS(
             !negative,
             "xrpl::Number::normalizeToRange",
             "Number is non-negative for unsigned range.");
-    }
     Number::normalize(negative, mantissa, exponent, minMantissa, maxMantissa);
 
     auto const sign = negative ? -1 : 1;
     return std::make_pair(static_cast<T>(sign * mantissa), exponent);
 }
 
-constexpr Number
+inline constexpr Number
 abs(Number x) noexcept
 {
     if (x < Number{})
@@ -746,7 +746,7 @@ power(Number const& f, unsigned n, unsigned d);
 
 // Return 0 if abs(x) < limit, else returns x
 
-constexpr Number
+inline constexpr Number
 squelch(Number const& x, Number const& limit) noexcept
 {
     if (abs(x) < limit)

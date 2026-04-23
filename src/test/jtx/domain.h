@@ -2,7 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl::test::jtx {
+namespace xrpl {
+namespace test {
+namespace jtx {
 
 /** Set the domain on a JTx. */
 class domain
@@ -19,4 +21,6 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace xrpl::test::jtx
+}  // namespace jtx
+}  // namespace test
+}  // namespace xrpl

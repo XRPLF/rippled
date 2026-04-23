@@ -148,7 +148,7 @@ STVector256::size() const
 inline void
 STVector256::resize(std::size_t n)
 {
-    mValue.resize(n);
+    return mValue.resize(n);
 }
 
 inline bool
@@ -220,7 +220,7 @@ STVector256::erase(std::vector<uint256>::iterator position)
 inline void
 STVector256::clear() noexcept
 {
-    mValue.clear();
+    return mValue.clear();
 }
 
 }  // namespace xrpl

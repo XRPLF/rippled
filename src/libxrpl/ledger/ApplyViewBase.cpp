@@ -1,19 +1,7 @@
 #include <xrpl/ledger/detail/ApplyViewBase.h>
 
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/ReadView.h>
-#include <xrpl/protocol/Fees.h>
-#include <xrpl/protocol/Keylet.h>
-#include <xrpl/protocol/LedgerHeader.h>
-#include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/XRPAmount.h>
-
-#include <memory>
-#include <optional>
-
-namespace xrpl::detail {
+namespace xrpl {
+namespace detail {
 
 ApplyViewBase::ApplyViewBase(ReadView const* base, ApplyFlags flags) : flags_(flags), base_(base)
 {
@@ -164,4 +152,5 @@ ApplyViewBase::rawDestroyXRP(XRPAmount const& fee)
     items_.destroyXRP(fee);
 }
 
-}  // namespace xrpl::detail
+}  // namespace detail
+}  // namespace xrpl

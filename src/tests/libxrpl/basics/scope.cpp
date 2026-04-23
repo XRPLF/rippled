@@ -2,8 +2,6 @@
 
 #include <gtest/gtest.h>
 
-#include <utility>
-
 using namespace xrpl;
 
 TEST(scope, scope_exit)

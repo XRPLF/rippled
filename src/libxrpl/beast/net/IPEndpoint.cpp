@@ -1,9 +1,9 @@
-#include <xrpl/beast/net/IPEndpoint.h>
-
 #include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/address_v4.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <cctype>
@@ -12,15 +12,15 @@
 #include <optional>
 #include <sstream>
 #include <string>
-#include <utility>
 
-namespace beast::IP {
+namespace beast {
+namespace IP {
 
 Endpoint::Endpoint() : m_port(0)
 {
 }
 
-Endpoint::Endpoint(Address addr, Port port) : m_addr(std::move(addr)), m_port(port)
+Endpoint::Endpoint(Address const& addr, Port port) : m_addr(addr), m_port(port)
 {
 }
 
@@ -176,4 +176,5 @@ operator>>(std::istream& is, Endpoint& endpoint)
     return is;
 }
 
-}  // namespace beast::IP
+}  // namespace IP
+}  // namespace beast

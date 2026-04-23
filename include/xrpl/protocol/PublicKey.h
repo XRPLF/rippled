@@ -69,8 +69,8 @@ public:
         return buf_;
     }
 
-    static std::size_t
-    size() noexcept
+    std::size_t
+    size() const noexcept
     {
         return size_;
     }

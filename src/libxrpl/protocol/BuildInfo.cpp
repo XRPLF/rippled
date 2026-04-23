@@ -1,19 +1,20 @@
-#include <xrpl/protocol/BuildInfo.h>
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/git/Git.h>  // IWYU pragma: keep
+#include <xrpl/git/Git.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/SystemParameters.h>
 
-#include <boost/preprocessor/stringize.hpp>  // IWYU pragma: keep
+#include <boost/preprocessor/stringize.hpp>
 
 #include <algorithm>
 #include <cstdint>
 #include <string>
 #include <string_view>
 
-namespace xrpl::BuildInfo {
+namespace xrpl {
+
+namespace BuildInfo {
 
 namespace {
 
@@ -121,7 +122,7 @@ encodeSoftwareVersion(std::string_view versionStr)
                                           std::uint8_t hik) -> std::uint8_t {
                     std::uint8_t ret = 0;
 
-                    if (!identifier.starts_with(prefix))
+                    if (prefix != identifier.substr(0, prefix.length()))
                         return 0;
 
                     if (!beast::lexicalCastChecked(
@@ -172,4 +173,6 @@ isNewerVersion(std::uint64_t version)
     return false;
 }
 
-}  // namespace xrpl::BuildInfo
+}  // namespace BuildInfo
+
+}  // namespace xrpl

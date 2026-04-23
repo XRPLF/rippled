@@ -1,25 +1,17 @@
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 
-#include <xrpld/peerfinder/detail/Source.h>
-
-#include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/utility/Journal.h>
-
-#include <memory>
-#include <string>
-#include <utility>
-
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 class SourceStringsImp : public SourceStrings
 {
 public:
-    SourceStringsImp(std::string name, Strings strings)
-        : m_name(std::move(name)), m_strings(std::move(strings))
+    SourceStringsImp(std::string const& name, Strings const& strings)
+        : m_name(name), m_strings(strings)
     {
     }
 
-    ~SourceStringsImp() override = default;
+    ~SourceStringsImp() = default;
 
     std::string const&
     name() override
@@ -55,4 +47,5 @@ SourceStrings::New(std::string const& name, Strings const& strings)
     return std::make_shared<SourceStringsImp>(name, strings);
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

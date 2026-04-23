@@ -1,32 +1,9 @@
+#include <test/jtx.h>
 
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/fee.h>
-#include <test/jtx/ledgerStateFix.h>
-#include <test/jtx/noop.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/ticket.h>
-#include <test/jtx/token.h>
-#include <test/jtx/txflags.h>
-
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_forwards.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/nft.h>
-
-#include <algorithm>
-#include <cstdint>
-#include <vector>
+#include <xrpl/tx/ApplyContext.h>
 
 namespace xrpl {
 
@@ -94,7 +71,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         // Sort the NFTs so they are listed in storage order, not
         // creation order.
-        std::ranges::sort(nfts);
+        std::sort(nfts.begin(), nfts.end());
 
         // Verify that the owner does indeed have exactly three pages
         // of NFTs with 32 entries in each page.

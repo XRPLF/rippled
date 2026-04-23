@@ -3,35 +3,14 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/strHex.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/tokens.h>
 #include <xrpl/resource/Fees.h>
-
-#include <boost/lexical_cast.hpp>
-#include <boost/lexical_cast/bad_lexical_cast.hpp>
-
-#include <cstdint>
-#include <memory>
-#include <optional>
-#include <sstream>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace xrpl {
 
@@ -114,7 +93,7 @@ doAccountChannels(RPC::JsonContext& context)
         AccountID const& accountID;
         std::optional<AccountID> const& raDstAccount;
     };
-    VisitData visitData = {.items = {}, .accountID = accountID, .raDstAccount = raDstAccount};
+    VisitData visitData = {{}, accountID, raDstAccount};
     visitData.items.reserve(limit);
     uint256 startAfter = beast::zero;
     std::uint64_t startHint = 0;

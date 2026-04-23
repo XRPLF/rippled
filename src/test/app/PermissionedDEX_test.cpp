@@ -1,51 +1,34 @@
+#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/Account.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/balance.h>
-#include <test/jtx/credentials.h>
-#include <test/jtx/domain.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>  // IWYU pragma: keep
-#include <test/jtx/paths.h>
-#include <test/jtx/pay.h>
-#include <test/jtx/permissioned_dex.h>
-#include <test/jtx/permissioned_domains.h>
-#include <test/jtx/sendmax.h>
-#include <test/jtx/ter.h>
-#include <test/jtx/trust.h>
-#include <test/jtx/txflags.h>
 
-#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/ledger/OpenView.h>
-#include <xrpl/protocol/Book.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/tx/transactors/permissioned_domain/PermissionedDomainSet.h>
 
-#include <chrono>
-#include <cstddef>
+#include <atomic>
 #include <cstdint>
+#include <exception>
 #include <map>
-#include <memory>
 #include <optional>
 #include <string>
 #include <utility>
 #include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 using namespace jtx;
 
@@ -1389,73 +1372,6 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(!offerExists(env, bob, carolOfferSeq));
     }
 
-    void
-    testHybridMalformedOffer(FeatureBitset features)
-    {
-        bool const fixS313Enabled = features[fixSecurity3_1_3];
-
-        testcase << "Hybrid offer with empty AdditionalBooks"
-                 << (fixS313Enabled ? " (fixSecurity3_1_3 enabled)"
-                                    : " (fixSecurity3_1_3 disabled)");
-
-        // offerInDomain has two code paths gated by fixSecurity3_1_3:
-        //
-        // pre-fix:  only rejects a hybrid offer when sfAdditionalBooks is
-        //           entirely absent — an empty array (size 0) passes through.
-        // post-fix: also rejects a hybrid offer whose sfAdditionalBooks array
-        //           has size != 1 (i.e. 0 or >1 entries).
-        //
-        // We create a valid hybrid offer, then directly manipulate its SLE to
-        // produce the size==0 case that cannot occur via normal transactions,
-        // and verify that the two code paths produce the expected outcomes.
-        //
-        // Note: the PermissionedDEX invariant checker (ValidPermissionedDEX)
-        // does not flag this malformation for ttPAYMENT — only for
-        // ttOFFER_CREATE — so the without-fix payment completes as tesSUCCESS.
-
-        Env env(*this, features);
-        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            PermissionedDEX(env);
-
-        // Create a valid hybrid offer (sfAdditionalBooks has exactly 1 entry)
-        auto const bobOfferSeq{env.seq(bob)};
-        env(offer(bob, XRP(10), USD(10)), txflags(tfHybrid), domain(domainID));
-        env.close();
-        BEAST_EXPECT(offerExists(env, bob, bobOfferSeq));
-
-        // Directly manipulate the offer SLE in the open ledger so that
-        // sfAdditionalBooks is present but empty (size 0). This is the
-        // malformed state that fixSecurity3_1_3 is designed to catch.
-        auto const offerKey = keylet::offer(bob.id(), bobOfferSeq);
-        env.app().getOpenLedger().modify([&offerKey](OpenView& view, beast::Journal) {
-            auto const sle = view.read(offerKey);
-            if (!sle)
-                return false;
-            auto replacement = std::make_shared<SLE>(*sle, sle->key());
-            replacement->setFieldArray(sfAdditionalBooks, STArray{});
-            view.rawReplace(replacement);
-            return true;
-        });
-
-        if (fixS313Enabled)
-        {
-            // post-fixSecurity3_1_3: offerInDomain rejects the malformed
-            // offer (size == 0), so no valid domain offer is found.
-            env(pay(alice, carol, USD(10)),
-                path(~USD),
-                sendmax(XRP(10)),
-                domain(domainID),
-                ter(tecPATH_PARTIAL));
-        }
-        else
-        {
-            // pre-fixSecurity3_1_3: offerInDomain only checks for a missing
-            // sfAdditionalBooks field; size == 0 passes through, so the
-            // malformed offer is crossed and the payment succeeds.
-            env(pay(alice, carol, USD(10)), path(~USD), sendmax(XRP(10)), domain(domainID));
-        }
-    }
-
 public:
     void
     run() override
@@ -1477,11 +1393,10 @@ public:
         testHybridBookStep(all);
         testHybridInvalidOffer(all);
         testHybridOfferDirectories(all);
-        testHybridMalformedOffer(all);
-        testHybridMalformedOffer(all - fixSecurity3_1_3);
     }
 };
 
 BEAST_DEFINE_TESTSUITE(PermissionedDEX, app, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

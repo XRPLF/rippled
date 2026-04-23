@@ -1,18 +1,10 @@
 #include <xrpld/rpc/Status.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/beast/unit_test.h>
 
-#include <algorithm>
-#include <cstddef>
-#include <exception>
-#include <string>
-
-namespace xrpl::RPC {
+namespace xrpl {
+namespace RPC {
 
 class codeString_test : public beast::unit_test::suite
 {
@@ -204,4 +196,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(fillJson, rpc, RPC);
 
-}  // namespace xrpl::RPC
+}  // namespace RPC
+}  // namespace xrpl

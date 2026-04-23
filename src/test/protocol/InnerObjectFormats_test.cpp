@@ -1,15 +1,10 @@
-
-#include <test/jtx/Env.h>
+#include <test/jtx.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/json/json_reader.h>  // Json::Reader
-#include <xrpl/json/json_value.h>
+#include <xrpl/beast/unit_test.h>
+#include <xrpl/json/json_reader.h>       // Json::Reader
 #include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
-
-#include <stdexcept>
-#include <string>
 
 namespace xrpl {
 
@@ -24,7 +19,7 @@ struct TestJSONTxt
 static TestJSONTxt const testArray[] = {
 
     // Valid SignerEntry
-    {.txt = R"({
+    {R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -46,10 +41,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = false},
+     false},
 
     // SignerEntry missing Account
-    {.txt = R"({
+    {R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -70,10 +65,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = true},
+     true},
 
     // SignerEntry missing SignerWeight
-    {.txt = R"({
+    {R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -94,10 +89,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = true},
+     true},
 
     // SignerEntry with unexpected Amount
-    {.txt = R"({
+    {R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -120,10 +115,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = true},
+     true},
 
     // SignerEntry with no Account and unexpected Amount
-    {.txt = R"({
+    {R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -145,7 +140,7 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     .expectFail = true},
+     true},
 
 };
 

@@ -1,20 +1,13 @@
-
-#include <test/jtx/TestHelpers.h>
+#include <test/jtx.h>
 
 #include <xrpld/rpc/detail/Handler.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 
-#include <algorithm>
-#include <array>
-#include <cassert>
 #include <chrono>
-#include <cmath>
-#include <cstddef>
 #include <iostream>
+#include <limits>
 #include <random>
-#include <tuple>
-#include <vector>
 // cspell: words stdev
 
 namespace xrpl::test {
@@ -64,7 +57,7 @@ class Handler_test : public beast::unit_test::suite
                 samples[k] = (std::chrono::steady_clock::now() - start).count();
             }
 
-            std::ranges::sort(samples);
+            std::sort(samples.begin(), samples.end());
             for (std::size_t k = 35; k < 65; ++k)
             {
                 j += 1;

@@ -4,32 +4,41 @@ This directory contains auto-generated C++ wrapper classes for XRP Ledger protoc
 
 ## Generated Files
 
-The files in this directory are generated from macro definition files:
+The files in this directory are automatically generated at **CMake configure time** from macro definition files:
 
-- **Transaction classes** (in `transactions/`): Generated from `include/xrpl/protocol/detail/transactions.macro` by `cmake/scripts/codegen/generate_tx_classes.py`
-- **Ledger entry classes** (in `ledger_entries/`): Generated from `include/xrpl/protocol/detail/ledger_entries.macro` by `cmake/scripts/codegen/generate_ledger_classes.py`
+- **Transaction classes** (in `transactions/`): Generated from `include/xrpl/protocol/detail/transactions.macro` by `scripts/generate_tx_classes.py`
+- **Ledger entry classes** (in `ledger_entries/`): Generated from `include/xrpl/protocol/detail/ledger_entries.macro` by `scripts/generate_ledger_classes.py`
 
 ## Generation Process
 
-Generation requires a one-time setup step to create a virtual environment
-and install Python dependencies, followed by running the generation target:
+The generation happens automatically when you **configure** the project (not during build). When you run CMake, the system:
 
-```bash
-cmake --build . --target setup_code_gen  # create venv and install dependencies (once)
-cmake --build . --target code_gen        # generate code
-```
+1. Creates a Python virtual environment in the build directory (`codegen_venv`)
+2. Installs Python dependencies from `scripts/requirements.txt` into the venv (only if needed)
+3. Runs the Python generation scripts using the venv Python interpreter
+4. Parses the macro files to extract type definitions
+5. Generates type-safe C++ wrapper classes using Mako templates
+6. Places the generated headers in this directory
 
-By default, `CODEGEN_VENV_DIR` points to `.venv` in the project root. The
-`setup_code_gen` target creates a venv there and installs the required packages.
-The `code_gen` target then uses the venv's Python interpreter to run generation.
+### When Regeneration Happens
+
+The code is regenerated when:
+
+- You run CMake configure for the first time
+- The Python virtual environment doesn't exist
+- `scripts/requirements.txt` has been modified
+
+To force regeneration, delete the build directory and reconfigure.
 
 ### Python Dependencies
 
-The code generation requires the following Python packages (installed by `setup_code_gen`):
+The code generation requires the following Python packages (automatically installed):
 
 - `pcpp` - C preprocessor for Python
 - `pyparsing` - Parser combinator library
 - `Mako` - Template engine
+
+These are isolated in a virtual environment and won't affect your system Python installation.
 
 ## Version Control
 
@@ -41,15 +50,15 @@ The generated `.h` files **are checked into version control**. This means:
 
 ## Modifying Generated Code
 
-**Do not manually edit generated files.** Any changes will be overwritten the next time `code_gen` is run.
+**Do not manually edit generated files.** Any changes will be overwritten the next time CMake configure runs.
 
 To modify the generated classes:
 
 - Edit the macro files in `include/xrpl/protocol/detail/`
-- Edit the Mako templates in `cmake/scripts/codegen/templates/`
-- Edit the generation scripts in `cmake/scripts/codegen/`
-- Update Python dependencies in `cmake/scripts/codegen/requirements.txt`
-- Run `cmake --build . --target code_gen` to regenerate
+- Edit the Mako templates in `scripts/templates/`
+- Edit the generation scripts in `scripts/`
+- Update Python dependencies in `scripts/requirements.txt`
+- Run CMake configure to regenerate
 
 ## Adding Common Fields
 
@@ -64,7 +73,7 @@ Base classes:
 
 Templates (update to pass required common fields to base class constructors):
 
-- `cmake/scripts/codegen/templates/Transaction.h.mako`
-- `cmake/scripts/codegen/templates/LedgerEntry.h.mako`
+- `scripts/templates/Transaction.h.mako`
+- `scripts/templates/LedgerEntry.h.mako`
 
 These files are **not auto-generated** and must be updated by hand.

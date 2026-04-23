@@ -1,7 +1,6 @@
-#include <xrpl/protocol/RPCErr.h>
-
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
 namespace xrpl {

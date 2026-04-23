@@ -1,16 +1,19 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/conditions/Condition.h>
 #include <xrpl/conditions/Fulfillment.h>
+#include <xrpl/conditions/detail/PreimageSha256.h>
 
+#include <algorithm>
 #include <string>
-#include <system_error>
 #include <utility>
 #include <vector>
 
-namespace xrpl::cryptoconditions {
+namespace xrpl {
+namespace cryptoconditions {
 
 class PreimageSha256_test : public beast::unit_test::suite
 {
@@ -165,4 +168,6 @@ class PreimageSha256_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PreimageSha256, conditions, xrpl);
 
-}  // namespace xrpl::cryptoconditions
+}  // namespace cryptoconditions
+
+}  // namespace xrpl

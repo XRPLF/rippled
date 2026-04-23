@@ -9,8 +9,10 @@ template <bool IsConst, class T>
 struct maybe_const
 {
     explicit maybe_const() = default;
-    using type = std::
-        conditional_t<IsConst, typename std::remove_const<T>::type const, std::remove_const_t<T>>;
+    using type = typename std::conditional<
+        IsConst,
+        typename std::remove_const<T>::type const,
+        typename std::remove_const<T>::type>::type;
 };
 
 /** Alias for omitting `typename`. */

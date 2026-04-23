@@ -13,9 +13,9 @@
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <algorithm>
-#include <utility>
 
-namespace xrpl::PeerFinder {
+namespace xrpl {
+namespace PeerFinder {
 
 template <class>
 class Livecache;
@@ -30,7 +30,7 @@ public:
 protected:
     struct Element : boost::intrusive::list_base_hook<>
     {
-        Element(Endpoint endpoint_) : endpoint(std::move(endpoint_))
+        Element(Endpoint const& endpoint_) : endpoint(endpoint_)
         {
         }
 
@@ -409,7 +409,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
                                 << " at hops " << ep.hops;
         return;
     }
-    if (!result.second && (ep.hops > e.endpoint.hops))
+    else if (!result.second && (ep.hops > e.endpoint.hops))
     {
         // Drop duplicates at higher hops
         std::size_t const excess(ep.hops - e.endpoint.hops);
@@ -465,7 +465,7 @@ Livecache<Allocator>::hops_t::shuffle()
     {
         std::vector<std::reference_wrapper<Element>> v;
         v.reserve(list.size());
-        std::ranges::copy(list, std::back_inserter(v));
+        std::copy(list.begin(), list.end(), std::back_inserter(v));
         std::shuffle(v.begin(), v.end(), default_prng());
         list.clear();
         for (auto& e : v)
@@ -490,7 +490,7 @@ Livecache<Allocator>::hops_t::histogram() const
 template <class Allocator>
 Livecache<Allocator>::hops_t::hops_t(Allocator const& alloc)
 {
-    std::ranges::fill(m_hist, 0);
+    std::fill(m_hist.begin(), m_hist.end(), 0);
 }
 
 template <class Allocator>
@@ -532,4 +532,5 @@ Livecache<Allocator>::hops_t::remove(Element& e)
     list.erase(list.iterator_to(e));
 }
 
-}  // namespace xrpl::PeerFinder
+}  // namespace PeerFinder
+}  // namespace xrpl

@@ -4,7 +4,8 @@
 
 #include <memory>
 
-namespace beast::insight {
+namespace beast {
+namespace insight {
 
 /** A reference to a handler for performing polled collection. */
 class Hook final
@@ -13,7 +14,9 @@ public:
     /** Create a null hook.
         A null hook has no associated handler.
     */
-    Hook() = default;
+    Hook()
+    {
+    }
 
     /** Create a hook referencing the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
@@ -34,4 +37,5 @@ private:
     std::shared_ptr<HookImpl> m_impl;
 };
 
-}  // namespace beast::insight
+}  // namespace insight
+}  // namespace beast

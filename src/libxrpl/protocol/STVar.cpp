@@ -1,5 +1,3 @@
-#include <xrpl/protocol/detail/STVar.h>
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/SField.h>
@@ -18,12 +16,14 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/detail/STVar.h>
 
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
 
-namespace xrpl::detail {
+namespace xrpl {
+namespace detail {
 
 defaultObject_t defaultObject;
 nonPresentObject_t nonPresentObject;
@@ -227,4 +227,5 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
     }
 }
 
-}  // namespace xrpl::detail
+}  // namespace detail
+}  // namespace xrpl

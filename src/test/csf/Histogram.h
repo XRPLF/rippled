@@ -6,7 +6,9 @@
 #include <cmath>
 #include <map>
 
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 
 /** Basic histogram.
 
@@ -106,4 +108,6 @@ public:
     }
 };
 
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

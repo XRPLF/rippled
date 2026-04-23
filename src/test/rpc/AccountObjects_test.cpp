@@ -1,40 +1,20 @@
+#include <test/jtx.h>
 #include <test/jtx/AMM.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/TestHelpers.h>
-#include <test/jtx/amount.h>
-#include <test/jtx/deposit.h>
-#include <test/jtx/envconfig.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/offer.h>
-#include <test/jtx/owners.h>  // IWYU pragma: keep
-#include <test/jtx/pay.h>
-#include <test/jtx/permissioned_domains.h>
-#include <test/jtx/ticket.h>
-#include <test/jtx/token.h>
-#include <test/jtx/txflags.h>
 #include <test/jtx/xchain_bridge.h>
 
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/strHex.h>
-#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
-#include <algorithm>
-#include <cstdint>
-#include <iterator>
-#include <optional>
-#include <vector>
+#include <boost/utility/string_ref.hpp>
 
-namespace xrpl::test {
+#include <algorithm>
+
+namespace xrpl {
+namespace test {
 
 static char const* bob_account_objects[] = {
     R"json({
@@ -941,7 +921,7 @@ public:
                     jss::RippleState.c_str(),
                     jss::PayChannel.c_str(),
                     jss::PermissionedDomain.c_str()};
-                std::ranges::sort(v);
+                std::sort(v.begin(), v.end());
                 return v;
             }();
 
@@ -957,7 +937,7 @@ public:
                 {
                     gotLedgerTypes.push_back(aobjs[i]["LedgerEntryType"].asString());
                 }
-                std::ranges::sort(gotLedgerTypes);
+                std::sort(gotLedgerTypes.begin(), gotLedgerTypes.end());
                 BEAST_EXPECT(gotLedgerTypes == expectedLedgerTypes);
             }
         }
@@ -982,7 +962,7 @@ public:
                 auto const objs = resp[jss::result][jss::account_objects];
                 for (auto const& obj : resp[jss::result][jss::account_objects])
                     typesOut.push_back(obj[sfLedgerEntryType.fieldName].asString());
-                std::ranges::sort(typesOut);
+                std::sort(typesOut.begin(), typesOut.end());
             };
             // Make a lambda we can use to check the number of fetched
             // account objects and their ledger type
@@ -1366,4 +1346,5 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountObjects, rpc, xrpl);
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

@@ -8,7 +8,8 @@
 
 #include <string>
 
-namespace beast::unit_test {
+namespace beast {
+namespace unit_test {
 
 // Predicate for implementing matches
 class selector
@@ -162,4 +163,5 @@ match_library(std::string const& name)
     return selector(selector::library, name);
 }
 
-}  // namespace beast::unit_test
+}  // namespace unit_test
+}  // namespace beast

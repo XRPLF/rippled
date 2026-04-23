@@ -1,19 +1,10 @@
 #include <test/csf/ledgers.h>
 
-#include <test/csf/Tx.h>
-
-#include <xrpl/basics/chrono.h>
-#include <xrpl/json/json_value.h>
-#include <xrpl/ledger/LedgerTiming.h>
-
 #include <algorithm>
-#include <chrono>
-#include <cstddef>
-#include <optional>
-#include <set>
-#include <vector>
 
-namespace xrpl::test::csf {
+namespace xrpl {
+namespace test {
+namespace csf {
 
 Ledger::Instance const Ledger::genesis;
 
@@ -164,4 +155,6 @@ LedgerOracle::branches(std::set<Ledger> const& ledgers)
     // The size of tips is the number of branches
     return tips.size();
 }
-}  // namespace xrpl::test::csf
+}  // namespace csf
+}  // namespace test
+}  // namespace xrpl

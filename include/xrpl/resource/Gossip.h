@@ -4,7 +4,8 @@
 
 #include <vector>
 
-namespace xrpl::Resource {
+namespace xrpl {
+namespace Resource {
 
 /** Data format for exchanging consumption information across peers. */
 struct Gossip
@@ -23,4 +24,5 @@ struct Gossip
     std::vector<Item> items;
 };
 
-}  // namespace xrpl::Resource
+}  // namespace Resource
+}  // namespace xrpl

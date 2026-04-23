@@ -1,10 +1,8 @@
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SeqProxy.h>
 
-#include <cstdint>
 #include <limits>
 #include <sstream>
-#include <string>
 
 namespace xrpl {
 
@@ -54,7 +52,7 @@ struct SeqProxy_test : public beast::unit_test::suite
         ss << seqProx;
         std::string str{ss.str()};
 
-        return str.starts_with(type) && str[type.size()] == ' ' &&
+        return str.find(type) == 0 && str[type.size()] == ' ' &&
             str.find(value) == (type.size() + 1);
     }
 

@@ -1,11 +1,8 @@
-#include <helpers/TestSink.h>
-
-#include <xrpl/beast/utility/Journal.h>
-
 #include <boost/predef.h>
 
+#include <helpers/TestSink.h>
+
 #include <cstdlib>  // for getenv
-#include <string>
 
 #if BOOST_OS_WINDOWS
 #include <io.h>     // for _isatty, _fileno

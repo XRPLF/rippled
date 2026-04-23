@@ -2,7 +2,9 @@
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 
-namespace xrpl::detail {
+namespace xrpl {
+
+namespace detail {
 
 // Work over TCP/IP
 class WorkPlain : public WorkBase<WorkPlain>, public std::enable_shared_from_this<WorkPlain>
@@ -18,7 +20,7 @@ public:
         endpoint_type const& lastEndpoint,
         bool lastStatus,
         callback_type cb);
-    ~WorkPlain() override = default;
+    ~WorkPlain() = default;
 
 private:
     void
@@ -49,12 +51,11 @@ inline void
 WorkPlain::onConnect(error_code const& ec)
 {
     if (ec)
-    {
-        fail(ec);
-        return;
-    }
+        return fail(ec);
 
     onStart();
 }
 
-}  // namespace xrpl::detail
+}  // namespace detail
+
+}  // namespace xrpl

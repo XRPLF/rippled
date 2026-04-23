@@ -14,7 +14,9 @@ class BookListeners
 public:
     using pointer = std::shared_ptr<BookListeners>;
 
-    BookListeners() = default;
+    BookListeners()
+    {
+    }
 
     /** Add a new subscription for this book
      */

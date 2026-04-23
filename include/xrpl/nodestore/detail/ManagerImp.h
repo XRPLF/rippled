@@ -2,7 +2,9 @@
 
 #include <xrpl/nodestore/Manager.h>
 
-namespace xrpl::NodeStore {
+namespace xrpl {
+
+namespace NodeStore {
 
 class ManagerImp : public Manager
 {
@@ -19,7 +21,7 @@ public:
 
     ManagerImp();
 
-    ~ManagerImp() override = default;
+    ~ManagerImp() = default;
 
     Factory*
     find(std::string const& name) override;
@@ -46,4 +48,5 @@ public:
         beast::Journal journal) override;
 };
 
-}  // namespace xrpl::NodeStore
+}  // namespace NodeStore
+}  // namespace xrpl

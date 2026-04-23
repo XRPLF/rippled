@@ -2,7 +2,8 @@
 
 #include <xrpl/basics/Log.h>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 /**
  * @brief Log manager for CaptureSinks. This class holds the stream
@@ -65,4 +66,5 @@ public:
     }
 };
 
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

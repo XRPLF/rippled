@@ -4,7 +4,6 @@
 
 #include <memory>
 #include <unordered_map>
-#include <utility>
 
 namespace xrpl {
 
@@ -29,7 +28,7 @@ struct LocalValues
         T t_;
 
         Value() = default;
-        explicit Value(T t) : t_(std::move(t))
+        explicit Value(T const& t) : t_(t)
         {
         }
 
@@ -43,10 +42,10 @@ struct LocalValues
     // Keys are the address of a LocalValue.
     std::unordered_map<void const*, std::unique_ptr<BasicValue>> values;
 
-    static void
+    static inline void
     cleanup(LocalValues* lvs)
     {
-        if ((lvs != nullptr) && !lvs->onCoro)
+        if (lvs && !lvs->onCoro)
             delete lvs;
     }
 };
@@ -90,7 +89,7 @@ T&
 LocalValue<T>::operator*()
 {
     auto lvs = detail::getLocalValues().get();
-    if (lvs == nullptr)
+    if (!lvs)
     {
         lvs = new detail::LocalValues();
         lvs->onCoro = false;

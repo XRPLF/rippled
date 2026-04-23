@@ -1,7 +1,8 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 
-namespace beast::IP {
+namespace beast {
+namespace IP {
 
 inline Endpoint
 randomEP(bool v4 = true)
@@ -38,4 +39,5 @@ randomEP(bool v4 = true)
         rand_int<std::uint16_t>(1, UINT16_MAX)};
 }
 
-}  // namespace beast::IP
+}  // namespace IP
+}  // namespace beast

@@ -1,12 +1,12 @@
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 
-#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/unit_test.h>
 
 #include <algorithm>
-#include <utility>
 #include <vector>
 
-namespace xrpl::test {
+namespace xrpl {
+namespace test {
 
 class RCLCensorshipDetector_test : public beast::unit_test::suite
 {
@@ -80,4 +80,5 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(RCLCensorshipDetector, consensus, xrpl);
-}  // namespace xrpl::test
+}  // namespace test
+}  // namespace xrpl

@@ -13,7 +13,6 @@
 Debug/
 Release/
 /.build/
-/.venv/
 /build/
 /db/
 /out.txt
