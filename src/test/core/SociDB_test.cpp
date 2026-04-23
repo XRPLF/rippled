@@ -80,7 +80,7 @@ public:
         {
         }
     }
-    ~SociDB_test()
+    ~SociDB_test() override
     {
         try
         {
@@ -129,10 +129,8 @@ public:
             for (int i = 0; i < stringResult.size(); ++i)
             {
                 auto si = std::distance(
-                    stringData.begin(),
-                    std::find(stringData.begin(), stringData.end(), stringResult[i]));
-                auto ii = std::distance(
-                    intData.begin(), std::find(intData.begin(), intData.end(), intResult[i]));
+                    stringData.begin(), std::ranges::find(stringData, stringResult[i]));
+                auto ii = std::distance(intData.begin(), std::ranges::find(intData, intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };

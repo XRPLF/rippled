@@ -15,12 +15,16 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
 
 #include <algorithm>
 #include <cstdint>
+#include <memory>
 #include <variant>
 
 namespace xrpl {
@@ -264,6 +268,20 @@ Clawback::doApply()
     return std::visit(
         [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
         ctx_.tx[sfAmount].asset().value());
+}
+
+void
+Clawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

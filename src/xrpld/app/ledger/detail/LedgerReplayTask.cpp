@@ -67,7 +67,7 @@ LedgerReplayTask::TaskParameter::canMergeInto(TaskParameter const& existingTask)
         if (existingTask.full_)
         {
             auto const& exList = existingTask.skipList_;
-            if (auto i = std::find(exList.begin(), exList.end(), finishHash_); i != exList.end())
+            if (auto i = std::ranges::find(exList, finishHash_); i != exList.end())
             {
                 return existingTask.totalLedgers_ >= totalLedgers_ + (exList.end() - i) - 1;
             }
@@ -87,7 +87,9 @@ LedgerReplayTask::LedgerReplayTask(
           app,
           parameter.finishHash_,
           LedgerReplayParameters::TASK_TIMEOUT,
-          {jtREPLAY_TASK, "LedReplTask", LedgerReplayParameters::MAX_QUEUED_TASKS},
+          {.jobType = jtREPLAY_TASK,
+           .jobName = "LedReplTask",
+           .jobLimit = LedgerReplayParameters::MAX_QUEUED_TASKS},
           app.getJournal("LedgerReplayTask"))
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)

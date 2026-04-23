@@ -11,8 +11,7 @@
 #include <mutex>
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
     : m_callback(callback), m_scheduler(scheduler)
@@ -108,5 +107,4 @@ BatchWriter::waitForWriting()
         mWriteCondition.wait(sl);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

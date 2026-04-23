@@ -7,8 +7,7 @@
 #include <xrpl/resource/detail/Key.h>
 #include <xrpl/resource/detail/Tuning.h>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
@@ -87,5 +86,4 @@ operator<<(std::ostream& os, Entry const& v)
     return os;
 }
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

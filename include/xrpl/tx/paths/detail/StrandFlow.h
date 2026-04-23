@@ -468,14 +468,14 @@ public:
                             // an unusual corner case.
                             continue;
                         }
-                        strandQualities.push_back({*qual, strand});
+                        strandQualities.emplace_back(*qual, strand);
                     }
                 }
                 // must stable sort for deterministic order across different c++
                 // standard library implementations
-                std::stable_sort(
-                    strandQualities.begin(),
-                    strandQualities.end(),
+                std::ranges::stable_sort(
+                    strandQualities,
+
                     [](auto const& lhs, auto const& rhs) {
                         // higher qualities first
                         return std::get<Quality>(lhs) > std::get<Quality>(rhs);

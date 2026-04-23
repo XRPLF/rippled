@@ -19,9 +19,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace xrpl {
-
-namespace reduce_relay {
+namespace xrpl::reduce_relay {
 
 template <typename clock_type>
 class Slots;
@@ -52,9 +50,7 @@ epoch(TP const& t)
 class SquelchHandler
 {
 public:
-    virtual ~SquelchHandler()
-    {
-    }
+    virtual ~SquelchHandler() = default;
     /** Squelch handler
      * @param validator Public key of the source validator
      * @param id Peer's id to squelch
@@ -798,6 +794,4 @@ Slots<clock_type>::deleteIdlePeers()
     }
 }
 
-}  // namespace reduce_relay
-
-}  // namespace xrpl
+}  // namespace xrpl::reduce_relay

@@ -37,8 +37,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Manifest_test : public beast::unit_test::suite
 {
@@ -97,7 +96,7 @@ public:
         {
         }
     }
-    ~Manifest_test()
+    ~Manifest_test() override
     {
         try
         {
@@ -238,7 +237,7 @@ public:
                 return result;
             };
             auto sort = [](std::vector<Manifest const*> mv) -> std::vector<Manifest const*> {
-                std::sort(mv.begin(), mv.end(), [](Manifest const* lhs, Manifest const* rhs) {
+                std::ranges::sort(mv, [](Manifest const* lhs, Manifest const* rhs) {
                     return lhs->serialized < rhs->serialized;
                 });
                 return mv;
@@ -951,5 +950,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Manifest, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

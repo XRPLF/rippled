@@ -9,8 +9,7 @@
 #include <sstream>
 #include <string>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 std::string
 Status::codeString() const
@@ -86,5 +85,4 @@ Status::toString() const
     return "";
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

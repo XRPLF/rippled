@@ -102,7 +102,7 @@ public:
 
     private:
         ReadView const* view_ = nullptr;
-        std::unique_ptr<iter_base> impl_;
+        std::unique_ptr<iter_base> impl_{};
         std::optional<value_type> mutable cache_;
     };
 

@@ -6,8 +6,7 @@
 
 #include <xrpl/basics/random.h>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Manages the count of available connections for the various slots. */
 class Counts
@@ -299,5 +298,4 @@ private:
     int m_closingCount{0};
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

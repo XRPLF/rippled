@@ -66,8 +66,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class MPToken_test : public beast::unit_test::suite
 {
@@ -6813,5 +6812,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(MPToken, app, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
