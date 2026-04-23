@@ -1,12 +1,44 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/delegate.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
-#include <test/jtx/trust.h>
 #include <test/jtx/vault.h>
 
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
-#include <openssl/rand.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <initializer_list>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -70,7 +102,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         return trivialCommitment;
     }
 
-    std::string
+    static std::string
     getTrivialSendProofHex()
     {
         Buffer buf(ecSendProofLength);
@@ -4259,7 +4291,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
 
             // Bob authorizes the credential type from dpIssuer
-            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = dpIssuer, .credType = credType}}));
             env.close();
 
             // Carol still cannot send without including credential
@@ -4330,7 +4362,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             });
 
             // Bob authorizes the credential type
-            env(deposit::authCredentials(bob, {{dpIssuer, credType}}));
+            env(deposit::authCredentials(bob, {{.issuer = dpIssuer, .credType = credType}}));
             env.close();
 
             // Now Carol can send with credentials
@@ -5383,12 +5415,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto holderPubKeySet = false;
             auto verifyToggle = [&](TER expectedResult, uint64_t amt) {
                 if (!holderPubKeySet)
+                {
                     mptAlice.convert({
                         .account = bob,
                         .amt = amt,
                         .holderPubKey = mptAlice.getPubKey(bob),
                         .err = expectedResult,
                     });
+                }
                 else
                 {
                     mptAlice.convert({
@@ -7354,7 +7388,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
     // alice is issuer; bob has 'bobAmt' in confidential spending; carol has
     // 'carolAmt' in confidential spending; dave is initialised with pubkey but
     // zero spending/inbox.
-    void
+    static void
     setupBatchEnv(
         test::jtx::MPTTester& mpt,
         test::jtx::Account const& alice,

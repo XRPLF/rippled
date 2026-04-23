@@ -98,7 +98,8 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
     auto const txFlags = ctx.tx.getFlags();
 
     auto const mutatePrivacy = mutableFlags &&
-        ((*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount)));
+        (((*mutableFlags & (tmfMPTSetCanConfidentialAmount | tmfMPTClearCanConfidentialAmount))) !=
+         0u);
 
     auto const hasDomain = ctx.tx.isFieldPresent(sfDomainID);
     auto const hasHolder = ctx.tx.isFieldPresent(sfHolder);
@@ -176,7 +177,7 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 
     // Cannot set keys while clearing confidential amount
     if ((hasIssuerElGamalKey || hasAuditorElGamalKey) && mutableFlags &&
-        (*mutableFlags & tmfMPTClearCanConfidentialAmount))
+        ((*mutableFlags & tmfMPTClearCanConfidentialAmount) != 0u))
         return temINVALID_FLAG;
 
     if (hasIssuerElGamalKey && !isValidCompressedECPoint(ctx.tx[sfIssuerEncryptionKey]))
@@ -291,8 +292,14 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
             }))
             return tecNO_PERMISSION;
 
-        if ((*mutableFlags & tmfMPTSetCanConfidentialAmount) ||
-            (*mutableFlags & tmfMPTClearCanConfidentialAmount))
+        // Clearing lsfMPTRequireAuth is invalid when the issuance already has
+        // a DomainID set, because a DomainID requires RequireAuth to be active.
+        if ((*mutableFlags & tmfMPTClearRequireAuth) != 0u &&
+            sleMptIssuance->isFieldPresent(sfDomainID))
+            return tecNO_PERMISSION;
+
+        if (((*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u) ||
+            ((*mutableFlags & tmfMPTClearCanConfidentialAmount) != 0u))
         {
             std::uint64_t const confidentialOA =
                 (*sleMptIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
@@ -336,7 +343,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     // Check if the transaction is enabling confidential amounts
     bool const enablesConfidentialAmount =
-        mutableFlags && (*mutableFlags & tmfMPTSetCanConfidentialAmount);
+        mutableFlags && ((*mutableFlags & tmfMPTSetCanConfidentialAmount) != 0u);
 
     // Encryption keys can only be set if confidential amounts are already
     // enabled on the issuance OR if the transaction is enabling it

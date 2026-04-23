@@ -582,7 +582,7 @@ public:
     std::uint32_t
     getMPTokenVersion(Account const account) const;
 
-    Buffer
+    static Buffer
     getPedersenCommitment(std::uint64_t const amount, Buffer const& pedersenBlindingFactor);
 
     friend BookSpec
@@ -618,20 +618,30 @@ private:
             dstTag = arg.destinationTag;
 
         if (ticketSeq && delegateAcct)
+        {
             env_(
                 jv,
                 expectedFlags,
                 expectedTer,
                 ticket::use(*ticketSeq),
                 delegate::as(*delegateAcct));
+        }
         else if (ticketSeq)
+        {
             env_(jv, expectedFlags, expectedTer, ticket::use(*ticketSeq));
+        }
         else if (delegateAcct)
+        {
             env_(jv, expectedFlags, expectedTer, delegate::as(*delegateAcct));
+        }
         else if (dstTag)
+        {
             env_(jv, expectedFlags, expectedTer, dtag(*dstTag));
+        }
         else
+        {
             env_(jv, expectedFlags, expectedTer);
+        }
         auto const err = env_.ter();
         if (close_)
             env_.close();
