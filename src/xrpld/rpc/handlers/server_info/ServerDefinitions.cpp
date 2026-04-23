@@ -219,13 +219,9 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
     static std::map<int, SField const*> const sortedFields(
         xrpl::SField::getKnownCodeToField().begin(), xrpl::SField::getKnownCodeToField().end());
 
-    // track manually-added field names to avoid duplicates
-    static std::set<std::string> const manualFields{
-        "Invalid", "ObjectEndMarker", "ArrayEndMarker", "taker_gets_funded", "taker_pays_funded"};
-
     for (auto const& [code, field] : sortedFields)
     {
-        if (field->fieldName.empty() || manualFields.contains(field->fieldName))
+        if (field->fieldName.empty())
             continue;
 
         Json::Value innerObj = Json::objectValue;
