@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
+
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/ConfidentialTransfer.h>
@@ -6,7 +8,6 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/ConfidentialMPTConvert.h>
 
 namespace xrpl {
 
@@ -277,6 +278,25 @@ ConfidentialMPTConvert::doApply()
     view().update(sleIssuance);
     view().update(sleMptoken);
     return tesSUCCESS;
+}
+
+void
+ConfidentialMPTConvert::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+ConfidentialMPTConvert::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

@@ -55,7 +55,7 @@ struct MPTMutabilityFlags
     bool isCannotMutate = false;  // if true, cannot mutate by default.
 };
 
-static constexpr std::array<MPTMutabilityFlags, 6> mptMutabilityFlags = {
+static constexpr std::array<MPTMutabilityFlags, 7> mptMutabilityFlags = {
     {{.setFlag = tmfMPTSetCanLock,
       .clearFlag = tmfMPTClearCanLock,
       .mutabilityFlag = lsmfMPTCanMutateCanLock,
