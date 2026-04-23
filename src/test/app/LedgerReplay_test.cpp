@@ -940,6 +940,46 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
             BEAST_EXPECT(server.msgHandler.processProofPathResponse(reply));
 
             {
+                // bad reply: invalid hash/key sizes
+                {
+                    // reply with undersized ledgerhash (31 bytes)
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_ledgerhash(std::string(31, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with oversized ledgerhash (33 bytes)
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_ledgerhash(std::string(33, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with empty ledgerhash
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_ledgerhash(std::string());
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with undersized key (31 bytes)
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_key(std::string(31, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with oversized key (33 bytes)
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_key(std::string(33, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+                {
+                    // reply with empty key
+                    auto bad = std::make_shared<protocol::TMProofPathResponse>(*reply);
+                    bad->set_key(std::string());
+                    BEAST_EXPECT(!server.msgHandler.processProofPathResponse(bad));
+                }
+            }
+
+            {
                 // bad reply
                 // bad header
                 std::string r(reply->ledgerheader());
@@ -987,6 +1027,28 @@ struct LedgerReplayer_test : public beast::unit_test::Suite
                 server.msgHandler.processReplayDeltaRequest(request));
             BEAST_EXPECT(!reply->has_error());
             BEAST_EXPECT(server.msgHandler.processReplayDeltaResponse(reply));
+
+            {
+                // bad reply: invalid hash sizes
+                {
+                    // reply with undersized ledgerhash (31 bytes)
+                    auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
+                    bad->set_ledgerhash(std::string(31, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                }
+                {
+                    // reply with oversized ledgerhash (33 bytes)
+                    auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
+                    bad->set_ledgerhash(std::string(33, '\x01'));
+                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                }
+                {
+                    // reply with empty ledgerhash
+                    auto bad = std::make_shared<protocol::TMReplayDeltaResponse>(*reply);
+                    bad->set_ledgerhash(std::string());
+                    BEAST_EXPECT(!server.msgHandler.processReplayDeltaResponse(bad));
+                }
+            }
 
             {
                 // bad reply
