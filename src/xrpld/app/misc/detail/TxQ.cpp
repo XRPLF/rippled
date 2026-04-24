@@ -1,5 +1,5 @@
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/telemetry/TxQSpanNames.h>
+#include <xrpld/app/misc/detail/TxQSpanNames.h>
 
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
