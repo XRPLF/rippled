@@ -604,7 +604,7 @@ class Delegate_test : public beast::unit_test::suite
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
             auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
-                return std::any_of(
+                return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
@@ -653,7 +653,7 @@ class Delegate_test : public beast::unit_test::suite
             BEAST_EXPECT(env.closed()->exists(delegateKey));
 
             auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
-                return std::any_of(
+                return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
@@ -722,7 +722,7 @@ class Delegate_test : public beast::unit_test::suite
             auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
 
             auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
-                return std::any_of(
+                return std::any_of(  // NOLINT(modernize-use-ranges)
                     dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
             };
 
