@@ -230,6 +230,58 @@ jobs:
             fi
           fi
 
+      # Publishes captured OTel timings + regression report to the Step Summary.
+      # When the committed baseline is a placeholder, emits a fenced JSON block
+      # that can be copy-pasted directly into baselines/baseline-timings.json.
+      # When the baseline is populated, summarises the top regressions so the
+      # PR author sees the failure reason without downloading artifacts.
+      - name: Print regression summary
+        if: always()
+        run: |
+          TIMINGS="/tmp/xrpld-validation/reports/timings.json"
+          REGRESSION="/tmp/xrpld-validation/reports/regression-report.json"
+          BASELINE="docker/telemetry/workload/baselines/baseline-timings.json"
+
+          if [ ! -f "$TIMINGS" ]; then
+            echo "## Regression Gate: no timings captured" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          IS_PLACEHOLDER=$(jq -r '.placeholder == true or (.metrics | length == 0)' "$BASELINE")
+
+          echo "## OTel Timings Regression Gate" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$IS_PLACEHOLDER" = "true" ]; then
+            echo "### Paste into \`baselines/baseline-timings.json\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "The committed baseline is a placeholder. Open a PR replacing" \
+                 "its contents with the JSON block below to activate the" \
+                 "regression gate." >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            cat "$TIMINGS" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          elif [ -f "$REGRESSION" ]; then
+            REGR_COUNT=$(jq '.summary.regressions' "$REGRESSION")
+            IMPR_COUNT=$(jq '.summary.improvements' "$REGRESSION")
+            TOTAL=$(jq '.summary.total' "$REGRESSION")
+            echo "| Stat | Count |" >> "$GITHUB_STEP_SUMMARY"
+            echo "|------|-------|" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Metrics compared | $TOTAL |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Regressions | $REGR_COUNT |" >> "$GITHUB_STEP_SUMMARY"
+            echo "| Improvements | $IMPR_COUNT |" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            if [ "$REGR_COUNT" -gt 0 ]; then
+              echo "### Regressions" >> "$GITHUB_STEP_SUMMARY"
+              echo "" >> "$GITHUB_STEP_SUMMARY"
+              echo "| Metric | Baseline | Current | Δ | % | Unit |" >> "$GITHUB_STEP_SUMMARY"
+              echo "|--------|---------:|--------:|--:|--:|------|" >> "$GITHUB_STEP_SUMMARY"
+              jq -r '.metrics[] | select(.regressed) | "| \(.key) | \(.baseline) | \(.current) | \(.delta) | \(.pct_change)% | \(.unit) |"' \
+                "$REGRESSION" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          fi
+
       - name: Cleanup
         if: always()
         run: |

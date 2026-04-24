@@ -213,6 +213,49 @@ python3 validate_telemetry.py --report /tmp/report.json
 python3 validate_telemetry.py --skip-loki --report /tmp/report.json
 ```
 
+### OTel Timings Regression Gate
+
+`capture_timings.py` + `compare_to_baseline.py` implement a regression gate
+that compares OTel-derived per-span/per-RPC/per-job timings against a
+committed baseline. Unlike `benchmark.sh` (which measures the overhead of
+enabling telemetry on the current binary), this gate catches **xrpld
+performance regressions over time** by diffing against a stored baseline
+from a prior run.
+
+How it runs inside the validation pipeline:
+
+1. `run-full-validation.sh` executes the normal workload and validation suite.
+2. After validation, `capture_timings.py` queries Prometheus for every
+   metric in `regression-metrics.json` and writes `reports/timings.json`.
+3. `compare_to_baseline.py` reads `timings.json`,
+   `baselines/baseline-timings.json`, and `regression-thresholds.json`,
+   then either:
+   - Prints the paste-me JSON block (when the baseline is a placeholder
+     or empty) and exits 0.
+   - Prints a delta table, writes `reports/regression-report.json`, and
+     exits non-zero if any metric breached both the percentage AND
+     absolute bound.
+
+Bootstrapping a baseline:
+
+1. Push the branch. The `Telemetry Validation` CI run prints the full
+   timings JSON under "Paste into `baselines/baseline-timings.json`" in
+   the workflow Step Summary.
+2. Open a PR copying that JSON block verbatim into
+   `baselines/baseline-timings.json`. Reviewer approval is the audit gate.
+3. Subsequent runs compare against it; the gate fails on regression.
+
+Per-run tuning:
+
+- `--skip-regression` disables the gate (local exploration only).
+- `REGRESSION_WINDOW` env var overrides the default Prometheus `rate()`
+  window (`3m`). Keep close to the workload duration.
+- Metric surface lives in `regression-metrics.json`; thresholds in
+  `regression-thresholds.json`; both are reviewed changes.
+
+See [`baselines/README.md`](./baselines/README.md) for the baseline
+lifecycle and refresh process.
+
 ### benchmark.sh
 
 Compares baseline (no telemetry) vs telemetry-enabled performance:
@@ -273,13 +316,16 @@ The validation runs as a GitHub Actions workflow (`.github/workflows/telemetry-v
 
 ## Configuration Files
 
-| File                     | Purpose                                                       |
-| ------------------------ | ------------------------------------------------------------- |
-| `workload-profiles.json` | Named load profiles with phase definitions                    |
-| `expected_spans.json`    | Span inventory (names, attributes, hierarchies, config flags) |
-| `expected_metrics.json`  | Metric inventory — every listed metric must be present        |
-| `test_accounts.json`     | Test account roles (keys generated at runtime)                |
-| `requirements.txt`       | Python dependencies                                           |
+| File                              | Purpose                                                       |
+| --------------------------------- | ------------------------------------------------------------- |
+| `workload-profiles.json`          | Named load profiles with phase definitions                    |
+| `expected_spans.json`             | Span inventory (names, attributes, hierarchies, config flags) |
+| `expected_metrics.json`           | Metric inventory — every listed metric must be present        |
+| `test_accounts.json`              | Test account roles (keys generated at runtime)                |
+| `regression-metrics.json`         | Metric surface for the OTel regression gate                   |
+| `regression-thresholds.json`      | Per-metric regression bounds (pct AND abs)                    |
+| `baselines/baseline-timings.json` | Committed baseline — populated from first CI run              |
+| `requirements.txt`                | Python dependencies                                           |
 
 ### expected_metrics.json Format
 

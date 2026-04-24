@@ -1,0 +1,10 @@
+{
+  "_comment": "Empty baseline placeholder. The first CI run of the regression gate will emit the captured timings JSON to the workflow step summary; copy that JSON over this file (in a PR) to activate the regression gate. See baselines/README.md.",
+  "placeholder": true,
+  "schema_version": 1,
+  "captured_at": null,
+  "window": null,
+  "git_sha": null,
+  "profile": null,
+  "metrics": {}
+}

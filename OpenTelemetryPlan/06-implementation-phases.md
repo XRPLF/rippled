@@ -869,13 +869,15 @@ All 17 spans, 26 metrics, 10 dashboards, 14 attribute checks, 2 hierarchies, and
 
 **Not implemented or not available in CI**:
 
-1. Performance benchmark suite (Task 10.5) — not started
-2. `rpc.request` -> `rpc.process` parent-child hierarchy — skipped (cross-thread context propagation)
-3. Log-trace correlation validation (Loki) — not included in checks
-4. Full 255+ StatsD metric coverage — only 26 representative metrics validated
-5. Sustained load / backpressure testing — not implemented
-6. `docs/telemetry-runbook.md` updates — not done
-7. `09-data-collection-reference.md` "Validation" section — not done
+1. `rpc.request` -> `rpc.process` parent-child hierarchy — skipped (cross-thread context propagation)
+2. Log-trace correlation validation (Loki) — not included in checks
+3. Full 255+ StatsD metric coverage — only 26 representative metrics validated
+4. Sustained load / backpressure testing — not implemented
+5. `docs/telemetry-runbook.md` updates — not done
+6. `09-data-collection-reference.md` "Validation" section — not done
+7. **Automated cross-CI baseline persistence** — the regression gate reads a
+   committed baseline; baseline updates flow through a manual PR refresh, not
+   an artifact promoted from `develop` (FU-2).
 
 ### Exit Criteria
 
@@ -884,6 +886,8 @@ All 17 spans, 26 metrics, 10 dashboards, 14 attribute checks, 2 hierarchies, and
 - [x] All 10 Grafana dashboards render data
 - [ ] Benchmark shows < 3% CPU overhead, < 5MB memory overhead
 - [x] CI workflow runs validation on telemetry branch changes
+- [x] OTel-driven regression gate: captures per-span/per-RPC/per-job timings
+      from Prometheus and compares against a committed baseline
 
 ---
 
@@ -1240,19 +1244,19 @@ Clear, measurable criteria for each phase.
 
 ### 6.12.6 Success Metrics Summary
 
-| Phase    | Primary Metric                   | Secondary Metric            | Deadline       | Status             |
-| -------- | -------------------------------- | --------------------------- | -------------- | ------------------ |
-| Phase 1  | SDK compiles and runs            | Zero overhead when disabled | End of Week 2  | Active             |
-| Phase 2  | 100% RPC coverage                | <1ms latency overhead       | End of Week 4  | Active             |
-| Phase 3  | Cross-node traces work           | <5% throughput impact       | End of Week 6  | Active             |
-| Phase 4  | Consensus fully traced           | No consensus timing impact  | End of Week 8  | Active             |
-| Phase 5  | Production deployment            | Operators trained           | End of Week 9  | Active             |
-| Phase 6  | StatsD metrics in Prometheus     | 3 dashboards operational    | End of Week 10 | Active             |
-| Phase 7  | All metrics via OTLP             | No StatsD dependency        | End of Week 12 | Active             |
-| Phase 8  | trace_id in logs + Loki          | Tempo↔Loki correlation      | End of Week 13 | Active             |
-| Phase 9  | 68+ new internal metrics in Prom | 2 new dashboards            | End of Week 15 | Future Enhancement |
-| Phase 10 | Full telemetry stack validated   | < 3% CPU overhead proven    | End of Week 17 | Future Enhancement |
-| Phase 11 | Third-party metrics via receiver | 4 new dashboards + alerting | End of Week 20 | Future Enhancement |
+| Phase    | Primary Metric                                                     | Secondary Metric            | Deadline       | Status             |
+| -------- | ------------------------------------------------------------------ | --------------------------- | -------------- | ------------------ |
+| Phase 1  | SDK compiles and runs                                              | Zero overhead when disabled | End of Week 2  | Active             |
+| Phase 2  | 100% RPC coverage                                                  | <1ms latency overhead       | End of Week 4  | Active             |
+| Phase 3  | Cross-node traces work                                             | <5% throughput impact       | End of Week 6  | Active             |
+| Phase 4  | Consensus fully traced                                             | No consensus timing impact  | End of Week 8  | Active             |
+| Phase 5  | Production deployment                                              | Operators trained           | End of Week 9  | Active             |
+| Phase 6  | StatsD metrics in Prometheus                                       | 3 dashboards operational    | End of Week 10 | Active             |
+| Phase 7  | All metrics via OTLP                                               | No StatsD dependency        | End of Week 12 | Active             |
+| Phase 8  | trace_id in logs + Loki                                            | Tempo↔Loki correlation      | End of Week 13 | Active             |
+| Phase 9  | 68+ new internal metrics in Prom                                   | 2 new dashboards            | End of Week 15 | Future Enhancement |
+| Phase 10 | Full telemetry stack validated; OTel-sourced regression gate in CI | < 3% CPU overhead proven    | End of Week 17 | Future Enhancement |
+| Phase 11 | Third-party metrics via receiver                                   | 4 new dashboards + alerting | End of Week 20 | Future Enhancement |
 
 ---
 

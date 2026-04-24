@@ -1,0 +1,34 @@
+{
+  "_description": "Metric surface for the OTel-driven regression gate. Each entry names a metric, the quantiles to capture, and how to query Prometheus. The comparator compares current run against baseline-timings.json under these exact keys.",
+  "_key_format": "{category}.{name}.p{quantile}  (e.g. span.tx.process.p99, rpc.server_info.p95, job.transaction.queued.p95)",
+  "spans": {
+    "_query_template": "histogram_quantile({quantile}, sum by (le) (rate(traces_span_metrics_duration_milliseconds_bucket{span_name=\"{name}\"}[{window}])))",
+    "_unit": "ms",
+    "_quantiles": [0.5, 0.95, 0.99],
+    "names": [
+      "rpc.request",
+      "rpc.process",
+      "tx.process",
+      "tx.apply",
+      "ledger.build",
+      "ledger.validate",
+      "ledger.store",
+      "consensus.ledger_close",
+      "consensus.accept"
+    ]
+  },
+  "rpc_methods": {
+    "_query_template": "histogram_quantile({quantile}, sum by (le) (rate(rippled_rpc_method_duration_us_bucket{method=\"{name}\"}[{window}])))",
+    "_unit": "us",
+    "_quantiles": [0.95, 0.99],
+    "names": ["server_info", "account_info", "ledger", "fee", "tx"]
+  },
+  "job_queue": {
+    "_queued_template": "histogram_quantile({quantile}, sum by (le) (rate(rippled_job_queued_duration_us_bucket{job_type=\"{name}\"}[{window}])))",
+    "_running_template": "histogram_quantile({quantile}, sum by (le) (rate(rippled_job_running_duration_us_bucket{job_type=\"{name}\"}[{window}])))",
+    "_unit": "us",
+    "_quantiles": [0.95],
+    "_phases": ["queued", "running"],
+    "names": ["transaction", "acceptLedger"]
+  }
+}

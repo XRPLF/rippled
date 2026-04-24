@@ -7,11 +7,13 @@
 #   3. Wait for consensus
 #   4. Run workload orchestrator (RPC load, TX submission, propagation wait)
 #   5. Run the telemetry validation suite
-#   6. (Optional) Run the performance benchmark
+#   6. Capture OTel timings and compare against committed baseline
+#   7. (Optional) Run the performance overhead benchmark
 #
 # Usage:
 #   ./run-full-validation.sh --xrpld /path/to/xrpld
 #   ./run-full-validation.sh --xrpld /path/to/xrpld --with-benchmark
+#   ./run-full-validation.sh --xrpld /path/to/xrpld --skip-regression
 #   ./run-full-validation.sh --cleanup
 #
 # Exit codes:
@@ -50,8 +52,16 @@ TX_TPS=5
 TX_DURATION=120
 WITH_BENCHMARK=false
 SKIP_LOKI=false
+SKIP_REGRESSION=false
 WORKLOAD_PROFILE="full-validation"
 REPORT_DIR="$WORKDIR/reports"
+# Rate window handed to Prometheus `rate()` when capturing timings. Keep
+# this close to the active workload duration so histogram buckets cover
+# the measurement window; longer windows dilute short-lived regressions.
+REGRESSION_WINDOW="${REGRESSION_WINDOW:-3m}"
+BASELINE_FILE="${BASELINE_FILE:-$SCRIPT_DIR/baselines/baseline-timings.json}"
+THRESHOLDS_FILE="${THRESHOLDS_FILE:-$SCRIPT_DIR/regression-thresholds.json}"
+METRICS_FILE="${METRICS_FILE:-$SCRIPT_DIR/regression-metrics.json}"
 
 GENESIS_ACCOUNT="rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh"
 GENESIS_SEED="snoPBrXtMeMyMHUVTgbuqAfg1SUTb"
@@ -70,8 +80,9 @@ usage() {
     echo "  --tx-tps TPS         Transaction submit rate (default: 5)"
     echo "  --tx-duration SECS   Transaction submit duration (default: 120)"
     echo "  --profile NAME       Workload profile (default: full-validation)"
-    echo "  --with-benchmark     Also run performance benchmarks"
+    echo "  --with-benchmark     Also run performance overhead benchmark (telemetry off vs on)"
     echo "  --skip-loki          Skip Loki log-trace correlation checks"
+    echo "  --skip-regression    Skip the OTel-baseline regression gate"
     echo "  --cleanup            Tear down everything and exit"
     echo "  -h, --help           Show this help"
     exit 0
@@ -88,6 +99,7 @@ while [ $# -gt 0 ]; do
         --profile)       WORKLOAD_PROFILE="$2"; shift 2 ;;
         --with-benchmark) WITH_BENCHMARK=true; shift ;;
         --skip-loki)     SKIP_LOKI=true; shift ;;
+        --skip-regression) SKIP_REGRESSION=true; shift ;;
         --cleanup)       # Cleanup mode
             log "Cleaning up..."
             pkill -f "$WORKDIR" 2>/dev/null || true
@@ -350,10 +362,56 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 6: (Optional) Run benchmark
+# Step 6: Capture OTel timings and run the regression comparison
+# ---------------------------------------------------------------------------
+# This step ALWAYS captures timings (so CI always has an artifact from which
+# to bootstrap/refresh the committed baseline). The comparator then either:
+#   - prints the paste-me JSON when the baseline is a placeholder, or
+#   - enforces thresholds and fails the run on regression.
+# Use --skip-regression to opt out (e.g. for ad-hoc local exploration).
+TIMINGS_FILE="$REPORT_DIR/timings.json"
+REGRESSION_REPORT="$REPORT_DIR/regression-report.json"
+REGRESSION_EXIT=0
+
+if [ "$SKIP_REGRESSION" != true ]; then
+    log "Step 6: Capturing OTel timings from Prometheus..."
+    if python3 "$SCRIPT_DIR/capture_timings.py" \
+        --prometheus "http://localhost:9090" \
+        --metrics "$METRICS_FILE" \
+        --output "$TIMINGS_FILE" \
+        --window "$REGRESSION_WINDOW" \
+        --profile "$WORKLOAD_PROFILE"
+    then
+        ok "Timings captured: $TIMINGS_FILE"
+    else
+        fail "Failed to capture timings — skipping regression comparison."
+        SKIP_REGRESSION=true
+    fi
+fi
+
+if [ "$SKIP_REGRESSION" != true ]; then
+    log "Comparing against baseline $BASELINE_FILE..."
+    python3 "$SCRIPT_DIR/compare_to_baseline.py" \
+        --timings "$TIMINGS_FILE" \
+        --baseline "$BASELINE_FILE" \
+        --thresholds "$THRESHOLDS_FILE" \
+        --report "$REGRESSION_REPORT" || REGRESSION_EXIT=$?
+    if [ "$REGRESSION_EXIT" -eq 0 ]; then
+        ok "Regression gate passed (or baseline placeholder — paste JSON printed above)."
+    elif [ "$REGRESSION_EXIT" -eq 1 ]; then
+        fail "Regression detected — see $REGRESSION_REPORT"
+    else
+        fail "Regression comparator internal error (exit $REGRESSION_EXIT)"
+    fi
+else
+    warn "Regression gate skipped."
+fi
+
+# ---------------------------------------------------------------------------
+# Step 7: (Optional) Run overhead benchmark
 # ---------------------------------------------------------------------------
 if [ "$WITH_BENCHMARK" = true ]; then
-    log "Step 6: Running performance benchmark..."
+    log "Step 7: Running performance benchmark..."
     bash "$SCRIPT_DIR/benchmark.sh" \
         --xrpld "$XRPLD" \
         --duration 120 \
@@ -392,4 +450,13 @@ echo "    $0 --cleanup"
 echo ""
 echo "==========================================================="
 
-exit "$VALIDATION_EXIT"
+# Fail the run if EITHER validation or the regression gate failed. The
+# `[ "$VAR" -gt N ]` comparison works here because exit codes are numeric.
+FINAL_EXIT=0
+if [ "$VALIDATION_EXIT" -ne 0 ]; then
+    FINAL_EXIT="$VALIDATION_EXIT"
+fi
+if [ "$REGRESSION_EXIT" -ne 0 ] && [ "$FINAL_EXIT" -eq 0 ]; then
+    FINAL_EXIT="$REGRESSION_EXIT"
+fi
+exit "$FINAL_EXIT"

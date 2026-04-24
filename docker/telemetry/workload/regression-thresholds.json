@@ -1,0 +1,29 @@
+{
+  "_description": "Per-metric regression thresholds. A metric regresses when current - baseline exceeds BOTH the percentage and absolute bounds (AND, not OR — this tolerates small-value noise). Defaults apply unless a per-metric override exists.",
+  "defaults": {
+    "span": {
+      "p50": { "max_pct_increase": 15.0, "max_abs_increase_ms": 2.0 },
+      "p95": { "max_pct_increase": 10.0, "max_abs_increase_ms": 3.0 },
+      "p99": { "max_pct_increase": 10.0, "max_abs_increase_ms": 5.0 }
+    },
+    "rpc_method": {
+      "p95": { "max_pct_increase": 10.0, "max_abs_increase_us": 3000.0 },
+      "p99": { "max_pct_increase": 10.0, "max_abs_increase_us": 5000.0 }
+    },
+    "job_queue": {
+      "p95": { "max_pct_increase": 15.0, "max_abs_increase_us": 5000.0 }
+    }
+  },
+  "overrides": {
+    "span.consensus.ledger_close": {
+      "p50": { "max_pct_increase": 5.0, "max_abs_increase_ms": 200.0 },
+      "p95": { "max_pct_increase": 5.0, "max_abs_increase_ms": 500.0 },
+      "p99": { "max_pct_increase": 5.0, "max_abs_increase_ms": 1000.0 }
+    },
+    "span.consensus.accept": {
+      "p50": { "max_pct_increase": 5.0, "max_abs_increase_ms": 200.0 },
+      "p95": { "max_pct_increase": 5.0, "max_abs_increase_ms": 500.0 },
+      "p99": { "max_pct_increase": 5.0, "max_abs_increase_ms": 1000.0 }
+    }
+  }
+}
