@@ -14,6 +14,7 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -36,6 +37,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -7268,9 +7270,13 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             auto const spendingAfter =
                 mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
             if (divergentIdx)
+            {
                 BEAST_EXPECT(spendingAfter == spendingBefore);
+            }
             else
+            {
                 BEAST_EXPECT(spendingAfter == *spendingBefore - amt);
+            }
         };
 
         // This confirms the test setup is sound, if any of the divergent cases below
