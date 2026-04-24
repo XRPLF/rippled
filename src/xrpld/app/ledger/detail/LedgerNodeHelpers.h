@@ -34,12 +34,11 @@ validateLedgerNode(protocol::TMLedgerNode const& ledgerNode);
  * @brief Deserializes a SHAMapTreeNode from wire format data.
  *
  * This function attempts to create a SHAMapTreeNode from the provided data string. If the data is
- * malformed or deserialization fails, the function returns std::nullopt instead of throwing an
+ * malformed or deserialization fails, the function returns a nullptr instead of throwing an
  * exception.
  *
  * @param data The serialized node data in wire format.
- * @return An optional containing the deserialized tree node if successful, or std::nullopt if
- *         deserialization fails.
+ * @return The deserialized tree node if successful, or a nullptr if deserialization fails.
  */
 [[nodiscard]] SHAMapTreeNodePtr
 getTreeNode(std::string_view data);
