@@ -1,29 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/amount.h>  // IWYU pragma: keep
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 class STIssue_test : public beast::unit_test::suite
 {
@@ -41,7 +29,7 @@ public:
         {
             issue = xrpIssue();
             issue.account = alice;
-            STIssue stissue(sfAsset, Asset{issue});
+            STIssue const stissue(sfAsset, Asset{issue});
             fail("Inconsistent XRP Issue doesn't fail");
         }
         catch (...)
@@ -53,7 +41,7 @@ public:
         {
             issue = USD;
             issue.account = xrpAccount();
-            STIssue stissue(sfAsset, Asset{issue});
+            STIssue const stissue(sfAsset, Asset{issue});
             fail("Inconsistent IOU Issue doesn't fail");
         }
         catch (...)
@@ -70,7 +58,7 @@ public:
             base_uint<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             fail("Inconsistent IOU Issue doesn't fail on serializer");
         }
         catch (...)
@@ -80,7 +68,7 @@ public:
 
         try
         {
-            STIssue stissue(sfAsset, Asset{xrpIssue()});
+            STIssue const stissue(sfAsset, Asset{xrpIssue()});
         }
         catch (...)
         {
@@ -89,7 +77,7 @@ public:
 
         try
         {
-            STIssue stissue(sfAsset, Asset{USD});
+            STIssue const stissue(sfAsset, Asset{USD});
         }
         catch (...)
         {
@@ -104,7 +92,7 @@ public:
             base_uint<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             BEAST_EXPECT(stissue.value() == USD);
         }
         catch (...)
@@ -118,7 +106,7 @@ public:
             base_uint<160> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
-            STIssue stissue(iter, sfAsset);
+            STIssue const stissue(iter, sfAsset);
             BEAST_EXPECT(stissue.value() == xrpCurrency());
         }
         catch (...)
@@ -143,8 +131,7 @@ public:
         BEAST_EXPECT(STIssue(sfAsset, asset1) == asset1);
         BEAST_EXPECT(STIssue(sfAsset, asset1).getText() == "XRP");
         BEAST_EXPECT(
-            STIssue(sfAsset, asset2).getText() ==
-            "USD/rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn");
+            STIssue(sfAsset, asset2).getText() == "USD/rG1QQv2nh2gr7RCZ1P8YYcBUKCCN633jCn");
         BEAST_EXPECT(
             STIssue(sfAsset, asset3).getText() ==
             "000000000000000000000000000000000000000000000002");
@@ -159,7 +146,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STIssue, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STIssue, protocol, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

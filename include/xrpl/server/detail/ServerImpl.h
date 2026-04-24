@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
-#define RIPPLE_SERVER_SERVERIMPL_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/List.h>
@@ -35,10 +15,9 @@
 #include <optional>
 #include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
-using Endpoints =
-    std::unordered_map<std::string, boost::asio::ip::tcp::endpoint>;
+using Endpoints = std::unordered_map<std::string, boost::asio::ip::tcp::endpoint>;
 
 /** A multi-protocol server.
 
@@ -89,25 +68,20 @@ private:
     beast::Journal const j_;
     boost::asio::io_context& io_context_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    std::optional<boost::asio::executor_work_guard<
-        boost::asio::io_context::executor_type>>
-        work_;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> work_;
 
     std::mutex m_;
     std::vector<Port> ports_;
     std::vector<std::weak_ptr<Door<Handler>>> list_;
     int high_ = 0;
-    std::array<std::size_t, 64> hist_;
+    std::array<std::size_t, 64> hist_{};
 
     io_list ios_;
 
 public:
-    ServerImpl(
-        Handler& handler,
-        boost::asio::io_context& io_context,
-        beast::Journal journal);
+    ServerImpl(Handler& handler, boost::asio::io_context& io_context, beast::Journal journal);
 
-    ~ServerImpl();
+    ~ServerImpl() override;
 
     beast::Journal
     journal() override
@@ -176,13 +150,12 @@ ServerImpl<Handler>::ports(std::vector<Port> const& ports)
     {
         ports_.push_back(port);
         auto& internalPort = ports_.back();
-        if (auto sp = ios_.emplace<Door<Handler>>(
-                handler_, io_context_, internalPort, j_))
+        if (auto sp = ios_.emplace<Door<Handler>>(handler_, io_context_, internalPort, j_))
         {
             list_.push_back(sp);
 
             auto ep = sp->get_endpoint();
-            if (!internalPort.port)
+            if (internalPort.port == 0u)
                 internalPort.port = ep.port();
             eps.emplace(port.name, std::move(ep));
 
@@ -208,6 +181,4 @@ ServerImpl<Handler>::closed()
 {
     return ios_.closed();
 }
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

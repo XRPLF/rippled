@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_DETAIL_WORKBASE_H_INCLUDED
-#define RIPPLE_APP_MISC_DETAIL_WORKBASE_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/detail/Work.h>
 
@@ -32,9 +12,9 @@
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
 
-namespace ripple {
+#include <utility>
 
-namespace detail {
+namespace xrpl::detail {
 
 template <class Impl>
 class WorkBase : public Work
@@ -44,15 +24,14 @@ protected:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
 
 public:
-    using callback_type = std::function<
-        void(error_code const&, endpoint_type const&, response_type&&)>;
+    using callback_type =
+        std::function<void(error_code const&, endpoint_type const&, response_type&&)>;
 
 protected:
     using socket_type = boost::asio::ip::tcp::socket;
     using resolver_type = boost::asio::ip::tcp::resolver;
     using results_type = boost::asio::ip::tcp::resolver::results_type;
-    using request_type =
-        boost::beast::http::request<boost::beast::http::empty_body>;
+    using request_type = boost::beast::http::request<boost::beast::http::empty_body>;
 
     std::string host_;
     std::string path_;
@@ -68,16 +47,18 @@ protected:
     endpoint_type lastEndpoint_;
     bool lastStatus_;
 
-public:
+private:
     WorkBase(
-        std::string const& host,
-        std::string const& path,
-        std::string const& port,
+        std::string host,
+        std::string path,
+        std::string port,
         boost::asio::io_context& ios,
-        endpoint_type const& lastEndpoint,
+        endpoint_type lastEndpoint,
         bool lastStatus,
         callback_type cb);
-    ~WorkBase();
+
+public:
+    ~WorkBase() override;
 
     Impl&
     impl()
@@ -112,28 +93,30 @@ public:
 private:
     void
     close();
+
+    friend Impl;
 };
 
 //------------------------------------------------------------------------------
 
 template <class Impl>
 WorkBase<Impl>::WorkBase(
-    std::string const& host,
-    std::string const& path,
-    std::string const& port,
+    std::string host,
+    std::string path,
+    std::string port,
     boost::asio::io_context& ios,
-    endpoint_type const& lastEndpoint,
+    endpoint_type lastEndpoint,
     bool lastStatus,
     callback_type cb)
-    : host_(host)
-    , path_(path)
-    , port_(port)
+    : host_(std::move(host))
+    , path_(std::move(path))
+    , port_(std::move(port))
     , cb_(std::move(cb))
     , ios_(ios)
     , strand_(boost::asio::make_strand(ios))
     , resolver_(ios)
     , socket_(ios)
-    , lastEndpoint_{lastEndpoint}
+    , lastEndpoint_{std::move(lastEndpoint)}
     , lastStatus_(lastStatus)
 {
 }
@@ -142,9 +125,7 @@ template <class Impl>
 WorkBase<Impl>::~WorkBase()
 {
     if (cb_)
-        cb_(make_error_code(boost::system::errc::not_a_socket),
-            lastEndpoint_,
-            std::move(res_));
+        cb_(make_error_code(boost::system::errc::not_a_socket), lastEndpoint_, std::move(res_));
     close();
 }
 
@@ -153,10 +134,12 @@ void
 WorkBase<Impl>::run()
 {
     if (!strand_.running_in_this_thread())
+    {
         return boost::asio::post(
             ios_,
             boost::asio::bind_executor(
                 strand_, std::bind(&WorkBase::run, impl().shared_from_this())));
+    }
 
     resolver_.async_resolve(
         host_,
@@ -180,8 +163,7 @@ WorkBase<Impl>::cancel()
             ios_,
 
             boost::asio::bind_executor(
-                strand_,
-                std::bind(&WorkBase::cancel, impl().shared_from_this())));
+                strand_, std::bind(&WorkBase::cancel, impl().shared_from_this())));
     }
 
     error_code ec;
@@ -246,10 +228,7 @@ WorkBase<Impl>::onStart()
         req_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &WorkBase::onRequest,
-                impl().shared_from_this(),
-                std::placeholders::_1)));
+            std::bind(&WorkBase::onRequest, impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Impl>
@@ -265,10 +244,7 @@ WorkBase<Impl>::onRequest(error_code const& ec)
         res_,
         boost::asio::bind_executor(
             strand_,
-            std::bind(
-                &WorkBase::onResponse,
-                impl().shared_from_this(),
-                std::placeholders::_1)));
+            std::bind(&WorkBase::onResponse, impl().shared_from_this(), std::placeholders::_1)));
 }
 
 template <class Impl>
@@ -279,7 +255,7 @@ WorkBase<Impl>::onResponse(error_code const& ec)
         return fail(ec);
 
     close();
-    XRPL_ASSERT(cb_, "ripple::detail::WorkBase::onResponse : callback is set");
+    XRPL_ASSERT(cb_, "xrpl::detail::WorkBase::onResponse : callback is set");
     cb_(ec, lastEndpoint_, std::move(res_));
     cb_ = nullptr;
 }
@@ -298,8 +274,4 @@ WorkBase<Impl>::close()
     }
 }
 
-}  // namespace detail
-
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::detail

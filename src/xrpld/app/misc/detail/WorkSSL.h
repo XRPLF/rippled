@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
-#define RIPPLE_APP_MISC_DETAIL_WORKSSL_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/detail/WorkBase.h>
 #include <xrpld/core/Config.h>
@@ -31,13 +11,10 @@
 
 #include <functional>
 
-namespace ripple {
-
-namespace detail {
+namespace xrpl::detail {
 
 // Work over SSL
-class WorkSSL : public WorkBase<WorkSSL>,
-                public std::enable_shared_from_this<WorkSSL>
+class WorkSSL : public WorkBase<WorkSSL>, public std::enable_shared_from_this<WorkSSL>
 {
     friend class WorkBase<WorkSSL>;
 
@@ -58,7 +35,7 @@ public:
         endpoint_type const& lastEndpoint,
         bool lastStatus,
         callback_type cb);
-    ~WorkSSL() = default;
+    ~WorkSSL() override = default;
 
 private:
     stream_type&
@@ -74,8 +51,4 @@ private:
     onHandshake(error_code const& ec);
 };
 
-}  // namespace detail
-
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::detail

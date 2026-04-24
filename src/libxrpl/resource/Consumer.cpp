@@ -1,27 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/resource/Consumer.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/resource/Charge.h>
-#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
@@ -29,11 +12,9 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
-namespace Resource {
+namespace xrpl::Resource {
 
-Consumer::Consumer(Logic& logic, Entry& entry)
-    : m_logic(&logic), m_entry(&entry)
+Consumer::Consumer(Logic& logic, Entry& entry) : m_logic(&logic), m_entry(&entry)
 {
 }
 
@@ -41,10 +22,9 @@ Consumer::Consumer() : m_logic(nullptr), m_entry(nullptr)
 {
 }
 
-Consumer::Consumer(Consumer const& other)
-    : m_logic(other.m_logic), m_entry(nullptr)
+Consumer::Consumer(Consumer const& other) : m_logic(other.m_logic), m_entry(nullptr)
 {
-    if (m_logic && other.m_entry)
+    if ((m_logic != nullptr) && (other.m_entry != nullptr))
     {
         m_entry = other.m_entry;
         m_logic->acquire(*m_entry);
@@ -53,22 +33,25 @@ Consumer::Consumer(Consumer const& other)
 
 Consumer::~Consumer()
 {
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->release(*m_entry);
 }
 
 Consumer&
 Consumer::operator=(Consumer const& other)
 {
+    if (this == &other)
+        return *this;
+
     // remove old ref
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->release(*m_entry);
 
     m_logic = other.m_logic;
     m_entry = other.m_entry;
 
     // add new ref
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         m_logic->acquire(*m_entry);
 
     return *this;
@@ -86,7 +69,7 @@ Consumer::to_string() const
 bool
 Consumer::isUnlimited() const
 {
-    if (m_entry)
+    if (m_entry != nullptr)
         return m_entry->isUnlimited();
 
     return false;
@@ -96,7 +79,7 @@ Disposition
 Consumer::disposition() const
 {
     Disposition d = ok;
-    if (m_logic && m_entry)
+    if ((m_logic != nullptr) && (m_entry != nullptr))
         d = m_logic->charge(*m_entry, Charge(0));
 
     return d;
@@ -107,7 +90,7 @@ Consumer::charge(Charge const& what, std::string const& context)
 {
     Disposition d = ok;
 
-    if (m_logic && m_entry && !m_entry->isUnlimited())
+    if ((m_logic != nullptr) && (m_entry != nullptr) && !m_entry->isUnlimited())
         d = m_logic->charge(*m_entry, what, context);
 
     return d;
@@ -116,15 +99,14 @@ Consumer::charge(Charge const& what, std::string const& context)
 bool
 Consumer::warn()
 {
-    XRPL_ASSERT(m_entry, "ripple::Resource::Consumer::warn : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::warn : non-null entry");
     return m_logic->warn(*m_entry);
 }
 
 bool
 Consumer::disconnect(beast::Journal const& j)
 {
-    XRPL_ASSERT(
-        m_entry, "ripple::Resource::Consumer::disconnect : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::disconnect : non-null entry");
     bool const d = m_logic->disconnect(*m_entry);
     if (d)
     {
@@ -136,15 +118,14 @@ Consumer::disconnect(beast::Journal const& j)
 int
 Consumer::balance()
 {
-    XRPL_ASSERT(
-        m_entry, "ripple::Resource::Consumer::balance : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::balance : non-null entry");
     return m_logic->balance(*m_entry);
 }
 
 Entry&
 Consumer::entry()
 {
-    XRPL_ASSERT(m_entry, "ripple::Resource::Consumer::entry : non-null entry");
+    XRPL_ASSERT(m_entry, "xrpl::Resource::Consumer::entry : non-null entry");
     return *m_entry;
 }
 
@@ -161,5 +142,4 @@ operator<<(std::ostream& os, Consumer const& v)
     return os;
 }
 
-}  // namespace Resource
-}  // namespace ripple
+}  // namespace xrpl::Resource

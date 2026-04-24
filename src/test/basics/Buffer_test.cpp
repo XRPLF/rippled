@@ -1,37 +1,21 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github0.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <type_traits>
+#include <utility>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 struct Buffer_test : beast::unit_test::suite
 {
-    bool
-    sane(Buffer const& b) const
+    static bool
+    sane(Buffer const& b)
     {
-        if (b.size() == 0)
+        if (b.empty())
             return b.data() == nullptr;
 
         return b.data() != nullptr;
@@ -40,12 +24,12 @@ struct Buffer_test : beast::unit_test::suite
     void
     run() override
     {
-        std::uint8_t const data[] = {
-            0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,
-            0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,
-            0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
+        std::uint8_t const data[] = {0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23,
+                                     0x71, 0x6d, 0x2a, 0x18, 0xb4, 0x70, 0xcb, 0xf5,
+                                     0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c, 0xf0, 0x2c,
+                                     0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};
 
-        Buffer b0;
+        Buffer const b0;
         BEAST_EXPECT(sane(b0));
         BEAST_EXPECT(b0.empty());
 
@@ -119,25 +103,24 @@ struct Buffer_test : beast::unit_test::suite
         {
             testcase("Move Construction / Assignment");
 
-            static_assert(
-                std::is_nothrow_move_constructible<Buffer>::value, "");
-            static_assert(std::is_nothrow_move_assignable<Buffer>::value, "");
+            static_assert(std::is_nothrow_move_constructible_v<Buffer>, "");
+            static_assert(std::is_nothrow_move_assignable_v<Buffer>, "");
 
             {  // Move-construct from empty buf
                 Buffer x;
-                Buffer y{std::move(x)};
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.empty());
+                Buffer const y{std::move(x)};
+                BEAST_EXPECT(sane(x));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(x.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y.empty());
-                BEAST_EXPECT(x == y);
+                BEAST_EXPECT(x == y);  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move-construct from non-empty buf
                 Buffer x{b1};
-                Buffer y{std::move(x)};
-                BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.empty());
+                Buffer const y{std::move(x)};
+                BEAST_EXPECT(sane(x));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(x.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(sane(y));
                 BEAST_EXPECT(y == b1);
             }
@@ -149,8 +132,8 @@ struct Buffer_test : beast::unit_test::suite
                 x = std::move(y);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign non-empty buf to empty buf
@@ -160,8 +143,8 @@ struct Buffer_test : beast::unit_test::suite
                 x = std::move(y);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x == b1);
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign empty buf to non-empty buf
@@ -171,8 +154,8 @@ struct Buffer_test : beast::unit_test::suite
                 x = std::move(y);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(x.empty());
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
             }
 
             {  // Move assign non-empty buf to non-empty buf
@@ -183,14 +166,14 @@ struct Buffer_test : beast::unit_test::suite
                 x = std::move(y);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(!x.empty());
-                BEAST_EXPECT(sane(y));
-                BEAST_EXPECT(y.empty());
+                BEAST_EXPECT(sane(y));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(y.empty());  // NOLINT(bugprone-use-after-move)
 
                 x = std::move(z);
                 BEAST_EXPECT(sane(x));
                 BEAST_EXPECT(!x.empty());
-                BEAST_EXPECT(sane(z));
-                BEAST_EXPECT(z.empty());
+                BEAST_EXPECT(sane(z));    // NOLINT(bugprone-use-after-move)
+                BEAST_EXPECT(z.empty());  // NOLINT(bugprone-use-after-move)
             }
         }
 
@@ -261,13 +244,13 @@ struct Buffer_test : beast::unit_test::suite
                 // Try to clear:
                 x.clear();
                 BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.size() == 0);
+                BEAST_EXPECT(x.empty());
                 BEAST_EXPECT(x.data() == nullptr);
 
                 // Try to clear again:
                 x.clear();
                 BEAST_EXPECT(sane(x));
-                BEAST_EXPECT(x.size() == 0);
+                BEAST_EXPECT(x.empty());
                 BEAST_EXPECT(x.data() == nullptr);
             };
 
@@ -280,7 +263,6 @@ struct Buffer_test : beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Buffer, basics, ripple);
+BEAST_DEFINE_TESTSUITE(Buffer, basics, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

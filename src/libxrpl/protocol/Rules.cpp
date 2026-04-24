@@ -1,29 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/Rules.h>
 
 #include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STVector256.h>
 
 #include <memory>
@@ -31,7 +14,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace {
 // Use a static inside a function to help prevent order-of-initialization issues
@@ -52,6 +35,13 @@ getCurrentTransactionRules()
 void
 setCurrentTransactionRules(std::optional<Rules> r)
 {
+    // Make global changes associated with the rules before the value is moved.
+    // Push the appropriate setting, instead of having the class pull every time
+    // the value is needed. That could get expensive fast.
+    bool const enableLargeNumbers =
+        !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+    Number::setMantissaScale(enableLargeNumbers ? MantissaRange::large : MantissaRange::small);
+
     *getCurrentTransactionRulesRef() = std::move(r);
 }
 
@@ -63,8 +53,7 @@ private:
     std::unordered_set<uint256, beast::uhash<>> const& presets_;
 
 public:
-    explicit Impl(std::unordered_set<uint256, beast::uhash<>> const& presets)
-        : presets_(presets)
+    explicit Impl(std::unordered_set<uint256, beast::uhash<>> const& presets) : presets_(presets)
     {
     }
 
@@ -87,9 +76,9 @@ public:
     bool
     enabled(uint256 const& feature) const
     {
-        if (presets_.count(feature) > 0)
+        if (presets_.contains(feature))
             return true;
-        return set_.count(feature) > 0;
+        return set_.contains(feature);
     }
 
     bool
@@ -101,7 +90,7 @@ public:
             return false;
         XRPL_ASSERT(
             presets_ == other.presets_,
-            "ripple::Rules::Impl::operator==(Impl) const : input presets do "
+            "xrpl::Rules::Impl::operator==(Impl) const : input presets do "
             "match");
         return *digest_ == *other.digest_;
     }
@@ -129,18 +118,7 @@ Rules::presets() const
 bool
 Rules::enabled(uint256 const& feature) const
 {
-    XRPL_ASSERT(impl_, "ripple::Rules::enabled : initialized");
-
-    // The functionality of the "NonFungibleTokensV1_1" amendment is
-    // precisely the functionality of the following three amendments
-    // so if their status is ever queried individually, we inject an
-    // extra check here to simplify the checking elsewhere.
-    if (feature == featureNonFungibleTokensV1 ||
-        feature == fixNFTokenNegOffer || feature == fixNFTokenDirV1)
-    {
-        if (impl_->enabled(featureNonFungibleTokensV1_1))
-            return true;
-    }
+    XRPL_ASSERT(impl_, "xrpl::Rules::enabled : initialized");
 
     return impl_->enabled(feature);
 }
@@ -148,9 +126,7 @@ Rules::enabled(uint256 const& feature) const
 bool
 Rules::operator==(Rules const& other) const
 {
-    XRPL_ASSERT(
-        impl_ && other.impl_,
-        "ripple::Rules::operator==(Rules) const : both initialized");
+    XRPL_ASSERT(impl_ && other.impl_, "xrpl::Rules::operator==(Rules) const : both initialized");
     if (impl_.get() == other.impl_.get())
         return true;
     return *impl_ == *other.impl_;
@@ -169,4 +145,4 @@ isFeatureEnabled(uint256 const& feature)
     return rules && rules->enabled(feature);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

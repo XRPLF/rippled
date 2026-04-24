@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
-#define RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -31,14 +11,14 @@
 #include <system_error>
 #include <tuple>
 
-namespace ripple {
+namespace xrpl {
 
 template <class T>
 using Result = boost::outcome_v2::result<T, std::error_code>;
 
 #ifndef _MSC_VER
-namespace b58_fast {
-namespace detail {
+
+namespace b58_fast::detail {
 
 // This optimizes to what hand written asm would do (single divide)
 [[nodiscard]] inline std::tuple<std::uint64_t, std::uint64_t>
@@ -53,7 +33,7 @@ carrying_mul(std::uint64_t a, std::uint64_t b, std::uint64_t carry)
 {
     unsigned __int128 const x = a;
     unsigned __int128 const y = b;
-    unsigned __int128 const c = x * y + carry;
+    unsigned __int128 const c = (x * y) + carry;
     return {c & 0xffff'ffff'ffff'ffff, c >> 64};
 }
 
@@ -79,18 +59,18 @@ inplace_bigint_add(std::span<std::uint64_t> a, std::uint64_t b)
         return TokenCodecErrc::inputTooSmall;
     }
 
-    std::uint64_t carry;
+    std::uint64_t carry = 0;
     std::tie(a[0], carry) = carrying_add(a[0], b);
 
     for (auto& v : a.subspan(1))
     {
-        if (!carry)
+        if (carry == 0u)
         {
             return TokenCodecErrc::success;
         }
         std::tie(v, carry) = carrying_add(v, 1);
     }
-    if (carry)
+    if (carry != 0u)
     {
         return TokenCodecErrc::overflowAdd;
     }
@@ -125,45 +105,42 @@ inplace_bigint_mul(std::span<std::uint64_t> a, std::uint64_t b)
 [[nodiscard]] inline std::uint64_t
 inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 {
-    if (numerator.size() == 0)
+    if (numerator.empty())
     {
         // should never happen, but if it does then it seems natural to define
         // the a null set of numbers to be zero, so the remainder is also zero.
         // LCOV_EXCL_START
         UNREACHABLE(
-            "ripple::b58_fast::detail::inplace_bigint_div_rem : empty "
+            "xrpl::b58_fast::detail::inplace_bigint_div_rem : empty "
             "numerator");
         return 0;
         // LCOV_EXCL_STOP
     }
 
-    auto to_u128 = [](std::uint64_t high,
-                      std::uint64_t low) -> unsigned __int128 {
+    auto to_u128 = [](std::uint64_t high, std::uint64_t low) -> unsigned __int128 {
         unsigned __int128 const high128 = high;
         unsigned __int128 const low128 = low;
         return ((high128 << 64) | low128);
     };
-    auto div_rem_64 =
-        [](unsigned __int128 num,
-           std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
+    auto div_rem_64 = [](unsigned __int128 num,
+                         std::uint64_t denom) -> std::tuple<std::uint64_t, std::uint64_t> {
         unsigned __int128 const denom128 = denom;
         unsigned __int128 const d = num / denom128;
         unsigned __int128 const r = num - (denom128 * d);
         XRPL_ASSERT(
             d >> 64 == 0,
-            "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
+            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
             "valid division result");
         XRPL_ASSERT(
             r >> 64 == 0,
-            "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
+            "xrpl::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
             "valid remainder");
         return {static_cast<std::uint64_t>(d), static_cast<std::uint64_t>(r)};
     };
 
     std::uint64_t prev_rem = 0;
     int const last_index = numerator.size() - 1;
-    std::tie(numerator[last_index], prev_rem) =
-        div_rem(numerator[last_index], divisor);
+    std::tie(numerator[last_index], prev_rem) = div_rem(numerator[last_index], divisor);
     for (int i = last_index - 1; i >= 0; --i)
     {
         unsigned __int128 const cur_num = to_u128(prev_rem, numerator[i]);
@@ -178,17 +155,14 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
 [[nodiscard]] inline std::array<std::uint8_t, 10>
 b58_10_to_b58_be(std::uint64_t input)
 {
-    [[maybe_unused]] static constexpr std::uint64_t B_58_10 =
-        430804206899405824;  // 58^10;
-    XRPL_ASSERT(
-        input < B_58_10,
-        "ripple::b58_fast::detail::b58_10_to_b58_be : valid input");
+    [[maybe_unused]] static constexpr std::uint64_t B_58_10 = 430804206899405824;  // 58^10;
+    XRPL_ASSERT(input < B_58_10, "xrpl::b58_fast::detail::b58_10_to_b58_be : valid input");
     constexpr std::size_t resultSize = 10;
     std::array<std::uint8_t, resultSize> result{};
     int i = 0;
     while (input > 0)
     {
-        std::uint64_t rem;
+        std::uint64_t rem = 0;
         std::tie(input, rem) = div_rem(input, 58);
         result[resultSize - 1 - i] = rem;
         i += 1;
@@ -196,9 +170,8 @@ b58_10_to_b58_be(std::uint64_t input)
 
     return result;
 }
-}  // namespace detail
-}  // namespace b58_fast
+}  // namespace b58_fast::detail
+
 #endif
 
-}  // namespace ripple
-#endif  // RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
+}  // namespace xrpl

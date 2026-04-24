@@ -1,50 +1,60 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpld/overlay/detail/Handshake.h>
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 
-#include <boost/regex.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_search.hpp>
+#include <boost/system/detail/error_code.hpp>
 
-#include <algorithm>
+#include <openssl/crypto.h>
+#include <openssl/sha.h>
+#include <openssl/ssl.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
 
 // VFALCO Shouldn't we have to include the OpenSSL
 // headers or something for SSL_get_finished?
 
-namespace ripple {
+namespace xrpl {
 
 std::optional<std::string>
-getFeatureValue(
-    boost::beast::http::fields const& headers,
-    std::string const& feature)
+getFeatureValue(boost::beast::http::fields const& headers, std::string const& feature)
 {
     auto const header = headers.find("X-Protocol-Ctl");
     if (header == headers.end())
         return {};
     boost::smatch match;
-    boost::regex rx(feature + "=([^;\\s]+)");
+    boost::regex const rx(feature + "=([^;\\s]+)");
     std::string const allFeatures(header->value());
     if (boost::regex_search(allFeatures, match, rx))
         return {match[1]};
@@ -64,9 +74,7 @@ isFeatureValue(
 }
 
 bool
-featureEnabled(
-    boost::beast::http::fields const& headers,
-    std::string const& feature)
+featureEnabled(boost::beast::http::fields const& headers, std::string const& feature)
 {
     return isFeatureValue(headers, feature, "1");
 }
@@ -122,7 +130,7 @@ makeFeaturesResponseHeader(
     @note This construct is non-standard. There are potential "standard"
           alternatives that should be considered. For a discussion, on
           this topic, see https://github.com/openssl/openssl/issues/5509 and
-          https://github.com/ripple/rippled/issues/2413.
+          https://github.com/XRPLF/rippled/issues/2413.
 */
 static std::optional<base_uint<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
@@ -130,12 +138,12 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
     constexpr std::size_t sslMinimumFinishedLength = 12;
 
     unsigned char buf[1024];
-    size_t len = get(ssl, buf, sizeof(buf));
+    size_t const len = get(ssl, buf, sizeof(buf));
 
     if (len < sslMinimumFinishedLength)
         return std::nullopt;
 
-    sha512_hasher h;
+    sha512_hasher const h;
 
     base_uint<512> cookie;
     SHA512(buf, len, cookie.data());
@@ -152,8 +160,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
         return std::nullopt;
     }
 
-    auto const cookie2 =
-        hashLastMessage(ssl.native_handle(), SSL_get_peer_finished);
+    auto const cookie2 = hashLastMessage(ssl.native_handle(), SSL_get_peer_finished);
     if (!cookie2)
     {
         JLOG(journal.error()) << "Cookie generation: peer setup not complete";
@@ -166,8 +173,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
     // is 0. Don't allow this.
     if (result == beast::zero)
     {
-        JLOG(journal.error())
-            << "Cookie generation: identical finished messages";
+        JLOG(journal.error()) << "Cookie generation: identical finished messages";
         return std::nullopt;
     }
 
@@ -177,7 +183,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 void
 buildHandshake(
     boost::beast::http::fields& h,
-    ripple::uint256 const& sharedValue,
+    xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote_ip,
@@ -191,17 +197,13 @@ buildHandshake(
         h.insert("Network-ID", std::to_string(*networkID));
     }
 
-    h.insert(
-        "Network-Time",
-        std::to_string(app.timeKeeper().now().time_since_epoch().count()));
+    h.insert("Network-Time", std::to_string(app.getTimeKeeper().now().time_since_epoch().count()));
 
-    h.insert(
-        "Public-Key",
-        toBase58(TokenType::NodePublic, app.nodeIdentity().first));
+    h.insert("Public-Key", toBase58(TokenType::NodePublic, app.nodeIdentity().first));
 
     {
-        auto const sig = signDigest(
-            app.nodeIdentity().first, app.nodeIdentity().second, sharedValue);
+        auto const sig =
+            signDigest(app.nodeIdentity().first, app.nodeIdentity().second, sharedValue);
         h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
     }
 
@@ -218,15 +220,15 @@ buildHandshake(
 
     if (auto const cl = app.getLedgerMaster().getClosedLedger())
     {
-        h.insert("Closed-Ledger", strHex(cl->info().hash));
-        h.insert("Previous-Ledger", strHex(cl->info().parentHash));
+        h.insert("Closed-Ledger", strHex(cl->header().hash));
+        h.insert("Previous-Ledger", strHex(cl->header().parentHash));
     }
 }
 
 PublicKey
 verifyHandshake(
     boost::beast::http::fields const& headers,
-    ripple::uint256 const& sharedValue,
+    xrpl::uint256 const& sharedValue,
     std::optional<std::uint32_t> networkID,
     beast::IP::Address public_ip,
     beast::IP::Address remote,
@@ -240,7 +242,7 @@ verifyHandshake(
 
     if (auto const iter = headers.find("Network-ID"); iter != headers.end())
     {
-        std::uint32_t nid;
+        std::uint32_t nid = 0;
 
         if (!beast::lexicalCastChecked(nid, iter->value()))
             throw std::runtime_error("Invalid peer network identifier");
@@ -252,7 +254,7 @@ verifyHandshake(
     if (auto const iter = headers.find("Network-Time"); iter != headers.end())
     {
         auto const netTime = [str = iter->value()]() -> TimeKeeper::time_point {
-            TimeKeeper::duration::rep val;
+            TimeKeeper::duration::rep val = 0;
 
             if (beast::lexicalCastChecked(val, str))
                 return TimeKeeper::time_point{TimeKeeper::duration{val}};
@@ -264,14 +266,13 @@ verifyHandshake(
 
         using namespace std::chrono;
 
-        auto const ourTime = app.timeKeeper().now();
+        auto const ourTime = app.getTimeKeeper().now();
         auto const tolerance = 20s;
 
         // We can't blindly "return a-b;" because TimeKeeper::time_point
         // uses an unsigned integer for representing durations, which is
         // a problem when trying to subtract time points.
-        auto calculateOffset = [](TimeKeeper::time_point a,
-                                  TimeKeeper::time_point b) {
+        auto calculateOffset = [](TimeKeeper::time_point a, TimeKeeper::time_point b) {
             if (a > b)
                 return duration_cast<std::chrono::seconds>(a - b);
             return -duration_cast<std::chrono::seconds>(b - a);
@@ -286,8 +287,7 @@ verifyHandshake(
     PublicKey const publicKey = [&headers] {
         if (auto const iter = headers.find("Public-Key"); iter != headers.end())
         {
-            auto pk =
-                parseBase58<PublicKey>(TokenType::NodePublic, iter->value());
+            auto pk = parseBase58<PublicKey>(TokenType::NodePublic, iter->value());
 
             if (pk)
             {
@@ -325,36 +325,37 @@ verifyHandshake(
     if (auto const iter = headers.find("Local-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const local_ip =
-            boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+        auto const local_ip = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
 
         if (beast::IP::is_public(remote) && remote != local_ip)
+        {
             throw std::runtime_error(
                 "Incorrect Local-IP: " + remote.to_string() + " instead of " +
                 local_ip.to_string());
+        }
     }
 
     if (auto const iter = headers.find("Remote-IP"); iter != headers.end())
     {
         boost::system::error_code ec;
-        auto const remote_ip =
-            boost::asio::ip::make_address(std::string_view(iter->value()), ec);
+        auto const remote_ip = boost::asio::ip::make_address(std::string_view(iter->value()), ec);
 
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::IP::is_public(remote) &&
-            !beast::IP::is_unspecified(public_ip))
+        if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(public_ip))
         {
             // We know our public IP and peer reports our connection came
             // from some other IP.
             if (remote_ip != public_ip)
+            {
                 throw std::runtime_error(
-                    "Incorrect Remote-IP: " + public_ip.to_string() +
-                    " instead of " + remote_ip.to_string());
+                    "Incorrect Remote-IP: " + public_ip.to_string() + " instead of " +
+                    remote_ip.to_string());
+            }
         }
     }
 
@@ -381,10 +382,7 @@ makeRequest(
     m.insert(
         "X-Protocol-Ctl",
         makeFeaturesRequestHeader(
-            comprEnabled,
-            ledgerReplayEnabled,
-            txReduceRelayEnabled,
-            vpReduceRelayEnabled));
+            comprEnabled, ledgerReplayEnabled, txReduceRelayEnabled, vpReduceRelayEnabled));
     return m;
 }
 
@@ -421,4 +419,4 @@ makeResponse(
     return resp;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

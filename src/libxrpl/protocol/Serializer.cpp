@@ -1,21 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/Serializer.h>
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
@@ -24,7 +7,6 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/endian/conversion.hpp>
@@ -37,12 +19,12 @@
 #include <string>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 int
 Serializer::add16(std::uint16_t i)
 {
-    int ret = mData.size();
+    int const ret = mData.size();
     mData.push_back(static_cast<unsigned char>(i >> 8));
     mData.push_back(static_cast<unsigned char>(i & 0xff));
     return ret;
@@ -53,8 +35,7 @@ Serializer::add32(HashPrefix p)
 {
     // This should never trigger; the size & type of a hash prefix are
     // integral parts of the protocol and unlikely to ever change.
-    static_assert(
-        std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
+    static_assert(std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
 
     return add32(safe_cast<std::uint32_t>(p));
 }
@@ -93,7 +74,7 @@ Serializer::addInteger(std::int32_t i)
 int
 Serializer::addRaw(Blob const& vector)
 {
-    int ret = mData.size();
+    int const ret = mData.size();
     mData.insert(mData.end(), vector.begin(), vector.end());
     return ret;
 }
@@ -101,7 +82,7 @@ Serializer::addRaw(Blob const& vector)
 int
 Serializer::addRaw(Slice slice)
 {
-    int ret = mData.size();
+    int const ret = mData.size();
     mData.insert(mData.end(), slice.begin(), slice.end());
     return ret;
 }
@@ -109,7 +90,7 @@ Serializer::addRaw(Slice slice)
 int
 Serializer::addRaw(Serializer const& s)
 {
-    int ret = mData.size();
+    int const ret = mData.size();
     mData.insert(mData.end(), s.begin(), s.end());
     return ret;
 }
@@ -117,7 +98,7 @@ Serializer::addRaw(Serializer const& s)
 int
 Serializer::addRaw(void const* ptr, int len)
 {
-    int ret = mData.size();
+    int const ret = mData.size();
     mData.insert(mData.end(), (char const*)ptr, ((char const*)ptr) + len);
     return ret;
 }
@@ -125,15 +106,17 @@ Serializer::addRaw(void const* ptr, int len)
 int
 Serializer::addFieldID(int type, int name)
 {
-    int ret = mData.size();
+    int const ret = mData.size();
     XRPL_ASSERT(
         (type > 0) && (type < 256) && (name > 0) && (name < 256),
-        "ripple::Serializer::addFieldID : inputs inside range");
+        "xrpl::Serializer::addFieldID : inputs inside range");
 
     if (type < 16)
     {
-        if (name < 16)  // common type, common name
+        if (name < 16)
+        {  // common type, common name
             mData.push_back(static_cast<unsigned char>((type << 4) | name));
+        }
         else
         {
             // common type, uncommon name
@@ -161,7 +144,7 @@ Serializer::addFieldID(int type, int name)
 int
 Serializer::add8(unsigned char byte)
 {
-    int ret = mData.size();
+    int const ret = mData.size();
     mData.push_back(byte);
     return ret;
 }
@@ -195,20 +178,19 @@ Serializer::getSHA512Half() const
 int
 Serializer::addVL(Blob const& vector)
 {
-    int ret = addEncoded(vector.size());
+    int const ret = addEncoded(vector.size());
     addRaw(vector);
     XRPL_ASSERT(
-        mData.size() ==
-            (ret + vector.size() + encodeLengthLength(vector.size())),
-        "ripple::Serializer::addVL : size matches expected");
+        mData.size() == (ret + vector.size() + encodeLengthLength(vector.size())),
+        "xrpl::Serializer::addVL : size matches expected");
     return ret;
 }
 
 int
 Serializer::addVL(Slice const& slice)
 {
-    int ret = addEncoded(slice.size());
-    if (slice.size())
+    int const ret = addEncoded(slice.size());
+    if (!slice.empty())
         addRaw(slice.data(), slice.size());
     return ret;
 }
@@ -216,9 +198,9 @@ Serializer::addVL(Slice const& slice)
 int
 Serializer::addVL(void const* ptr, int len)
 {
-    int ret = addEncoded(len);
+    int const ret = addEncoded(len);
 
-    if (len)
+    if (len != 0)
         addRaw(ptr, len);
 
     return ret;
@@ -227,7 +209,7 @@ Serializer::addVL(void const* ptr, int len)
 int
 Serializer::addEncoded(int length)
 {
-    std::array<std::uint8_t, 4> bytes;
+    std::array<std::uint8_t, 4> bytes{};
     int numBytes = 0;
 
     if (length <= 192)
@@ -251,7 +233,9 @@ Serializer::addEncoded(int length)
         numBytes = 3;
     }
     else
+    {
         Throw<std::overflow_error>("lenlen");
+    }
 
     return addRaw(&bytes[0], numBytes);
 }
@@ -315,7 +299,7 @@ Serializer::decodeVLLength(int b1, int b2)
     if (b1 > 240)
         Throw<std::overflow_error>("b1>240");
 
-    return 193 + (b1 - 193) * 256 + b2;
+    return 193 + ((b1 - 193) * 256) + b2;
 }
 
 int
@@ -327,7 +311,7 @@ Serializer::decodeVLLength(int b1, int b2, int b3)
     if (b1 > 254)
         Throw<std::overflow_error>("b1>254");
 
-    return 12481 + (b1 - 241) * 65536 + b2 * 256 + b3;
+    return 12481 + ((b1 - 241) * 65536) + (b2 * 256) + b3;
 }
 
 //------------------------------------------------------------------------------
@@ -360,7 +344,7 @@ SerialIter::get8()
 {
     if (remain_ < 1)
         Throw<std::runtime_error>("invalid SerialIter get8");
-    unsigned char t = *p_;
+    unsigned char const t = *p_;
     ++p_;
     ++used_;
     --remain_;
@@ -388,8 +372,8 @@ SerialIter::get32()
     p_ += 4;
     used_ += 4;
     remain_ -= 4;
-    return (std::uint64_t(t[0]) << 24) + (std::uint64_t(t[1]) << 16) +
-        (std::uint64_t(t[2]) << 8) + std::uint64_t(t[3]);
+    return (std::uint64_t(t[0]) << 24) + (std::uint64_t(t[1]) << 16) + (std::uint64_t(t[2]) << 8) +
+        std::uint64_t(t[3]);
 }
 
 std::uint64_t
@@ -401,9 +385,8 @@ SerialIter::get64()
     p_ += 8;
     used_ += 8;
     remain_ -= 8;
-    return (std::uint64_t(t[0]) << 56) + (std::uint64_t(t[1]) << 48) +
-        (std::uint64_t(t[2]) << 40) + (std::uint64_t(t[3]) << 32) +
-        (std::uint64_t(t[4]) << 24) + (std::uint64_t(t[5]) << 16) +
+    return (std::uint64_t(t[0]) << 56) + (std::uint64_t(t[1]) << 48) + (std::uint64_t(t[2]) << 40) +
+        (std::uint64_t(t[3]) << 32) + (std::uint64_t(t[4]) << 24) + (std::uint64_t(t[5]) << 16) +
         (std::uint64_t(t[6]) << 8) + std::uint64_t(t[7]);
 }
 
@@ -443,8 +426,7 @@ SerialIter::getFieldID(int& type, int& name)
         // uncommon type
         type = get8();
         if (type < 16)
-            Throw<std::runtime_error>(
-                "gFID: uncommon type out of range " + std::to_string(type));
+            Throw<std::runtime_error>("gFID: uncommon type out of range " + std::to_string(type));
     }
 
     if (name == 0)
@@ -452,8 +434,7 @@ SerialIter::getFieldID(int& type, int& name)
         // uncommon name
         name = get8();
         if (name < 16)
-            Throw<std::runtime_error>(
-                "gFID: uncommon name out of range " + std::to_string(name));
+            Throw<std::runtime_error>("gFID: uncommon name out of range " + std::to_string(name));
     }
 }
 
@@ -462,8 +443,7 @@ template <class T>
 T
 SerialIter::getRawHelper(int size)
 {
-    static_assert(
-        std::is_same<T, Blob>::value || std::is_same<T, Buffer>::value, "");
+    static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>, "");
     if (remain_ < size)
         Throw<std::runtime_error>("invalid SerialIter getRaw");
     T result(size);
@@ -490,24 +470,23 @@ SerialIter::getRaw(int size)
 int
 SerialIter::getVLDataLength()
 {
-    int b1 = get8();
-    int datLen;
-    int lenLen = Serializer::decodeLengthLength(b1);
+    int const b1 = get8();
+    int datLen = 0;
+    int const lenLen = Serializer::decodeLengthLength(b1);
     if (lenLen == 1)
     {
         datLen = Serializer::decodeVLLength(b1);
     }
     else if (lenLen == 2)
     {
-        int b2 = get8();
+        int const b2 = get8();
         datLen = Serializer::decodeVLLength(b1, b2);
     }
     else
     {
-        XRPL_ASSERT(
-            lenLen == 3, "ripple::SerialIter::getVLDataLength : lenLen is 3");
-        int b2 = get8();
-        int b3 = get8();
+        XRPL_ASSERT(lenLen == 3, "xrpl::SerialIter::getVLDataLength : lenLen is 3");
+        int const b2 = get8();
+        int const b3 = get8();
         datLen = Serializer::decodeVLLength(b1, b2, b3);
     }
     return datLen;
@@ -518,7 +497,7 @@ SerialIter::getSlice(std::size_t bytes)
 {
     if (bytes > remain_)
         Throw<std::runtime_error>("invalid SerialIter getSlice");
-    Slice s(p_, bytes);
+    Slice const s(p_, bytes);
     p_ += bytes;
     used_ += bytes;
     remain_ -= bytes;
@@ -538,4 +517,4 @@ SerialIter::getVLBuffer()
     return getRawHelper<Buffer>(getVLDataLength());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

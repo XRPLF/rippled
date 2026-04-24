@@ -1,18 +1,13 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_RECORDER_HPP
-#define BEAST_UNIT_TEST_RECORDER_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/results.h>
 #include <xrpl/beast/unit_test/runner.h>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** A test runner that stores the results. */
 class recorder : public runner
@@ -33,51 +28,48 @@ public:
     }
 
 private:
-    virtual void
+    void
     on_suite_begin(suite_info const& info) override
     {
         m_suite = suite_results(info.full_name());
     }
 
-    virtual void
+    void
     on_suite_end() override
     {
         m_results.insert(std::move(m_suite));
     }
 
-    virtual void
+    void
     on_case_begin(std::string const& name) override
     {
         m_case = case_results(name);
     }
 
-    virtual void
+    void
     on_case_end() override
     {
-        if (m_case.tests.size() > 0)
+        if (!m_case.tests.empty())
             m_suite.insert(std::move(m_case));
     }
 
-    virtual void
+    void
     on_pass() override
     {
         m_case.tests.pass();
     }
 
-    virtual void
+    void
     on_fail(std::string const& reason) override
     {
         m_case.tests.fail(reason);
     }
 
-    virtual void
+    void
     on_log(std::string const& s) override
     {
         m_case.log.insert(s);
     }
 };
 
-}  // namespace unit_test
-}  // namespace beast
-
-#endif
+}  // namespace beast::unit_test

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_RATE_H_INCLUDED
-#define RIPPLE_PROTOCOL_RATE_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/STAmount.h>
@@ -28,7 +8,7 @@
 #include <cstdint>
 #include <ostream>
 
-namespace ripple {
+namespace xrpl {
 
 /** Represents a transfer rate
 
@@ -73,11 +53,7 @@ STAmount
 multiplyRound(STAmount const& amount, Rate const& rate, bool roundUp);
 
 STAmount
-multiplyRound(
-    STAmount const& amount,
-    Rate const& rate,
-    Asset const& asset,
-    bool roundUp);
+multiplyRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp);
 
 STAmount
 divide(STAmount const& amount, Rate const& rate);
@@ -86,11 +62,7 @@ STAmount
 divideRound(STAmount const& amount, Rate const& rate, bool roundUp);
 
 STAmount
-divideRound(
-    STAmount const& amount,
-    Rate const& rate,
-    Asset const& asset,
-    bool roundUp);
+divideRound(STAmount const& amount, Rate const& rate, Asset const& asset, bool roundUp);
 
 namespace nft {
 /** Given a transfer fee (in basis points) convert it to a transfer rate. */
@@ -102,6 +74,4 @@ transferFeeAsRate(std::uint16_t fee);
 /** A transfer rate signifying a 1:1 exchange */
 extern Rate const parityRate;
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

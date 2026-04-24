@@ -1,19 +1,14 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_MATCH_HPP
-#define BEAST_UNIT_TEST_MATCH_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/suite_info.h>
 
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 // Predicate for implementing matches
 class selector
@@ -56,8 +51,7 @@ public:
 //------------------------------------------------------------------------------
 
 template <class>
-selector::selector(mode_t mode, std::string const& pattern)
-    : mode_(mode), pat_(pattern)
+selector::selector(mode_t mode, std::string const& pattern) : mode_(mode), pat_(pattern)
 {
     if (mode_ == automatch && pattern.empty())
         mode_ = all;
@@ -168,7 +162,4 @@ match_library(std::string const& name)
     return selector(selector::library, name);
 }
 
-}  // namespace unit_test
-}  // namespace beast
-
-#endif
+}  // namespace beast::unit_test

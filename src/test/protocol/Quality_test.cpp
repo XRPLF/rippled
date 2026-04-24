@@ -1,28 +1,15 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 
+#include <cstdint>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 class Quality_test : public beast::unit_test::suite
 {
@@ -35,21 +22,17 @@ public:
 
     template <class Integer>
     static STAmount
-    amount(
-        Integer integer,
-        std::enable_if_t<std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral<Integer>::value, "");
+        static_assert(std::is_integral_v<Integer>, "");
         return STAmount(integer, false);
     }
 
     template <class Integer>
     static STAmount
-    amount(
-        Integer integer,
-        std::enable_if_t<!std::is_signed<Integer>::value>* = 0)
+    amount(Integer integer, std::enable_if_t<!std::is_signed_v<Integer>>* = 0)
     {
-        static_assert(std::is_integral<Integer>::value, "");
+        static_assert(std::is_integral_v<Integer>, "");
         if (integer < 0)
             return STAmount(-integer, true);
         return STAmount(integer, false);
@@ -64,13 +47,7 @@ public:
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_in(
-        Quality const& q,
-        In1 in,
-        Out1 out,
-        Int limit,
-        In2 in_expected,
-        Out2 out_expected)
+    ceil_in(Quality const& q, In1 in, Out1 out, Int limit, In2 in_expected, Out2 out_expected)
     {
         auto expect_result(amounts(in_expected, out_expected));
         auto actual_result(q.ceil_in(amounts(in, out), amount(limit)));
@@ -80,13 +57,7 @@ public:
 
     template <class In1, class Out1, class Int, class In2, class Out2>
     void
-    ceil_out(
-        Quality const& q,
-        In1 in,
-        Out1 out,
-        Int limit,
-        In2 in_expected,
-        Out2 out_expected)
+    ceil_out(Quality const& q, In1 in, Out1 out, Int limit, In2 in_expected, Out2 out_expected)
     {
         auto const expect_result(amounts(in_expected, out_expected));
         auto const actual_result(q.ceil_out(amounts(in, out), amount(limit)));
@@ -101,7 +72,7 @@ public:
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
             ceil_in(
                 q,
@@ -130,7 +101,7 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
             ceil_in(
                 q,
@@ -159,7 +130,7 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
             ceil_in(
                 q,
@@ -194,7 +165,7 @@ public:
 
         {
             // 1 in, 1 out:
-            Quality q(Amounts(amount(1), amount(1)));
+            Quality const q(Amounts(amount(1), amount(1)));
 
             ceil_out(
                 q,
@@ -223,7 +194,7 @@ public:
 
         {
             // 1 in, 2 out:
-            Quality q(Amounts(amount(1), amount(2)));
+            Quality const q(Amounts(amount(1), amount(2)));
 
             ceil_out(
                 q,
@@ -252,7 +223,7 @@ public:
 
         {
             // 2 in, 1 out:
-            Quality q(Amounts(amount(2), amount(1)));
+            Quality const q(Amounts(amount(2), amount(1)));
 
             ceil_out(
                 q,
@@ -286,12 +257,11 @@ public:
         testcase("raw");
 
         {
-            Quality q(0x5d048191fb9130daull);  // 126836389.7680090
+            Quality const q(0x5d048191fb9130daull);  // 126836389.7680090
             Amounts const value(
-                amount(349469768),               // 349.469768 XRP
-                raw(2755280000000000ull, -15));  // 2.75528
-            STAmount const limit(
-                raw(4131113916555555, -16));  // .4131113916555555
+                amount(349469768),                             // 349.469768 XRP
+                raw(2755280000000000ull, -15));                // 2.75528
+            STAmount const limit(raw(4131113916555555, -16));  // .4131113916555555
             Amounts const result(q.ceil_out(value, limit));
             BEAST_EXPECT(result.in != beast::zero);
         }
@@ -302,7 +272,7 @@ public:
     {
         testcase("round");
 
-        Quality q(0x59148191fb913522ull);  // 57719.63525051682
+        Quality const q(0x59148191fb913522ull);  // 57719.63525051682
         BEAST_EXPECT(q.round(3).rate().getText() == "57800");
         BEAST_EXPECT(q.round(4).rate().getText() == "57720");
         BEAST_EXPECT(q.round(5).rate().getText() == "57720");
@@ -385,8 +355,7 @@ public:
     {
         testcase("operations");
 
-        Quality const q11(
-            Amounts(STAmount(noIssue(), 731), STAmount(noIssue(), 731)));
+        Quality const q11(Amounts(STAmount(noIssue(), 731), STAmount(noIssue(), 731)));
 
         Quality qa(q11);
         Quality qb(q11);
@@ -415,6 +384,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Quality, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Quality, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

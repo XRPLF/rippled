@@ -1,34 +1,30 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/shamap/SHAMap.h>
-#include <xrpld/shamap/SHAMapItem.h>
-
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-namespace ripple {
-namespace tests {
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <list>
+#include <ostream>
+#include <utility>
+#include <vector>
+
+namespace xrpl::tests {
 
 class SHAMapSync_test : public beast::unit_test::suite
 {
@@ -50,7 +46,7 @@ public:
     {
         // add a bunch of random states to a map, then remove them
         // map should be the same
-        SHAMapHash beforeHash = map.getHash();
+        SHAMapHash const beforeHash = map.getHash();
 
         std::list<uint256> items;
 
@@ -77,8 +73,7 @@ public:
 
         if (beforeHash != map.getHash())
         {
-            log << "Hashes do not match " << beforeHash << " " << map.getHash()
-                << std::endl;
+            log << "Hashes do not match " << beforeHash << " " << map.getHash() << std::endl;
             return false;
         }
 
@@ -95,7 +90,7 @@ public:
         SHAMap source(SHAMapType::FREE, f);
         SHAMap destination(SHAMapType::FREE, f2);
 
-        int items = 10000;
+        int const items = 10000;
         for (int i = 0; i < items; ++i)
         {
             source.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomAS());
@@ -117,25 +112,17 @@ public:
         source.walkMap(missingNodes, 2048);
         BEAST_EXPECT(missingNodes.empty());
 
-        std::vector<SHAMapNodeID> nodeIDs, gotNodeIDs;
-        std::vector<Blob> gotNodes;
-        std::vector<uint256> hashes;
-
         destination.setSynching();
 
         {
             std::vector<std::pair<SHAMapNodeID, Blob>> a;
 
-            BEAST_EXPECT(source.getNodeFat(
-                SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
+            BEAST_EXPECT(source.getNodeFat(SHAMapNodeID(), a, rand_bool(eng_), rand_int(eng_, 2)));
 
-            unexpected(a.size() < 1, "NodeSize");
+            unexpected(a.empty(), "NodeSize");
 
-            BEAST_EXPECT(
-                destination
-                    .addRootNode(
-                        source.getHash(), makeSlice(a[0].second), nullptr)
-                    .isGood());
+            BEAST_EXPECT(destination.addRootNode(source.getHash(), makeSlice(a[0].second), nullptr)
+                             .isGood());
         }
 
         do
@@ -156,8 +143,7 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!source.getNodeFat(
-                        it.first, b, rand_bool(eng_), rand_int(eng_, 2)))
+                if (!source.getNodeFat(it.first, b, rand_bool(eng_), rand_int(eng_, 2)))
                     fail("", __FILE__, __LINE__);
             }
 
@@ -172,9 +158,7 @@ public:
                 // Don't use BEAST_EXPECT here b/c it will be called a
                 // non-deterministic number of times and the number of tests run
                 // should be deterministic
-                if (!destination
-                         .addKnownNode(
-                             b[i].first, makeSlice(b[i].second), nullptr)
+                if (!destination.addKnownNode(b[i].first, makeSlice(b[i].second), nullptr)
                          .isUseful())
                     fail("", __FILE__, __LINE__);
             }
@@ -188,7 +172,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, ripple);
+BEAST_DEFINE_TESTSUITE(SHAMapSync, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl::tests

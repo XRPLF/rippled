@@ -1,36 +1,33 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
+#include <test/jtx/permissioned_domains.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/jss.h>
 
-#include <test/jtx.h>
+#include <map>
+#include <memory>
+#include <optional>
+#include <set>
+#include <stdexcept>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
 
-namespace ripple {
-namespace test {
-namespace jtx {
-namespace pdomain {
+namespace xrpl::test::jtx::pdomain {
 
 // helpers
 // Make json for PermissionedDomainSet transaction
 Json::Value
-setTx(
-    AccountID const& account,
-    Credentials const& credentials,
-    std::optional<uint256> domain)
+setTx(AccountID const& account, Credentials const& credentials, std::optional<uint256> domain)
 {
     Json::Value jv;
     jv[sfTransactionType] = jss::PermissionedDomainSet;
@@ -102,8 +99,7 @@ objectExists(uint256 const& objID, Env& env)
     Json::Value params;
     params[jss::index] = to_string(objID);
 
-    auto const result =
-        env.rpc("json", "ledger_entry", to_string(params))["result"];
+    auto const result = env.rpc("json", "ledger_entry", to_string(params))["result"];
 
     if ((result["status"] == "error") && (result["error"] == "entryNotFound"))
         return false;
@@ -132,10 +128,9 @@ credentialsFromJson(
         obj = credential[jss::Credential];
         auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access): used only in tests
         auto blob = strUnHex(credentialType.asString()).value();
-        ret.push_back(
-            {human2Acc.at(issuer.asString()),
-             std::string(blob.begin(), blob.end())});
+        ret.push_back({human2Acc.at(issuer.asString()), std::string(blob.begin(), blob.end())});
     }
     return ret;
 }
@@ -166,15 +161,11 @@ getNewDomain(std::shared_ptr<STObject const> const& meta)
         {
             continue;
         }
-        std::ignore =
-            ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
+        std::ignore = ret.parseHex(node["CreatedNode"]["LedgerIndex"].asString());
         break;
     }
 
     return ret;
 }
 
-}  // namespace pdomain
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx::pdomain

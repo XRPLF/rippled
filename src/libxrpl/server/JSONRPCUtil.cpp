@@ -1,33 +1,15 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/server/detail/JSONRPCUtil.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/server/detail/JSONRPCUtil.h>
 
 #include <ctime>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 getHTTPHeaderTimestamp()
@@ -36,30 +18,20 @@ getHTTPHeaderTimestamp()
     //         sense. There's no point in doing all this work if this function
     //         gets called multiple times a second.
     char buffer[96];
-    time_t now;
+    time_t now = 0;
     time(&now);
-    struct tm now_gmt
-    {
-    };
+    struct tm now_gmt{};
 #ifndef _MSC_VER
     gmtime_r(&now, &now_gmt);
 #else
     gmtime_s(&now_gmt, &now);
 #endif
-    strftime(
-        buffer,
-        sizeof(buffer),
-        "Date: %a, %d %b %Y %H:%M:%S +0000\r\n",
-        &now_gmt);
+    strftime(buffer, sizeof(buffer), "Date: %a, %d %b %Y %H:%M:%S +0000\r\n", &now_gmt);
     return std::string(buffer);
 }
 
 void
-HTTPReply(
-    int nStatus,
-    std::string const& content,
-    Json::Output const& output,
-    beast::Journal j)
+HTTPReply(int nStatus, std::string const& content, Json::Output const& output, beast::Journal j)
 {
     JLOG(j.trace()) << "HTTP Reply " << nStatus << " " << content;
 
@@ -97,6 +69,7 @@ HTTPReply(
         return;
     }
 
+    // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
     switch (nStatus)
     {
         case 200:
@@ -158,4 +131,4 @@ HTTPReply(
     output("\r\n");
 }
 
-}  // namespace ripple
+}  // namespace xrpl

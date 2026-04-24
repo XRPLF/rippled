@@ -1,31 +1,37 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2025 Ripple Labs Inc.
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/flags.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 
-#include <test/jtx.h>
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <tuple>
 
-#include <xrpld/app/tx/detail/NFTokenUtils.h>
-
-namespace ripple {
+namespace xrpl {
 
 class NFTokenAuth_test : public beast::unit_test::suite
 {
-    auto
+    static auto
     mintAndOfferNFT(
         test::jtx::Env& env,
         test::jtx::Account const& account,
@@ -33,16 +39,12 @@ class NFTokenAuth_test : public beast::unit_test::suite
         uint32_t xfee = 0u)
     {
         using namespace test::jtx;
-        auto const nftID{
-            token::getNextID(env, account, 0u, tfTransferable, xfee)};
-        env(token::mint(account, 0),
-            token::xferFee(xfee),
-            txflags(tfTransferable));
+        auto const nftID{token::getNextID(env, account, 0u, tfTransferable, xfee)};
+        env(token::mint(account, 0), token::xferFee(xfee), txflags(tfTransferable));
         env.close();
 
         auto const sellIdx = keylet::nftoffer(account, env.seq(account)).key;
-        env(token::createOffer(account, nftID, currency),
-            txflags(tfSellNFToken));
+        env(token::createOffer(account, nftID, currency), txflags(tfSellNFToken));
         env.close();
 
         return std::make_tuple(nftID, sellIdx);
@@ -56,9 +58,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -109,9 +111,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -121,30 +123,24 @@ public:
         auto const [nftID, _] = mintAndOfferNFT(env, A2, drops(1));
 
         // test: check that buyer can't make an offer if they're not authorized.
-        env(token::createOffer(A1, nftID, USD(10)),
-            token::owner(A2),
-            ter(tecUNFUNDED_OFFER));
+        env(token::createOffer(A1, nftID, USD(10)), token::owner(A2), ter(tecUNFUNDED_OFFER));
         env.close();
 
         // Artificially create an unauthorized trustline with balance. Don't
         // close ledger before running the actual tests against this trustline.
         // After ledger is closed, the trustline will not exist.
-        auto const unauthTrustline = [&](OpenView& view,
-                                         beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+        auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
+            auto const sleA1 = std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that buyer can't make an offer even with balance
-            env(token::createOffer(A1, nftID, USD(10)),
-                token::owner(A2),
-                ter(tecNO_AUTH));
+            env(token::createOffer(A1, nftID, USD(10)), token::owner(A2), ter(tecNO_AUTH));
         }
         else
         {
@@ -161,9 +157,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -196,15 +192,13 @@ public:
         // trustline with balance. Don't close ledger before running the actual
         // tests against this trustline. After ledger is closed, the trustline
         // will not exist.
-        auto const unauthTrustline = [&](OpenView& view,
-                                         beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+        auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
+            auto const sleA1 = std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that offer can't be accepted even with balance
@@ -221,9 +215,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -241,15 +235,11 @@ public:
         {
             // test: can't create sell offer if there is no trustline but auth
             // required
-            env(token::createOffer(A2, nftID, USD(10)),
-                txflags(tfSellNFToken),
-                ter(tecNO_LINE));
+            env(token::createOffer(A2, nftID, USD(10)), txflags(tfSellNFToken), ter(tecNO_LINE));
 
             env(trust(A2, limit));
             // test: can't create sell offer if not authorized to hold token
-            env(token::createOffer(A2, nftID, USD(10)),
-                txflags(tfSellNFToken),
-                ter(tecNO_AUTH));
+            env(token::createOffer(A2, nftID, USD(10)), txflags(tfSellNFToken), ter(tecNO_AUTH));
 
             // Authorizing trustline to make an offer creation possible
             env(trust(G1, USD(0), A2, tfSetfAuth));
@@ -300,9 +290,9 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -322,15 +312,13 @@ public:
         env.close();
 
         // Creating an artificial unauth trustline
-        auto const unauthTrustline = [&](OpenView& view,
-                                         beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+        auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
+            auto const sleA1 = std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             env(token::acceptSellOffer(A1, sellIdx), ter(tecNO_AUTH));
@@ -344,10 +332,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -394,8 +382,7 @@ public:
         else
         {
             // Old behavior: broker can receive IOUs without the authorization
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)));
             env.close();
 
             BEAST_EXPECT(env.balance(broker, USD) == USD(1));
@@ -411,10 +398,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -444,15 +431,13 @@ public:
         env(trust(A1, USD(0)));
         env.close();
 
-        auto const unauthTrustline = [&](OpenView& view,
-                                         beast::Journal) -> bool {
-            auto const sleA1 =
-                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+        auto const unauthTrustline = [&](OpenView& view, beast::Journal) -> bool {
+            auto const sleA1 = std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
             sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
             view.rawInsert(sleA1);
             return true;
         };
-        env.app().openLedger().modify(unauthTrustline);
+        env.app().getOpenLedger().modify(unauthTrustline);
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
@@ -473,10 +458,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account broker{"broker"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const broker{"broker"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, broker);
@@ -532,8 +517,7 @@ public:
         else
         {
             // Old behavior: broker can receive IOUs without the authorization
-            env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(USD(1)));
             env.close();
 
             BEAST_EXPECT(env.balance(A2, USD) == USD(10));
@@ -548,10 +532,10 @@ public:
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account minter{"minter"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const minter{"minter"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, minter, A1, A2);
@@ -572,8 +556,7 @@ public:
 
         // We authorized A1 and A2, but not the minter.
         // Now mint NFT
-        auto const [nftID, minterSellIdx] =
-            mintAndOfferNFT(env, minter, drops(1), 1);
+        auto const [nftID, minterSellIdx] = mintAndOfferNFT(env, minter, drops(1), 1);
         env(token::acceptSellOffer(A1, minterSellIdx));
 
         uint256 const sellIdx = keylet::nftoffer(A1, env.seq(A1)).key;
@@ -601,8 +584,7 @@ public:
         using namespace test::jtx;
         static FeatureBitset const all{testable_amendments()};
 
-        static std::array const features = {
-            all - fixEnforceNFTokenTrustlineV2, all};
+        static std::array const features = {all - fixEnforceNFTokenTrustlineV2, all};
 
         for (auto const feature : features)
         {
@@ -619,6 +601,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, app, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAuth, app, xrpl, 2);
 
-}  // namespace ripple
+}  // namespace xrpl

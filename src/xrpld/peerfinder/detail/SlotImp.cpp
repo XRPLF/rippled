@@ -1,32 +1,21 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpld/peerfinder/detail/SlotImp.h>
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
-#include <xrpld/peerfinder/detail/SlotImp.h>
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace ripple {
-namespace PeerFinder {
+#include <xrpl/beast/container/detail/aged_unordered_container.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+
+#include <cstdint>
+#include <utility>
+
+namespace xrpl::PeerFinder {
 
 SlotImp::SlotImp(
     beast::IP::Endpoint const& local_endpoint,
-    beast::IP::Endpoint const& remote_endpoint,
+    beast::IP::Endpoint remote_endpoint,
     bool fixed,
     clock_type& clock)
     : recent(clock)
@@ -34,7 +23,7 @@ SlotImp::SlotImp(
     , m_fixed(fixed)
     , m_reserved(false)
     , m_state(accept)
-    , m_remote_endpoint(remote_endpoint)
+    , m_remote_endpoint(std::move(remote_endpoint))
     , m_local_endpoint(local_endpoint)
     , m_listening_port(unknownPort)
     , checked(false)
@@ -43,16 +32,13 @@ SlotImp::SlotImp(
 {
 }
 
-SlotImp::SlotImp(
-    beast::IP::Endpoint const& remote_endpoint,
-    bool fixed,
-    clock_type& clock)
+SlotImp::SlotImp(beast::IP::Endpoint remote_endpoint, bool fixed, clock_type& clock)
     : recent(clock)
     , m_inbound(false)
     , m_fixed(fixed)
     , m_reserved(false)
     , m_state(connect)
-    , m_remote_endpoint(remote_endpoint)
+    , m_remote_endpoint(std::move(remote_endpoint))
     , m_listening_port(unknownPort)
     , checked(true)
     , canAccept(true)
@@ -64,31 +50,29 @@ void
 SlotImp::state(State state_)
 {
     // Must go through activate() to set active state
-    XRPL_ASSERT(
-        state_ != active,
-        "ripple::PeerFinder::SlotImp::state : input state is not active");
+    XRPL_ASSERT(state_ != active, "xrpl::PeerFinder::SlotImp::state : input state is not active");
 
     // The state must be different
     XRPL_ASSERT(
         state_ != m_state,
-        "ripple::PeerFinder::SlotImp::state : input state is different from "
+        "xrpl::PeerFinder::SlotImp::state : input state is different from "
         "current");
 
     // You can't transition into the initial states
     XRPL_ASSERT(
         state_ != accept && state_ != connect,
-        "ripple::PeerFinder::SlotImp::state : input state is not an initial");
+        "xrpl::PeerFinder::SlotImp::state : input state is not an initial");
 
     // Can only become connected from outbound connect state
     XRPL_ASSERT(
         state_ != connected || (!m_inbound && m_state == connect),
-        "ripple::PeerFinder::SlotImp::state : input state is not connected an "
+        "xrpl::PeerFinder::SlotImp::state : input state is not connected an "
         "invalid state");
 
     // Can't gracefully close on an outbound connection attempt
     XRPL_ASSERT(
         state_ != closing || m_state != connect,
-        "ripple::PeerFinder::SlotImp::state : input state is not closing an "
+        "xrpl::PeerFinder::SlotImp::state : input state is not closing an "
         "invalid state");
 
     m_state = state_;
@@ -100,7 +84,7 @@ SlotImp::activate(clock_type::time_point const& now)
     // Can only become active from the accept or connected state
     XRPL_ASSERT(
         m_state == accept || m_state == connected,
-        "ripple::PeerFinder::SlotImp::activate : valid state");
+        "xrpl::PeerFinder::SlotImp::activate : valid state");
 
     m_state = active;
     whenAcceptEndpoints = now;
@@ -149,5 +133,4 @@ SlotImp::recent_t::expire()
     beast::expire(cache, Tuning::liveCacheSecondsToLive);
 }
 
-}  // namespace PeerFinder
-}  // namespace ripple
+}  // namespace xrpl::PeerFinder

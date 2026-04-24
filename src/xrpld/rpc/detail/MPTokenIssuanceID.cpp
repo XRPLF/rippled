@@ -1,27 +1,22 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
-namespace ripple {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
 
-namespace RPC {
+#include <memory>
+#include <optional>
+
+namespace xrpl::RPC {
 
 bool
 canHaveMPTokenIssuanceID(
@@ -36,13 +31,13 @@ canHaveMPTokenIssuanceID(
         return false;
 
     // if the transaction failed nothing could have been delivered.
-    if (transactionMeta.getResultTER() != tesSUCCESS)
+    if (!isTesSuccess(transactionMeta.getResultTER()))
         return false;
 
     return true;
 }
 
-std::optional<uint192>
+std::optional<MPTID>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
@@ -51,10 +46,8 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
             node.getFName() != sfCreatedNode)
             continue;
 
-        auto const& mptNode =
-            node.peekAtField(sfNewFields).downcast<STObject>();
-        return makeMptID(
-            mptNode.getFieldU32(sfSequence), mptNode.getAccountID(sfIssuer));
+        auto const& mptNode = node.peekAtField(sfNewFields).downcast<STObject>();
+        return makeMptID(mptNode.getFieldU32(sfSequence), mptNode.getAccountID(sfIssuer));
     }
 
     return std::nullopt;
@@ -69,10 +62,9 @@ insertMPTokenIssuanceID(
     if (!canHaveMPTokenIssuanceID(transaction, transactionMeta))
         return;
 
-    std::optional<uint192> result = getIDFromCreatedIssuance(transactionMeta);
+    std::optional<MPTID> result = getIDFromCreatedIssuance(transactionMeta);
     if (result)
         response[jss::mpt_issuance_id] = to_string(result.value());
 }
 
-}  // namespace RPC
-}  // namespace ripple
+}  // namespace xrpl::RPC

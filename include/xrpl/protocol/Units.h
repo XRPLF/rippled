@@ -1,23 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-#ifndef PROTOCOL_UNITS_H_INCLUDED
-#define PROTOCOL_UNITS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -31,7 +12,7 @@
 #include <limits>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 namespace unit {
 
@@ -40,7 +21,7 @@ namespace unit {
 struct dropTag;
 /** "fee levels" are used by the transaction queue to compare the relative
     cost of transactions that require different levels of effort to process.
-    See also: src/ripple/app/misc/FeeEscalation.md#fee-level */
+    See also: src/xrpld/app/misc/FeeEscalation.md#fee-level */
 struct feelevelTag;
 /** unitless values are plain scalars wrapped in a ValueUnit. They are
     used for calculations in this header. */
@@ -73,8 +54,8 @@ concept Usable = Valid<T> &&
      std::is_same_v<typename T::unit_type, TenthBipsTag>);
 
 template <class Other, class VU>
-concept Compatible = Valid<VU> && std::is_arithmetic_v<Other> &&
-    std::is_arithmetic_v<typename VU::value_type> &&
+concept Compatible =
+    Valid<VU> && std::is_arithmetic_v<Other> && std::is_arithmetic_v<typename VU::value_type> &&
     std::is_convertible_v<Other, typename VU::value_type>;
 
 template <class T>
@@ -239,8 +220,7 @@ public:
     ValueUnit
     operator-() const
     {
-        static_assert(
-            std::is_signed_v<T>, "- operator illegal on unsigned value types");
+        static_assert(std::is_signed_v<T>, "- operator illegal on unsigned value types");
         return ValueUnit{-value_};
     }
 
@@ -287,7 +267,9 @@ public:
     constexpr int
     signum() const noexcept
     {
-        return (value_ < 0) ? -1 : (value_ ? 1 : 0);
+        if (value_ < 0)
+            return -1;
+        return value_ ? 1 : 0;
     }
 
     /** Returns the number of drops */
@@ -315,10 +297,8 @@ public:
     {
         if constexpr (std::is_integral_v<value_type>)
         {
-            using jsontype = std::conditional_t<
-                std::is_signed_v<value_type>,
-                Json::Int,
-                Json::UInt>;
+            using jsontype =
+                std::conditional_t<std::is_signed_v<value_type>, Json::Int, Json::UInt>;
 
             constexpr auto min = std::numeric_limits<jsontype>::min();
             constexpr auto max = std::numeric_limits<jsontype>::max();
@@ -369,8 +349,8 @@ to_string(ValueUnit<UnitTag, T> const& amount)
 }
 
 template <class Source>
-concept muldivSource = Valid<Source> &&
-    std::is_convertible_v<typename Source::value_type, std::uint64_t>;
+concept muldivSource =
+    Valid<Source> && std::is_convertible_v<typename Source::value_type, std::uint64_t>;
 
 template <class Dest>
 concept muldivDest = muldivSource<Dest> &&  // Dest is also a source
@@ -405,12 +385,9 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
-        XRPL_ASSERT(
-            value.value() >= 0, "ripple::unit::mulDivU : minimum value input");
-        XRPL_ASSERT(
-            mul.value() >= 0, "ripple::unit::mulDivU : minimum mul input");
-        XRPL_ASSERT(
-            div.value() > 0, "ripple::unit::mulDivU : minimum div input");
+        XRPL_ASSERT(value.value() >= 0, "xrpl::unit::mulDivU : minimum value input");
+        XRPL_ASSERT(mul.value() >= 0, "xrpl::unit::mulDivU : minimum mul input");
+        XRPL_ASSERT(div.value() > 0, "xrpl::unit::mulDivU : minimum div input");
         return std::nullopt;
     }
 
@@ -468,10 +445,7 @@ mulDiv(Source1 value, Dest mul, Source2 div)
     return unit::mulDivU(value, mul, div);
 }
 
-template <
-    class Source1,
-    class Source2,
-    unit::muldivCommutable<Source1, Source2> Dest>
+template <class Source1, class Source2, unit::muldivCommutable<Source1, Source2> Dest>
 std::optional<Dest>
 mulDiv(Dest value, Source1 mul, Source2 div)
 {
@@ -550,6 +524,4 @@ unsafe_cast(Src s) noexcept
     return Dest{unsafe_cast<typename Dest::value_type>(s)};
 }
 
-}  // namespace ripple
-
-#endif  // PROTOCOL_UNITS_H_INCLUDED
+}  // namespace xrpl

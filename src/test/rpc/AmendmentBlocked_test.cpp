@@ -1,31 +1,27 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sig.h>
 
-#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
-namespace ripple {
+#include <memory>
+
+namespace xrpl {
 
 class AmendmentBlocked_test : public beast::unit_test::suite
 {
@@ -79,8 +75,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         pf_req[jss::subcommand] = "create";
         pf_req[jss::source_account] = alice.human();
         pf_req[jss::destination_account] = bob.human();
-        pf_req[jss::destination_amount] =
-            bob["USD"](20).value().getJson(JsonOptions::none);
+        pf_req[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::none);
         jr = wsc->invoke("path_find", pf_req)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
@@ -92,9 +87,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         Serializer s;
         jt.stx->add(s);
         jr = env.rpc("submit", strHex(s.slice()))[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::engine_result) &&
-            jr[jss::engine_result] == "tesSUCCESS");
+        BEAST_EXPECT(jr.isMember(jss::engine_result) && jr[jss::engine_result] == "tesSUCCESS");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
@@ -119,11 +112,8 @@ class AmendmentBlocked_test : public beast::unit_test::suite
 
         Json::Value ms_req;
         ms_req[jss::tx_json] = jr[jss::tx_json];
-        jr = env.rpc(
-            "json", "submit_multisigned", to_string(ms_req))[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::engine_result) &&
-            jr[jss::engine_result] == "tesSUCCESS");
+        jr = env.rpc("json", "submit_multisigned", to_string(ms_req))[jss::result];
+        BEAST_EXPECT(jr.isMember(jss::engine_result) && jr[jss::engine_result] == "tesSUCCESS");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // set up an amendment warning. Nothing changes
@@ -150,8 +140,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         pf_req[jss::subcommand] = "create";
         pf_req[jss::source_account] = alice.human();
         pf_req[jss::destination_account] = bob.human();
-        pf_req[jss::destination_amount] =
-            bob["USD"](20).value().getJson(JsonOptions::none);
+        pf_req[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::none);
         jr = wsc->invoke("path_find", pf_req)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
@@ -163,9 +152,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         s.erase();
         jt.stx->add(s);
         jr = env.rpc("submit", strHex(s.slice()))[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::engine_result) &&
-            jr[jss::engine_result] == "tesSUCCESS");
+        BEAST_EXPECT(jr.isMember(jss::engine_result) && jr[jss::engine_result] == "tesSUCCESS");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
@@ -187,11 +174,8 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         ms_req[jss::tx_json] = jr[jss::tx_json];
-        jr = env.rpc(
-            "json", "submit_multisigned", to_string(ms_req))[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::engine_result) &&
-            jr[jss::engine_result] == "tesSUCCESS");
+        jr = env.rpc("json", "submit_multisigned", to_string(ms_req))[jss::result];
+        BEAST_EXPECT(jr.isMember(jss::engine_result) && jr[jss::engine_result] == "tesSUCCESS");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // make the network amendment blocked...now all the same
@@ -201,36 +185,31 @@ class AmendmentBlocked_test : public beast::unit_test::suite
 
         // ledger_accept
         jr = env.rpc("ledger_accept")[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // ledger_current
         jr = env.rpc("ledger_current")[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // owner_info
         jr = env.rpc("owner_info", alice.human())[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // path_find
         jr = wsc->invoke("path_find", pf_req)[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit
         jr = env.rpc("submit", strHex(s.slice()))[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
+        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(jr[jss::status] == "error");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
@@ -240,10 +219,8 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         jr = env.rpc("json", "sign_for", to_string(sign_for))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");
         ms_req[jss::tx_json] = jr[jss::tx_json];
-        jr = env.rpc(
-            "json", "submit_multisigned", to_string(ms_req))[jss::result];
-        BEAST_EXPECT(
-            jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
+        jr = env.rpc("json", "submit_multisigned", to_string(ms_req))[jss::result];
+        BEAST_EXPECT(jr.isMember(jss::error) && jr[jss::error] == "amendmentBlocked");
         BEAST_EXPECT(!jr.isMember(jss::warnings));
     }
 
@@ -255,6 +232,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AmendmentBlocked, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(AmendmentBlocked, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

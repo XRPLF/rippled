@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
+#pragma once
 
 #include <xrpld/consensus/ConsensusParms.h>
 
@@ -28,7 +8,9 @@
 
 #include <boost/container/flat_map.hpp>
 
-namespace ripple {
+#include <utility>
+
+namespace xrpl {
 
 /** A transaction discovered to be in dispute during consensus.
 
@@ -58,12 +40,8 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(
-        Tx_t const& tx,
-        bool ourVote,
-        std::size_t numPeers,
-        beast::Journal j)
-        : yays_(0), nays_(0), ourVote_(ourVote), tx_(tx), j_(j)
+    DisputedTx(Tx_t tx, bool ourVote, std::size_t numPeers, beast::Journal j)
+        : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
     }
@@ -121,15 +99,16 @@ public:
 
         // Compute the percentage of nodes voting 'yes' (possibly including us)
         int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
-        int total = nays_ + yays_ + (proposing ? 1 : 0);
-        if (!total)
+        int const total = nays_ + yays_ + (proposing ? 1 : 0);
+        if (total == 0)
+        {
             // There are no votes, so we know nothing
             return false;
+        }
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
-        bool const stalled =
-            weight > p.minCONSENSUS_PCT || weight < (100 - p.minCONSENSUS_PCT);
+        bool const stalled = weight > p.minCONSENSUS_PCT || weight < (100 - p.minCONSENSUS_PCT);
 
         if (stalled)
         {
@@ -138,9 +117,8 @@ public:
             std::stringstream s;
             s << "Transaction " << ID() << " is stalled. We have been voting "
               << (getOurVote() ? "YES" : "NO") << " for " << currentVoteCounter_
-              << " rounds. Peers have not changed their votes in "
-              << peersUnchanged << " rounds. The transaction has " << weight
-              << "% support. ";
+              << " rounds. Peers have not changed their votes in " << peersUnchanged
+              << " rounds. The transaction has " << weight << "% support. ";
             JLOG(j_.error()) << s.str();
             CLOG(clog) << s.str();
         }
@@ -199,8 +177,8 @@ public:
     getJson() const;
 
 private:
-    int yays_;      //< Number of yes votes
-    int nays_;      //< Number of no votes
+    int yays_{0};   //< Number of yes votes
+    int nays_{0};   //< Number of no votes
     bool ourVote_;  //< Our vote (true is yes)
     Tx_t tx_;       //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
@@ -236,7 +214,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         return true;
     }
     // changes vote to yes
-    else if (votesYes && !it->second)
+    if (votesYes && !it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
         --nays_;
@@ -245,7 +223,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         return true;
     }
     // changes vote to no
-    else if (!votesYes && it->second)
+    if (!votesYes && it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
         ++nays_;
@@ -266,9 +244,13 @@ DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)
     if (it != votes_.end())
     {
         if (it->second)
+        {
             --yays_;
+        }
         else
+        {
             --nays_;
+        }
 
         votes_.erase(it);
     }
@@ -276,10 +258,7 @@ DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)
 
 template <class Tx_t, class NodeID_t>
 bool
-DisputedTx<Tx_t, NodeID_t>::updateVote(
-    int percentTime,
-    bool proposing,
-    ConsensusParms const& p)
+DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, ConsensusParms const& p)
 {
     if (ourVote_ && (nays_ == 0))
         return false;
@@ -287,8 +266,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     if (!ourVote_ && (yays_ == 0))
         return false;
 
-    bool newPosition;
-    int weight;
+    bool newPosition = false;
+    int weight = 0;
 
     // When proposing, to prevent avalanche stalls, we increase the needed
     // weight slightly over time. We also need to ensure that the consensus has
@@ -296,8 +275,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     // to the next.
     // Proposing or not, we need to keep track of which state we've reached so
     // we can determine if the vote has stalled.
-    auto const [requiredPct, newState] = getNeededWeight(
-        p, avalancheState_, percentTime, ++avalancheCounter_, p.avMIN_ROUNDS);
+    auto const [requiredPct, newState] =
+        getNeededWeight(p, avalancheState_, percentTime, ++avalancheCounter_, p.avMIN_ROUNDS);
     if (newState)
     {
         avalancheState_ = *newState;
@@ -321,9 +300,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     if (newPosition == ourVote_)
     {
         ++currentVoteCounter_;
-        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on "
-                        << tx_.id() << " : weight " << weight << ", percent "
-                        << percentTime
+        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on " << tx_.id()
+                        << " : weight " << weight << ", percent " << percentTime
                         << ", round(s) with this vote: " << currentVoteCounter_;
         JLOG(j_.debug()) << Json::Compact{getJson()};
         return false;
@@ -331,8 +309,7 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
 
     currentVoteCounter_ = 0;
     ourVote_ = newPosition;
-    JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
-                     << tx_.id();
+    JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on " << tx_.id();
     JLOG(j_.debug()) << Json::Compact{getJson()};
     return true;
 }
@@ -351,15 +328,13 @@ DisputedTx<Tx_t, NodeID_t>::getJson() const
 
     if (!votes_.empty())
     {
-        Json::Value votesj(Json::objectValue);
+        Json::Value votes(Json::objectValue);
         for (auto const& [nodeId, vote] : votes_)
-            votesj[to_string(nodeId)] = vote;
-        ret["votes"] = std::move(votesj);
+            votes[to_string(nodeId)] = vote;
+        ret["votes"] = std::move(votes);
     }
 
     return ret;
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

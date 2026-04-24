@@ -1,17 +1,12 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
-#define BEAST_UNIT_TEST_GLOBAL_SUITES_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/suite_list.h>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 namespace detail {
 
@@ -46,7 +41,4 @@ global_suites()
     return detail::global_suites();
 }
 
-}  // namespace unit_test
-}  // namespace beast
-
-#endif
+}  // namespace beast::unit_test

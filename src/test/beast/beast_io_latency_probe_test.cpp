@@ -1,46 +1,31 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/test/yield_to.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/executor_work_guard.hpp>  // IWYU pragma: keep
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/spawn.hpp>
+#include <boost/system/detail/error_code.hpp>
 
-#include <algorithm>
-#include <mutex>
-#include <numeric>
-#include <optional>
+#include <chrono>
+#include <condition_variable>  // IWYU pragma: keep
+#include <cstddef>
+#include <functional>
+#include <mutex>     // IWYU pragma: keep
+#include <optional>  // IWYU pragma: keep
+#include <stdexcept>
+#include <string>
+#include <thread>  // IWYU pragma: keep
 #include <vector>
 
 using namespace std::chrono_literals;
 
-class io_latency_probe_test : public beast::unit_test::suite,
-                              public beast::test::enable_yield_to
+class io_latency_probe_test : public beast::unit_test::suite, public beast::test::enable_yield_to
 {
-    using MyTimer =
-        boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
+    using MyTimer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
 
-#ifdef RIPPLED_RUNNING_IN_CI
+#ifdef XRPL_RUNNING_IN_CI
     /**
      * @brief attempt to measure inaccuracy of asio waitable timers
      *
@@ -48,9 +33,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
      * timer inaccuracy impacts the io_probe tests below.
      *
      */
-    template <
-        class Clock,
-        class MeasureClock = std::chrono::high_resolution_clock>
+    template <class Clock, class MeasureClock = std::chrono::high_resolution_clock>
     struct measure_asio_timers
     {
         using duration = typename Clock::duration;
@@ -62,8 +45,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         {
             using namespace std::chrono;
             boost::asio::io_context ios;
-            std::optional<boost::asio::executor_work_guard<
-                boost::asio::io_context::executor_type>>
+            std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>>
                 work{boost::asio::make_work_guard(ios)};
             std::thread worker{[&] { ios.run(); }};
             boost::asio::basic_waitable_timer<Clock> timer{ios};
@@ -74,7 +56,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
             bool done = false;
             boost::system::error_code wait_err;
 
-            while (--num_samples)
+            while (--num_samples > 0u)
             {
                 auto const start{MeasureClock::now()};
                 done = false;
@@ -84,7 +66,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
                         wait_err = ec;
                     auto const end{MeasureClock::now()};
                     elapsed_times_.emplace_back(end - start);
-                    std::lock_guard lk{mtx};
+                    std::lock_guard const lk{mtx};
                     done = true;
                     cv.notify_one();
                 });
@@ -103,8 +85,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
             double sum = {0};
             for (auto const& v : elapsed_times_)
             {
-                sum += static_cast<double>(
-                    std::chrono::duration_cast<D>(v).count());
+                sum += static_cast<double>(std::chrono::duration_cast<D>(v).count());
             }
             return sum / elapsed_times_.size();
         }
@@ -114,8 +95,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         getMax()
         {
             return std::chrono::duration_cast<D>(
-                       *std::max_element(
-                           elapsed_times_.begin(), elapsed_times_.end()))
+                       *std::max_element(elapsed_times_.begin(), elapsed_times_.end()))
                 .count();
         }
 
@@ -124,8 +104,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         getMin()
         {
             return std::chrono::duration_cast<D>(
-                       *std::min_element(
-                           elapsed_times_.begin(), elapsed_times_.end()))
+                       *std::min_element(elapsed_times_.begin(), elapsed_times_.end()))
                 .count();
         }
     };
@@ -136,9 +115,7 @@ class io_latency_probe_test : public beast::unit_test::suite,
         beast::io_latency_probe<std::chrono::steady_clock> probe_;
         std::vector<std::chrono::steady_clock::duration> durations_;
 
-        test_sampler(
-            std::chrono::milliseconds interval,
-            boost::asio::io_context& ios)
+        test_sampler(std::chrono::milliseconds interval, boost::asio::io_context& ios)
             : probe_(interval, ios)
         {
         }
@@ -186,19 +163,17 @@ class io_latency_probe_test : public beast::unit_test::suite,
         auto interval = 99ms;
         auto probe_duration = 1s;
 
-        size_t expected_probe_count_max = (probe_duration / interval);
+        size_t const expected_probe_count_max = (probe_duration / interval);
+        // NOLINTNEXTLINE(misc-const-correctness)
         size_t expected_probe_count_min = expected_probe_count_max;
-#ifdef RIPPLED_RUNNING_IN_CI
+#ifdef XRPL_RUNNING_IN_CI
         // adjust min expected based on measurements
         // if running in CI/VM environment
         measure_asio_timers<steady_clock> tt{interval};
-        log << "measured mean for timers: " << tt.getMean<milliseconds>()
-            << "ms\n";
-        log << "measured max for timers: " << tt.getMax<milliseconds>()
-            << "ms\n";
+        log << "measured mean for timers: " << tt.getMean<milliseconds>() << "ms\n";
+        log << "measured max for timers: " << tt.getMax<milliseconds>() << "ms\n";
         expected_probe_count_min =
-            static_cast<size_t>(
-                duration_cast<milliseconds>(probe_duration).count()) /
+            static_cast<size_t>(duration_cast<milliseconds>(probe_duration).count()) /
             static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
         test_sampler io_probe{interval, get_io_context()};

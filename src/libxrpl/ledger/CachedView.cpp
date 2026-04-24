@@ -1,27 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/ledger/CachedView.h>
 
-namespace ripple {
-namespace detail {
+#include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/TaggedCache.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <memory>
+#include <mutex>
+#include <optional>
+
+namespace xrpl::detail {
 
 bool
 CachedViewImpl::exists(Keylet const& k) const
@@ -40,7 +30,7 @@ CachedViewImpl::read(Keylet const& k) const
 
     auto const digest = [&]() -> std::optional<uint256> {
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             auto const iter = map_.find(k.key);
             if (iter != map_.end())
             {
@@ -57,22 +47,26 @@ CachedViewImpl::read(Keylet const& k) const
         return base_.read(k);
     });
     // If the sle is null, then a failure must have occurred in base_.read()
-    XRPL_ASSERT(
-        sle || baseRead,
-        "ripple::CachedView::read : null SLE result from base");
+    XRPL_ASSERT(sle || baseRead, "xrpl::CachedView::read : null SLE result from base");
     if (cacheHit && baseRead)
+    {
         hitsexpired.increment();
+    }
     else if (cacheHit)
+    {
         hits.increment();
+    }
     else
+    {
         misses.increment();
+    }
 
     if (!cacheHit)
     {
         // Avoid acquiring this lock unless necessary. It is only necessary if
         // the key was not found in the map_. The lock is needed to add the key
         // and digest.
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         map_.emplace(k.key, *digest);
     }
     if (!sle || !k.check(*sle))
@@ -80,5 +74,4 @@ CachedViewImpl::read(Keylet const& k) const
     return sle;
 }
 
-}  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl::detail

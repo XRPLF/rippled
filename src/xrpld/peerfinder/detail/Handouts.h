@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_HANDOUTS_H_INCLUDED
-#define RIPPLE_PEERFINDER_HANDOUTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
@@ -26,8 +6,9 @@
 #include <xrpl/beast/container/aged_set.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
-namespace ripple {
-namespace PeerFinder {
+#include <utility>
+
+namespace xrpl::PeerFinder {
 
 namespace detail {
 
@@ -42,9 +23,7 @@ template <class Target, class HopContainer>
 std::size_t
 handout_one(Target& t, HopContainer& h)
 {
-    XRPL_ASSERT(
-        !t.full(),
-        "ripple::PeerFinder::detail::handout_one : target is not full");
+    XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handout_one : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;
@@ -65,11 +44,7 @@ handout_one(Target& t, HopContainer& h)
 */
 template <class TargetFwdIter, class SeqFwdIter>
 void
-handout(
-    TargetFwdIter first,
-    TargetFwdIter last,
-    SeqFwdIter seq_first,
-    SeqFwdIter seq_last)
+handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seq_first, SeqFwdIter seq_last)
 {
     for (;;)
     {
@@ -104,7 +79,7 @@ class RedirectHandouts
 {
 public:
     template <class = void>
-    explicit RedirectHandouts(SlotImp::ptr const& slot);
+    explicit RedirectHandouts(SlotImp::ptr slot);
 
     template <class = void>
     bool
@@ -140,7 +115,7 @@ private:
 };
 
 template <class>
-RedirectHandouts::RedirectHandouts(SlotImp::ptr const& slot) : slot_(slot)
+RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
     list_.reserve(Tuning::redirectEndpointCount);
 }
@@ -188,7 +163,7 @@ class SlotHandouts
 {
 public:
     template <class = void>
-    explicit SlotHandouts(SlotImp::ptr const& slot);
+    explicit SlotHandouts(SlotImp::ptr slot);
 
     template <class = void>
     bool
@@ -224,7 +199,7 @@ private:
 };
 
 template <class>
-SlotHandouts::SlotHandouts(SlotImp::ptr const& slot) : slot_(slot)
+SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 {
     list_.reserve(Tuning::numberOfEndpoints);
 }
@@ -336,13 +311,10 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
         return false;
 
     // Make sure the address isn't already in our list
-    if (std::any_of(
-            m_list.begin(),
-            m_list.end(),
-            [&endpoint](beast::IP::Endpoint const& other) {
-                // Ignore port for security reasons
-                return other.address() == endpoint.address();
-            }))
+    if (std::any_of(m_list.begin(), m_list.end(), [&endpoint](beast::IP::Endpoint const& other) {
+            // Ignore port for security reasons
+            return other.address() == endpoint.address();
+        }))
     {
         return false;
     }
@@ -358,7 +330,4 @@ ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
     return true;
 }
 
-}  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::PeerFinder

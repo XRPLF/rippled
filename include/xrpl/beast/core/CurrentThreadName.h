@@ -1,28 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
+// Portions of this file are from JUCE (http://www.juce.com).
+// Copyright (c) 2013 - Raw Material Software Ltd.
+// Please visit http://www.juce.com
 
-    Portions of this file are from JUCE.
-    Copyright (c) 2013 - Raw Material Software Ltd.
-    Please visit http://www.juce.com
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED
-#define BEAST_CORE_CURRENT_THREAD_NAME_H_INCLUDED
+#include <boost/predef.h>
 
 #include <string>
 #include <string_view>
@@ -34,6 +16,29 @@ namespace beast {
 */
 void
 setCurrentThreadName(std::string_view newThreadName);
+
+#if BOOST_OS_LINUX
+
+// On Linux, thread names are limited to 16 bytes including the null terminator.
+// Maximum number of characters is therefore 15.
+constexpr std::size_t maxThreadNameLength = 15;
+
+/** Sets the name of the caller thread with compile-time size checking.
+    @tparam N The size of the string literal including null terminator
+    @param newThreadName A string literal to set as the thread name
+
+    This template overload enforces that thread names are at most 16 characters
+    (including null terminator) at compile time, matching Linux's limit.
+*/
+template <std::size_t N>
+void
+setCurrentThreadName(char const (&newThreadName)[N])
+{
+    static_assert(N <= maxThreadNameLength + 1, "Thread name cannot exceed 15 characters");
+
+    setCurrentThreadName(std::string_view(newThreadName, N - 1));
+}
+#endif
 
 /** Returns the name of the caller thread.
 
@@ -47,5 +52,3 @@ std::string
 getCurrentThreadName();
 
 }  // namespace beast
-
-#endif

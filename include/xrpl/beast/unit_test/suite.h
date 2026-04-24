@@ -1,12 +1,8 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_SUITE_HPP
-#define BEAST_UNIT_TEST_SUITE_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/runner.h>
 
@@ -18,8 +14,7 @@
 #include <sstream>
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 namespace detail {
 
@@ -40,7 +35,7 @@ make_reason(String const& reason, char const* file, int line)
 
 }  // namespace detail
 
-class thread;
+class Thread;
 
 enum abort_t { no_abort_on_fail, abort_on_fail };
 
@@ -79,7 +74,7 @@ private:
         {
         }
 
-        ~log_buf()
+        ~log_buf() override
         {
             sync();
         }
@@ -104,8 +99,7 @@ private:
         log_buf<CharT, Traits, Allocator> buf_;
 
     public:
-        explicit log_os(suite& self)
-            : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
+        explicit log_os(suite& self) : std::basic_ostream<CharT, Traits>(&buf_), buf_(self)
         {
         }
     };
@@ -244,11 +238,7 @@ public:
 
     template <class Condition, class String>
     bool
-    expect(
-        Condition const& shouldBeTrue,
-        String const& reason,
-        char const* file,
-        int line);
+    expect(Condition const& shouldBeTrue, String const& reason, char const* file, int line);
     /** @} */
 
     //
@@ -304,12 +294,12 @@ public:
     }
 
 private:
-    friend class thread;
+    friend class Thread;
 
     static suite**
     p_this_suite()
     {
-        static suite* pts = nullptr;
+        static suite* pts = nullptr;  // NOLINT(misc-const-correctness)
         return &pts;
     }
 
@@ -318,7 +308,7 @@ private:
     run() = 0;
 
     void
-    propagate_abort();
+    propagate_abort() const;
 
     template <class = void>
     void
@@ -352,8 +342,7 @@ public:
     }
 
     template <class T>
-    scoped_testcase(suite& self, std::stringstream& ss, T const& t)
-        : suite_(self), ss_(ss)
+    scoped_testcase(suite& self, std::stringstream& ss, T const& t) : suite_(self), ss_(ss)
     {
         ss_.clear();
         ss_.str({});
@@ -426,11 +415,7 @@ suite::expect(Condition const& shouldBeTrue, String const& reason)
 
 template <class Condition, class String>
 bool
-suite::expect(
-    Condition const& shouldBeTrue,
-    String const& reason,
-    char const* file,
-    int line)
+suite::expect(Condition const& shouldBeTrue, String const& reason, char const* file, int line)
 {
     if (shouldBeTrue)
     {
@@ -500,9 +485,13 @@ suite::unexpected(Condition shouldBeFalse, String const& reason)
 {
     bool const b = static_cast<bool>(shouldBeFalse);
     if (!b)
+    {
         pass();
+    }
     else
+    {
         fail(reason);
+    }
     return !b;
 }
 
@@ -536,7 +525,7 @@ suite::fail(String const& reason, char const* file, int line)
 }
 
 inline void
-suite::propagate_abort()
+suite::propagate_abort() const
 {
     if (abort_ && aborted_)
         BOOST_THROW_EXCEPTION(abort_exception());
@@ -552,7 +541,7 @@ suite::run(runner& r)
     {
         run();
     }
-    catch (abort_exception const&)
+    catch (abort_exception const&)  // NOLINT(bugprone-empty-catch)
     {
         // ends the suite
     }
@@ -583,18 +572,15 @@ suite::run(runner& r)
     ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
 #endif
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test
 
 //------------------------------------------------------------------------------
 
 // detail:
 // This inserts the suite with the given manual flag
-#define BEAST_DEFINE_TESTSUITE_INSERT(                          \
-    Class, Module, Library, manual, priority)                   \
-    static beast::unit_test::detail::insert_suite<Class##_test> \
-        Library##Module##Class##_test_instance(                 \
-            #Class, #Module, #Library, manual, priority)
+#define BEAST_DEFINE_TESTSUITE_INSERT(Class, Module, Library, manual, priority) \
+    static beast::unit_test::detail::insert_suite<Class##_test>                 \
+        Library##Module##Class##_test_instance(#Class, #Module, #Library, manual, priority)
 
 //------------------------------------------------------------------------------
 
@@ -662,5 +648,3 @@ suite::run(runner& r)
 #endif
 
 //------------------------------------------------------------------------------
-
-#endif

@@ -1,32 +1,27 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2016 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/flags.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
-#include <xrpld/rpc/detail/RPCHelpers.h>
-
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
+#include <string>
 
-namespace test {
+namespace xrpl::test {
 
 class NoRipple_test : public beast::unit_test::suite
 {
@@ -54,18 +49,13 @@ public:
         for (auto SetOrClear : {true, false})
         {
             // Create a trust line with no-ripple flag setting
-            env(trust(
-                gw,
-                USD(100),
-                alice,
-                SetOrClear ? tfSetNoRipple : tfClearNoRipple));
+            env(trust(gw, USD(100), alice, SetOrClear ? tfSetNoRipple : tfClearNoRipple));
             env.close();
 
             // Check no-ripple flag on sender 'gateway'
-            Json::Value lines{
-                env.rpc("json", "account_lines", to_string(account_gw))};
-            auto const& gline0 = lines[jss::result][jss::lines][0u];
-            BEAST_EXPECT(gline0[jss::no_ripple].asBool() == SetOrClear);
+            Json::Value lines{env.rpc("json", "account_lines", to_string(account_gw))};
+            auto const& gwLine0 = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(gwLine0[jss::no_ripple].asBool() == SetOrClear);
 
             // Check no-ripple peer flag on destination 'alice'
             lines = env.rpc("json", "account_lines", to_string(account_alice));
@@ -117,8 +107,7 @@ public:
             return dest_amt;
         }();
 
-        auto const resp =
-            env.rpc("json", "ripple_path_find", to_string(params));
+        auto const resp = env.rpc("json", "ripple_path_find", to_string(params));
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 1);
 
         auto getAccountLines = [&env](Account const& acct) {
@@ -188,8 +177,7 @@ public:
             return dest_amt;
         }();
 
-        Json::Value const resp{
-            env.rpc("json", "ripple_path_find", to_string(params))};
+        Json::Value const resp{env.rpc("json", "ripple_path_find", to_string(params))};
         BEAST_EXPECT(resp[jss::result][jss::alternatives].size() == 0);
 
         env(pay(alice, carol, bob["USD"](50)), ter(tecPATH_DRY));
@@ -260,13 +248,15 @@ public:
                 params[jss::role] = "gateway";
                 params[jss::transactions] = "asdf";
 
-                auto lines =
-                    env.rpc("json", "noripple_check", to_string(params));
+                auto lines = env.rpc("json", "noripple_check", to_string(params));
                 if (apiVersion < 2u)
+                {
                     BEAST_EXPECT(lines[jss::result][jss::status] == "success");
+                }
                 else
-                    BEAST_EXPECT(
-                        lines[jss::result][jss::error] == "invalidParams");
+                {
+                    BEAST_EXPECT(lines[jss::result][jss::error] == "invalidParams");
+                }
             }
         }
     }
@@ -277,9 +267,8 @@ public:
         testSetAndClear();
 
         auto withFeatsTests = [this](FeatureBitset features) {
-            forAllApiVersions([&, this](unsigned testVersion) {
-                testDefaultRipple(features, testVersion);
-            });
+            forAllApiVersions(
+                [&, this](unsigned testVersion) { testDefaultRipple(features, testVersion); });
             testNegativeBalance(features);
             testPairwise(features);
         };
@@ -290,7 +279,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(NoRipple, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(NoRipple, rpc, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

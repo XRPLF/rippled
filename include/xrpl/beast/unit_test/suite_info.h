@@ -1,20 +1,15 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_SUITE_INFO_HPP
-#define BEAST_UNIT_TEST_SUITE_INFO_HPP
+#pragma once
 
 #include <cstring>
 #include <functional>
 #include <string>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 class runner;
 
@@ -91,10 +86,8 @@ public:
     {
         // we want higher priority suites sorted first, thus the negation
         // of priority value here
-        return std::forward_as_tuple(
-                   -lhs.priority_, lhs.library_, lhs.module_, lhs.name_) <
-            std::forward_as_tuple(
-                   -rhs.priority_, rhs.library_, rhs.module_, rhs.name_);
+        return std::forward_as_tuple(-lhs.priority_, lhs.library_, lhs.module_, lhs.name_) <
+            std::forward_as_tuple(-rhs.priority_, rhs.library_, rhs.module_, rhs.name_);
     }
 };
 
@@ -111,15 +104,9 @@ make_suite_info(
     int priority)
 {
     return suite_info(
-        std::move(name),
-        std::move(module),
-        std::move(library),
-        manual,
-        priority,
-        [](runner& r) { Suite{}(r); });
+        std::move(name), std::move(module), std::move(library), manual, priority, [](runner& r) {
+            Suite{}(r);
+        });
 }
 
-}  // namespace unit_test
-}  // namespace beast
-
-#endif
+}  // namespace beast::unit_test

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_SECRETKEY_H_INCLUDED
-#define RIPPLE_PROTOCOL_SECRETKEY_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
@@ -31,13 +11,16 @@
 #include <cstring>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 /** A secret key. */
 class SecretKey
 {
+public:
+    static constexpr std::size_t size_ = 32;
+
 private:
-    std::uint8_t buf_[32];
+    std::uint8_t buf_[size_]{};
 
 public:
     using const_iterator = std::uint8_t const*;
@@ -47,9 +30,14 @@ public:
     SecretKey&
     operator=(SecretKey const&) = default;
 
+    bool
+    operator==(SecretKey const&) = delete;
+    bool
+    operator!=(SecretKey const&) = delete;
+
     ~SecretKey();
 
-    SecretKey(std::array<std::uint8_t, 32> const& data);
+    SecretKey(std::array<std::uint8_t, size_> const& data);
     SecretKey(Slice const& slice);
 
     std::uint8_t const*
@@ -97,18 +85,11 @@ public:
     }
 };
 
-inline bool
-operator==(SecretKey const& lhs, SecretKey const& rhs)
-{
-    return lhs.size() == rhs.size() &&
-        std::memcmp(lhs.data(), rhs.data(), rhs.size()) == 0;
-}
+bool
+operator==(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
-inline bool
-operator!=(SecretKey const& lhs, SecretKey const& rhs)
-{
-    return !(lhs == rhs);
-}
+bool
+operator!=(SecretKey const& lhs, SecretKey const& rhs) = delete;
 
 //------------------------------------------------------------------------------
 
@@ -137,7 +118,7 @@ derivePublicKey(KeyType type, SecretKey const& sk);
 
 /** Generate a key pair deterministically.
 
-    This algorithm is specific to Ripple:
+    This algorithm is specific to the XRPL:
 
     For secp256k1 key pairs, the seed is converted
     to a Generator and used to compute the key pair
@@ -181,6 +162,4 @@ sign(KeyType type, SecretKey const& sk, Slice const& message)
 }
 /** @} */
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

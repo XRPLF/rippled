@@ -1,36 +1,25 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2012-2017 Ripple Labs Inc.
 
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
 
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <test/jtx/Env.h>  // IWYU pragma: keep
 
-#include <test/jtx.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
 
-#include <xrpl/protocol/Feature.h>
-
+#include <cstdint>
 #include <functional>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class Hooks_test : public beast::unit_test::suite
 {
     /**
      * This unit test was requested here:
-     * https://github.com/ripple/rippled/pull/4089#issuecomment-1050274539
+     * https://github.com/XRPLF/rippled/pull/4089#issuecomment-1050274539
      * These are tests that exercise facilities that are reserved for when Hooks
      * is merged in the future.
      **/
@@ -42,7 +31,7 @@ class Hooks_test : public beast::unit_test::suite
 
         using namespace test::jtx;
 
-        std::vector<std::reference_wrapper<SField const>> fields_to_test = {
+        std::vector<std::reference_wrapper<SField const>> const fields_to_test = {
             sfHookResult,
             sfHookStateChangeCount,
             sfHookEmitCount,
@@ -135,7 +124,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_UINT256: {
-                    uint256 u = uint256::fromVoid(
+                    uint256 const u = uint256::fromVoid(
                         "DEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBEEFDEADBE"
                         "EFDEADBEEF");
                     dummy.setFieldH256(f, u);
@@ -145,7 +134,7 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_VL: {
-                    std::vector<uint8_t> v{1, 2, 3};
+                    std::vector<uint8_t> const v{1, 2, 3};
                     dummy.setFieldVL(f, v);
                     BEAST_EXPECT(dummy.getFieldVL(f) == v);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
@@ -153,8 +142,10 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_ACCOUNT: {
-                    AccountID id = *parseBase58<AccountID>(
-                        "rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+                    // NOLINTBEGIN(bugprone-unchecked-optional-access)
+                    AccountID const id =
+                        *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+                    // NOLINTEND(bugprone-unchecked-optional-access)
                     dummy.setAccountID(f, id);
                     BEAST_EXPECT(dummy.getAccountID(f) == id);
                     BEAST_EXPECT(dummy.isFieldPresent(f));
@@ -193,6 +184,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Hooks, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(Hooks, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STXATTESTATIONS_H_INCLUDED
-#define RIPPLE_PROTOCOL_STXATTESTATIONS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Expected.h>
@@ -35,9 +15,10 @@
 #include <boost/container/vector.hpp>
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 namespace Attestations {
 
@@ -52,12 +33,12 @@ struct AttestationBase
     // Account on the sending chain that triggered the event (sent the
     // transaction)
     AccountID sendingAccount;
-    // Amount transfered on the sending chain
+    // Amount transferred on the sending chain
     STAmount sendingAmount;
     // Account on the destination chain that collects a share of the attestation
     // reward
     AccountID rewardAccount;
-    // Amount was transfered on the locking chain
+    // Amount was transferred on the locking chain
     bool wasLockingChainSend;
 
     explicit AttestationBase(
@@ -65,7 +46,7 @@ struct AttestationBase
         PublicKey const& publicKey_,
         Buffer signature_,
         AccountID const& sendingAccount_,
-        STAmount const& sendingAmount_,
+        STAmount sendingAmount_,
         AccountID const& rewardAccount_,
         bool wasLockingChainSend_);
 
@@ -189,7 +170,7 @@ struct AttestationCreateAccount : AttestationBase
         Buffer signature_,
         AccountID const& sendingAccount_,
         STAmount const& sendingAmount_,
-        STAmount const& rewardAmount_,
+        STAmount rewardAmount_,
         AccountID const& rewardAccount_,
         bool wasLockingChainSend_,
         std::uint64_t createCount_,
@@ -216,9 +197,7 @@ struct AttestationCreateAccount : AttestationBase
     sameEvent(AttestationCreateAccount const& rhs) const;
 
     friend bool
-    operator==(
-        AttestationCreateAccount const& lhs,
-        AttestationCreateAccount const& rhs);
+    operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& rhs);
 
     [[nodiscard]] static std::vector<std::uint8_t>
     message(
@@ -242,9 +221,7 @@ private:
 struct CmpByCreateCount
 {
     bool
-    operator()(
-        AttestationCreateAccount const& lhs,
-        AttestationCreateAccount const& rhs) const
+    operator()(AttestationCreateAccount const& lhs, AttestationCreateAccount const& rhs) const
     {
         return lhs.createCount < rhs.createCount;
     }
@@ -280,11 +257,8 @@ struct XChainClaimAttestation
         bool wasLockingChainSend;
         std::optional<AccountID> dst;
         MatchFields(TSignedAttestation const& att);
-        MatchFields(
-            STAmount const& a,
-            bool b,
-            std::optional<AccountID> const& d)
-            : amount{a}, wasLockingChainSend{b}, dst{d}
+        MatchFields(STAmount a, bool b, std::optional<AccountID> const& d)
+            : amount{std::move(a)}, wasLockingChainSend{b}, dst{d}
         {
         }
     };
@@ -318,9 +292,7 @@ struct XChainClaimAttestation
     toSTObject() const;
 
     friend bool
-    operator==(
-        XChainClaimAttestation const& lhs,
-        XChainClaimAttestation const& rhs);
+    operator==(XChainClaimAttestation const& lhs, XChainClaimAttestation const& rhs);
 };
 
 struct XChainCreateAccountAttestation
@@ -373,7 +345,7 @@ struct XChainCreateAccountAttestation
         XChainCreateAccountAttestation const& rhs);
 };
 
-// Attestations from witness servers for a particular claimid and bridge.
+// Attestations from witness servers for a particular claim ID and bridge.
 // Only one attestation per signature is allowed.
 template <class TAttestation>
 class XChainAttestationsBase
@@ -483,8 +455,7 @@ XChainAttestationsBase<TAttestation>::empty() const
     return attestations_.empty();
 }
 
-class XChainClaimAttestations final
-    : public XChainAttestationsBase<XChainClaimAttestation>
+class XChainClaimAttestations final : public XChainAttestationsBase<XChainClaimAttestation>
 {
     using TBase = XChainAttestationsBase<XChainClaimAttestation>;
     using TBase::TBase;
@@ -497,6 +468,4 @@ class XChainCreateAccountAttestations final
     using TBase::TBase;
 };
 
-}  // namespace ripple
-
-#endif  // STXCHAINATTESTATIONS_H_
+}  // namespace xrpl

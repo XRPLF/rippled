@@ -1,34 +1,25 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/TestSuite.h>
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/overlay/Cluster.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/tokens.h>
 
-namespace ripple {
-namespace tests {
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <vector>
 
-class cluster_test : public ripple::TestSuite
+namespace xrpl::tests {
+
+class cluster_test : public xrpl::TestSuite
 {
     test::SuiteJournal journal_;
 
@@ -48,7 +39,7 @@ public:
         return cluster;
     }
 
-    PublicKey
+    static PublicKey
     randomNode()
     {
         return derivePublicKey(KeyType::secp256k1, randomSecretKey());
@@ -88,8 +79,7 @@ public:
         {
             testcase("Membership: Non-empty cluster and some present");
 
-            std::vector<PublicKey> cluster(
-                network.begin(), network.begin() + 16);
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + 16);
 
             while (cluster.size() != 32)
                 cluster.push_back(randomNode());
@@ -101,18 +91,15 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::find(cluster.begin(), cluster.end(), n);
-                BEAST_EXPECT(
-                    static_cast<bool>(c->member(n)) ==
-                    (found != cluster.end()));
+                auto found = std::ranges::find(cluster, n);
+                BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
 
         {
             testcase("Membership: Non-empty cluster and all present");
 
-            std::vector<PublicKey> cluster(
-                network.begin(), network.begin() + 32);
+            std::vector<PublicKey> cluster(network.begin(), network.begin() + 32);
 
             auto c = create(cluster);
 
@@ -121,10 +108,8 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::find(cluster.begin(), cluster.end(), n);
-                BEAST_EXPECT(
-                    static_cast<bool>(c->member(n)) ==
-                    (found != cluster.end()));
+                auto found = std::ranges::find(cluster, n);
+                BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
     }
@@ -138,7 +123,7 @@ public:
 
         auto const node = randomNode();
         auto const name = toBase58(TokenType::NodePublic, node);
-        std::uint32_t load = 0;
+        std::uint32_t const load = 0;
         NetClock::time_point tick = {};
 
         // Initial update
@@ -146,7 +131,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->empty());
+            BEAST_EXPECT(member->empty());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Updating too quickly: should fail
@@ -154,7 +139,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->empty());
+            BEAST_EXPECT(member->empty());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         using namespace std::chrono_literals;
@@ -165,7 +150,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->compare(name) == 0);
+            BEAST_EXPECT(member->compare(name) == 0);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Updating the name (non-empty doesn't go to empty)
@@ -174,7 +159,7 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->compare(name) == 0);
+            BEAST_EXPECT(member->compare(name) == 0);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         // Updating the name (non-empty updates to new non-empty)
@@ -183,7 +168,8 @@ public:
         {
             auto member = c->member(node);
             BEAST_EXPECT(static_cast<bool>(member));
-            BEAST_EXPECT(member->compare("test") == 0);
+            BEAST_EXPECT(
+                member->compare("test") == 0);  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 
@@ -200,8 +186,7 @@ public:
         while (network.size() != 8)
             network.push_back(randomNode());
 
-        auto format = [](PublicKey const& publicKey,
-                         char const* comment = nullptr) {
+        auto format = [](PublicKey const& publicKey, char const* comment = nullptr) {
             auto ret = toBase58(TokenType::NodePublic, publicKey);
 
             if (comment)
@@ -224,8 +209,7 @@ public:
         s1.append(format(network[4], "  Leading Whitespace"));
         s1.append(format(network[5], " Trailing Whitespace  "));
         s1.append(format(network[6], "  Leading & Trailing Whitespace  "));
-        s1.append(format(
-            network[7], "  Leading,  Trailing  &  Internal  Whitespace  "));
+        s1.append(format(network[7], "  Leading,  Trailing  &  Internal  Whitespace  "));
 
         BEAST_EXPECT(c->load(s1));
 
@@ -246,7 +230,7 @@ public:
         BEAST_EXPECT(!c->load(s4));
 
         // Check if we properly terminate when we encounter
-        // a malformed or unparseable entry:
+        // a malformed or unparsable entry:
         auto const node1 = randomNode();
         auto const node2 = randomNode();
 
@@ -267,7 +251,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(cluster, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(cluster, overlay, xrpl);
 
-}  // namespace tests
-}  // namespace ripple
+}  // namespace xrpl::tests

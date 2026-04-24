@@ -1,29 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/csf/ledgers.h>
 
-#include <algorithm>
+#include <test/csf/Tx.h>
 
-namespace ripple {
-namespace test {
-namespace csf {
+#include <xrpl/basics/chrono.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/LedgerTiming.h>
+
+#include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <optional>
+#include <set>
+#include <vector>
+
+namespace xrpl::test::csf {
 
 Ledger::Instance const Ledger::genesis;
 
@@ -61,14 +51,14 @@ mismatch(Ledger const& a, Ledger const& b)
 
     // end is 1 past end of range
     Seq start{0};
-    Seq end = std::min(a.seq() + Seq{1}, b.seq() + Seq{1});
+    Seq const end = std::min(a.seq() + Seq{1}, b.seq() + Seq{1});
 
     // Find mismatch in [start,end)
     // Binary search
     Seq count = end - start;
     while (count > Seq{0})
     {
-        Seq step = count / Seq{2};
+        Seq const step = count / Seq{2};
         Seq curr = start + step;
         if (a[curr] == b[curr])
         {
@@ -77,7 +67,9 @@ mismatch(Ledger const& a, Ledger const& b)
             count -= step + Seq{1};
         }
         else
+        {
             count = step;
+        }
     }
     return start;
 }
@@ -107,10 +99,13 @@ LedgerOracle::accept(
     next.closeTimeResolution = closeTimeResolution;
     next.closeTimeAgree = consensusCloseTime != NetClock::time_point{};
     if (next.closeTimeAgree)
-        next.closeTime = effCloseTime(
-            consensusCloseTime, closeTimeResolution, parent.closeTime());
+    {
+        next.closeTime = effCloseTime(consensusCloseTime, closeTimeResolution, parent.closeTime());
+    }
     else
+    {
         next.closeTime = parent.closeTime() + 1s;
+    }
 
     next.parentCloseTime = parent.closeTime();
     next.parentID = parent.id();
@@ -137,7 +132,7 @@ LedgerOracle::lookup(Ledger::ID const& id) const
 }
 
 std::size_t
-LedgerOracle::branches(std::set<Ledger> const& ledgers) const
+LedgerOracle::branches(std::set<Ledger> const& ledgers)
 {
     // Tips always maintains the Ledgers with largest sequence number
     // along all known chains.
@@ -169,6 +164,4 @@ LedgerOracle::branches(std::set<Ledger> const& ledgers) const
     // The size of tips is the number of branches
     return tips.size();
 }
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::csf

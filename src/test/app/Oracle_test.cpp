@@ -1,30 +1,37 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
-namespace oracle {
+#include <chrono>
+#include <cstdint>
+#include <optional>
+
+namespace xrpl::test::jtx::oracle {
 
 struct Oracle_test : public beast::unit_test::suite
 {
@@ -42,7 +49,7 @@ private:
             Env env(*this);
             Account const bad("bad");
             env.memoize(bad);
-            Oracle oracle(
+            Oracle const oracle(
                 env,
                 {.owner = bad,
                  .seq = seq(1),
@@ -54,7 +61,7 @@ private:
         {
             Env env(*this);
             env.fund(env.current()->fees().accountReserve(0), owner);
-            Oracle oracle(
+            Oracle const oracle(
                 env,
                 {.owner = owner,
                  .fee = static_cast<int>(env.current()->fees().base.drops()),
@@ -64,215 +71,199 @@ private:
         {
             Env env(*this);
             env.fund(
-                env.current()->fees().accountReserve(1) +
-                    env.current()->fees().base * 2,
-                owner);
+                env.current()->fees().accountReserve(1) + env.current()->fees().base * 2, owner);
             Oracle oracle(
-                env,
-                {.owner = owner,
-                 .fee = static_cast<int>(env.current()->fees().base.drops())});
+                env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
             BEAST_EXPECT(oracle.exists());
-            oracle.set(UpdateArg{
-                .series =
-                    {
-                        {"XRP", "EUR", 740, 1},
-                        {"XRP", "GBP", 740, 1},
-                        {"XRP", "CNY", 740, 1},
-                        {"XRP", "CAD", 740, 1},
-                        {"XRP", "AUD", 740, 1},
-                    },
-                .fee = static_cast<int>(env.current()->fees().base.drops()),
-                .err = ter(tecINSUFFICIENT_RESERVE)});
+            oracle.set(
+                UpdateArg{
+                    .series =
+                        {
+                            {"XRP", "EUR", 740, 1},
+                            {"XRP", "GBP", 740, 1},
+                            {"XRP", "CNY", 740, 1},
+                            {"XRP", "CAD", 740, 1},
+                            {"XRP", "AUD", 740, 1},
+                        },
+                    .fee = static_cast<int>(env.current()->fees().base.drops()),
+                    .err = ter(tecINSUFFICIENT_RESERVE)});
         }
 
         {
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
 
             // Invalid flag
-            oracle.set(CreateArg{
-                .flags = tfSellNFToken,
-                .fee = baseFee,
-                .err = ter(temINVALID_FLAG)});
+            oracle.set(
+                CreateArg{.flags = tfSellNFToken, .fee = baseFee, .err = ter(temINVALID_FLAG)});
 
             // Duplicate token pair
-            oracle.set(CreateArg{
-                .series = {{"XRP", "USD", 740, 1}, {"XRP", "USD", 750, 1}},
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{
+                    .series = {{"XRP", "USD", 740, 1}, {"XRP", "USD", 750, 1}},
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
 
             // Price is not included
-            oracle.set(CreateArg{
-                .series =
-                    {{"XRP", "USD", 740, 1}, {"XRP", "EUR", std::nullopt, 1}},
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{
+                    .series = {{"XRP", "USD", 740, 1}, {"XRP", "EUR", std::nullopt, 1}},
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
 
             // Token pair is in update and delete
-            oracle.set(CreateArg{
-                .series =
-                    {{"XRP", "USD", 740, 1}, {"XRP", "USD", std::nullopt, 1}},
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{
+                    .series = {{"XRP", "USD", 740, 1}, {"XRP", "USD", std::nullopt, 1}},
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
             // Token pair is in add and delete
-            oracle.set(CreateArg{
-                .series =
-                    {{"XRP", "EUR", 740, 1}, {"XRP", "EUR", std::nullopt, 1}},
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{
+                    .series = {{"XRP", "EUR", 740, 1}, {"XRP", "EUR", std::nullopt, 1}},
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
 
             // Array of token pair is 0 or exceeds 10
-            oracle.set(CreateArg{
-                .series =
-                    {{"XRP", "US1", 740, 1},
-                     {"XRP", "US2", 750, 1},
-                     {"XRP", "US3", 740, 1},
-                     {"XRP", "US4", 750, 1},
-                     {"XRP", "US5", 740, 1},
-                     {"XRP", "US6", 750, 1},
-                     {"XRP", "US7", 740, 1},
-                     {"XRP", "US8", 750, 1},
-                     {"XRP", "US9", 740, 1},
-                     {"XRP", "U10", 750, 1},
-                     {"XRP", "U11", 740, 1}},
-                .fee = baseFee,
-                .err = ter(temARRAY_TOO_LARGE)});
-            oracle.set(CreateArg{
-                .series = {}, .fee = baseFee, .err = ter(temARRAY_EMPTY)});
+            oracle.set(
+                CreateArg{
+                    .series =
+                        {{"XRP", "US1", 740, 1},
+                         {"XRP", "US2", 750, 1},
+                         {"XRP", "US3", 740, 1},
+                         {"XRP", "US4", 750, 1},
+                         {"XRP", "US5", 740, 1},
+                         {"XRP", "US6", 750, 1},
+                         {"XRP", "US7", 740, 1},
+                         {"XRP", "US8", 750, 1},
+                         {"XRP", "US9", 740, 1},
+                         {"XRP", "U10", 750, 1},
+                         {"XRP", "U11", 740, 1}},
+                    .fee = baseFee,
+                    .err = ter(temARRAY_TOO_LARGE)});
+            oracle.set(CreateArg{.series = {}, .fee = baseFee, .err = ter(temARRAY_EMPTY)});
         }
 
         // Array of token pair exceeds 10 after update
         {
             Env env{*this};
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
 
             Oracle oracle(
                 env,
-                CreateArg{
-                    .owner = owner,
-                    .series = {{{"XRP", "USD", 740, 1}}},
-                    .fee = baseFee});
-            oracle.set(UpdateArg{
-                .series =
-                    {
-                        {"XRP", "US1", 740, 1},
-                        {"XRP", "US2", 750, 1},
-                        {"XRP", "US3", 740, 1},
-                        {"XRP", "US4", 750, 1},
-                        {"XRP", "US5", 740, 1},
-                        {"XRP", "US6", 750, 1},
-                        {"XRP", "US7", 740, 1},
-                        {"XRP", "US8", 750, 1},
-                        {"XRP", "US9", 740, 1},
-                        {"XRP", "U10", 750, 1},
-                    },
-                .fee = baseFee,
-                .err = ter(tecARRAY_TOO_LARGE)});
+                CreateArg{.owner = owner, .series = {{{"XRP", "USD", 740, 1}}}, .fee = baseFee});
+            oracle.set(
+                UpdateArg{
+                    .series =
+                        {
+                            {"XRP", "US1", 740, 1},
+                            {"XRP", "US2", 750, 1},
+                            {"XRP", "US3", 740, 1},
+                            {"XRP", "US4", 750, 1},
+                            {"XRP", "US5", 740, 1},
+                            {"XRP", "US6", 750, 1},
+                            {"XRP", "US7", 740, 1},
+                            {"XRP", "US8", 750, 1},
+                            {"XRP", "US9", 740, 1},
+                            {"XRP", "U10", 750, 1},
+                        },
+                    .fee = baseFee,
+                    .err = ter(tecARRAY_TOO_LARGE)});
         }
 
         {
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
 
             // Asset class or provider not included on create
-            oracle.set(CreateArg{
-                .assetClass = std::nullopt,
-                .provider = "provider",
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
-            oracle.set(CreateArg{
-                .assetClass = "currency",
-                .provider = std::nullopt,
-                .uri = "URI",
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{
+                    .assetClass = std::nullopt,
+                    .provider = "provider",
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{
+                    .assetClass = "currency",
+                    .provider = std::nullopt,
+                    .uri = "URI",
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
 
             // Asset class or provider are included on update
             // and don't match the current values
-            oracle.set(CreateArg{
-                .fee = static_cast<int>(env.current()->fees().base.drops())});
+            oracle.set(CreateArg{.fee = static_cast<int>(env.current()->fees().base.drops())});
             BEAST_EXPECT(oracle.exists());
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "USD", 740, 1}},
-                .provider = "provider1",
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "USD", 740, 1}},
-                .assetClass = "currency1",
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "USD", 740, 1}},
+                    .provider = "provider1",
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "USD", 740, 1}},
+                    .assetClass = "currency1",
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
         }
 
         {
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee}, false);
 
             // Fields too long
             // Asset class
             std::string assetClass(17, '0');
-            oracle.set(CreateArg{
-                .assetClass = assetClass,
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                CreateArg{.assetClass = assetClass, .fee = baseFee, .err = ter(temMALFORMED)});
             // provider
             std::string const large(257, '0');
-            oracle.set(CreateArg{
-                .provider = large, .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.provider = large, .fee = baseFee, .err = ter(temMALFORMED)});
             // URI
-            oracle.set(CreateArg{
-                .uri = large, .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.uri = large, .fee = baseFee, .err = ter(temMALFORMED)});
             // Empty field
             // Asset class
-            oracle.set(CreateArg{
-                .assetClass = "", .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.assetClass = "", .fee = baseFee, .err = ter(temMALFORMED)});
             // provider
-            oracle.set(CreateArg{
-                .provider = "", .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.provider = "", .fee = baseFee, .err = ter(temMALFORMED)});
             // URI
-            oracle.set(
-                CreateArg{.uri = "", .fee = baseFee, .err = ter(temMALFORMED)});
+            oracle.set(CreateArg{.uri = "", .fee = baseFee, .err = ter(temMALFORMED)});
         }
 
         {
             // Different owner creates a new object and fails because
             // of missing fields currency/provider
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             Account const some("some");
             env.fund(XRP(1'000), owner);
             env.fund(XRP(1'000), some);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
-            oracle.set(UpdateArg{
-                .owner = some,
-                .series = {{"XRP", "USD", 740, 1}},
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                UpdateArg{
+                    .owner = some,
+                    .series = {{"XRP", "USD", 740, 1}},
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
         }
 
         {
             // Invalid update time
             using namespace std::chrono;
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             auto closeTime = [&]() {
                 return duration_cast<seconds>(
-                           env.current()->info().closeTime.time_since_epoch() -
-                           10'000s)
+                           env.current()->header().closeTime.time_since_epoch() - 10'000s)
                     .count();
             };
             env.fund(XRP(1'000), owner);
@@ -280,61 +271,64 @@ private:
             BEAST_EXPECT(oracle.exists());
             env.close(seconds(400));
             // Less than the last close time - 300s
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = static_cast<std::uint32_t>(closeTime() - 301),
-                .fee = baseFee,
-                .err = ter(tecINVALID_UPDATE_TIME)});
-            // Greater than last close time + 300s
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = static_cast<std::uint32_t>(closeTime() + 311),
-                .fee = baseFee,
-                .err = ter(tecINVALID_UPDATE_TIME)});
             oracle.set(
-                UpdateArg{.series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
+                UpdateArg{
+                    .series = {{"XRP", "USD", 740, 1}},
+                    .lastUpdateTime = static_cast<std::uint32_t>(closeTime() - 301),
+                    .fee = baseFee,
+                    .err = ter(tecINVALID_UPDATE_TIME)});
+            // Greater than last close time + 300s
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "USD", 740, 1}},
+                    .lastUpdateTime = static_cast<std::uint32_t>(closeTime() + 311),
+                    .fee = baseFee,
+                    .err = ter(tecINVALID_UPDATE_TIME)});
+            oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
             BEAST_EXPECT(oracle.expectLastUpdateTime(
                 static_cast<std::uint32_t>(testStartTime.count() + 450)));
             // Less than the previous lastUpdateTime
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = static_cast<std::uint32_t>(449),
-                .fee = baseFee,
-                .err = ter(tecINVALID_UPDATE_TIME)});
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "USD", 740, 1}},
+                    .lastUpdateTime = static_cast<std::uint32_t>(449),
+                    .fee = baseFee,
+                    .err = ter(tecINVALID_UPDATE_TIME)});
             // Less than the epoch time
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = static_cast<int>(epoch_offset.count() - 1),
-                .fee = baseFee,
-                .err = ter(tecINVALID_UPDATE_TIME)});
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "USD", 740, 1}},
+                    .lastUpdateTime = static_cast<int>(epoch_offset.count() - 1),
+                    .fee = baseFee,
+                    .err = ter(tecINVALID_UPDATE_TIME)});
         }
 
         {
             // delete token pair that doesn't exist
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "EUR", std::nullopt, std::nullopt}},
-                .fee = baseFee,
-                .err = ter(tecTOKEN_PAIR_NOT_FOUND)});
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "EUR", std::nullopt, std::nullopt}},
+                    .fee = baseFee,
+                    .err = ter(tecTOKEN_PAIR_NOT_FOUND)});
             // delete all token pairs
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "USD", std::nullopt, std::nullopt}},
-                .fee = baseFee,
-                .err = ter(tecARRAY_EMPTY)});
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "USD", std::nullopt, std::nullopt}},
+                    .fee = baseFee,
+                    .err = ter(tecARRAY_EMPTY)});
         }
 
         {
             // same BaseAsset and QuoteAsset
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
-            Oracle oracle(
+            Oracle const oracle(
                 env,
                 {.owner = owner,
                  .series = {{"USD", "USD", 740, 1}},
@@ -345,10 +339,9 @@ private:
         {
             // Scale is greater than maxPriceScale
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
-            Oracle oracle(
+            Oracle const oracle(
                 env,
                 {.owner = owner,
                  .series = {{"USD", "BTC", 740, maxPriceScale + 1}},
@@ -359,41 +352,37 @@ private:
         {
             // Updating token pair to add and delete
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
-            oracle.set(UpdateArg{
-                .series =
-                    {{"XRP", "EUR", std::nullopt, std::nullopt},
-                     {"XRP", "EUR", 740, 1}},
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "EUR", std::nullopt, std::nullopt}, {"XRP", "EUR", 740, 1}},
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
             // Delete token pair that doesn't exist in this oracle
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "EUR", std::nullopt, std::nullopt}},
-                .fee = baseFee,
-                .err = ter(tecTOKEN_PAIR_NOT_FOUND)});
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "EUR", std::nullopt, std::nullopt}},
+                    .fee = baseFee,
+                    .err = ter(tecTOKEN_PAIR_NOT_FOUND)});
             // Delete token pair in oracle, which is not in the ledger
-            oracle.set(UpdateArg{
-                .documentID = 10,
-                .series = {{"XRP", "EUR", std::nullopt, std::nullopt}},
-                .fee = baseFee,
-                .err = ter(temMALFORMED)});
+            oracle.set(
+                UpdateArg{
+                    .documentID = 10,
+                    .series = {{"XRP", "EUR", std::nullopt, std::nullopt}},
+                    .fee = baseFee,
+                    .err = ter(temMALFORMED)});
         }
 
         {
             // Bad fee
             Env env(*this);
             env.fund(XRP(1'000), owner);
-            Oracle oracle(
-                env, {.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
-            Oracle oracle1(
-                env,
-                {.owner = owner,
-                 .fee = static_cast<int>(env.current()->fees().base.drops())});
-            oracle.set(
-                UpdateArg{.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
+            Oracle oracle(env, {.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
+            Oracle const oracle1(
+                env, {.owner = owner, .fee = static_cast<int>(env.current()->fees().base.drops())});
+            oracle.set(UpdateArg{.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
         }
     }
 
@@ -405,21 +394,17 @@ private:
         Account const owner("owner");
 
         auto test = [&](Env& env, DataSeries const& series, std::uint16_t adj) {
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             auto const count = ownerCount(env, owner);
-            Oracle oracle(
-                env, {.owner = owner, .series = series, .fee = baseFee});
+            Oracle const oracle(env, {.owner = owner, .series = series, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
             BEAST_EXPECT(ownerCount(env, owner) == (count + adj));
             auto const entry = oracle.ledgerEntry();
             BEAST_EXPECT(entry[jss::node][jss::Owner] == owner.human());
             if (features[fixIncludeKeyletFields])
             {
-                BEAST_EXPECT(
-                    entry[jss::node][jss::OracleDocumentID] ==
-                    oracle.documentID());
+                BEAST_EXPECT(entry[jss::node][jss::OracleDocumentID] == oracle.documentID());
             }
             else
             {
@@ -451,17 +436,14 @@ private:
         {
             // Different owner creates a new object
             Env env(*this, features);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             Account const some("some");
             env.fund(XRP(1'000), owner);
             env.fund(XRP(1'000), some);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
-            oracle.set(CreateArg{
-                .owner = some,
-                .series = {{"912810RR9", "USD", 740, 1}},
-                .fee = baseFee});
+            oracle.set(
+                CreateArg{.owner = some, .series = {{"912810RR9", "USD", 740, 1}}, .fee = baseFee});
             BEAST_EXPECT(Oracle::exists(env, some, oracle.documentID()));
         }
     }
@@ -473,8 +455,7 @@ private:
 
         using namespace jtx;
         Env env(*this);
-        auto const baseFee =
-            static_cast<int>(env.current()->fees().base.drops());
+        auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
         Account const owner("owner");
         env.fund(XRP(1'000), owner);
         Oracle oracle(env, {.owner = owner, .fee = baseFee});
@@ -484,28 +465,19 @@ private:
             // Invalid account
             Account const bad("bad");
             env.memoize(bad);
-            oracle.remove(
-                {.owner = bad,
-                 .seq = seq(1),
-                 .fee = baseFee,
-                 .err = ter(terNO_ACCOUNT)});
+            oracle.remove({.owner = bad, .seq = seq(1), .fee = baseFee, .err = ter(terNO_ACCOUNT)});
         }
 
         // Invalid DocumentID
-        oracle.remove(
-            {.documentID = 2, .fee = baseFee, .err = ter(tecNO_ENTRY)});
+        oracle.remove({.documentID = 2, .fee = baseFee, .err = ter(tecNO_ENTRY)});
 
         // Invalid owner
         Account const invalid("invalid");
         env.fund(XRP(1'000), invalid);
-        oracle.remove(
-            {.owner = invalid, .fee = baseFee, .err = ter(tecNO_ENTRY)});
+        oracle.remove({.owner = invalid, .fee = baseFee, .err = ter(tecNO_ENTRY)});
 
         // Invalid flags
-        oracle.remove(
-            {.flags = tfSellNFToken,
-             .fee = baseFee,
-             .err = ter(temINVALID_FLAG)});
+        oracle.remove({.flags = tfSellNFToken, .fee = baseFee, .err = ter(temINVALID_FLAG)});
 
         // Bad fee
         oracle.remove({.fee = -1, .err = ter(temBAD_FEE)});
@@ -519,11 +491,9 @@ private:
         Account const owner("owner");
 
         auto test = [&](Env& env, DataSeries const& series, std::uint16_t adj) {
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
-            Oracle oracle(
-                env, {.owner = owner, .series = series, .fee = baseFee});
+            Oracle oracle(env, {.owner = owner, .series = series, .fee = baseFee});
             auto const count = ownerCount(env, owner);
             BEAST_EXPECT(oracle.exists());
             oracle.remove({.fee = baseFee});
@@ -556,19 +526,15 @@ private:
         {
             // deleting the account deletes the oracles
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
             auto const alice = Account("alice");
             auto const acctDelFee{drops(env.current()->fees().increment)};
             env.fund(XRP(1'000), owner);
             env.fund(XRP(1'000), alice);
-            Oracle oracle(
-                env,
-                {.owner = owner,
-                 .series = {{"XRP", "USD", 740, 1}},
-                 .fee = baseFee});
-            Oracle oracle1(
+            Oracle const oracle(
+                env, {.owner = owner, .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
+            Oracle const oracle1(
                 env,
                 {.owner = owner,
                  .documentID = 2,
@@ -578,7 +544,7 @@ private:
             BEAST_EXPECT(oracle.exists());
             BEAST_EXPECT(oracle1.exists());
             auto const index = env.closed()->seq();
-            auto const hash = env.closed()->info().hash;
+            auto const hash = env.closed()->header().hash;
             for (int i = 0; i < 256; ++i)
                 env.close();
             env(acctdelete(owner, alice), fee(acctDelFee));
@@ -592,8 +558,7 @@ private:
                 jvParams[field] = value;
                 jvParams[jss::binary] = false;
                 jvParams[jss::type] = jss::oracle;
-                Json::Value jrr =
-                    env.rpc("json", "ledger_data", to_string(jvParams));
+                Json::Value jrr = env.rpc("json", "ledger_data", to_string(jvParams));
                 BEAST_EXPECT(jrr[jss::result][jss::state].size() == 2);
             };
             verifyLedgerData(jss::ledger_index, index);
@@ -610,16 +575,14 @@ private:
 
         {
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(XRP(1'000), owner);
             auto count = ownerCount(env, owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
             BEAST_EXPECT(oracle.exists());
 
             // update existing pair
-            oracle.set(
-                UpdateArg{.series = {{"XRP", "USD", 740, 2}}, .fee = baseFee});
+            oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 2}}, .fee = baseFee});
             BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 740, 2}}));
             // owner count is increased by 1 since the oracle object is added
             // with one token pair
@@ -627,49 +590,46 @@ private:
             BEAST_EXPECT(ownerCount(env, owner) == count);
 
             // add new pairs, not-included pair is reset
-            oracle.set(
-                UpdateArg{.series = {{"XRP", "EUR", 700, 2}}, .fee = baseFee});
-            BEAST_EXPECT(oracle.expectPrice(
-                {{"XRP", "USD", 0, 0}, {"XRP", "EUR", 700, 2}}));
+            oracle.set(UpdateArg{.series = {{"XRP", "EUR", 700, 2}}, .fee = baseFee});
+            BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 0, 0}, {"XRP", "EUR", 700, 2}}));
             // owner count is not changed since the number of pairs is 2
             BEAST_EXPECT(ownerCount(env, owner) == count);
 
             // update both pairs
-            oracle.set(UpdateArg{
-                .series = {{"XRP", "USD", 741, 2}, {"XRP", "EUR", 710, 2}},
-                .fee = baseFee});
-            BEAST_EXPECT(oracle.expectPrice(
-                {{"XRP", "USD", 741, 2}, {"XRP", "EUR", 710, 2}}));
+            oracle.set(
+                UpdateArg{
+                    .series = {{"XRP", "USD", 741, 2}, {"XRP", "EUR", 710, 2}}, .fee = baseFee});
+            BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 741, 2}, {"XRP", "EUR", 710, 2}}));
             // owner count is not changed since the number of pairs is 2
             BEAST_EXPECT(ownerCount(env, owner) == count);
 
             // owner count is increased by 1 since the number of pairs is 6
-            oracle.set(UpdateArg{
-                .series =
-                    {
-                        {"BTC", "USD", 741, 2},
-                        {"ETH", "EUR", 710, 2},
-                        {"YAN", "EUR", 710, 2},
-                        {"CAN", "EUR", 710, 2},
-                    },
-                .fee = baseFee});
+            oracle.set(
+                UpdateArg{
+                    .series =
+                        {
+                            {"BTC", "USD", 741, 2},
+                            {"ETH", "EUR", 710, 2},
+                            {"YAN", "EUR", 710, 2},
+                            {"CAN", "EUR", 710, 2},
+                        },
+                    .fee = baseFee});
             count += 1;
             BEAST_EXPECT(ownerCount(env, owner) == count);
 
             // update two pairs and delete four
-            oracle.set(UpdateArg{
-                .series = {{"BTC", "USD", std::nullopt, std::nullopt}},
-                .fee = baseFee});
-            oracle.set(UpdateArg{
-                .series =
-                    {{"XRP", "USD", 742, 2},
-                     {"XRP", "EUR", 711, 2},
-                     {"ETH", "EUR", std::nullopt, std::nullopt},
-                     {"YAN", "EUR", std::nullopt, std::nullopt},
-                     {"CAN", "EUR", std::nullopt, std::nullopt}},
-                .fee = baseFee});
-            BEAST_EXPECT(oracle.expectPrice(
-                {{"XRP", "USD", 742, 2}, {"XRP", "EUR", 711, 2}}));
+            oracle.set(
+                UpdateArg{.series = {{"BTC", "USD", std::nullopt, std::nullopt}}, .fee = baseFee});
+            oracle.set(
+                UpdateArg{
+                    .series =
+                        {{"XRP", "USD", 742, 2},
+                         {"XRP", "EUR", 711, 2},
+                         {"ETH", "EUR", std::nullopt, std::nullopt},
+                         {"YAN", "EUR", std::nullopt, std::nullopt},
+                         {"CAN", "EUR", std::nullopt, std::nullopt}},
+                    .fee = baseFee});
+            BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 742, 2}, {"XRP", "EUR", 711, 2}}));
             // owner count is decreased by 1 since the number of pairs is 2
             count -= 1;
             BEAST_EXPECT(ownerCount(env, owner) == count);
@@ -678,15 +638,11 @@ private:
         // Min reserve to create and update
         {
             Env env(*this);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
             env.fund(
-                env.current()->fees().accountReserve(1) +
-                    env.current()->fees().base * 2,
-                owner);
+                env.current()->fees().accountReserve(1) + env.current()->fees().base * 2, owner);
             Oracle oracle(env, {.owner = owner, .fee = baseFee});
-            oracle.set(
-                UpdateArg{.series = {{"XRP", "USD", 742, 2}}, .fee = baseFee});
+            oracle.set(UpdateArg{.series = {{"XRP", "USD", 742, 2}}, .fee = baseFee});
         }
 
         for (bool const withFixOrder : {false, true})
@@ -694,41 +650,32 @@ private:
             // Should be same order as creation
             Env env(
                 *this,
-                withFixOrder ? testable_amendments()
-                             : testable_amendments() - fixPriceOracleOrder);
-            auto const baseFee =
-                static_cast<int>(env.current()->fees().base.drops());
+                withFixOrder ? testable_amendments() : testable_amendments() - fixPriceOracleOrder);
+            auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
             auto test = [&](Env& env, DataSeries const& series) {
                 env.fund(XRP(1'000), owner);
-                Oracle oracle(
-                    env, {.owner = owner, .series = series, .fee = baseFee});
+                Oracle oracle(env, {.owner = owner, .series = series, .fee = baseFee});
                 BEAST_EXPECT(oracle.exists());
                 auto sle = env.le(keylet::oracle(owner, oracle.documentID()));
-                BEAST_EXPECT(
-                    sle->getFieldArray(sfPriceDataSeries).size() ==
-                    series.size());
+                BEAST_EXPECT(sle->getFieldArray(sfPriceDataSeries).size() == series.size());
 
-                auto const beforeQuoteAssetName1 =
-                    sle->getFieldArray(sfPriceDataSeries)[0]
-                        .getFieldCurrency(sfQuoteAsset)
-                        .getText();
-                auto const beforeQuoteAssetName2 =
-                    sle->getFieldArray(sfPriceDataSeries)[1]
-                        .getFieldCurrency(sfQuoteAsset)
-                        .getText();
+                auto const beforeQuoteAssetName1 = sle->getFieldArray(sfPriceDataSeries)[0]
+                                                       .getFieldCurrency(sfQuoteAsset)
+                                                       .getText();
+                auto const beforeQuoteAssetName2 = sle->getFieldArray(sfPriceDataSeries)[1]
+                                                       .getFieldCurrency(sfQuoteAsset)
+                                                       .getText();
 
                 oracle.set(UpdateArg{.series = series, .fee = baseFee});
                 sle = env.le(keylet::oracle(owner, oracle.documentID()));
 
-                auto const afterQuoteAssetName1 =
-                    sle->getFieldArray(sfPriceDataSeries)[0]
-                        .getFieldCurrency(sfQuoteAsset)
-                        .getText();
-                auto const afterQuoteAssetName2 =
-                    sle->getFieldArray(sfPriceDataSeries)[1]
-                        .getFieldCurrency(sfQuoteAsset)
-                        .getText();
+                auto const afterQuoteAssetName1 = sle->getFieldArray(sfPriceDataSeries)[0]
+                                                      .getFieldCurrency(sfQuoteAsset)
+                                                      .getText();
+                auto const afterQuoteAssetName2 = sle->getFieldArray(sfPriceDataSeries)[1]
+                                                      .getFieldCurrency(sfQuoteAsset)
+                                                      .getText();
 
                 if (env.current()->rules().enabled(fixPriceOracleOrder))
                 {
@@ -746,15 +693,14 @@ private:
     }
 
     void
-    testMultisig(FeatureBitset features)
+    testMultisig()
     {
         testcase("Multisig");
         using namespace jtx;
         Oracle::setFee(100'000);
 
-        Env env(*this, features);
-        auto const baseFee =
-            static_cast<int>(env.current()->fees().base.drops());
+        Env env(*this);
+        auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
         Account const alice{"alice", KeyType::secp256k1};
         Account const bogie{"bogie", KeyType::secp256k1};
@@ -772,39 +718,34 @@ private:
         // Attach signers to alice.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}, {ed, 2}}), sig(alie));
         env.close();
-        // if multiSignReserve disabled then its 2 + 1 per signer
-        int const signerListOwners{features[featureMultiSignReserve] ? 1 : 5};
-        env.require(owners(alice, signerListOwners));
+
+        env.require(owners(alice, 1));
 
         // Create
         // Force close (true) and time advancement because the close time
         // is no longer 0.
-        Oracle oracle(
-            env,
-            CreateArg{.owner = alice, .fee = baseFee, .close = true},
-            false);
-        oracle.set(CreateArg{
-            .msig = msig(becky), .fee = baseFee, .err = ter(tefBAD_QUORUM)});
-        oracle.set(CreateArg{
-            .msig = msig(zelda), .fee = baseFee, .err = ter(tefBAD_SIGNATURE)});
+        Oracle oracle(env, CreateArg{.owner = alice, .fee = baseFee, .close = true}, false);
+        oracle.set(CreateArg{.msig = msig(becky), .fee = baseFee, .err = ter(tefBAD_QUORUM)});
+        oracle.set(CreateArg{.msig = msig(zelda), .fee = baseFee, .err = ter(tefBAD_SIGNATURE)});
         oracle.set(CreateArg{.msig = msig(becky, bogie), .fee = baseFee});
         BEAST_EXPECT(oracle.exists());
 
         // Update
-        oracle.set(UpdateArg{
-            .series = {{"XRP", "USD", 740, 1}},
-            .msig = msig(becky),
-            .fee = baseFee,
-            .err = ter(tefBAD_QUORUM)});
-        oracle.set(UpdateArg{
-            .series = {{"XRP", "USD", 740, 1}},
-            .msig = msig(zelda),
-            .fee = baseFee,
-            .err = ter(tefBAD_SIGNATURE)});
-        oracle.set(UpdateArg{
-            .series = {{"XRP", "USD", 741, 1}},
-            .msig = msig(becky, bogie),
-            .fee = baseFee});
+        oracle.set(
+            UpdateArg{
+                .series = {{"XRP", "USD", 740, 1}},
+                .msig = msig(becky),
+                .fee = baseFee,
+                .err = ter(tefBAD_QUORUM)});
+        oracle.set(
+            UpdateArg{
+                .series = {{"XRP", "USD", 740, 1}},
+                .msig = msig(zelda),
+                .fee = baseFee,
+                .err = ter(tefBAD_SIGNATURE)});
+        oracle.set(
+            UpdateArg{
+                .series = {{"XRP", "USD", 741, 1}}, .msig = msig(becky, bogie), .fee = baseFee});
         BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 741, 1}}));
         // remove the signer list
         env(signers(alice, jtx::none), sig(alie));
@@ -814,30 +755,24 @@ private:
         env(signers(alice, 2, {{zelda, 1}, {bob, 1}, {ed, 2}}), sig(alie));
         env.close();
         // old list fails
-        oracle.set(UpdateArg{
-            .series = {{"XRP", "USD", 740, 1}},
-            .msig = msig(becky, bogie),
-            .fee = baseFee,
-            .err = ter(tefBAD_SIGNATURE)});
+        oracle.set(
+            UpdateArg{
+                .series = {{"XRP", "USD", 740, 1}},
+                .msig = msig(becky, bogie),
+                .fee = baseFee,
+                .err = ter(tefBAD_SIGNATURE)});
         // updated list succeeds
-        oracle.set(UpdateArg{
-            .series = {{"XRP", "USD", 7412, 2}},
-            .msig = msig(zelda, bob),
-            .fee = baseFee});
+        oracle.set(
+            UpdateArg{
+                .series = {{"XRP", "USD", 7412, 2}}, .msig = msig(zelda, bob), .fee = baseFee});
         BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 7412, 2}}));
-        oracle.set(UpdateArg{
-            .series = {{"XRP", "USD", 74245, 3}},
-            .msig = msig(ed),
-            .fee = baseFee});
+        oracle.set(
+            UpdateArg{.series = {{"XRP", "USD", 74245, 3}}, .msig = msig(ed), .fee = baseFee});
         BEAST_EXPECT(oracle.expectPrice({{"XRP", "USD", 74245, 3}}));
 
         // Remove
-        oracle.remove(
-            {.msig = msig(bob), .fee = baseFee, .err = ter(tefBAD_QUORUM)});
-        oracle.remove(
-            {.msig = msig(becky),
-             .fee = baseFee,
-             .err = ter(tefBAD_SIGNATURE)});
+        oracle.remove({.msig = msig(bob), .fee = baseFee, .err = ter(tefBAD_QUORUM)});
+        oracle.remove({.msig = msig(becky), .fee = baseFee, .err = ter(tefBAD_SIGNATURE)});
         oracle.remove({.msig = msig(ed), .fee = baseFee});
         BEAST_EXPECT(!oracle.exists());
     }
@@ -851,13 +786,11 @@ private:
         auto const features = testable_amendments() - featurePriceOracle;
         Account const owner("owner");
         Env env(*this, features);
-        auto const baseFee =
-            static_cast<int>(env.current()->fees().base.drops());
+        auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
         env.fund(XRP(1'000), owner);
         {
-            Oracle oracle(
-                env, {.owner = owner, .fee = baseFee, .err = ter(temDISABLED)});
+            Oracle const oracle(env, {.owner = owner, .fee = baseFee, .err = ter(temDISABLED)});
         }
 
         {
@@ -879,20 +812,10 @@ public:
         testDelete();
         testUpdate();
         testAmendment();
-        for (auto const& features :
-             {all,
-              all - featureMultiSignReserve - featureExpandedSignerList,
-              all - featureExpandedSignerList})
-            testMultisig(features);
+        testMultisig();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Oracle, app, ripple);
+BEAST_DEFINE_TESTSUITE(Oracle, app, xrpl);
 
-}  // namespace oracle
-
-}  // namespace jtx
-
-}  // namespace test
-
-}  // namespace ripple
+}  // namespace xrpl::test::jtx::oracle

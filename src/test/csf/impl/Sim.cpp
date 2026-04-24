@@ -1,27 +1,14 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/csf/Sim.h>
 
-namespace ripple {
-namespace test {
-namespace csf {
+#include <test/csf/PeerGroup.h>
+#include <test/csf/SimTime.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <limits>
+#include <set>
+
+namespace xrpl::test::csf {
 
 void
 Sim::run(int ledgers)
@@ -52,12 +39,12 @@ Sim::synchronized() const
 }
 
 bool
-Sim::synchronized(PeerGroup const& g) const
+Sim::synchronized(PeerGroup const& g)
 {
     if (g.size() < 1)
         return true;
     Peer const* ref = g[0];
-    return std::all_of(g.begin(), g.end(), [&ref](Peer const* p) {
+    return std::ranges::all_of(g, [&ref](Peer const* p) {
         return p->lastClosedLedger.id() == ref->lastClosedLedger.id() &&
             p->fullyValidatedLedger.id() == ref->fullyValidatedLedger.id();
     });
@@ -80,6 +67,4 @@ Sim::branches(PeerGroup const& g) const
     return oracle.branches(ledgers);
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::csf

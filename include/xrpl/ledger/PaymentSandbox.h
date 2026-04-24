@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_LEDGER_PAYMENTSANDBOX_H_INCLUDED
-#define RIPPLE_LEDGER_PAYMENTSANDBOX_H_INCLUDED
+#pragma once
 
 #include <xrpl/ledger/RawView.h>
 #include <xrpl/ledger/Sandbox.h>
@@ -26,8 +6,9 @@
 #include <xrpl/protocol/AccountID.h>
 
 #include <map>
+#include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -35,11 +16,56 @@ namespace detail {
 //        into the PaymentSandbox class itself
 class DeferredCredits
 {
-public:
-    struct Adjustment
+private:
+    using KeyIOU = std::tuple<AccountID, AccountID, Currency>;
+    struct ValueIOU
     {
-        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b)
-            : debits(d), credits(c), origBalance(b)
+        explicit ValueIOU() = default;
+
+        STAmount lowAcctCredits;
+        STAmount highAcctCredits;
+        STAmount lowAcctOrigBalance;
+    };
+
+    struct HolderValueMPT
+    {
+        HolderValueMPT() = default;
+        // Debit to issuer
+        std::uint64_t debit = 0;
+        std::uint64_t origBalance = 0;
+    };
+
+    struct IssuerValueMPT
+    {
+        IssuerValueMPT() = default;
+        std::map<AccountID, HolderValueMPT> holders;
+        // Credit to holder
+        std::uint64_t credit = 0;
+        // OutstandingAmount might overflow when MPTs are credited to a holder.
+        // Consider A1 paying 100MPT to A2 and A1 already having maximum MPTs.
+        // Since the payment engine executes a payment in revers, A2 is
+        // credited first and OutstandingAmount is going to be equal
+        // to MaximumAmount + 100MPT. In the next step A1 redeems 100MPT
+        // to the issuer and OutstandingAmount balances out.
+        std::int64_t origBalance = 0;
+        // Self debit on offer selling MPT. Since the payment engine executes
+        // a payment in reverse, a crediting/buying step may overflow
+        // OutstandingAmount. A sell MPT offer owned by a holder can redeem any
+        // amount up to the offer's amount and holder's available funds,
+        // balancing out OutstandingAmount. But if the offer's owner is issuer
+        // then it issues more MPT. In this case the available amount to issue
+        // is the initial issuer's available amount less all offer sell amounts
+        // by the issuer. This is self-debit, where the offer's owner,
+        // issuer in this case, debits to self.
+        std::uint64_t selfDebit = 0;
+    };
+    using AdjustmentMPT = IssuerValueMPT;
+
+public:
+    struct AdjustmentIOU
+    {
+        AdjustmentIOU(STAmount d, STAmount c, STAmount b)
+            : debits(std::move(d)), credits(std::move(c)), origBalance(std::move(b))
         {
         }
         STAmount debits;
@@ -49,18 +75,29 @@ public:
 
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
-    std::optional<Adjustment>
-    adjustments(
-        AccountID const& main,
-        AccountID const& other,
-        Currency const& currency) const;
+    std::optional<AdjustmentIOU>
+    adjustmentsIOU(AccountID const& main, AccountID const& other, Currency const& currency) const;
+
+    std::optional<AdjustmentMPT>
+    adjustmentsMPT(MPTID const& mptID) const;
 
     void
-    credit(
+    creditIOU(
         AccountID const& sender,
         AccountID const& receiver,
         STAmount const& amount,
         STAmount const& preCreditSenderBalance);
+
+    void
+    creditMPT(
+        AccountID const& sender,
+        AccountID const& receiver,
+        STAmount const& amount,
+        std::uint64_t preCreditBalanceHolder,
+        std::int64_t preCreditBalanceIssuer);
+
+    void
+    issuerSelfDebitMPT(MPTIssue const& issue, std::uint64_t amount, std::int64_t origBalance);
 
     void
     ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next);
@@ -75,21 +112,11 @@ public:
     apply(DeferredCredits& to);
 
 private:
-    // lowAccount, highAccount
-    using Key = std::tuple<AccountID, AccountID, Currency>;
-    struct Value
-    {
-        explicit Value() = default;
+    static KeyIOU
+    makeKeyIOU(AccountID const& a1, AccountID const& a2, Currency const& currency);
 
-        STAmount lowAcctCredits;
-        STAmount highAcctCredits;
-        STAmount lowAcctOrigBalance;
-    };
-
-    static Key
-    makeKey(AccountID const& a1, AccountID const& a2, Currency const& c);
-
-    std::map<Key, Value> credits_;
+    std::map<KeyIOU, ValueIOU> creditsIOU_;
+    std::map<MPTID, IssuerValueMPT> creditsMPT_;
     std::map<AccountID, std::uint32_t> ownerCounts_;
 };
 
@@ -121,8 +148,7 @@ public:
 
     PaymentSandbox(PaymentSandbox&&) = default;
 
-    PaymentSandbox(ReadView const* base, ApplyFlags flags)
-        : ApplyViewBase(base, flags)
+    PaymentSandbox(ReadView const* base, ApplyFlags flags) : ApplyViewBase(base, flags)
     {
     }
 
@@ -149,34 +175,46 @@ public:
     {
     }
 
-    explicit PaymentSandbox(PaymentSandbox* base)
-        : ApplyViewBase(base, base->flags()), ps_(base)
+    explicit PaymentSandbox(PaymentSandbox* base) : ApplyViewBase(base, base->flags()), ps_(base)
     {
     }
     /** @} */
 
     STAmount
-    balanceHook(
-        AccountID const& account,
-        AccountID const& issuer,
-        STAmount const& amount) const override;
+    balanceHookIOU(AccountID const& account, AccountID const& issuer, STAmount const& amount)
+        const override;
+
+    STAmount
+    balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount)
+        const override;
+
+    STAmount
+    balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount) const override;
 
     void
-    creditHook(
+    creditHookIOU(
         AccountID const& from,
         AccountID const& to,
         STAmount const& amount,
         STAmount const& preCreditBalance) override;
 
     void
-    adjustOwnerCountHook(
-        AccountID const& account,
-        std::uint32_t cur,
-        std::uint32_t next) override;
+    creditHookMPT(
+        AccountID const& from,
+        AccountID const& to,
+        STAmount const& amount,
+        std::uint64_t preCreditBalanceHolder,
+        std::int64_t preCreditBalanceIssuer) override;
+
+    void
+    issuerSelfDebitHookMPT(MPTIssue const& issue, std::uint64_t amount, std::int64_t origBalance)
+        override;
+
+    void
+    adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;
 
     std::uint32_t
-    ownerCountHook(AccountID const& account, std::uint32_t count)
-        const override;
+    ownerCountHook(AccountID const& account, std::uint32_t count) const override;
 
     /** Apply changes to base view.
 
@@ -207,6 +245,4 @@ private:
     PaymentSandbox const* ps_ = nullptr;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

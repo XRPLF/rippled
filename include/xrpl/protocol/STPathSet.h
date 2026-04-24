@@ -1,28 +1,10 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STPATHSET_H_INCLUDED
-#define RIPPLE_PROTOCOL_STPATHSET_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -30,13 +12,13 @@
 #include <cstddef>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class STPathElement final : public CountedObject<STPathElement>
 {
     unsigned int mType;
     AccountID mAccountID;
-    Currency mCurrencyID;
+    PathAsset mAssetID;
     AccountID mIssuerID;
 
     bool is_offer_;
@@ -45,12 +27,13 @@ class STPathElement final : public CountedObject<STPathElement>
 public:
     enum Type {
         typeNone = 0x00,
-        typeAccount =
-            0x01,  // Rippling through an account (vs taking an offer).
+        typeAccount = 0x01,   // Rippling through an account (vs taking an offer).
         typeCurrency = 0x10,  // Currency follows.
         typeIssuer = 0x20,    // Issuer follows.
+        typeMPT = 0x40,       // MPT follows.
         typeBoundary = 0xFF,  // Boundary between alternate paths.
-        typeAll = typeAccount | typeCurrency | typeIssuer,
+        typeAsset = typeCurrency | typeMPT,
+        typeAll = typeAccount | typeCurrency | typeIssuer | typeMPT,
         // Combination of all types.
     };
 
@@ -61,19 +44,19 @@ public:
 
     STPathElement(
         std::optional<AccountID> const& account,
-        std::optional<Currency> const& currency,
+        std::optional<PathAsset> const& asset,
         std::optional<AccountID> const& issuer);
 
     STPathElement(
         AccountID const& account,
-        Currency const& currency,
+        PathAsset const& asset,
         AccountID const& issuer,
-        bool forceCurrency = false);
+        bool forceAsset = false);
 
     STPathElement(
         unsigned int uType,
         AccountID const& account,
-        Currency const& currency,
+        PathAsset const& asset,
         AccountID const& issuer);
 
     auto
@@ -92,6 +75,12 @@ public:
     hasCurrency() const;
 
     bool
+    hasMPT() const;
+
+    bool
+    hasAsset() const;
+
+    bool
     isNone() const;
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
@@ -99,11 +88,20 @@ public:
     AccountID const&
     getAccountID() const;
 
+    PathAsset const&
+    getPathAsset() const;
+
     Currency const&
     getCurrency() const;
 
+    MPTID const&
+    getMPTID() const;
+
     AccountID const&
     getIssuerID() const;
+
+    bool
+    isType(Type const& pe) const;
 
     bool
     operator==(STPathElement const& t) const;
@@ -139,10 +137,7 @@ public:
     emplace_back(Args&&... args);
 
     bool
-    hasSeen(
-        AccountID const& account,
-        Currency const& currency,
-        AccountID const& issuer) const;
+    hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const;
 
     Json::Value getJson(JsonOptions) const;
 
@@ -245,7 +240,7 @@ inline STPathElement::STPathElement() : mType(typeNone), is_offer_(true)
 
 inline STPathElement::STPathElement(
     std::optional<AccountID> const& account,
-    std::optional<Currency> const& currency,
+    std::optional<PathAsset> const& asset,
     std::optional<AccountID> const& issuer)
     : mType(typeNone)
 {
@@ -259,23 +254,20 @@ inline STPathElement::STPathElement(
         mAccountID = *account;
         mType |= typeAccount;
         XRPL_ASSERT(
-            mAccountID != noAccount(),
-            "ripple::STPathElement::STPathElement : account is set");
+            mAccountID != noAccount(), "xrpl::STPathElement::STPathElement : account is set");
     }
 
-    if (currency)
+    if (asset)
     {
-        mCurrencyID = *currency;
-        mType |= typeCurrency;
+        mAssetID = *asset;
+        mType |= mAssetID.holds<Currency>() ? typeCurrency : typeMPT;
     }
 
     if (issuer)
     {
         mIssuerID = *issuer;
         mType |= typeIssuer;
-        XRPL_ASSERT(
-            mIssuerID != noAccount(),
-            "ripple::STPathElement::STPathElement : issuer is set");
+        XRPL_ASSERT(mIssuerID != noAccount(), "xrpl::STPathElement::STPathElement : issuer is set");
     }
 
     hash_value_ = get_hash(*this);
@@ -283,20 +275,20 @@ inline STPathElement::STPathElement(
 
 inline STPathElement::STPathElement(
     AccountID const& account,
-    Currency const& currency,
+    PathAsset const& asset,
     AccountID const& issuer,
-    bool forceCurrency)
+    bool forceAsset)
     : mType(typeNone)
     , mAccountID(account)
-    , mCurrencyID(currency)
+    , mAssetID(asset)
     , mIssuerID(issuer)
     , is_offer_(isXRP(mAccountID))
 {
     if (!is_offer_)
         mType |= typeAccount;
 
-    if (forceCurrency || !isXRP(currency))
-        mType |= typeCurrency;
+    if (forceAsset || !isXRP(mAssetID))
+        mType |= asset.holds<Currency>() ? typeCurrency : typeMPT;
 
     if (!isXRP(issuer))
         mType |= typeIssuer;
@@ -307,14 +299,19 @@ inline STPathElement::STPathElement(
 inline STPathElement::STPathElement(
     unsigned int uType,
     AccountID const& account,
-    Currency const& currency,
+    PathAsset const& asset,
     AccountID const& issuer)
     : mType(uType)
     , mAccountID(account)
-    , mCurrencyID(currency)
+    , mAssetID(asset)
     , mIssuerID(issuer)
     , is_offer_(isXRP(mAccountID))
 {
+    // uType could be assetType; i.e. either Currency or MPTID.
+    // Get the actual type.
+    mAssetID.visit(
+        [&](Currency const&) { mType = mType & (~Type::typeMPT); },
+        [&](MPTID const&) { mType = mType & (~Type::typeCurrency); });
     hash_value_ = get_hash(*this);
 }
 
@@ -337,15 +334,33 @@ STPathElement::isAccount() const
 }
 
 inline bool
+STPathElement::isType(Type const& pe) const
+{
+    return (mType & pe) != 0u;
+}
+
+inline bool
 STPathElement::hasIssuer() const
 {
-    return getNodeType() & STPathElement::typeIssuer;
+    return isType(STPathElement::typeIssuer);
 }
 
 inline bool
 STPathElement::hasCurrency() const
 {
-    return getNodeType() & STPathElement::typeCurrency;
+    return isType(STPathElement::typeCurrency);
+}
+
+inline bool
+STPathElement::hasMPT() const
+{
+    return isType(STPathElement::typeMPT);
+}
+
+inline bool
+STPathElement::hasAsset() const
+{
+    return isType(STPathElement::typeAsset);
 }
 
 inline bool
@@ -362,10 +377,22 @@ STPathElement::getAccountID() const
     return mAccountID;
 }
 
+inline PathAsset const&
+STPathElement::getPathAsset() const
+{
+    return mAssetID;
+}
+
 inline Currency const&
 STPathElement::getCurrency() const
 {
-    return mCurrencyID;
+    return mAssetID.get<Currency>();
+}
+
+inline MPTID const&
+STPathElement::getMPTID() const
+{
+    return mAssetID.get<MPTID>();
 }
 
 inline AccountID const&
@@ -377,9 +404,8 @@ STPathElement::getIssuerID() const
 inline bool
 STPathElement::operator==(STPathElement const& t) const
 {
-    return (mType & typeAccount) == (t.mType & typeAccount) &&
-        hash_value_ == t.hash_value_ && mAccountID == t.mAccountID &&
-        mCurrencyID == t.mCurrencyID && mIssuerID == t.mIssuerID;
+    return (mType & typeAccount) == (t.mType & typeAccount) && hash_value_ == t.hash_value_ &&
+        mAccountID == t.mAccountID && mAssetID == t.mAssetID && mIssuerID == t.mIssuerID;
 }
 
 inline bool
@@ -523,6 +549,4 @@ STPathSet::emplace_back(Args&&... args)
     value.emplace_back(std::forward<Args>(args)...);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

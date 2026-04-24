@@ -1,46 +1,28 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#include <xrpl/json/json_value.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/detail/json_assert.h>
 #include <xrpl/json/json_forwards.h>
-#include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <cstring>
+#include <limits>
 #include <string>
 #include <utility>
 
 namespace Json {
 
 Value const Value::null;
-Int const Value::minInt = Int(~(UInt(-1) / 2));
-Int const Value::maxInt = Int(UInt(-1) / 2);
-UInt const Value::maxUInt = UInt(-1);
 
 class DefaultValueAllocator : public ValueAllocator
 {
 public:
-    virtual ~DefaultValueAllocator() = default;
+    ~DefaultValueAllocator() override = default;
 
     char*
     makeMemberName(char const* memberName) override
@@ -55,18 +37,17 @@ public:
     }
 
     char*
-    duplicateStringValue(char const* value, unsigned int length = unknown)
-        override
+    duplicateStringValue(char const* value, unsigned int length = unknown) override
     {
         //@todo investigate this old optimization
         // if ( !value  ||  value[0] == 0 )
         //   return 0;
 
         if (length == unknown)
-            length = value ? (unsigned int)strlen(value) : 0;
+            length = (value != nullptr) ? (unsigned int)strlen(value) : 0;
 
         char* newString = static_cast<char*>(malloc(length + 1));
-        if (value)
+        if (value != nullptr)
             memcpy(newString, value, length);
         newString[length] = 0;
         return newString;
@@ -75,7 +56,7 @@ public:
     void
     releaseStringValue(char* value) override
     {
-        if (value)
+        if (value != nullptr)
             free(value);
     }
 };
@@ -83,6 +64,7 @@ public:
 static ValueAllocator*&
 valueAllocator()
 {
+    // NOLINTNEXTLINE(misc-const-correctness)
     static ValueAllocator* valueAllocator = new DefaultValueAllocator;
     return valueAllocator;
 }
@@ -112,9 +94,7 @@ Value::CZString::CZString(int index) : cstr_(0), index_(index)
 }
 
 Value::CZString::CZString(char const* cstr, DuplicationPolicy allocate)
-    : cstr_(
-          allocate == duplicate ? valueAllocator()->makeMemberName(cstr) : cstr)
-    , index_(allocate)
+    : cstr_(allocate == duplicate ? valueAllocator()->makeMemberName(cstr) : cstr), index_(allocate)
 {
 }
 
@@ -123,23 +103,24 @@ Value::CZString::CZString(CZString const& other)
           other.index_ != noDuplication && other.cstr_ != 0
               ? valueAllocator()->makeMemberName(other.cstr_)
               : other.cstr_)
-    , index_(
-          other.cstr_
-              ? (other.index_ == noDuplication ? noDuplication : duplicate)
-              : other.index_)
+    , index_([&]() -> int {
+        if (!other.cstr_)
+            return other.index_;
+        return other.index_ == noDuplication ? noDuplication : duplicate;
+    }())
 {
 }
 
 Value::CZString::~CZString()
 {
-    if (cstr_ && index_ == duplicate)
+    if ((cstr_ != nullptr) && index_ == duplicate)
         valueAllocator()->releaseMemberName(const_cast<char*>(cstr_));
 }
 
 bool
 Value::CZString::operator<(CZString const& other) const
 {
-    if (cstr_ && other.cstr_)
+    if ((cstr_ != nullptr) && (other.cstr_ != nullptr))
         return strcmp(cstr_, other.cstr_) < 0;
 
     return index_ < other.index_;
@@ -148,7 +129,7 @@ Value::CZString::operator<(CZString const& other) const
 bool
 Value::CZString::operator==(CZString const& other) const
 {
-    if (cstr_ && other.cstr_)
+    if ((cstr_ != nullptr) && (other.cstr_ != nullptr))
         return strcmp(cstr_, other.cstr_) == 0;
 
     return index_ == other.index_;
@@ -184,7 +165,7 @@ Value::CZString::isStaticString() const
  * memset( this, 0, sizeof(Value) )
  * This optimization is used in ValueInternalMap fast allocator.
  */
-Value::Value(ValueType type) : type_(type), allocated_(0)
+Value::Value(ValueType type) : type_(type)
 {
     switch (type)
     {
@@ -240,20 +221,19 @@ Value::Value(char const* value) : type_(stringValue), allocated_(true)
     value_.string_ = valueAllocator()->duplicateStringValue(value);
 }
 
-Value::Value(ripple::Number const& value) : type_(stringValue), allocated_(true)
+Value::Value(xrpl::Number const& value) : type_(stringValue), allocated_(true)
 {
     auto const tmp = to_string(value);
-    value_.string_ =
-        valueAllocator()->duplicateStringValue(tmp.c_str(), tmp.length());
+    value_.string_ = valueAllocator()->duplicateStringValue(tmp.c_str(), tmp.length());
 }
 
 Value::Value(std::string const& value) : type_(stringValue), allocated_(true)
 {
-    value_.string_ = valueAllocator()->duplicateStringValue(
-        value.c_str(), (unsigned int)value.length());
+    value_.string_ =
+        valueAllocator()->duplicateStringValue(value.c_str(), (unsigned int)value.length());
 }
 
-Value::Value(StaticString const& value) : type_(stringValue), allocated_(false)
+Value::Value(StaticString const& value) : type_(stringValue)
 {
     value_.string_ = const_cast<char*>(value.c_str());
 }
@@ -276,14 +256,15 @@ Value::Value(Value const& other) : type_(other.type_)
             break;
 
         case stringValue:
-            if (other.value_.string_)
+            if (other.value_.string_ != nullptr)
             {
-                value_.string_ = valueAllocator()->duplicateStringValue(
-                    other.value_.string_);
+                value_.string_ = valueAllocator()->duplicateStringValue(other.value_.string_);
                 allocated_ = true;
             }
             else
+            {
                 value_.string_ = 0;
+            }
 
             break;
 
@@ -318,7 +299,7 @@ Value::~Value()
 
         case arrayValue:
         case objectValue:
-            if (value_.map_)
+            if (value_.map_ != nullptr)
                 delete value_.map_;
             break;
 
@@ -357,11 +338,11 @@ Value::swap(Value& other) noexcept
 {
     std::swap(value_, other.value_);
 
-    ValueType temp = type_;
+    ValueType const temp = type_;
     type_ = other.type_;
     other.type_ = temp;
 
-    int temp2 = allocated_;
+    int const temp2 = allocated_;
     allocated_ = other.allocated_;
     other.allocated_ = temp2;
 }
@@ -380,7 +361,9 @@ integerCmp(Int i, UInt ui)
         return -1;
 
     // Now we can safely compare.
-    return (i < ui) ? -1 : (i == ui) ? 0 : 1;
+    if (i < ui)
+        return -1;
+    return (i == ui) ? 0 : 1;
 }
 
 bool
@@ -389,9 +372,13 @@ operator<(Value const& x, Value const& y)
     if (auto signum = x.type_ - y.type_)
     {
         if (x.type_ == intValue && y.type_ == uintValue)
+        {
             signum = integerCmp(x.value_.int_, y.value_.uint_);
+        }
         else if (x.type_ == uintValue && y.type_ == intValue)
+        {
             signum = -integerCmp(y.value_.int_, x.value_.uint_);
+        }
         return signum < 0;
     }
 
@@ -410,16 +397,16 @@ operator<(Value const& x, Value const& y)
             return x.value_.real_ < y.value_.real_;
 
         case booleanValue:
-            return x.value_.bool_ < y.value_.bool_;
+            return static_cast<int>(x.value_.bool_) < static_cast<int>(y.value_.bool_);
 
         case stringValue:
-            return (x.value_.string_ == 0 && y.value_.string_) ||
-                (y.value_.string_ && x.value_.string_ &&
+            return (x.value_.string_ == 0 && (y.value_.string_ != nullptr)) ||
+                ((y.value_.string_ != nullptr) && (x.value_.string_ != nullptr) &&
                  strcmp(x.value_.string_, y.value_.string_) < 0);
 
         case arrayValue:
         case objectValue: {
-            if (int signum = int(x.value_.map_->size()) - y.value_.map_->size())
+            if (int const signum = int(x.value_.map_->size()) - y.value_.map_->size())
                 return signum < 0;
 
             return *x.value_.map_ < *y.value_.map_;
@@ -431,7 +418,7 @@ operator<(Value const& x, Value const& y)
             // LCOV_EXCL_STOP
     }
 
-    return 0;  // unreachable
+    return false;  // unreachable
 }
 
 bool
@@ -440,9 +427,9 @@ operator==(Value const& x, Value const& y)
     if (x.type_ != y.type_)
     {
         if (x.type_ == intValue && y.type_ == uintValue)
-            return !integerCmp(x.value_.int_, y.value_.uint_);
+            return integerCmp(x.value_.int_, y.value_.uint_) == 0;
         if (x.type_ == uintValue && y.type_ == intValue)
-            return !integerCmp(y.value_.int_, x.value_.uint_);
+            return integerCmp(y.value_.int_, x.value_.uint_) == 0;
         return false;
     }
 
@@ -465,8 +452,8 @@ operator==(Value const& x, Value const& y)
 
         case stringValue:
             return x.value_.string_ == y.value_.string_ ||
-                (y.value_.string_ && x.value_.string_ &&
-                 !strcmp(x.value_.string_, y.value_.string_));
+                ((y.value_.string_ != nullptr) && (x.value_.string_ != nullptr) &&
+                 (strcmp(x.value_.string_, y.value_.string_) == 0));
 
         case arrayValue:
         case objectValue:
@@ -479,7 +466,7 @@ operator==(Value const& x, Value const& y)
             // LCOV_EXCL_STOP
     }
 
-    return 0;  // unreachable
+    return false;  // unreachable
 }
 
 char const*
@@ -498,7 +485,7 @@ Value::asString() const
             return "";
 
         case stringValue:
-            return value_.string_ ? value_.string_ : "";
+            return (value_.string_ != nullptr) ? value_.string_ : "";
 
         case booleanValue:
             return value_.bool_ ? "true" : "false";
@@ -538,13 +525,12 @@ Value::asInt() const
 
         case uintValue:
             JSON_ASSERT_MESSAGE(
-                value_.uint_ < (unsigned)maxInt,
-                "integer out of signed integer range");
+                value_.uint_ < (unsigned)maxInt, "integer out of signed integer range");
             return value_.uint_;
 
         case realValue:
             JSON_ASSERT_MESSAGE(
-                value_.real_ >= minInt && value_.real_ <= maxInt,
+                (value_.real_ >= minInt && value_.real_ <= maxInt),
                 "Real out of signed integer range");
             return Int(value_.real_);
 
@@ -552,7 +538,7 @@ Value::asInt() const
             return value_.bool_ ? 1 : 0;
 
         case stringValue: {
-            char const* const str{value_.string_ ? value_.string_ : ""};
+            char const* const str{(value_.string_ != nullptr) ? value_.string_ : ""};
             return beast::lexicalCastThrow<int>(str);
         }
 
@@ -569,6 +555,64 @@ Value::asInt() const
     return 0;  // unreachable;
 }
 
+UInt
+Value::asAbsUInt() const
+{
+    switch (type_)
+    {
+        case nullValue:
+            return 0;
+
+        case intValue: {
+            // Doing this conversion through int64 avoids overflow error for
+            // value_.int_ = -1 * 2^31 i.e. numeric_limits<int>::min().
+            if (value_.int_ < 0)
+                return static_cast<std::int64_t>(value_.int_) * -1;
+            return value_.int_;
+        }
+
+        case uintValue:
+            return value_.uint_;
+
+        case realValue: {
+            if (value_.real_ < 0)
+            {
+                JSON_ASSERT_MESSAGE(
+                    -1 * value_.real_ <= maxUInt, "Real out of unsigned integer range");
+                return UInt(-1 * value_.real_);
+            }
+            JSON_ASSERT_MESSAGE(value_.real_ <= maxUInt, "Real out of unsigned integer range");
+            return UInt(value_.real_);
+        }
+
+        case booleanValue:
+            return value_.bool_ ? 1 : 0;
+
+        case stringValue: {
+            char const* const str{(value_.string_ != nullptr) ? value_.string_ : ""};
+            auto const temp = beast::lexicalCastThrow<std::int64_t>(str);
+            if (temp < 0)
+            {
+                JSON_ASSERT_MESSAGE(-1 * temp <= maxUInt, "String out of unsigned integer range");
+                return -1 * temp;
+            }
+            JSON_ASSERT_MESSAGE(temp <= maxUInt, "String out of unsigned integer range");
+            return temp;
+        }
+
+        case arrayValue:
+        case objectValue:
+            JSON_ASSERT_MESSAGE(false, "Type is not convertible to int");
+
+            // LCOV_EXCL_START
+        default:
+            UNREACHABLE("Json::Value::asAbsInt : invalid type");
+            // LCOV_EXCL_STOP
+    }
+
+    return 0;  // unreachable;
+}
+
 Value::UInt
 Value::asUInt() const
 {
@@ -579,8 +623,7 @@ Value::asUInt() const
 
         case intValue:
             JSON_ASSERT_MESSAGE(
-                value_.int_ >= 0,
-                "Negative integer can not be converted to unsigned integer");
+                value_.int_ >= 0, "Negative integer can not be converted to unsigned integer");
             return value_.int_;
 
         case uintValue:
@@ -588,7 +631,7 @@ Value::asUInt() const
 
         case realValue:
             JSON_ASSERT_MESSAGE(
-                value_.real_ >= 0 && value_.real_ <= maxUInt,
+                (value_.real_ >= 0 && value_.real_ <= maxUInt),
                 "Real out of unsigned integer range");
             return UInt(value_.real_);
 
@@ -596,7 +639,7 @@ Value::asUInt() const
             return value_.bool_ ? 1 : 0;
 
         case stringValue: {
-            char const* const str{value_.string_ ? value_.string_ : ""};
+            char const* const str{(value_.string_ != nullptr) ? value_.string_ : ""};
             return beast::lexicalCastThrow<unsigned int>(str);
         }
 
@@ -666,11 +709,11 @@ Value::asBool() const
             return value_.bool_;
 
         case stringValue:
-            return value_.string_ && value_.string_[0] != 0;
+            return (value_.string_ != nullptr) && value_.string_[0] != 0;
 
         case arrayValue:
         case objectValue:
-            return value_.map_->size() != 0;
+            return !value_.map_->empty();
 
             // LCOV_EXCL_START
         default:
@@ -690,45 +733,37 @@ Value::isConvertibleTo(ValueType other) const
             return true;
 
         case intValue:
-            return (other == nullValue && value_.int_ == 0) ||
-                other == intValue || (other == uintValue && value_.int_ >= 0) ||
-                other == realValue || other == stringValue ||
-                other == booleanValue;
+            return (other == nullValue && value_.int_ == 0) || other == intValue ||
+                (other == uintValue && value_.int_ >= 0) || other == realValue ||
+                other == stringValue || other == booleanValue;
 
         case uintValue:
             return (other == nullValue && value_.uint_ == 0) ||
-                (other == intValue && value_.uint_ <= (unsigned)maxInt) ||
-                other == uintValue || other == realValue ||
-                other == stringValue || other == booleanValue;
+                (other == intValue && value_.uint_ <= (unsigned)maxInt) || other == uintValue ||
+                other == realValue || other == stringValue || other == booleanValue;
 
         case realValue:
             return (other == nullValue && value_.real_ == 0.0) ||
-                (other == intValue && value_.real_ >= minInt &&
-                 value_.real_ <= maxInt) ||
-                (other == uintValue && value_.real_ >= 0 &&
-                 value_.real_ <= maxUInt &&
+                (other == intValue && value_.real_ >= minInt && value_.real_ <= maxInt) ||
+                (other == uintValue && value_.real_ >= 0 && value_.real_ <= maxUInt &&
                  std::fabs(round(value_.real_) - value_.real_) <
                      std::numeric_limits<double>::epsilon()) ||
-                other == realValue || other == stringValue ||
-                other == booleanValue;
+                other == realValue || other == stringValue || other == booleanValue;
 
         case booleanValue:
-            return (other == nullValue && value_.bool_ == false) ||
-                other == intValue || other == uintValue || other == realValue ||
-                other == stringValue || other == booleanValue;
+            return (other == nullValue && !value_.bool_) || other == intValue ||
+                other == uintValue || other == realValue || other == stringValue ||
+                other == booleanValue;
 
         case stringValue:
             return other == stringValue ||
-                (other == nullValue &&
-                 (!value_.string_ || value_.string_[0] == 0));
+                (other == nullValue && ((value_.string_ == nullptr) || value_.string_[0] == 0));
 
         case arrayValue:
-            return other == arrayValue ||
-                (other == nullValue && value_.map_->size() == 0);
+            return other == arrayValue || (other == nullValue && value_.map_->empty());
 
         case objectValue:
-            return other == objectValue ||
-                (other == nullValue && value_.map_->size() == 0);
+            return other == objectValue || (other == nullValue && value_.map_->empty());
 
         // LCOV_EXCL_START
         default:
@@ -775,7 +810,8 @@ Value::size() const
     return 0;  // unreachable;
 }
 
-Value::operator bool() const
+Value::
+operator bool() const
 {
     if (isNull())
         return false;
@@ -783,10 +819,10 @@ Value::operator bool() const
     if (isString())
     {
         auto s = asCString();
-        return s && s[0];
+        return (s != nullptr) && (s[0] != 0);
     }
 
-    return !(isArray() || isObject()) || size();
+    return !(isArray() || isObject()) || (size() != 0u);
 }
 
 void
@@ -812,19 +848,18 @@ Value&
 Value::operator[](UInt index)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == arrayValue,
-        "Json::Value::operator[](UInt) : valid type");
+        type_ == nullValue || type_ == arrayValue, "Json::Value::operator[](UInt) : valid type");
 
     if (type_ == nullValue)
         *this = Value(arrayValue);
 
-    CZString key(index);
+    CZString const key(index);
     ObjectValues::iterator it = value_.map_->lower_bound(key);
 
     if (it != value_.map_->end() && (*it).first == key)
         return (*it).second;
 
-    ObjectValues::value_type defaultValue(key, null);
+    ObjectValues::value_type const defaultValue(key, null);
     it = value_.map_->insert(it, defaultValue);
     return (*it).second;
 }
@@ -839,8 +874,8 @@ Value::operator[](UInt index) const
     if (type_ == nullValue)
         return null;
 
-    CZString key(index);
-    ObjectValues::const_iterator it = value_.map_->find(key);
+    CZString const key(index);
+    ObjectValues::const_iterator const it = value_.map_->find(key);
 
     if (it == value_.map_->end())
         return null;
@@ -858,20 +893,18 @@ Value&
 Value::resolveReference(char const* key, bool isStatic)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue,
-        "Json::Value::resolveReference : valid type");
+        type_ == nullValue || type_ == objectValue, "Json::Value::resolveReference : valid type");
 
     if (type_ == nullValue)
         *this = Value(objectValue);
 
-    CZString actualKey(
-        key, isStatic ? CZString::noDuplication : CZString::duplicateOnCopy);
+    CZString const actualKey(key, isStatic ? CZString::noDuplication : CZString::duplicateOnCopy);
     ObjectValues::iterator it = value_.map_->lower_bound(actualKey);
 
     if (it != value_.map_->end() && (*it).first == actualKey)
         return (*it).second;
 
-    ObjectValues::value_type defaultValue(actualKey, null);
+    ObjectValues::value_type const defaultValue(actualKey, null);
     it = value_.map_->insert(it, defaultValue);
     Value& value = (*it).second;
     return value;
@@ -900,8 +933,8 @@ Value::operator[](char const* key) const
     if (type_ == nullValue)
         return null;
 
-    CZString actualKey(key, CZString::noDuplication);
-    ObjectValues::const_iterator it = value_.map_->find(actualKey);
+    CZString const actualKey(key, CZString::noDuplication);
+    ObjectValues::const_iterator const it = value_.map_->find(actualKey);
 
     if (it == value_.map_->end())
         return null;
@@ -962,14 +995,13 @@ Value
 Value::removeMember(char const* key)
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue,
-        "Json::Value::removeMember : valid type");
+        type_ == nullValue || type_ == objectValue, "Json::Value::removeMember : valid type");
 
     if (type_ == nullValue)
         return null;
 
-    CZString actualKey(key, CZString::noDuplication);
-    ObjectValues::iterator it = value_.map_->find(actualKey);
+    CZString const actualKey(key, CZString::noDuplication);
+    ObjectValues::iterator const it = value_.map_->find(actualKey);
 
     if (it == value_.map_->end())
         return null;
@@ -1001,12 +1033,17 @@ Value::isMember(std::string const& key) const
     return isMember(key.c_str());
 }
 
+bool
+Value::isMember(StaticString const& key) const
+{
+    return isMember(key.c_str());
+}
+
 Value::Members
 Value::getMemberNames() const
 {
     XRPL_ASSERT(
-        type_ == nullValue || type_ == objectValue,
-        "Json::Value::getMemberNames : valid type");
+        type_ == nullValue || type_ == objectValue, "Json::Value::getMemberNames : valid type");
 
     if (type_ == nullValue)
         return Value::Members();
@@ -1014,10 +1051,10 @@ Value::getMemberNames() const
     Members members;
     members.reserve(value_.map_->size());
     ObjectValues::const_iterator it = value_.map_->begin();
-    ObjectValues::const_iterator itEnd = value_.map_->end();
+    ObjectValues::const_iterator const itEnd = value_.map_->end();
 
     for (; it != itEnd; ++it)
-        members.push_back(std::string((*it).first.c_str()));
+        members.emplace_back((*it).first.c_str());
 
     return members;
 }
@@ -1108,7 +1145,7 @@ Value::begin() const
     {
         case arrayValue:
         case objectValue:
-            if (value_.map_)
+            if (value_.map_ != nullptr)
                 return const_iterator(value_.map_->begin());
 
             break;
@@ -1126,7 +1163,7 @@ Value::end() const
     {
         case arrayValue:
         case objectValue:
-            if (value_.map_)
+            if (value_.map_ != nullptr)
                 return const_iterator(value_.map_->end());
 
             break;
@@ -1144,7 +1181,7 @@ Value::begin()
     {
         case arrayValue:
         case objectValue:
-            if (value_.map_)
+            if (value_.map_ != nullptr)
                 return iterator(value_.map_->begin());
             break;
         default:
@@ -1161,7 +1198,7 @@ Value::end()
     {
         case arrayValue:
         case objectValue:
-            if (value_.map_)
+            if (value_.map_ != nullptr)
                 return iterator(value_.map_->end());
             break;
         default:

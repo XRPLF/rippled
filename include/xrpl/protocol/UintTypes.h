@@ -1,31 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_UINTTYPES_H_INCLUDED
-#define RIPPLE_PROTOCOL_UINTTYPES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/AccountID.h>
 
-namespace ripple {
+namespace xrpl {
 namespace detail {
 
 class CurrencyTag
@@ -115,34 +95,32 @@ operator<<(std::ostream& os, Currency const& x)
     return os;
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 namespace std {
 
 template <>
-struct hash<ripple::Currency> : ripple::Currency::hasher
+struct hash<xrpl::Currency> : xrpl::Currency::hasher
 {
     hash() = default;
 };
 
 template <>
-struct hash<ripple::NodeID> : ripple::NodeID::hasher
+struct hash<xrpl::NodeID> : xrpl::NodeID::hasher
 {
     hash() = default;
 };
 
 template <>
-struct hash<ripple::Directory> : ripple::Directory::hasher
+struct hash<xrpl::Directory> : xrpl::Directory::hasher
 {
     hash() = default;
 };
 
 template <>
-struct hash<ripple::uint256> : ripple::uint256::hasher
+struct hash<xrpl::uint256> : xrpl::uint256::hasher
 {
     hash() = default;
 };
 
 }  // namespace std
-
-#endif

@@ -1,28 +1,165 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#include <xrpl/ledger/ApplyView.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STVector256.h>
 
-namespace ripple {
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <type_traits>
+
+namespace xrpl {
+
+namespace directory {
+
+std::uint64_t
+createRoot(
+    ApplyView& view,
+    Keylet const& directory,
+    uint256 const& key,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+{
+    auto newRoot = std::make_shared<SLE>(directory);
+    newRoot->setFieldH256(sfRootIndex, directory.key);
+    describe(newRoot);
+
+    STVector256 v;
+    v.push_back(key);
+    newRoot->setFieldV256(sfIndexes, v);
+
+    view.insert(newRoot);
+    return std::uint64_t{0};
+}
+
+auto
+findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
+{
+    std::uint64_t const page = start->getFieldU64(sfIndexPrevious);
+
+    auto node = start;
+
+    if (page != 0u)
+    {
+        node = view.peek(keylet::page(directory, page));
+        if (!node)
+        {
+            Throw<std::logic_error>(
+                "Directory chain: root back-pointer broken.");  // LCOV_EXCL_LINE
+        }
+    }
+
+    auto indexes = node->getFieldV256(sfIndexes);
+    return std::make_tuple(page, node, indexes);
+}
+
+std::uint64_t
+insertKey(
+    ApplyView& view,
+    SLE::ref node,
+    std::uint64_t page,
+    bool preserveOrder,
+    STVector256& indexes,
+    uint256 const& key)
+{
+    if (preserveOrder)
+    {
+        if (std::ranges::find(indexes, key) != indexes.end())
+            Throw<std::logic_error>("dirInsert: double insertion");  // LCOV_EXCL_LINE
+
+        indexes.push_back(key);
+    }
+    else
+    {
+        // We can't be sure if this page is already sorted because it may be a
+        // legacy page we haven't yet touched. Take the time to sort it.
+        std::ranges::sort(indexes);
+
+        auto pos = std::ranges::lower_bound(indexes, key);
+
+        if (pos != indexes.end() && key == *pos)
+            Throw<std::logic_error>("dirInsert: double insertion");  // LCOV_EXCL_LINE
+
+        indexes.insert(pos, key);
+    }
+
+    node->setFieldV256(sfIndexes, indexes);
+    view.update(node);
+    return page;
+}
+
+std::optional<std::uint64_t>
+insertPage(
+    ApplyView& view,
+    std::uint64_t page,
+    SLE::pointer node,
+    std::uint64_t nextPage,
+    SLE::ref next,
+    uint256 const& key,
+    Keylet const& directory,
+    std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+{
+    // We rely on modulo arithmetic of unsigned integers (guaranteed in
+    // [basic.fundamental] paragraph 2) to detect page representation overflow.
+    // For signed integers this would be UB, hence static_assert here.
+    static_assert(std::is_unsigned_v<decltype(page)>);
+    // Defensive check against breaking changes in compiler.
+    static_assert([]<typename T>(std::type_identity<T>) constexpr -> T {
+        T tmp = std::numeric_limits<T>::max();
+        return ++tmp;
+    }(std::type_identity<decltype(page)>{}) == 0);
+    ++page;
+    // Check whether we're out of pages.
+    if (page == 0)
+        return std::nullopt;
+    if (!view.rules().enabled(fixDirectoryLimit) && page >= dirNodeMaxPages)  // Old pages limit
+        return std::nullopt;
+
+    // We are about to create a new node; we'll link it to
+    // the chain first:
+    node->setFieldU64(sfIndexNext, page);
+    view.update(node);
+
+    next->setFieldU64(sfIndexPrevious, page);
+    view.update(next);
+
+    // Insert the new key:
+    STVector256 indexes;
+    indexes.push_back(key);
+
+    node = std::make_shared<SLE>(keylet::page(directory, page));
+    node->setFieldH256(sfRootIndex, directory.key);
+    node->setFieldV256(sfIndexes, indexes);
+
+    // Save some space by not specifying the value 0 since it's the default.
+    if (page != 1)
+        node->setFieldU64(sfIndexPrevious, page - 1);
+    XRPL_ASSERT_PARTS(!nextPage, "xrpl::directory::insertPage", "nextPage has default value");
+    /* Reserved for future use when directory pages may be inserted in
+     * between two other pages instead of only at the end of the chain.
+    if (nextPage)
+        node->setFieldU64(sfIndexNext, nextPage);
+    */
+    describe(node);
+    view.insert(node);
+
+    return page;
+}
+
+}  // namespace directory
 
 std::optional<std::uint64_t>
 ApplyView::dirAdd(
@@ -36,89 +173,18 @@ ApplyView::dirAdd(
     if (!root)
     {
         // No root, make it.
-        root = std::make_shared<SLE>(directory);
-        root->setFieldH256(sfRootIndex, directory.key);
-        describe(root);
-
-        STVector256 v;
-        v.push_back(key);
-        root->setFieldV256(sfIndexes, v);
-
-        insert(root);
-        return std::uint64_t{0};
+        return directory::createRoot(*this, directory, key, describe);
     }
 
-    std::uint64_t page = root->getFieldU64(sfIndexPrevious);
-
-    auto node = root;
-
-    if (page)
-    {
-        node = peek(keylet::page(directory, page));
-        if (!node)
-            LogicError("Directory chain: root back-pointer broken.");
-    }
-
-    auto indexes = node->getFieldV256(sfIndexes);
+    auto [page, node, indexes] = directory::findPreviousPage(*this, directory, root);
 
     // If there's space, we use it:
     if (indexes.size() < dirNodeMaxEntries)
     {
-        if (preserveOrder)
-        {
-            if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
-                LogicError("dirInsert: double insertion");
-
-            indexes.push_back(key);
-        }
-        else
-        {
-            // We can't be sure if this page is already sorted because
-            // it may be a legacy page we haven't yet touched. Take
-            // the time to sort it.
-            std::sort(indexes.begin(), indexes.end());
-
-            auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
-
-            if (pos != indexes.end() && key == *pos)
-                LogicError("dirInsert: double insertion");
-
-            indexes.insert(pos, key);
-        }
-
-        node->setFieldV256(sfIndexes, indexes);
-        update(node);
-        return page;
+        return directory::insertKey(*this, node, page, preserveOrder, indexes, key);
     }
 
-    // Check whether we're out of pages.
-    if (++page >= dirNodeMaxPages)
-        return std::nullopt;
-
-    // We are about to create a new node; we'll link it to
-    // the chain first:
-    node->setFieldU64(sfIndexNext, page);
-    update(node);
-
-    root->setFieldU64(sfIndexPrevious, page);
-    update(root);
-
-    // Insert the new key:
-    indexes.clear();
-    indexes.push_back(key);
-
-    node = std::make_shared<SLE>(keylet::page(directory, page));
-    node->setFieldH256(sfRootIndex, directory.key);
-    node->setFieldV256(sfIndexes, indexes);
-
-    // Save some space by not specifying the value 0 since
-    // it's the default.
-    if (page != 1)
-        node->setFieldU64(sfIndexPrevious, page - 1);
-    describe(node);
-    insert(node);
-
-    return page;
+    return directory::insertPage(*this, page, node, 0, root, key, directory, describe);
 }
 
 bool
@@ -130,11 +196,10 @@ ApplyView::emptyDirDelete(Keylet const& directory)
         return false;
 
     // Verify that the passed directory node is the directory root.
-    if (directory.type != ltDIR_NODE ||
-        node->getFieldH256(sfRootIndex) != directory.key)
+    if (directory.type != ltDIR_NODE || node->getFieldH256(sfRootIndex) != directory.key)
     {
         // LCOV_EXCL_START
-        UNREACHABLE("ripple::ApplyView::emptyDirDelete : invalid node type");
+        UNREACHABLE("xrpl::ApplyView::emptyDirDelete : invalid node type");
         return false;
         // LCOV_EXCL_STOP
     }
@@ -148,25 +213,24 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     auto nextPage = node->getFieldU64(sfIndexNext);
 
     if (nextPage == rootPage && prevPage != rootPage)
-        LogicError("Directory chain: fwd link broken");
+        Throw<std::logic_error>("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
 
     if (prevPage == rootPage && nextPage != rootPage)
-        LogicError("Directory chain: rev link broken");
+        Throw<std::logic_error>("Directory chain: rev link broken");  // LCOV_EXCL_LINE
 
-    // Older versions of the code would, in some cases, allow the last
-    // page to be empty. Remove such pages:
+    // Older versions of the code would, in some cases, allow the last page to
+    // be empty. Remove such pages:
     if (nextPage == prevPage && nextPage != rootPage)
     {
         auto last = peek(keylet::page(directory, nextPage));
 
         if (!last)
-            LogicError("Directory chain: fwd link broken.");
+            Throw<std::logic_error>("Directory chain: fwd link broken.");  // LCOV_EXCL_LINE
 
         if (!last->getFieldV256(sfIndexes).empty())
             return false;
 
-        // Update the first page's linked list and
-        // mark it as updated.
+        // Update the first page's linked list and mark it as updated.
         node->setFieldU64(sfIndexNext, rootPage);
         node->setFieldU64(sfIndexPrevious, rootPage);
         update(node);
@@ -174,8 +238,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
         // And erase the empty last page:
         erase(last);
 
-        // Make sure our local values reflect the
-        // updated information:
+        // Make sure our local values reflect the updated information:
         nextPage = rootPage;
         prevPage = rootPage;
     }
@@ -188,11 +251,7 @@ ApplyView::emptyDirDelete(Keylet const& directory)
 }
 
 bool
-ApplyView::dirRemove(
-    Keylet const& directory,
-    std::uint64_t page,
-    uint256 const& key,
-    bool keepRoot)
+ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const& key, bool keepRoot)
 {
     auto node = peek(keylet::page(directory, page));
 
@@ -204,7 +263,7 @@ ApplyView::dirRemove(
     {
         auto entries = node->getFieldV256(sfIndexes);
 
-        auto it = std::find(entries.begin(), entries.end(), key);
+        auto it = std::ranges::find(entries, key);
 
         if (entries.end() == it)
             return false;
@@ -219,37 +278,33 @@ ApplyView::dirRemove(
             return true;
     }
 
-    // The current page is now empty; check if it can be
-    // deleted, and, if so, whether the entire directory
-    // can now be removed.
+    // The current page is now empty; check if it can be deleted, and, if so,
+    // whether the entire directory can now be removed.
     auto prevPage = node->getFieldU64(sfIndexPrevious);
     auto nextPage = node->getFieldU64(sfIndexNext);
 
-    // The first page is the directory's root node and is
-    // treated specially: it can never be deleted even if
-    // it is empty, unless we plan on removing the entire
-    // directory.
+    // The first page is the directory's root node and is treated specially: it
+    // can never be deleted even if it is empty, unless we plan on removing the
+    // entire directory.
     if (page == rootPage)
     {
         if (nextPage == page && prevPage != page)
-            LogicError("Directory chain: fwd link broken");
+            Throw<std::logic_error>("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
 
         if (prevPage == page && nextPage != page)
-            LogicError("Directory chain: rev link broken");
+            Throw<std::logic_error>("Directory chain: rev link broken");  // LCOV_EXCL_LINE
 
-        // Older versions of the code would, in some cases,
-        // allow the last page to be empty. Remove such
-        // pages if we stumble on them:
+        // Older versions of the code would, in some cases, allow the last page
+        // to be empty. Remove such pages if we stumble on them:
         if (nextPage == prevPage && nextPage != page)
         {
             auto last = peek(keylet::page(directory, nextPage));
             if (!last)
-                LogicError("Directory chain: fwd link broken.");
+                Throw<std::logic_error>("Directory chain: fwd link broken.");  // LCOV_EXCL_LINE
 
             if (last->getFieldV256(sfIndexes).empty())
             {
-                // Update the first page's linked list and
-                // mark it as updated.
+                // Update the first page's linked list and mark it as updated.
                 node->setFieldU64(sfIndexNext, page);
                 node->setFieldU64(sfIndexPrevious, page);
                 update(node);
@@ -257,8 +312,7 @@ ApplyView::dirRemove(
                 // And erase the empty last page:
                 erase(last);
 
-                // Make sure our local values reflect the
-                // updated information:
+                // Make sure our local values reflect the updated information:
                 nextPage = page;
                 prevPage = page;
             }
@@ -276,25 +330,24 @@ ApplyView::dirRemove(
 
     // This can never happen for nodes other than the root:
     if (nextPage == page)
-        LogicError("Directory chain: fwd link broken");
+        Throw<std::logic_error>("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
 
     if (prevPage == page)
-        LogicError("Directory chain: rev link broken");
+        Throw<std::logic_error>("Directory chain: rev link broken");  // LCOV_EXCL_LINE
 
-    // This node isn't the root, so it can either be in the
-    // middle of the list, or at the end. Unlink it first
-    // and then check if that leaves the list with only a
-    // root:
+    // This node isn't the root, so it can either be in the middle of the list,
+    // or at the end. Unlink it first and then check if that leaves the list
+    // with only a root:
     auto prev = peek(keylet::page(directory, prevPage));
     if (!prev)
-        LogicError("Directory chain: fwd link broken.");
+        Throw<std::logic_error>("Directory chain: fwd link broken.");  // LCOV_EXCL_LINE
     // Fix previous to point to its new next.
     prev->setFieldU64(sfIndexNext, nextPage);
     update(prev);
 
     auto next = peek(keylet::page(directory, nextPage));
     if (!next)
-        LogicError("Directory chain: rev link broken.");
+        Throw<std::logic_error>("Directory chain: rev link broken.");  // LCOV_EXCL_LINE
     // Fix next to point to its new previous.
     next->setFieldU64(sfIndexPrevious, prevPage);
     update(next);
@@ -302,13 +355,12 @@ ApplyView::dirRemove(
     // The page is no longer linked. Delete it.
     erase(node);
 
-    // Check whether the next page is the last page and, if
-    // so, whether it's empty. If it is, delete it.
+    // Check whether the next page is the last page and, if so, whether it's
+    // empty. If it is, delete it.
     if (nextPage != rootPage && next->getFieldU64(sfIndexNext) == rootPage &&
         next->getFieldV256(sfIndexes).empty())
     {
-        // Since next doesn't point to the root, it
-        // can't be pointing to prev.
+        // Since next doesn't point to the root, it can't be pointing to prev.
         erase(next);
 
         // The previous page is now the last page:
@@ -318,15 +370,16 @@ ApplyView::dirRemove(
         // And the root points to the last page:
         auto root = peek(keylet::page(directory, rootPage));
         if (!root)
-            LogicError("Directory chain: root link broken.");
+            Throw<std::logic_error>("Directory chain: root link broken.");  // LCOV_EXCL_LINE
+
         root->setFieldU64(sfIndexPrevious, prevPage);
         update(root);
 
         nextPage = rootPage;
     }
 
-    // If we're not keeping the root, then check to see if
-    // it's left empty. If so, delete it as well.
+    // If we're not keeping the root, then check to see if it's left empty.
+    // If so, delete it as well.
     if (!keepRoot && nextPage == rootPage && prevPage == rootPage)
     {
         if (prev->getFieldV256(sfIndexes).empty())
@@ -337,9 +390,7 @@ ApplyView::dirRemove(
 }
 
 bool
-ApplyView::dirDelete(
-    Keylet const& directory,
-    std::function<void(uint256 const&)> const& callback)
+ApplyView::dirDelete(Keylet const& directory, std::function<void(uint256 const&)> const& callback)
 {
     std::optional<std::uint64_t> pi;
 
@@ -361,4 +412,4 @@ ApplyView::dirDelete(
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

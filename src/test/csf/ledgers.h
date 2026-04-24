@@ -1,43 +1,20 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_LEDGERS_H_INCLUDED
-#define RIPPLE_TEST_CSF_LEDGERS_H_INCLUDED
+#pragma once
 
 #include <test/csf/Tx.h>
-
-#include <xrpld/consensus/LedgerTiming.h>
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/comparators.h>
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
 #include <boost/bimap/bimap.hpp>
 
 #include <optional>
 #include <set>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** A ledger is a set of observed transactions and a sequence number
     identifying the ledger.
@@ -54,7 +31,7 @@ namespace csf {
 
     Ledgers are immutable value types. All ledgers with the same sequence
     number, transactions, close time, etc. will have the same ledger ID. The
-    LedgerOracle class below manges ID assignments for a simulation and is the
+    LedgerOracle class below manages ID assignments for a simulation and is the
     only way to close and create a new ledger. Since the parent ledger ID is
     part of type, this also means ledgers with distinct histories will have
     distinct ids, even if they have the same set of transactions, sequence
@@ -80,9 +57,7 @@ private:
     // ID by the oracle
     struct Instance
     {
-        Instance()
-        {
-        }
+        Instance() = default;
 
         // Sequence number
         Seq seq{0};
@@ -249,8 +224,8 @@ private:
 class LedgerOracle
 {
     using InstanceMap = boost::bimaps::bimap<
-        boost::bimaps::set_of<Ledger::Instance, ripple::less<Ledger::Instance>>,
-        boost::bimaps::set_of<Ledger::ID, ripple::less<Ledger::ID>>>;
+        boost::bimaps::set_of<Ledger::Instance, xrpl::less<Ledger::Instance>>,
+        boost::bimaps::set_of<Ledger::ID, xrpl::less<Ledger::ID>>>;
     using InstanceEntry = InstanceMap::value_type;
 
     // Set of all known ledgers; note this is never pruned
@@ -286,11 +261,7 @@ public:
     accept(Ledger const& curr, Tx tx)
     {
         using namespace std::chrono_literals;
-        return accept(
-            curr,
-            TxSetType{tx},
-            curr.closeTimeResolution(),
-            curr.closeTime() + 1s);
+        return accept(curr, TxSetType{tx}, curr.closeTimeResolution(), curr.closeTime() + 1s);
     }
 
     /** Determine the number of distinct branches for the set of ledgers.
@@ -302,8 +273,8 @@ public:
         O
           \--> B
     */
-    std::size_t
-    branches(std::set<Ledger> const& ledgers) const;
+    static std::size_t
+    branches(std::set<Ledger> const& ledgers);
 };
 
 /** Helper for writing unit tests with controlled ledger histories.
@@ -353,13 +324,8 @@ struct LedgerHistoryHelper
         assert(seen.emplace(s.back()).second);
 
         Ledger const& parent = (*this)[s.substr(0, s.size() - 1)];
-        return ledgers.emplace(s, oracle.accept(parent, Tx{++nextTx}))
-            .first->second;
+        return ledgers.emplace(s, oracle.accept(parent, Tx{++nextTx})).first->second;
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

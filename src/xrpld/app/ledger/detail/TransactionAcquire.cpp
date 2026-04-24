@@ -1,32 +1,30 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpld/app/ledger/detail/TransactionAcquire.h>
 
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
-#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
-#include <xrpld/app/ledger/detail/TransactionAcquire.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapAddNode.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+
+#include <xrpl.pb.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <exception>
 #include <memory>
+#include <utility>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 using namespace std::chrono_literals;
 
@@ -46,13 +44,11 @@ TransactionAcquire::TransactionAcquire(
           app,
           hash,
           TX_ACQUIRE_TIMEOUT,
-          {jtTXN_DATA, "TransactionAcquire", {}},
-          app.journal("TransactionAcquire"))
-    , mHaveRoot(false)
+          {.jobType = jtTXN_DATA, .jobName = "TxAcq", .jobLimit = {}},
+          app.getJournal("TransactionAcquire"))
     , mPeerSet(std::move(peerSet))
 {
-    mMap = std::make_shared<SHAMap>(
-        SHAMapType::TRANSACTION, hash, app_.getNodeFamily());
+    mMap = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app.getNodeFamily());
     mMap->setUnbacked();
 }
 
@@ -78,10 +74,9 @@ TransactionAcquire::done()
         // not be called.  That's fine.  According to David the giveSet() call
         // just updates the consensus and related structures when we acquire
         // a transaction set. No need to update them if we're shutting down.
-        app_.getJobQueue().addJob(
-            jtTXN_DATA, "completeAcquire", [pap, hash, map]() {
-                pap->getInboundTransactions().giveSet(hash, map, true);
-            });
+        app_.getJobQueue().addJob(jtTXN_DATA, "ComplAcquire", [pap, hash, map]() {
+            pap->getInboundTransactions().giveSet(hash, map, true);
+        });
     }
 }
 
@@ -123,8 +118,8 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
 
     if (!mHaveRoot)
     {
-        JLOG(journal_.trace()) << "TransactionAcquire::trigger "
-                               << (peer ? "havePeer" : "noPeer") << " no root";
+        JLOG(journal_.trace()) << "TransactionAcquire::trigger " << (peer ? "havePeer" : "noPeer")
+                               << " no root";
         protocol::TMGetLedger tmGL;
         tmGL.set_ledgerhash(hash_.begin(), hash_.size());
         tmGL.set_itype(protocol::liTS_CANDIDATE);
@@ -149,9 +144,13 @@ TransactionAcquire::trigger(std::shared_ptr<Peer> const& peer)
         if (nodes.empty())
         {
             if (mMap->isValid())
+            {
                 complete_ = true;
+            }
             else
+            {
                 failed_ = true;
+            }
 
             done();
             return;
@@ -177,7 +176,7 @@ TransactionAcquire::takeNodes(
     std::vector<std::pair<SHAMapNodeID, Slice>> const& data,
     std::shared_ptr<Peer> const& peer)
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
 
     if (complete_)
     {
@@ -203,16 +202,17 @@ TransactionAcquire::takeNodes(
             if (d.first.isRoot())
             {
                 if (mHaveRoot)
-                    JLOG(journal_.debug())
-                        << "Got root TXS node, already have it";
-                else if (!mMap->addRootNode(
-                                  SHAMapHash{hash_}, d.second, nullptr)
-                              .isGood())
+                {
+                    JLOG(journal_.debug()) << "Got root TXS node, already have it";
+                }
+                else if (!mMap->addRootNode(SHAMapHash{hash_}, d.second, nullptr).isGood())
                 {
                     JLOG(journal_.warn()) << "TX acquire got bad root node";
                 }
                 else
+                {
                     mHaveRoot = true;
+                }
             }
             else if (!mMap->addKnownNode(d.first, d.second, &sf).isGood())
             {
@@ -227,9 +227,8 @@ TransactionAcquire::takeNodes(
     }
     catch (std::exception const& ex)
     {
-        JLOG(journal_.error())
-            << "Peer " << peer->id()
-            << " sent us junky transaction node data: " << ex.what();
+        JLOG(journal_.error()) << "Peer " << peer->id()
+                               << " sent us junky transaction node data: " << ex.what();
         return SHAMapAddNode::invalid();
     }
 }
@@ -256,11 +255,10 @@ TransactionAcquire::init(int numPeers)
 void
 TransactionAcquire::stillNeed()
 {
-    ScopedLockType sl(mtx_);
+    ScopedLockType const sl(mtx_);
 
-    if (timeouts_ > NORM_TIMEOUTS)
-        timeouts_ = NORM_TIMEOUTS;
+    timeouts_ = std::min<int>(timeouts_, NORM_TIMEOUTS);
     failed_ = false;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

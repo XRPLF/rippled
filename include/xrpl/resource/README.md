@@ -17,7 +17,7 @@ performed, or simply disconnecting the endpoint.
 
 Currently, consumption endpoints include websocket connections used to
 service clients, and peer connections used to create the peer to peer
-overlay network implementing the Ripple protocol.
+overlay network implementing the XRPL protocol.
 
 The current "balance" of a Consumer represents resource consumption
 debt or credit. Debt is accrued when bad loads are imposed. Credit is
@@ -66,12 +66,12 @@ values over time: this is implemented by the DecayingSample class.
 Each server in a cluster creates a list of IP addresses of end points
 that are imposing a significant load. This list is called Gossip, which
 is passed to other nodes in that cluster. Gossip helps individual
-servers in the cluster identify IP addreses that might be unduly loading
+servers in the cluster identify IP addresses that might be unduly loading
 the entire cluster. Again the recourse of the individual servers is to
 drop connections to those IP addresses that occur commonly in the gossip.
 
 ## Access
 
-In rippled, the Application holds a unique instance of Resource::Manager,
+In xrpld, the Application holds a unique instance of Resource::Manager,
 which may be retrieved by calling the method
 `Application::getResourceManager()`.

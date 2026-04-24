@@ -1,34 +1,23 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx/flags.h>
 #include <test/jtx/token.h>
 
-#include <xrpld/app/tx/detail/NFTokenMint.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/flags.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/nft.h>
+#include <xrpl/tx/transactors/nft/NFTokenMint.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
-namespace token {
+#include <cstdint>
+#include <initializer_list>
+#include <vector>
+
+namespace xrpl::test::jtx::token {
 
 Json::Value
 mint(jtx::Account const& account, std::uint32_t nfTokenTaxon)
@@ -73,8 +62,7 @@ getNextID(
     std::uint16_t xferFee)
 {
     // Get the nftSeq from the account root of the issuer.
-    std::uint32_t const nftSeq = {
-        env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
+    std::uint32_t const nftSeq = {env.le(issuer)->at(~sfMintedNFTokens).value_or(0)};
     return token::getID(env, issuer, nfTokenTaxon, nftSeq, flags, xferFee);
 }
 
@@ -87,15 +75,10 @@ getID(
     std::uint16_t flags,
     std::uint16_t xferFee)
 {
-    if (env.current()->rules().enabled(fixNFTokenRemint))
-    {
-        // If fixNFTokenRemint is enabled, we must add issuer's
-        // FirstNFTokenSequence to offset the starting NFT sequence number.
-        nftSeq += env.le(issuer)
-                      ->at(~sfFirstNFTokenSequence)
-                      .value_or(env.seq(issuer));
-    }
-    return ripple::NFTokenMint::createNFTokenID(
+    // We must add issuer's FirstNFTokenSequence to offset the starting NFT
+    // sequence number.
+    nftSeq += env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.seq(issuer));
+    return xrpl::NFTokenMint::createNFTokenID(
         flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
 
@@ -110,10 +93,7 @@ burn(jtx::Account const& account, uint256 const& nftokenID)
 }
 
 Json::Value
-createOffer(
-    jtx::Account const& account,
-    uint256 const& nftokenID,
-    STAmount const& amount)
+createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount const& amount)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
@@ -158,17 +138,13 @@ cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
 }
 
 Json::Value
-cancelOffer(
-    jtx::Account const& account,
-    std::initializer_list<uint256> const& nftokenOffers)
+cancelOffer(jtx::Account const& account, std::initializer_list<uint256> const& nftokenOffers)
 {
     return cancelOfferImpl(account, nftokenOffers);
 }
 
 Json::Value
-cancelOffer(
-    jtx::Account const& account,
-    std::vector<uint256> const& nftokenOffers)
+cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffers)
 {
     return cancelOfferImpl(account, nftokenOffers);
 }
@@ -243,7 +219,4 @@ modify(jtx::Account const& account, uint256 const& nftokenID)
     return jv;
 }
 
-}  // namespace token
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx::token

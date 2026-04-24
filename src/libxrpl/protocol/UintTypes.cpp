@@ -1,33 +1,15 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2014 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/UintTypes.h>
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/protocol/UintTypes.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 // For details on the protocol-level serialization please visit
 // https://xrpl.org/serialization.html#currency-codes
@@ -59,8 +41,7 @@ to_string(Currency const& currency)
     if (currency == noCurrency())
         return "1";
 
-    static constexpr Currency sIsoBits(
-        "FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
+    static constexpr Currency sIsoBits("FFFFFFFFFFFFFFFFFFFFFFFF000000FFFFFFFFFF");
 
     if ((currency & sIsoBits).isZero())
     {
@@ -83,7 +64,7 @@ to_string(Currency const& currency)
 bool
 to_currency(Currency& currency, std::string const& code)
 {
-    if (code.empty() || !code.compare(systemCurrencyCode()))
+    if (code.empty() || (code.compare(systemCurrencyCode()) == 0))
     {
         currency = beast::zero;
         return true;
@@ -97,8 +78,7 @@ to_currency(Currency& currency, std::string const& code)
 
         currency = beast::zero;
 
-        std::copy(
-            code.begin(), code.end(), currency.begin() + detail::isoCodeOffset);
+        std::ranges::copy(code, currency.begin() + detail::isoCodeOffset);
 
         return true;
     }
@@ -136,4 +116,4 @@ badCurrency()
     return currency;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

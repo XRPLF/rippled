@@ -1,29 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/SeqProxy.h>
 
+#include <cstdint>
 #include <limits>
 #include <sstream>
+#include <string>
 
-namespace ripple {
+namespace xrpl {
 
 struct SeqProxy_test : public beast::unit_test::suite
 {
@@ -40,28 +23,28 @@ struct SeqProxy_test : public beast::unit_test::suite
     static constexpr bool
     expectLt(SeqProxy lhs, SeqProxy rhs)
     {
-        return (lhs < rhs) && (lhs <= rhs) && (!(lhs == rhs)) && (lhs != rhs) &&
-            (!(lhs >= rhs)) && (!(lhs > rhs));
+        return (lhs < rhs) && (lhs <= rhs) && (!(lhs == rhs)) && (lhs != rhs) && (!(lhs >= rhs)) &&
+            (!(lhs > rhs));
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs == rhs.
     static constexpr bool
     expectEq(SeqProxy lhs, SeqProxy rhs)
     {
-        return (!(lhs < rhs)) && (lhs <= rhs) && (lhs == rhs) &&
-            (!(lhs != rhs)) && (lhs >= rhs) && (!(lhs > rhs));
+        return (!(lhs < rhs)) && (lhs <= rhs) && (lhs == rhs) && (!(lhs != rhs)) && (lhs >= rhs) &&
+            (!(lhs > rhs));
     }
 
     // Exercise all SeqProxy comparison operators expecting lhs > rhs.
     static constexpr bool
     expectGt(SeqProxy lhs, SeqProxy rhs)
     {
-        return (!(lhs < rhs)) && (!(lhs <= rhs)) && (!(lhs == rhs)) &&
-            (lhs != rhs) && (lhs >= rhs) && (lhs > rhs);
+        return (!(lhs < rhs)) && (!(lhs <= rhs)) && (!(lhs == rhs)) && (lhs != rhs) &&
+            (lhs >= rhs) && (lhs > rhs);
     }
 
     // Verify streaming.
-    bool
+    static bool
     streamTest(SeqProxy seqProx)
     {
         std::string const type{seqProx.isSeq() ? "sequence" : "ticket"};
@@ -71,7 +54,7 @@ struct SeqProxy_test : public beast::unit_test::suite
         ss << seqProx;
         std::string str{ss.str()};
 
-        return str.find(type) == 0 && str[type.size()] == ' ' &&
+        return str.starts_with(type) && str[type.size()] == ' ' &&
             str.find(value) == (type.size() + 1);
     }
 
@@ -81,8 +64,7 @@ struct SeqProxy_test : public beast::unit_test::suite
         // While SeqProxy supports values of zero, they are not
         // expected in the wild.  Nevertheless they are tested here.
         // But so are values of 1, which are expected to occur in the wild.
-        static constexpr std::uint32_t uintMax{
-            std::numeric_limits<std::uint32_t>::max()};
+        static constexpr std::uint32_t uintMax{std::numeric_limits<std::uint32_t>::max()};
         static constexpr SeqProxy::Type seq{SeqProxy::seq};
         static constexpr SeqProxy::Type ticket{SeqProxy::ticket};
 
@@ -236,6 +218,6 @@ struct SeqProxy_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SeqProxy, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(SeqProxy, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

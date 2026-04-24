@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef TEST_UNIT_TEST_MULTI_RUNNER_H
-#define TEST_UNIT_TEST_MULTI_RUNNER_H
+#pragma once
 
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/runner.h>
@@ -39,7 +19,7 @@
 #include <unordered_set>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -151,11 +131,10 @@ class multi_runner_base
         print_results(S& s);
     };
 
-    static constexpr char const* shared_mem_name_ = "RippledUnitTestSharedMem";
+    static constexpr char const* shared_mem_name_ = "XrpldUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
-    static constexpr char const* message_queue_name_ =
-        "RippledUnitTestMessageQueue";
+    static constexpr char const* message_queue_name_ = "XrpldUnitTestMessageQueue";
 
     // `inner_` will be created in shared memory
     inner* inner_;
@@ -273,7 +252,7 @@ public:
     operator=(multi_runner_child const&) = delete;
 
     multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log);
-    ~multi_runner_child();
+    ~multi_runner_child() override;
 
     std::size_t
     tests() const;
@@ -289,25 +268,25 @@ public:
     run_multi(Pred pred);
 
 private:
-    virtual void
+    void
     on_suite_begin(beast::unit_test::suite_info const& info) override;
 
-    virtual void
+    void
     on_suite_end() override;
 
-    virtual void
+    void
     on_case_begin(std::string const& name) override;
 
-    virtual void
+    void
     on_case_end() override;
 
-    virtual void
+    void
     on_pass() override;
 
-    virtual void
+    void
     on_fail(std::string const& reason) override;
 
-    virtual void
+    void
     on_log(std::string const& s) override;
 };
 
@@ -354,6 +333,4 @@ multi_runner_child::run_multi(Pred pred)
 }
 
 }  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

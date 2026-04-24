@@ -1,30 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2018 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef TEST_UNIT_TEST_SUITE_JOURNAL_H
-#define TEST_UNIT_TEST_SUITE_JOURNAL_H
+#pragma once
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 // A Journal::Sink intended for use with the beast unit test framework.
 class SuiteJournalSink : public beast::Journal::Sink
@@ -42,7 +21,7 @@ public:
     }
 
     // For unit testing, always generate logging text.
-    inline bool
+    bool
     active(beast::severities::Severity level) const override
     {
         return true;
@@ -52,14 +31,11 @@ public:
     write(beast::severities::Severity level, std::string const& text) override;
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override;
+    writeAlways(beast::severities::Severity level, std::string const& text) override;
 };
 
 inline void
-SuiteJournalSink::write(
-    beast::severities::Severity level,
-    std::string const& text)
+SuiteJournalSink::write(beast::severities::Severity level, std::string const& text)
 {
     // Only write the string if the level at least equals the threshold.
     if (level >= threshold())
@@ -67,9 +43,7 @@ SuiteJournalSink::write(
 }
 
 inline void
-SuiteJournalSink::writeAlways(
-    beast::severities::Severity level,
-    std::string const& text)
+SuiteJournalSink::writeAlways(beast::severities::Severity level, std::string const& text)
 {
     using namespace beast::severities;
 
@@ -95,7 +69,7 @@ SuiteJournalSink::writeAlways(
     }();
 
     static std::mutex log_mutex;
-    std::lock_guard lock(log_mutex);
+    std::lock_guard const lock(log_mutex);
     suite_.log << s << partition_ << text << std::endl;
 }
 
@@ -112,11 +86,7 @@ public:
         : sink_(partition, threshold, suite), journal_(sink_)
     {
     }
-    // Clang 10.0.0 and 10.0.1 disagree about formatting operator&
-    // TBD Re-enable formatting when we upgrade to clang 11
-    // clang-format off
-    operator beast::Journal &()
-    // clang-format on
+    operator beast::Journal&()
     {
         return journal_;
     }
@@ -130,8 +100,7 @@ class StreamSink : public beast::Journal::Sink
     std::stringstream strm_;
 
 public:
-    StreamSink(
-        beast::severities::Severity threshold = beast::severities::kDebug)
+    StreamSink(beast::severities::Severity threshold = beast::severities::kDebug)
         : Sink(threshold, false)
     {
     }
@@ -144,9 +113,8 @@ public:
         writeAlways(level, text);
     }
 
-    inline void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override
+    void
+    writeAlways(beast::severities::Severity level, std::string const& text) override
     {
         strm_ << text << std::endl;
     }
@@ -158,7 +126,4 @@ public:
     }
 };
 
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test

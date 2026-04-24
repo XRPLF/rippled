@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
-#define RIPPLE_PEERFINDER_COUNTS_H_INCLUDED
+#pragma once
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
@@ -26,31 +6,12 @@
 
 #include <xrpl/basics/random.h>
 
-namespace ripple {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Manages the count of available connections for the various slots. */
 class Counts
 {
 public:
-    Counts()
-        : m_attempts(0)
-        , m_active(0)
-        , m_in_max(0)
-        , m_in_active(0)
-        , m_out_max(0)
-        , m_out_active(0)
-        , m_fixed(0)
-        , m_fixed_active(0)
-        , m_reserved(0)
-
-        , m_acceptCount(0)
-        , m_closingCount(0)
-    {
-    }
-
-    //--------------------------------------------------------------------------
-
     /** Adds the slot state and properties to the slot counts. */
     void
     add(Slot const& s)
@@ -72,7 +33,7 @@ public:
         // Must be handshaked and in the right state
         XRPL_ASSERT(
             s.state() == Slot::connected || s.state() == Slot::accept,
-            "ripple::PeerFinder::Counts::can_activate : valid input state");
+            "xrpl::PeerFinder::Counts::can_activate : valid input state");
 
         if (s.fixed() || s.reserved())
             return true;
@@ -217,15 +178,12 @@ public:
         //
         // Fixed peers do not count towards the active outgoing total.
 
-        if (m_out_max > 0)
-            return false;
-
-        return true;
+        return m_out_max <= 0;
     }
 
     /** Output statistics. */
     void
-    onWrite(beast::PropertyStream::Map& map)
+    onWrite(beast::PropertyStream::Map& map) const
     {
         map["accept"] = acceptCount();
         map["connect"] = connectCount();
@@ -242,9 +200,8 @@ public:
     state_string() const
     {
         std::stringstream ss;
-        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/"
-           << m_in_max << " in, " << connectCount() << " connecting, "
-           << closingCount() << " closing";
+        ss << m_out_active << "/" << m_out_max << " out, " << m_in_active << "/" << m_in_max
+           << " in, " << connectCount() << " connecting, " << closingCount() << " closing";
         return ss.str();
     }
 
@@ -263,9 +220,7 @@ private:
         switch (s.state())
         {
             case Slot::accept:
-                XRPL_ASSERT(
-                    s.inbound(),
-                    "ripple::PeerFinder::Counts::adjust : input is inbound");
+                XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
                 m_acceptCount += n;
                 break;
 
@@ -273,7 +228,7 @@ private:
             case Slot::connected:
                 XRPL_ASSERT(
                     !s.inbound(),
-                    "ripple::PeerFinder::Counts::adjust : input is not "
+                    "xrpl::PeerFinder::Counts::adjust : input is not "
                     "inbound");
                 m_attempts += n;
                 break;
@@ -284,9 +239,13 @@ private:
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
+                    {
                         m_in_active += n;
+                    }
                     else
+                    {
                         m_out_active += n;
+                    }
                 }
                 m_active += n;
                 break;
@@ -297,8 +256,7 @@ private:
 
             // LCOV_EXCL_START
             default:
-                UNREACHABLE(
-                    "ripple::PeerFinder::Counts::adjust : invalid input state");
+                UNREACHABLE("xrpl::PeerFinder::Counts::adjust : invalid input state");
                 break;
                 // LCOV_EXCL_STOP
         };
@@ -306,41 +264,38 @@ private:
 
 private:
     /** Outbound connection attempts. */
-    int m_attempts;
+    int m_attempts{0};
 
     /** Active connections, including fixed and reserved. */
-    std::size_t m_active;
+    std::size_t m_active{0};
 
     /** Total number of inbound slots. */
-    std::size_t m_in_max;
+    std::size_t m_in_max{0};
 
     /** Number of inbound slots assigned to active peers. */
-    std::size_t m_in_active;
+    std::size_t m_in_active{0};
 
     /** Maximum desired outbound slots. */
-    std::size_t m_out_max;
+    std::size_t m_out_max{0};
 
     /** Active outbound slots. */
-    std::size_t m_out_active;
+    std::size_t m_out_active{0};
 
     /** Fixed connections. */
-    std::size_t m_fixed;
+    std::size_t m_fixed{0};
 
     /** Active fixed connections. */
-    std::size_t m_fixed_active;
+    std::size_t m_fixed_active{0};
 
     /** Reserved connections. */
-    std::size_t m_reserved;
+    std::size_t m_reserved{0};
 
     // Number of inbound connections that are
     // not active or gracefully closing.
-    int m_acceptCount;
+    int m_acceptCount{0};
 
     // Number of connections that are gracefully closing.
-    int m_closingCount;
+    int m_closingCount{0};
 };
 
-}  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::PeerFinder
