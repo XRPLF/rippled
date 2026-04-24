@@ -83,6 +83,11 @@ struct SHAMapNodeData
     SHAMapNodeID nodeID;
     Blob data;
     bool isLeaf;
+
+    SHAMapNodeData(SHAMapNodeID const& id, Blob d, bool leaf)
+        : nodeID(id), data(std::move(d)), isLeaf(leaf)
+    {
+    }
 };
 
 class SHAMap

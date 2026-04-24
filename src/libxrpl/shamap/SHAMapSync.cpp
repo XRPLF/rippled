@@ -461,7 +461,7 @@ SHAMap::getNodeFat(
         // Add this node to the reply
         s.erase();
         node->serializeForWire(s);
-        data.push_back({nodeID, s.getData(), node->isLeaf()});
+        data.emplace_back(nodeID, s.getData(), node->isLeaf());
 
         if (node->isInner())
         {
@@ -491,7 +491,7 @@ SHAMap::getNodeFat(
                             // Just include this node
                             s.erase();
                             childNode->serializeForWire(s);
-                            data.push_back({childID, s.getData(), childNode->isLeaf()});
+                            data.emplace_back(childID, s.getData(), childNode->isLeaf());
                         }
                     }
                 }
