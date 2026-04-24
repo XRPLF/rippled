@@ -256,13 +256,12 @@ public:
                 auto const treeNode = getTreeNode(ledgerNode.nodedata());
                 if (!treeNode)
                     return;
-                auto const tn = *treeNode;
 
                 s.erase();
-                tn->serializeWithPrefix(s);
+                treeNode->serializeWithPrefix(s);
 
                 app_.getLedgerMaster().addFetchPack(
-                    tn->getHash().as_uint256(), std::make_shared<Blob>(s.begin(), s.end()));
+                    treeNode->getHash().as_uint256(), std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
         catch (std::exception const&)  // NOLINT(bugprone-empty-catch)

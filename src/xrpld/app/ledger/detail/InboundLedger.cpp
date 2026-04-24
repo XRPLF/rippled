@@ -892,7 +892,7 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
                 return;
             }
 
-            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
+            auto const nodeID = getSHAMapNodeID(ledgerNode, treeNode);
             if (!nodeID)
             {
                 JLOG(journal_.warn()) << "Got invalid node id";
@@ -902,11 +902,11 @@ InboundLedger::receiveNode(protocol::TMLedgerData& packet, SHAMapAddNode& san)
 
             if (nodeID->isRoot())
             {
-                san += map.addRootNode(rootHash, std::move(*treeNode), f);
+                san += map.addRootNode(rootHash, std::move(treeNode), f);
             }
             else
             {
-                san += map.addKnownNode(*nodeID, std::move(*treeNode), f);
+                san += map.addKnownNode(*nodeID, std::move(treeNode), f);
             }
 
             if (!san.isGood())
@@ -972,7 +972,7 @@ InboundLedger::takeAsRootNode(std::string_view data, SHAMapAddNode& san)
 
     AccountStateSF filter(mLedger->stateMap().family().db(), app_.getLedgerMaster());
     san += mLedger->stateMap().addRootNode(
-        SHAMapHash{mLedger->header().accountHash}, std::move(*treeNode), &filter);
+        SHAMapHash{mLedger->header().accountHash}, std::move(treeNode), &filter);
     return san.isGood();
 }
 
@@ -1006,7 +1006,7 @@ InboundLedger::takeTxRootNode(std::string_view data, SHAMapAddNode& san)
 
     TransactionStateSF filter(mLedger->txMap().family().db(), app_.getLedgerMaster());
     san += mLedger->txMap().addRootNode(
-        SHAMapHash{mLedger->header().txHash}, std::move(*treeNode), &filter);
+        SHAMapHash{mLedger->header().txHash}, std::move(treeNode), &filter);
     return san.isGood();
 }
 

@@ -694,10 +694,8 @@ SHAMap::delItem(uint256 const& id)
 
     SHAMapNodeType const type = leaf->getType();
 
-    using TreeNodeType = SHAMapTreeNodePtr;
-
     // What gets attached to the end of the chain (For now, nothing, since we deleted the leaf)
-    TreeNodeType prevNode;
+    SHAMapTreeNodePtr prevNode;
 
     while (!stack.empty())
     {
@@ -723,7 +721,7 @@ SHAMap::delItem(uint256 const& id)
                 // no children below this branch
                 //
                 // Note: This is unnecessary due to the std::move above but left here for safety
-                prevNode = TreeNodeType{};
+                prevNode = SHAMapTreeNodePtr{};
             }
             else if (bc == 1)
             {
@@ -736,7 +734,7 @@ SHAMap::delItem(uint256 const& id)
                     {
                         if (!node->isEmptyBranch(i))
                         {
-                            node->setChild(i, TreeNodeType{});
+                            node->setChild(i, SHAMapTreeNodePtr{});
                             break;
                         }
                     }

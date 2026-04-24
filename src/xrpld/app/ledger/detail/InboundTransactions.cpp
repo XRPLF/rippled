@@ -165,7 +165,7 @@ public:
                 return;
             }
 
-            auto const nodeID = getSHAMapNodeID(ledgerNode, *treeNode);
+            auto const nodeID = getSHAMapNodeID(ledgerNode, treeNode);
             if (!nodeID)
             {
                 JLOG(j_.warn()) << "Got invalid node id";
@@ -173,10 +173,10 @@ public:
                 return;
             }
 
-            data.emplace_back(*nodeID, std::move(*treeNode));
+            data.emplace_back(*nodeID, std::move(treeNode));
         }
 
-        if (!ta->takeNodes(data, peer).isUseful())
+        if (!ta->takeNodes(std::move(data), peer).isUseful())
             peer->charge(Resource::feeUselessData, "ledger_data not useful");
     }
 

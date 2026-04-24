@@ -422,7 +422,7 @@ private:
 
     // returns the first item at or below this node
     SHAMapLeafNode*
-    firstBelow(SHAMapTreeNodePtr, SharedPtrNodeStack& stack, int branch = 0) const;
+    firstBelow(SHAMapTreeNodePtr node, SharedPtrNodeStack& stack, int branch = 0) const;
 
     // returns the last item at or below this node
     SHAMapLeafNode*

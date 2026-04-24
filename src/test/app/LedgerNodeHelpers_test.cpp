@@ -163,8 +163,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
             innerNode->setChild(0, childNode);
             auto const innerData = serializeNode(innerNode);
             auto const result = getTreeNode(innerData);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT((*result)->isInner());
+            BEAST_EXPECT(result->isInner());
         }
 
         // Valid: leaf node.
@@ -173,20 +172,19 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
             auto const leafNode = intr_ptr::make_shared<SHAMapAccountStateLeafNode>(leafItem, 1);
             auto const leafData = serializeNode(leafNode);
             auto result = getTreeNode(leafData);
-            BEAST_EXPECT(result.has_value());
-            BEAST_EXPECT((*result)->isLeaf());
+            BEAST_EXPECT(result->isLeaf());
         }
 
         // Invalid: empty data.
         {
             auto const result = getTreeNode("");
-            BEAST_EXPECT(!result.has_value());
+            BEAST_EXPECT(!result);
         }
 
         // Invalid: garbage data.
         {
             auto const result = getTreeNode("invalid");
-            BEAST_EXPECT(!result.has_value());
+            BEAST_EXPECT(!result);
         }
 
         // Invalid: truncated data.
@@ -198,7 +196,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
             uint256 const tag;
             auto const leafData = serializeNode(leafNode).substr(0, tag.bytes - 1);
             auto const result = getTreeNode(leafData);
-            BEAST_EXPECT(!result.has_value());
+            BEAST_EXPECT(!result);
         }
     }
 
@@ -223,8 +221,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 node.set_nodedata(innerData);
                 node.set_nodeid(innerID.getRawString());
                 auto const result = getSHAMapNodeID(node, innerNode);
-                BEAST_EXPECT(result.has_value());
-                BEAST_EXPECT(*result == innerID);
+                BEAST_EXPECT(result == innerID);
             }
 
             // Valid: new `id` field at minimum depth.
@@ -236,8 +233,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 node.set_nodedata(innerData);
                 node.set_id(innerID.getRawString());
                 auto const result = getSHAMapNodeID(node, innerNode);
-                BEAST_EXPECT(result.has_value());
-                BEAST_EXPECT(*result == innerID);
+                BEAST_EXPECT(result == innerID);
             }
 
             // Invalid: new `depth` field should not be used for inner nodes.
@@ -246,7 +242,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 node.set_nodedata(innerData);
                 node.set_depth(10);
                 auto const result = getSHAMapNodeID(node, innerNode);
-                BEAST_EXPECT(!result.has_value());
+                BEAST_EXPECT(!result);
             }
         }
 
@@ -266,8 +262,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_nodeid(leafID.getRawString());
                 auto const result = getSHAMapNodeID(ledgerNode, leafNode);
-                BEAST_EXPECT(result.has_value());
-                BEAST_EXPECT(*result == leafID);
+                BEAST_EXPECT(result == leafID);
             }
 
             // Invalid: new `id` field should not be used for leaf nodes.
@@ -279,7 +274,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_id(leafID.getRawString());
                 auto const result = getSHAMapNodeID(ledgerNode, leafNode);
-                BEAST_EXPECT(!result.has_value());
+                BEAST_EXPECT(!result);
             }
 
             // Valid: new `depth` field at minimum depth.
@@ -291,8 +286,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 node.set_nodedata(leafData);
                 node.set_depth(leafDepth);
                 auto const result = getSHAMapNodeID(node, leafNode);
-                BEAST_EXPECT(result.has_value());
-                BEAST_EXPECT(*result == leafID);
+                BEAST_EXPECT(result == leafID);
             }
 
             // Valid: new `depth` field at arbitrary depth between minimum and maximum.
@@ -304,8 +298,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 ledgerNode.set_nodedata(leafData);
                 ledgerNode.set_depth(leafDepth);
                 auto const result = getSHAMapNodeID(ledgerNode, leafNode);
-                BEAST_EXPECT(result.has_value());
-                BEAST_EXPECT(*result == leafID);
+                BEAST_EXPECT(result == leafID);
             }
 
             // Valid: new `depth` field at maximum depth.
@@ -320,8 +313,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 node.set_nodedata(leafData);
                 node.set_depth(leafDepth);
                 auto const result = getSHAMapNodeID(node, leafNode);
-                BEAST_EXPECT(result.has_value());
-                BEAST_EXPECT(*result == leafID);
+                BEAST_EXPECT(result == leafID);
             }
 
             // Invalid: legacy `nodeid` field where the node ID is inconsistent with the key.
@@ -338,7 +330,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
                 ledgerNode.set_nodedata(otherData);
                 ledgerNode.set_nodeid(otherID.getRawString());
                 auto const result = getSHAMapNodeID(ledgerNode, leafNode);
-                BEAST_EXPECT(!result.has_value());
+                BEAST_EXPECT(!result);
             }
         }
     }

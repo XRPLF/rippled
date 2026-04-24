@@ -1614,7 +1614,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
         }
     }
 
-    // Verify ledger node IDs
+    // Verify and parse ledger node IDs
+    std::vector<SHAMapNodeID> nodeIDs;
     if (itype != protocol::liBASE)
     {
         if (m->nodeids_size() <= 0)
@@ -1623,13 +1624,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
             return;
         }
 
+        nodeIDs.reserve(m->nodeids_size());
         for (auto const& nodeId : m->nodeids())
         {
-            if (deserializeSHAMapNodeID(nodeId) == std::nullopt)
+            auto parsed = deserializeSHAMapNodeID(nodeId);
+            if (!parsed)
             {
                 badData("Invalid SHAMap node ID");
                 return;
             }
+            nodeIDs.push_back(std::move(*parsed));
         }
     }
 
@@ -1652,10 +1656,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 
     // Queue a job to process the request
     std::weak_ptr<PeerImp> const weak = shared_from_this();
-    app_.getJobQueue().addJob(jtLEDGER_REQ, "RcvGetLedger", [weak, m]() {
-        if (auto peer = weak.lock())
-            peer->processLedgerRequest(m);
-    });
+    app_.getJobQueue().addJob(
+        jtLEDGER_REQ, "RcvGetLedger", [weak, m, nodeIDs = std::move(nodeIDs)]() mutable {
+            if (auto peer = weak.lock())
+                peer->processLedgerRequest(m, std::move(nodeIDs));
+        });
 }
 
 void
@@ -3364,7 +3369,9 @@ PeerImp::getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const
 }
 
 void
-PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
+PeerImp::processLedgerRequest(
+    std::shared_ptr<protocol::TMGetLedger> const& m,
+    std::vector<SHAMapNodeID> nodeIDs)
 {
     // Do not resource charge a peer responding to a relay
     if (!m->has_requestcookie())
@@ -3449,7 +3456,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
     }
 
     // Add requested node data to reply
-    if (m->nodeids_size() > 0)
+    if (!nodeIDs.empty())
     {
         std::uint32_t const defaultDepth = isHighLatency() ? 2 : 1;
         auto const queryDepth{m->has_querydepth() ? m->querydepth() : defaultDepth};
@@ -3457,21 +3464,17 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
         std::vector<SHAMapNodeData> data;
         auto const useLedgerNodeDepth = supportsFeature(ProtocolFeature::LedgerNodeDepth);
 
-        for (int i = 0;
-             i < m->nodeids_size() && ledgerData.nodes_size() < Tuning::softMaxReplyNodes;
-             ++i)
+        for (auto const& nodeID : nodeIDs)
         {
-            auto const shaMapNodeId{deserializeSHAMapNodeID(m->nodeids(i))};
-            XRPL_ASSERT(
-                shaMapNodeId.has_value(), "xrpl::PeerImp::processLedgerRequest : valid node ID");
+            if (ledgerData.nodes_size() >= Tuning::softMaxReplyNodes)
+                break;
 
             data.clear();
             data.reserve(Tuning::softMaxReplyNodes);
 
             try
             {
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) nodeids checked in onGetLedger
-                if (map->getNodeFat(*shaMapNodeId, data, fatLeaves, queryDepth))
+                if (map->getNodeFat(nodeID, data, fatLeaves, queryDepth))
                 {
                     JLOG(p_journal_.trace())
                         << "processLedgerRequest: getNodeFat got " << data.size() << " nodes";
@@ -3489,17 +3492,11 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
                         // we always set the `nodeid` field. However, when it is supported then we
                         // set the `id` field for inner nodes and the `depth` field for leaf nodes.
                         if (!useLedgerNodeDepth)
-                        {
                             node->set_nodeid(d.nodeID.getRawString());
-                        }
                         else if (d.isLeaf)
-                        {
                             node->set_depth(d.nodeID.getDepth());
-                        }
                         else
-                        {
                             node->set_id(d.nodeID.getRawString());
-                        }
                     }
                 }
                 else
@@ -3538,7 +3535,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
                     info += ", no hash specified";
 
                 JLOG(p_journal_.warn())
-                    << "processLedgerRequest: getNodeFat with nodeId " << *shaMapNodeId
+                    << "processLedgerRequest: getNodeFat with nodeId " << nodeID
                     << " and ledger info type " << info << " throws exception: " << e.what();
             }
         }

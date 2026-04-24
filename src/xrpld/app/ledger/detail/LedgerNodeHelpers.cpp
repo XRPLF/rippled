@@ -29,20 +29,17 @@ validateLedgerNode(protocol::TMLedgerNode const& ledgerNode)
         (ledgerNode.has_depth() && ledgerNode.depth() <= SHAMap::leafDepth);
 }
 
-std::optional<SHAMapTreeNodePtr>
+SHAMapTreeNodePtr
 getTreeNode(std::string_view data)
 {
     auto const slice = makeSlice(data);
     try
     {
-        auto treeNode = SHAMapTreeNode::makeFromWire(slice);
-        if (!treeNode)
-            return std::nullopt;
-        return treeNode;
+        return SHAMapTreeNode::makeFromWire(slice);
     }
     catch (std::exception const&)
     {
-        return std::nullopt;
+        return {};
     }
 }
 

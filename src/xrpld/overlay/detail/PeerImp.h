@@ -14,6 +14,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
@@ -792,7 +793,9 @@ private:
     getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
     void
-    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+    processLedgerRequest(
+        std::shared_ptr<protocol::TMGetLedger> const& m,
+        std::vector<SHAMapNodeID> nodeIDs);
 };
 
 //------------------------------------------------------------------------------

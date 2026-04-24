@@ -41,7 +41,7 @@ validateLedgerNode(protocol::TMLedgerNode const& ledgerNode);
  * @return An optional containing the deserialized tree node if successful, or std::nullopt if
  *         deserialization fails.
  */
-[[nodiscard]] std::optional<SHAMapTreeNodePtr>
+[[nodiscard]] SHAMapTreeNodePtr
 getTreeNode(std::string_view data);
 
 /**
