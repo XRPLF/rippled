@@ -267,7 +267,7 @@ public:
     std::vector<std::pair<SHAMapNodeID, uint256>>
     getMissingNodes(int maxNodes, SHAMapSyncFilter* filter);
 
-    bool
+    [[nodiscard]] bool
     getNodeFat(
         SHAMapNodeID const& wanted,
         std::vector<SHAMapNodeData>& data,
