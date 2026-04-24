@@ -14,6 +14,7 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -36,6 +37,7 @@
 #include <cstring>
 #include <initializer_list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -7110,6 +7112,183 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         BEAST_EXPECT(mptAlice.getDecryptedBalance(carol, MPTTester::HOLDER_ENCRYPTED_INBOX) == 0);
     }
 
+    // This test verifies that the compact AND-composed Send sigma proof
+    // enforces the shared-randomness invariant across participants.
+    void
+    testSendSharedRandomnessViolation(FeatureBitset features)
+    {
+        testcase("divergent C1 across participants in ConfidentialMPTSend");
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const auditor("auditor");
+        MPTTester mptAlice(env, alice, {.holders = {bob, carol}, .auditor = auditor});
+
+        mptAlice.create(
+            {.ownerCount = 1,
+             .flags = tfMPTCanLock | tfMPTCanConfidentialAmount | tfMPTCanTransfer});
+
+        mptAlice.authorize({.account = bob});
+        mptAlice.authorize({.account = carol});
+        mptAlice.pay(alice, bob, 100);
+        mptAlice.pay(alice, carol, 50);
+
+        mptAlice.generateKeyPair(alice);
+        mptAlice.generateKeyPair(bob);
+        mptAlice.generateKeyPair(carol);
+        mptAlice.generateKeyPair(auditor);
+
+        mptAlice.set({
+            .account = alice,
+            .issuerPubKey = mptAlice.getPubKey(alice),
+            .auditorPubKey = mptAlice.getPubKey(auditor),
+        });
+
+        mptAlice.convert({.account = bob, .amt = 50, .holderPubKey = mptAlice.getPubKey(bob)});
+        mptAlice.mergeInbox({.account = bob});
+        mptAlice.convert({.account = carol, .amt = 50, .holderPubKey = mptAlice.getPubKey(carol)});
+        mptAlice.mergeInbox({.account = carol});
+
+        // Send amount is 10.
+        uint64_t const amt = 10;
+
+        enum class Participant { Sender, Dest, Issuer, Auditor };
+
+        // This lambda submits a send transaction where one of the four ciphertexts
+        // is encrypted with different randomness than the one used to build the proof.
+        // Note: When divergent is nullopt, all participants
+        // will use the same randomness and expected to succeed, this is the
+        // control case that confirms the test setup itself is sound, the bad proof
+        // is actually from divergent randomness, not other causes.
+        auto submitWithDivergentC1 = [&](std::optional<Participant> divergent) {
+            // Shared ElGamal randomness.
+            Buffer const bf = generateBlindingFactor();
+
+            // Divergent ElGamal randomness.
+            Buffer const bfDivergent = generateBlindingFactor();
+
+            // All ciphertexts encrypt amt
+            // using shared bf. We'll re-encrypt one of these with bfDivergent below to create the
+            // C1 mismatch.
+            Buffer senderCt = mptAlice.encryptAmount(bob, amt, bf);
+            Buffer destCt = mptAlice.encryptAmount(carol, amt, bf);
+            Buffer issuerCt = mptAlice.encryptAmount(alice, amt, bf);
+            Buffer auditorCt = mptAlice.encryptAmount(auditor, amt, bf);
+
+            // Pedersen commitments that the proof binds to. The amount Pedersen commitment
+            // must reuse the shared ElGamal blinding factor bf.
+            Buffer const amountCommitment = mptAlice.getPedersenCommitment(amt, bf);
+            Buffer const balanceBf = generateBlindingFactor();
+
+            auto const spendingBalance =
+                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            auto const encSpendingBalance =
+                mptAlice.getEncryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            BEAST_EXPECT(spendingBalance.has_value());
+            BEAST_EXPECT(encSpendingBalance.has_value());
+
+            Buffer const balanceCommitment =
+                mptAlice.getPedersenCommitment(*spendingBalance, balanceBf);
+
+            auto const version = mptAlice.getMPTokenVersion(bob);
+            uint256 const contextHash =
+                getSendContextHash(bob, mptAlice.issuanceID(), env.seq(bob), carol, version);
+
+            auto const bobPub = mptAlice.getPubKey(bob);
+            auto const carolPub = mptAlice.getPubKey(carol);
+            auto const alicePub = mptAlice.getPubKey(alice);
+            auto const auditorPub = mptAlice.getPubKey(auditor);
+            BEAST_EXPECT(bobPub && carolPub && alicePub && auditorPub);
+
+            std::vector<ConfidentialRecipient> const recipients{
+                {.publicKey = *bobPub, .encryptedAmount = senderCt},
+                {.publicKey = *carolPub, .encryptedAmount = destCt},
+                {.publicKey = *alicePub, .encryptedAmount = issuerCt},
+                {.publicKey = *auditorPub, .encryptedAmount = auditorCt},
+            };
+
+            // Build the correct case without divergent C1 for comparison.
+            auto const proofOpt = mptAlice.getConfidentialSendProof(
+                bob,
+                amt,
+                recipients,
+                Slice(bf),
+                contextHash,
+                {.pedersenCommitment = amountCommitment,
+                 .amt = amt,
+                 .encryptedAmt = senderCt,
+                 .blindingFactor = bf},
+                {.pedersenCommitment = balanceCommitment,
+                 .amt = *spendingBalance,
+                 .encryptedAmt = *encSpendingBalance,
+                 .blindingFactor = balanceBf});
+            BEAST_EXPECT(proofOpt.has_value());
+
+            // Re-encrypt one participant's ciphertext with bfDivergent.
+            if (divergent)
+            {
+                switch (*divergent)
+                {
+                    case Participant::Sender:
+                        senderCt = mptAlice.encryptAmount(bob, amt, bfDivergent);
+                        break;
+                    case Participant::Dest:
+                        destCt = mptAlice.encryptAmount(carol, amt, bfDivergent);
+                        break;
+                    case Participant::Issuer:
+                        issuerCt = mptAlice.encryptAmount(alice, amt, bfDivergent);
+                        break;
+                    case Participant::Auditor:
+                        auditorCt = mptAlice.encryptAmount(auditor, amt, bfDivergent);
+                        break;
+                }
+            }
+
+            auto const spendingBefore = spendingBalance;
+            TER const expectedErr = divergent ? TER{tecBAD_PROOF} : TER{tesSUCCESS};
+
+            mptAlice.send({
+                .account = bob,
+                .dest = carol,
+                .amt = amt,
+                .proof = strHex(*proofOpt),
+                .senderEncryptedAmt = senderCt,
+                .destEncryptedAmt = destCt,
+                .issuerEncryptedAmt = issuerCt,
+                .auditorEncryptedAmt = auditorCt,
+                .blindingFactor = bf,
+                .amountCommitment = amountCommitment,
+                .balanceCommitment = balanceCommitment,
+                .err = expectedErr,
+            });
+
+            // Verify balances.
+            auto const spendingAfter =
+                mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
+            if (divergent)
+            {
+                BEAST_EXPECT(spendingAfter == spendingBefore);
+            }
+            else
+            {
+                BEAST_EXPECT(spendingAfter == *spendingBefore - amt);
+            }
+        };
+
+        // This confirms the test setup is sound, if any of the divergent cases below
+        // fail, it is due to the C1 mismatch and not a setup bug.
+        submitWithDivergentC1(std::nullopt);
+
+        // Divergent C1 for different participants should all fail with tecBAD_PROOF:
+        submitWithDivergentC1(Participant::Sender);
+        submitWithDivergentC1(Participant::Dest);
+        submitWithDivergentC1(Participant::Issuer);
+        submitWithDivergentC1(Participant::Auditor);
+    }
+
     // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
     // Convert, MergeInbox, Send, ConvertBack) using tickets instead of regular account
     // sequence numbers.
@@ -8819,6 +8998,9 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         testProofContextBinding(features);
         testProofCiphertextBinding(features);
         testProofVersionMismatch(features);
+
+        // Crafted-proof Tests
+        testSendSharedRandomnessViolation(features);
 
         // Ticket Tests
         testWithTickets(features);
