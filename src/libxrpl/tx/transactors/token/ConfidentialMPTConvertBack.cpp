@@ -139,7 +139,8 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount) ||
+        !sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
