@@ -137,24 +137,24 @@ public:
     D const&
     downcast() const;
 
-    virtual SerializedTypeID
+    [[nodiscard]] virtual SerializedTypeID
     getSType() const;
 
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getFullText() const;
 
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getText() const;
 
-    virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
+    [[nodiscard]] virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
 
     virtual void
     add(Serializer& s) const;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isEquivalent(STBase const& t) const;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isDefault() const;
 
     /** A STBase is a field.
@@ -163,7 +163,7 @@ public:
     void
     setFName(SField const& n);
 
-    SField const&
+    [[nodiscard]] SField const&
     getFName() const;
 
     void
@@ -199,7 +199,7 @@ STBase::downcast()
 }
 
 template <class D>
-D const&
+[[nodiscard]] D const&
 STBase::downcast() const
 {
     D const* ptr = dynamic_cast<D const*>(this);

@@ -69,13 +69,13 @@ public:
     {
     }
 
-    std::unique_ptr<base_type>
+    [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
         return std::make_unique<sles_iter_impl>(*this);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
         if (auto const p = dynamic_cast<sles_iter_impl const*>(&impl))
@@ -89,7 +89,7 @@ public:
         ++iter_;
     }
 
-    sles_type::value_type
+    [[nodiscard]] sles_type::value_type
     dereference() const override
     {
         SerialIter sit(iter_->slice());
@@ -116,13 +116,13 @@ public:
     {
     }
 
-    std::unique_ptr<base_type>
+    [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
         return std::make_unique<txs_iter_impl>(*this);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
         if (auto const p = dynamic_cast<txs_iter_impl const*>(&impl))
@@ -136,7 +136,7 @@ public:
         ++iter_;
     }
 
-    txs_type::value_type
+    [[nodiscard]] txs_type::value_type
     dereference() const override
     {
         auto const& item = *iter_;

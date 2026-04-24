@@ -45,7 +45,7 @@ struct FlowDebugInfo
             numActive.reserve(s);
         }
 
-        size_t
+        [[nodiscard]] size_t
         size() const
         {
             return in.size();
@@ -92,7 +92,7 @@ struct FlowDebugInfo
         passInfo.reserve(64);
     }
 
-    auto
+    [[nodiscard]] auto
     duration(std::string const& tag) const
     {
         auto i = timePoints.find(tag);
@@ -109,7 +109,7 @@ struct FlowDebugInfo
         return std::chrono::duration_cast<std::chrono::duration<double>>(t.second - t.first);
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     count(std::string const& tag) const
     {
         auto i = counts.find(tag);
@@ -158,7 +158,7 @@ struct FlowDebugInfo
         counts[tag] = c;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     passCount() const
     {
         return passInfo.size();
@@ -182,7 +182,7 @@ struct FlowDebugInfo
         passInfo.newLiquidityPass();
     }
 
-    std::string
+    [[nodiscard]] std::string
     to_string(bool writePassInfo) const
     {
         std::ostringstream ostr;

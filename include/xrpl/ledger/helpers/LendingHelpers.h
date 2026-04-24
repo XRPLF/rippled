@@ -104,7 +104,7 @@ struct LoanState
     Number managementFeeDue;
 
     // Interest still due to be paid by the borrower.
-    Number
+    [[nodiscard]] Number
     interestOutstanding() const
     {
         XRPL_ASSERT_PARTS(
@@ -266,7 +266,7 @@ struct PaymentComponents
     //
     // @return The amount of tracked interest included in this payment that
     //         will be paid to the vault.
-    Number
+    [[nodiscard]] Number
     trackedInterestPart() const;
 };
 
@@ -340,7 +340,7 @@ struct LoanStateDeltas
     /* Calculates the total change across all components.
      * @return The sum of principal, interest, and management fee deltas.
      */
-    Number
+    [[nodiscard]] Number
     total() const
     {
         return principal + interest + managementFee;

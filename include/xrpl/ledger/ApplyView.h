@@ -134,7 +134,7 @@ public:
         while transactions applied to the consensus
         ledger produce hard failures (and claim a fee).
     */
-    virtual ApplyFlags
+    [[nodiscard]] virtual ApplyFlags
     flags() const = 0;
 
     /** Prepare to modify the SLE associated with key.

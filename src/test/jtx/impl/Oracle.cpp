@@ -409,8 +409,8 @@ validDocumentID(AnyValue const& v)
     {
         Json::Value jv;
         toJson(jv, v);
-        jv.asUInt();
-        jv.isNumeric();
+        [[maybe_unused]] auto unused1 = jv.asUInt();
+        [[maybe_unused]] auto unused2 = jv.isNumeric();
         return true;
     }
     catch (...)

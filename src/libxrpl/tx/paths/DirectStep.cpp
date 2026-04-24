@@ -70,19 +70,19 @@ protected:
     // the best available quality.
     // return: first element is max amount that can flow,
     //         second is the debt direction of the source w.r.t. the dst
-    std::pair<IOUAmount, DebtDirection>
+    [[nodiscard]] std::pair<IOUAmount, DebtDirection>
     maxPaymentFlow(ReadView const& sb) const;
 
     // Compute srcQOut and dstQIn when the source redeems.
-    std::pair<std::uint32_t, std::uint32_t>
+    [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualitiesSrcRedeems(ReadView const& sb) const;
 
     // Compute srcQOut and dstQIn when the source issues.
-    std::pair<std::uint32_t, std::uint32_t>
+    [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualitiesSrcIssues(ReadView const& sb, DebtDirection prevStepDebtDirection) const;
 
     // Returns srcQOut, dstQIn
-    std::pair<std::uint32_t, std::uint32_t>
+    [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualities(ReadView const& sb, DebtDirection srcDebtDir, StrandDirection strandDir) const;
 
 private:
@@ -101,23 +101,23 @@ private:
     }
 
 public:
-    AccountID const&
+    [[nodiscard]] AccountID const&
     src() const
     {
         return src_;
     }
-    AccountID const&
+    [[nodiscard]] AccountID const&
     dst() const
     {
         return dst_;
     }
-    Currency const&
+    [[nodiscard]] Currency const&
     currency() const
     {
         return currency_;
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         if (!cache_)
@@ -125,7 +125,7 @@ public:
         return EitherAmount(cache_->in);
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         if (!cache_)
@@ -133,25 +133,25 @@ public:
         return EitherAmount(cache_->out);
     }
 
-    std::optional<AccountID>
+    [[nodiscard]] std::optional<AccountID>
     directStepSrcAcct() const override
     {
         return src_;
     }
 
-    std::optional<std::pair<AccountID, AccountID>>
+    [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         return std::make_pair(src_, dst_);
     }
 
-    DebtDirection
+    [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     lineQualityIn(ReadView const& v) const override;
 
-    std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection dir) const override;
 
     std::pair<IOUAmount, IOUAmount>
@@ -173,7 +173,7 @@ public:
 
     // Check for error, existing liquidity, and violations of auth/frozen
     // constraints.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
     void
@@ -206,7 +206,7 @@ protected:
     }
 
 private:
-    bool
+    [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
         if (auto ds = dynamic_cast<DirectStepI const*>(&rhs))
@@ -256,22 +256,22 @@ public:
         return true;
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     quality(ReadView const& sb, QualityDirection qDir) const;
 
     // Compute the maximum value that can flow from src->dst at
     // the best available quality.
     // return: first element is max amount that can flow,
     //         second is the debt direction w.r.t. the source account
-    std::pair<IOUAmount, DebtDirection>
+    [[nodiscard]] std::pair<IOUAmount, DebtDirection>
     maxFlow(ReadView const& sb, IOUAmount const& desired) const;
 
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("DirectIPaymentStep");
@@ -321,7 +321,7 @@ public:
     // the best available quality.
     // return: first element is max amount that can flow,
     //         second is the debt direction w.r.t the source
-    std::pair<IOUAmount, DebtDirection>
+    [[nodiscard]] std::pair<IOUAmount, DebtDirection>
     maxFlow(ReadView const& sb, IOUAmount const& desired) const;
 
     // Verify the consistency of the step.  These checks are specific to
@@ -329,7 +329,7 @@ public:
     static TER
     check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("DirectIOfferCrossingStep");

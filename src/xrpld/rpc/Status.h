@@ -50,7 +50,7 @@ public:
     /* Returns a representation of the integer status Code as a string.
        If the Status is OK, the result is an empty string.
     */
-    std::string
+    [[nodiscard]] std::string
     codeString() const;
 
     /** Returns true if the Status is *not* OK. */
@@ -68,7 +68,7 @@ public:
 
     /** Returns the Status as a TER.
         This may only be called if type() == Type::TER. */
-    TER
+    [[nodiscard]] TER
     toTER() const
     {
         XRPL_ASSERT(type_ == Type::TER, "xrpl::RPC::Status::toTER : type is TER");
@@ -77,7 +77,7 @@ public:
 
     /** Returns the Status as an error_code_i.
         This may only be called if type() == Type::error_code_i. */
-    error_code_i
+    [[nodiscard]] error_code_i
     toErrorCode() const
     {
         XRPL_ASSERT(type_ == Type::error_code_i, "xrpl::RPC::Status::toTER : type is error code");
@@ -102,23 +102,23 @@ public:
         }
     }
 
-    Strings const&
+    [[nodiscard]] Strings const&
     messages() const
     {
         return messages_;
     }
 
     /** Return the first message, if any. */
-    std::string
+    [[nodiscard]] std::string
     message() const;
 
-    Type
+    [[nodiscard]] Type
     type() const
     {
         return type_;
     }
 
-    std::string
+    [[nodiscard]] std::string
     toString() const;
 
     /** Fill a Json::Value with an RPC 2.0 response.

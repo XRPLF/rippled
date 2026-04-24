@@ -295,7 +295,7 @@ class Consensus
         MonitoredMode(ConsensusMode m) : mode_{m}
         {
         }
-        ConsensusMode
+        [[nodiscard]] ConsensusMode
         get() const
         {
             return mode_;
@@ -408,7 +408,7 @@ public:
         return prevLedgerID_;
     }
 
-    ConsensusPhase
+    [[nodiscard]] ConsensusPhase
     phase() const
     {
         return phase_;
@@ -421,7 +421,7 @@ public:
         @param full True if verbose response desired.
         @return     The Json state.
     */
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson(bool full) const;
 
 private:
@@ -500,7 +500,7 @@ private:
      *
      * @return Whether to pause to wait for lagging proposers.
      */
-    bool
+    [[nodiscard]] bool
     shouldPause(std::unique_ptr<std::stringstream> const& clog) const;
 
     // Close the open ledger and establish initial position.
@@ -529,7 +529,7 @@ private:
     leaveConsensus(std::unique_ptr<std::stringstream> const& clog);
 
     // The rounded or effective close time estimate from a proposer
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     asCloseTime(NetClock::time_point raw) const;
 
 private:
