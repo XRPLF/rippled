@@ -17,6 +17,7 @@
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
+#include <ios>
 #include <memory>
 #include <random>
 #include <sstream>

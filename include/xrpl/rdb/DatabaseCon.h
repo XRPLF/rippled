@@ -94,7 +94,7 @@ public:
     struct CheckpointerSetup
     {
         JobQueue* jobQueue{};
-        std::reference_wrapper<ServiceRegistry> registry;
+        std::reference_wrapper<ServiceRegistry> registry{};
     };
 
     template <std::size_t N, std::size_t M>

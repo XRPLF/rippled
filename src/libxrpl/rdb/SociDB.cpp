@@ -4,6 +4,8 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 
+#include <soci/blob.h>
+
 #include <cstddef>
 #include <cstdint>
 #include <filesystem>
