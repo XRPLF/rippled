@@ -115,7 +115,7 @@ XRPL_RETIRE_FIX(RmSmallIncreasedQOffers)
 XRPL_RETIRE_FIX(STAmountCanonicalize)
 XRPL_RETIRE_FIX(TakerDryOfferRemoval)
 XRPL_RETIRE_FIX(TrustLinesToSelf)
-XRPL_RETIRE(fixUniversalNumber)
+XRPL_RETIRE_FIX(UniversalNumber)
 
 XRPL_RETIRE_FEATURE(Checks)
 XRPL_RETIRE_FEATURE(CheckCashMakesTrustLine)

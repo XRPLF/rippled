@@ -386,7 +386,7 @@ operator+(STAmount const& v1, STAmount const& v2)
     if (v1.holds<MPTIssue>())
         return {v1.mAsset, v1.mpt().value() + v2.mpt().value()};
 
-    auto x = v1;
+    STAmount x{};
     x = v1.iou() + v2.iou();
     return x;
 }

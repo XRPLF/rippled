@@ -4339,8 +4339,7 @@ private:
     testAmendment()
     {
         testcase("Amendment");
-        FeatureBitset const all{testable_amendments()};
-        FeatureBitset const noAMM{all - featureAMM};
+        FeatureBitset const noAMM{testable_amendments() - featureAMM};
 
         Env env{*this, noAMM};
         fund(env, gw, {alice}, {USD(1'000)}, Fund::All);
