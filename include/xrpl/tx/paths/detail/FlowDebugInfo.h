@@ -327,27 +327,4 @@ writeDiffs(std::ostringstream& ostr, Iter begin, Iter end)
     ostr << ']';
 };
 
-using BalanceDiffs =
-    std::pair<std::map<std::tuple<AccountID, AccountID, Currency>, STAmount>, XRPAmount>;
-
-inline BalanceDiffs
-balanceDiffs(PaymentSandbox const& sb, ReadView const& rv)
-{
-    return {sb.balanceChanges(rv), sb.xrpDestroyed()};
-}
-
-inline std::string
-balanceDiffsToString(std::optional<BalanceDiffs> const& bd)
-{
-    if (!bd)
-        return std::string{};
-    auto const& diffs = bd->first;
-    auto const& xrpDestroyed = bd->second;
-    std::ostringstream ostr;
-    ostr << ", xrpDestroyed: " << to_string(xrpDestroyed);
-    ostr << ", balanceDiffs: ";
-    writeDiffs(ostr, diffs.begin(), diffs.end());
-    return ostr.str();
-};
-
 }  // namespace xrpl::path::detail
