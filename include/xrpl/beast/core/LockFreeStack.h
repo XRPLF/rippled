@@ -162,7 +162,7 @@ public:
     operator=(LockFreeStack const&) = delete;
 
     /** Returns true if the stack is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return m_head.load() == &m_end;

@@ -175,13 +175,13 @@ public:
     void
     print_results(S& s);
 
-    bool
+    [[nodiscard]] bool
     any_failed() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     tests() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     suites() const;
 
     void

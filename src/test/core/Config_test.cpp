@@ -164,25 +164,25 @@ public:
             /* bStandalone */ false);
     }
 
-    Config const&
+    [[nodiscard]] Config const&
     config() const
     {
         return config_;
     }
 
-    std::string
+    [[nodiscard]] std::string
     configFile() const
     {
         return file().string();
     }
 
-    bool
+    [[nodiscard]] bool
     dataDirExists() const
     {
         return boost::filesystem::is_directory(dataDir_);
     }
 
-    bool
+    [[nodiscard]] bool
     configFileExists() const
     {
         return fileExists();
@@ -254,13 +254,13 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     validatorsFileExists() const
     {
         return fileExists();
     }
 
-    std::string
+    [[nodiscard]] std::string
     validatorsFile() const
     {
         return absolute(file()).string();

@@ -426,7 +426,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "NuDB";
