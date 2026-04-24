@@ -91,8 +91,8 @@ unsigned-integer-overflow:rocks*/*/table/block_based/block_based_table_builder.c
 unsigned-integer-overflow:rocks*/*/table/block_based/reader_common.cc
 unsigned-integer-overflow:rocks*/*/db/version_set.cc
 alignment:rocks*/*/util/crc32c_arm64.cc
-undefined:rocks.*/*/util/crc32c_arm64.cc
-undefined:rocks.*/*/util/xxhash.h
+undefined:rocks*/*/util/crc32c_arm64.cc
+undefined:rocks*/*/util/xxhash.h
 
 # nudb intentional overflows in hash functions
 unsigned-integer-overflow:nudb/detail/xxhash.hpp
@@ -128,18 +128,19 @@ unsigned-integer-overflow:__chrono/duration.h
 # Signed integer negation (-value) in amount types.
 # INT64_MIN cannot occur in practice due to domain invariants (mantissa ranges
 # are well within int64_t bounds), but UBSan flags the pattern as potential
-# signed overflow.
-signed-integer-overflow:IOUAmount
-signed-integer-overflow:XRPAmount
-signed-integer-overflow:MPTAmount
-signed-integer-overflow:STAmount
+# signed overflow. Narrowed to operator- to avoid suppressing unrelated
+# overflows anywhere in a stack trace containing these type names.
+signed-integer-overflow:operator-*IOUAmount*
+signed-integer-overflow:operator-*XRPAmount*
+signed-integer-overflow:operator-*MPTAmount*
+signed-integer-overflow:operator-*STAmount*
 
 # STAmount::operator+ signed addition — operands are bounded by total supply
 # (~10^17 for XRP, ~10^18 for MPT) so overflow cannot occur in practice.
 signed-integer-overflow:operator+*STAmount*
 
 # STAmount::getRate uses unsigned shift and addition
-unsigned-integer-overflow:getRate*
+unsigned-integer-overflow:*STAmount*getRate*
 # STAmount::serialize uses unsigned bitwise operations
 unsigned-integer-overflow:*STAmount*serialize*
 
