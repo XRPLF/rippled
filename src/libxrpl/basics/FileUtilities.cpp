@@ -35,7 +35,7 @@ getFileContents(
 
     if (!fileStream)
     {
-        ec = make_error_code(static_cast<std::errc>(errno));
+        ec.assign(errno, std::generic_category());
         return {};
     }
 
@@ -44,7 +44,7 @@ getFileContents(
 
     if (fileStream.bad())
     {
-        ec = make_error_code(static_cast<std::errc>(errno));
+        ec.assign(errno, std::generic_category());
         return {};
     }
 

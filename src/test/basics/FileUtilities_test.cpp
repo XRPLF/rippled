@@ -44,7 +44,7 @@ public:
         {
             // Test with small max
             auto const bad = getFileContents(ec, path, 16);
-            BEAST_EXPECT(ec && ec.value() == static_cast<int>(std::errc::file_too_large));
+            BEAST_EXPECT(ec && ec == std::errc::file_too_large);
             BEAST_EXPECT(bad.empty());
         }
     }

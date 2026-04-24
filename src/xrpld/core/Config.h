@@ -10,7 +10,7 @@
 #include <xrpl/rdb/DatabaseCon.h>
 
 #include <cstdint>
-#include <filesystem>  // VFALCO FIX: This include should not be here
+#include <filesystem>
 #include <optional>
 #include <string>
 #include <unordered_set>

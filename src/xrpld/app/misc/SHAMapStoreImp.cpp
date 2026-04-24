@@ -475,9 +475,21 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     {
         std::filesystem::path const p = get(section, "path");
         std::random_device rd;
-        std::ostringstream oss;
-        oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
-        newPath = (p / dbPrefix_).string() + "." + oss.str();
+        constexpr std::size_t maxAttempts = 100;
+        for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
+        {
+            std::ostringstream oss;
+            oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
+            auto const candidate =
+                std::filesystem::path((p / dbPrefix_).string() + "." + oss.str());
+            if (!std::filesystem::exists(candidate))
+            {
+                newPath = candidate;
+                break;
+            }
+        }
+        if (newPath.empty())
+            Throw<std::runtime_error>("Unable to generate a unique rotating backend path");
     }
     section.set("path", newPath.string());
 
