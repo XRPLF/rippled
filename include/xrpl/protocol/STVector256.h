@@ -69,9 +69,6 @@ public:
     std::vector<uint256>::iterator
     insert(std::vector<uint256>::const_iterator pos, uint256 const& value);
 
-    std::vector<uint256>::iterator
-    insert(std::vector<uint256>::const_iterator pos, uint256&& value);
-
     void
     push_back(uint256 const& v);
 
@@ -151,7 +148,7 @@ STVector256::size() const
 inline void
 STVector256::resize(std::size_t n)
 {
-    return mValue.resize(n);
+    mValue.resize(n);
 }
 
 inline bool
@@ -182,12 +179,6 @@ inline std::vector<uint256>::iterator
 STVector256::insert(std::vector<uint256>::const_iterator pos, uint256 const& value)
 {
     return mValue.insert(pos, value);
-}
-
-inline std::vector<uint256>::iterator
-STVector256::insert(std::vector<uint256>::const_iterator pos, uint256&& value)
-{
-    return mValue.insert(pos, std::move(value));
 }
 
 inline void
@@ -229,7 +220,7 @@ STVector256::erase(std::vector<uint256>::iterator position)
 inline void
 STVector256::clear() noexcept
 {
-    return mValue.clear();
+    mValue.clear();
 }
 
 }  // namespace xrpl

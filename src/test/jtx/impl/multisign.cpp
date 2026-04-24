@@ -1,15 +1,31 @@
 #include <test/jtx/multisign.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/tags.h>
 #include <test/jtx/utility.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
+#include <ostream>
+#include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 Json::Value
 signers(Account const& account, std::uint32_t quorum, std::vector<signer> const& v)
@@ -78,12 +94,12 @@ msig::operator()(Env& env, JTx& jt) const
             jo[jss::Account] = e.acct.human();
             jo[jss::SigningPubKey] = strHex(e.sig.pk().slice());
 
-            Serializer ss{buildMultiSigningData(*st, e.acct.id())};
+            Serializer const ss{buildMultiSigningData(*st, e.acct.id())};
             auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), ss.slice());
             jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
         }
     };
-    if (!subField)
+    if (subField == nullptr)
     {
         jt.mainSigners.emplace_back(callback);
     }
@@ -93,6 +109,4 @@ msig::operator()(Env& env, JTx& jt) const
     }
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

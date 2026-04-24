@@ -183,11 +183,17 @@ private:
                 return ParseResult::badChar;
 
             if (c >= 'a')
+            {
                 nibble = static_cast<std::uint32_t>(c - 'a' + 0xA);
+            }
             else if (c >= 'A')
+            {
                 nibble = static_cast<std::uint32_t>(c - 'A' + 0xA);
+            }
             else if (c <= '9')
+            {
                 nibble = static_cast<std::uint32_t>(c - '0');
+            }
 
             if (nibble > 0xFu)
                 return ParseResult::badChar;
@@ -212,7 +218,7 @@ private:
         while (in != sv.end())
         {
             std::uint32_t accum = {};
-            for (std::uint32_t shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
+            for (std::uint32_t const shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
             {
                 if (auto const result = hexCharToUInt(*in++, shift, accum);
                     result != ParseResult::okay)
@@ -263,7 +269,7 @@ public:
         class Container,
         class = std::enable_if_t<
             detail::is_contiguous_container<Container>::value &&
-            std::is_trivially_copyable<typename Container::value_type>::value>>
+            std::is_trivially_copyable_v<typename Container::value_type>>>
     explicit base_uint(Container const& c)
     {
         XRPL_ASSERT(
@@ -275,7 +281,7 @@ public:
     template <class Container>
     std::enable_if_t<
         detail::is_contiguous_container<Container>::value &&
-            std::is_trivially_copyable<typename Container::value_type>::value,
+            std::is_trivially_copyable_v<typename Container::value_type>,
         base_uint&>
     operator=(Container const& c)
     {
@@ -308,8 +314,10 @@ public:
     signum() const
     {
         for (int i = 0; i < WIDTH; i++)
+        {
             if (data_[i] != 0)
                 return 1;
+        }
 
         return 0;
     }
@@ -335,11 +343,13 @@ public:
     operator=(std::uint64_t uHost)
     {
         *this = beast::zero;
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
         union
         {
             unsigned u[2];
             std::uint64_t ul;
         };
+        // NOLINTEND(cppcoreguidelines-pro-type-member-init)
         // Put in least significant bits.
         ul = boost::endian::native_to_big(uHost);
         data_[WIDTH - 2] = u[0];
@@ -388,7 +398,7 @@ public:
         return *this;
     }
 
-    base_uint const
+    base_uint
     operator++(int)
     {
         // postfix operator
@@ -413,7 +423,7 @@ public:
         return *this;
     }
 
-    base_uint const
+    base_uint
     operator--(int)
     {
         // postfix operator
@@ -442,9 +452,9 @@ public:
     {
         std::uint64_t carry = 0;
 
-        for (int i = WIDTH; i--;)
+        for (int i = WIDTH - 1; i >= 0; i--)
         {
-            std::uint64_t n = carry + boost::endian::big_to_native(data_[i]) +
+            std::uint64_t const n = carry + boost::endian::big_to_native(data_[i]) +
                 boost::endian::big_to_native(b.data_[i]);
 
             data_[i] = boost::endian::native_to_big(static_cast<std::uint32_t>(n));
@@ -530,7 +540,7 @@ using uint256 = base_uint<256>;
 using uint192 = base_uint<192>;
 
 template <std::size_t Bits, class Tag>
-[[nodiscard]] inline constexpr std::strong_ordering
+[[nodiscard]] constexpr std::strong_ordering
 operator<=>(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 {
     // This comparison might seem wrong on a casual inspection because it
@@ -551,7 +561,7 @@ operator<=>(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 }
 
 template <std::size_t Bits, typename Tag>
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 {
     return (lhs <=> rhs) == 0;
@@ -559,7 +569,7 @@ operator==(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline constexpr bool
+constexpr bool
 operator==(base_uint<Bits, Tag> const& a, std::uint64_t b)
 {
     return a == base_uint<Bits, Tag>(b);
@@ -567,28 +577,28 @@ operator==(base_uint<Bits, Tag> const& a, std::uint64_t b)
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator^(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) ^= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator&(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) &= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator|(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) |= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator+(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) += b;
@@ -621,7 +631,7 @@ template <>
 inline std::size_t
 extract(uint256 const& key)
 {
-    std::size_t result;
+    std::size_t result = 0;
     // Use memcpy to avoid unaligned UB
     // (will optimize to equivalent code)
     std::memcpy(&result, key.data(), sizeof(std::size_t));

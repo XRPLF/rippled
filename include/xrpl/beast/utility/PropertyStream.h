@@ -174,7 +174,7 @@ private:
     std::ostringstream mutable m_ostream;
 
 public:
-    Proxy(Map const& map, std::string const& key);
+    Proxy(Map const& map, std::string key);
     Proxy(Proxy const& other);
     ~Proxy();
 
@@ -311,11 +311,11 @@ private:
     std::string const m_name;
     std::recursive_mutex lock_;
     Item item_;
-    Source* parent_;
+    Source* parent_{nullptr};
     List<Item> children_;
 
 public:
-    explicit Source(std::string const& name);
+    explicit Source(std::string name);
     virtual ~Source();
 
     Source(Source const&) = delete;

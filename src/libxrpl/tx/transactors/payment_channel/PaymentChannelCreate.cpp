@@ -1,13 +1,27 @@
+#include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
+
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/payment_channel/PaymentChannelCreate.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <memory>
 
 namespace xrpl {
 
@@ -85,10 +99,10 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
         auto const flags = sled->getFlags();
 
         // Check if they have disallowed incoming payment channels
-        if (flags & lsfDisallowIncomingPayChan)
+        if ((flags & lsfDisallowIncomingPayChan) != 0u)
             return tecNO_PERMISSION;
 
-        if ((flags & lsfRequireDestTag) && !ctx.tx[~sfDestinationTag])
+        if (((flags & lsfRequireDestTag) != 0u) && !ctx.tx[~sfDestinationTag])
             return tecDST_TAG_NEEDED;
 
         // Pseudo-accounts cannot receive payment channels, other than native
@@ -123,7 +137,7 @@ PaymentChannelCreate::doApply()
 
     // Create PayChan in ledger.
     //
-    // Note that we we use the value from the sequence or ticket as the
+    // Note that we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet = keylet::payChan(account, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
@@ -172,4 +186,22 @@ PaymentChannelCreate::doApply()
     return tesSUCCESS;
 }
 
+void
+PaymentChannelCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+PaymentChannelCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
 }  // namespace xrpl

@@ -1,13 +1,32 @@
+#include <xrpl/tx/transactors/system/Batch.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/apply.h>
-#include <xrpl/tx/transactors/system/Batch.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <algorithm>
+#include <bit>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
 
 namespace xrpl {
 
@@ -123,7 +142,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     // LCOV_EXCL_STOP
 
-    XRPAmount signerFees = signerCount * view.fees().base;
+    XRPAmount const signerFees = signerCount * view.fees().base;
 
     // LCOV_EXCL_START
     if (signerFees > maxAmount - txnFees)
@@ -262,15 +281,13 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID;
         }
 
-        if (std::any_of(
-                disabledTxTypes.begin(), disabledTxTypes.end(), [txType](auto const& disabled) {
-                    return txType == disabled;
-                }))
+        if (std::ranges::any_of(
+                disabledTxTypes, [txType](auto const& disabled) { return txType == disabled; }))
         {
             return temINVALID_INNER_BATCH;
         }
 
-        if (!(stx.getFlags() & tfInnerBatchTxn))
+        if ((stx.getFlags() & tfInnerBatchTxn) == 0u)
         {
             JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have the tfInnerBatchTxn flag. "
@@ -335,7 +352,7 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Duplicate sequence and ticket checks
-        if (flags & (tfAllOrNothing | tfUntilFailure))
+        if ((flags & (tfAllOrNothing | tfUntilFailure)) != 0u)
         {
             if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
             {
@@ -498,6 +515,20 @@ TER
 Batch::doApply()
 {
     return tesSUCCESS;
+}
+
+void
+Batch::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+Batch::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

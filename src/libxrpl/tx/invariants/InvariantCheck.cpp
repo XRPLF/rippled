@@ -1,22 +1,40 @@
 #include <xrpl/tx/invariants/InvariantCheck.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <optional>
+#include <sstream>
+#include <vector>
 
 namespace xrpl {
 
@@ -284,25 +302,29 @@ NoZeroEscrow::visitEntry(
         }
         else
         {
-            // IOU case
-            if (amount.holds<Issue>())
-            {
-                if (amount <= beast::zero)
-                    return true;
+            return amount.asset().visit(
+                [&](Issue const& issue) {
+                    // IOU case
+                    if (amount <= beast::zero)
+                        return true;
 
-                if (badCurrency() == amount.getCurrency())
-                    return true;
-            }
+                    if (badCurrency() == issue.currency)
+                        return true;
 
-            // MPT case
-            if (amount.holds<MPTIssue>())
-            {
-                if (amount <= beast::zero)
-                    return true;
+                    return false;
+                }
 
-                if (amount.mpt() > MPTAmount{maxMPTokenAmount})
-                    return true;  // LCOV_EXCL_LINE
-            }
+                // MPT case
+                ,
+                [&](MPTIssue const&) {
+                    if (amount <= beast::zero)
+                        return true;
+
+                    if (amount.mpt() > MPTAmount{maxMPTokenAmount})
+                        return true;  // LCOV_EXCL_LINE
+
+                    return false;
+                });
         }
         return false;
     };
@@ -600,8 +622,8 @@ NoXRPTrustLines::visitEntry(
         // checking the issue directly here instead of
         // relying on .native() just in case native somehow
         // were systematically incorrect
-        xrpTrustLine_ = after->getFieldAmount(sfLowLimit).issue() == xrpIssue() ||
-            after->getFieldAmount(sfHighLimit).issue() == xrpIssue();
+        xrpTrustLine_ = after->getFieldAmount(sfLowLimit).asset() == xrpIssue() ||
+            after->getFieldAmount(sfHighLimit).asset() == xrpIssue();
     }
 }
 
@@ -631,11 +653,11 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     if (after && after->getType() == ltRIPPLE_STATE)
     {
         std::uint32_t const uFlags = after->getFieldU32(sfFlags);
-        bool const lowFreeze = uFlags & lsfLowFreeze;
-        bool const lowDeepFreeze = uFlags & lsfLowDeepFreeze;
+        bool const lowFreeze = (uFlags & lsfLowFreeze) != 0u;
+        bool const lowDeepFreeze = (uFlags & lsfLowDeepFreeze) != 0u;
 
-        bool const highFreeze = uFlags & lsfHighFreeze;
-        bool const highDeepFreeze = uFlags & lsfHighDeepFreeze;
+        bool const highFreeze = (uFlags & lsfHighFreeze) != 0u;
+        bool const highDeepFreeze = (uFlags & lsfHighDeepFreeze) != 0u;
 
         deepFreezeWithoutFreeze_ = (lowDeepFreeze && !lowFreeze) || (highDeepFreeze && !highFreeze);
     }
@@ -774,17 +796,23 @@ ValidClawback::finalize(
             return false;
         }
 
-        if (trustlinesChanged == 1)
+        bool const mptV2Enabled = view.rules().enabled(featureMPTokensV2);
+        if (trustlinesChanged == 1 || (mptV2Enabled && mptokensChanged == 1))
         {
             AccountID const issuer = tx.getAccountID(sfAccount);
             STAmount const& amount = tx.getFieldAmount(sfAmount);
             AccountID const& holder = amount.getIssuer();
-            STAmount const holderBalance =
-                accountHolds(view, holder, amount.getCurrency(), issuer, fhIGNORE_FREEZE, j);
+            STAmount const holderBalance = amount.asset().visit(
+                [&](Issue const& issue) {
+                    return accountHolds(view, holder, issue.currency, issuer, fhIGNORE_FREEZE, j);
+                },
+                [&](MPTIssue const& issue) {
+                    return accountHolds(view, issuer, issue, fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
+                });
 
             if (holderBalance.signum() < 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: trustline balance is negative";
+                JLOG(j.fatal()) << "Invariant failed: trustline or MPT balance is negative";
                 return false;
             }
         }

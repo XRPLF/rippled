@@ -1,18 +1,30 @@
 #include <xrpld/app/ledger/ConsensusTransSetSF.h>
+
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>  // IWYU pragma: keep
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
 ConsensusTransSetSF::ConsensusTransSetSF(Application& app, NodeCache& nodeCache)
-    : app_(app), m_nodeCache(nodeCache), j_(app.journal("TransactionAcquire"))
+    : app_(app), m_nodeCache(nodeCache), j_(app.getJournal("TransactionAcquire"))
 {
 }
 
@@ -37,7 +49,7 @@ ConsensusTransSetSF::gotNode(
         try
         {
             // skip prefix
-            Serializer s(nodeData.data() + 4, nodeData.size() - 4);
+            Serializer const s(nodeData.data() + 4, nodeData.size() - 4);
             SerialIter sit(s.slice());
             auto stx = std::make_shared<STTx const>(std::ref(sit));
             XRPL_ASSERT(

@@ -1,16 +1,20 @@
+#include <xrpld/app/main/Application.h>
+
 #include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/ledger/LedgerPersistence.h>
+#include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
-#include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/BasicApp.h>
+#include <xrpld/app/main/CollectorManager.h>
 #include <xrpld/app/main/GRPCServer.h>
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/main/NodeIdentity.h>
@@ -21,53 +25,110 @@
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
 #include <xrpld/app/misc/setup_HashRouter.h>
-#include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/NetworkIDServiceImpl.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/make_Overlay.h>
+#include <xrpld/rpc/Context.h>
+#include <xrpld/rpc/RPCHandler.h>
+#include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/PathRequestManager.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/shamap/NodeFamily.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/MallocTrim.h>
 #include <xrpl/basics/ResolverAsio.h>
+#include <xrpl/basics/ToString.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/insight/Event.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ClosureCounter.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/NetworkIDService.h>
 #include <xrpl/core/PeerReservationTable.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/core/StartUpType.h>
 #include <xrpl/crypto/csprng.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/DatabaseCon.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/Wallet.h>
+#include <xrpl/server/detail/ServerImpl.h>
+#include <xrpl/shamap/FullBelowCache.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/TreeNodeCache.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/signal_set.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include <boost/system/error_code.hpp>
+#include <boost/lexical_cast/bad_lexical_cast.hpp>
+#include <boost/program_options/variables_map.hpp>
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <date/date.h>
 
+#include <algorithm>
+#include <atomic>
 #include <chrono>
-#include <condition_variable>
+#include <csignal>
+#include <cstdint>
 #include <cstring>
+#include <exception>
 #include <fstream>
+#include <functional>
+#include <ios>
+#include <iostream>
 #include <limits>
-#include <mutex>
+#include <memory>
 #include <optional>
+#include <ostream>
+#include <string>
+#include <thread>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -92,7 +153,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : m_event(ev), m_journal(journal), m_probe(interval, ios)
+            : m_event(std::move(ev)), m_journal(journal), m_probe(interval, ios)
         {
         }
 
@@ -170,7 +231,7 @@ public:
     std::unique_ptr<NodeStore::Database> m_nodeStore;
     NodeFamily nodeFamily_;
     std::unique_ptr<OrderBookDB> m_orderBookDB;
-    std::unique_ptr<PathRequests> m_pathRequests;
+    std::unique_ptr<PathRequestManager> m_pathRequestManager;
     std::unique_ptr<LedgerMaster> m_ledgerMaster;
     std::unique_ptr<LedgerCleaner> ledgerCleaner_;
     std::unique_ptr<InboundLedgers> m_inboundLedgers;
@@ -328,10 +389,12 @@ public:
 
         , nodeFamily_(*this, *m_collectorManager)
 
-        , m_orderBookDB(make_OrderBookDB(*this, {config_->PATH_SEARCH_MAX, config_->standalone()}))
+        , m_orderBookDB(make_OrderBookDB(
+              *this,
+              {.pathSearchMax = config_->PATH_SEARCH_MAX, .standalone = config_->standalone()}))
 
-        , m_pathRequests(
-              std::make_unique<PathRequests>(
+        , m_pathRequestManager(
+              std::make_unique<PathRequestManager>(
                   *this,
                   logs_->journal("PathRequest"),
                   m_collectorManager->collector()))
@@ -488,7 +551,7 @@ public:
     }
 
     Logs&
-    logs() override
+    getLogs() override
     {
         return *logs_;
     }
@@ -512,7 +575,7 @@ public:
     }
 
     TimeKeeper&
-    timeKeeper() override
+    getTimeKeeper() override
     {
         return *timeKeeper_;
     }
@@ -547,7 +610,7 @@ public:
         return *m_networkOPs;
     }
 
-    virtual ServerHandler&
+    ServerHandler&
     getServerHandler() override
     {
         XRPL_ASSERT(
@@ -660,14 +723,14 @@ public:
         return *m_orderBookDB;
     }
 
-    PathRequests&
-    getPathRequests() override
+    PathRequestManager&
+    getPathRequestManager() override
     {
-        return *m_pathRequests;
+        return *m_pathRequestManager;
     }
 
     CachedSLEs&
-    cachedSLEs() override
+    getCachedSLEs() override
     {
         return cachedSLEs_;
     }
@@ -703,37 +766,37 @@ public:
     }
 
     ValidatorList&
-    validators() override
+    getValidators() override
     {
         return *validators_;
     }
 
     ValidatorSite&
-    validatorSites() override
+    getValidatorSites() override
     {
         return *validatorSites_;
     }
 
     ManifestCache&
-    validatorManifests() override
+    getValidatorManifests() override
     {
         return *validatorManifests_;
     }
 
     ManifestCache&
-    publisherManifests() override
+    getPublisherManifests() override
     {
         return *publisherManifests_;
     }
 
     Cluster&
-    cluster() override
+    getCluster() override
     {
         return *cluster_;
     }
 
     PeerReservationTable&
-    peerReservations() override
+    getPeerReservations() override
     {
         return *peerReservations_;
     }
@@ -745,35 +808,37 @@ public:
     }
 
     PendingSaves&
-    pendingSaves() override
+    getPendingSaves() override
     {
         return pendingSaves_;
     }
 
     OpenLedger&
-    openLedger() override
+    getOpenLedger() override
     {
-        return *openLedger_;
+        return *openLedger_;  // NOLINT(bugprone-unchecked-optional-access) emplaced during
+                              // initialization before any caller
     }
 
     OpenLedger const&
-    openLedger() const override
+    getOpenLedger() const override
     {
-        return *openLedger_;
+        return *openLedger_;  // NOLINT(bugprone-unchecked-optional-access) emplaced during
+                              // initialization before any caller
     }
 
     Overlay&
-    overlay() override
+    getOverlay() override
     {
         XRPL_ASSERT(overlay_, "xrpl::ApplicationImp::overlay : non-null overlay");
-        return *overlay_;
+        return *overlay_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     TxQ&
     getTxQ() override
     {
         XRPL_ASSERT(txQ_, "xrpl::ApplicationImp::getTxQ : non-null transaction queue");
-        return *txQ_;
+        return *txQ_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     RelationalDatabase&
@@ -781,9 +846,8 @@ public:
     {
         XRPL_ASSERT(
             relationalDatabase_,
-            "xrpl::ApplicationImp::getRelationalDatabase : non-null "
-            "relational database");
-        return *relationalDatabase_;
+            "xrpl::ApplicationImp::getRelationalDatabase : non-null relational database");
+        return *relationalDatabase_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     DatabaseCon&
@@ -797,7 +861,7 @@ public:
     serverOkay(std::string& reason) override;
 
     beast::Journal
-    journal(std::string const& name) override;
+    getJournal(std::string const& name) override;
 
     //--------------------------------------------------------------------------
 
@@ -933,6 +997,7 @@ public:
     {
         XRPL_ASSERT(
             relationalDatabase_, "xrpl::ApplicationImp::doSweep : non-null relational database");
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
         if (!config_->standalone() && !relationalDatabase_->transactionDbHasSpace(*config_))
         {
             signalStop("Out of transaction DB space");
@@ -1072,8 +1137,8 @@ public:
         return maxDisallowedLedger_;
     }
 
-    virtual std::optional<uint256> const&
-    trapTxID() const override
+    std::optional<uint256> const&
+    getTrapTxID() const override
     {
         return trapTxID_;
     }
@@ -1109,7 +1174,7 @@ private:
     setMaxDisallowedLedger();
 
     Application&
-    app() override
+    getApp() override
     {
         return *this;
     }
@@ -1221,22 +1286,22 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     auto const startUp = config_->START_UP;
     JLOG(m_journal.debug()) << "startUp: " << startUp;
-    if (startUp == StartUpType::FRESH)
+    if (startUp == StartUpType::Fresh)
     {
         JLOG(m_journal.info()) << "Starting new Ledger";
 
         startGenesisLedger();
     }
     else if (
-        startUp == StartUpType::LOAD || startUp == StartUpType::LOAD_FILE ||
-        startUp == StartUpType::REPLAY)
+        startUp == StartUpType::Load || startUp == StartUpType::LoadFile ||
+        startUp == StartUpType::Replay)
     {
         JLOG(m_journal.info()) << "Loading specified Ledger";
 
         if (!loadOldLedger(
                 config_->START_LEDGER,
-                startUp == StartUpType::REPLAY,
-                startUp == StartUpType::LOAD_FILE,
+                startUp == StartUpType::Replay,
+                startUp == StartUpType::LoadFile,
                 config_->TRAP_TX_HASH))
         {
             JLOG(m_journal.error()) << "The specified ledger could not be loaded.";
@@ -1252,7 +1317,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             }
         }
     }
-    else if (startUp == StartUpType::NETWORK)
+    else if (startUp == StartUpType::Network)
     {
         // This should probably become the default once we have a stable
         // network.
@@ -1407,7 +1472,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                                   "implications and have";
         JLOG(m_journal.warn()) << "*** been deprecated. They will be removed "
                                   "in a future release of";
-        JLOG(m_journal.warn()) << "*** rippled.";
+        JLOG(m_journal.warn()) << "*** xrpld.";
         JLOG(m_journal.warn()) << "*** If you do not use them to sign "
                                   "transactions please edit your";
         JLOG(m_journal.warn()) << "*** configuration file and remove the [enable_signing] stanza.";
@@ -1419,7 +1484,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
     //
     // Execute start up rpc commands.
     //
-    for (auto cmd : config_->section(SECTION_RPC_STARTUP).lines())
+    for (auto const& cmd : config_->section(SECTION_RPC_STARTUP).lines())
     {
         Json::Reader jrReader;
         Json::Value jvCommand;
@@ -1438,16 +1503,16 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         Resource::Charge loadType = Resource::feeReferenceRPC;
         Resource::Consumer c;
         RPC::JsonContext context{
-            {journal("RPCHandler"),
-             *this,
-             loadType,
-             getOPs(),
-             getLedgerMaster(),
-             c,
-             Role::ADMIN,
-             {},
-             {},
-             RPC::apiMaximumSupportedVersion},
+            {.j = getJournal("RPCHandler"),
+             .app = *this,
+             .loadType = loadType,
+             .netOps = getOPs(),
+             .ledgerMaster = getLedgerMaster(),
+             .consumer = c,
+             .role = Role::ADMIN,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiMaximumSupportedVersion},
             jvCommand};
 
         Json::Value jvResult;
@@ -1559,11 +1624,11 @@ ApplicationImp::run()
 
     // TODO Store manifests in manifests.sqlite instead of wallet.db
     validatorManifests_->save(getWalletDB(), "ValidatorManifests", [this](PublicKey const& pubKey) {
-        return validators().listed(pubKey);
+        return getValidators().listed(pubKey);
     });
 
     publisherManifests_->save(getWalletDB(), "PublisherManifests", [this](PublicKey const& pubKey) {
-        return validators().trustedPublisher(pubKey);
+        return getValidators().trustedPublisher(pubKey);
     });
 
     // The order of these stop calls is delicate.
@@ -1648,15 +1713,19 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
-    std::vector<uint256> const initialAmendments = (config_->START_UP == StartUpType::FRESH)
+    std::vector<uint256> const initialAmendments = (config_->START_UP == StartUpType::Fresh)
         ? m_amendmentTable->getDesired()
         : std::vector<uint256>{};
 
-    std::shared_ptr<Ledger> const genesis =
-        std::make_shared<Ledger>(create_genesis, *config_, initialAmendments, nodeFamily_);
+    std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
+        create_genesis,
+        Rules{config_->features},
+        config_->FEES.toFees(),
+        initialAmendments,
+        nodeFamily_);
     m_ledgerMaster->storeLedger(genesis);
 
-    auto const next = std::make_shared<Ledger>(*genesis, timeKeeper().closeTime());
+    auto const next = std::make_shared<Ledger>(*genesis, getTimeKeeper().closeTime());
     next->updateSkipList();
     XRPL_ASSERT(
         next->header().seq < XRP_LEDGER_EARLIEST_FEES || next->read(keylet::fees()),
@@ -1670,11 +1739,12 @@ ApplicationImp::startGenesisLedger()
 std::shared_ptr<Ledger>
 ApplicationImp::getLastFullLedger()
 {
-    auto j = journal("Ledger");
+    auto j = getJournal("Ledger");
 
     try
     {
-        auto const [ledger, seq, hash] = getLatestLedger(*this);
+        auto const [ledger, seq, hash] =
+            getLatestLedger(Rules{config_->features}, config_->FEES.toFees(), *this);
 
         if (!ledger)
             return ledger;
@@ -1742,7 +1812,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             ledger = ledger.get()["ledger"];
 
         std::uint32_t seq = 1;
-        auto closeTime = timeKeeper().closeTime();
+        auto closeTime = getTimeKeeper().closeTime();
         using namespace std::chrono_literals;
         auto closeTimeResolution = 30s;
         bool closeTimeEstimated = false;
@@ -1785,7 +1855,8 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             return nullptr;
         }
 
-        auto loadLedger = std::make_shared<Ledger>(seq, closeTime, *config_, nodeFamily_);
+        auto loadLedger = std::make_shared<Ledger>(
+            seq, closeTime, Rules{config_->features}, config_->FEES.toFees(), nodeFamily_);
         loadLedger->setTotalDrops(totalDrops);
 
         for (Json::UInt index = 0; index < ledger.get().size(); ++index)
@@ -1818,7 +1889,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
 
             // VFALCO TODO This is the only place that
             //             constructor is used, try to remove it
-            STLedgerEntry sle(*stp.object, uIndex);
+            STLedgerEntry const sle(*stp.object, uIndex);
 
             if (!loadLedger->addSLE(sle))
             {
@@ -1865,7 +1936,8 @@ ApplicationImp::loadOldLedger(
 
             if (hash.parseHex(ledgerID))
             {
-                loadLedger = loadByHash(hash, *this);
+                loadLedger =
+                    loadByHash(hash, Rules{config_->features}, config_->FEES.toFees(), *this);
 
                 if (!loadLedger)
                 {
@@ -1892,7 +1964,10 @@ ApplicationImp::loadOldLedger(
             std::uint32_t index = 0;
 
             if (beast::lexicalCastChecked(index, ledgerID))
-                loadLedger = loadByIndex(index, *this);
+            {
+                loadLedger =
+                    loadByIndex(index, Rules{config_->features}, config_->FEES.toFees(), *this);
+            }
         }
 
         if (!loadLedger)
@@ -1907,7 +1982,11 @@ ApplicationImp::loadOldLedger(
 
             JLOG(m_journal.info()) << "Loading parent ledger";
 
-            loadLedger = loadByHash(replayLedger->header().parentHash, *this);
+            loadLedger = loadByHash(
+                replayLedger->header().parentHash,
+                Rules{config_->features},
+                config_->FEES.toFees(),
+                *this);
             if (!loadLedger)
             {
                 JLOG(m_journal.info()) << "Loading parent ledger from node store";
@@ -1948,7 +2027,7 @@ ApplicationImp::loadOldLedger(
                                     << " UTC.\n"
                                        "This replay will not handle your ledger as it was "
                                        "originally "
-                                       "handled.\nConsider running an earlier version of rippled "
+                                       "handled.\nConsider running an earlier version of xrpld "
                                        "to "
                                        "get the older rules.\n*** CONTINUING ***\n";
         }
@@ -1965,7 +2044,7 @@ ApplicationImp::loadOldLedger(
             // LCOV_EXCL_STOP
         }
 
-        if (!loadLedger->walkLedger(journal("Ledger"), true))
+        if (!loadLedger->walkLedger(getJournal("Ledger"), true))
         {
             // LCOV_EXCL_START
             JLOG(m_journal.fatal()) << "Ledger is missing nodes.";
@@ -1976,10 +2055,13 @@ ApplicationImp::loadOldLedger(
             // LCOV_EXCL_STOP
         }
 
-        if (!loadLedger->assertSensible(journal("Ledger")))
+        if (!loadLedger->isSensible())
         {
             // LCOV_EXCL_START
-            JLOG(m_journal.fatal()) << "Ledger is not sensible.";
+            Json::Value j = getJson({*loadLedger, {}});
+            j[jss::accountTreeHash] = to_string(loadLedger->header().accountHash);
+            j[jss::transTreeHash] = to_string(loadLedger->header().txHash);
+            JLOG(m_journal.fatal()) << "Ledger is not sensible: " << j;
             UNREACHABLE(
                 "xrpl::ApplicationImp::loadOldLedger : ledger is not "
                 "sensible");
@@ -2015,6 +2097,8 @@ ApplicationImp::loadOldLedger(
 
                 forceValidity(getHashRouter(), txID, Validity::SigGoodOnly);
 
+                // emplaced during initialization before any caller
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 openLedger_->modify([&txID, &s](OpenView& view, beast::Journal j) {
                     view.rawTxInsert(txID, std::move(s), nullptr);
                     return true;
@@ -2094,7 +2178,7 @@ ApplicationImp::serverOkay(std::string& reason)
 }
 
 beast::Journal
-ApplicationImp::journal(std::string const& name)
+ApplicationImp::getJournal(std::string const& name)
 {
     return logs_->journal(name);
 }
@@ -2140,7 +2224,7 @@ fixConfigPorts(Config& config, Endpoints const& endpoints)
         if (optPort)
         {
             std::uint16_t const port = beast::lexicalCast<std::uint16_t>(*optPort);
-            if (!port)
+            if (port == 0u)
                 section.set("port", std::to_string(ep.port()));
         }
     }

@@ -10,8 +10,7 @@
 
 #include <boost/utility/string_view.hpp>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 /** Tracks load and resource consumption. */
 class Manager : public beast::PropertyStream::Source
@@ -20,7 +19,7 @@ protected:
     Manager();
 
 public:
-    virtual ~Manager() = 0;
+    ~Manager() override = 0;
 
     /** Start the manager's background thread.
         Must be called after construction to begin periodic charge decay
@@ -71,5 +70,4 @@ public:
 std::unique_ptr<Manager>
 make_Manager(beast::insight::Collector::ptr const& collector, beast::Journal journal);
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

@@ -1,19 +1,26 @@
+#include <xrpl/tx/SignerEntries.h>
+
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/tx/SignerEntries.h>
+#include <xrpl/protocol/TER.h>
 
 #include <cstdint>
 #include <optional>
+#include <string_view>
+#include <vector>
 
 namespace xrpl {
 
 Expected<std::vector<SignerEntries::SignerEntry>, NotTEC>
 SignerEntries::deserialize(STObject const& obj, beast::Journal journal, std::string_view annotation)
 {
-    std::pair<std::vector<SignerEntry>, NotTEC> s;
-
     if (!obj.isFieldPresent(sfSignerEntries))
     {
         JLOG(journal.trace()) << "Malformed " << annotation << ": Need signer entry array.";

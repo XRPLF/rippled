@@ -1,7 +1,16 @@
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -10,13 +19,13 @@ RCLCxPeerPos::RCLCxPeerPos(
     PublicKey const& publicKey,
     Slice const& signature,
     uint256 const& suppression,
-    Proposal&& proposal)
-    : publicKey_(publicKey), suppression_(suppression), proposal_(std::move(proposal))
+    Proposal const& proposal)  // trivially copyable
+    : publicKey_(publicKey), suppression_(suppression), proposal_(proposal)
 {
     // The maximum allowed size of a signature is 72 bytes; we verify
     // this elsewhere, but we want to be extra careful here:
     XRPL_ASSERT(
-        signature.size() != 0 && signature.size() <= signature_.capacity(),
+        !signature.empty() && signature.size() <= signature_.capacity(),
         "xrpl::RCLCxPeerPos::RCLCxPeerPos : valid signature size");
 
     if (!signature.empty() && signature.size() <= signature_.capacity())
@@ -34,7 +43,7 @@ RCLCxPeerPos::getJson() const
 {
     auto ret = proposal().getJson();
 
-    if (publicKey().size())
+    if (publicKey().size() != 0u)
         ret[jss::peer_id] = toBase58(TokenType::NodePublic, publicKey());
 
     return ret;

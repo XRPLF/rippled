@@ -1,13 +1,31 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/AmendmentTable.h>
-#include <xrpl/ledger/Sandbox.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/transactors/system/Change.h>
 
-#include <string_view>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <memory>
 
 namespace xrpl {
 
@@ -142,7 +160,7 @@ Change::preCompute()
 TER
 Change::applyAmendment()
 {
-    uint256 amendment(ctx_.tx.getFieldH256(sfAmendment));
+    uint256 const amendment(ctx_.tx.getFieldH256(sfAmendment));
 
     auto const k = keylet::amendments();
 
@@ -156,7 +174,7 @@ Change::applyAmendment()
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
 
-    if (std::find(amendments.begin(), amendments.end(), amendment) != amendments.end())
+    if (std::ranges::find(amendments, amendment) != amendments.end())
         return tefALREADY;
 
     auto flags = ctx_.tx.getFlags();
@@ -200,7 +218,7 @@ Change::applyAmendment()
         entry[sfAmendment] = amendment;
         entry[sfCloseTime] = view().parentCloseTime().time_since_epoch().count();
 
-        if (!ctx_.registry.getAmendmentTable().isSupported(amendment))
+        if (!ctx_.registry.get().getAmendmentTable().isSupported(amendment))
         {
             JLOG(j_.warn()) << "Unsupported amendment " << amendment << " received a majority.";
         }
@@ -211,13 +229,13 @@ Change::applyAmendment()
         amendments.push_back(amendment);
         amendmentObject->setFieldV256(sfAmendments, amendments);
 
-        ctx_.registry.getAmendmentTable().enable(amendment);
+        ctx_.registry.get().getAmendmentTable().enable(amendment);
 
-        if (!ctx_.registry.getAmendmentTable().isSupported(amendment))
+        if (!ctx_.registry.get().getAmendmentTable().isSupported(amendment))
         {
             JLOG(j_.error()) << "Unsupported amendment " << amendment
                              << " activated: server blocked.";
-            ctx_.registry.getOPs().setAmendmentBlocked();
+            ctx_.registry.get().getOPs().setAmendmentBlocked();
         }
     }
 
@@ -292,7 +310,7 @@ Change::applyUNLModify()
         return tefFAILURE;
     }
 
-    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling);
+    bool const disabling = ctx_.tx.getFieldU8(sfUNLModifyDisabling) != 0u;
     auto const seq = ctx_.tx.getFieldU32(sfLedgerSequence);
     if (seq != view().seq())
     {
@@ -390,6 +408,20 @@ Change::applyUNLModify()
 
     view().update(negUnlObject);
     return tesSUCCESS;
+}
+
+void
+Change::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+Change::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

@@ -37,7 +37,7 @@ public:
         XRPL_ASSERT((flags & tapBATCH) == 0, "Batch apply flag should not be set");
     }
 
-    ServiceRegistry& registry;
+    std::reference_wrapper<ServiceRegistry> registry;
     STTx const& tx;
     TER const preclaimResult;
     XRPAmount const baseFee;
@@ -46,20 +46,20 @@ public:
     ApplyView&
     view()
     {
-        return *view_;
+        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
     ApplyView const&
     view() const
     {
-        return *view_;
+        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
     // VFALCO Unfortunately this is necessary
     RawView&
     rawView()
     {
-        return *view_;
+        return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
     ApplyFlags const&
@@ -72,6 +72,7 @@ public:
     void
     deliver(STAmount const& amount)
     {
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->deliver(amount);
     }
 
@@ -98,6 +99,7 @@ public:
     void
     destroyXRP(XRPAmount const& fee)
     {
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) view_ emplaced in constructor
         view_->rawDestroyXRP(fee);
     }
 
@@ -111,7 +113,7 @@ public:
     checkInvariants(TER const result, XRPAmount const fee);
 
 private:
-    TER
+    static TER
     failInvariantCheck(TER const result);
 
     template <std::size_t... Is>

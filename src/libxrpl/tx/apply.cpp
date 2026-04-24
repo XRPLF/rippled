@@ -1,10 +1,27 @@
+#include <xrpl/tx/apply.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/apply.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/applySteps.h>
+
+#include <exception>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -116,7 +133,7 @@ template <typename PreflightChecks>
 ApplyResult
 apply(ServiceRegistry& registry, OpenView& view, PreflightChecks&& preflightChecks)
 {
-    NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
+    NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
     return doApply(preclaim(preflightChecks(), registry, view), registry, view);
 }
 
@@ -149,7 +166,7 @@ applyBatchTransactions(
     beast::Journal j)
 {
     XRPL_ASSERT(
-        batchTxn.getTxnType() == ttBATCH && batchTxn.getFieldArray(sfRawTransactions).size() != 0,
+        batchTxn.getTxnType() == ttBATCH && !batchTxn.getFieldArray(sfRawTransactions).empty(),
         "Batch transaction missing sfRawTransactions");
 
     auto const parentBatchId = batchTxn.getTransactionID();
@@ -188,13 +205,13 @@ applyBatchTransactions(
 
         if (!isTesSuccess(result.ter))
         {
-            if (mode & tfAllOrNothing)
+            if ((mode & tfAllOrNothing) != 0u)
                 return false;
 
-            if (mode & tfUntilFailure)
+            if ((mode & tfUntilFailure) != 0u)
                 break;
         }
-        else if (mode & tfOnlyOne)
+        else if ((mode & tfOnlyOne) != 0u)
         {
             break;
         }

@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STXChainBridge.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -6,7 +8,6 @@
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 
@@ -167,7 +168,7 @@ bool
 STXChainBridge::isEquivalent(STBase const& t) const
 {
     STXChainBridge const* v = dynamic_cast<STXChainBridge const*>(&t);
-    return v && (*v == *this);
+    return (v != nullptr) && (*v == *this);
 }
 
 bool

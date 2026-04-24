@@ -1,11 +1,33 @@
 #include <xrpld/app/rdb/PeerFinder.h>
 
+#include <xrpld/peerfinder/detail/Store.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/rdb/SociDB.h>
+
+#include <boost/optional/optional.hpp>
+
+#include <soci/into.h>
+#include <soci/session.h>
+#include <soci/statement.h>
+#include <soci/transaction.h>
+#include <soci/use.h>
+
+#include <cstddef>
+#include <functional>
+#include <stdexcept>
+#include <vector>
+
 namespace xrpl {
 
 void
 initPeerFinderDB(soci::session& session, BasicConfig const& config, beast::Journal j)
 {
-    DBConfig m_sociConfig(config, "peerfinder");
+    DBConfig const m_sociConfig(config, "peerfinder");
     m_sociConfig.open(session);
 
     JLOG(j.info()) << "Opening database at '" << m_sociConfig.connectionString() << "'";

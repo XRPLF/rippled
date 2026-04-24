@@ -1,12 +1,53 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/token.h>
+
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/tx/apply.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <limits>
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -84,7 +125,7 @@ public:
                     continue;
                 }
 
-                if (std::find(goodFlags.begin(), goodFlags.end(), flag) != goodFlags.end())
+                if (std::ranges::find(goodFlags, flag) != goodFlags.end())
                 {
                     // Good flag
                     env.require(nflags(alice, flag));
@@ -195,7 +236,7 @@ public:
         std::size_t const maxLength = 256;
         for (std::size_t len = maxLength - 1; len <= maxLength + 1; ++len)
         {
-            std::string domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
+            std::string const domain2 = std::string(len - domain.length() - 1, 'a') + "." + domain;
 
             BEAST_EXPECT(domain2.length() == len);
 
@@ -320,13 +361,13 @@ public:
 
         doTests(
             testable_amendments(),
-            {{1.0, tesSUCCESS, 1.0},
-             {1.1, tesSUCCESS, 1.1},
-             {2.0, tesSUCCESS, 2.0},
-             {2.1, temBAD_TRANSFER_RATE, 2.0},
-             {0.0, tesSUCCESS, 1.0},
-             {2.0, tesSUCCESS, 2.0},
-             {0.9, temBAD_TRANSFER_RATE, 2.0}});
+            {{.set = 1.0, .code = tesSUCCESS, .get = 1.0},
+             {.set = 1.1, .code = tesSUCCESS, .get = 1.1},
+             {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
+             {.set = 2.1, .code = temBAD_TRANSFER_RATE, .get = 2.0},
+             {.set = 0.0, .code = tesSUCCESS, .get = 1.0},
+             {.set = 2.0, .code = tesSUCCESS, .get = 2.0},
+             {.set = 0.9, .code = temBAD_TRANSFER_RATE, .get = 2.0}});
     }
 
     void
@@ -373,7 +414,7 @@ public:
         //
         // Two out-of-bound values are currently in the ledger (March 2020)
         // They are 4.0 and 4.294967295.  So those are the values we test.
-        for (double transferRate : {4.0, 4.294967295})
+        for (double const transferRate : {4.0, 4.294967295})
         {
             Env env(*this);
             env.fund(XRP(10000), gw, alice, bob);
@@ -403,7 +444,7 @@ public:
             // Note that we're bypassing almost all of the ledger's safety
             // checks with this modify() call.  If you call close() between
             // here and the end of the test all the effort will be lost.
-            env.app().openLedger().modify([&gw, transferRate](OpenView& view, beast::Journal j) {
+            env.app().getOpenLedger().modify([&gw, transferRate](OpenView& view, beast::Journal j) {
                 // Get the account root we want to hijack.
                 auto const sle = view.read(keylet::account(gw.id()));
                 if (!sle)
@@ -552,7 +593,7 @@ public:
         auto stx = std::make_shared<STTx>(*jtx.stx);
         stx->at(sfSigningPubKey) = makeSlice(std::string("badkey"));
 
-        env.app().openLedger().modify([&](OpenView& view, beast::Journal j) {
+        env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
             auto const result = xrpl::apply(env.app(), view, *stx, tapNONE, j);
             BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
             BEAST_EXPECT(!result.applied);

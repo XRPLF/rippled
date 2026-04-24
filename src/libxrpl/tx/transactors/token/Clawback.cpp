@@ -1,12 +1,31 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/Clawback.h>
+
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/Clawback.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <variant>
 
 namespace xrpl {
 
@@ -90,11 +109,12 @@ preclaimHelper<Issue>(
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlagsIn & lsfAllowTrustLineClawback) || (issuerFlagsIn & lsfNoFreeze))
+    if (((issuerFlagsIn & lsfAllowTrustLineClawback) == 0u) ||
+        ((issuerFlagsIn & lsfNoFreeze) != 0u))
         return tecNO_PERMISSION;
 
     auto const sleRippleState =
-        ctx.view.read(keylet::line(holder, issuer, clawAmount.getCurrency()));
+        ctx.view.read(keylet::line(holder, issuer, clawAmount.get<Issue>().currency));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -117,7 +137,8 @@ preclaimHelper<Issue>(
     // We can't directly check the balance of trustline because
     // the available balance of a trustline is prone to new changes (eg.
     // XLS-34). So we must use `accountHolds`.
-    if (accountHolds(ctx.view, holder, clawAmount.getCurrency(), issuer, fhIGNORE_FREEZE, ctx.j) <=
+    if (accountHolds(
+            ctx.view, holder, clawAmount.get<Issue>().currency, issuer, fhIGNORE_FREEZE, ctx.j) <=
         beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
@@ -138,7 +159,7 @@ preclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!((*sleIssuance)[sfFlags] & lsfMPTCanClawback))
+    if (((*sleIssuance)[sfFlags] & lsfMPTCanClawback) == 0u)
         return tecNO_PERMISSION;
 
     if (sleIssuance->getAccountID(sfIssuer) != issuer)
@@ -198,7 +219,7 @@ applyHelper<Issue>(ApplyContext& ctx)
     AccountID const holder = clawAmount.getIssuer();  // cannot be reference
 
     // Replace the `issuer` field with issuer's account
-    clawAmount.setIssuer(issuer);
+    clawAmount.get<Issue>().account = issuer;
     if (holder == issuer)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -206,12 +227,12 @@ applyHelper<Issue>(ApplyContext& ctx)
     STAmount const spendableAmount = accountHolds(
         ctx.view(),
         holder,
-        clawAmount.getCurrency(),
+        clawAmount.get<Issue>().currency,
         clawAmount.getIssuer(),
         fhIGNORE_FREEZE,
         ctx.journal);
 
-    return rippleCredit(
+    return directSendNoFee(
         ctx.view(), holder, issuer, std::min(spendableAmount, clawAmount), true, ctx.journal);
 }
 
@@ -232,7 +253,7 @@ applyHelper<MPTIssue>(ApplyContext& ctx)
         ahIGNORE_AUTH,
         ctx.journal);
 
-    return rippleCredit(
+    return directSendNoFee(
         ctx.view(),
         holder,
         issuer,
@@ -247,6 +268,20 @@ Clawback::doApply()
     return std::visit(
         [&]<typename T>(T const&) { return applyHelper<T>(ctx_); },
         ctx_.tx[sfAmount].asset().value());
+}
+
+void
+Clawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+Clawback::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

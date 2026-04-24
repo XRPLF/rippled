@@ -4,10 +4,7 @@
 
 #include <date/date.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+namespace xrpl::test::jtx::oracle {
 
 using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
 using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
@@ -58,7 +55,7 @@ struct UpdateArg
 {
     std::optional<AccountID> owner = std::nullopt;
     std::optional<AnyValue> documentID = std::nullopt;
-    DataSeries series = {};
+    DataSeries series = {};  // NOLINT(readability-redundant-member-init)
     std::optional<AnyValue> assetClass = std::nullopt;
     std::optional<AnyValue> provider = std::nullopt;
     std::optional<AnyValue> uri = "URI";
@@ -81,7 +78,7 @@ struct RemoveArg
     std::optional<ter> const& err = std::nullopt;
 };
 
-// Simulate testStartTime as 10'000s from Ripple epoch time to make
+// Simulate testStartTime as 10'000s from XRPL epoch time to make
 // LastUpdateTime validation to work and to make unit-test consistent.
 // The value doesn't matter much, it has to be greater
 // than maxLastUpdateTimeDelta in order to pass LastUpdateTime
@@ -99,7 +96,7 @@ private:
     static inline std::uint32_t fee = 0;
     Env& env_;
     AccountID owner_;
-    std::uint32_t documentID_;
+    std::uint32_t documentID_{};
 
 private:
     void
@@ -177,7 +174,4 @@ public:
     }
 };
 
-}  // namespace oracle
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

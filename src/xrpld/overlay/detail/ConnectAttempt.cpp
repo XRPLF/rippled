@@ -1,18 +1,55 @@
-#include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
+
+#include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/detail/Handshake.h>
+#include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/tokens.h>
+#include <xrpl/resource/Consumer.h>
 
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/ssl/stream_base.hpp>
+#include <boost/asio/ssl/verify_mode.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/beast/core/stream_traits.hpp>
+#include <boost/beast/http/impl/read.hpp>
+#include <boost/beast/http/impl/write.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/system/system_error.hpp>
+
+#include <chrono>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 ConnectAttempt::ConnectAttempt(
     Application& app,
     boost::asio::io_context& io_context,
-    endpoint_type const& remote_endpoint,
+    endpoint_type remote_endpoint,
     Resource::Consumer usage,
     shared_context const& context,
     std::uint32_t id,
@@ -24,7 +61,7 @@ ConnectAttempt::ConnectAttempt(
     , id_(id)
     , sink_(journal, OverlayImpl::makePrefix(id))
     , journal_(sink_)
-    , remote_endpoint_(remote_endpoint)
+    , remote_endpoint_(std::move(remote_endpoint))
     , usage_(usage)
     , strand_(boost::asio::make_strand(io_context))
     , timer_(io_context)
@@ -143,7 +180,7 @@ ConnectAttempt::onShutdown(error_code ec)
         // occur if a peer does not perform a graceful disconnect
         // - broken_pipe: the peer is gone
         // - application data after close notify: benign SSL shutdown condition
-        bool shouldLog =
+        bool const shouldLog =
             (ec != boost::asio::error::eof && ec != boost::asio::error::operation_aborted &&
              ec.message().find("application data after close notify") == std::string::npos);
 
@@ -287,8 +324,8 @@ ConnectAttempt::onTimer(error_code ec)
 
     // Determine which timer expired by checking their expiry times
     auto const now = std::chrono::steady_clock::now();
-    bool globalExpired = (timer_.expiry() <= now);
-    bool stepExpired = (stepTimer_.expiry() <= now);
+    bool const globalExpired = (timer_.expiry() <= now);
+    bool const stepExpired = (stepTimer_.expiry() <= now);
 
     if (globalExpired)
     {
@@ -607,7 +644,7 @@ ConnectAttempt::processResponse()
         JLOG(journal_.debug()) << "Protocol: " << to_string(*negotiatedProtocol);
         JLOG(journal_.info()) << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
 
-        auto const member = app_.cluster().member(publicKey);
+        auto const member = app_.getCluster().member(publicKey);
         if (member)
         {
             JLOG(journal_.info()) << "Cluster name: " << *member;

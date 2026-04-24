@@ -1,5 +1,6 @@
 #pragma once
 
+#include <test/csf/Digraph.h>
 #include <test/csf/random.h>
 
 #include <boost/container/flat_set.hpp>
@@ -9,9 +10,7 @@
 #include <random>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Trust graph
 
@@ -122,9 +121,9 @@ public:
             {
                 auto const& unlA = uniqueUNLs[i];
                 auto const& unlB = uniqueUNLs[j];
-                double rhs = 2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
+                double const rhs = 2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
 
-                int intersectionSize = std::count_if(
+                int const intersectionSize = std::count_if(
                     unlA.begin(), unlA.end(), [&](Peer p) { return unlB.find(p) != unlB.end(); });
 
                 if (intersectionSize < rhs)
@@ -146,6 +145,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

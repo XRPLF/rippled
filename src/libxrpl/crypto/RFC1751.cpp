@@ -1,5 +1,6 @@
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/RFC1751.h>
+
+#include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/constants.hpp>
@@ -210,8 +211,8 @@ RFC1751::extract(char const* s, int start, int length)
 
     int const shiftR = 24 - (length + (start % 8));
     cl = s[start / 8];  // get components
-    cc = (shiftR < 16) ? s[start / 8 + 1] : 0;
-    cr = (shiftR < 8) ? s[start / 8 + 2] : 0;
+    cc = (shiftR < 16) ? s[(start / 8) + 1] : 0;
+    cr = (shiftR < 8) ? s[(start / 8) + 2] : 0;
 
     x = ((long)(cl << 8 | cc) << 8 | cr);  // Put bits together
     x = x >> shiftR;                       // Right justify number
@@ -265,13 +266,13 @@ RFC1751::insert(char* s, int x, int start, int length)
     if (shift + length > 16)
     {
         s[start / 8] |= cl;
-        s[start / 8 + 1] |= cc;
-        s[start / 8 + 2] |= cr;
+        s[(start / 8) + 1] |= cc;
+        s[(start / 8) + 2] |= cr;
     }
     else if (shift + length > 8)
     {
         s[start / 8] |= cc;
-        s[start / 8 + 1] |= cr;
+        s[(start / 8) + 1] |= cr;
     }
     else
     {
@@ -284,7 +285,7 @@ RFC1751::standard(std::string& strWord)
 {
     for (auto& letter : strWord)
     {
-        if (islower(static_cast<unsigned char>(letter)))
+        if (islower(static_cast<unsigned char>(letter)) != 0)
         {
             letter = toupper(static_cast<unsigned char>(letter));
         }
@@ -312,10 +313,10 @@ RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
     while (iResult < 0 && iMin != iMax)
     {
         // Have a range to search.
-        int iMid = iMin + (iMax - iMin) / 2;
-        int iDir = strWord.compare(s_dictionary[iMid]);
+        int const iMid = iMin + ((iMax - iMin) / 2);
+        int const iDir = strWord.compare(s_dictionary[iMid]);
 
-        if (!iDir)
+        if (iDir == 0)
         {
             iResult = iMid;  // Found it.
         }
@@ -349,7 +350,7 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
 
     for (auto& strWord : vsHuman)
     {
-        int l = strWord.length();
+        int const l = strWord.length();
 
         if (l > 4 || l < 1)
             return -1;

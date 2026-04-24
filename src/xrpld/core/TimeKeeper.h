@@ -11,7 +11,7 @@ namespace xrpl {
 class TimeKeeper : public beast::abstract_clock<NetClock>
 {
 private:
-    std::atomic<std::chrono::seconds> closeOffset_{};
+    std::atomic<std::chrono::seconds> closeOffset_;
 
     // Adjust system_clock::time_point for NetClock epoch
     static constexpr time_point
@@ -22,7 +22,7 @@ private:
     }
 
 public:
-    virtual ~TimeKeeper() = default;
+    ~TimeKeeper() override = default;
 
     /** Returns the current time, using the server's clock.
 
@@ -34,7 +34,7 @@ public:
         protocol, but it is possible for them to make an educated guess
         if this server publishes proposals or validations.
 
-        @note The network time is adjusted for the "Ripple epoch" which
+        @note The network time is adjusted for the "XRPL epoch" which
               was arbitrarily defined as 2000-01-01T00:00:00Z by Arthur
               Britto and David Schwartz during early development of the
               code. No rationale has been provided for this curious and

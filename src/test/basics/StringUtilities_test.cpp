@@ -1,7 +1,9 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/ToString.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <string>
 
 namespace xrpl {
 
@@ -279,7 +281,7 @@ public:
         }
 
         {
-            std::string strUrl("s://" + std::string(8192, ':'));
+            std::string const strUrl("s://" + std::string(8192, ':'));
             parsedURL pUrl;
             BEAST_EXPECT(!parseUrl(pUrl, strUrl));
         }

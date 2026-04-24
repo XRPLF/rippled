@@ -11,17 +11,17 @@
 #include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -40,9 +40,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 /** Wrapper that captures std::source_location when implicitly constructed.
     This solves the problem of combining std::source_location with variadic
@@ -85,9 +83,13 @@ testable_amendments()
         {
             (void)vote;
             if (auto const f = getRegisteredFeature(s))
+            {
                 feats.push_back(*f);
+            }
             else
+            {
                 Throw<std::runtime_error>("Unknown feature: " + s + "  in allAmendments.");
+            }
         }
         return FeatureBitset(feats);
     }();
@@ -128,12 +130,12 @@ public:
     /// Used by parseResult() and postConditions()
     struct ParsedResult
     {
-        std::optional<TER> ter{};
+        std::optional<TER> ter;
         // RPC errors tend to return either a "code" and a "message" (sometimes
         // with an "error" that corresponds to the "code"), or with an "error"
         // and an "exception". However, this structure allows all possible
         // combinations.
-        std::optional<error_code_i> rpcCode{};
+        std::optional<error_code_i> rpcCode;
         std::string rpcMessage;
         std::string rpcError;
         std::string rpcException;
@@ -189,7 +191,7 @@ public:
         beast::severities::Severity thresh = beast::severities::kError)
         : test(suite_)
         , bundle_(suite_, std::move(config), std::move(logs), thresh)
-        , journal{bundle_.app->journal("Env")}
+        , journal{bundle_.app->getJournal("Env")}
     {
         memoize(Account::master);
         Pathfinder::initPathTable();
@@ -256,6 +258,7 @@ public:
     virtual ~Env() = default;
 
     Application&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     app()
     {
         return *bundle_.app;
@@ -268,6 +271,7 @@ public:
     }
 
     ManualTimeKeeper&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     timeKeeper()
     {
         return *bundle_.timeKeeper;
@@ -279,6 +283,7 @@ public:
               close or by callers.
     */
     NetClock::time_point
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     now()
     {
         return timeKeeper().now();
@@ -286,6 +291,7 @@ public:
 
     /** Returns the connected client. */
     AbstractClient&
+    // NOLINTNEXTLINE(readability-make-member-function-const)
     client()
     {
         return *bundle_.client;
@@ -328,7 +334,7 @@ public:
     std::shared_ptr<OpenView const>
     current() const
     {
-        return app().openLedger().current();
+        return app().getOpenLedger().current();
     }
 
     /** Returns the last closed ledger.
@@ -511,12 +517,6 @@ public:
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
     balance(Account const& account, Asset const& asset) const;
-
-    PrettyAmount
-    balance(Account const& account, Issue const& issue) const;
-
-    PrettyAmount
-    balance(Account const& account, MPTIssue const& mptIssue) const;
 
     /** Returns the IOU limit on an account.
         Returns 0 if the trust line does not exist.
@@ -779,7 +779,7 @@ public:
     trust(STAmount const& amount, Account const& to0, Account const& to1, Accounts const&... toN)
     {
         trust(amount, to0);
-        trust(amount, to1, toN...);
+        trust(amount, to1, toN...);  // NOLINT(readability-suspicious-call-argument)
     }
     /** @} */
 
@@ -883,6 +883,4 @@ Env::rpc(std::string const& cmd, Args&&... args)
     return rpc(std::unordered_map<std::string, std::string>(), cmd, std::forward<Args>(args)...);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

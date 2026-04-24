@@ -1,11 +1,33 @@
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
-//
-#include <xrpl/ledger/View.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <set>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace credentials {
@@ -78,7 +100,7 @@ deleteSLE(ApplyView& view, std::shared_ptr<SLE> const& sleCredential, beast::Jou
 
     auto const issuer = sleCredential->getAccountID(sfIssuer);
     auto const subject = sleCredential->getAccountID(sfSubject);
-    bool const accepted = sleCredential->getFlags() & lsfAccepted;
+    bool const accepted = (sleCredential->getFlags() & lsfAccepted) != 0u;
 
     auto err = delSLE(issuer, sfIssuerNode, !accepted || (subject == issuer));
     if (!isTesSuccess(err))
@@ -147,7 +169,7 @@ valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal
             return tecBAD_CREDENTIALS;
         }
 
-        if (!(sleCred->getFlags() & lsfAccepted))
+        if ((sleCred->getFlags() & lsfAccepted) == 0u)
         {
             JLOG(j.trace()) << "Credential isn't accepted. Cred: " << h;
             return tecBAD_CREDENTIALS;
@@ -188,7 +210,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
                 foundExpired = true;
                 continue;
             }
-            if (sleCredential->getFlags() & lsfAccepted)
+            if ((sleCredential->getFlags() & lsfAccepted) != 0u)
             {
                 return tesSUCCESS;
             }
@@ -309,7 +331,7 @@ verifyValidDomain(ApplyView& view, AccountID const& account, uint256 domainID, b
         if (!sleCredential)
             continue;  // expired, i.e. deleted in credentials::removeExpired
 
-        if (sleCredential->getFlags() & lsfAccepted)
+        if ((sleCredential->getFlags() & lsfAccepted) != 0u)
             return tesSUCCESS;
     }
 
@@ -336,7 +358,7 @@ verifyDepositPreauth(
     if (credentialsPresent && credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
         return tecEXPIRED;
 
-    if (sleDst && (sleDst->getFlags() & lsfDepositAuth))
+    if (sleDst && ((sleDst->getFlags() & lsfDepositAuth) != 0u))
     {
         if (src != dst)
         {

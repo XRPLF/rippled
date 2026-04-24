@@ -233,11 +233,11 @@ parseMessageHeader(boost::system::error_code& ec, BufferSequence const& bufs, st
 template <
     class T,
     class Buffers,
-    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
+    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
 std::shared_ptr<T>
 parseMessageContent(MessageHeader const& header, Buffers const& buffers)
 {
-    auto const m = std::make_shared<T>();
+    auto m = std::make_shared<T>();
 
     ZeroCopyInputStream<Buffers> stream(buffers);
     stream.Skip(header.header_size);
@@ -258,7 +258,9 @@ parseMessageContent(MessageHeader const& header, Buffers const& buffers)
             return {};
     }
     else if (!m->ParseFromZeroCopyStream(&stream))
+    {
         return {};
+    }
 
     return m;
 }
@@ -267,7 +269,7 @@ template <
     class T,
     class Buffers,
     class Handler,
-    class = std::enable_if_t<std::is_base_of<::google::protobuf::Message, T>::value>>
+    class = std::enable_if_t<std::is_base_of_v<::google::protobuf::Message, T>>>
 bool
 invoke(MessageHeader const& header, Buffers const& buffers, Handler& handler)
 {
@@ -349,7 +351,7 @@ invokeProtocolMessage(Buffers const& buffers, Handler& handler, std::size_t& hin
         return result;
     }
 
-    bool success;
+    bool success = false;
 
     switch (header->message_type)
     {

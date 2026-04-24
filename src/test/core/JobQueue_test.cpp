@@ -1,10 +1,13 @@
 #include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 
-namespace xrpl {
-namespace test {
+#include <atomic>
+#include <memory>
+
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -23,7 +26,7 @@ class JobQueue_test : public beast::unit_test::suite
                 jQueue.addJob(jtCLIENT, "JobAddTest1", [&jobRan]() { jobRan = true; }) == true);
 
             // Wait for the Job to run.
-            while (jobRan == false)
+            while (!jobRan)
                 ;
         }
         {
@@ -138,5 +141,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(JobQueue, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -4,10 +4,20 @@
 #include <xrpld/overlay/Cluster.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/tokens.h>
 
-namespace xrpl {
-namespace tests {
+#include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <memory>
+#include <vector>
+
+namespace xrpl::tests {
 
 class cluster_test : public xrpl::TestSuite
 {
@@ -29,7 +39,7 @@ public:
         return cluster;
     }
 
-    PublicKey
+    static PublicKey
     randomNode()
     {
         return derivePublicKey(KeyType::secp256k1, randomSecretKey());
@@ -81,7 +91,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::find(cluster.begin(), cluster.end(), n);
+                auto found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
@@ -98,7 +108,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::find(cluster.begin(), cluster.end(), n);
+                auto found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(static_cast<bool>(c->member(n)) == (found != cluster.end()));
             }
         }
@@ -113,7 +123,7 @@ public:
 
         auto const node = randomNode();
         auto const name = toBase58(TokenType::NodePublic, node);
-        std::uint32_t load = 0;
+        std::uint32_t const load = 0;
         NetClock::time_point tick = {};
 
         // Initial update
@@ -243,5 +253,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(cluster, overlay, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

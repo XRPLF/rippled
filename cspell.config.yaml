@@ -44,6 +44,10 @@ suggestWords:
 words:
   - abempty
   - AMMID
+  - AMMMPT
+  - AMMMPToken
+  - AMMMPTokens
+  - AMMXRP
   - amt
   - amts
   - asnode
@@ -96,6 +100,7 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - enabled
   - endmacro
   - eventfd
   - exceptioned
@@ -149,6 +154,8 @@ words:
   - ltype
   - mcmodel
   - MEMORYSTATUSEX
+  - MPTAMM
+  - MPTDEX
   - Merkle
   - Metafuncton
   - misprediction
@@ -158,6 +165,7 @@ words:
   - mptid
   - mptissuance
   - mptissuanceid
+  - mptissue
   - mptoken
   - mptokenid
   - mptokenissuance
@@ -298,6 +306,7 @@ words:
   - venv
   - vfalco
   - vinnie
+  - wasmi
   - wextra
   - wptr
   - writeme

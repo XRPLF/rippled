@@ -1,15 +1,57 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>  // IWYU pragma: keep
+#include <test/jtx/credentials.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/txflags.h>
+
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Dir.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/PayChan.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
 using namespace jtx::paychan;
 
 struct PayChan_test : public beast::unit_test::suite
@@ -1096,7 +1138,7 @@ struct PayChan_test : public beast::unit_test::suite
         {
             auto leftToFind = bobsB58;
             auto const numFull = bobs.size() / limit;
-            auto const numNonFull = bobs.size() % limit ? 1 : 0;
+            auto const numNonFull = ((bobs.size() % limit) != 0u) ? 1 : 0;
 
             Json::Value marker = Json::nullValue;
 
@@ -1122,7 +1164,7 @@ struct PayChan_test : public beast::unit_test::suite
                 testIt(expectMarker, limit);
             }
 
-            if (numNonFull)
+            if (numNonFull != 0)
             {
                 testIt(false, bobs.size() % limit);
             }
@@ -1504,7 +1546,7 @@ struct PayChan_test : public beast::unit_test::suite
         auto const settleDelay = 3600s;
         auto const channelFunds = XRP(1000);
 
-        std::optional<NetClock::time_point> cancelAfter;
+        std::optional<NetClock::time_point> const cancelAfter;
 
         {
             auto const chan = to_string(channel(alice, bob, env.seq(alice)));
@@ -1606,6 +1648,7 @@ struct PayChan_test : public beast::unit_test::suite
                              Account const& acc,
                              std::shared_ptr<SLE const> const& chan) -> bool {
             xrpl::Dir const ownerDir(view, keylet::ownerDir(acc.id()));
+            // NOLINTNEXTLINE(modernize-use-ranges)
             return std::find(ownerDir.begin(), ownerDir.end(), chan) != ownerDir.end();
         };
 
@@ -1936,5 +1979,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(PayChan, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

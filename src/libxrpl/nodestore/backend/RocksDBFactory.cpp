@@ -1,4 +1,36 @@
-#include <xrpl/basics/rocksdb.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <rocksdb/advanced_options.h>
+#include <rocksdb/cache.h>
+#include <rocksdb/compression_type.h>
+#include <rocksdb/convenience.h>
+#include <rocksdb/db.h>
+#include <rocksdb/env.h>
+#include <rocksdb/filter_policy.h>
+#include <rocksdb/iterator.h>
+#include <rocksdb/options.h>
+#include <rocksdb/slice.h>
+#include <rocksdb/table.h>
+#include <rocksdb/write_batch.h>
+
+#include <bit>
+#include <cstddef>
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #if XRPL_ROCKSDB_AVAILABLE
 #include <xrpl/basics/ByteUtilities.h>
@@ -14,8 +46,7 @@
 #include <atomic>
 #include <memory>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class RocksDBEnv : public rocksdb::EnvWrapper
 {
@@ -37,18 +68,17 @@ public:
     static void
     thread_entry(void* ptr)
     {
-        ThreadParams* const p(reinterpret_cast<ThreadParams*>(ptr));
-        void (*f)(void*) = p->f;
+        ThreadParams const* const p(reinterpret_cast<ThreadParams*>(ptr));
+        auto const f = p->f;
+
         void* a(p->a);
         delete p;
 
         static std::atomic<std::size_t> n;
         std::size_t const id(++n);
-        std::stringstream ss;
-        ss << "rocksdb #" << id;
-        beast::setCurrentThreadName(ss.str());
+        beast::setCurrentThreadName("rocksdb #" + std::to_string(id));
 
-        (*f)(a);
+        f(a);
     }
 
     void
@@ -89,7 +119,7 @@ public:
         rocksdb::BlockBasedTableOptions table_options;
         m_options.env = env;
 
-        bool hard_set = keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
+        bool const hard_set = keyValues.exists("hard_set") && get<bool>(keyValues, "hard_set");
 
         if (keyValues.exists("cache_mb"))
         {
@@ -162,7 +192,7 @@ public:
 
         if (keyValues.exists("bbt_options"))
         {
-            rocksdb::ConfigOptions config_options;
+            rocksdb::ConfigOptions const config_options;
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
                 config_options, table_options, get(keyValues, "bbt_options"), &table_options);
             if (!s.ok())
@@ -212,8 +242,8 @@ public:
         }
         rocksdb::DB* db = nullptr;
         m_options.create_if_missing = createIfMissing;
-        rocksdb::Status status = rocksdb::DB::Open(m_options, m_name, &db);
-        if (!status.ok() || !db)
+        rocksdb::Status const status = rocksdb::DB::Open(m_options, m_name, &db);
+        if (!status.ok() || (db == nullptr))
         {
             Throw<std::runtime_error>(
                 std::string("Unable to open/create RocksDB: ") + status.ToString());
@@ -235,7 +265,7 @@ public:
             m_db.reset();
             if (m_deletePath)
             {
-                boost::filesystem::path dir = m_name;
+                boost::filesystem::path const dir = m_name;
                 boost::filesystem::remove_all(dir);
             }
         }
@@ -262,7 +292,7 @@ public:
 
         std::string string;
 
-        rocksdb::Status getStatus = m_db->Get(options, slice, &string);
+        rocksdb::Status const getStatus = m_db->Get(options, slice, &string);
 
         if (getStatus.ok())
         {
@@ -308,7 +338,7 @@ public:
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h, &nObj);
+            Status const status = fetch(h, &nObj);
             if (status != ok)
             {
                 results.push_back({});
@@ -339,7 +369,7 @@ public:
 
         for (auto const& e : batch)
         {
-            EncodedBlob encoded(e);
+            EncodedBlob const encoded(e);
 
             wb.Put(
                 rocksdb::Slice(std::bit_cast<char const*>(encoded.getKey()), m_keyBytes),
@@ -456,10 +486,9 @@ public:
 void
 registerRocksDBFactory(Manager& manager)
 {
-    static RocksDBFactory instance{manager};
+    static RocksDBFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore
 
 #endif

@@ -1,33 +1,60 @@
 #include <xrpld/core/Config.h>
+
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/json/json_reader.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/net/HTTPClient.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/rdb/DBInit.h>
+#include <xrpl/rdb/DatabaseCon.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/replace.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/format/free_funcs.hpp>
+#include <boost/multiprecision/detail/endian.hpp>
 #include <boost/predef.h>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
+#include <limits>
+#include <memory>
+#include <optional>
 #include <regex>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <thread>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 #if BOOST_OS_WINDOWS
 #include <sysinfoapi.h>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 [[nodiscard]] std::uint64_t
 getMemorySize()
@@ -38,15 +65,14 @@ getMemorySize()
     return 0;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail
+
 #endif
 
 #if BOOST_OS_LINUX
-#include <sys/sysinfo.h>
+#include <sys/sysinfo.h>  // IWYU pragma: keep
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 [[nodiscard]] std::uint64_t
 getMemorySize()
@@ -57,17 +83,14 @@ getMemorySize()
     return 0;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail
 
 #endif
 
 #if BOOST_OS_MACOS
 #include <sys/sysctl.h>
-#include <sys/types.h>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 [[nodiscard]] std::uint64_t
 getMemorySize()
@@ -82,8 +105,8 @@ getMemorySize()
     return 0;
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail
+
 #endif
 
 namespace xrpl {
@@ -112,11 +135,12 @@ sizedItems
     {SizedItem::ramSizeGB,          {{      6,       8,      12,      24,       0 }}},
     {SizedItem::accountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
 }};
+// clang-format on
 
 // Ensure that the order of entries in the table corresponds to the
 // order of entries in the enum:
 static_assert(
-    []() constexpr->bool {
+    []() constexpr -> bool {
         std::underlying_type_t<SizedItem> idx = 0;
 
         for (auto const& i : sizedItems)
@@ -130,7 +154,6 @@ static_assert(
         return true;
     }(),
     "Mismatch between sized item enum & array indices");
-// clang-format on
 
 //
 // TODO: Check permissions on config file before using it.
@@ -204,13 +227,13 @@ getSingleSection(
 {
     auto const pmtEntries = getIniFileSection(secSource, strSection);
 
-    if (pmtEntries && pmtEntries->size() == 1)
+    if ((pmtEntries != nullptr) && pmtEntries->size() == 1)
     {
         strValue = (*pmtEntries)[0];
         return true;
     }
 
-    if (pmtEntries)
+    if (pmtEntries != nullptr)
     {
         JLOG(j.warn()) << "Section '" << strSection << "': requires 1 line not "
                        << pmtEntries->size() << " lines.";
@@ -262,10 +285,9 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
         // First, check against 'minimum' RAM requirements per node size:
         auto const& threshold = sizedItems[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
 
-        auto ns = std::find_if(
-            threshold.second.begin(), threshold.second.end(), [this](std::size_t limit) {
-                return (limit == 0) || (ramSize_ < limit);
-            });
+        auto ns = std::ranges::find_if(threshold.second, [this](std::size_t limit) {
+            return (limit == 0) || (ramSize_ < limit);
+        });
 
         XRPL_ASSERT(ns != threshold.second.end(), "xrpl::Config::setupControl : valid node size");
 
@@ -390,10 +412,10 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     if (RUN_STANDALONE)
         LEDGER_HISTORY = 0;
 
-    Section ledgerTxTablesSection = section("ledger_tx_tables");
+    Section const ledgerTxTablesSection = section("ledger_tx_tables");
     get_if_exists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES);
 
-    Section& nodeDbSection{section(ConfigSection::nodeDatabase())};
+    Section const& nodeDbSection{section(ConfigSection::nodeDatabase())};
     get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
@@ -415,7 +437,7 @@ checkZeroPorts(Config const& config)
         if (optResult)
         {
             auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
-            if (!port)
+            if (port == 0u)
             {
                 std::stringstream ss;
                 ss << "Invalid value '" << *optResult << "' for key 'port' in [" << name << "]";
@@ -471,7 +493,7 @@ Config::loadFromString(std::string const& fileContents)
                 if (std::count(line.begin(), line.end(), ':') != 1)
                     continue;
 
-                std::string result = std::regex_replace(line, e, " $1");
+                std::string const result = std::regex_replace(line, e, " $1");
                 // sanity check the result of the replace, should be same length
                 // as input
                 if (result.size() == line.size())
@@ -487,7 +509,7 @@ Config::loadFromString(std::string const& fileContents)
         std::string dbPath;
         if (getSingleSection(secConfig, "database_path", dbPath, j_))
         {
-            boost::filesystem::path p(dbPath);
+            boost::filesystem::path const p(dbPath);
             legacy("database_path", boost::filesystem::absolute(p).string());
         }
     }
@@ -890,7 +912,7 @@ Config::loadFromString(std::string const& fileContents)
                                       ", must be: [0-9]+ [minutes|hours|days|weeks]");
         }
 
-        std::uint32_t duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
+        std::uint32_t const duration = beast::lexicalCastThrow<std::uint32_t>(match[1].str());
 
         if (boost::iequals(match[2], "minutes"))
         {
@@ -999,30 +1021,30 @@ Config::loadFromString(std::string const& fileContents)
 
             auto entries = getIniFileSection(iniFile, SECTION_VALIDATORS);
 
-            if (entries)
+            if (entries != nullptr)
                 section(SECTION_VALIDATORS).append(*entries);
 
             auto valKeyEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_KEYS);
 
-            if (valKeyEntries)
+            if (valKeyEntries != nullptr)
                 section(SECTION_VALIDATOR_KEYS).append(*valKeyEntries);
 
             auto valSiteEntries = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_SITES);
 
-            if (valSiteEntries)
+            if (valSiteEntries != nullptr)
                 section(SECTION_VALIDATOR_LIST_SITES).append(*valSiteEntries);
 
             auto valListKeys = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_KEYS);
 
-            if (valListKeys)
+            if (valListKeys != nullptr)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
             auto valListThreshold = getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
 
-            if (valListThreshold)
+            if (valListThreshold != nullptr)
                 section(SECTION_VALIDATOR_LIST_THRESHOLD).append(*valListThreshold);
 
-            if (!entries && !valKeyEntries && !valListKeys)
+            if ((entries == nullptr) && (valKeyEntries == nullptr) && (valListKeys == nullptr))
             {
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -1226,7 +1248,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"journal_mode\"");
             }
-            bool higherRisk =
+            bool const higherRisk =
                 boost::iequals(journal_mode, "memory") || boost::iequals(journal_mode, "off");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(journal_mode, "delete") ||
@@ -1250,7 +1272,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"synchronous\"");
             }
-            bool higherRisk = boost::iequals(synchronous, "off");
+            bool const higherRisk = boost::iequals(synchronous, "off");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(synchronous, "normal") ||
                 boost::iequals(synchronous, "full") || boost::iequals(synchronous, "extra"))
@@ -1271,7 +1293,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
                     "Configuration file may not define both "
                     "\"safety_level\" and \"temp_store\"");
             }
-            bool higherRisk = boost::iequals(temp_store, "memory");
+            bool const higherRisk = boost::iequals(temp_store, "memory");
             showRiskWarning = showRiskWarning || higherRisk;
             if (higherRisk || boost::iequals(temp_store, "default") ||
                 boost::iequals(temp_store, "file"))
@@ -1315,7 +1337,7 @@ setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
         if (page_size < 512 || page_size > 65536)
             Throw<std::runtime_error>("Invalid page_size. Must be between 512 and 65536.");
 
-        if (page_size & (page_size - 1))
+        if ((page_size & (page_size - 1)) != 0)
             Throw<std::runtime_error>("Invalid page_size. Must be a power of 2.");
     }
 

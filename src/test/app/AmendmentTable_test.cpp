@@ -1,20 +1,43 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/app/main/Application.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstring>
+#include <exception>
+#include <memory>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -419,7 +442,7 @@ public:
             BEAST_EXPECT(table->unVeto(unvetoedID));
 
             std::vector<uint256> const desired = table->getDesired();
-            BEAST_EXPECT(std::find(desired.begin(), desired.end(), unvetoedID) != desired.end());
+            BEAST_EXPECT(std::ranges::find(desired, unvetoedID) != desired.end());
         }
 
         // Veto all supported amendments.  Now desired should be empty.
@@ -439,7 +462,7 @@ public:
 
     // Make a list of trusted validators.
     // Register the validators with AmendmentTable and return the list.
-    std::vector<std::pair<PublicKey, SecretKey>>
+    static std::vector<std::pair<PublicKey, SecretKey>>
     makeValidators(int num, std::unique_ptr<AmendmentTable> const& table)
     {
         std::vector<std::pair<PublicKey, SecretKey>> ret;
@@ -462,7 +485,7 @@ public:
     }
 
     // Execute a pretend consensus round for a flag ledger
-    void
+    static void
     doRound(
         Rules const& rules,
         AmendmentTable& table,
@@ -954,10 +977,9 @@ public:
             // We need a hash_set to pass to trustChanged.
             hash_set<PublicKey> trustedValidators;
             trustedValidators.reserve(validators.size());
-            std::for_each(
-                validators.begin(), validators.end(), [&trustedValidators](auto const& val) {
-                    trustedValidators.insert(val.first);
-                });
+            std::ranges::for_each(validators, [&trustedValidators](auto const& val) {
+                trustedValidators.insert(val.first);
+            });
 
             // Tell the AmendmentTable that the UNL changed.
             table->trustChanged(trustedValidators);
@@ -1067,7 +1089,7 @@ public:
         // Since the local validator vote record expires after 24 hours,
         // with 23 hour flapping the amendment will go live.  But with 25
         // hour flapping the amendment will not go live.
-        for (int flapRateHours : {23, 25})
+        for (int const flapRateHours : {23, 25})
         {
             test::jtx::Env env{*this, feat};
             auto const testAmendment = amendmentId("validatorFlapping");
@@ -1151,9 +1173,8 @@ public:
         BEAST_EXPECT(table->needValidatedLedger(1));
 
         std::set<uint256> enabled;
-        std::for_each(unsupported_.begin(), unsupported_.end(), [&enabled](auto const& s) {
-            enabled.insert(amendmentId(s));
-        });
+        std::ranges::for_each(
+            unsupported_, [&enabled](auto const& s) { enabled.insert(amendmentId(s)); });
 
         majorityAmendments_t majority;
         table->doValidatedLedger(1, enabled, majority);
@@ -1161,12 +1182,9 @@ public:
         BEAST_EXPECT(!table->firstUnsupportedExpected());
 
         NetClock::duration t{1000s};
-        std::for_each(
-            unsupportedMajority_.begin(),
-            unsupportedMajority_.end(),
-            [&majority, &t](auto const& s) {
-                majority[amendmentId(s)] = NetClock::time_point{--t};
-            });
+        std::ranges::for_each(unsupportedMajority_, [&majority, &t](auto const& s) {
+            majority[amendmentId(s)] = NetClock::time_point{--t};
+        });
 
         table->doValidatedLedger(1, enabled, majority);
         BEAST_EXPECT(table->hasUnsupportedEnabled());

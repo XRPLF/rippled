@@ -10,9 +10,9 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/strand.hpp>
 
-namespace xrpl {
+#include <utility>
 
-namespace detail {
+namespace xrpl::detail {
 
 // Work with files
 class WorkFile : public Work, public std::enable_shared_from_this<WorkFile>
@@ -26,8 +26,8 @@ public:
     using callback_type = std::function<void(error_code const&, response_type const&)>;
 
 public:
-    WorkFile(std::string const& path, boost::asio::io_context& ios, callback_type cb);
-    ~WorkFile();
+    WorkFile(std::string path, boost::asio::io_context& ios, callback_type cb);
+    ~WorkFile() override;
 
     void
     run() override;
@@ -44,24 +44,27 @@ private:
 
 //------------------------------------------------------------------------------
 
-WorkFile::WorkFile(std::string const& path, boost::asio::io_context& ios, callback_type cb)
-    : path_(path), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
+inline WorkFile::WorkFile(std::string path, boost::asio::io_context& ios, callback_type cb)
+    : path_(std::move(path)), cb_(std::move(cb)), ios_(ios), strand_(boost::asio::make_strand(ios))
 {
 }
 
-WorkFile::~WorkFile()
+inline WorkFile::~WorkFile()
 {
     if (cb_)
         cb_(make_error_code(boost::system::errc::interrupted), {});
 }
 
-void
+inline void
 WorkFile::run()
 {
     if (!strand_.running_in_this_thread())
-        return boost::asio::post(
+    {
+        boost::asio::post(
             ios_,
             boost::asio::bind_executor(strand_, std::bind(&WorkFile::run, shared_from_this())));
+        return;
+    }
 
     error_code ec;
     auto const fileContents = getFileContents(ec, path_, megabytes(1));
@@ -71,12 +74,10 @@ WorkFile::run()
     cb_ = nullptr;
 }
 
-void
+inline void
 WorkFile::cancel()
 {
     // Nothing to do. Either it finished in run, or it didn't start.
 }
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

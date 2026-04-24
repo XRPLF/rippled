@@ -1,17 +1,38 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <boost/filesystem/path.hpp>
+
+#include <atomic>
+#include <cstdint>
+#include <limits>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+
+namespace xrpl::test {
 
 class SHAMapStore_test : public beast::unit_test::suite
 {
@@ -34,7 +55,7 @@ class SHAMapStore_test : public beast::unit_test::suite
         return cfg;
     }
 
-    bool
+    static bool
     goodLedger(jtx::Env& env, Json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
         auto good = json.isMember(jss::result) && !RPC::contains_error(json[jss::result]) &&
@@ -73,7 +94,7 @@ class SHAMapStore_test : public beast::unit_test::suite
             outTxHash == ledger[jss::transaction_hash].asString();
     }
 
-    bool
+    static bool
     bad(Json::Value const& json, error_code_i error = rpcLGR_NOT_FOUND)
     {
         return json.isMember(jss::result) && RPC::contains_error(json[jss::result]) &&
@@ -157,10 +178,10 @@ public:
         auto ledgerTmp = env.rpc("ledger", "0");
         BEAST_EXPECT(bad(ledgerTmp));
 
-        ledgers.emplace(std::make_pair(1, env.rpc("ledger", "1")));
+        ledgers.emplace(1, env.rpc("ledger", "1"));
         BEAST_EXPECT(goodLedger(env, ledgers[1], "1"));
 
-        ledgers.emplace(std::make_pair(2, env.rpc("ledger", "2")));
+        ledgers.emplace(2, env.rpc("ledger", "2"));
         BEAST_EXPECT(goodLedger(env, ledgers[2], "2"));
 
         ledgerTmp = env.rpc("ledger", "current");
@@ -187,7 +208,7 @@ public:
 
         for (auto i = 3; i < deleteInterval + lastRotated; ++i)
         {
-            ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
+            ledgers.emplace(i, env.rpc("ledger", std::to_string(i)));
             BEAST_EXPECT(
                 goodLedger(env, ledgers[i], std::to_string(i), true) &&
                 !getHash(ledgers[i]).empty());
@@ -224,7 +245,7 @@ public:
             ledgerTmp = env.rpc("ledger", "current");
             BEAST_EXPECT(goodLedger(env, ledgerTmp, std::to_string(i + 3)));
 
-            ledgers.emplace(std::make_pair(i, env.rpc("ledger", std::to_string(i))));
+            ledgers.emplace(i, env.rpc("ledger", std::to_string(i)));
             BEAST_EXPECT(
                 store.getLastRotated() == lastRotated || i == lastRotated + deleteInterval - 2);
             BEAST_EXPECT(
@@ -346,9 +367,9 @@ public:
         BEAST_EXPECT(lastRotated == store.getLastRotated());
 
         // This does not kick off a cleanup
-        canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + deleteInterval / 2));
+        canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (deleteInterval / 2)));
         BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
-        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + deleteInterval / 2);
+        BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (deleteInterval / 2));
 
         store.rendezvous();
 
@@ -481,7 +502,7 @@ public:
             section,
             megabytes(env.app().config().getValueFor(SizedItem::burstSize, std::nullopt)),
             scheduler,
-            env.app().logs().journal("NodeStoreTest"))};
+            env.app().getJournal("NodeStoreTest"))};
         backend->open();
         return backend;
     }
@@ -514,7 +535,7 @@ public:
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
-            env.app().logs().journal("NodeStoreTest"));
+            env.app().getJournal("NodeStoreTest"));
 
         /////////////////////////////////////////////////////////////
         // Check basic functionality
@@ -576,5 +597,4 @@ public:
 // VFALCO This test fails because of thread asynchronous issues
 BEAST_DEFINE_TESTSUITE(SHAMapStore, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

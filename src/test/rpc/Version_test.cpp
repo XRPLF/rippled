@@ -1,7 +1,15 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -45,7 +53,8 @@ class Version_test : public beast::unit_test::suite
             {
                 if (re["error_what"].isString())
                 {
-                    return re["error_what"].asString().find(jss::invalid_API_version.c_str()) == 0;
+                    return re["error_what"].asString().starts_with(
+                        jss::invalid_API_version.c_str());
                 }
             }
             return false;
@@ -77,13 +86,13 @@ class Version_test : public beast::unit_test::suite
     {
         testcase("test getAPIVersionNumber function");
 
-        unsigned int versionIfUnspecified =
+        unsigned int const versionIfUnspecified =
             RPC::apiVersionIfUnspecified < RPC::apiMinimumSupportedVersion
             ? RPC::apiInvalidVersion
             : RPC::apiVersionIfUnspecified;
 
-        Json::Value j_array = Json::Value(Json::arrayValue);
-        Json::Value j_null = Json::Value(Json::nullValue);
+        Json::Value const j_array = Json::Value(Json::arrayValue);
+        Json::Value const j_null = Json::Value(Json::nullValue);
         BEAST_EXPECT(RPC::getAPIVersionNumber(j_array, false) == versionIfUnspecified);
         BEAST_EXPECT(RPC::getAPIVersionNumber(j_null, false) == versionIfUnspecified);
 
@@ -185,7 +194,7 @@ class Version_test : public beast::unit_test::suite
     {
         testcase("config test");
         {
-            Config c;
+            Config const c;
             BEAST_EXPECT(c.BETA_RPC_API == false);
         }
 

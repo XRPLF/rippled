@@ -12,8 +12,7 @@
 #include <boost/bimap/unordered_set_of.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Stores IP addresses useful for gaining initial connections.
 
@@ -55,9 +54,7 @@ private:
         friend bool
         operator<(Entry const& lhs, Entry const& rhs)
         {
-            if (lhs.valence() > rhs.valence())
-                return true;
-            return false;
+            return lhs.valence() > rhs.valence();
         }
 
     private:
@@ -97,7 +94,7 @@ private:
     clock_type::time_point m_whenUpdate;
 
     // Set to true when a database update is needed
-    bool m_needsUpdate;
+    bool m_needsUpdate{false};
 
 public:
     static constexpr int staticValence = 32;
@@ -171,5 +168,4 @@ private:
     flagForUpdate();
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

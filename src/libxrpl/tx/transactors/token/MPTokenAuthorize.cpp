@@ -1,11 +1,21 @@
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -38,7 +48,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     //       `holderID` is NOT used
     if (!holderID)
     {
-        std::shared_ptr<SLE const> sleMpt =
+        std::shared_ptr<SLE const> const sleMpt =
             ctx.view.read(keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], accountID));
 
         // There is an edge case where all holders have zero balance, issuance
@@ -48,7 +58,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
         // before fetching the MPTIssuance object.
 
         // if holder wants to delete/unauthorize a mpt
-        if (ctx.tx.getFlags() & tfMPTUnauthorize)
+        if ((ctx.tx.getFlags() & tfMPTUnauthorize) != 0u)
         {
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
@@ -116,7 +126,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 
     // If tx is submitted by issuer, it only applies for MPT with
     // lsfMPTRequireAuth set
-    if (!(mptIssuanceFlags & lsfMPTRequireAuth))
+    if ((mptIssuanceFlags & lsfMPTRequireAuth) == 0u)
         return tecNO_AUTH;
 
     // The holder must create the MPT before the issuer can authorize it.
@@ -133,32 +143,6 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-MPTokenAuthorize::createMPToken(
-    ApplyView& view,
-    MPTID const& mptIssuanceID,
-    AccountID const& account,
-    std::uint32_t const flags)
-{
-    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
-
-    auto const ownerNode =
-        view.dirInsert(keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
-
-    if (!ownerNode)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
-
-    auto mptoken = std::make_shared<SLE>(mptokenKey);
-    (*mptoken)[sfAccount] = account;
-    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
-    (*mptoken)[sfFlags] = flags;
-    (*mptoken)[sfOwnerNode] = *ownerNode;
-
-    view.insert(mptoken);
-
-    return tesSUCCESS;
-}
-
-TER
 MPTokenAuthorize::doApply()
 {
     auto const& tx = ctx_.tx;
@@ -170,6 +154,25 @@ MPTokenAuthorize::doApply()
         ctx_.journal,
         tx.getFlags(),
         tx[~sfHolder]);
+}
+
+void
+MPTokenAuthorize::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+MPTokenAuthorize::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

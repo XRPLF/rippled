@@ -1,9 +1,9 @@
-#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+
+#include <xrpl/beast/net/IPAddress.h>
 
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/address_v4.hpp>
 #include <boost/system/detail/error_code.hpp>
 
 #include <cctype>
@@ -12,15 +12,15 @@
 #include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
-namespace beast {
-namespace IP {
+namespace beast::IP {
 
 Endpoint::Endpoint() : m_port(0)
 {
 }
 
-Endpoint::Endpoint(Address const& addr, Port port) : m_addr(addr), m_port(port)
+Endpoint::Endpoint(Address addr, Port port) : m_addr(std::move(addr)), m_port(port)
 {
 }
 
@@ -57,7 +57,7 @@ Endpoint::to_string() const
     if (port() != 0 && address().is_v6())
         s += '[';
     s += address().to_string();
-    if (port())
+    if (port() != 0u)
     {
         if (address().is_v6())
             s += ']';
@@ -111,7 +111,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
         // so we continue to honor that here by assuming we are at the end
         // of the address portion if we hit a space (or the separator
         // we were expecting to see)
-        if (isspace(static_cast<unsigned char>(i)) || (readTo && i == readTo))
+        if ((isspace(static_cast<unsigned char>(i)) != 0) || ((readTo != 0) && i == readTo))
             break;
 
         if ((i == '.') || (i >= '0' && i <= ':') || (i >= 'a' && i <= 'f') ||
@@ -120,14 +120,13 @@ operator>>(std::istream& is, Endpoint& endpoint)
             addrStr += i;
 
             // don't exceed a reasonable length...
-            if (addrStr.size() == INET6_ADDRSTRLEN ||
-                (readTo && readTo == ':' && addrStr.size() > 15))
+            if (addrStr.size() == INET6_ADDRSTRLEN || (readTo == ':' && addrStr.size() > 15))
             {
                 is.setstate(std::ios_base::failbit);
                 return is;
             }
 
-            if (!readTo && (i == '.' || i == ':'))
+            if ((readTo == 0) && (i == '.' || i == ':'))
             {
                 // if we see a dot first, must be IPv4
                 // otherwise must be non-bracketed IPv6
@@ -145,7 +144,7 @@ operator>>(std::istream& is, Endpoint& endpoint)
     if (readTo == ']' && is.rdbuf()->in_avail() > 0)
     {
         is.get(i);
-        if (!(isspace(static_cast<unsigned char>(i)) || i == ':'))
+        if ((isspace(static_cast<unsigned char>(i)) == 0) && i != ':')
         {
             is.unget();
             is.setstate(std::ios_base::failbit);
@@ -177,5 +176,4 @@ operator>>(std::istream& is, Endpoint& endpoint)
     return is;
 }
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP

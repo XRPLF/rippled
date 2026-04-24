@@ -16,8 +16,7 @@
 #include <thread>
 #include <vector>
 
-namespace beast {
-namespace test {
+namespace beast::test {
 
 /** Stack size for yield_to coroutines.
  *
@@ -66,7 +65,7 @@ public:
         : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
-        while (concurrency--)
+        while ((concurrency--) != 0u)
             threads_.emplace_back([&] { ios_.run(); });
     }
 
@@ -136,7 +135,7 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
         boost::context::fixedsize_stack(yieldStackSize),
         [&](yield_context yield) {
             f(yield);
-            std::lock_guard lock{m_};
+            std::lock_guard const lock{m_};
             if (--running_ == 0)
                 cv_.notify_all();
         },
@@ -147,5 +146,4 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
     spawn(fn...);
 }
 
-}  // namespace test
-}  // namespace beast
+}  // namespace beast::test

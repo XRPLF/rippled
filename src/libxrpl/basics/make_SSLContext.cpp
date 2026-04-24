@@ -1,5 +1,6 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+
+#include <xrpl/basics/contract.h>
 
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
@@ -8,8 +9,9 @@
 
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
+#include <openssl/crypto.h>
 #include <openssl/evp.h>
-#include <openssl/objects.h>
+#include <openssl/objects.h>  // IWYU pragma: keep
 #include <openssl/ossl_typ.h>
 #include <openssl/pem.h>
 #include <openssl/rsa.h>
@@ -25,8 +27,8 @@
 #include <string>
 
 namespace xrpl {
-namespace openssl {
-namespace detail {
+
+namespace openssl::detail {
 
 /** The default strength of self-signed RSA certificates.
 
@@ -140,7 +142,7 @@ initAnonymous(boost::asio::ssl::context& context)
 
         auto const ts = std::time(nullptr) - (25 * 60 * 60);
 
-        int ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
+        int const ret = std::strftime(buf, sizeof(buf) - 1, "%y%m%d000000Z", std::gmtime(&ts));
 
         buf[ret] = 0;
 
@@ -253,7 +255,7 @@ initAuthenticated(
         // VFALCO Replace fopen() with RAII
         FILE* f = fopen(chain_file.c_str(), "r");
 
-        if (!f)
+        if (f == nullptr)
         {
             LogicError(
                 "Problem opening SSL chain file" +
@@ -344,8 +346,7 @@ get_context(std::string cipherList)
     return c;
 }
 
-}  // namespace detail
-}  // namespace openssl
+}  // namespace openssl::detail
 
 //------------------------------------------------------------------------------
 std::shared_ptr<boost::asio::ssl::context>

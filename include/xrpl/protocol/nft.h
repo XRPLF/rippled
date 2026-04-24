@@ -9,8 +9,7 @@
 #include <cstdint>
 #include <cstring>
 
-namespace xrpl {
-namespace nft {
+namespace xrpl::nft {
 
 // Separate taxons from regular integers.
 struct TaxonTag
@@ -39,7 +38,7 @@ constexpr std::uint16_t const flagMutable = 0x0010;
 inline std::uint16_t
 getFlags(uint256 const& id)
 {
-    std::uint16_t flags;
+    std::uint16_t flags = 0;
     memcpy(&flags, id.begin(), 2);
     return boost::endian::big_to_native(flags);
 }
@@ -47,7 +46,7 @@ getFlags(uint256 const& id)
 inline std::uint16_t
 getTransferFee(uint256 const& id)
 {
-    std::uint16_t fee;
+    std::uint16_t fee = 0;
     memcpy(&fee, id.begin() + 2, 2);
     return boost::endian::big_to_native(fee);
 }
@@ -55,7 +54,7 @@ getTransferFee(uint256 const& id)
 inline std::uint32_t
 getSerial(uint256 const& id)
 {
-    std::uint32_t seq;
+    std::uint32_t seq = 0;
     memcpy(&seq, id.begin() + 28, 4);
     return boost::endian::big_to_native(seq);
 }
@@ -87,7 +86,7 @@ cipheredTaxon(std::uint32_t tokenSeq, Taxon taxon)
 inline Taxon
 getTaxon(uint256 const& id)
 {
-    std::uint32_t taxon;
+    std::uint32_t taxon = 0;
     memcpy(&taxon, id.begin() + 24, 4);
     taxon = boost::endian::big_to_native(taxon);
 
@@ -102,5 +101,4 @@ getIssuer(uint256 const& id)
     return AccountID::fromVoid(id.data() + 4);
 }
 
-}  // namespace nft
-}  // namespace xrpl
+}  // namespace xrpl::nft

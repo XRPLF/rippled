@@ -1,10 +1,11 @@
+#include <xrpl/protocol/STVector256.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstddef>
@@ -68,7 +69,7 @@ bool
 STVector256::isEquivalent(STBase const& t) const
 {
     STVector256 const* v = dynamic_cast<STVector256 const*>(&t);
-    return v && (mValue == v->mValue);
+    return (v != nullptr) && (mValue == v->mValue);
 }
 
 Json::Value
