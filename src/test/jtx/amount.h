@@ -103,25 +103,25 @@ public:
     {
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     value() const
     {
         return amount_;
     }
 
-    Number
+    [[nodiscard]] Number
     number() const
     {
         return amount_;
     }
 
-    int
+    [[nodiscard]] int
     signum() const
     {
         return amount_.signum();
@@ -172,7 +172,7 @@ public:
     {
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     raw() const
     {
         return asset_;
@@ -209,20 +209,20 @@ public:
         return {asset_};
     }
 
-    bool
+    [[nodiscard]] bool
     integral() const
     {
         return asset_.integral();
     }
 
-    bool
+    [[nodiscard]] bool
     native() const
     {
         return asset_.native();
     }
 
     template <ValidIssueType TIss>
-    bool
+    [[nodiscard]] bool
     holds() const
     {
         return asset_.holds<TIss>();
@@ -390,17 +390,17 @@ public:
     {
     }
 
-    Issue
+    [[nodiscard]] Issue
     issue() const
     {
         return {currency, account.id()};
     }
-    Asset
+    [[nodiscard]] Asset
     asset() const
     {
         return issue();
     }
-    bool
+    [[nodiscard]] bool
     integral() const
     {
         return issue().integral();
@@ -488,7 +488,7 @@ public:
     {
     }
 
-    xrpl::MPTID const&
+    [[nodiscard]] xrpl::MPTID const&
     mpt() const
     {
         return issuanceID;
@@ -496,12 +496,12 @@ public:
 
     /** Explicit conversion to MPTIssue or asset.
      */
-    xrpl::MPTIssue
+    [[nodiscard]] xrpl::MPTIssue
     mptIssue() const
     {
         return MPTIssue{issuanceID};
     }
-    Asset
+    [[nodiscard]] Asset
     asset() const
     {
         return mptIssue();

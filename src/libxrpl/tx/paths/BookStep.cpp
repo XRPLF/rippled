@@ -118,13 +118,13 @@ private:
     }
 
 public:
-    Book const&
+    [[nodiscard]] Book const&
     book() const
     {
         return book_;
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         if (!cache_)
@@ -132,7 +132,7 @@ public:
         return EitherAmount(cache_->in);
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         if (!cache_)
@@ -140,25 +140,25 @@ public:
         return EitherAmount(cache_->out);
     }
 
-    DebtDirection
+    [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
         return ownerPaysTransferFee_ ? DebtDirection::issues : DebtDirection::redeems;
     }
 
-    std::optional<Book>
+    [[nodiscard]] std::optional<Book>
     bookStepBook() const override
     {
         return book_;
     }
 
-    std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
-    std::pair<std::optional<QualityFunction>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<QualityFunction>, DebtDirection>
     getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const override;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     offersUsed() const override;
 
     std::pair<TIn, TOut>
@@ -179,10 +179,10 @@ public:
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
     // Check for errors frozen constraints.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
-    bool
+    [[nodiscard]] bool
     inactive() const override
     {
         return inactive_;
@@ -199,7 +199,7 @@ protected:
         return ostr.str();
     }
 
-    Rate
+    [[nodiscard]] Rate
     rate(ReadView const& view, Asset const& asset, AccountID const& dstAccount) const;
 
 private:
@@ -215,7 +215,7 @@ private:
         return !(lhs == rhs);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(Step const& rhs) const override;
 
     // Iterate through the offers at the best quality in a book.
@@ -258,12 +258,12 @@ private:
     tipOfferQuality(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality function,
     // whichever is a better quality.
-    std::optional<QualityFunction>
+    [[nodiscard]] std::optional<QualityFunction>
     tipOfferQualityF(ReadView const& view) const;
 
     // Check that takerPays/takerGets can be transferred/traded.
     // Applies to MPT assets.
-    bool
+    [[nodiscard]] bool
     checkMPTDEX(ReadView const& view, AccountID const& owner) const;
 
     friend TDerived;
@@ -307,7 +307,7 @@ public:
     }
 
     // A payment can look at offers of any quality
-    bool
+    [[nodiscard]] bool
     checkQualityThreshold(Quality const& quality) const
     {
         return true;
@@ -315,7 +315,7 @@ public:
 
     // A payment doesn't use quality threshold (limitQuality)
     // since the strand's quality doesn't directly relate to the step's quality.
-    std::optional<Quality>
+    [[nodiscard]] std::optional<Quality>
     qualityThreshold(Quality const& lobQuality) const
     {
         return lobQuality;
@@ -335,7 +335,7 @@ public:
         return trOut;
     }
 
-    Quality
+    [[nodiscard]] Quality
     adjustQualityWithFees(
         ReadView const& v,
         Quality const& ofrQ,
@@ -361,7 +361,7 @@ public:
         return composed_quality(q1, ofrQ);
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return this->logStringImpl("BookPaymentStep");
@@ -455,7 +455,7 @@ public:
 
     // Offer crossing can prune the offers it needs to look at with a
     // quality threshold.
-    bool
+    [[nodiscard]] bool
     checkQualityThreshold(Quality const& quality) const
     {
         return !defaultPath_ || quality >= qualityThreshold_;
@@ -471,7 +471,7 @@ public:
     // generates the maximum AMM offer in this case, which matches
     // the quality threshold. This only applies to single path scenario.
     // Multi-path AMM offers work the same as LOB offers.
-    std::optional<Quality>
+    [[nodiscard]] std::optional<Quality>
     qualityThreshold(Quality const& lobQuality) const
     {
         if (this->ammLiquidity_ && !this->ammLiquidity_->multiPath() &&
@@ -507,7 +507,7 @@ public:
             : trOut;  // then rate = QUALITY_ONE
     }
 
-    Quality
+    [[nodiscard]] Quality
     adjustQualityWithFees(
         ReadView const& v,
         Quality const& ofrQ,
@@ -545,7 +545,7 @@ public:
         return composed_quality(q1, ofrQ);
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return this->logStringImpl("BookOfferCrossingStep");

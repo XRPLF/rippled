@@ -40,19 +40,19 @@ public:
         }
     }
 
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
         return Slice(mData.data(), mData.size());
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
         return mData.size();
     }
 
-    void const*
+    [[nodiscard]] void const*
     data() const noexcept
     {
         return mData.data();
@@ -168,16 +168,16 @@ public:
     }
 
     // DEPRECATED
-    uint256
+    [[nodiscard]] uint256
     getSHA512Half() const;
 
     // totality functions
-    Blob const&
+    [[nodiscard]] Blob const&
     peekData() const
     {
         return mData;
     }
-    Blob
+    [[nodiscard]] Blob
     getData() const
     {
         return mData;
@@ -188,12 +188,12 @@ public:
         return mData;
     }
 
-    int
+    [[nodiscard]] int
     getDataLength() const
     {
         return mData.size();
     }
-    void const*
+    [[nodiscard]] void const*
     getDataPtr() const
     {
         return mData.data();
@@ -203,12 +203,12 @@ public:
     {
         return mData.data();
     }
-    int
+    [[nodiscard]] int
     getLength() const
     {
         return mData.size();
     }
-    std::string
+    [[nodiscard]] std::string
     getString() const
     {
         return std::string(static_cast<char const*>(getDataPtr()), size());
@@ -232,12 +232,12 @@ public:
     {
         return mData.end();
     }
-    Blob ::const_iterator
+    [[nodiscard]] Blob ::const_iterator
     begin() const
     {
         return mData.begin();
     }
-    Blob ::const_iterator
+    [[nodiscard]] Blob ::const_iterator
     end() const
     {
         return mData.end();
@@ -252,7 +252,7 @@ public:
     {
         mData.resize(n);
     }
-    size_t
+    [[nodiscard]] size_t
     capacity() const
     {
         return mData.capacity();
@@ -345,7 +345,7 @@ public:
     void
     reset() noexcept;
 
-    int
+    [[nodiscard]] int
     getBytesLeft() const noexcept
     {
         return static_cast<int>(remain_);

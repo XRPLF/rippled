@@ -58,19 +58,19 @@ public:
         return SeqProxy{Type::seq, v};
     }
 
-    constexpr std::uint32_t
+    [[nodiscard]] constexpr std::uint32_t
     value() const
     {
         return value_;
     }
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     isSeq() const
     {
         return type_ == seq;
     }
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     isTicket() const
     {
         return type_ == ticket;

@@ -151,7 +151,7 @@ protected:
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
 
-        Number
+        [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
         {
             NumberRoundModeGuard const mg(Number::downward);
@@ -189,18 +189,18 @@ protected:
         {
         }
 
-        Keylet
+        [[nodiscard]] Keylet
         brokerKeylet() const
         {
             return keylet::loanbroker(brokerID);
         }
-        Keylet
+        [[nodiscard]] Keylet
         vaultKeylet() const
         {
             return keylet::vault(vaultID);
         }
 
-        int
+        [[nodiscard]] int
         vaultScale(jtx::Env const& env) const
         {
             using namespace jtx;
