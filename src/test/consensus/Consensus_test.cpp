@@ -29,6 +29,18 @@
 #include <string>
 #include <vector>
 
+namespace xrpl {
+bool
+checkConsensusReached(
+    std::size_t agreeing,
+    std::size_t total,
+    bool count_self,
+    std::size_t minConsensusPct,
+    bool reachedMax,
+    bool stalled,
+    std::unique_ptr<std::stringstream> const& clog);
+}
+
 namespace xrpl::test {
 
 class Consensus_test : public beast::unit_test::suite
@@ -156,6 +168,55 @@ public:
         // time has passed
         BEAST_EXPECT(
             ConsensusState::Yes == checkConsensus(10, 8, 1, 0, 1s, 19s, true, p, true, journal_));
+    }
+
+    void
+    testLoggingHelpers()
+    {
+        using namespace std::chrono_literals;
+        testcase("logging helpers");
+
+        ConsensusParms const p{};
+
+        {
+            auto clog = std::make_unique<std::stringstream>();
+            BEAST_EXPECT(shouldCloseLedger(false, 10, 0, 0, 1s, 10s, 1s, 10s, p, journal_, clog));
+            BEAST_EXPECT(!clog->str().empty());
+        }
+
+        {
+            auto clog = std::make_unique<std::stringstream>();
+            BEAST_EXPECT(!xrpl::checkConsensusReached(1, 2, false, 80, false, false, clog));
+            BEAST_EXPECT(!clog->str().empty());
+        }
+
+        {
+            auto clog = std::make_unique<std::stringstream>();
+            BEAST_EXPECT(xrpl::checkConsensusReached(0, 0, false, 80, true, false, clog));
+            BEAST_EXPECT(!clog->str().empty());
+        }
+
+        {
+            auto clog = std::make_unique<std::stringstream>();
+            BEAST_EXPECT(xrpl::checkConsensusReached(1, 10, false, 80, false, true, clog));
+            BEAST_EXPECT(!clog->str().empty());
+        }
+
+        {
+            auto clog = std::make_unique<std::stringstream>();
+            BEAST_EXPECT(
+                ConsensusState::MovedOn ==
+                checkConsensus(10, 2, 1, 8, 3s, 10s, false, p, true, journal_, clog));
+            BEAST_EXPECT(!clog->str().empty());
+        }
+
+        {
+            auto clog = std::make_unique<std::stringstream>();
+            BEAST_EXPECT(
+                ConsensusState::Expired ==
+                checkConsensus(10, 8, 1, 0, 1s, 19s, false, p, true, journal_, clog));
+            BEAST_EXPECT(!clog->str().empty());
+        }
     }
 
     void
@@ -1427,6 +1488,7 @@ public:
     {
         testShouldCloseLedger();
         testCheckConsensus();
+        testLoggingHelpers();
 
         testStandalone();
         testPeersAgree();

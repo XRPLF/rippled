@@ -31,6 +31,171 @@ public:
         BEAST_EXPECT(unknown == TrafficCount::category::unknown);
     }
 
+    void
+    testLedgerDataCategorize()
+    {
+        testcase("ledger-data categorize");
+
+        auto checkCategory = [&](protocol::TMLedgerInfoType type,
+                                 bool inbound,
+                                 bool requestCookie,
+                                 TrafficCount::category category) {
+            protocol::TMLedgerData message;
+            message.set_type(type);
+            if (requestCookie)
+                message.set_requestcookie(1);
+
+            BEAST_EXPECT(
+                TrafficCount::categorize(message, protocol::mtLEDGER_DATA, inbound) == category);
+        };
+
+        checkCategory(protocol::liTS_CANDIDATE, true, false, TrafficCount::category::ld_tsc_get);
+        checkCategory(protocol::liTS_CANDIDATE, true, true, TrafficCount::category::ld_tsc_share);
+        checkCategory(protocol::liTS_CANDIDATE, false, false, TrafficCount::category::ld_tsc_share);
+
+        checkCategory(protocol::liTX_NODE, true, false, TrafficCount::category::ld_txn_get);
+        checkCategory(protocol::liTX_NODE, true, true, TrafficCount::category::ld_txn_share);
+        checkCategory(protocol::liTX_NODE, false, false, TrafficCount::category::ld_txn_share);
+
+        checkCategory(protocol::liAS_NODE, true, false, TrafficCount::category::ld_asn_get);
+        checkCategory(protocol::liAS_NODE, true, true, TrafficCount::category::ld_asn_share);
+        checkCategory(protocol::liAS_NODE, false, false, TrafficCount::category::ld_asn_share);
+
+        checkCategory(protocol::liBASE, true, false, TrafficCount::category::ld_get);
+        checkCategory(protocol::liBASE, true, true, TrafficCount::category::ld_share);
+        checkCategory(protocol::liBASE, false, false, TrafficCount::category::ld_share);
+    }
+
+    void
+    testGetLedgerCategorize()
+    {
+        testcase("get-ledger categorize");
+
+        auto checkCategory = [&](protocol::TMLedgerInfoType type,
+                                 bool inbound,
+                                 bool requestCookie,
+                                 TrafficCount::category category) {
+            protocol::TMGetLedger message;
+            message.set_itype(type);
+            if (requestCookie)
+                message.set_requestcookie(1);
+
+            BEAST_EXPECT(
+                TrafficCount::categorize(message, protocol::mtGET_LEDGER, inbound) == category);
+        };
+
+        checkCategory(protocol::liTS_CANDIDATE, true, false, TrafficCount::category::gl_tsc_share);
+        checkCategory(protocol::liTS_CANDIDATE, false, true, TrafficCount::category::gl_tsc_share);
+        checkCategory(protocol::liTS_CANDIDATE, false, false, TrafficCount::category::gl_tsc_get);
+
+        checkCategory(protocol::liTX_NODE, true, false, TrafficCount::category::gl_txn_share);
+        checkCategory(protocol::liTX_NODE, false, true, TrafficCount::category::gl_txn_share);
+        checkCategory(protocol::liTX_NODE, false, false, TrafficCount::category::gl_txn_get);
+
+        checkCategory(protocol::liAS_NODE, true, false, TrafficCount::category::gl_asn_share);
+        checkCategory(protocol::liAS_NODE, false, true, TrafficCount::category::gl_asn_share);
+        checkCategory(protocol::liAS_NODE, false, false, TrafficCount::category::gl_asn_get);
+
+        checkCategory(protocol::liBASE, true, false, TrafficCount::category::gl_share);
+        checkCategory(protocol::liBASE, false, true, TrafficCount::category::gl_share);
+        checkCategory(protocol::liBASE, false, false, TrafficCount::category::gl_get);
+    }
+
+    void
+    testGetObjectByHashCategorize()
+    {
+        testcase("get-object-by-hash categorize");
+
+        auto checkCategory = [&](protocol::TMGetObjectByHash::ObjectType type,
+                                 bool query,
+                                 bool inbound,
+                                 TrafficCount::category category) {
+            protocol::TMGetObjectByHash message;
+            message.set_type(type);
+            message.set_query(query);
+
+            BEAST_EXPECT(
+                TrafficCount::categorize(message, protocol::mtGET_OBJECTS, inbound) == category);
+        };
+
+        checkCategory(
+            protocol::TMGetObjectByHash::otLEDGER,
+            true,
+            true,
+            TrafficCount::category::share_hash_ledger);
+        checkCategory(
+            protocol::TMGetObjectByHash::otLEDGER,
+            true,
+            false,
+            TrafficCount::category::get_hash_ledger);
+
+        checkCategory(
+            protocol::TMGetObjectByHash::otTRANSACTION,
+            false,
+            false,
+            TrafficCount::category::share_hash_tx);
+        checkCategory(
+            protocol::TMGetObjectByHash::otTRANSACTION,
+            false,
+            true,
+            TrafficCount::category::get_hash_tx);
+
+        checkCategory(
+            protocol::TMGetObjectByHash::otTRANSACTION_NODE,
+            true,
+            true,
+            TrafficCount::category::share_hash_txnode);
+        checkCategory(
+            protocol::TMGetObjectByHash::otTRANSACTION_NODE,
+            true,
+            false,
+            TrafficCount::category::get_hash_txnode);
+
+        checkCategory(
+            protocol::TMGetObjectByHash::otSTATE_NODE,
+            false,
+            false,
+            TrafficCount::category::share_hash_asnode);
+        checkCategory(
+            protocol::TMGetObjectByHash::otSTATE_NODE,
+            false,
+            true,
+            TrafficCount::category::get_hash_asnode);
+
+        checkCategory(
+            protocol::TMGetObjectByHash::otCAS_OBJECT,
+            true,
+            true,
+            TrafficCount::category::share_cas_object);
+        checkCategory(
+            protocol::TMGetObjectByHash::otCAS_OBJECT,
+            true,
+            false,
+            TrafficCount::category::get_cas_object);
+
+        checkCategory(
+            protocol::TMGetObjectByHash::otFETCH_PACK,
+            false,
+            false,
+            TrafficCount::category::share_fetch_pack);
+        checkCategory(
+            protocol::TMGetObjectByHash::otFETCH_PACK,
+            false,
+            true,
+            TrafficCount::category::get_fetch_pack);
+
+        checkCategory(
+            protocol::TMGetObjectByHash::otTRANSACTIONS,
+            true,
+            true,
+            TrafficCount::category::get_transactions);
+
+        checkCategory(
+            protocol::TMGetObjectByHash::otUNKNOWN, true, true, TrafficCount::category::share_hash);
+        checkCategory(
+            protocol::TMGetObjectByHash::otUNKNOWN, true, false, TrafficCount::category::get_hash);
+    }
+
     struct TestCase
     {
         std::string name;
@@ -119,6 +284,9 @@ public:
     run() override
     {
         testCategorize();
+        testLedgerDataCategorize();
+        testGetLedgerCategorize();
+        testGetObjectByHashCategorize();
         testAddCount();
         testToString();
     }

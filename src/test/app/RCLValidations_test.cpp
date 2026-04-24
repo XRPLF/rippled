@@ -1,9 +1,13 @@
 
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/consensus/LedgerTrie.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/core/ConfigSections.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -15,14 +19,56 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace xrpl::test {
 
 class RCLValidations_test : public beast::unit_test::suite
 {
+    static std::unique_ptr<Config>
+    makeTrustedValidatorConfig(std::string const& seed)
+    {
+        auto cfg = jtx::envconfig(jtx::validator, seed);
+        auto const parsedSeed = parseBase58<Seed>(seed);
+        XRPL_ASSERT(parsedSeed, "xrpl::test::RCLValidations_test valid seed");
+        auto const secret = generateSecretKey(KeyType::secp256k1, *parsedSeed);
+        auto const publicKey = derivePublicKey(KeyType::secp256k1, secret);
+        cfg->section(SECTION_VALIDATORS).append(toBase58(TokenType::NodePublic, publicKey));
+        return cfg;
+    }
+
+    static std::shared_ptr<STValidation>
+    makeValidation(
+        NetClock::time_point when,
+        PublicKey const& publicKey,
+        SecretKey const& secretKey,
+        NodeID const& nodeID,
+        uint256 const& ledgerHash,
+        std::uint32_t ledgerSeq,
+        std::uint64_t cookie = 0)
+    {
+        return std::make_shared<STValidation>(
+            when, publicKey, secretKey, nodeID, [ledgerHash, ledgerSeq, cookie](STValidation& v) {
+                v.setFieldH256(sfLedgerHash, ledgerHash);
+                v.setFieldU32(sfLedgerSequence, ledgerSeq);
+                v.setFlag(vfFullValidation);
+                if (cookie != 0)
+                    v.setFieldU64(sfCookie, cookie);
+            });
+    }
+
+    static uint256
+    digest(std::string const& value)
+    {
+        return sha512Half(value);
+    }
+
     void
     testChangeTrusted()
     {
@@ -312,6 +358,100 @@ class RCLValidations_test : public beast::unit_test::suite
         BEAST_EXPECT(trie.branchSupport(ledg_259) == 4);
     }
 
+    void
+    testAdaptorAcquireAndHandleValidation()
+    {
+        testcase("adaptor acquire and handle validation");
+
+        using namespace std::chrono_literals;
+
+        std::string logs;
+        std::string const seed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
+        {
+            jtx::Env env(
+                *this,
+                makeTrustedValidatorConfig(seed),
+                std::make_unique<CaptureLogs>(&logs),
+                beast::severities::kAll);
+
+            auto const journal = env.app().getJournal("RCLValidations_test");
+            ValidatorKeys const keys{env.app().config(), journal};
+            BEAST_EXPECT(keys.keys.has_value());
+            if (!keys.keys)
+                return;
+
+            env.close();
+
+            auto const ledgerHash = env.closed()->header().hash;
+            auto const ledgerSeq = env.closed()->seq();
+            auto const signTime = env.app().getTimeKeeper().closeTime() + 1s;
+
+            RCLValidationsAdaptor adaptor(env.app(), journal);
+            auto const acquired = adaptor.acquire(ledgerHash);
+            BEAST_EXPECT(acquired.has_value());
+            if (acquired)
+            {
+                BEAST_EXPECT(acquired->id() == ledgerHash);
+                BEAST_EXPECT(acquired->seq() == ledgerSeq);
+            }
+
+            auto const missing = adaptor.acquire(digest("missing-ledger"));
+            BEAST_EXPECT(!missing);
+            env.app().getJobQueue().rendezvous();
+
+            auto current = makeValidation(
+                signTime,
+                keys.keys->publicKey,
+                keys.keys->secretKey,
+                keys.nodeID,
+                ledgerHash,
+                ledgerSeq,
+                1);
+            current->setUntrusted();
+            handleNewValidation(env.app(), current, "test", BypassAccept::no, journal);
+            BEAST_EXPECT(current->isTrusted());
+            BEAST_EXPECT(env.app().getValidations().currentTrusted().size() == 1);
+
+            auto bypassed = makeValidation(
+                signTime + 1s,
+                keys.keys->publicKey,
+                keys.keys->secretKey,
+                keys.nodeID,
+                digest("later-ledger"),
+                ledgerSeq + 1,
+                2);
+            bypassed->setUntrusted();
+            handleNewValidation(env.app(), bypassed, "test", BypassAccept::yes, journal);
+            BEAST_EXPECT(bypassed->isTrusted());
+
+            auto conflicting = makeValidation(
+                signTime + 2s,
+                keys.keys->publicKey,
+                keys.keys->secretKey,
+                keys.nodeID,
+                digest("conflict-ledger"),
+                ledgerSeq + 1,
+                2);
+            conflicting->setUntrusted();
+            handleNewValidation(env.app(), conflicting, "test", BypassAccept::yes, journal);
+
+            auto multiple = makeValidation(
+                signTime + 1s,
+                keys.keys->publicKey,
+                keys.keys->secretKey,
+                keys.nodeID,
+                digest("later-ledger"),
+                ledgerSeq + 1,
+                3);
+            multiple->setUntrusted();
+            handleNewValidation(env.app(), multiple, "test", BypassAccept::yes, journal);
+            BEAST_EXPECT(env.app().getValidations().currentTrusted().size() == 1);
+        }
+
+        BEAST_EXPECT(logs.find("Conflicting validation") != std::string::npos);
+        BEAST_EXPECT(logs.find("Multiple validations") != std::string::npos);
+    }
+
 public:
     void
     run() override
@@ -319,6 +459,7 @@ public:
         testChangeTrusted();
         testRCLValidatedLedger();
         testLedgerTrieRCLValidatedLedger();
+        testAdaptorAcquireAndHandleValidation();
     }
 };
 
