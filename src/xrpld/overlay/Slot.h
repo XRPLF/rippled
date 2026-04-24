@@ -609,7 +609,7 @@ public:
     deleteIdlePeers();
 
     /** Return number of peers in state */
-    std::optional<std::uint16_t>
+    [[nodiscard]] std::optional<std::uint16_t>
     inState(PublicKey const& validator, PeerState state) const
     {
         auto const& it = slots_.find(validator);
@@ -619,7 +619,7 @@ public:
     }
 
     /** Return number of peers not in state */
-    std::optional<std::uint16_t>
+    [[nodiscard]] std::optional<std::uint16_t>
     notInState(PublicKey const& validator, PeerState state) const
     {
         auto const& it = slots_.find(validator);
@@ -629,7 +629,7 @@ public:
     }
 
     /** Return true if Slot is in state */
-    bool
+    [[nodiscard]] bool
     inState(PublicKey const& validator, SlotState state) const
     {
         auto const& it = slots_.find(validator);
