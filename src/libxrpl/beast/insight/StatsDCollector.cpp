@@ -164,7 +164,7 @@ private:
     std::string m_name;
     GaugeImpl::value_type m_last_value{0};
     GaugeImpl::value_type m_value{0};
-    bool m_dirty{false};
+    bool m_dirty{true};
 };
 
 //------------------------------------------------------------------------------

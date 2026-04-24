@@ -642,6 +642,25 @@ async def submit_transaction(
         logger.debug("%s error: %s", tx_type, exc)
 
 
+async def _refresh_sequences(
+    ws: websockets.WebSocketClientProtocol,
+    accounts: list[Account],
+) -> None:
+    """Re-sync account sequences from the validated ledger.
+
+    In a consensus network, other nodes' transactions advance sequences
+    beyond the submitter's local tracking.  Refreshing every ~10 s keeps
+    the local counter close to the ledger and prevents tefPAST_SEQ storms.
+    """
+    for acct in accounts:
+        try:
+            seq = await get_account_sequence(ws, acct.account)
+            if seq > acct.sequence:
+                acct.sequence = seq
+        except Exception:
+            pass
+
+
 async def run_submitter(
     endpoint: str,
     tps: float,
@@ -684,7 +703,15 @@ async def run_submitter(
         )
 
         start = time.monotonic()
+        last_seq_refresh = start
+        seq_refresh_interval = 10.0
         while (time.monotonic() - start) < duration:
+            # Periodically re-sync account sequences from the ledger so
+            # locally-tracked sequences don't drift behind consensus.
+            if (time.monotonic() - last_seq_refresh) >= seq_refresh_interval:
+                await _refresh_sequences(ws, accounts)
+                last_seq_refresh = time.monotonic()
+
             tx_type = random.choices(tx_types, weights=tx_weights, k=1)[0]
             await submit_transaction(ws, tx_type, accounts, stats)
             await asyncio.sleep(interval)
