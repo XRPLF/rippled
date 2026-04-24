@@ -176,11 +176,22 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 | 4.10 | Multi-validator integration tests              |
 | 4.11 | Performance validation                         |
 
+### Spans Produced
+
+| Span Name                   | Location               | Attributes                                                                                                                                                                                                            |
+| --------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.proposal.send`   | `RCLConsensus.cpp:177` | `xrpl.consensus.round`                                                                                                                                                                                                |
+| `consensus.ledger_close`    | `RCLConsensus.cpp:282` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                    |
+| `consensus.accept`          | `RCLConsensus.cpp:395` | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                                                                                                                                                            |
+| `consensus.accept.apply`    | `RCLConsensus.cpp:521` | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
+| `consensus.validation.send` | `RCLConsensus.cpp:753` | `xrpl.consensus.proposing`                                                                                                                                                                                            |
+
 ### Exit Criteria
 
 - [x] Complete consensus round traces
 - [x] Phase transitions visible
 - [x] Proposals and validations traced
+- [x] Close time agreement tracked (per `avCT_CONSENSUS_PCT`)
 - [x] No impact on consensus timing
 - [ ] Multi-validator test network validated
 
@@ -205,6 +216,69 @@ Phase 4a (establish-phase gap fill & cross-node correlation) adds:
   `updateEstablishTracing`, `endEstablishTracing`).
 
 See [Phase4_taskList.md](./Phase4_taskList.md) for the full spec and implementation notes.
+
+---
+
+## 6.5a Phase 4a: Establish-Phase Gap Fill & Cross-Node Correlation
+
+**Objective**: Fill tracing gaps in the establish phase and establish cross-node
+correlation using deterministic trace IDs derived from `previousLedger.id()`.
+
+**Approach**: Direct instrumentation in `Consensus.h`. Long-lived spans use
+direct SpanGuard members; short-lived scoped spans use `XRPL_TRACE_*` macros.
+
+### Tasks
+
+| Task | Description                                      | Effort | Risk   |
+| ---- | ------------------------------------------------ | ------ | ------ |
+| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | 1d     | Medium |
+| 4a.1 | Adaptor `getTelemetry()` method                  | 0.5d   | Low    |
+| 4a.2 | Switchable round span with deterministic traceID | 2d     | High   |
+| 4a.3 | Span members in `Consensus.h`                    | 0.5d   | Medium |
+| 4a.4 | Instrument `phaseEstablish()`                    | 1d     | Medium |
+| 4a.5 | Instrument `updateOurPositions()`                | 1d     | Medium |
+| 4a.6 | Instrument `haveConsensus()` (thresholds)        | 1d     | Medium |
+| 4a.7 | Instrument mode changes                          | 0.5d   | Low    |
+| 4a.8 | Reparent existing spans under round              | 0.5d   | Low    |
+| 4a.9 | Build verification and testing                   | 1d     | Low    |
+
+**Total Effort**: 9 days
+
+### Spans Produced
+
+| Span Name                    | Location           | Key Attributes                                                   |
+| ---------------------------- | ------------------ | ---------------------------------------------------------------- |
+| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`; link → prev round |
+| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`               |
+| `consensus.update_positions` | `Consensus.h`      | `disputes_count`, `converge_percent`, `proposers_agreed/total`   |
+| `consensus.check`            | `Consensus.h`      | `agree/disagree_count`, `threshold_percent`, `result`            |
+| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                           |
+
+### Exit Criteria
+
+- [ ] Establish phase internals fully traced (disputes, convergence, thresholds)
+- [ ] Cross-node correlation works via deterministic trace_id
+- [ ] Strategy switchable via config (`deterministic` / `attribute`)
+- [ ] Consecutive rounds linked via follows-from spans
+- [ ] Build passes with telemetry ON and OFF
+- [ ] No impact on consensus timing
+
+See [Phase4_taskList.md](./Phase4_taskList.md) for full task details.
+
+---
+
+## 6.5b Phase 4b: Cross-Node Propagation (Future)
+
+**Objective**: Wire `TraceContextPropagator` for P2P messages (proposals,
+validations) to enable true distributed tracing between nodes.
+
+**Status**: Design documented, NOT implemented. Protobuf fields (field 1001)
+and `TraceContextPropagator` class exist. Wiring deferred until Phase 4a is
+validated in a multi-node environment.
+
+**Prerequisites**: Phase 4a complete and validated.
+
+See [Phase4_taskList.md § Phase 4b](./Phase4_taskList.md) for full design.
 
 ---
 

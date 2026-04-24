@@ -43,6 +43,7 @@
 #include <cstring>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace telemetry {
@@ -298,6 +299,40 @@ SpanGuard::hashSpan(
     return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
 }
 
+// ===== Hash-derived span (generic, category-gated) =========================
+
+SpanGuard
+SpanGuard::hashSpan(
+    TraceCategory cat,
+    std::string_view name,
+    std::uint8_t const* hashData,
+    std::size_t hashSize)
+{
+    if (hashSize < 16)
+        return {};
+    auto* tel = Telemetry::getInstance();
+    if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
+        return {};
+
+    otel_trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
+
+    std::uint8_t spanIdBytes[8];
+    std::random_device rd;
+    for (auto& b : spanIdBytes)
+        b = static_cast<std::uint8_t>(rd());
+    otel_trace::SpanId spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBytes, 8));
+
+    otel_trace::SpanContext syntheticCtx(
+        traceId, spanId, otel_trace::TraceFlags(1), /* remote = */ false);
+
+    auto parentCtx = opentelemetry::context::Context{}.SetValue(
+        otel_trace::kSpanKey,
+        opentelemetry::nostd::shared_ptr<otel_trace::Span>(
+            new otel_trace::DefaultSpan(syntheticCtx)));
+
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
+}
+
 // ===== Context capture =====================================================
 
 SpanContext
@@ -388,6 +423,19 @@ SpanGuard::addEvent(std::string_view name)
 {
     if (impl_)
         impl_->span->AddEvent(std::string(name));
+}
+
+void
+SpanGuard::addEvent(std::string_view name, std::initializer_list<EventAttribute> attrs)
+{
+    if (!impl_)
+        return;
+    // Own the strings to ensure lifetime safety through the AddEvent call.
+    std::vector<std::pair<std::string, std::string>> owned;
+    owned.reserve(attrs.size());
+    for (auto const& [k, v] : attrs)
+        owned.emplace_back(std::string(k), std::string(v));
+    impl_->span->AddEvent(std::string(name), owned);
 }
 
 void

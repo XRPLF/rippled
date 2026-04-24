@@ -1,5 +1,6 @@
 #pragma once
 
+#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpld/consensus/ConsensusTypes.h>
@@ -10,6 +11,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <algorithm>
 #include <chrono>
@@ -600,6 +602,21 @@ private:
 
     // nodes that have bowed out of this consensus process
     hash_set<NodeID_t> deadNodes_;
+
+    /** Span for the establish phase of consensus.
+     *  Created when the ledger closes and we enter phaseEstablish;
+     *  cleared (ended) when consensus is reached.
+     */
+    std::optional<xrpl::telemetry::SpanGuard> establishSpan_;
+
+    void
+    startEstablishTracing();
+
+    void
+    updateEstablishTracing();
+
+    void
+    endEstablishTracing();
 
     // Journal for debugging
     beast::Journal const j_;
@@ -1327,6 +1344,8 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     XRPL_ASSERT(result_, "xrpl::Consensus::phaseEstablish : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
+    startEstablishTracing();
+
     ++peerUnchangedCounter_;
     ++establishCounter_;
 
@@ -1354,6 +1373,8 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
 
     updateOurPositions(clog);
 
+    updateEstablishTracing();
+
     // Nothing to do if too many laggards or we don't have consensus.
     if (shouldPause(clog) || !haveConsensus(clog))
         return;
@@ -1371,6 +1392,7 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     adaptor_.updateOperatingMode(currPeerPositions_.size());
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
+    endEstablishTracing();
     phase_ = ConsensusPhase::accepted;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::accepted";
     adaptor_.onAccept(
@@ -1447,6 +1469,10 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     // We must have a position if we are updating it
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
+    using namespace telemetry;
+    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, "update_positions");
+    span.setAttribute(cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    span.setAttribute(cons_span::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1506,6 +1532,11 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
                     // now a no
                     mutableSet->erase(txId);
                 }
+
+                span.addEvent(
+                    "dispute.resolve",
+                    {{cons_span::attr::txId, to_string(txId)},
+                     {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"}});
             }
         }
 
@@ -1629,6 +1660,8 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     // Must have a stance if we are checking for consensus
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
+    using namespace telemetry;
+    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, "check");
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1727,6 +1760,17 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         JLOG(j_.error()) << Json::Compact{getJson(true)};
         CLOG(clog) << "Unable to reach consensus " << Json::Compact{getJson(true)} << ". ";
     }
+
+    span.setAttribute(cons_span::attr::agreeCount, static_cast<int64_t>(agree));
+    span.setAttribute(cons_span::attr::disagreeCount, static_cast<int64_t>(disagree));
+    span.setAttribute(cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+
+    char const* stateStr = "no";
+    if (result_->state == ConsensusState::Yes)
+        stateStr = "yes";
+    else if (result_->state == ConsensusState::MovedOn)
+        stateStr = "moved_on";
+    span.setAttribute(cons_span::attr::result, stateStr);
 
     CLOG(clog) << "Consensus has been reached. ";
     // NOLINTEND(bugprone-unchecked-optional-access)
@@ -1847,6 +1891,38 @@ NetClock::time_point
 Consensus<Adaptor>::asCloseTime(NetClock::time_point raw) const
 {
     return roundCloseTime(raw, closeResolution_);
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::startEstablishTracing()
+{
+    if (establishSpan_)
+        return;
+    establishSpan_.emplace(
+        telemetry::SpanGuard::span(
+            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "establish"));
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::updateEstablishTracing()
+{
+    if (!establishSpan_)
+        return;
+    establishSpan_->setAttribute(
+        telemetry::cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    establishSpan_->setAttribute(
+        telemetry::cons_span::attr::establishCount, static_cast<int64_t>(establishCounter_));
+    establishSpan_->setAttribute(
+        telemetry::cons_span::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
+}
+
+template <class Adaptor>
+void
+Consensus<Adaptor>::endEstablishTracing()
+{
+    establishSpan_.reset();
 }
 
 }  // namespace xrpl

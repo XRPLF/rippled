@@ -1,4 +1,5 @@
 #include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 
 #include <gtest/gtest.h>
 
@@ -79,4 +80,27 @@ TEST(SpanGuardFactory, discard_safe_on_null)
     auto span = SpanGuard::span(TraceCategory::Transactions, "tx", "process");
     span.discard();
     EXPECT_FALSE(span);
+}
+
+TEST(SpanGuardFactory, consensus_close_time_attributes)
+{
+    // Verify the consensus attribute pattern compiles and
+    // doesn't crash with null SpanGuard.
+    {
+        auto span = telemetry::SpanGuard::span(
+            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
+        span.setAttribute("xrpl.consensus.ledger.seq", static_cast<int64_t>(42));
+        span.setAttribute("xrpl.consensus.close_time", static_cast<int64_t>(780000000));
+        span.setAttribute("xrpl.consensus.close_time_correct", true);
+        span.setAttribute("xrpl.consensus.close_resolution_ms", static_cast<int64_t>(30000));
+        span.setAttribute("xrpl.consensus.state", std::string("finished"));
+        span.setAttribute("xrpl.consensus.proposing", true);
+        span.setAttribute("xrpl.consensus.round_time_ms", static_cast<int64_t>(3500));
+    }
+    {
+        auto span = telemetry::SpanGuard::span(
+            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
+        span.setAttribute("xrpl.consensus.close_time_correct", false);
+        span.setAttribute("xrpl.consensus.state", std::string("moved_on"));
+    }
 }
