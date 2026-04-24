@@ -527,14 +527,6 @@ public:
     {
         return cur_.size();
     }
-
-    void
-    removeIndex(std::size_t i)
-    {
-        if (i >= next_.size())
-            return;
-        next_.erase(next_.begin() + i);
-    }
 };
 /// @endcond
 
@@ -661,11 +653,6 @@ flow(
         std::optional<BestStrand> best;
         if (flowDebugInfo)
             flowDebugInfo->newLiquidityPass();
-        // Index of strand to mark as inactive (remove from the active list) if
-        // the liquidity is used. This is used for strands that consume too many
-        // offers Constructed as `false,0` to workaround a gcc warning about
-        // uninitialized variables
-        std::optional<std::size_t> markInactiveOnUse;
         for (size_t strandIndex = 0, sie = activeStrands.size(); strandIndex != sie; ++strandIndex)
         {
             Strand const* strand = activeStrands.get(strandIndex);
@@ -729,11 +716,6 @@ flow(
 
         if (best)
         {
-            if (markInactiveOnUse)
-            {
-                activeStrands.removeIndex(*markInactiveOnUse);
-                markInactiveOnUse.reset();
-            }
             savedIns.insert(best->in);
             savedOuts.insert(best->out);
             remainingOut = outReq - sum(savedOuts);
