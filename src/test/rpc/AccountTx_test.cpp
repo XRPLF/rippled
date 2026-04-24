@@ -959,7 +959,7 @@ class AccountTx_test : public beast::unit_test::suite
         {
             Json::Value p;
             p[jss::delegate_filter] = "actor";
-            p[jss::counterparty] = bob.human();
+            p[jss::counter_party] = bob.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 1);
         }
 
@@ -967,7 +967,7 @@ class AccountTx_test : public beast::unit_test::suite
         {
             Json::Value p;
             p[jss::delegate_filter] = "actor";
-            p[jss::counterparty] = carol.human();
+            p[jss::counter_party] = carol.human();
             BEAST_EXPECT(countTxs(alice.id(), p) == 0);
         }
 
@@ -983,7 +983,7 @@ class AccountTx_test : public beast::unit_test::suite
         {
             Json::Value p;
             p[jss::delegate_filter] = "authorizer";
-            p[jss::counterparty] = alice.human();
+            p[jss::counter_party] = alice.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
 
@@ -992,7 +992,7 @@ class AccountTx_test : public beast::unit_test::suite
         {
             Json::Value p;
             p[jss::delegate_filter] = "authorizer";
-            p[jss::counterparty] = carol.human();
+            p[jss::counter_party] = carol.human();
             BEAST_EXPECT(countTxs(bob.id(), p) == 0);
         }
 
@@ -1034,7 +1034,7 @@ class AccountTx_test : public beast::unit_test::suite
         {
             Json::Value p;
             p[jss::delegate_filter] = "actor";
-            p[jss::counterparty] = 123;
+            p[jss::counter_party] = 123;
             checkError(p, "invalidParams");
         }
 
@@ -1042,8 +1042,81 @@ class AccountTx_test : public beast::unit_test::suite
         {
             Json::Value p;
             p[jss::delegate_filter] = "actor";
-            p[jss::counterparty] = "not_an_account";
+            p[jss::counter_party] = "not_an_account";
             checkError(p, "actMalformed");
+        }
+    }
+
+    void
+    testDelegationMultiSign()
+    {
+        testcase("Delegation filter with multi-signed delegatee");
+        using namespace test::jtx;
+
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const daria{"daria"};
+        Account const edward{"edward"};
+
+        env.fund(XRP(10000), alice, bob, carol, daria, edward);
+        env.close();
+
+        // Bob's identity is established via multi-sig (daria + edward)
+        env(signers(bob, 2, {{daria, 1}, {edward, 1}}));
+        env.close();
+
+        env(delegate::set(alice, bob, {"Payment"}));
+        env.close();
+
+        // Delegated tx: Alice pays Carol, Bob signs via multi-sig
+        env(pay(alice, carol, XRP(10)), fee(XRP(1)), delegate::as(bob), msig(daria, edward));
+        env.close();
+
+        auto const countTxs = [&](AccountID const& account,
+                                  Json::Value const& delegateParams) -> int {
+            Json::Value params;
+            params[jss::account] = toBase58(account);
+            params[jss::ledger_index_min] = -1;
+            params[jss::ledger_index_max] = -1;
+            params[jss::delegate] = delegateParams;
+
+            auto const res = env.rpc("json", "account_tx", to_string(params));
+
+            if (res[jss::result].isMember(jss::transactions))
+                return res[jss::result][jss::transactions].size();
+            return 0;
+        };
+
+        // Alice (owner) finds the tx with actor filter
+        {
+            Json::Value p;
+            p[jss::delegate_filter] = "actor";
+            BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
+
+        // Alice (owner) + counterparty Bob finds the tx
+        {
+            Json::Value p;
+            p[jss::delegate_filter] = "actor";
+            p[jss::counter_party] = bob.human();
+            BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
+
+        // Bob (delegatee) finds the tx with authorizer filter
+        {
+            Json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            BEAST_EXPECT(countTxs(bob.id(), p) == 1);
+        }
+
+        // Bob (delegatee) + counterparty Alice finds the tx
+        {
+            Json::Value p;
+            p[jss::delegate_filter] = "authorizer";
+            p[jss::counter_party] = alice.human();
+            BEAST_EXPECT(countTxs(bob.id(), p) == 1);
         }
     }
 
@@ -1056,6 +1129,7 @@ public:
         testAccountDelete();
         testMPT();
         testDelegation();
+        testDelegationMultiSign();
     }
 };
 BEAST_DEFINE_TESTSUITE(AccountTx, rpc, xrpl);

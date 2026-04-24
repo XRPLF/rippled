@@ -11,6 +11,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
@@ -27,6 +28,8 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/LedgerHeader.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
@@ -42,9 +45,6 @@
 #include <boost/optional/optional.hpp>
 #include <boost/system/detail/error_code.hpp>
 
-#include "xrpl/basics/Slice.h"
-#include "xrpl/protocol/PublicKey.h"
-#include "xrpl/protocol/SField.h"
 #include <soci/blob.h>
 #include <soci/into.h>
 #include <soci/soci-backend.h>
@@ -991,6 +991,69 @@ getNewestAccountTxsB(
 }
 
 /**
+ * @brief Determines whether a transaction should be included in account_tx
+ *        results based on a delegation filter.
+ * @param rawData Serialized transaction blob.
+ * @param filter The delegate filter specifying the role of the queried account
+ *        (Actor or Authorizer) and an optional counterparty to match against.
+ * @param contextAccount The account passed to account_tx (the queried account).
+ * @return True if the transaction passes the filter and should be included,
+ *         false if it should be skipped.
+ */
+static bool
+passesDelegateFilter(
+    Blob const& rawData,
+    DelegateFilter const& filter,
+    AccountID const& contextAccount)
+{
+    SerialIter sit{makeSlice(rawData)};
+    STTx const tx{sit};
+
+    AccountID const txOwner = tx.getAccountID(sfAccount);
+
+    // If sfDelegate is present use it directly — the delegatee may have
+    // proven their identity via multi-sig (empty sfSigningPubKey).
+    // Otherwise derive from sfSigningPubKey; skip if empty (multi-signed
+    // non-delegated txns and batch inner txns cannot be delegation txns).
+    AccountID txSigner;
+    if (tx.isFieldPresent(sfDelegate))
+    {
+        txSigner = tx.getAccountID(sfDelegate);
+    }
+    else
+    {
+        auto const signingPubKeyBlob = tx.getSigningPubKey();
+        if (signingPubKeyBlob.empty())
+            return false;
+        txSigner = calcAccountID(PublicKey(makeSlice(signingPubKeyBlob)));
+    }
+
+    switch (filter.type)
+    {
+        case DelegateType::Actor: {
+            // Keep txns where the queried account (A) is the owner but
+            // another account (C) was the delegatee that signed.
+            bool const isDelegated = (txOwner == contextAccount) && (txSigner != contextAccount);
+            if (!isDelegated)
+                return false;
+            return !filter.counterparty || (txSigner == *filter.counterparty);
+        }
+
+        case DelegateType::Authorizer: {
+            // Keep txns where the queried account (C) is the signer acting
+            // on behalf of another account (A, the delegator/owner).
+            bool const isActingAsDelegate =
+                (txSigner == contextAccount) && (txOwner != contextAccount);
+            if (!isActingAsDelegate)
+                return false;
+            return !filter.counterparty || (txOwner == *filter.counterparty);
+        }
+    }
+
+    return false;
+}
+
+/**
  * @brief accountTxPage Searches for the oldest or newest transactions for the
  *        account that matches the given criteria starting from the provided
  *        marker and invokes the callback parameter for each found transaction.
@@ -1167,66 +1230,7 @@ accountTxPage(
 
             if (options.delegate.has_value() && !rawData.empty())
             {
-                SerialIter sit{makeSlice(rawData)};
-                STTx const tx{sit};
-
-                // The account in the TX (delegator)
-                AccountID const txOwner = tx.getAccountID(sfAccount);
-
-                // The account that actually signed and submitted the TX
-                // (delegatee)
-                AccountID const txSigner =
-                    calcAccountID(PublicKey(makeSlice(tx.getSigningPubKey())));
-
-                bool keep = false;
-                auto const& filter = options.delegate.value();
-                auto const& contextAccount = options.account;
-
-                switch (filter.type)
-                {
-                    case DelegateType::Actor: {
-                        // Case: account_tx(A) delegatee(C)
-                        // We want TXs where Context(A) is the Owner, but Signer is
-                        // NOT A (it's C)
-                        bool const isDelegated =
-                            (txOwner == contextAccount) && (txSigner != contextAccount);
-
-                        if (isDelegated)
-                        {
-                            if (filter.counterparty)
-                            {
-                                keep = (txSigner == *filter.counterparty);
-                            }
-                            else
-                            {
-                                keep = true;
-                            }
-                        }
-                        break;
-                    }
-
-                    case DelegateType::Authorizer: {
-                        // Case: account_tx(C) delegator(A)
-                        // We want TXs where Context(C) is the Signer, but Owner is
-                        // NOT C (it's A)
-                        bool const isActingAsDelegate =
-                            (txSigner == contextAccount) && (txOwner != contextAccount);
-
-                        if (isActingAsDelegate)
-                        {
-                            if (filter.counterparty)
-                            {
-                                keep = (txOwner == *filter.counterparty);
-                            }
-                            else
-                            {
-                                keep = true;
-                            }
-                        }
-                    }
-                }
-
-                if (!keep)
+                if (!passesDelegateFilter(rawData, options.delegate.value(), options.account))
                     continue;
             }
 

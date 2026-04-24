@@ -191,7 +191,7 @@ JSS(converge_time);               // out: NetworkOPs
 JSS(converge_time_s);             // out: NetworkOPs
 JSS(cookie);                      // out: NetworkOPs
 JSS(count);                       // in: AccountTx*, ValidatorList
-JSS(counterparty);                // in/out: AccountTx
+JSS(counter_party);               // in/out: AccountTx
 JSS(counters);                    // in/out: retrieve counters
 JSS(credentials);                 // in: deposit_authorized
 JSS(credential_type);             // in: LedgerEntry DepositPreauth

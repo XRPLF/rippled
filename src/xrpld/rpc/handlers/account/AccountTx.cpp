@@ -43,43 +43,43 @@ namespace xrpl {
 Expected<DelegateFilter, Json::Value>
 DelegateFilter::create(Json::Value const& delegateNode)
 {
-    if (!delegateNode.isObject() || !delegateNode.isMember(jss::delegate_filter))
-        return Unexpected(RPC::invalid_field_error("delegate"));
+    if (!delegateNode.isObject())
+        return Unexpected(RPC::invalid_field_error(jss::delegate));
 
-    DelegateFilter filter;
-
-    if (!delegateNode[jss::delegate_filter].isString())
+    if (!delegateNode.isMember(jss::delegate_filter) ||
+        !delegateNode[jss::delegate_filter].isString())
         return Unexpected(RPC::invalid_field_error(jss::delegate_filter));
 
     auto const& delegateFilterStr = delegateNode[jss::delegate_filter].asString();
 
-    if (delegateFilterStr == "actor")
-    {
-        filter.type = DelegateType::Actor;
-    }
-    else if (delegateFilterStr == "authorizer")
-    {
-        filter.type = DelegateType::Authorizer;
-    }
-    else
-    {
+    auto typeResult = [&]() -> Expected<DelegateType, Json::Value> {
+        if (delegateFilterStr == "actor")
+            return DelegateType::Actor;
+
+        if (delegateFilterStr == "authorizer")
+            return DelegateType::Authorizer;
+
         return Unexpected(RPC::invalid_field_error(jss::delegate_filter));
-    }
+    }();
 
-    if (delegateNode.isMember(jss::counterparty))
+    if (!typeResult)
+        return Unexpected(typeResult.error());
+
+    DelegateType const type = *typeResult;
+
+    std::optional<AccountID> counterparty;
+    if (delegateNode.isMember(jss::counter_party))
     {
-        if (!delegateNode[jss::counterparty].isString())
-            return Unexpected(RPC::invalid_field_error(jss::counterparty));
+        if (!delegateNode[jss::counter_party].isString())
+            return Unexpected(RPC::invalid_field_error(jss::counter_party));
 
-        auto const counterparty =
-            parseBase58<AccountID>(delegateNode[jss::counterparty].asString());
+        counterparty = parseBase58<AccountID>(delegateNode[jss::counter_party].asString());
+
         if (!counterparty)
             return Unexpected(rpcError(rpcACT_MALFORMED));
-
-        filter.counterparty = *counterparty;
     }
 
-    return filter;
+    return DelegateFilter{.type = type, .counterparty = counterparty};
 }
 
 using TxnsData = RelationalDatabase::AccountTxs;
