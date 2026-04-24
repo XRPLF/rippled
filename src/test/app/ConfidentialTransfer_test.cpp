@@ -7155,13 +7155,15 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // Send amount is 10.
         uint64_t const amt = 10;
 
+        enum class Participant { Sender, Dest, Issuer, Auditor };
+
         // This lambda submits a send transaction where one of the four ciphertexts
         // is encrypted with different randomness than the one used to build the proof.
-        // Note: When divergentIdx is nullopt, all participants
+        // Note: When divergent is nullopt, all participants
         // will use the same randomness and expected to succeed, this is the
         // control case that confirms the test setup itself is sound, the bad proof
         // is actually from divergent randomness, not other causes.
-        auto submitWithDivergentC1 = [&](std::optional<size_t> divergentIdx) {
+        auto submitWithDivergentC1 = [&](std::optional<Participant> divergent) {
             // Shared ElGamal randomness.
             Buffer const bf = generateBlindingFactor();
 
@@ -7226,30 +7228,27 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             BEAST_EXPECT(proofOpt.has_value());
 
             // Re-encrypt one participant's ciphertext with bfDivergent.
-            if (divergentIdx)
+            if (divergent)
             {
-                switch (*divergentIdx)
+                switch (*divergent)
                 {
-                    case 0:
+                    case Participant::Sender:
                         senderCt = mptAlice.encryptAmount(bob, amt, bfDivergent);
                         break;
-                    case 1:
+                    case Participant::Dest:
                         destCt = mptAlice.encryptAmount(carol, amt, bfDivergent);
                         break;
-                    case 2:
+                    case Participant::Issuer:
                         issuerCt = mptAlice.encryptAmount(alice, amt, bfDivergent);
                         break;
-                    case 3:
+                    case Participant::Auditor:
                         auditorCt = mptAlice.encryptAmount(auditor, amt, bfDivergent);
                         break;
-                    default:
-                        fail("bad divergentIdx");
-                        return;
                 }
             }
 
             auto const spendingBefore = spendingBalance;
-            TER const expectedErr = divergentIdx ? TER{tecBAD_PROOF} : TER{tesSUCCESS};
+            TER const expectedErr = divergent ? TER{tecBAD_PROOF} : TER{tesSUCCESS};
 
             mptAlice.send({
                 .account = bob,
@@ -7269,7 +7268,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             // Verify balances.
             auto const spendingAfter =
                 mptAlice.getDecryptedBalance(bob, MPTTester::HOLDER_ENCRYPTED_SPENDING);
-            if (divergentIdx)
+            if (divergent)
             {
                 BEAST_EXPECT(spendingAfter == spendingBefore);
             }
@@ -7284,10 +7283,10 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         submitWithDivergentC1(std::nullopt);
 
         // Divergent C1 for different participants should all fail with tecBAD_PROOF:
-        submitWithDivergentC1(0);
-        submitWithDivergentC1(1);
-        submitWithDivergentC1(2);
-        submitWithDivergentC1(3);
+        submitWithDivergentC1(Participant::Sender);
+        submitWithDivergentC1(Participant::Dest);
+        submitWithDivergentC1(Participant::Issuer);
+        submitWithDivergentC1(Participant::Auditor);
     }
 
     // Exercises every Confidential Transfer transaction type (MPTokenIssuanceSet,
