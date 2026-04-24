@@ -102,6 +102,7 @@ words:
   - dxrpl
   - enabled
   - endmacro
+  - EOCFG
   - exceptioned
   - Falco
   - fcontext
@@ -203,6 +204,8 @@ words:
   - permdex
   - perminute
   - permissioned
+  - pgrep
+  - pkill
   - pimpl
   - pointee
   - populator
@@ -222,6 +225,7 @@ words:
   - Raphson
   - reparent
   - replayer
+  - reqps
   - rerere
   - retriable
   - RIPD
@@ -319,6 +323,10 @@ words:
   - xchain
   - ximinez
   - EXPECT_STREQ
+  - Gantt
+  - gantt
+  - otelc
+  - traceql
   - XMACRO
   - xrpkuwait
   - xrpl
@@ -327,10 +335,6 @@ words:
   - xxhash
   - xxhasher
   - xychart
-  - otelc
   - zpages
-  - traceql
-  - Gantt
-  - gantt
   - pratik
   - dedup

@@ -321,6 +321,13 @@ public:
             // Force flush with timeout to avoid blocking indefinitely
             // when the OTLP endpoint is unreachable.
             sdkProvider_->ForceFlush(std::chrono::milliseconds(5000));
+            // TODO: sdkProvider_ is not thread-safe. This reset() races with
+            // getTracer() if any thread is still calling startSpan().
+            // Currently safe because Application::stop() shuts down
+            // serverHandler_, overlay_, and jobQueue_ before calling
+            // telemetry_->stop() — so no callers should remain. If the
+            // shutdown order ever changes, add an std::atomic<bool> stopped_
+            // flag checked in getTracer() to make this robust.
             sdkProvider_.reset();
             trace_api::Provider::SetTracerProvider(
                 opentelemetry::nostd::shared_ptr<trace_api::TracerProvider>(

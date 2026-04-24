@@ -1,0 +1,189 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "RPC Request Rate by Command",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{xrpl_rpc_command=~\"$command\", exported_instance=~\"$node\", span_name=~\"rpc.command.*\"}[5m]))",
+          "legendFormat": "{{xrpl_rpc_command}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "axisLabel": "Requests / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Latency P95 by Command",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "histogram_quantile(0.95, sum by (le, xrpl_rpc_command) (rate(traces_span_metrics_duration_milliseconds_bucket{xrpl_rpc_command=~\"$command\", exported_instance=~\"$node\", span_name=~\"rpc.command.*\"}[5m])))",
+          "legendFormat": "P95 {{xrpl_rpc_command}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Error Rate",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{xrpl_rpc_command=~\"$command\", exported_instance=~\"$node\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m])) / sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) * 100",
+          "legendFormat": "{{xrpl_rpc_command}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 1
+              },
+              {
+                "color": "red",
+                "value": 5
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Latency Heatmap",
+      "type": "heatmap",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{xrpl_rpc_command=~\"$command\", exported_instance=~\"$node\", span_name=~\"rpc.command.*\"}[5m])) by (le)",
+          "legendFormat": "{{le}}",
+          "format": "heatmap"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rippled", "rpc", "telemetry"],
+  "templating": {
+    "list": [
+      {
+        "name": "node",
+        "label": "Node",
+        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "type": "query",
+        "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      },
+      {
+        "name": "command",
+        "label": "RPC Command",
+        "description": "Filter by RPC command name (e.g., server_info, submit)",
+        "type": "query",
+        "query": "label_values(traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}, xrpl_rpc_command)",
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "multi": true,
+        "refresh": 2,
+        "sort": 1
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "rippled RPC Performance",
+  "uid": "rippled-rpc-perf"
+}

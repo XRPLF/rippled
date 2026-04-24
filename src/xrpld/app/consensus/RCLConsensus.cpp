@@ -338,7 +338,7 @@ RCLConsensus::Adaptor::onClose(
     span.setAttribute(
         telemetry::cons_span::attr::ledgerSeq,
         static_cast<int64_t>(ledger.ledger_->header().seq + 1));
-    span.setAttribute(telemetry::cons_span::attr::mode, to_string(mode).c_str());
+    span.setAttribute(telemetry::cons_span::attr::mode, toDisplayString(mode).c_str());
 
     bool const wrongLCL = mode == ConsensusMode::wrongLedger;
     bool const proposing = mode == ConsensusMode::proposing;
@@ -960,8 +960,8 @@ RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
     auto span = telemetry::SpanGuard::span(
         telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "mode_change");
-    span.setAttribute(telemetry::cons_span::attr::modeOld, to_string(before).c_str());
-    span.setAttribute(telemetry::cons_span::attr::modeNew, to_string(after).c_str());
+    span.setAttribute(telemetry::cons_span::attr::modeOld, toDisplayString(before).c_str());
+    span.setAttribute(telemetry::cons_span::attr::modeNew, toDisplayString(after).c_str());
 
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
@@ -1162,7 +1162,7 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
 
     roundSpan_->setAttribute(cons_span::attr::ledgerId, to_string(prevLgr.id()).c_str());
     roundSpan_->setAttribute(cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq() + 1));
-    roundSpan_->setAttribute(cons_span::attr::mode, to_string(mode_.load()).c_str());
+    roundSpan_->setAttribute(cons_span::attr::mode, toDisplayString(mode_.load()).c_str());
     roundSpan_->setAttribute(cons_span::attr::traceStrategy, strategy.c_str());
     roundSpan_->setAttribute(cons_span::attr::roundId, static_cast<int64_t>(prevLgr.seq() + 1));
 

@@ -7,7 +7,7 @@
 #   - tempo: Grafana Tempo tracing backend, queryable via Grafana Explore
 #     on port 3000. Recommended for production (S3/GCS storage, TraceQL).
 #   - grafana: dashboards on port 3000, pre-configured with Tempo
-#     datasource.
+#     and Prometheus datasources.
 #
 # Usage:
 #   docker compose -f docker/telemetry/docker-compose.yml up -d
@@ -26,6 +26,7 @@ services:
     ports:
       - "4317:4317" # OTLP gRPC receiver
       - "4318:4318" # OTLP HTTP receiver (xrpld sends traces here)
+      - "8889:8889" # Prometheus metrics (spanmetrics)
       - "13133:13133" # Health check endpoint
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
@@ -50,6 +51,17 @@ services:
     networks:
       - xrpld-telemetry
 
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - otel-collector
+    networks:
+      - xrpld-telemetry
+
   # Grafana: visualization UI with Tempo pre-configured as a datasource.
   # Anonymous admin access enabled for local development convenience.
   grafana:
@@ -62,8 +74,10 @@ services:
     volumes:
       # Auto-provision Tempo datasource and search filters on startup
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
       - tempo
+      - prometheus
     networks:
       - xrpld-telemetry
 

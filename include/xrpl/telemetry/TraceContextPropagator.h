@@ -6,6 +6,13 @@
     Protocol Buffer TraceContext messages (P2P cross-node propagation).
 
     Only compiled when XRPL_ENABLE_TELEMETRY is defined.
+
+    TODO: These utilities are not yet wired into the P2P message flow.
+    To enable cross-node distributed traces, call injectToProtobuf() in
+    PeerImp when sending TMTransaction/TMProposeSet messages, and call
+    extractFromProtobuf() in the corresponding message handlers to
+    reconstruct the parent span context before starting a child span.
+    This was deferred to validate single-node tracing performance first.
 */
 
 #ifdef XRPL_ENABLE_TELEMETRY
