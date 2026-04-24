@@ -53,12 +53,24 @@ struct MPTMutabilityFlags
 };
 
 static constexpr std::array<MPTMutabilityFlags, 6> kMPT_MUTABILITY_FLAGS = {
-    {{tmfMPTSetCanLock, tmfMPTClearCanLock, lsmfMPTCanMutateCanLock},
-     {tmfMPTSetRequireAuth, tmfMPTClearRequireAuth, lsmfMPTCanMutateRequireAuth},
-     {tmfMPTSetCanEscrow, tmfMPTClearCanEscrow, lsmfMPTCanMutateCanEscrow},
-     {tmfMPTSetCanTrade, tmfMPTClearCanTrade, lsmfMPTCanMutateCanTrade},
-     {tmfMPTSetCanTransfer, tmfMPTClearCanTransfer, lsmfMPTCanMutateCanTransfer},
-     {tmfMPTSetCanClawback, tmfMPTClearCanClawback, lsmfMPTCanMutateCanClawback}}};
+    {{.setFlag = tmfMPTSetCanLock,
+      .clearFlag = tmfMPTClearCanLock,
+      .canMutateFlag = lsmfMPTCanMutateCanLock},
+     {.setFlag = tmfMPTSetRequireAuth,
+      .clearFlag = tmfMPTClearRequireAuth,
+      .canMutateFlag = lsmfMPTCanMutateRequireAuth},
+     {.setFlag = tmfMPTSetCanEscrow,
+      .clearFlag = tmfMPTClearCanEscrow,
+      .canMutateFlag = lsmfMPTCanMutateCanEscrow},
+     {.setFlag = tmfMPTSetCanTrade,
+      .clearFlag = tmfMPTClearCanTrade,
+      .canMutateFlag = lsmfMPTCanMutateCanTrade},
+     {.setFlag = tmfMPTSetCanTransfer,
+      .clearFlag = tmfMPTClearCanTransfer,
+      .canMutateFlag = lsmfMPTCanMutateCanTransfer},
+     {.setFlag = tmfMPTSetCanClawback,
+      .clearFlag = tmfMPTClearCanClawback,
+      .canMutateFlag = lsmfMPTCanMutateCanClawback}}};
 
 NotTEC
 MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
@@ -114,12 +126,9 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
                 return temINVALID_FLAG;
 
             // Can not set and clear the same flag
-            if (std::any_of(
-                    kMPT_MUTABILITY_FLAGS.begin(),
-                    kMPT_MUTABILITY_FLAGS.end(),
-                    [mutableFlags](auto const& f) {
-                        return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
-                    }))
+            if (std::ranges::any_of(kMPT_MUTABILITY_FLAGS, [mutableFlags](auto const& f) {
+                    return (*mutableFlags & f.setFlag) && (*mutableFlags & f.clearFlag);
+                }))
                 return temINVALID_FLAG;
 
             // Trying to set a non-zero TransferFee and clear MPTCanTransfer
@@ -227,10 +236,8 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 
     if (auto const mutableFlags = ctx.tx[~sfMutableFlags])
     {
-        if (std::any_of(
-                kMPT_MUTABILITY_FLAGS.begin(),
-                kMPT_MUTABILITY_FLAGS.end(),
-                [mutableFlags, &isMutableFlag](auto const& f) {
+        if (std::ranges::any_of(
+                kMPT_MUTABILITY_FLAGS, [mutableFlags, &isMutableFlag](auto const& f) {
                     return !isMutableFlag(f.canMutateFlag) &&
                         ((*mutableFlags & (f.setFlag | f.clearFlag)));
                 }))

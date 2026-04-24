@@ -16,28 +16,7 @@
 #include <sstream>
 #include <string>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-#if 0
-std::ostream&
-operator<<(std::ostream&& os,
-    AnyAmount const& amount)
-{
-    if (amount.isAny)
-    {
-        os << amount.value.getText() << "/" <<
-            to_string(amount.value.issue().currency) <<
-                "*";
-        return os;
-    }
-    os << amount.value.getText() << "/" <<
-        to_string(amount.value.issue().currency) <<
-            "(" << amount.name() << ")";
-    return os;
-}
-#endif
+namespace xrpl::test::jtx {
 
 PrettyAmount::
 operator AnyAmount() const
@@ -65,40 +44,45 @@ toPlaces(T const d, std::uint8_t places)
 std::ostream&
 operator<<(std::ostream& os, PrettyAmount const& amount)
 {
-    if (amount.value().native())
-    {
-        // measure in hundredths
-        auto const c = kDROPS_PER_XRP.drops() / 100;
-        auto const n = amount.value().mantissa();
-        if (n < c)
-        {
-            if (amount.value().negative())
+    amount.value().asset().visit(
+        [&](Issue const& issue) {
+            if (issue.native())
             {
-                os << "-" << n << " drops";
+                // measure in hundredths
+                auto const c = kDROPS_PER_XRP.drops() / 100;
+                auto const n = amount.value().mantissa();
+                if (n < c)
+                {
+                    if (amount.value().negative())
+                    {
+                        os << "-" << n << " drops";
+                    }
+                    else
+                    {
+                        os << n << " drops";
+                    }
+                }
+                else
+                {
+                    auto const d = double(n) / kDROPS_PER_XRP.drops();
+                    if (amount.value().negative())
+                    {
+                        os << "-";
+                    }
+
+                    os << toPlaces(d, 6) << " XRP";
+                }
             }
             else
             {
-                os << n << " drops";
+                os << amount.value().getText() << "/" << to_string(issue.currency) << "("
+                   << amount.name() << ")";
             }
-            return os;
-        }
-        auto const d = double(n) / kDROPS_PER_XRP.drops();
-        if (amount.value().negative())
-            os << "-";
-
-        os << toPlaces(d, 6) << " XRP";
-    }
-    else if (amount.value().holds<Issue>())
-    {
-        os << amount.value().getText() << "/"
-           << to_string(amount.value().asset().get<Issue>().currency) << "(" << amount.name()
-           << ")";
-    }
-    else
-    {
-        auto const& mptIssue = amount.value().asset().get<MPTIssue>();
-        os << amount.value().getText() << "/" << to_string(mptIssue) << "(" << amount.name() << ")";
-    }
+        },
+        [&](MPTIssue const& issue) {
+            os << amount.value().getText() << "/" << to_string(issue) << "(" << amount.name()
+               << ")";
+        });
     return os;
 }
 
@@ -134,6 +118,4 @@ operator<<(std::ostream& os, MPT const& mpt)
 
 AnyT const kANY{};
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

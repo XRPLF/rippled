@@ -210,15 +210,7 @@ Pathfinder::Pathfinder(
     , dstAmount_(saDstAmount)
     , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
-    , srcAmount_(srcAmount.value_or(uSrcPathAsset.visit(
-          [&](Currency const& c) {
-              return STAmount(
-                  Issue{c, uSrcIssuer.value_or(isXRP(c) ? xrpAccount() : uSrcAccount)},
-                  1u,
-                  0,
-                  true);
-          },
-          [&](MPTID const& mptid) { return STAmount(MPTIssue{mptid}, 1u, 0, true); })))
+    , srcAmount_(amountFromPathAsset(uSrcPathAsset, uSrcIssuer, uSrcAccount))
     , convert_all_(convertAllCheck(dstAmount_))
     , domain_(domain)
     , ledger_(cache->getLedger())

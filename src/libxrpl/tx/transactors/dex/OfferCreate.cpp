@@ -279,16 +279,18 @@ OfferCreate::checkAcceptAsset(
                 }
 
                 // Entries have a canonical representation, determined by a
-                // lexicographical "greater than" comparison employing strict weak
-                // ordering. Determine which entry we need to access.
-                bool const canonicalGt(id > issue.account);
+                // lexicographical "greater than" comparison employing
+                // strict weak ordering. Determine which entry we need to
+                // access.
+                bool const canonicalGt(id > issuer);
 
                 bool const isAuthorized(
                     ((*trustLine)[sfFlags] & (canonicalGt ? lsfLowAuth : lsfHighAuth)) != 0u);
 
                 if (!isAuthorized)
                 {
-                    JLOG(j.debug()) << "delay: can't receive IOUs from issuer without auth.";
+                    JLOG(j.debug()) << "delay: can't receive IOUs from "
+                                       "issuer without auth.";
 
                     return ((flags & tapRETRY) != 0u) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
                 }

@@ -876,7 +876,7 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
             // issue
             if (auto book = ctx.prevStep->bookStepBook())
             {
-                if (!book->out.holds<Issue>() || book->out.get<Issue>() != srcIssue)
+                if (book->out.get<Issue>() != srcIssue)
                     return temBAD_PATH_LOOP;
             }
         }

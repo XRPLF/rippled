@@ -48,66 +48,6 @@
 #include <vector>
 
 namespace xrpl {
-namespace test {
-namespace jtx {
-
-/** Set Expiration on a JTx. */
-class Expiration
-{
-private:
-    std::uint32_t const expiry_;
-
-public:
-    explicit Expiration(NetClock::time_point const& expiry)
-        : expiry_{expiry.time_since_epoch().count()}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt[sfExpiration.jsonName] = expiry_;
-    }
-};
-
-/** Set SourceTag on a JTx. */
-class SourceTag
-{
-private:
-    std::uint32_t const tag_;
-
-public:
-    explicit SourceTag(std::uint32_t tag) : tag_{tag}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt[sfSourceTag.jsonName] = tag_;
-    }
-};
-
-/** Set DestinationTag on a JTx. */
-class DestTag
-{
-private:
-    std::uint32_t const tag_;
-
-public:
-    explicit DestTag(std::uint32_t tag) : tag_{tag}
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt[sfDestinationTag.jsonName] = tag_;
-    }
-};
-
-}  // namespace jtx
-}  // namespace test
 
 class Check_test : public beast::unit_test::suite
 {
@@ -237,19 +177,19 @@ class Check_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         std::size_t const aliceCount{checksOnAccount(env, alice).size()};
         std::size_t const bobCount{checksOnAccount(env, bob).size()};
-        env(check::create(alice, bob, usd(50)), Expiration(env.now() + 1s));
+        env(check::create(alice, bob, usd(50)), expiration(env.now() + 1s));
         env.close();
 
-        env(check::create(alice, bob, usd(50)), SourceTag(2));
+        env(check::create(alice, bob, usd(50)), source_tag(2));
         env.close();
-        env(check::create(alice, bob, usd(50)), DestTag(3));
+        env(check::create(alice, bob, usd(50)), dest_tag(3));
         env.close();
         env(check::create(alice, bob, usd(50)), invoice_id(uint256{4}));
         env.close();
         env(check::create(alice, bob, usd(50)),
-            Expiration(env.now() + 1s),
-            SourceTag(12),
-            DestTag(13),
+            expiration(env.now() + 1s),
+            source_tag(12),
+            dest_tag(13),
             invoice_id(uint256{4}));
         env.close();
 
@@ -417,7 +357,7 @@ class Check_test : public beast::unit_test::suite
 
         // Bad expiration.
         env(check::create(alice, bob, usd(50)),
-            Expiration(NetClock::time_point{}),
+            expiration(NetClock::time_point{}),
             Ter(temBAD_EXPIRATION));
         env.close();
 
@@ -433,7 +373,7 @@ class Check_test : public beast::unit_test::suite
         env(check::create(alice, bob, usd(50)), Ter(tecDST_TAG_NEEDED));
         env.close();
 
-        env(check::create(alice, bob, usd(50)), DestTag(11));
+        env(check::create(alice, bob, usd(50)), dest_tag(11));
         env.close();
 
         env(fclear(bob, asfRequireDest));
@@ -521,11 +461,11 @@ class Check_test : public beast::unit_test::suite
         }
 
         // Expired expiration.
-        env(check::create(alice, bob, usd(50)), Expiration(env.now()), Ter(tecEXPIRED));
+        env(check::create(alice, bob, usd(50)), expiration(env.now()), Ter(tecEXPIRED));
         env.close();
 
         using namespace std::chrono_literals;
-        env(check::create(alice, bob, usd(50)), Expiration(env.now() + 1s));
+        env(check::create(alice, bob, usd(50)), expiration(env.now() + 1s));
         env.close();
 
         // Insufficient reserve.
@@ -1328,7 +1268,7 @@ class Check_test : public beast::unit_test::suite
 
         using namespace std::chrono_literals;
         uint256 const chkIdExp{getCheckIndex(alice, env.Seq(alice))};
-        env(check::create(alice, bob, XRP(10)), Expiration(env.now() + 1s));
+        env(check::create(alice, bob, XRP(10)), expiration(env.now() + 1s));
         env.close();
 
         uint256 const chkIdFroz1{getCheckIndex(alice, env.Seq(alice))};
@@ -1360,7 +1300,7 @@ class Check_test : public beast::unit_test::suite
         env.close();
 
         uint256 const chkIdHasDest2{getCheckIndex(alice, env.Seq(alice))};
-        env(check::create(alice, bob, usd(2)), DestTag(7));
+        env(check::create(alice, bob, usd(2)), dest_tag(7));
         env.close();
 
         // Same set of failing cases for both IOU and XRP check cashing.
@@ -1614,28 +1554,28 @@ class Check_test : public beast::unit_test::suite
             // Three checks that expire in 10 minutes.
             using namespace std::chrono_literals;
             uint256 const chkIdNotExp1{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)), Expiration(env.now() + 600s));
+            env(check::create(alice, bob, XRP(10)), expiration(env.now() + 600s));
             env.close();
 
             uint256 const chkIdNotExp2{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, usd(10)), Expiration(env.now() + 600s));
+            env(check::create(alice, bob, usd(10)), expiration(env.now() + 600s));
             env.close();
 
             uint256 const chkIdNotExp3{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)), Expiration(env.now() + 600s));
+            env(check::create(alice, bob, XRP(10)), expiration(env.now() + 600s));
             env.close();
 
             // Three checks that expire in one second.
             uint256 const chkIdExp1{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, usd(10)), Expiration(env.now() + 1s));
+            env(check::create(alice, bob, usd(10)), expiration(env.now() + 1s));
             env.close();
 
             uint256 const chkIdExp2{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)), Expiration(env.now() + 1s));
+            env(check::create(alice, bob, XRP(10)), expiration(env.now() + 1s));
             env.close();
 
             uint256 const chkIdExp3{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, usd(10)), Expiration(env.now() + 1s));
+            env(check::create(alice, bob, usd(10)), expiration(env.now() + 1s));
             env.close();
 
             // Two checks to cancel using a regular key and using multisigning.

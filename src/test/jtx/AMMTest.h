@@ -35,7 +35,7 @@ inline static auto AMMMPT = MPT("AMM");
 [[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
-    jtx::Account const& gw_,
+    jtx::Account const& gw,
     std::vector<jtx::Account> const& accounts,
     std::vector<STAmount> const& amts,
     Fund how);
@@ -43,7 +43,7 @@ fund(
 [[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
-    jtx::Account const& gw_,
+    jtx::Account const& gw,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts = {},
@@ -57,6 +57,14 @@ fund(
     std::vector<STAmount> const& amts = {},
     Fund how = Fund::All,
     std::optional<Account> const& mptIssuer = std::nullopt);
+
+struct TestAMMArgs
+{
+    std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt;
+    std::uint16_t tfee = 0;
+    std::optional<jtx::Ter> const& ter = std::nullopt;
+    std::vector<FeatureBitset> const& features = {testableAmendments()};
+};
 
 class AMMTestBase : public beast::unit_test::suite
 {
@@ -140,24 +148,6 @@ protected:
 
     jtx::Env
     pathTestEnv();
-
-    Json::Value
-    findPathsRequest(
-        jtx::Env& env,
-        jtx::Account const& src,
-        jtx::Account const& dst,
-        STAmount const& saDstAmount,
-        std::optional<STAmount> const& saSendMax = std::nullopt,
-        std::optional<Currency> const& saSrcCurrency = std::nullopt);
-
-    std::tuple<STPathSet, STAmount, STAmount>
-    findPaths(
-        jtx::Env& env,
-        jtx::Account const& src,
-        jtx::Account const& dst,
-        STAmount const& saDstAmount,
-        std::optional<STAmount> const& saSendMax = std::nullopt,
-        std::optional<Currency> const& saSrcCurrency = std::nullopt);
 };
 
 }  // namespace xrpl::test::jtx

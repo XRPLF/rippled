@@ -11,24 +11,15 @@
 #include <test/jtx/ter.h>
 
 #include <xrpld/core/Config.h>
-#include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/RPCHandler.h>
-#include <xrpld/rpc/Role.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
-#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STParsedJSON.h>
-#include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/resource/Charge.h>
-#include <xrpl/resource/Consumer.h>
-#include <xrpl/resource/Fees.h>
 
 #include <cstdint>
 #include <functional>
@@ -175,7 +166,8 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
 
         // asset1/asset2 could be dummy MPT. In this case real MPT
         // is created by fund(), which returns the funded amounts.
-        // The amounts then can be used to figure out the created MPT if any.
+        // The amounts then can be used to figure out the created
+        // MPT if any.
         std::vector<STAmount> funded;
         if (!asset1.native() && !asset2.native())
         {
@@ -226,110 +218,6 @@ AMMTest::pathTestEnv()
         cfg->PATH_SEARCH_MAX = 10;
         return cfg;
     }));
-}
-
-Json::Value
-AMMTest::findPathsRequest(
-    jtx::Env& env,
-    jtx::Account const& src,
-    jtx::Account const& dst,
-    STAmount const& saDstAmount,
-    std::optional<STAmount> const& saSendMax,
-    std::optional<Currency> const& saSrcCurrency)
-{
-    using namespace jtx;
-
-    auto& app = env.app();
-    Resource::Charge loadType = Resource::feeReferenceRPC;
-    Resource::Consumer c;
-
-    RPC::JsonContext context{
-        {env.journal,
-         app,
-         loadType,
-         app.getOPs(),
-         app.getLedgerMaster(),
-         c,
-         Role::USER,
-         {},
-         {},
-         RPC::apiVersionIfUnspecified},
-        {},
-        {}};
-
-    Json::Value params = Json::objectValue;
-    params[jss::command] = "ripple_path_find";
-    params[jss::source_account] = toBase58(src);
-    params[jss::destination_account] = toBase58(dst);
-    params[jss::destination_amount] = saDstAmount.getJson(JsonOptions::kNONE);
-    if (saSendMax)
-        params[jss::send_max] = saSendMax->getJson(JsonOptions::kNONE);
-    if (saSrcCurrency)
-    {
-        auto& sc = params[jss::source_currencies] = Json::arrayValue;
-        Json::Value j = Json::objectValue;
-        j[jss::currency] = to_string(saSrcCurrency.value());
-        sc.append(j);
-    }
-
-    Json::Value result;
-    Gate g;
-    app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
-        context.params = std::move(params);
-        context.coro = coro;
-        RPC::doCommand(context, result);
-        g.signal();
-    });
-
-    using namespace std::chrono_literals;
-    BEAST_EXPECT(g.waitFor(5s));
-    BEAST_EXPECT(!result.isMember(jss::error));
-    return result;
-}
-
-std::tuple<STPathSet, STAmount, STAmount>
-AMMTest::findPaths(
-    jtx::Env& env,
-    jtx::Account const& src,
-    jtx::Account const& dst,
-    STAmount const& saDstAmount,
-    std::optional<STAmount> const& saSendMax,
-    std::optional<Currency> const& saSrcCurrency)
-{
-    Json::Value result = findPathsRequest(env, src, dst, saDstAmount, saSendMax, saSrcCurrency);
-    BEAST_EXPECT(!result.isMember(jss::error));
-
-    STAmount da;
-    if (result.isMember(jss::destination_amount))
-        da = amountFromJson(sfGeneric, result[jss::destination_amount]);
-
-    STAmount sa;
-    STPathSet paths;
-    if (result.isMember(jss::alternatives))
-    {
-        auto const& alts = result[jss::alternatives];
-        if (alts.size() > 0)
-        {
-            auto const& path = alts[0u];
-
-            if (path.isMember(jss::source_amount))
-                sa = amountFromJson(sfGeneric, path[jss::source_amount]);
-
-            if (path.isMember(jss::destination_amount))
-                da = amountFromJson(sfGeneric, path[jss::destination_amount]);
-
-            if (path.isMember(jss::paths_computed))
-            {
-                Json::Value p;
-                p["Paths"] = path[jss::paths_computed];
-                STParsedJSONObject po("generic", p);
-                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                paths = po.object->getFieldPathSet(sfPaths);
-            }
-        }
-    }
-
-    return std::make_tuple(std::move(paths), std::move(sa), std::move(da));
 }
 
 }  // namespace xrpl::test::jtx

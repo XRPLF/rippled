@@ -229,52 +229,14 @@ doSubscribe(RPC::JsonContext& context)
                 return rpcError(rpcINVALID_PARAMS);
 
             Book book;
-            Json::Value takerPays = j[jss::taker_pays];
-            Json::Value takerGets = j[jss::taker_gets];
 
-            Issue issueIn;
-            Issue issueOut;
+            if (auto const err = RPC::parseSubUnsubJson(book.in, j, jss::taker_pays, context.j);
+                err != rpcSUCCESS)
+                return rpcError(err);
 
-            // Parse mandatory currency.
-            if (!takerPays.isMember(jss::currency) ||
-                !to_currency(issueIn.currency, takerPays[jss::currency].asString()))
-            {
-                JLOG(context.j.info()) << "Bad taker_pays currency.";
-                return rpcError(rpcSRC_CUR_MALFORMED);
-            }
-
-            // Parse optional issuer.
-            if (((takerPays.isMember(jss::issuer)) &&
-                 (!takerPays[jss::issuer].isString() ||
-                  !to_issuer(issueIn.account, takerPays[jss::issuer].asString())))
-                // Don't allow illegal issuers.
-                || (!issueIn.currency != !issueIn.account) || noAccount() == issueIn.account)
-            {
-                JLOG(context.j.info()) << "Bad taker_pays issuer.";
-                return rpcError(rpcSRC_ISR_MALFORMED);
-            }
-
-            // Parse mandatory currency.
-            if (!takerGets.isMember(jss::currency) ||
-                !to_currency(issueOut.currency, takerGets[jss::currency].asString()))
-            {
-                JLOG(context.j.info()) << "Bad taker_gets currency.";
-                return rpcError(rpcDST_AMT_MALFORMED);
-            }
-
-            // Parse optional issuer.
-            if (((takerGets.isMember(jss::issuer)) &&
-                 (!takerGets[jss::issuer].isString() ||
-                  !to_issuer(issueOut.account, takerGets[jss::issuer].asString())))
-                // Don't allow illegal issuers.
-                || (!issueOut.currency != !issueOut.account) || noAccount() == issueOut.account)
-            {
-                JLOG(context.j.info()) << "Bad taker_gets issuer.";
-                return rpcError(rpcDST_ISR_MALFORMED);
-            }
-
-            book.in = issueIn;
-            book.out = issueOut;
+            if (auto const err = RPC::parseSubUnsubJson(book.out, j, jss::taker_gets, context.j);
+                err != rpcSUCCESS)
+                return rpcError(err);
 
             if (book.in == book.out)
             {

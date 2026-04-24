@@ -301,7 +301,7 @@ public:
         std::optional<Account> const& account,
         STAmount const& asset1Out,
         std::optional<STAmount> const& asset2Out = std::nullopt,
-        std::optional<IOUAmount> const& maxEP = std::nullopt,
+        std::optional<LPToken> const& maxEP = std::nullopt,
         std::optional<Ter> const& ter = std::nullopt);
 
     IOUAmount
@@ -385,7 +385,7 @@ public:
     deleteJv(AccountID const& account, Asset const& asset1, Asset const& assets);
 
     void
-    ammDelete(AccountID const& deleter, std::optional<Ter> const& ter = std::nullopt);
+    ammDelete(AccountID const& account, std::optional<Ter> const& ter = std::nullopt);
 
     void
     setClose(bool close)
@@ -484,22 +484,6 @@ private:
         std::uint32_t tfee = 0,
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::Seq> const& seq = std::nullopt,
-        std::optional<Ter> const& ter = std::nullopt);
-
-    IOUAmount
-    deposit(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<jtx::Seq> const& seq = std::nullopt,
-        std::optional<Ter> const& ter = std::nullopt);
-
-    IOUAmount
-    withdraw(
-        std::optional<Account> const& account,
-        Json::Value& jv,
-        std::optional<jtx::Seq> const& seq,
-        std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
         std::optional<Ter> const& ter = std::nullopt);
 
     void

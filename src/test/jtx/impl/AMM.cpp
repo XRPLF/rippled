@@ -156,12 +156,7 @@ AMM::create(
     std::optional<jtx::Seq> const& seq,
     std::optional<Ter> const& ter)
 {
-    Json::Value jv;
-    jv[jss::Account] = creatorAccount_.human();
-    jv[jss::Amount] = asset1_.getJson(JsonOptions::kNONE);
-    jv[jss::Amount2] = asset2_.getJson(JsonOptions::kNONE);
-    jv[jss::TradingFee] = tfee;
-    jv[jss::TransactionType] = jss::AMMCreate;
+    Json::Value jv = createJv(creatorAccount_, asset1_, asset2_, tfee);
     if (flags)
         jv[jss::Flags] = *flags;
     if (fee_ != 0)
@@ -615,7 +610,7 @@ AMM::withdraw(
     std::optional<Account> const& account,
     STAmount const& asset1Out,
     std::optional<STAmount> const& asset2Out,
-    std::optional<IOUAmount> const& maxEP,
+    std::optional<LPToken> const& maxEP,
     std::optional<Ter> const& ter)
 {
     if (asset2Out && maxEP)
@@ -902,28 +897,6 @@ AMM::ammDelete(AccountID const& account, std::optional<Ter> const& ter)
 }
 
 namespace amm {
-Json::Value
-trust(AccountID const& account, STAmount const& amount, std::uint32_t flags)
-{
-    if (isXRP(amount))
-        Throw<std::runtime_error>("trust() requires IOU");
-    Json::Value jv;
-    jv[jss::Account] = to_string(account);
-    jv[jss::LimitAmount] = amount.getJson(JsonOptions::kNONE);
-    jv[jss::TransactionType] = jss::TrustSet;
-    jv[jss::Flags] = flags;
-    return jv;
-}
-Json::Value
-pay(Account const& account, AccountID const& to, STAmount const& amount)
-{
-    Json::Value jv;
-    jv[jss::Account] = account.human();
-    jv[jss::Amount] = amount.getJson(JsonOptions::kNONE);
-    jv[jss::Destination] = to_string(to);
-    jv[jss::TransactionType] = jss::Payment;
-    return jv;
-}
 
 Json::Value
 ammClawback(
