@@ -259,12 +259,20 @@ public:
     {
         auto tmpDir = std::filesystem::temp_directory_path();
         std::random_device rd;
-        do
+        constexpr std::size_t maxAttempts = 100;
+        for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
         {
+            std::error_code ec;
             std::ostringstream oss;
             oss << kCERTS_DIR_PREFIX << std::hex << std::setfill('0') << std::setw(8) << rd();
             tempDir_ = tmpDir / oss.str();
-        } while (std::filesystem::exists(tempDir_));
+            if (!std::filesystem::exists(tempDir_, ec) && !ec)
+                break;
+            tempDir_.clear();
+        }
+        if (tempDir_.empty())
+            throw std::runtime_error(
+                "Unable to generate a unique temporary TLS certificate directory");
         std::filesystem::create_directories(tempDir_);
 
         writeFile(tempDir_ / kCA_CERT_FILENAME, kCA_CERT_CONTENT);

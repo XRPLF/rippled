@@ -31,7 +31,7 @@ getFileContents(
         return {};
     }
 
-    std::ifstream fileStream(fullPath.string(), std::ios::in);
+    std::ifstream fileStream(fullPath, std::ios::in);
 
     if (!fileStream)
     {
@@ -57,11 +57,11 @@ writeFileContents(
     std::filesystem::path const& destPath,
     std::string const& contents)
 {
-    std::ofstream fileStream(destPath.string(), std::ios::out | std::ios::trunc);
+    std::ofstream fileStream(destPath, std::ios::out | std::ios::trunc);
 
     if (!fileStream)
     {
-        ec = make_error_code(static_cast<std::errc>(errno));
+        ec.assign(errno, std::generic_category());
         return;
     }
 
@@ -69,7 +69,7 @@ writeFileContents(
 
     if (fileStream.bad())
     {
-        ec = make_error_code(static_cast<std::errc>(errno));
+        ec.assign(errno, std::generic_category());
         return;
     }
 }

@@ -30,12 +30,19 @@ public:
     {
         auto const dir = std::filesystem::temp_directory_path();
         std::random_device rd;
-        do
+        constexpr std::size_t maxAttempts = 100;
+        for (std::size_t attempt = 0; attempt < maxAttempts; ++attempt)
         {
+            std::error_code ec;
             std::ostringstream oss;
             oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
             path_ = dir / oss.str();
-        } while (std::filesystem::exists(path_));
+            if (!std::filesystem::exists(path_, ec) && !ec)
+                break;
+            path_.clear();
+        }
+        if (path_.empty())
+            throw std::runtime_error("Unable to generate a unique temporary directory path");
         std::filesystem::create_directory(path_);
     }
 

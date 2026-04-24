@@ -482,7 +482,8 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
             oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
             auto const candidate =
                 std::filesystem::path((p / dbPrefix_).string() + "." + oss.str());
-            if (!std::filesystem::exists(candidate))
+            std::error_code existsEc;
+            if (!std::filesystem::exists(candidate, existsEc) && !existsEc)
             {
                 newPath = candidate;
                 break;
