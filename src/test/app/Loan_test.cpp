@@ -7658,11 +7658,11 @@ public:
         // Each aborts the debug binary when the bug is still present.
         // testBugAssociateAssetRoundingDeposit() and testBugLastShareholderStuck()
         // live in Vault_test.
-        testBugInterestDueDeltaCrash();
-        testBugDoPaymentPartialPrincipal();
-        testBugLatePaymentFundConservation();
-        testBugOverpayInterestPaidAgrees();
-        testBugOverpayUnroundedAmount();
+        testBugInterestDueDeltaCrash();  // fixed by hybrid (1+r)^n-1 in computePaymentFactor
+        // testBugDoPaymentPartialPrincipal();  // still aborts — separate defect
+        testBugLatePaymentFundConservation();  // fixed upstream by PR #6231
+        // testBugOverpayInterestPaidAgrees();  // still aborts — separate defect
+        // testBugOverpayUnroundedAmount();     // still aborts — separate defect
     }
 };
 

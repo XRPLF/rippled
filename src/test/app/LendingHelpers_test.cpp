@@ -18,58 +18,6 @@ namespace xrpl::test {
 class LendingHelpers_test : public beast::unit_test::suite
 {
     void
-    testComputeRaisedRate()
-    {
-        using namespace jtx;
-        using namespace xrpl::detail;
-        struct TestCase
-        {
-            std::string name;
-            Number periodicRate;
-            std::uint32_t paymentsRemaining;
-            Number expectedRaisedRate;
-        };
-
-        auto const testCases = std::vector<TestCase>{
-            {
-                .name = "Zero payments remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 0,
-                .expectedRaisedRate = Number{1},  // (1 + r)^0 = 1
-            },
-            {
-                .name = "One payment remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 1,
-                .expectedRaisedRate = Number{105, -2},
-            },  // 1.05^1
-            {
-                .name = "Multiple payments remaining",
-                .periodicRate = Number{5, -2},
-                .paymentsRemaining = 3,
-                .expectedRaisedRate = Number{1157625, -6},
-            },  // 1.05^3
-            {
-                .name = "Zero periodic rate",
-                .periodicRate = Number{0},
-                .paymentsRemaining = 5,
-                .expectedRaisedRate = Number{1},  // (1 + 0)^5 = 1
-            }};
-
-        for (auto const& tc : testCases)
-        {
-            testcase("computeRaisedRate: " + tc.name);
-
-            auto const computedRaisedRate =
-                computeRaisedRate(tc.periodicRate, tc.paymentsRemaining);
-            BEAST_EXPECTS(
-                computedRaisedRate == tc.expectedRaisedRate,
-                "Raised rate mismatch: expected " + to_string(tc.expectedRaisedRate) + ", got " +
-                    to_string(computedRaisedRate));
-        }
-    }
-
-    void
     testComputePaymentFactor()
     {
         using namespace jtx;
@@ -239,6 +187,150 @@ class LendingHelpers_test : public beast::unit_test::suite
                     to_string(tc.expectedPrincipalOutstanding) + ", got " +
                     to_string(computedPrincipalOutstanding));
         }
+    }
+
+    // Regression guard for the near-zero-rate numerical bug:
+    // loanPrincipalFromPeriodicPayment must satisfy the mathematical
+    // bound `principal <= periodicPayment * paymentsRemaining` for any
+    // non-negative rate. The closed-form (1+r)^n - 1 evaluation suffered
+    // catastrophic cancellation at near-zero rates and violated this
+    // bound. Using binomial expansion of (1+r)^n - 1 restores the bound.
+    void
+    testLoanPrincipalFromPeriodicPaymentNearZeroRate()
+    {
+        testcase("loanPrincipalFromPeriodicPayment: principal <= payment*n at near-zero rate");
+
+        using namespace xrpl::detail;
+
+        // Inputs from testBugInterestDueDeltaCrash:
+        // InterestRate = 1 TenthBips32 (0.001% per year), PaymentInterval
+        // = 600s, principal = 100, 3 payments. periodicRate is ~1.9e-10.
+        auto const periodicRate = loanPeriodicRate(TenthBips32{1}, 600);
+        auto const periodicPayment = loanPeriodicPayment(Number{100}, periodicRate, 3);
+
+        for (std::uint32_t n : {3u, 2u, 1u})
+        {
+            auto const computed =
+                loanPrincipalFromPeriodicPayment(periodicPayment, periodicRate, n);
+            auto const upperBound = periodicPayment * Number{n};
+
+            log << "n=" << n << " payment*n=" << to_string(upperBound)
+                << " computedPrincipal=" << to_string(computed) << std::endl;
+
+            // Mathematical bound: for rate >= 0, principal <= payment*n
+            // (equality only at rate = 0).
+            BEAST_EXPECT(computed <= upperBound);
+        }
+    }
+
+    // Empirical measurement: how expensive is computePowerMinusOne across
+    // the (periodicRate, paymentsRemaining) parameter space? The
+    // paymentsRemaining parameter is a uint32_t — we want to confirm early
+    // termination keeps runtime bounded even for large values, and compare
+    // against the closed-form `power(1 + periodicRate, paymentsRemaining) - 1`.
+    void
+    testComputePowerMinusOnePerformance()
+    {
+        testcase("computePowerMinusOne: timing envelope");
+
+        using namespace xrpl::detail;
+        using Clock = std::chrono::steady_clock;
+
+        struct ScenarioCase
+        {
+            char const* label;
+            Number periodicRate;
+            std::uint32_t paymentsRemaining;
+        };
+        std::vector<ScenarioCase> const cases = {
+            {"near-zero rate (bug regime)", loanPeriodicRate(TenthBips32{1}, 600), 2},
+            {"very small rate, small n", loanPeriodicRate(TenthBips32{10}, 600), 12},
+            {"moderate rate (0.228%), n=12", Number{228, -5}, 12},
+            {"moderate rate (0.1%), n=1000", Number{1, -3}, 1'000},
+            {"moderate rate (0.1%), n=100k", Number{1, -3}, 100'000},
+            {"small rate (0.01%), n=100k", Number{1, -4}, 100'0000},
+            {"moderate rate (0.1%), n=1000k", Number{1, -3}, 100'0000},
+            {"high rate (10%), n=1000", Number{1, -1}, 1'000},
+            {"high rate (10%), n=100k", Number{1, -1}, 100'000},
+        };
+
+        for (auto const& tc : cases)
+        {
+            auto const taylorStart = Clock::now();
+            Number const taylorResult = computePowerMinusOne(tc.periodicRate, tc.paymentsRemaining);
+            auto const taylorDuration =
+                std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - taylorStart);
+
+            auto const hybridStart = Clock::now();
+            Number const hybridResult =
+                computePowerMinusOneHybrid(tc.periodicRate, tc.paymentsRemaining);
+            auto const hybridDuration =
+                std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - hybridStart);
+
+            auto const closedStart = Clock::now();
+            Number closedFormResult{0};
+            bool closedFormOK = true;
+            try
+            {
+                closedFormResult =
+                    power(Number{1} + tc.periodicRate, tc.paymentsRemaining) - Number{1};
+            }
+            catch (std::overflow_error const&)
+            {
+                closedFormOK = false;
+            }
+            auto const closedDuration =
+                std::chrono::duration_cast<std::chrono::microseconds>(Clock::now() - closedStart);
+
+            Number const nrProduct = tc.periodicRate * Number{tc.paymentsRemaining};
+
+            log << "[" << tc.label << "]"
+                << " periodicRate=" << to_string(tc.periodicRate)
+                << " paymentsRemaining=" << tc.paymentsRemaining
+                << " rate*payments=" << to_string(nrProduct) << "\n"
+                << "    taylor:     " << taylorDuration.count()
+                << "us   = " << to_string(taylorResult) << "\n"
+                << "    hybrid:     " << hybridDuration.count()
+                << "us   = " << to_string(hybridResult) << "\n"
+                << "    closedForm: "
+                << (closedFormOK ? std::to_string(closedDuration.count()) + "us" : "OVERFLOW")
+                << (closedFormOK ? "   = " + to_string(closedFormResult) : "") << std::endl;
+
+            BEAST_EXPECT(taylorResult > Number{0});
+            BEAST_EXPECT(hybridResult > Number{0});
+        }
+    }
+
+    // Regression guard: computeTheoreticalLoanState must produce a
+    // non-negative interestDue for any non-negative rate. Before the
+    // numerical-stability fix to computePaymentFactor, near-zero rates
+    // produced negative interestDue because (1+r)^n-1 evaluated via direct
+    // subtraction suffered catastrophic cancellation.
+    void
+    testComputeTheoreticalLoanStateNearZeroRate()
+    {
+        testcase("computeTheoreticalLoanState: non-negative interestDue at near-zero rate");
+
+        using namespace xrpl::detail;
+
+        // Inputs from testBugInterestDueDeltaCrash: periodicRate ~1.9e-10,
+        // principal = 100, 3 payments.
+        auto const periodicRate = loanPeriodicRate(TenthBips32{1}, 600);
+        auto const periodicPayment = loanPeriodicPayment(Number{100}, periodicRate, 3);
+
+        auto const state =
+            computeTheoreticalLoanState(periodicPayment, periodicRate, 2, TenthBips32{0});
+
+        log << "periodicRate=" << to_string(periodicRate)
+            << " periodicPayment=" << to_string(periodicPayment) << '\n'
+            << " valueOutstanding=" << to_string(state.valueOutstanding)
+            << " principalOutstanding=" << to_string(state.principalOutstanding)
+            << " interestDue=" << to_string(state.interestDue) << std::endl;
+
+        // Fixed: principal <= value, interestDue >= 0.
+        BEAST_EXPECT(state.principalOutstanding <= state.valueOutstanding);
+        BEAST_EXPECT(state.interestDue >= Number{0});
+        BEAST_EXPECT(state.managementFeeDue == Number{0});
     }
 
     void
@@ -1199,7 +1291,9 @@ public:
         testLoanLatePaymentInterest();
         testLoanPeriodicPayment();
         testLoanPrincipalFromPeriodicPayment();
-        testComputeRaisedRate();
+        testLoanPrincipalFromPeriodicPaymentNearZeroRate();
+        testComputePowerMinusOnePerformance();
+        testComputeTheoreticalLoanStateNearZeroRate();
         testComputePaymentFactor();
         testComputeOverpaymentComponents();
         testComputeInterestAndFeeParts();

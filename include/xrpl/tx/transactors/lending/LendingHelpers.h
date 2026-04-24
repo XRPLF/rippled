@@ -365,7 +365,14 @@ tryOverpayment(
     beast::Journal j);
 
 Number
-computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
+computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining);
+
+// Experimental hybrid variant of computePowerMinusOne. Uses the closed-form
+// subtraction when rate*paymentsRemaining is above a threshold (where the
+// cancellation loss is small), falling back to the binomial expansion only
+// at very small rate*paymentsRemaining where cancellation is severe.
+Number
+computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
 Number
 computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining);
