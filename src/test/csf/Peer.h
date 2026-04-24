@@ -87,7 +87,7 @@ struct Peer
         // Received delay is the time from receiving the message to actually
         // handling it.
         template <class M>
-        [[nodiscard]] [[nodiscard]] [[nodiscard]] [[nodiscard]] SimDuration
+        [[nodiscard]] SimDuration
         onReceive(M const&) const
         {
             return SimDuration{};

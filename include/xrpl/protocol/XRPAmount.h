@@ -165,7 +165,7 @@ public:
     decimalXRP() const;
 
     template <class Dest>
-    [[nodiscard]] [[nodiscard]] std::optional<Dest>
+    [[nodiscard]] std::optional<Dest>
     dropsAs() const
     {
         if ((drops_ > std::numeric_limits<Dest>::max()) ||
@@ -185,7 +185,7 @@ public:
     }
 
     template <class Dest>
-    [[nodiscard]] [[nodiscard]] Dest
+    [[nodiscard]] Dest
     dropsAs(XRPAmount defaultValue) const
     {
         return dropsAs<Dest>().value_or(defaultValue.drops());

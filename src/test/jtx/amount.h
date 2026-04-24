@@ -222,7 +222,7 @@ public:
     }
 
     template <ValidIssueType TIss>
-    [[nodiscard]] [[nodiscard]] bool
+    [[nodiscard]] bool
     holds() const
     {
         return asset_.holds<TIss>();

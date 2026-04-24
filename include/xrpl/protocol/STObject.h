@@ -1068,7 +1068,7 @@ STObject::operator[](OptionaledField<T> const& of) -> OptionalProxy<T>
 }
 
 template <class T>
-[[nodiscard]] [[nodiscard]] [[nodiscard]] typename T::value_type
+[[nodiscard]] typename T::value_type
 STObject::at(TypedField<T> const& f) const
 {
     auto const b = peekAtPField(f);
@@ -1100,7 +1100,7 @@ STObject::at(TypedField<T> const& f) const
 }
 
 template <class T>
-[[nodiscard]] [[nodiscard]] [[nodiscard]] std::optional<std::decay_t<typename T::value_type>>
+[[nodiscard]] std::optional<std::decay_t<typename T::value_type>>
 STObject::at(OptionaledField<T> const& of) const
 {
     auto const b = peekAtPField(*of.f);

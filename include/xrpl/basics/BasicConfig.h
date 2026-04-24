@@ -121,7 +121,7 @@ public:
     exists(std::string const& name) const;
 
     template <class T = std::string>
-    [[nodiscard]] [[nodiscard]] std::optional<T>
+    [[nodiscard]] std::optional<T>
     get(std::string const& name) const
     {
         auto const iter = lookup_.find(name);
@@ -132,7 +132,7 @@ public:
 
     /// Returns a value if present, else another value.
     template <class T>
-    [[nodiscard]] [[nodiscard]] T
+    [[nodiscard]] T
     value_or(std::string const& name, T const& other) const
     {
         auto const v = get<T>(name);
