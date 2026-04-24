@@ -358,8 +358,8 @@ class PeerImp_test : public beast::unit_test::suite
         peer->checkTracking(10, 10);
 
         std::vector<PeerFinder::Endpoint> endpoints = {
-            {beast::IP::Endpoint::from_string("8.8.8.8:51235"), 2},
-            {beast::IP::Endpoint::from_string("9.9.9.9:51235"), 3},
+            {beast::IP::Endpoint::from_string("198.51.100.201:51235"), 2},
+            {beast::IP::Endpoint::from_string("198.51.100.202:51235"), 3},
         };
         peer->sendEndpoints(endpoints.begin(), endpoints.end());
         BEAST_EXPECT(peer->sent().size() == 1);
@@ -370,7 +370,7 @@ class PeerImp_test : public beast::unit_test::suite
         auto incomingEndpoints = std::make_shared<protocol::TMEndpoints>();
         incomingEndpoints->set_version(2);
         auto* incoming = incomingEndpoints->add_endpoints_v2();
-        incoming->set_endpoint("8.8.4.4:51235");
+        incoming->set_endpoint("198.51.100.203:51235");
         incoming->set_hops(2);
         peer->onMessage(incomingEndpoints);
 

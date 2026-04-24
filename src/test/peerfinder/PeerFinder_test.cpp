@@ -129,7 +129,7 @@ public:
         TestChecker checker;
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
-        logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
+        logic.addFixedPeer("test", beast::IP::Endpoint::from_string("198.51.100.1:5"));
         {
             Config c;
             c.autoConnect = false;
@@ -145,7 +145,7 @@ public:
                 BEAST_EXPECT(list.size() == 1);
                 auto const [slot, _] = logic.new_outbound_slot(list.front());
                 BEAST_EXPECT(
-                    logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5")));
+                    logic.onConnected(slot, beast::IP::Endpoint::from_string("198.51.100.2:5")));
                 logic.on_closed(slot);
                 ++n;
             }
@@ -166,7 +166,7 @@ public:
         TestChecker checker;
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
-        logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.1:5"));
+        logic.addFixedPeer("test", beast::IP::Endpoint::from_string("198.51.100.1:5"));
         {
             Config c;
             c.autoConnect = false;
@@ -185,7 +185,7 @@ public:
                 BEAST_EXPECT(list.size() == 1);
                 auto const [slot, _] = logic.new_outbound_slot(list.front());
                 if (!BEAST_EXPECT(
-                        logic.onConnected(slot, beast::IP::Endpoint::from_string("65.0.0.2:5"))))
+                        logic.onConnected(slot, beast::IP::Endpoint::from_string("198.51.100.2:5"))))
                     return;
                 if (!BEAST_EXPECT(logic.activate(slot, pk, false) == PeerFinder::Result::success))
                     return;
@@ -216,13 +216,13 @@ public:
             logic.config(c);
         }
 
-        auto const remote = beast::IP::Endpoint::from_string("65.0.0.1:5");
+        auto const remote = beast::IP::Endpoint::from_string("198.51.100.1:5");
         auto const [slot1, r] = logic.new_outbound_slot(remote);
         BEAST_EXPECT(slot1 != nullptr);
         BEAST_EXPECT(r == Result::success);
         BEAST_EXPECT(logic.connectedAddresses_.count(remote.address()) == 1);
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        auto const local = beast::IP::Endpoint::from_string("198.51.100.2:1024");
         auto const [slot2, r2] = logic.new_inbound_slot(local, remote);
         BEAST_EXPECT(logic.connectedAddresses_.count(remote.address()) == 1);
         BEAST_EXPECT(r2 == Result::duplicatePeer);
@@ -250,8 +250,8 @@ public:
             logic.config(c);
         }
 
-        auto const remote = beast::IP::Endpoint::from_string("65.0.0.1:5");
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        auto const remote = beast::IP::Endpoint::from_string("198.51.100.1:5");
+        auto const local = beast::IP::Endpoint::from_string("198.51.100.2:1024");
 
         auto const [slot1, r] = logic.new_inbound_slot(local, remote);
         BEAST_EXPECT(slot1 != nullptr);
@@ -282,19 +282,19 @@ public:
             logic.config(c);
         }
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        auto const local = beast::IP::Endpoint::from_string("198.51.100.2:1024");
         auto const [slot, r] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("198.51.100.22:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(r == Result::success);
 
         auto const [slot1, r1] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("198.51.100.22:1026"));
         BEAST_EXPECT(slot1 != nullptr);
         BEAST_EXPECT(r1 == Result::success);
 
         auto const [slot2, r2] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1027"));
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("198.51.100.22:1027"));
         BEAST_EXPECT(r2 == Result::ipLimitExceeded);
 
         if (!BEAST_EXPECT(slot2 == nullptr))
@@ -319,17 +319,17 @@ public:
             logic.config(c);
         }
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        auto const local = beast::IP::Endpoint::from_string("198.51.100.2:1024");
 
         PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
 
         auto const [slot, rSlot] =
-            logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+            logic.new_outbound_slot(beast::IP::Endpoint::from_string("198.51.100.22:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(rSlot == Result::success);
 
         auto const [slot2, r2Slot] =
-            logic.new_outbound_slot(beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+            logic.new_outbound_slot(beast::IP::Endpoint::from_string("198.51.100.22:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
 
@@ -365,10 +365,10 @@ public:
         }
 
         PublicKey const pk1(randomKeyPair(KeyType::secp256k1).first);
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1024");
+        auto const local = beast::IP::Endpoint::from_string("198.51.100.2:1024");
 
         auto const [slot, rSlot] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1025"));
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("198.51.100.22:1025"));
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(rSlot == Result::success);
 
@@ -387,7 +387,7 @@ public:
 
         // creating a new inbound slot must succeed as IP Limit is not exceeded
         auto const [slot2, r2Slot] =
-            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("55.104.0.2:1026"));
+            logic.new_inbound_slot(local, beast::IP::Endpoint::from_string("198.51.100.22:1026"));
         BEAST_EXPECT(slot2 != nullptr);
         BEAST_EXPECT(r2Slot == Result::success);
 
@@ -410,7 +410,7 @@ public:
         Logic<TestChecker> logic(clock, store, checker, journal_);
         try
         {
-            logic.addFixedPeer("test", beast::IP::Endpoint::from_string("65.0.0.2"));
+            logic.addFixedPeer("test", beast::IP::Endpoint::from_string("198.51.100.2"));
             fail("invalid endpoint successfully added");
         }
         catch (std::runtime_error const& e)
@@ -428,7 +428,7 @@ public:
         TestStopwatch clock;
         Logic<TestChecker> logic(clock, store, checker, journal_);
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:1234");
+        auto const local = beast::IP::Endpoint::from_string("198.51.100.2:1234");
         auto const [slot, r] = logic.new_outbound_slot(local);
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(r == Result::success);
@@ -458,8 +458,8 @@ public:
             logic.config(c);
         }
 
-        auto const local = beast::IP::Endpoint::from_string("65.0.0.2:51235");
-        auto const remote = beast::IP::Endpoint::from_string("66.0.0.1:1234");
+        auto const local = beast::IP::Endpoint::from_string("198.51.100.2:51235");
+        auto const remote = beast::IP::Endpoint::from_string("198.51.100.1:1234");
         auto const [slot, result] = logic.new_inbound_slot(local, remote);
         BEAST_EXPECT(slot != nullptr);
         BEAST_EXPECT(result == Result::success);
@@ -469,24 +469,24 @@ public:
 
         Endpoints endpoints{
             {beast::IP::Endpoint::from_string("0.0.0.0:51235"), 0},
-            {beast::IP::Endpoint::from_string("65.0.0.3:51235"), 2},
-            {beast::IP::Endpoint::from_string("65.0.0.3:51235"), 2},
+            {beast::IP::Endpoint::from_string("198.51.100.3:51235"), 2},
+            {beast::IP::Endpoint::from_string("198.51.100.3:51235"), 2},
             {beast::IP::Endpoint::from_string("10.0.0.1:51235"), 2},
-            {beast::IP::Endpoint::from_string("65.0.0.4:51235"), Tuning::maxHops + 1},
+            {beast::IP::Endpoint::from_string("198.51.100.4:51235"), Tuning::maxHops + 1},
         };
 
         logic.preprocess(slot, endpoints);
 
         BEAST_EXPECT(endpoints.size() == 2);
-        BEAST_EXPECT(endpoints[0].address == beast::IP::Endpoint::from_string("66.0.0.1:51235"));
+        BEAST_EXPECT(endpoints[0].address == beast::IP::Endpoint::from_string("198.51.100.1:51235"));
         BEAST_EXPECT(endpoints[0].hops == 1);
-        BEAST_EXPECT(endpoints[1].address == beast::IP::Endpoint::from_string("65.0.0.3:51235"));
+        BEAST_EXPECT(endpoints[1].address == beast::IP::Endpoint::from_string("198.51.100.3:51235"));
         BEAST_EXPECT(endpoints[1].hops == 3);
 
         logic.on_endpoints(
             slot,
-            {{beast::IP::Endpoint::from_string("65.0.0.5:51235"), 2},
-             {beast::IP::Endpoint::from_string("65.0.0.6:51235"), 2}});
+            {{beast::IP::Endpoint::from_string("198.51.100.5:51235"), 2},
+             {beast::IP::Endpoint::from_string("198.51.100.6:51235"), 2}});
 
         auto const broadcast = logic.buildEndpointsForPeers();
         BEAST_EXPECT(broadcast.size() == 1);
@@ -521,23 +521,23 @@ public:
         }
 
         std::vector<boost::asio::ip::tcp::endpoint> redirects{
-            {boost::asio::ip::make_address("65.0.1.1"), 51235},
-            {boost::asio::ip::make_address("65.0.1.2"), 51235},
+            {boost::asio::ip::make_address("198.51.100.41"), 51235},
+            {boost::asio::ip::make_address("198.51.100.42"), 51235},
         };
         logic.onRedirects(
             redirects.begin(),
             redirects.end(),
-            {boost::asio::ip::make_address("65.0.1.99"), 51235});
+            {boost::asio::ip::make_address("198.51.100.139"), 51235});
 
         auto const staticCount = logic.addBootcacheAddresses(
-            {beast::IP::Endpoint::from_string("65.0.1.3:51235"),
-             beast::IP::Endpoint::from_string("65.0.1.3:51235"),
-             beast::IP::Endpoint::from_string("65.0.1.4:51235")});
+            {beast::IP::Endpoint::from_string("198.51.100.43:51235"),
+             beast::IP::Endpoint::from_string("198.51.100.43:51235"),
+             beast::IP::Endpoint::from_string("198.51.100.44:51235")});
         BEAST_EXPECT(staticCount == 2);
         BEAST_EXPECT(!logic.autoconnect().empty());
 
         auto source = std::make_shared<TestSource>();
-        source->addresses = {beast::IP::Endpoint::from_string("65.0.1.5:51235")};
+        source->addresses = {beast::IP::Endpoint::from_string("198.51.100.45:51235")};
         logic.fetchSource_ = source;
         logic.stop();
         BEAST_EXPECT(logic.stopping_);
@@ -562,51 +562,51 @@ public:
 
         TestStopwatch clock;
         auto const slot = std::make_shared<SlotImp>(
-            beast::IP::Endpoint::from_string("65.0.2.1:51235"),
-            beast::IP::Endpoint::from_string("65.0.2.2:51235"),
+            beast::IP::Endpoint::from_string("198.51.100.81:51235"),
+            beast::IP::Endpoint::from_string("198.51.100.82:51235"),
             false,
             clock);
 
         SlotHandouts slotHandouts(slot);
         BEAST_EXPECT(
-            !slotHandouts.try_insert({beast::IP::Endpoint::from_string("65.0.2.2:60000"), 1}));
+            !slotHandouts.try_insert({beast::IP::Endpoint::from_string("198.51.100.82:60000"), 1}));
         BEAST_EXPECT(
-            slotHandouts.try_insert({beast::IP::Endpoint::from_string("65.0.2.3:51235"), 1}));
+            slotHandouts.try_insert({beast::IP::Endpoint::from_string("198.51.100.83:51235"), 1}));
         BEAST_EXPECT(
-            !slotHandouts.try_insert({beast::IP::Endpoint::from_string("65.0.2.3:60000"), 2}));
+            !slotHandouts.try_insert({beast::IP::Endpoint::from_string("198.51.100.83:60000"), 2}));
         BEAST_EXPECT(!slotHandouts.try_insert(
-            {beast::IP::Endpoint::from_string("65.0.2.4:51235"), Tuning::maxHops + 1}));
+            {beast::IP::Endpoint::from_string("198.51.100.84:51235"), Tuning::maxHops + 1}));
 
-        slot->recent.insert(beast::IP::Endpoint::from_string("65.0.2.5:51235"), 1);
+        slot->recent.insert(beast::IP::Endpoint::from_string("198.51.100.85:51235"), 1);
         BEAST_EXPECT(
-            !slotHandouts.try_insert({beast::IP::Endpoint::from_string("65.0.2.5:51235"), 1}));
+            !slotHandouts.try_insert({beast::IP::Endpoint::from_string("198.51.100.85:51235"), 1}));
 
         RedirectHandouts redirectHandouts(slot);
         BEAST_EXPECT(
-            !redirectHandouts.try_insert({beast::IP::Endpoint::from_string("65.0.2.6:51235"), 0}));
+            !redirectHandouts.try_insert({beast::IP::Endpoint::from_string("198.51.100.86:51235"), 0}));
         BEAST_EXPECT(
-            !redirectHandouts.try_insert({beast::IP::Endpoint::from_string("65.0.2.2:51235"), 1}));
+            !redirectHandouts.try_insert({beast::IP::Endpoint::from_string("198.51.100.82:51235"), 1}));
         BEAST_EXPECT(
-            redirectHandouts.try_insert({beast::IP::Endpoint::from_string("65.0.2.6:51235"), 1}));
+            redirectHandouts.try_insert({beast::IP::Endpoint::from_string("198.51.100.86:51235"), 1}));
         BEAST_EXPECT(
-            !redirectHandouts.try_insert({beast::IP::Endpoint::from_string("65.0.2.6:60000"), 2}));
+            !redirectHandouts.try_insert({beast::IP::Endpoint::from_string("198.51.100.86:60000"), 2}));
         BEAST_EXPECT(!redirectHandouts.try_insert(
-            {beast::IP::Endpoint::from_string("65.0.2.7:51235"), Tuning::maxHops + 1}));
+            {beast::IP::Endpoint::from_string("198.51.100.87:51235"), Tuning::maxHops + 1}));
 
         ConnectHandouts::Squelches squelches(clock);
         ConnectHandouts connectHandouts(2, squelches);
         BEAST_EXPECT(
-            connectHandouts.try_insert(beast::IP::Endpoint::from_string("65.0.2.8:51235")));
+            connectHandouts.try_insert(beast::IP::Endpoint::from_string("198.51.100.88:51235")));
         BEAST_EXPECT(
-            !connectHandouts.try_insert(beast::IP::Endpoint::from_string("65.0.2.8:60000")));
+            !connectHandouts.try_insert(beast::IP::Endpoint::from_string("198.51.100.88:60000")));
         BEAST_EXPECT(
-            connectHandouts.try_insert(beast::IP::Endpoint::from_string("65.0.2.9:51235")));
+            connectHandouts.try_insert(beast::IP::Endpoint::from_string("198.51.100.89:51235")));
         BEAST_EXPECT(
-            !connectHandouts.try_insert(beast::IP::Endpoint::from_string("65.0.2.10:51235")));
+            !connectHandouts.try_insert(beast::IP::Endpoint::from_string("198.51.100.90:51235")));
 
         ConnectHandouts squelchedHandouts(1, squelches);
         BEAST_EXPECT(
-            !squelchedHandouts.try_insert(beast::IP::Endpoint::from_string("65.0.2.8:51235")));
+            !squelchedHandouts.try_insert(beast::IP::Endpoint::from_string("198.51.100.88:51235")));
     }
 
     void
@@ -617,27 +617,27 @@ public:
         TestStore store;
         TestStopwatch clock;
         store.loadEntries = {
-            makeEntry("65.0.3.1:51235", -1),
-            makeEntry("65.0.3.2:51235", 2),
+            makeEntry("198.51.100.121:51235", -1),
+            makeEntry("198.51.100.122:51235", 2),
         };
 
         {
             Bootcache cache(store, clock, journal_);
             cache.load();
             BEAST_EXPECT(cache.size() == 2);
-            BEAST_EXPECT(*cache.begin() == beast::IP::Endpoint::from_string("65.0.3.2:51235"));
+            BEAST_EXPECT(*cache.begin() == beast::IP::Endpoint::from_string("198.51.100.122:51235"));
 
-            BEAST_EXPECT(cache.insertStatic(beast::IP::Endpoint::from_string("65.0.3.1:51235")));
-            BEAST_EXPECT(*cache.begin() == beast::IP::Endpoint::from_string("65.0.3.1:51235"));
+            BEAST_EXPECT(cache.insertStatic(beast::IP::Endpoint::from_string("198.51.100.121:51235")));
+            BEAST_EXPECT(*cache.begin() == beast::IP::Endpoint::from_string("198.51.100.121:51235"));
 
-            cache.on_success(beast::IP::Endpoint::from_string("65.0.3.3:51235"));
-            cache.on_success(beast::IP::Endpoint::from_string("65.0.3.3:51235"));
-            cache.on_failure(beast::IP::Endpoint::from_string("65.0.3.4:51235"));
+            cache.on_success(beast::IP::Endpoint::from_string("198.51.100.123:51235"));
+            cache.on_success(beast::IP::Endpoint::from_string("198.51.100.123:51235"));
+            cache.on_failure(beast::IP::Endpoint::from_string("198.51.100.124:51235"));
 
             for (std::size_t i = 0; i <= Tuning::bootcacheSize + 5; ++i)
             {
-                auto const address = "65.1." + std::to_string(i / 250) + "." +
-                    std::to_string((i % 250) + 1) + ":51235";
+                auto const address = "198.51.100." + std::to_string((i % 250) + 1) + ":" +
+                    std::to_string(51235 + (i / 250));
                 cache.insert(beast::IP::Endpoint::from_string(address));
             }
             BEAST_EXPECT(cache.size() <= Tuning::bootcacheSize);
