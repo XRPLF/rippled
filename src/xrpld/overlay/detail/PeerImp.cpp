@@ -7,6 +7,7 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/TxSpanNames.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/consensus/Validations.h>
 #include <xrpld/overlay/Cluster.h>
@@ -21,7 +22,6 @@
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
-#include <xrpld/telemetry/TxSpanNames.h>
 #include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Log.h>

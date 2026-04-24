@@ -17,6 +17,7 @@
 #include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/app/misc/TxSpanNames.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/make_NetworkOPs.h>
@@ -34,7 +35,6 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
-#include <xrpld/telemetry/TxSpanNames.h>
 #include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Log.h>
