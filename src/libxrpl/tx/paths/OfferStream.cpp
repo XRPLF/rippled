@@ -150,6 +150,9 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         return false;
     }
 
+    if (!ownerFunds_)
+        return false;
+
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
 

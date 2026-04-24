@@ -195,7 +195,7 @@ public:
 
         auto USDM = MPTTester({.env = env, .issuer = "bob"});
 
-        auto const result = find_paths(env, "alice", "bob", USDM(5));
+        auto const result = findPaths(env, "alice", "bob", USDM(5));
         BEAST_EXPECT(std::get<0>(result).empty());
     }
 
@@ -211,7 +211,7 @@ public:
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = find_paths(env, "alice", "bob", USD(5));
+        std::tie(st, sa, std::ignore) = findPaths(env, "alice", "bob", USD(5));
         BEAST_EXPECT(st.empty());
         BEAST_EXPECT(equal(sa, USD(5)));
     }
@@ -250,7 +250,7 @@ public:
         STPathSet st;
         STAmount sa;
         STAmount da;
-        std::tie(st, sa, da) = find_paths(
+        std::tie(st, sa, da) = findPaths(
             env, "alice", "bob", USD(5), std::nullopt, std::nullopt, std::nullopt, domainID);
         // Note, a direct IOU payment will have "gateway" as alternative path
         // since IOU supports rippling
@@ -288,7 +288,7 @@ public:
             STPathSet st;
             STAmount sa;
             STAmount da;
-            std::tie(st, sa, da) = find_paths(
+            std::tie(st, sa, da) = findPaths(
                 env,
                 "alice",
                 "bob",
@@ -298,7 +298,7 @@ public:
                 std::nullopt,
                 domainID);
             BEAST_EXPECT(st.empty());
-            std::tie(st, sa, da) = find_paths(
+            std::tie(st, sa, da) = findPaths(
                 env,
                 "alice",
                 "bob",
@@ -321,7 +321,7 @@ public:
             // empty result
             if (domainEnabled)
             {
-                std::tie(st, sa, da) = find_paths(
+                std::tie(st, sa, da) = findPaths(
                     env,
                     "alice",
                     "bob",
@@ -396,7 +396,7 @@ public:
                 env(offer(charlie, XRP(10), USD(10)));
             }
             env.close();
-            auto [st, sa, da] = find_paths(
+            auto [st, sa, da] = findPaths(
                 env, alice, bob, USD(-1), XRP(100).value(), std::nullopt, std::nullopt, domainID);
             BEAST_EXPECT(sa == XRP(10));
             BEAST_EXPECT(equal(da, USD(10)));
@@ -427,7 +427,7 @@ public:
                 env(offer(charlie, USD(10), XRP(10)));
             }
             env.close();
-            auto [st, sa, da] = find_paths(
+            auto [st, sa, da] = findPaths(
                 env, alice, bob, drops(-1), USD(100).value(), std::nullopt, std::nullopt, domainID);
             BEAST_EXPECT(sa == USD(10));
             BEAST_EXPECT(equal(da, XRP(10)));

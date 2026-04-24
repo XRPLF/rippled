@@ -4,34 +4,26 @@ namespace xrpl::test::jtx {
 
 struct NoneT
 {
-    NoneT()
-    {
-    }
+    NoneT() = default;
 };
 static NoneT const kNONE;
 
 struct AutofillT
 {
-    AutofillT()
-    {
-    }
+    AutofillT() = default;
 };
 static AutofillT const kAUTOFILL;
 
 struct DisabledT
 {
-    DisabledT()
-    {
-    }
+    DisabledT() = default;
 };
 static DisabledT const kDISABLED;
 
-/** Used for Fee() calls that use an owner reserve kINCREMENT */
+/** Used for Fee() calls that use an owner reserve increment */
 struct IncrementT
 {
-    IncrementT()
-    {
-    }
+    IncrementT() = default;
 };
 
 static IncrementT const kINCREMENT;

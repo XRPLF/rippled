@@ -12,15 +12,15 @@
 
 namespace xrpl::test::jtx {
 
-/** A Signer in a SignerList */
+/** A signer in a SignerList */
 struct Signer
 {
     std::uint32_t weight;
     Account account;
     std::optional<uint256> tag;
 
-    Signer(Account acct, std::uint32_t wt = 1, std::optional<uint256> t = std::nullopt)
-        : weight(wt), account(std::move(acct)), tag(std::move(t))
+    Signer(Account account_, std::uint32_t weight_ = 1, std::optional<uint256> tag_ = std::nullopt)
+        : weight(weight_), account(std::move(account_)), tag(tag_)
     {
     }
 };
@@ -28,7 +28,7 @@ struct Signer
 Json::Value
 signers(Account const& account, std::uint32_t quorum, std::vector<Signer> const& v);
 
-/** Remove a Signer list. */
+/** Remove a signer list. */
 Json::Value
 signers(Account const& account, NoneT);
 
@@ -39,7 +39,7 @@ class Msig
 {
 public:
     std::vector<Reg> signers;
-    /** Alternative transaction object field in which to place the Signer list.
+    /** Alternative transaction object field in which to place the signer list.
      *
      * subField is only supported if an account_ is provided as well.
      */
@@ -48,30 +48,35 @@ public:
     /// a subfield.
     static constexpr SField* const kTOP_LEVEL = nullptr;
 
-    Msig(SField const* sf, std::vector<Reg> s) : signers(std::move(s)), subField(sf)
+    Msig(SField const* subField_, std::vector<Reg> signers_)
+        : signers(std::move(signers_)), subField(subField_)
     {
         sortSigners(signers);
     }
 
-    Msig(SField const& sf, std::vector<Reg> s) : Msig{&sf, s}
+    Msig(SField const& subField_, std::vector<Reg> signers_) : Msig{&subField_, signers_}
     {
     }
 
-    Msig(std::vector<Reg> s) : Msig(kTOP_LEVEL, s)
-    {
-    }
-
-    template <class AccountType, class... Accounts>
-        requires std::convertible_to<AccountType, Reg>
-    explicit Msig(SField const* sf, AccountType&& a0, Accounts&&... aN)
-        : Msig{sf, std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
+    Msig(std::vector<Reg> signers_) : Msig(kTOP_LEVEL, signers_)
     {
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit Msig(SField const& sf, AccountType&& a0, Accounts&&... aN)
-        : Msig{&sf, std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
+    explicit Msig(SField const* subField_, AccountType&& a0, Accounts&&... aN)
+        : Msig{
+              subField_,
+              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
+    {
+    }
+
+    template <class AccountType, class... Accounts>
+        requires std::convertible_to<AccountType, Reg>
+    explicit Msig(SField const& subField_, AccountType&& a0, Accounts&&... aN)
+        : Msig{
+              &subField_,
+              std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 
@@ -90,7 +95,7 @@ public:
 
 //------------------------------------------------------------------------------
 
-/** The number of Signer lists matches. */
+/** The number of signer lists matches. */
 using siglists = OwnerCount<ltSIGNER_LIST>;
 
 }  // namespace xrpl::test::jtx

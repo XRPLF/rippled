@@ -1232,11 +1232,11 @@ private:
         STPathSet st;
         STAmount sa;
         STAmount da;
-        std::tie(st, sa, da) = find_paths(
+        std::tie(st, sa, da) = findPaths(
             env, alice_, bob_, bob_["AUD"](-1), std::optional<STAmount>(XRP(100'000'000)));
         BEAST_EXPECT(st.empty());
         std::tie(st, sa, da) =
-            find_paths(env, alice_, bob_, ETH(-1), std::optional<STAmount>(XRP(100'000'000)));
+            findPaths(env, alice_, bob_, ETH(-1), std::optional<STAmount>(XRP(100'000'000)));
         // Alice sends all requested 100,000,000XRP
         BEAST_EXPECT(sa == XRP(100'000'000));
         // Bob gets ~99.99e12ETH. This is the amount Bob
@@ -1280,7 +1280,7 @@ private:
         BEAST_EXPECT(ammCarol.expectBalances(XRP(51), ETH(40), ammCarol.tokens()));
         env.Require(Balance(bob_, ETH(10)));
 
-        auto const result = find_paths(env, alice_, bob_, BTC(25));
+        auto const result = findPaths(env, alice_, bob_, BTC(25));
         BEAST_EXPECT(std::get<0>(result).empty());
     }
 
@@ -1303,7 +1303,7 @@ private:
                  .flags = kMPT_DEX_FLAGS});
 
             AMM const ammCharlie(env, charlie, XRP(10), ETH(11'000'000'000'000));
-            auto [st, sa, da] = find_paths(env, alice_, bob_, ETH(-1), XRP(1).value());
+            auto [st, sa, da] = findPaths(env, alice_, bob_, ETH(-1), XRP(1).value());
             BEAST_EXPECT(sa == XRP(1));
             BEAST_EXPECT(equal(da, ETH(1'000'000'000'000)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1329,7 +1329,7 @@ private:
             AMM const ammCharlie(env, charlie, XRP(11), ETH(10'000'000'000'000));
             env.close();
             auto [st, sa, da] =
-                find_paths(env, alice_, bob_, drops(-1), ETH(1'000'000'000'000).value());
+                findPaths(env, alice_, bob_, drops(-1), ETH(1'000'000'000'000).value());
             BEAST_EXPECT(sa == ETH(1'000'000'000'000));
             BEAST_EXPECT(equal(da, XRP(1)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
@@ -1392,7 +1392,7 @@ private:
 
         {
             auto const& send_amt = XRP(10);
-            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt, std::nullopt, xrpCurrency());
+            std::tie(st, sa, da) = findPaths(env, A1, A2, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(st.empty());
         }
@@ -1402,14 +1402,14 @@ private:
             // does not exist.
             auto const& send_amt = XRP(200);
             std::tie(st, sa, da) =
-                find_paths(env, A1, Account{"A0"}, send_amt, std::nullopt, xrpCurrency());
+                findPaths(env, A1, Account{"A0"}, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(st.empty());
         }
 
         {
             auto const& send_amt = ABC_G3(10'000'000);
-            std::tie(st, sa, da) = find_paths(env, A2, G3, send_amt, std::nullopt, xrpCurrency());
+            std::tie(st, sa, da) = findPaths(env, A2, G3, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, XRPAmount{101'010'102}));
             BEAST_EXPECT(same(st, stpath(IPE(MPT(ABC_G3)))));
@@ -1417,7 +1417,7 @@ private:
 
         {
             auto const& send_amt = ABC_A2(1'000'000);
-            std::tie(st, sa, da) = find_paths(env, A1, A2, send_amt, std::nullopt, xrpCurrency());
+            std::tie(st, sa, da) = findPaths(env, A1, A2, send_amt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, send_amt));
             BEAST_EXPECT(equal(sa, XRPAmount{10'010'011}));
             BEAST_EXPECT(same(st, stpath(IPE(MPT(ABC_G3)), IPE(MPT(ABC_A2)))));
@@ -1454,7 +1454,7 @@ private:
         auto const& send_amt = XRP(10);
 
         std::tie(st, sa, da) =
-            find_paths_by_element(env, A1, A2, send_amt, std::nullopt, IPE(MPT(ETH)));
+            findPathsByElement(env, A1, A2, send_amt, std::nullopt, IPE(MPT(ETH)));
         BEAST_EXPECT(equal(da, send_amt));
         BEAST_EXPECT(equal(sa, ETH(1'000'000)));
         BEAST_EXPECT(same(st, stpath(ipe(xrpIssue()))));
@@ -1497,7 +1497,7 @@ private:
             auto const& send_amt = HKD_G2(10'000'000);
             STPathSet st;
             STAmount sa, da;
-            std::tie(st, sa, da) = jtx::find_paths(
+            std::tie(st, sa, da) = jtx::findPaths(
                 env,
                 G1,
                 A2,

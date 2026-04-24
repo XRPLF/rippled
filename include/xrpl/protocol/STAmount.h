@@ -35,9 +35,9 @@ public:
 
 private:
     Asset asset_;
-    mantissa_type value_;
+    mantissa_type value_{};
     exponent_type offset_;
-    bool isNegative_;
+    bool isNegative_{};
 
 public:
     using value_type = STAmount;
@@ -168,14 +168,8 @@ public:
     TIss&
     get();
 
-    Currency const&
-    getCurrency() const;
-
     AccountID const&
     getIssuer() const;
-
-    void
-    setIssuer(AccountID const& uIssuer);
 
     int
     signum() const noexcept;
@@ -365,9 +359,13 @@ inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
     : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::zero)
 {
     if (isNegative_)
+    {
         value_ = unsafe_cast<std::uint64_t>(-amount.mantissa());
+    }
     else
+    {
         value_ = unsafe_cast<std::uint64_t>(amount.mantissa());
+    }
 
     canonicalize();
 }
@@ -376,9 +374,13 @@ inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
     : asset_(mptIssue), offset_(0), isNegative_(amount < beast::zero)
 {
     if (isNegative_)
+    {
         value_ = unsafe_cast<std::uint64_t>(-amount.value());
+    }
     else
+    {
         value_ = unsafe_cast<std::uint64_t>(amount.value());
+    }
 
     canonicalize();
 }
@@ -473,12 +475,6 @@ STAmount::get()
     return asset_.get<TIss>();
 }
 
-inline Currency const&
-STAmount::getCurrency() const
-{
-    return asset_.get<Issue>().currency;
-}
-
 inline AccountID const&
 STAmount::getIssuer() const
 {
@@ -488,7 +484,9 @@ STAmount::getIssuer() const
 inline int
 STAmount::signum() const noexcept
 {
-    return value_ ? (isNegative_ ? -1 : 1) : 0;
+    if (value_ == 0u)
+        return 0;
+    return isNegative_ ? -1 : 1;
 }
 
 inline STAmount
@@ -506,11 +504,13 @@ operator bool() const noexcept
 inline STAmount::
 operator Number() const
 {
-    if (native())
-        return xrp();
-    if (asset_.holds<MPTIssue>())
-        return mpt();
-    return iou();
+    return asset().visit(
+        [&](Issue const& issue) -> Number {
+            if (issue.native())
+                return xrp();
+            return iou();
+        },
+        [&](MPTIssue const&) -> Number { return mpt(); });
 }
 
 inline STAmount&
@@ -567,12 +567,6 @@ STAmount::clear(Asset const& asset)
 {
     setIssue(asset);
     clear();
-}
-
-inline void
-STAmount::setIssuer(AccountID const& uIssuer)
-{
-    asset_.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&

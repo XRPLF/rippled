@@ -65,7 +65,9 @@ public:
         unsigned short const port,
         std::size_t maxResponseSize,
         beast::Journal& j)
-        : socket_(ioContext, gHttpClientSslContext->context())
+        : socket_(
+              ioContext,
+              gHttpClientSslContext->context())  // NOLINT(bugprone-unchecked-optional-access)
         , resolver_(ioContext)
         , header_(maxClientHeaderBytes)
         , port_(port)
@@ -242,6 +244,8 @@ public:
         {
             shutdown_ = ecResult
                 ? ecResult
+                // gHttpClientSslContext always initialized before use
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 : gHttpClientSslContext->preConnectVerify(socket_.SSLSocket(), deqSites_[0]);
         }
 
@@ -278,6 +282,8 @@ public:
         {
             JLOG(j_.trace()) << "Connected.";
 
+            // gHttpClientSslContext always initialized before use
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             shutdown_ = gHttpClientSslContext->postConnectVerify(socket_.SSLSocket(), deqSites_[0]);
 
             if (shutdown_)

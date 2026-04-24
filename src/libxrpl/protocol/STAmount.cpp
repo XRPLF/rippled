@@ -189,7 +189,7 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
 }
 
 STAmount::STAmount(SField const& name, std::int64_t mantissa)
-    : STBase(name), asset_(xrpIssue()), value_(0), offset_(0), isNegative_(false)
+    : STBase(name), asset_(xrpIssue()), offset_(0)
 {
     set(mantissa);
 }
@@ -521,26 +521,35 @@ canAdd(STAmount const& a, STAmount const& b)
     }
 
     // IOU case (precision check)
-    if (a.holds<Issue>() && b.holds<Issue>())
-    {
-        static STAmount const kONE{IOUAmount{1, 0}, noIssue()};
-        static STAmount const kMAX_LOSS{IOUAmount{1, -4}, noIssue()};
-        STAmount lhs = divide((a - b) + b, a, noIssue()) - kONE;
-        STAmount rhs = divide((b - a) + a, b, noIssue()) - kONE;
-        return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= kMAX_LOSS;
-    }
+    auto const ret = std::visit(
+        [&]<ValidIssueType TIss1, ValidIssueType TIss2>(
+            TIss1 const&, TIss2 const&) -> std::optional<bool> {
+            if constexpr (is_issue_v<TIss1> && is_issue_v<TIss2>)
+            {
+                static STAmount const kONE{IOUAmount{1, 0}, noIssue()};
+                static STAmount const kMAX_LOSS{IOUAmount{1, -4}, noIssue()};
+                STAmount const lhs = divide((a - b) + b, a, noIssue()) - kONE;
+                STAmount const rhs = divide((b - a) + a, b, noIssue()) - kONE;
+                return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <= kMAX_LOSS;
+            }
 
-    // MPT (overflow & underflow check)
-    if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
-    {
-        MPTAmount A = a.mpt();  // NOLINT(readability-identifier-naming)
-        MPTAmount B = b.mpt();  // NOLINT(readability-identifier-naming)
-        return !(
-            (B > MPTAmount{0} &&
-             A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} - B) ||
-            (B < MPTAmount{0} &&
-             A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} - B));
-    }
+            // MPT (overflow & underflow check)
+            if constexpr (is_mptissue_v<TIss1> && is_mptissue_v<TIss2>)
+            {
+                MPTAmount const A = a.mpt();
+                MPTAmount const B = b.mpt();
+                return !(
+                    (B > MPTAmount{0} &&
+                     A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} - B) ||
+                    (B < MPTAmount{0} &&
+                     A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} - B));
+            }
+            return std::nullopt;
+        },
+        a.asset().value(),
+        b.asset().value());
+    if (ret)
+        return *ret;
     // LCOV_EXCL_START
     UNREACHABLE("STAmount::canAdd : unexpected STAmount type");
     return false;
@@ -602,10 +611,10 @@ canSubtract(STAmount const& a, STAmount const& b)
             }
 
             // MPT case (underflow & overflow check)
-            if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
+            if constexpr (is_mptissue_v<TIss1> && is_mptissue_v<TIss2>)
             {
-                MPTAmount A = a.mpt();  // NOLINT(readability-identifier-naming)
-                MPTAmount B = b.mpt();  // NOLINT(readability-identifier-naming)
+                MPTAmount const A = a.mpt();
+                MPTAmount const B = b.mpt();
 
                 // Underflow check
                 if (B > MPTAmount{0} && A < B)
@@ -676,7 +685,7 @@ STAmount::getText() const
     if (*this == beast::zero)
         return "0";
 
-    std::string const rawValue(std::to_string(value_));
+    std::string const raw_value(std::to_string(value_));
     std::string ret;
 
     if (isNegative_)
@@ -686,7 +695,7 @@ STAmount::getText() const
 
     if (native() || asset_.holds<MPTIssue>() || scientific)
     {
-        ret.append(rawValue);
+        ret.append(raw_value);
 
         if (scientific)
         {
@@ -699,59 +708,59 @@ STAmount::getText() const
 
     XRPL_ASSERT(offset_ + 43 > 0, "xrpl::STAmount::getText : minimum offset");
 
-    size_t const padPrefix = 27;
-    size_t const padSuffix = 23;
+    size_t const pad_prefix = 27;
+    size_t const pad_suffix = 23;
 
     std::string val;
-    val.reserve(rawValue.length() + padPrefix + padSuffix);
-    val.append(padPrefix, '0');
-    val.append(rawValue);
-    val.append(padSuffix, '0');
+    val.reserve(raw_value.length() + pad_prefix + pad_suffix);
+    val.append(pad_prefix, '0');
+    val.append(raw_value);
+    val.append(pad_suffix, '0');
 
     size_t const offset(offset_ + 43);
 
-    auto preFrom(val.begin());
-    auto const preTo(val.begin() + offset);
+    auto pre_from(val.begin());
+    auto const pre_to(val.begin() + offset);
 
-    auto const postFrom(val.begin() + offset);
-    auto postTo(val.end());
+    auto const post_from(val.begin() + offset);
+    auto post_to(val.end());
 
     // Crop leading zeroes. Take advantage of the fact that there's always a
     // fixed amount of leading zeroes and skip them.
-    if (std::distance(preFrom, preTo) > padPrefix)
-        preFrom += padPrefix;
+    if (std::distance(pre_from, pre_to) > pad_prefix)
+        pre_from += pad_prefix;
 
-    XRPL_ASSERT(postTo >= postFrom, "xrpl::STAmount::getText : first distance check");
+    XRPL_ASSERT(post_to >= post_from, "xrpl::STAmount::getText : first distance check");
 
-    preFrom = std::find_if(preFrom, preTo, [](char c) { return c != '0'; });
+    pre_from = std::find_if(pre_from, pre_to, [](char c) { return c != '0'; });
 
     // Crop trailing zeroes. Take advantage of the fact that there's always a
     // fixed amount of trailing zeroes and skip them.
-    if (std::distance(postFrom, postTo) > padSuffix)
-        postTo -= padSuffix;
+    if (std::distance(post_from, post_to) > pad_suffix)
+        post_to -= pad_suffix;
 
-    XRPL_ASSERT(postTo >= postFrom, "xrpl::STAmount::getText : second distance check");
+    XRPL_ASSERT(post_to >= post_from, "xrpl::STAmount::getText : second distance check");
 
-    postTo = std::find_if(
-                 std::make_reverse_iterator(postTo),
-                 std::make_reverse_iterator(postFrom),
-                 [](char c) { return c != '0'; })
-                 .base();
+    post_to = std::find_if(
+                  std::make_reverse_iterator(post_to),
+                  std::make_reverse_iterator(post_from),
+                  [](char c) { return c != '0'; })
+                  .base();
 
     // Assemble the output:
-    if (preFrom == preTo)
+    if (pre_from == pre_to)
     {
         ret.append(1, '0');
     }
     else
     {
-        ret.append(preFrom, preTo);
+        ret.append(pre_from, pre_to);
     }
 
-    if (postTo != postFrom)
+    if (post_to != post_from)
     {
         ret.append(1, '.');
-        ret.append(postFrom, postTo);
+        ret.append(post_from, post_to);
     }
 
     return ret;
@@ -768,45 +777,49 @@ STAmount::getJson(JsonOptions) const
 void
 STAmount::add(Serializer& s) const
 {
-    if (native())
-    {
-        XRPL_ASSERT(offset_ == 0, "xrpl::STAmount::add : zero offset");
-
-        if (!isNegative_)
-        {
-            s.add64(value_ | cPositive);
-        }
-        else
-        {
+    asset_.visit(
+        [&](MPTIssue const& issue) {
+            auto u8 = static_cast<unsigned char>(cMPToken >> 56);
+            if (!isNegative_)
+                u8 |= static_cast<unsigned char>(cPositive >> 56);
+            s.add8(u8);
             s.add64(value_);
-        }
-    }
-    else if (asset_.holds<MPTIssue>())
-    {
-        auto u8 = static_cast<unsigned char>(cMPToken >> 56);
-        if (!isNegative_)
-            u8 |= static_cast<unsigned char>(cPositive >> 56);
-        s.add8(u8);
-        s.add64(value_);
-        s.addBitString(asset_.get<MPTIssue>().getMptID());
-    }
-    else
-    {
-        if (*this == beast::zero)
-        {
-            s.add64(cIssuedCurrency);
-        }
-        else if (isNegative_)
-        {  // 512 = not native
-            s.add64(value_ | (static_cast<std::uint64_t>(offset_ + 512 + 97) << (64 - 10)));
-        }
-        else
-        {  // 256 = positive
-            s.add64(value_ | (static_cast<std::uint64_t>(offset_ + 512 + 256 + 97) << (64 - 10)));
-        }
-        s.addBitString(asset_.get<Issue>().currency);
-        s.addBitString(asset_.get<Issue>().account);
-    }
+            s.addBitString(issue.getMptID());
+        },
+        [&](Issue const& issue) {
+            if (native())
+            {
+                XRPL_ASSERT(offset_ == 0, "xrpl::STAmount::add : zero offset");
+
+                if (!isNegative_)
+                {
+                    s.add64(value_ | cPositive);
+                }
+                else
+                {
+                    s.add64(value_);
+                }
+            }
+            else
+            {
+                if (*this == beast::zero)
+                {
+                    s.add64(cIssuedCurrency);
+                }
+                else if (isNegative_)  // 512 = not native
+                {
+                    s.add64(value_ | (static_cast<std::uint64_t>(offset_ + 512 + 97) << (64 - 10)));
+                }
+                else  // 256 = positive
+                {
+                    s.add64(
+                        value_ |
+                        (static_cast<std::uint64_t>(offset_ + 512 + 256 + 97) << (64 - 10)));
+                }
+                s.addBitString(issue.currency);
+                s.addBitString(issue.account);
+            }
+        });
 }
 
 bool
@@ -1236,7 +1249,7 @@ muldiv(std::uint64_t multiplier, std::uint64_t multiplicand, std::uint64_t divis
 }
 
 static std::uint64_t
-muldivRound(
+muldiv_round(
     std::uint64_t multiplier,
     std::uint64_t multiplicand,
     std::uint64_t divisor,
@@ -1269,7 +1282,7 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
 
     std::uint64_t numVal = num.mantissa();
     std::uint64_t denVal = den.mantissa();
-    int numOffset = num.exponent();
+    int num_offset = num.exponent();
     int denOffset = den.exponent();
 
     if (num.integral())
@@ -1278,7 +1291,7 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
         {
             // Need to bring into range
             numVal *= 10;
-            --numOffset;
+            --num_offset;
         }
     }
 
@@ -1299,7 +1312,7 @@ divide(STAmount const& num, STAmount const& den, Asset const& asset)
     return STAmount(
         asset,
         muldiv(numVal, kTEN_TO17, denVal) + 5,
-        numOffset - denOffset - 17,
+        num_offset - denOffset - 17,
         num.negative() != den.negative());
 }
 
@@ -1589,7 +1602,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
     // from zero, and if we're rounding down, truncation
     // is implicit.
     std::uint64_t amount =
-        muldivRound(value1, value2, kTEN_TO14, (resultNegative != roundUp) ? kTEN_TO14M1 : 0);
+        muldiv_round(value1, value2, kTEN_TO14, (resultNegative != roundUp) ? kTEN_TO14M1 : 0);
 
     int offset = offset1 + offset2 + 14;
     if (resultNegative != roundUp)
@@ -1647,14 +1660,14 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
         return {asset};
 
     std::uint64_t numVal = num.mantissa(), denVal = den.mantissa();
-    int numOffset = num.exponent(), denOffset = den.exponent();
+    int num_offset = num.exponent(), denOffset = den.exponent();
 
     if (num.integral())
     {
         while (numVal < STAmount::cMinValue)
         {
             numVal *= 10;
-            --numOffset;
+            --num_offset;
         }
     }
 
@@ -1678,9 +1691,9 @@ divRoundImpl(STAmount const& num, STAmount const& den, Asset const& asset, bool 
     // We round away from zero if we're rounding up or
     // truncate if we're rounding down.
     std::uint64_t amount =
-        muldivRound(numVal, kTEN_TO17, denVal, (resultNegative != roundUp) ? denVal - 1 : 0);
+        muldiv_round(numVal, kTEN_TO17, denVal, (resultNegative != roundUp) ? denVal - 1 : 0);
 
-    int offset = numOffset - denOffset - 17;
+    int offset = num_offset - denOffset - 17;
 
     if (resultNegative != roundUp)
         canonicalizeRound(asset.integral(), amount, offset, roundUp);

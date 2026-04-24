@@ -37,12 +37,8 @@ public:
         JobTypeInfo const& info_,
         beast::insight::Collector::ptr collector,
         Logs& logs) noexcept
-        : load_(logs.journal("LoadMonitor"))
-        , collector_(collector)
-        , info(info_)
-        , waiting(0)
-        , running(0)
-        , deferred(0)
+        : load_(logs.journal("LoadMonitor")), collector_(std::move(collector)), info(info_)
+
     {
         load_.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
 

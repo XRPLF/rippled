@@ -12,24 +12,6 @@ namespace xrpl::PeerFinder {
 class Counts
 {
 public:
-    Counts()
-        : attempts_(0)
-        , active_(0)
-        , in_max_(0)
-        , in_active_(0)
-        , out_max_(0)
-        , out_active_(0)
-        , fixed_(0)
-        , fixed_active_(0)
-        , reserved_(0)
-
-        , acceptCount_(0)
-        , closingCount_(0)
-    {
-    }
-
-    //--------------------------------------------------------------------------
-
     /** Adds the slot state and properties to the slot counts. */
     void
     add(Slot const& s)
@@ -196,10 +178,7 @@ public:
         //
         // Fixed peers do not count towards the active outgoing total.
 
-        if (out_max_ > 0)
-            return false;
-
-        return true;
+        return out_max_ <= 0;
     }
 
     /** Output statistics. */
@@ -281,38 +260,38 @@ private:
 
 private:
     /** Outbound connection attempts. */
-    int attempts_;
+    int attempts_{0};
 
     /** Active connections, including fixed and reserved. */
-    std::size_t active_;
+    std::size_t active_{0};
 
     /** Total number of inbound slots. */
-    std::size_t in_max_;
+    std::size_t in_max_{0};
 
     /** Number of inbound slots assigned to active peers. */
-    std::size_t in_active_;
+    std::size_t in_active_{0};
 
     /** Maximum desired outbound slots. */
-    std::size_t out_max_;
+    std::size_t out_max_{0};
 
     /** Active outbound slots. */
-    std::size_t out_active_;
+    std::size_t out_active_{0};
 
     /** Fixed connections. */
-    std::size_t fixed_;
+    std::size_t fixed_{0};
 
     /** Active fixed connections. */
-    std::size_t fixed_active_;
+    std::size_t fixed_active_{0};
 
     /** Reserved connections. */
-    std::size_t reserved_;
+    std::size_t reserved_{0};
 
     // Number of inbound connections that are
     // not active or gracefully closing.
-    int acceptCount_;
+    int acceptCount_{0};
 
     // Number of connections that are gracefully closing.
-    int closingCount_;
+    int closingCount_{0};
 };
 
 }  // namespace xrpl::PeerFinder

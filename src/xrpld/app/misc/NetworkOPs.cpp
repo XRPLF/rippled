@@ -184,12 +184,12 @@ class NetworkOPsImp final : public NetworkOPs
      * Synchronization states for transaction batches.
      */
     enum class DispatchState : unsigned char {
-        None,
-        Scheduled,
-        Running,
+        none,
+        scheduled,
+        running,
     };
 
-    static std::array<char const*, 5> const kSTATES;
+    static std::array<char const*, 5> const states_;
 
     /**
      * State accounting records two attributes for each possible server state:
@@ -221,7 +221,7 @@ class NetworkOPsImp final : public NetworkOPs
         std::chrono::steady_clock::time_point start_ = std::chrono::steady_clock::now();
         std::chrono::steady_clock::time_point const processStart_ = start_;
         std::uint64_t initialSyncUs_{0};
-        static std::array<Json::StaticString const, 5> const kSTATES;
+        static std::array<Json::StaticString const, 5> const states_;
 
     public:
         explicit StateAccounting()
@@ -296,41 +296,41 @@ public:
         NetworkOPs::clock_type& clock,
         bool standalone,
         std::size_t minPeerCount,
-        bool startValid,
-        JobQueue& jobQueue,
+        bool start_valid,
+        JobQueue& job_queue,
         LedgerMaster& ledgerMaster,
         ValidatorKeys const& validatorKeys,
-        boost::asio::io_context& ioSvc,
+        boost::asio::io_context& ioCtx,
         beast::Journal journal,
         beast::insight::Collector::ptr const& collector)
         : registry_(registry)
         , journal_(journal)
         , localTX_(makeLocalTxs())
-        , mode_(startValid ? OperatingMode::FULL : OperatingMode::DISCONNECTED)
-        , heartbeatTimer_(ioSvc)
-        , clusterTimer_(ioSvc)
-        , accountHistoryTxTimer_(ioSvc)
+        , mode_(start_valid ? OperatingMode::FULL : OperatingMode::DISCONNECTED)
+        , heartbeatTimer_(ioCtx)
+        , clusterTimer_(ioCtx)
+        , accountHistoryTxTimer_(ioCtx)
         , consensus_(
-              registry_.getApp(),
+              registry_.get().getApp(),
               makeFeeVote(
-                  setup_FeeVote(registry_.getApp().config().section("voting")),
-                  registry_.getLogs().journal("FeeVote")),
+                  setup_FeeVote(registry_.get().getApp().config().section("voting")),
+                  registry_.get().getJournal("FeeVote")),
               ledgerMaster,
               *localTX_,
               registry.getInboundTransactions(),
               beast::getAbstractClock<std::chrono::steady_clock>(),
               validatorKeys,
-              registry_.getJournal("LedgerConsensus"))
+              registry_.get().getJournal("LedgerConsensus"))
         , validatorPK_(
               validatorKeys.keys ? validatorKeys.keys->publicKey : decltype(validatorPK_){})
         , validatorMasterPK_(
               validatorKeys.keys ? validatorKeys.keys->masterPublicKey
                                  : decltype(validatorMasterPK_){})
         , ledgerMaster_(ledgerMaster)
-        , job_queue_(jobQueue)
+        , job_queue_(job_queue)
         , standalone_(standalone)
-        , minPeerCount_(startValid ? 0 : minPeerCount)
-        , stats_(std::bind(&NetworkOPsImp::collectMetrics, this), collector)
+        , minPeerCount_(start_valid ? 0 : minPeerCount)
+        , stats_(std::bind(&NetworkOPsImp::collect_metrics, this), collector)
     {
     }
 
@@ -673,7 +673,7 @@ private:
     void
     setTimer(
         boost::asio::steady_timer& timer,
-        std::chrono::milliseconds const& expiryTime,
+        std::chrono::milliseconds const& expiry_time,
         std::function<void()> onExpire,
         std::function<void()> onError);
     void
@@ -734,30 +734,30 @@ private:
      */
     struct SubAccountHistoryIndex
     {
-        AccountID const accountId;
+        AccountID const accountId_;
         // forward
-        std::uint32_t forwardTxIndex{0};
+        std::uint32_t forwardTxIndex_{0};
         // separate backward and forward
-        std::uint32_t separationLedgerSeq{0};
+        std::uint32_t separationLedgerSeq_{0};
         // history, backward
-        std::uint32_t historyLastLedgerSeq{0};
-        std::int32_t historyTxIndex{-1};
-        bool haveHistorical{false};
-        std::atomic<bool> stopHistorical{false};
+        std::uint32_t historyLastLedgerSeq_{0};
+        std::int32_t historyTxIndex_{-1};
+        bool haveHistorical_{false};
+        std::atomic<bool> stopHistorical_{false};
 
-        SubAccountHistoryIndex(AccountID const& accountId) : accountId(accountId)
+        SubAccountHistoryIndex(AccountID const& accountId) : accountId_(accountId)
         {
         }
     };
     struct SubAccountHistoryInfo
     {
-        InfoSub::pointer sink;
-        std::shared_ptr<SubAccountHistoryIndex> index;
+        InfoSub::pointer sink_;
+        std::shared_ptr<SubAccountHistoryIndex> index_;
     };
     struct SubAccountHistoryInfoWeak
     {
-        InfoSub::wptr sinkWptr;
-        std::shared_ptr<SubAccountHistoryIndex> index;
+        InfoSub::wptr sinkWptr_;
+        std::shared_ptr<SubAccountHistoryIndex> index_;
     };
     using SubAccountHistoryMapType =
         hash_map<AccountID, hash_map<std::uint64_t, SubAccountHistoryInfoWeak>>;
@@ -774,7 +774,7 @@ private:
     void
     setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo);
 
-    ServiceRegistry& registry_;
+    std::reference_wrapper<ServiceRegistry> registry_;
     beast::Journal journal_;
 
     std::unique_ptr<LocalTxs> localTX_;
@@ -810,19 +810,19 @@ private:
     SubAccountHistoryMapType subAccountHistory_;
 
     enum SubTypes {
-        SLedger,          // Accepted ledgers.
-        SManifests,       // Received validator manifests.
-        SServer,          // When server changes connectivity state.
-        STransactions,    // All accepted transactions.
-        SRtTransactions,  // All proposed and accepted transactions.
-        SValidations,     // Received validations.
-        SPeerStatus,      // Peer status changes.
-        SConsensusPhase,  // Consensus phase
-        SBookChanges,     // Per-ledger order book changes
-        SLastEntry        // Any new entry must be ADDED ABOVE this one
+        sLedger,          // Accepted ledgers.
+        sManifests,       // Received validator manifests.
+        sServer,          // When server changes connectivity state.
+        sTransactions,    // All accepted transactions.
+        sRTTransactions,  // All proposed and accepted transactions.
+        sValidations,     // Received validations.
+        sPeerStatus,      // Peer status changes.
+        sConsensusPhase,  // Consensus phase
+        sBookChanges,     // Per-ledger order book changes
+        sLastEntry        // Any new entry must be ADDED ABOVE this one
     };
 
-    std::array<SubMapType, SubTypes::SLastEntry> streamMaps_;
+    std::array<SubMapType, SubTypes::sLastEntry> streamMaps_;
 
     ServerFeeSummary lastFeeSummary_;
 
@@ -837,7 +837,7 @@ private:
     // Transaction batching.
     std::condition_variable cond_;
     std::mutex mutex_;
-    DispatchState dispatchState_ = DispatchState::None;
+    DispatchState dispatchState_ = DispatchState::none;
     std::vector<TransactionStatus> transactions_;
 
     StateAccounting accounting_;
@@ -887,22 +887,22 @@ private:
 
 private:
     void
-    collectMetrics();
+    collect_metrics();
 };
 
 //------------------------------------------------------------------------------
 
-static std::array<char const*, 5> const kSTATE_NAMES{
+static std::array<char const*, 5> const stateNames{
     {"disconnected", "connected", "syncing", "tracking", "full"}};
 
-std::array<char const*, 5> const NetworkOPsImp::kSTATES = kSTATE_NAMES;
+std::array<char const*, 5> const NetworkOPsImp::states_ = stateNames;
 
-std::array<Json::StaticString const, 5> const NetworkOPsImp::StateAccounting::kSTATES = {
-    {Json::StaticString(kSTATE_NAMES[0]),
-     Json::StaticString(kSTATE_NAMES[1]),
-     Json::StaticString(kSTATE_NAMES[2]),
-     Json::StaticString(kSTATE_NAMES[3]),
-     Json::StaticString(kSTATE_NAMES[4])}};
+std::array<Json::StaticString const, 5> const NetworkOPsImp::StateAccounting::states_ = {
+    {Json::StaticString(stateNames[0]),
+     Json::StaticString(stateNames[1]),
+     Json::StaticString(stateNames[2]),
+     Json::StaticString(stateNames[3]),
+     Json::StaticString(stateNames[4])}};
 
 static auto const kGENESIS_ACCOUNT_ID =
     calcAccountID(generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")).first);
@@ -953,20 +953,20 @@ NetworkOPsImp::isFull()
 std::string
 NetworkOPsImp::getHostId(bool forAdmin)
 {
-    static std::string const kHOSTNAME = boost::asio::ip::host_name();
+    static std::string const hostname = boost::asio::ip::host_name();
 
     if (forAdmin)
-        return kHOSTNAME;
+        return hostname;
 
     // For non-admin uses hash the node public key into a
     // single RFC1751 word:
-    static std::string const kSHROUDED_HOST_ID = [this]() {
-        auto const& id = registry_.getApp().nodeIdentity();
+    static std::string const shroudedHostId = [this]() {
+        auto const& id = registry_.get().getApp().nodeIdentity();
 
         return RFC1751::getWordFromBlob(id.first.data(), id.first.size());
     }();
 
-    return kSHROUDED_HOST_ID;
+    return shroudedHostId;
 }
 
 void
@@ -975,14 +975,14 @@ NetworkOPsImp::setStateTimer()
     setHeartbeatTimer();
 
     // Only do this work if a cluster is configured
-    if (registry_.getCluster().size() != 0)
+    if (registry_.get().getCluster().size() != 0)
         setClusterTimer();
 }
 
 void
 NetworkOPsImp::setTimer(
     boost::asio::steady_timer& timer,
-    std::chrono::milliseconds const& expiryTime,
+    std::chrono::milliseconds const& expiry_time,
     std::function<void()> onExpire,
     std::function<void()> onError)
 {
@@ -1004,7 +1004,7 @@ NetworkOPsImp::setTimer(
                 }
             }))
     {
-        timer.expires_after(expiryTime);
+        timer.expires_after(expiry_time);
         timer.async_wait(std::move(*optionalCountedHandler));
     }
 }
@@ -1039,7 +1039,7 @@ void
 NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 {
     JLOG(journal_.debug()) << "Scheduling AccountHistory job for account "
-                           << toBase58(subInfo.index->accountId);
+                           << toBase58(subInfo.index_->accountId_);
     using namespace std::chrono_literals;
     setTimer(
         accountHistoryTxTimer_,
@@ -1053,13 +1053,13 @@ NetworkOPsImp::processHeartbeatTimer()
 {
     RclConsensusLogger clog("Heartbeat Timer", consensus_.validating(), journal_);
     {
-        std::unique_lock lock{registry_.getApp().getMasterMutex()};
+        std::unique_lock lock{registry_.get().getApp().getMasterMutex()};
 
         // VFALCO NOTE This is for diagnosing a crash on exit
-        LoadManager& mgr(registry_.getLoadManager());
+        LoadManager& mgr(registry_.get().getLoadManager());
         mgr.heartbeat();
 
-        std::size_t const numPeers = registry_.getOverlay().size();
+        std::size_t const numPeers = registry_.get().getOverlay().size();
 
         // do we have sufficient peers? If not, we are disconnected.
         if (numPeers < minPeerCount_)
@@ -1115,7 +1115,7 @@ NetworkOPsImp::processHeartbeatTimer()
         CLOG(clog.ss()) << ". ";
     }
 
-    consensus_.timerEntry(registry_.getTimeKeeper().closeTime(), clog.ss());
+    consensus_.timerEntry(registry_.get().getTimeKeeper().closeTime(), clog.ss());
 
     CLOG(clog.ss()) << "consensus phase " << toString(lastConsensusPhase_);
     ConsensusPhase const currPhase = consensus_.phase();
@@ -1133,16 +1133,18 @@ NetworkOPsImp::processHeartbeatTimer()
 void
 NetworkOPsImp::processClusterTimer()
 {
-    if (registry_.getCluster().size() == 0)
+    if (registry_.get().getCluster().size() == 0)
         return;
 
     using namespace std::chrono_literals;
 
-    bool const update = registry_.getCluster().update(
-        registry_.getApp().nodeIdentity().first,
+    bool const update = registry_.get().getCluster().update(
+        registry_.get().getApp().nodeIdentity().first,
         "",
-        (ledgerMaster_.getValidatedLedgerAge() <= 4min) ? registry_.getFeeTrack().getLocalFee() : 0,
-        registry_.getTimeKeeper().now());
+        (ledgerMaster_.getValidatedLedgerAge() <= 4min)
+            ? registry_.get().getFeeTrack().getLocalFee()
+            : 0,
+        registry_.get().getTimeKeeper().now());
 
     if (!update)
     {
@@ -1152,7 +1154,7 @@ NetworkOPsImp::processClusterTimer()
     }
 
     protocol::TMCluster cluster;
-    registry_.getCluster().forEach([&cluster](ClusterNode const& node) {
+    registry_.get().getCluster().forEach([&cluster](ClusterNode const& node) {
         protocol::TMClusterNode& n = *cluster.add_clusternodes();
         n.set_publickey(toBase58(TokenType::NodePublic, node.identity()));
         n.set_reporttime(node.getReportTime().time_since_epoch().count());
@@ -1161,14 +1163,14 @@ NetworkOPsImp::processClusterTimer()
             n.set_nodename(node.name());
     });
 
-    Resource::Gossip const gossip = registry_.getResourceManager().exportConsumers();
+    Resource::Gossip const gossip = registry_.get().getResourceManager().exportConsumers();
     for (auto& item : gossip.items)
     {
         protocol::TMLoadSource& node = *cluster.add_loadsources();
         node.set_name(to_string(item.address));
         node.set_cost(item.balance);
     }
-    registry_.getOverlay().foreach(
+    registry_.get().getOverlay().foreach(
         sendIf(std::make_shared<Message>(cluster, protocol::mtCLUSTER), PeerInCluster()));
     setClusterTimer();
 }
@@ -1191,7 +1193,7 @@ NetworkOPsImp::strOperatingMode(OperatingMode const mode, bool const admin) cons
         }
     }
 
-    return kSTATES[static_cast<std::size_t>(mode)];
+    return states_[static_cast<std::size_t>(mode)];
 }
 
 void
@@ -1214,7 +1216,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     auto const trans = sterilize(*iTrans);
 
     auto const txid = trans->getTransactionID();
-    auto const flags = registry_.getHashRouter().getFlags(txid);
+    auto const flags = registry_.get().getHashRouter().getFlags(txid);
 
     if ((flags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
@@ -1224,8 +1226,8 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     try
     {
-        auto const [validity, reason] =
-            checkValidity(registry_.getHashRouter(), *trans, ledgerMaster_.getValidatedRules());
+        auto const [validity, reason] = checkValidity(
+            registry_.get().getHashRouter(), *trans, ledgerMaster_.getValidatedRules());
 
         if (validity != Validity::Valid)
         {
@@ -1242,7 +1244,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 
     std::string reason;
 
-    auto tx = std::make_shared<Transaction>(trans, reason, registry_.getApp());
+    auto tx = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
 
     job_queue_.addJob(jtTRANSACTION, "SubmitTxn", [this, tx]() {
         auto t = tx;
@@ -1253,7 +1255,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
 bool
 NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 {
-    auto const newFlags = registry_.getHashRouter().getFlags(transaction->getID());
+    auto const newFlags = registry_.get().getHashRouter().getFlags(transaction->getID());
 
     if ((newFlags & HashRouterFlags::BAD) != HashRouterFlags::UNDEFINED)
     {
@@ -1274,14 +1276,15 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     {
         transaction->setStatus(INVALID);
         transaction->setResult(temINVALID_FLAG);
-        registry_.getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
         return false;
     }
 
     // NOTE ximinez - I think this check is redundant,
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
-    auto const [validity, reason] = checkValidity(registry_.getHashRouter(), sttx, view->rules());
+    auto const [validity, reason] =
+        checkValidity(registry_.get().getHashRouter(), sttx, view->rules());
     XRPL_ASSERT(
         validity == Validity::Valid, "xrpl::NetworkOPsImp::processTransaction : valid validity");
 
@@ -1291,12 +1294,12 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
         JLOG(journal_.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        registry_.getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
+        registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
         return false;
     }
 
     // canonicalize can change our pointer
-    registry_.getMasterTransaction().canonicalize(&transaction);
+    registry_.get().getMasterTransaction().canonicalize(&transaction);
 
     return true;
 }
@@ -1335,14 +1338,14 @@ NetworkOPsImp::doTransactionAsync(
     if (transaction->getApplying())
         return;
 
-    transactions_.push_back(TransactionStatus(transaction, bUnlimited, false, failType));
+    transactions_.emplace_back(transaction, bUnlimited, false, failType);
     transaction->setApplying();
 
-    if (dispatchState_ == DispatchState::None)
+    if (dispatchState_ == DispatchState::none)
     {
         if (job_queue_.addJob(jtBATCH, "TxBatchAsync", [this]() { transactionBatch(); }))
         {
-            dispatchState_ = DispatchState::Scheduled;
+            dispatchState_ = DispatchState::scheduled;
         }
     }
 }
@@ -1357,7 +1360,7 @@ NetworkOPsImp::doTransactionSync(
 
     if (!transaction->getApplying())
     {
-        transactions_.push_back(TransactionStatus(transaction, bUnlimited, true, failType));
+        transactions_.emplace_back(transaction, bUnlimited, true, failType);
         transaction->setApplying();
     }
 
@@ -1373,7 +1376,7 @@ NetworkOPsImp::doTransactionSyncBatch(
 {
     do
     {
-        if (dispatchState_ == DispatchState::Running)
+        if (dispatchState_ == DispatchState::running)
         {
             // A batch processing job is already running, so wait.
             cond_.wait(lock);
@@ -1387,7 +1390,7 @@ NetworkOPsImp::doTransactionSyncBatch(
                 // More transactions need to be applied, but by another job.
                 if (job_queue_.addJob(jtBATCH, "TxBatchSync", [this]() { transactionBatch(); }))
                 {
-                    dispatchState_ = DispatchState::Scheduled;
+                    dispatchState_ = DispatchState::scheduled;
                 }
             }
         }
@@ -1403,7 +1406,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
     for (auto const& [_, tx] : set)
     {
         std::string reason;
-        auto transaction = std::make_shared<Transaction>(tx, reason, registry_.getApp());
+        auto transaction = std::make_shared<Transaction>(tx, reason, registry_.get().getApp());
 
         if (transaction->getStatus() == INVALID)
         {
@@ -1411,7 +1414,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
             {
                 JLOG(journal_.trace()) << "Exception checking transaction: " << reason;
             }
-            registry_.getHashRouter().setFlags(tx->getTransactionID(), HashRouterFlags::BAD);
+            registry_.get().getHashRouter().setFlags(tx->getTransactionID(), HashRouterFlags::BAD);
             continue;
         }
 
@@ -1454,9 +1457,8 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
 
     doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {
         XRPL_ASSERT(lock.owns_lock(), "xrpl::NetworkOPsImp::processTransactionSet has lock");
-        return std::any_of(transactions_.begin(), transactions_.end(), [](auto const& t) {
-            return t.transaction->getApplying();
-        });
+        return std::ranges::any_of(
+            transactions_, [](auto const& t) { return t.transaction->getApplying(); });
     });
 }
 
@@ -1465,7 +1467,7 @@ NetworkOPsImp::transactionBatch()
 {
     std::unique_lock<std::mutex> lock(mutex_);
 
-    if (dispatchState_ == DispatchState::Running)
+    if (dispatchState_ == DispatchState::running)
         return;
 
     while (!transactions_.empty())
@@ -1477,24 +1479,24 @@ NetworkOPsImp::transactionBatch()
 void
 NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 {
-    std::vector<TransactionStatus> submitHeld;
+    std::vector<TransactionStatus> submit_held;
     std::vector<TransactionStatus> transactions;
     transactions_.swap(transactions);
     XRPL_ASSERT(!transactions.empty(), "xrpl::NetworkOPsImp::apply : non-empty transactions");
     XRPL_ASSERT(
-        dispatchState_ != DispatchState::Running, "xrpl::NetworkOPsImp::apply : is not running");
+        dispatchState_ != DispatchState::running, "xrpl::NetworkOPsImp::apply : is not running");
 
-    dispatchState_ = DispatchState::Running;
+    dispatchState_ = DispatchState::running;
 
     batchLock.unlock();
 
     {
-        std::unique_lock masterLock{registry_.getApp().getMasterMutex(), std::defer_lock};
+        std::unique_lock masterLock{registry_.get().getApp().getMasterMutex(), std::defer_lock};
         bool changed = false;
         {
             std::unique_lock ledgerLock{ledgerMaster_.peekMutex(), std::defer_lock};
             std::lock(masterLock, ledgerLock);
-            registry_.getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
+            registry_.get().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 for (TransactionStatus& e : transactions)
                 {
                     // we check before adding to the batch
@@ -1505,8 +1507,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     if (e.failType == FailHard::yes)
                         flags |= tapFAIL_HARD;
 
-                    auto const result = registry_.getTxQ().apply(
-                        registry_.getApp(), view, e.transaction->getSTransaction(), flags, j);
+                    auto const result = registry_.get().getTxQ().apply(
+                        registry_.get().getApp(), view, e.transaction->getSTransaction(), flags, j);
                     e.result = result.ter;
                     e.applied = result.applied;
                     changed = changed || result.applied;
@@ -1521,7 +1523,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         if (auto const l = ledgerMaster_.getValidatedLedger())
             validatedLedgerIndex = l->header().seq;
 
-        auto newOL = registry_.getOpenLedger().current();
+        auto newOL = registry_.get().getOpenLedger().current();
         for (TransactionStatus const& e : transactions)
         {
             e.transaction->clearSubmitResult();
@@ -1536,7 +1538,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
             if (isTemMalformed(e.result))
             {
-                registry_.getHashRouter().setFlags(e.transaction->getID(), HashRouterFlags::BAD);
+                registry_.get().getHashRouter().setFlags(
+                    e.transaction->getID(), HashRouterFlags::BAD);
             }
 
 #ifdef DEBUG
@@ -1572,10 +1575,10 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                         batchLock.lock();
                     std::string reason;
                     auto const trans = sterilize(*txNext);
-                    auto t = std::make_shared<Transaction>(trans, reason, registry_.getApp());
+                    auto t = std::make_shared<Transaction>(trans, reason, registry_.get().getApp());
                     if (t->getApplying())
                         break;
-                    submitHeld.emplace_back(t, false, false, FailHard::no);
+                    submit_held.emplace_back(t, false, false, FailHard::no);
                     t->setApplying();
                 }
                 if (batchLock.owns_lock())
@@ -1626,7 +1629,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     //    up!)
                     //
                     if (e.local || (ledgersLeft && ledgersLeft <= LocalTxs::kHOLD_LEDGERS) ||
-                        registry_.getHashRouter().setFlags(
+                        registry_.get().getHashRouter().setFlags(
                             e.transaction->getID(), HashRouterFlags::HELD))
                     {
                         // transaction should be held
@@ -1663,7 +1666,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                  (e.result == terQUEUED)) &&
                 !enforceFailHard)
             {
-                auto const toSkip = registry_.getHashRouter().shouldRelay(e.transaction->getID());
+                auto const toSkip =
+                    registry_.get().getHashRouter().shouldRelay(e.transaction->getID());
                 if (auto const sttx = *(e.transaction->getSTransaction()); toSkip &&
                     // Skip relaying if it's an inner batch txn. The flag should
                     // only be set if the Batch feature is enabled. If Batch is
@@ -1678,18 +1682,19 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
                     tx.set_receivetimestamp(
-                        registry_.getTimeKeeper().now().time_since_epoch().count());
+                        registry_.get().getTimeKeeper().now().time_since_epoch().count());
                     tx.set_deferred(e.result == terQUEUED);
                     // FIXME: This should be when we received it
-                    registry_.getOverlay().relay(e.transaction->getID(), tx, *toSkip);
+                    registry_.get().getOverlay().relay(e.transaction->getID(), tx, *toSkip);
                     e.transaction->setBroadcast();
                 }
             }
 
             if (validatedLedgerIndex)
             {
-                auto [fee, accountSeq, availableSeq] = registry_.getTxQ().getTxRequiredFeeAndSeq(
-                    *newOL, e.transaction->getSTransaction());
+                auto [fee, accountSeq, availableSeq] =
+                    registry_.get().getTxQ().getTxRequiredFeeAndSeq(
+                        *newOL, e.transaction->getSTransaction());
                 e.transaction->setCurrentLedgerState(
                     *validatedLedgerIndex, fee, accountSeq, availableSeq);
             }
@@ -1701,23 +1706,23 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     for (TransactionStatus const& e : transactions)
         e.transaction->clearApplying();
 
-    if (!submitHeld.empty())
+    if (!submit_held.empty())
     {
         if (transactions_.empty())
         {
-            transactions_.swap(submitHeld);
+            transactions_.swap(submit_held);
         }
         else
         {
-            transactions_.reserve(transactions_.size() + submitHeld.size());
-            for (auto& e : submitHeld)
+            transactions_.reserve(transactions_.size() + submit_held.size());
+            for (auto& e : submit_held)
                 transactions_.push_back(std::move(e));
         }
     }
 
     cond_.notify_all();
 
-    dispatchState_ = DispatchState::None;
+    dispatchState_ = DispatchState::none;
 }
 
 //
@@ -1867,7 +1872,7 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
     //-------------------------------------------------------------------------
     // Determine preferred last closed ledger
 
-    auto& validations = registry_.getValidations();
+    auto& validations = registry_.get().getValidations();
     JLOG(journal_.debug()) << "ValidationTrie " << Json::Compact(validations.getJsonTrie());
 
     // Will rely on peer LCL if no trusted validations exist
@@ -1915,7 +1920,7 @@ NetworkOPsImp::checkLastClosedLedger(Overlay::PeerSequence const& peerList, uint
 
     if (!consensus)
     {
-        consensus = registry_.getInboundLedgers().acquire(
+        consensus = registry_.get().getInboundLedgers().acquire(
             closedLedger, 0, InboundLedger::Reason::CONSENSUS);
     }
 
@@ -1958,7 +1963,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     clearNeedNetworkLedger();
 
     // Update fee computations.
-    registry_.getTxQ().processClosedLedger(registry_.getApp(), *newLCL, true);
+    registry_.get().getTxQ().processClosedLedger(registry_.get().getApp(), *newLCL, true);
 
     // Caller must own master lock
     {
@@ -1966,18 +1971,18 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
         // open ledger. Then apply local tx.
 
         auto retries = localTX_->getTxSet();
-        auto const lastVal = registry_.getLedgerMaster().getValidatedLedger();
+        auto const lastVal = registry_.get().getLedgerMaster().getValidatedLedger();
         std::optional<Rules> rules;
         if (lastVal)
         {
-            rules = makeRulesGivenLedger(*lastVal, registry_.getApp().config().features);
+            rules = makeRulesGivenLedger(*lastVal, registry_.get().getApp().config().features);
         }
         else
         {
-            rules.emplace(registry_.getApp().config().features);
+            rules.emplace(registry_.get().getApp().config().features);
         }
-        registry_.getOpenLedger().accept(
-            registry_.getApp(),
+        registry_.get().getOpenLedger().accept(
+            registry_.get().getApp(),
             *rules,
             newLCL,
             OrderedTxs({}),
@@ -1987,7 +1992,7 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
             "jump",
             [&](OpenView& view, beast::Journal j) {
                 // Stuff the ledger with transactions from the queue.
-                return registry_.getTxQ().accept(registry_.getApp(), view);
+                return registry_.get().getTxQ().accept(registry_.get().getApp(), view);
             });
     }
 
@@ -1996,12 +2001,11 @@ NetworkOPsImp::switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLC
     protocol::TMStatusChange s;
     s.set_newevent(protocol::neSWITCHED_LEDGER);
     s.set_ledgerseq(newLCL->header().seq);
-    s.set_networktime(registry_.getTimeKeeper().now().time_since_epoch().count());
+    s.set_networktime(registry_.get().getTimeKeeper().now().time_since_epoch().count());
     s.set_ledgerhashprevious(
         newLCL->header().parentHash.begin(), newLCL->header().parentHash.size());
     s.set_ledgerhash(newLCL->header().hash.begin(), newLCL->header().hash.size());
-
-    registry_.getOverlay().foreach(
+    registry_.get().getOverlay().foreach(
         SendAlways(std::make_shared<Message>(s, protocol::mtSTATUS_CHANGE)));
 }
 
@@ -2042,24 +2046,24 @@ NetworkOPsImp::beginConsensus(
         "xrpl::NetworkOPsImp::beginConsensus : closedLedger parent matches "
         "hash");
 
-    registry_.getValidators().setNegativeUNL(prevLedger->negativeUNL());
-    TrustChanges const changes = registry_.getValidators().updateTrusted(
-        registry_.getValidations().getCurrentNodeIDs(),
+    registry_.get().getValidators().setNegativeUNL(prevLedger->negativeUNL());
+    TrustChanges const changes = registry_.get().getValidators().updateTrusted(
+        registry_.get().getValidations().getCurrentNodeIDs(),
         closingInfo.parentCloseTime,
         *this,
-        registry_.getOverlay(),
-        registry_.getHashRouter());
+        registry_.get().getOverlay(),
+        registry_.get().getHashRouter());
 
     if (!changes.added.empty() || !changes.removed.empty())
     {
-        registry_.getValidations().trustChanged(changes.added, changes.removed);
+        registry_.get().getValidations().trustChanged(changes.added, changes.removed);
         // Update the AmendmentTable so it tracks the current validators.
-        registry_.getAmendmentTable().trustChanged(
-            registry_.getValidators().getQuorumKeys().second);
+        registry_.get().getAmendmentTable().trustChanged(
+            registry_.get().getValidators().getQuorumKeys().second);
     }
 
     consensus_.startRound(
-        registry_.getTimeKeeper().closeTime(),
+        registry_.get().getTimeKeeper().closeTime(),
         networkClosed,
         prevLedger,
         changes.removed,
@@ -2099,7 +2103,7 @@ NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
         return false;
     }
 
-    return consensus_.peerProposal(registry_.getTimeKeeper().closeTime(), peerPos);
+    return consensus_.peerProposal(registry_.get().getTimeKeeper().closeTime(), peerPos);
 }
 
 void
@@ -2110,20 +2114,19 @@ NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
     protocol::TMHaveTransactionSet msg;
     msg.set_hash(map->getHash().as_uint256().begin(), 256 / 8);
     msg.set_status(protocol::tsHAVE);
-    registry_.getOverlay().foreach(
+    registry_.get().getOverlay().foreach(
         SendAlways(std::make_shared<Message>(msg, protocol::mtHAVE_SET)));
 
     // We acquired it because consensus asked us to
     if (fromAcquire)
-        consensus_.gotTxSet(registry_.getTimeKeeper().closeTime(), RCLTxSet{map});
+        consensus_.gotTxSet(registry_.get().getTimeKeeper().closeTime(), RCLTxSet{map});
 }
 
 void
 NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
-    uint256 deadLedger = ledgerMaster_.getClosedLedger()->header().parentHash;
-
-    for (auto const& it : registry_.getOverlay().getActivePeers())
+    uint256 const deadLedger = ledgerMaster_.getClosedLedger()->header().parentHash;
+    for (auto const& it : registry_.get().getOverlay().getActivePeers())
     {
         if (it && (it->getClosedLedgerHash() == deadLedger))
         {
@@ -2134,7 +2137,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 
     uint256 networkClosed;
     bool const ledgerChange =
-        checkLastClosedLedger(registry_.getOverlay().getActivePeers(), networkClosed);
+        checkLastClosedLedger(registry_.get().getOverlay().getActivePeers(), networkClosed);
 
     if (networkClosed.isZero())
     {
@@ -2164,7 +2167,7 @@ NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
         // Note: Do not go to FULL if we don't have the previous ledger
         // check if the ledger is bad enough to go to CONNECTED -- TODO
         auto current = ledgerMaster_.getCurrentLedger();
-        if (registry_.getTimeKeeper().now() <
+        if (registry_.get().getTimeKeeper().now() <
             (current->header().parentCloseTime + 2 * current->header().closeTimeResolution))
         {
             setMode(OperatingMode::FULL);
@@ -2189,7 +2192,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
     // VFALCO consider std::shared_mutex
     std::lock_guard const sl(subLock_);
 
-    if (!streamMaps_[SManifests].empty())
+    if (!streamMaps_[sManifests].empty())
     {
         Json::Value jvObj(Json::objectValue);
 
@@ -2205,7 +2208,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
             jvObj[jss::domain] = mo.domain;
         jvObj[jss::manifest] = strHex(mo.serialized);
 
-        for (auto i = streamMaps_[SManifests].begin(); i != streamMaps_[SManifests].end();)
+        for (auto i = streamMaps_[sManifests].begin(); i != streamMaps_[sManifests].end();)
         {
             if (auto p = i->second.lock())
             {
@@ -2214,7 +2217,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
             }
             else
             {
-                i = streamMaps_[SManifests].erase(i);
+                i = streamMaps_[sManifests].erase(i);
             }
         }
     }
@@ -2253,9 +2256,9 @@ NetworkOPsImp::ServerFeeSummary::operator!=(NetworkOPsImp::ServerFeeSummary cons
 static std::uint32_t
 trunc32(std::uint64_t v)
 {
-    constexpr std::uint64_t kMAX32 = std::numeric_limits<std::uint32_t>::max();
+    constexpr std::uint64_t max32 = std::numeric_limits<std::uint32_t>::max();
 
-    return std::min(kMAX32, v);
+    return std::min(max32, v);
 };
 
 void
@@ -2267,14 +2270,14 @@ NetworkOPsImp::pubServer()
     //
     std::lock_guard const sl(subLock_);
 
-    if (!streamMaps_[SServer].empty())
+    if (!streamMaps_[sServer].empty())
     {
         Json::Value jvObj(Json::objectValue);
 
         ServerFeeSummary f{
-            registry_.getOpenLedger().current()->fees().base,
-            registry_.getTxQ().getMetrics(*registry_.getOpenLedger().current()),
-            registry_.getFeeTrack()};
+            registry_.get().getOpenLedger().current()->fees().base,
+            registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current()),
+            registry_.get().getFeeTrack()};
 
         jvObj[jss::type] = "serverStatus";
         jvObj[jss::server_status] = strOperatingMode();
@@ -2301,7 +2304,7 @@ NetworkOPsImp::pubServer()
 
         lastFeeSummary_ = f;
 
-        for (auto i = streamMaps_[SServer].begin(); i != streamMaps_[SServer].end();)
+        for (auto i = streamMaps_[sServer].begin(); i != streamMaps_[sServer].end();)
         {
             InfoSub::pointer const p = i->second.lock();
 
@@ -2315,7 +2318,7 @@ NetworkOPsImp::pubServer()
             }
             else
             {
-                i = streamMaps_[SServer].erase(i);
+                i = streamMaps_[sServer].erase(i);
             }
         }
     }
@@ -2326,7 +2329,7 @@ NetworkOPsImp::pubConsensus(ConsensusPhase phase)
 {
     std::lock_guard const sl(subLock_);
 
-    auto& streamMap = streamMaps_[SConsensusPhase];
+    auto& streamMap = streamMaps_[sConsensusPhase];
     if (!streamMap.empty())
     {
         Json::Value jvObj(Json::objectValue);
@@ -2354,7 +2357,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
     // VFALCO consider std::shared_mutex
     std::lock_guard const sl(subLock_);
 
-    if (!streamMaps_[SValidations].empty())
+    if (!streamMaps_[sValidations].empty())
     {
         Json::Value jvObj(Json::objectValue);
 
@@ -2368,7 +2371,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         jvObj[jss::flags] = val->getFlags();
         jvObj[jss::signing_time] = *(*val)[~sfSigningTime];
         jvObj[jss::data] = strHex(val->getSerializer().slice());
-        jvObj[jss::network_id] = registry_.getNetworkIDService().getNetworkID();
+        jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
         if (auto version = (*val)[~sfServerVersion])
             jvObj[jss::server_version] = std::to_string(*version);
@@ -2379,7 +2382,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
         if (auto hash = (*val)[~sfValidatedHash])
             jvObj[jss::validated_hash] = strHex(*hash);
 
-        auto const masterKey = registry_.getValidatorManifests().getMasterKey(signerPublic);
+        auto const masterKey = registry_.get().getValidatorManifests().getMasterKey(signerPublic);
 
         if (masterKey != signerPublic)
             jvObj[jss::master_key] = toBase58(TokenType::NodePublic, masterKey);
@@ -2437,7 +2440,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
                 }
             });
 
-        for (auto i = streamMaps_[SValidations].begin(); i != streamMaps_[SValidations].end();)
+        for (auto i = streamMaps_[sValidations].begin(); i != streamMaps_[sValidations].end();)
         {
             if (auto p = i->second.lock())
             {
@@ -2448,7 +2451,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             }
             else
             {
-                i = streamMaps_[SValidations].erase(i);
+                i = streamMaps_[sValidations].erase(i);
             }
         }
     }
@@ -2459,13 +2462,13 @@ NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
 {
     std::lock_guard const sl(subLock_);
 
-    if (!streamMaps_[SPeerStatus].empty())
+    if (!streamMaps_[sPeerStatus].empty())
     {
         Json::Value jvObj(func());
 
         jvObj[jss::type] = "peerStatusChange";
 
-        for (auto i = streamMaps_[SPeerStatus].begin(); i != streamMaps_[SPeerStatus].end();)
+        for (auto i = streamMaps_[sPeerStatus].begin(); i != streamMaps_[sPeerStatus].end();)
         {
             InfoSub::pointer const p = i->second.lock();
 
@@ -2476,7 +2479,7 @@ NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
             }
             else
             {
-                i = streamMaps_[SPeerStatus].erase(i);
+                i = streamMaps_[sPeerStatus].erase(i);
             }
         }
     }
@@ -2488,12 +2491,12 @@ NetworkOPsImp::setMode(OperatingMode om)
     using namespace std::chrono_literals;
     if (om == OperatingMode::CONNECTED)
     {
-        if (registry_.getLedgerMaster().getValidatedLedgerAge() < 1min)
+        if (registry_.get().getLedgerMaster().getValidatedLedgerAge() < 1min)
             om = OperatingMode::SYNCING;
     }
     else if (om == OperatingMode::SYNCING)
     {
-        if (registry_.getLedgerMaster().getValidatedLedgerAge() >= 1min)
+        if (registry_.get().getLedgerMaster().getValidatedLedgerAge() >= 1min)
             om = OperatingMode::CONNECTED;
     }
 
@@ -2529,7 +2532,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
             pendingValidations_.insert(val->getLedgerHash());
         }
         scope_unlock const unlock(lock);
-        handleNewValidation(registry_.getApp(), val, source, bypassAccept, journal_);
+        handleNewValidation(registry_.get().getApp(), val, source, bypassAccept, journal_);
     }
     catch (std::exception const& e)
     {
@@ -2552,7 +2555,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
     JLOG(journal_.debug()) << [this, &val]() -> auto {
         std::stringstream ss;
         ss << "VALIDATION: " << val->render() << " master_key: ";
-        auto master = registry_.getValidators().getTrustedKey(val->getSignerPublic());
+        auto master = registry_.get().getValidators().getTrustedKey(val->getSignerPublic());
         if (master)
         {
             ss << toBase58(TokenType::NodePublic, *master);
@@ -2566,7 +2569,7 @@ NetworkOPsImp::recvValidation(std::shared_ptr<STValidation> const& val, std::str
 
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
-    return registry_.getApp().config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
+    return registry_.get().getApp().config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
 }
 
 Json::Value
@@ -2608,7 +2611,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 "One or more unsupported amendments have reached majority. "
                 "Upgrade to the latest version before they are activated "
                 "to avoid being amendment blocked.";
-            if (auto const expected = registry_.getAmendmentTable().firstUnsupportedExpected())
+            if (auto const expected =
+                    registry_.get().getAmendmentTable().firstUnsupportedExpected())
             {
                 auto& d = w[jss::details] = Json::objectValue;
                 d[jss::expected_date] = expected->time_since_epoch().count();
@@ -2625,8 +2629,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         info[jss::hostid] = getHostId(admin);
 
     // domain: if configured with a domain, report it:
-    if (!registry_.getApp().config().SERVER_DOMAIN.empty())
-        info[jss::server_domain] = registry_.getApp().config().SERVER_DOMAIN;
+    if (!registry_.get().getApp().config().SERVER_DOMAIN.empty())
+        info[jss::server_domain] = registry_.get().getApp().config().SERVER_DOMAIN;
 
     info[jss::build_version] = BuildInfo::getVersionString();
 
@@ -2638,14 +2642,15 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (needNetworkLedger_)
         info[jss::network_ledger] = "waiting";
 
-    info[jss::validation_quorum] = static_cast<Json::UInt>(registry_.getValidators().quorum());
+    info[jss::validation_quorum] =
+        static_cast<Json::UInt>(registry_.get().getValidators().quorum());
 
     if (admin)
     {
         // Note: By default the node size is "tiny". When parsing it's an error if the final
         // NODE_SIZE is over 4 so below code should be safe.
         // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
-        switch (registry_.getApp().config().NODE_SIZE)
+        switch (registry_.get().getApp().config().NODE_SIZE)
         {
             case 0:
                 info[jss::node_size] = "tiny";
@@ -2664,7 +2669,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 break;
         }
 
-        auto when = registry_.getValidators().expires();
+        auto when = registry_.get().getValidators().expires();
 
         if (!human)
         {
@@ -2682,7 +2687,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         {
             auto& x = (info[jss::validator_list] = Json::objectValue);
 
-            x[jss::count] = static_cast<Json::UInt>(registry_.getValidators().count());
+            x[jss::count] = static_cast<Json::UInt>(registry_.get().getValidators().count());
 
             if (when)
             {
@@ -2695,7 +2700,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 {
                     x[jss::expiration] = to_string(*when);
 
-                    if (*when > registry_.getTimeKeeper().now())
+                    if (*when > registry_.get().getTimeKeeper().now())
                     {
                         x[jss::status] = "active";
                     }
@@ -2721,12 +2726,13 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 x[jss::branch] = xrpl::git::getBuildBranch();
         }
     }
-    info[jss::io_latency_ms] = static_cast<Json::UInt>(registry_.getApp().getIOLatency().count());
+    info[jss::io_latency_ms] =
+        static_cast<Json::UInt>(registry_.get().getApp().getIOLatency().count());
 
     if (admin)
     {
-        if (auto const localPubKey = registry_.getValidators().localPublicKey();
-            localPubKey && registry_.getApp().getValidationPublicKey())
+        if (auto const localPubKey = registry_.get().getValidators().localPublicKey();
+            localPubKey && registry_.get().getApp().getValidationPublicKey())
         {
             info[jss::pubkey_validator] = toBase58(TokenType::NodePublic, localPubKey.value());
         }
@@ -2738,18 +2744,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     if (counters)
     {
-        info[jss::counters] = registry_.getPerfLog().countersJson();
+        info[jss::counters] = registry_.get().getPerfLog().countersJson();
 
         Json::Value nodestore(Json::objectValue);
-        registry_.getNodeStore().getCountsJson(nodestore);
+        registry_.get().getNodeStore().getCountsJson(nodestore);
         info[jss::counters][jss::nodestore] = nodestore;
-        info[jss::current_activities] = registry_.getPerfLog().currentJson();
+        info[jss::current_activities] = registry_.get().getPerfLog().currentJson();
     }
 
     info[jss::pubkey_node] =
-        toBase58(TokenType::NodePublic, registry_.getApp().nodeIdentity().first);
+        toBase58(TokenType::NodePublic, registry_.get().getApp().nodeIdentity().first);
 
-    info[jss::complete_ledgers] = registry_.getLedgerMaster().getCompleteLedgers();
+    info[jss::complete_ledgers] = registry_.get().getLedgerMaster().getCompleteLedgers();
 
     if (amendmentBlocked_)
         info[jss::amendment_blocked] = true;
@@ -2759,7 +2765,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (fp != 0)
         info[jss::fetch_pack] = Json::UInt(fp);
 
-    info[jss::peers] = Json::UInt(registry_.getOverlay().size());
+    info[jss::peers] = Json::UInt(registry_.get().getOverlay().size());
 
     Json::Value lastClose = Json::objectValue;
     lastClose[jss::proposers] = Json::UInt(consensus_.prevProposers());
@@ -2781,14 +2787,14 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     if (admin)
         info[jss::load] = job_queue_.getJson();
 
-    if (auto const netid = registry_.getOverlay().networkID())
+    if (auto const netid = registry_.get().getOverlay().networkID())
         info[jss::network_id] = static_cast<Json::UInt>(*netid);
 
     auto const escalationMetrics =
-        registry_.getTxQ().getMetrics(*registry_.getOpenLedger().current());
+        registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current());
 
-    auto const loadFactorServer = registry_.getFeeTrack().getLoadFactor();
-    auto const loadBaseServer = registry_.getFeeTrack().getLoadBase();
+    auto const loadFactorServer = registry_.get().getFeeTrack().getLoadFactor();
+    auto const loadBaseServer = registry_.get().getFeeTrack().getLoadBase();
     /* Scale the escalated fee level to unitless "load factor".
        In practice, this just strips the units, but it will continue
        to work correctly if either base value ever changes. */
@@ -2825,13 +2831,13 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
         if (admin)
         {
-            std::uint32_t fee = registry_.getFeeTrack().getLocalFee();
+            std::uint32_t fee = registry_.get().getFeeTrack().getLocalFee();
             if (fee != loadBaseServer)
                 info[jss::load_factor_local] = static_cast<double>(fee) / loadBaseServer;
-            fee = registry_.getFeeTrack().getRemoteFee();
+            fee = registry_.get().getFeeTrack().getRemoteFee();
             if (fee != loadBaseServer)
                 info[jss::load_factor_net] = static_cast<double>(fee) / loadBaseServer;
-            fee = registry_.getFeeTrack().getClusterFee();
+            fee = registry_.get().getFeeTrack().getClusterFee();
             if (fee != loadBaseServer)
                 info[jss::load_factor_cluster] = static_cast<double>(fee) / loadBaseServer;
         }
@@ -2883,25 +2889,25 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::reserve_base_xrp] = lpClosed->fees().reserve.decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
 
-            if (auto const closeOffset = registry_.getTimeKeeper().closeOffset();
+            if (auto const closeOffset = registry_.get().getTimeKeeper().closeOffset();
                 std::abs(closeOffset.count()) >= 60)
                 l[jss::close_time_offset] = static_cast<std::uint32_t>(closeOffset.count());
 
-            constexpr std::chrono::seconds kHIGH_AGE_THRESHOLD{1000000};
+            constexpr std::chrono::seconds highAgeThreshold{1000000};
             if (ledgerMaster_.haveValidated())
             {
                 auto const age = ledgerMaster_.getValidatedLedgerAge();
-                l[jss::age] = Json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
+                l[jss::age] = Json::UInt(age < highAgeThreshold ? age.count() : 0);
             }
             else
             {
                 auto lCloseTime = lpClosed->header().closeTime;
-                auto closeTime = registry_.getTimeKeeper().closeTime();
+                auto closeTime = registry_.get().getTimeKeeper().closeTime();
                 if (lCloseTime <= closeTime)
                 {
                     using namespace std::chrono_literals;
                     auto age = closeTime - lCloseTime;
-                    l[jss::age] = Json::UInt(age < kHIGH_AGE_THRESHOLD ? age.count() : 0);
+                    l[jss::age] = Json::UInt(age < highAgeThreshold ? age.count() : 0);
                 }
             }
         }
@@ -2928,18 +2934,19 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     accounting_.json(info);
     info[jss::uptime] = UptimeClock::now().time_since_epoch().count();
-    info[jss::jq_trans_overflow] = std::to_string(registry_.getOverlay().getJqTransOverflow());
-    info[jss::peer_disconnects] = std::to_string(registry_.getOverlay().getPeerDisconnect());
+    info[jss::jq_trans_overflow] =
+        std::to_string(registry_.get().getOverlay().getJqTransOverflow());
+    info[jss::peer_disconnects] = std::to_string(registry_.get().getOverlay().getPeerDisconnect());
     info[jss::peer_disconnects_resources] =
-        std::to_string(registry_.getOverlay().getPeerDisconnectCharges());
+        std::to_string(registry_.get().getOverlay().getPeerDisconnectCharges());
 
     // This array must be sorted in increasing order.
-    static constexpr std::array<std::string_view, 7> kPROTOCOLS{
+    static constexpr std::array<std::string_view, 7> protocols{
         "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
-    static_assert(std::is_sorted(std::begin(kPROTOCOLS), std::end(kPROTOCOLS)));
+    static_assert(std::ranges::is_sorted(protocols));
     {
         Json::Value ports{Json::arrayValue};
-        for (auto const& port : registry_.getServerHandler().setup().ports)
+        for (auto const& port : registry_.get().getServerHandler().setup().ports)
         {
             // Don't publish admin ports for non-admin users
             if (!admin &&
@@ -2951,8 +2958,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             std::set_intersection(
                 std::begin(port.protocol),
                 std::end(port.protocol),
-                std::begin(kPROTOCOLS),
-                std::end(kPROTOCOLS),
+                std::begin(protocols),
+                std::end(protocols),
                 std::back_inserter(proto));
             if (!proto.empty())
             {
@@ -2964,9 +2971,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             }
         }
 
-        if (registry_.getApp().config().exists(SECTION_PORT_GRPC))
+        if (registry_.get().getApp().config().exists(SECTION_PORT_GRPC))
         {
-            auto const& grpcSection = registry_.getApp().config().section(SECTION_PORT_GRPC);
+            auto const& grpcSection = registry_.get().getApp().config().section(SECTION_PORT_GRPC);
             auto const optPort = grpcSection.get("port");
             if (optPort && grpcSection.get("ip"))
             {
@@ -2985,13 +2992,13 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 void
 NetworkOPsImp::clearLedgerFetch()
 {
-    registry_.getInboundLedgers().clearFailures();
+    registry_.get().getInboundLedgers().clearFailures();
 }
 
 Json::Value
 NetworkOPsImp::getLedgerFetchInfo()
 {
-    return registry_.getInboundLedgers().getInfo();
+    return registry_.get().getInboundLedgers().getInfo();
 }
 
 void
@@ -3012,8 +3019,8 @@ NetworkOPsImp::pubProposedTransaction(
     {
         std::lock_guard const sl(subLock_);
 
-        auto it = streamMaps_[SRtTransactions].begin();
-        while (it != streamMaps_[SRtTransactions].end())
+        auto it = streamMaps_[sRTTransactions].begin();
+        while (it != streamMaps_[sRTTransactions].end())
         {
             InfoSub::pointer p = it->second.lock();
 
@@ -3026,7 +3033,7 @@ NetworkOPsImp::pubProposedTransaction(
             }
             else
             {
-                it = streamMaps_[SRtTransactions].erase(it);
+                it = streamMaps_[sRTTransactions].erase(it);
             }
         }
     }
@@ -3041,11 +3048,11 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
     // Holes are filled across connection loss or other catastrophe
 
     std::shared_ptr<AcceptedLedger> alpAccepted =
-        registry_.getAcceptedLedgerCache().fetch(lpAccepted->header().hash);
+        registry_.get().getAcceptedLedgerCache().fetch(lpAccepted->header().hash);
     if (!alpAccepted)
     {
         alpAccepted = std::make_shared<AcceptedLedger>(lpAccepted);
-        registry_.getAcceptedLedgerCache().canonicalize_replace_client(
+        registry_.get().getAcceptedLedgerCache().canonicalize_replace_client(
             lpAccepted->header().hash, alpAccepted);
     }
 
@@ -3059,7 +3066,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
         std::lock_guard const sl(subLock_);
 
-        if (!streamMaps_[SLedger].empty())
+        if (!streamMaps_[sLedger].empty())
         {
             Json::Value jvObj(Json::objectValue);
 
@@ -3069,7 +3076,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::ledger_time] =
                 Json::Value::UInt(lpAccepted->header().closeTime.time_since_epoch().count());
 
-            jvObj[jss::network_id] = registry_.getNetworkIDService().getNetworkID();
+            jvObj[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
 
             if (!lpAccepted->rules().enabled(featureXRPFees))
                 jvObj[jss::fee_ref] = FEE_UNITS_DEPRECATED;
@@ -3081,11 +3088,12 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
 
             if (mode_ >= OperatingMode::SYNCING)
             {
-                jvObj[jss::validated_ledgers] = registry_.getLedgerMaster().getCompleteLedgers();
+                jvObj[jss::validated_ledgers] =
+                    registry_.get().getLedgerMaster().getCompleteLedgers();
             }
 
-            auto it = streamMaps_[SLedger].begin();
-            while (it != streamMaps_[SLedger].end())
+            auto it = streamMaps_[sLedger].begin();
+            while (it != streamMaps_[sLedger].end())
             {
                 InfoSub::pointer const p = it->second.lock();
                 if (p)
@@ -3095,17 +3103,17 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                 }
                 else
                 {
-                    it = streamMaps_[SLedger].erase(it);
+                    it = streamMaps_[sLedger].erase(it);
                 }
             }
         }
 
-        if (!streamMaps_[SBookChanges].empty())
+        if (!streamMaps_[sBookChanges].empty())
         {
             Json::Value const jvObj = xrpl::RPC::computeBookChanges(lpAccepted);
 
-            auto it = streamMaps_[SBookChanges].begin();
-            while (it != streamMaps_[SBookChanges].end())
+            auto it = streamMaps_[sBookChanges].begin();
+            while (it != streamMaps_[sBookChanges].end())
             {
                 InfoSub::pointer const p = it->second.lock();
                 if (p)
@@ -3115,23 +3123,23 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                 }
                 else
                 {
-                    it = streamMaps_[SBookChanges].erase(it);
+                    it = streamMaps_[sBookChanges].erase(it);
                 }
             }
         }
 
         {
-            static bool kFIRST_TIME = true;
-            if (kFIRST_TIME)
+            static bool firstTime = true;
+            if (firstTime)
             {
                 // First validated ledger, start delayed SubAccountHistory
-                kFIRST_TIME = false;
+                firstTime = false;
                 for (auto& outer : subAccountHistory_)
                 {
                     for (auto& inner : outer.second)
                     {
                         auto& subInfo = inner.second;
-                        if (subInfo.index->separationLedgerSeq == 0)
+                        if (subInfo.index_->separationLedgerSeq_ == 0)
                         {
                             subAccountHistoryStart(alpAccepted->getLedger(), subInfo);
                         }
@@ -3153,9 +3161,9 @@ void
 NetworkOPsImp::reportFeeChange()
 {
     ServerFeeSummary const f{
-        registry_.getOpenLedger().current()->fees().base,
-        registry_.getTxQ().getMetrics(*registry_.getOpenLedger().current()),
-        registry_.getFeeTrack()};
+        registry_.get().getOpenLedger().current()->fees().base,
+        registry_.get().getTxQ().getMetrics(*registry_.get().getOpenLedger().current()),
+        registry_.get().getFeeTrack()};
 
     // only schedule the job if something has changed
     if (f != lastFeeSummary_)
@@ -3216,7 +3224,7 @@ NetworkOPsImp::transJson(
         lookup.second && lookup.second->isFieldPresent(sfTransactionIndex))
     {
         uint32_t const txnSeq = lookup.second->getFieldU32(sfTransactionIndex);
-        uint32_t netID = registry_.getNetworkIDService().getNetworkID();
+        uint32_t netID = registry_.get().getNetworkIDService().getNetworkID();
         if (transaction->isFieldPresent(sfNetworkID))
             netID = transaction->getFieldU32(sfNetworkID);
 
@@ -3261,7 +3269,7 @@ NetworkOPsImp::transJson(
                 amount,
                 fhIGNORE_FREEZE,
                 ahIGNORE_AUTH,
-                registry_.getJournal("View"));
+                registry_.get().getJournal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
     }
@@ -3303,8 +3311,8 @@ NetworkOPsImp::pubValidatedTransaction(
     {
         std::lock_guard const sl(subLock_);
 
-        auto it = streamMaps_[STransactions].begin();
-        while (it != streamMaps_[STransactions].end())
+        auto it = streamMaps_[sTransactions].begin();
+        while (it != streamMaps_[sTransactions].end())
         {
             InfoSub::pointer p = it->second.lock();
 
@@ -3317,13 +3325,13 @@ NetworkOPsImp::pubValidatedTransaction(
             }
             else
             {
-                it = streamMaps_[STransactions].erase(it);
+                it = streamMaps_[sTransactions].erase(it);
             }
         }
 
-        it = streamMaps_[SRtTransactions].begin();
+        it = streamMaps_[sRTTransactions].begin();
 
-        while (it != streamMaps_[SRtTransactions].end())
+        while (it != streamMaps_[sRTTransactions].end())
         {
             InfoSub::pointer p = it->second.lock();
 
@@ -3336,13 +3344,13 @@ NetworkOPsImp::pubValidatedTransaction(
             }
             else
             {
-                it = streamMaps_[SRtTransactions].erase(it);
+                it = streamMaps_[sRTTransactions].erase(it);
             }
         }
     }
 
     if (transaction.getResult() == tesSUCCESS)
-        registry_.getOrderBookDB().processTxn(ledger, transaction, jvObj);
+        registry_.get().getOrderBookDB().processTxn(ledger, transaction, jvObj);
 
     pubAccountTransaction(ledger, transaction, last);
 }
@@ -3416,16 +3424,16 @@ NetworkOPsImp::pubAccountTransaction(
                     while (it != subs.end())
                     {
                         SubAccountHistoryInfoWeak const& info = it->second;
-                        if (currLedgerSeq <= info.index->separationLedgerSeq)
+                        if (currLedgerSeq <= info.index_->separationLedgerSeq_)
                         {
                             ++it;
                             continue;
                         }
 
-                        if (auto isSptr = info.sinkWptr.lock(); isSptr)
+                        if (auto isSptr = info.sinkWptr_.lock(); isSptr)
                         {
                             accountHistoryNotify.emplace_back(
-                                SubAccountHistoryInfo{isSptr, info.index});
+                                SubAccountHistoryInfo{.sink_ = isSptr, .index_ = info.index_});
                             ++it;
                         }
                         else
@@ -3468,15 +3476,15 @@ NetworkOPsImp::pubAccountTransaction(
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
-            auto& index = info.index;
-            if (index->forwardTxIndex == 0 && !index->haveHistorical)
+            auto& index = info.index_;
+            if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
                 jvObj.set(jss::account_history_tx_first, true);
 
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
+            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
 
             jvObj.visit(
-                info.sink->getApiVersion(),  //
-                [&](Json::Value const& jv) { info.sink->send(jv, true); });
+                info.sink_->getApiVersion(),  //
+                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
         }
     }
 }
@@ -3547,13 +3555,13 @@ NetworkOPsImp::pubProposedAccountTransaction(
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
-            auto& index = info.index;
-            if (index->forwardTxIndex == 0 && !index->haveHistorical)
+            auto& index = info.index_;
+            if (index->forwardTxIndex_ == 0 && !index->haveHistorical_)
                 jvObj.set(jss::account_history_tx_first, true);
-            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex++);
+            jvObj.set(jss::account_history_tx_index, index->forwardTxIndex_++);
             jvObj.visit(
-                info.sink->getApiVersion(),  //
-                [&](Json::Value const& jv) { info.sink->send(jv, true); });
+                info.sink_->getApiVersion(),  //
+                [&](Json::Value const& jv) { info.sink_->send(jv, true); });
         }
     }
 }
@@ -3645,284 +3653,229 @@ NetworkOPsImp::unsubAccountInternal(
 void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
-    enum DatabaseType { Sqlite, None };
-    static auto const kDATABASE_TYPE = [&]() -> DatabaseType {
-        // Use a dynamic_cast to return DatabaseType::None
-        // on failure.
-        if (dynamic_cast<SQLiteDatabase*>(&registry_.getRelationalDatabase()))
-        {
-            return DatabaseType::Sqlite;
-        }
-        return DatabaseType::None;
-    }();
+    registry_.get().getJobQueue().addJob(jtCLIENT_ACCT_HIST, "HistTxStream", [this, subInfo]() {
+        auto const& accountId = subInfo.index_->accountId_;
+        auto& lastLedgerSeq = subInfo.index_->historyLastLedgerSeq_;
+        auto& txHistoryIndex = subInfo.index_->historyTxIndex_;
 
-    if (kDATABASE_TYPE == DatabaseType::None)
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::NetworkOPsImp::addAccountHistoryJob : no database");
-        JLOG(journal_.error()) << "AccountHistory job for account "
-                               << toBase58(subInfo.index->accountId) << " no database";
-        if (auto sptr = subInfo.sinkWptr.lock(); sptr)
-        {
-            sptr->send(rpcError(rpcINTERNAL), true);
-            unsubAccountHistory(sptr, subInfo.index->accountId, false);
-        }
-        return;
-        // LCOV_EXCL_STOP
-    }
+        JLOG(journal_.trace()) << "AccountHistory job for account " << toBase58(accountId)
+                               << " started. lastLedgerSeq=" << lastLedgerSeq;
 
-    registry_.getJobQueue().addJob(
-        jtCLIENT_ACCT_HIST, "HistTxStream", [this, dbType = kDATABASE_TYPE, subInfo]() {
-            auto const& accountId = subInfo.index->accountId;
-            auto& lastLedgerSeq = subInfo.index->historyLastLedgerSeq;
-            auto& txHistoryIndex = subInfo.index->historyTxIndex;
+        auto isFirstTx = [&](std::shared_ptr<Transaction> const& tx,
+                             std::shared_ptr<TxMeta> const& meta) -> bool {
+            /*
+             * genesis account: first tx is the one with seq 1
+             * other account: first tx is the one created the account
+             */
+            if (accountId == kGENESIS_ACCOUNT_ID)
+            {
+                auto stx = tx->getSTransaction();
+                if (stx->getAccountID(sfAccount) == accountId && stx->getSeqValue() == 1)
+                    return true;
+            }
 
-            JLOG(journal_.trace()) << "AccountHistory job for account " << toBase58(accountId)
-                                   << " started. lastLedgerSeq=" << lastLedgerSeq;
+            for (auto& node : meta->getNodes())
+            {
+                if (node.getFieldU16(sfLedgerEntryType) != ltACCOUNT_ROOT)
+                    continue;
 
-            auto isFirstTx = [&](std::shared_ptr<Transaction> const& tx,
-                                 std::shared_ptr<TxMeta> const& meta) -> bool {
-                /*
-                 * genesis account: first tx is the one with seq 1
-                 * other account: first tx is the one created the account
-                 */
-                if (accountId == kGENESIS_ACCOUNT_ID)
+                if (node.isFieldPresent(sfNewFields))
                 {
-                    auto stx = tx->getSTransaction();
-                    if (stx->getAccountID(sfAccount) == accountId && stx->getSeqValue() == 1)
-                        return true;
-                }
-
-                for (auto& node : meta->getNodes())
-                {
-                    if (node.getFieldU16(sfLedgerEntryType) != ltACCOUNT_ROOT)
-                        continue;
-
-                    if (node.isFieldPresent(sfNewFields))
+                    if (auto inner = dynamic_cast<STObject const*>(node.peekAtPField(sfNewFields));
+                        inner)
                     {
-                        if (auto inner =
-                                dynamic_cast<STObject const*>(node.peekAtPField(sfNewFields));
-                            inner)
+                        if (inner->isFieldPresent(sfAccount) &&
+                            inner->getAccountID(sfAccount) == accountId)
                         {
-                            if (inner->isFieldPresent(sfAccount) &&
-                                inner->getAccountID(sfAccount) == accountId)
-                            {
-                                return true;
-                            }
+                            return true;
                         }
                     }
                 }
+            }
 
-                return false;
-            };
+            return false;
+        };
 
-            auto send = [&](Json::Value const& jvObj, bool unsubscribe) -> bool {
-                if (auto sptr = subInfo.sinkWptr.lock())
-                {
-                    sptr->send(jvObj, true);
-                    if (unsubscribe)
-                        unsubAccountHistory(sptr, accountId, false);
-                    return true;
-                }
-
-                return false;
-            };
-
-            auto sendMultiApiJson = [&](MultiApiJson const& jvObj, bool unsubscribe) -> bool {
-                if (auto sptr = subInfo.sinkWptr.lock())
-                {
-                    jvObj.visit(
-                        sptr->getApiVersion(),  //
-                        [&](Json::Value const& jv) { sptr->send(jv, true); });
-
-                    if (unsubscribe)
-                        unsubAccountHistory(sptr, accountId, false);
-                    return true;
-                }
-
-                return false;
-            };
-
-            auto getMoreTxns = [&](std::uint32_t minLedger,
-                                   std::uint32_t maxLedger,
-                                   std::optional<RelationalDatabase::AccountTxMarker> marker)
-                -> std::optional<std::pair<
-                    RelationalDatabase::AccountTxs,
-                    std::optional<RelationalDatabase::AccountTxMarker>>> {
-                switch (dbType)
-                {
-                    case Sqlite: {
-                        auto& db = registry_.getRelationalDatabase();
-                        RelationalDatabase::AccountTxPageOptions const options{
-                            .account = accountId,
-                            .ledgerRange = {.min = minLedger, .max = maxLedger},
-                            .marker = marker,
-                            .limit = 0,
-                            .bAdmin = true};
-                        return db.newestAccountTxPage(options);
-                    }
-                    // LCOV_EXCL_START
-                    default: {
-                        UNREACHABLE(
-                            "xrpl::NetworkOPsImp::addAccountHistoryJob : "
-                            "getMoreTxns : invalid database type");
-                        return {};
-                    }
-                        // LCOV_EXCL_STOP
-                }
-            };
-
-            /*
-             * search backward until the genesis ledger or asked to stop
-             */
-            while (lastLedgerSeq >= 2 && !subInfo.index->stopHistorical)
+        auto send = [&](Json::Value const& jvObj, bool unsubscribe) -> bool {
+            if (auto sptr = subInfo.sinkWptr_.lock())
             {
-                int feeChargeCount = 0;
-                if (auto sptr = subInfo.sinkWptr.lock(); sptr)
+                sptr->send(jvObj, true);
+                if (unsubscribe)
+                    unsubAccountHistory(sptr, accountId, false);
+                return true;
+            }
+
+            return false;
+        };
+
+        auto sendMultiApiJson = [&](MultiApiJson const& jvObj, bool unsubscribe) -> bool {
+            if (auto sptr = subInfo.sinkWptr_.lock())
+            {
+                jvObj.visit(
+                    sptr->getApiVersion(),  //
+                    [&](Json::Value const& jv) { sptr->send(jv, true); });
+
+                if (unsubscribe)
+                    unsubAccountHistory(sptr, accountId, false);
+                return true;
+            }
+
+            return false;
+        };
+
+        auto getMoreTxns = [&](std::uint32_t minLedger,
+                               std::uint32_t maxLedger,
+                               std::optional<RelationalDatabase::AccountTxMarker> marker)
+            -> std::pair<
+                RelationalDatabase::AccountTxs,
+                std::optional<RelationalDatabase::AccountTxMarker>> {
+            auto& db = registry_.get().getRelationalDatabase();
+            RelationalDatabase::AccountTxPageOptions const options{
+                .account = accountId,
+                .ledgerRange = {.min = minLedger, .max = maxLedger},
+                .marker = marker,
+                .limit = 0,
+                .bAdmin = true};
+            return db.newestAccountTxPage(options);
+        };
+
+        /*
+         * search backward until the genesis ledger or asked to stop
+         */
+        while (lastLedgerSeq >= 2 && !subInfo.index_->stopHistorical_)
+        {
+            int feeChargeCount = 0;
+            if (auto sptr = subInfo.sinkWptr_.lock(); sptr)
+            {
+                sptr->getConsumer().charge(Resource::feeMediumBurdenRPC);
+                ++feeChargeCount;
+            }
+            else
+            {
+                JLOG(journal_.trace())
+                    << "AccountHistory job for account " << toBase58(accountId)
+                    << " no InfoSub. Fee charged " << feeChargeCount << " times.";
+                return;
+            }
+
+            // try to search in 1024 ledgers till reaching genesis ledgers
+            auto startLedgerSeq = (lastLedgerSeq > 1024 + 2 ? lastLedgerSeq - 1024 : 2);
+            JLOG(journal_.trace())
+                << "AccountHistory job for account " << toBase58(accountId)
+                << ", working on ledger range [" << startLedgerSeq << "," << lastLedgerSeq << "]";
+
+            auto haveRange = [&]() -> bool {
+                std::uint32_t validatedMin = UINT_MAX;
+                std::uint32_t validatedMax = 0;
+                auto haveSomeValidatedLedgers =
+                    registry_.get().getLedgerMaster().getValidatedRange(validatedMin, validatedMax);
+
+                return haveSomeValidatedLedgers && validatedMin <= startLedgerSeq &&
+                    lastLedgerSeq <= validatedMax;
+            }();
+
+            if (!haveRange)
+            {
+                JLOG(journal_.debug()) << "AccountHistory reschedule job for account "
+                                       << toBase58(accountId) << ", incomplete ledger range ["
+                                       << startLedgerSeq << "," << lastLedgerSeq << "]";
+                setAccountHistoryJobTimer(subInfo);
+                return;
+            }
+
+            std::optional<RelationalDatabase::AccountTxMarker> marker{};
+            while (!subInfo.index_->stopHistorical_)
+            {
+                auto dbResult = getMoreTxns(startLedgerSeq, lastLedgerSeq, marker);
+
+                auto const& txns = dbResult.first;
+                marker = dbResult.second;
+                size_t const num_txns = txns.size();
+                for (size_t i = 0; i < num_txns; ++i)
                 {
-                    sptr->getConsumer().charge(Resource::feeMediumBurdenRPC);
-                    ++feeChargeCount;
-                }
-                else
-                {
-                    JLOG(journal_.trace())
-                        << "AccountHistory job for account " << toBase58(accountId)
-                        << " no InfoSub. Fee charged " << feeChargeCount << " times.";
-                    return;
-                }
+                    auto const& [tx, meta] = txns[i];
 
-                // try to search in 1024 ledgers till reaching genesis ledgers
-                auto startLedgerSeq = (lastLedgerSeq > 1024 + 2 ? lastLedgerSeq - 1024 : 2);
-                JLOG(journal_.trace()) << "AccountHistory job for account " << toBase58(accountId)
-                                       << ", working on ledger range [" << startLedgerSeq << ","
-                                       << lastLedgerSeq << "]";
-
-                auto haveRange = [&]() -> bool {
-                    std::uint32_t validatedMin = UINT_MAX;
-                    std::uint32_t validatedMax = 0;
-                    auto haveSomeValidatedLedgers =
-                        registry_.getLedgerMaster().getValidatedRange(validatedMin, validatedMax);
-
-                    return haveSomeValidatedLedgers && validatedMin <= startLedgerSeq &&
-                        lastLedgerSeq <= validatedMax;
-                }();
-
-                if (!haveRange)
-                {
-                    JLOG(journal_.debug()) << "AccountHistory reschedule job for account "
-                                           << toBase58(accountId) << ", incomplete ledger range ["
-                                           << startLedgerSeq << "," << lastLedgerSeq << "]";
-                    setAccountHistoryJobTimer(subInfo);
-                    return;
-                }
-
-                std::optional<RelationalDatabase::AccountTxMarker> marker{};
-                while (!subInfo.index->stopHistorical)
-                {
-                    auto dbResult = getMoreTxns(startLedgerSeq, lastLedgerSeq, marker);
-                    if (!dbResult)
+                    if (!tx || !meta)
+                    {
+                        JLOG(journal_.debug()) << "AccountHistory job for account "
+                                               << toBase58(accountId) << " empty tx or meta.";
+                        send(rpcError(rpcINTERNAL), true);
+                        return;
+                    }
+                    auto curTxLedger =
+                        registry_.get().getLedgerMaster().getLedgerBySeq(tx->getLedger());
+                    if (!curTxLedger)
                     {
                         // LCOV_EXCL_START
                         UNREACHABLE(
                             "xrpl::NetworkOPsImp::addAccountHistoryJob : "
-                            "getMoreTxns failed");
+                            "getLedgerBySeq failed");
                         JLOG(journal_.debug()) << "AccountHistory job for account "
-                                               << toBase58(accountId) << " getMoreTxns failed.";
+                                               << toBase58(accountId) << " no ledger.";
+                        send(rpcError(rpcINTERNAL), true);
+                        return;
+                        // LCOV_EXCL_STOP
+                    }
+                    std::shared_ptr<STTx const> const stTxn = tx->getSTransaction();
+                    if (!stTxn)
+                    {
+                        // LCOV_EXCL_START
+                        UNREACHABLE(
+                            "NetworkOPsImp::addAccountHistoryJob : "
+                            "getSTransaction failed");
+                        JLOG(journal_.debug()) << "AccountHistory job for account "
+                                               << toBase58(accountId) << " getSTransaction failed.";
                         send(rpcError(rpcINTERNAL), true);
                         return;
                         // LCOV_EXCL_STOP
                     }
 
-                    auto const& txns = dbResult->first;
-                    marker = dbResult->second;
-                    size_t const numTxns = txns.size();
-                    for (size_t i = 0; i < numTxns; ++i)
+                    auto const ref = std::ref(*meta);
+                    auto const trR = meta->getResultTER();
+                    MultiApiJson jvTx = transJson(stTxn, trR, true, curTxLedger, ref);
+
+                    jvTx.set(jss::account_history_tx_index, txHistoryIndex--);
+                    if (i + 1 == num_txns || txns[i + 1].first->getLedger() != tx->getLedger())
+                        jvTx.set(jss::account_history_boundary, true);
+
+                    if (isFirstTx(tx, meta))
                     {
-                        auto const& [tx, meta] = txns[i];
-
-                        if (!tx || !meta)
-                        {
-                            JLOG(journal_.debug()) << "AccountHistory job for account "
-                                                   << toBase58(accountId) << " empty tx or meta.";
-                            send(rpcError(rpcINTERNAL), true);
-                            return;
-                        }
-                        auto curTxLedger =
-                            registry_.getLedgerMaster().getLedgerBySeq(tx->getLedger());
-                        if (!curTxLedger)
-                        {
-                            // LCOV_EXCL_START
-                            UNREACHABLE(
-                                "xrpl::NetworkOPsImp::addAccountHistoryJob : "
-                                "getLedgerBySeq failed");
-                            JLOG(journal_.debug()) << "AccountHistory job for account "
-                                                   << toBase58(accountId) << " no ledger.";
-                            send(rpcError(rpcINTERNAL), true);
-                            return;
-                            // LCOV_EXCL_STOP
-                        }
-                        std::shared_ptr<STTx const> const stTxn = tx->getSTransaction();
-                        if (!stTxn)
-                        {
-                            // LCOV_EXCL_START
-                            UNREACHABLE(
-                                "NetworkOPsImp::addAccountHistoryJob : "
-                                "getSTransaction failed");
-                            JLOG(journal_.debug())
-                                << "AccountHistory job for account " << toBase58(accountId)
-                                << " getSTransaction failed.";
-                            send(rpcError(rpcINTERNAL), true);
-                            return;
-                            // LCOV_EXCL_STOP
-                        }
-
-                        auto const ref = std::ref(*meta);
-                        auto const trR = meta->getResultTER();
-                        MultiApiJson jvTx = transJson(stTxn, trR, true, curTxLedger, ref);
-
-                        jvTx.set(jss::account_history_tx_index, txHistoryIndex--);
-                        if (i + 1 == numTxns || txns[i + 1].first->getLedger() != tx->getLedger())
-                            jvTx.set(jss::account_history_boundary, true);
-
-                        if (isFirstTx(tx, meta))
-                        {
-                            jvTx.set(jss::account_history_tx_first, true);
-                            sendMultiApiJson(jvTx, false);
-
-                            JLOG(journal_.trace())
-                                << "AccountHistory job for account " << toBase58(accountId)
-                                << " done, found last tx.";
-                            return;
-                        }
-
+                        jvTx.set(jss::account_history_tx_first, true);
                         sendMultiApiJson(jvTx, false);
-                    }
 
-                    if (marker)
-                    {
-                        JLOG(journal_.trace())
-                            << "AccountHistory job for account " << toBase58(accountId)
-                            << " paging, marker=" << marker->ledgerSeq << ":" << marker->txnSeq;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                if (!subInfo.index->stopHistorical)
-                {
-                    lastLedgerSeq = startLedgerSeq - 1;
-                    if (lastLedgerSeq <= 1)
-                    {
-                        JLOG(journal_.trace())
-                            << "AccountHistory job for account " << toBase58(accountId)
-                            << " done, reached genesis ledger.";
+                        JLOG(journal_.trace()) << "AccountHistory job for account "
+                                               << toBase58(accountId) << " done, found last tx.";
                         return;
                     }
+
+                    sendMultiApiJson(jvTx, false);
+                }
+
+                if (marker)
+                {
+                    JLOG(journal_.trace())
+                        << "AccountHistory job for account " << toBase58(accountId)
+                        << " paging, marker=" << marker->ledgerSeq << ":" << marker->txnSeq;
+                }
+                else
+                {
+                    break;
                 }
             }
-        });
+
+            if (!subInfo.index_->stopHistorical_)
+            {
+                lastLedgerSeq = startLedgerSeq - 1;
+                if (lastLedgerSeq <= 1)
+                {
+                    JLOG(journal_.trace())
+                        << "AccountHistory job for account " << toBase58(accountId)
+                        << " done, reached genesis ledger.";
+                    return;
+                }
+            }
+        }
+    });
 }
 
 void
@@ -3930,8 +3883,8 @@ NetworkOPsImp::subAccountHistoryStart(
     std::shared_ptr<ReadView const> const& ledger,
     SubAccountHistoryInfoWeak& subInfo)
 {
-    subInfo.index->separationLedgerSeq = ledger->seq();
-    auto const& accountId = subInfo.index->accountId;
+    subInfo.index_->separationLedgerSeq_ = ledger->seq();
+    auto const& accountId = subInfo.index_->accountId_;
     auto const accountKeylet = keylet::account(accountId);
     if (!ledger->exists(accountKeylet))
     {
@@ -3961,8 +3914,8 @@ NetworkOPsImp::subAccountHistoryStart(
             // LCOV_EXCL_STOP
         }
     }
-    subInfo.index->historyLastLedgerSeq = ledger->seq();
-    subInfo.index->haveHistorical = true;
+    subInfo.index_->historyLastLedgerSeq_ = ledger->seq();
+    subInfo.index_->haveHistorical_ = true;
 
     JLOG(journal_.debug()) << "subAccountHistoryStart, add AccountHistory job: accountId="
                            << toBase58(accountId) << ", currentLedgerSeq=" << ledger->seq();
@@ -3980,8 +3933,9 @@ NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& acco
         return rpcINVALID_PARAMS;
     }
 
-    std::lock_guard sl(subLock_);
-    SubAccountHistoryInfoWeak ahi{isrListener, std::make_shared<SubAccountHistoryIndex>(accountId)};
+    std::lock_guard const sl(subLock_);
+    SubAccountHistoryInfoWeak ahi{
+        .sinkWptr_ = isrListener, .index_ = std::make_shared<SubAccountHistoryIndex>(accountId)};
     auto simIterator = subAccountHistory_.find(accountId);
     if (simIterator == subAccountHistory_.end())
     {
@@ -3994,7 +3948,7 @@ NetworkOPsImp::subAccountHistory(InfoSub::ref isrListener, AccountID const& acco
         simIterator->second.emplace(isrListener->getSeq(), ahi);
     }
 
-    auto const ledger = registry_.getLedgerMaster().getValidatedLedger();
+    auto const ledger = registry_.get().getLedgerMaster().getValidatedLedger();
     if (ledger)
     {
         subAccountHistoryStart(ledger, ahi);
@@ -4035,7 +3989,7 @@ NetworkOPsImp::unsubAccountHistoryInternal(
         auto subInfoIter = subInfoMap.find(seq);
         if (subInfoIter != subInfoMap.end())
         {
-            subInfoIter->second.index->stopHistorical = true;
+            subInfoIter->second.index_->stopHistorical_ = true;
         }
 
         if (!historyOnly)
@@ -4054,7 +4008,7 @@ NetworkOPsImp::unsubAccountHistoryInternal(
 bool
 NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
 {
-    if (auto listeners = registry_.getOrderBookDB().makeBookListeners(book))
+    if (auto listeners = registry_.get().getOrderBookDB().makeBookListeners(book))
     {
         listeners->addSubscriber(isrListener);
     }
@@ -4070,7 +4024,7 @@ NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
 bool
 NetworkOPsImp::unsubBook(std::uint64_t uSeq, Book const& book)
 {
-    if (auto listeners = registry_.getOrderBookDB().getBookListeners(book))
+    if (auto listeners = registry_.get().getOrderBookDB().getBookListeners(book))
         listeners->removeSubscriber(uSeq);
 
     return true;
@@ -4089,7 +4043,7 @@ NetworkOPsImp::acceptLedger(std::optional<std::chrono::milliseconds> consensusDe
     // FIXME Could we improve on this and remove the need for a specialized
     // API in Consensus?
     beginConsensus(ledgerMaster_.getClosedLedger()->header().hash, {});
-    consensus_.simulate(registry_.getTimeKeeper().closeTime(), consensusDelay);
+    consensus_.simulate(registry_.get().getTimeKeeper().closeTime(), consensusDelay);
     return ledgerMaster_.getCurrentLedger()->header().seq;
 }
 
@@ -4108,16 +4062,16 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::fee_base] = lpClosed->fees().base.jsonClipped();
         jvResult[jss::reserve_base] = lpClosed->fees().reserve.jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
-        jvResult[jss::network_id] = registry_.getNetworkIDService().getNetworkID();
+        jvResult[jss::network_id] = registry_.get().getNetworkIDService().getNetworkID();
     }
 
     if ((mode_ >= OperatingMode::SYNCING) && !isNeedNetworkLedger())
     {
-        jvResult[jss::validated_ledgers] = registry_.getLedgerMaster().getCompleteLedgers();
+        jvResult[jss::validated_ledgers] = registry_.get().getLedgerMaster().getCompleteLedgers();
     }
 
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SLedger].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sLedger].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=added, false=already there
@@ -4125,7 +4079,7 @@ bool
 NetworkOPsImp::subBookChanges(InfoSub::ref isrListener)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SBookChanges].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sBookChanges].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4133,7 +4087,7 @@ bool
 NetworkOPsImp::unsubLedger(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SLedger].erase(uSeq) != 0u;
+    return streamMaps_[sLedger].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4141,7 +4095,7 @@ bool
 NetworkOPsImp::unsubBookChanges(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SBookChanges].erase(uSeq) != 0u;
+    return streamMaps_[sBookChanges].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4149,7 +4103,7 @@ bool
 NetworkOPsImp::subManifests(InfoSub::ref isrListener)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SManifests].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sManifests].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4157,7 +4111,7 @@ bool
 NetworkOPsImp::unsubManifests(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SManifests].erase(uSeq) != 0u;
+    return streamMaps_[sManifests].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4172,17 +4126,17 @@ NetworkOPsImp::subServer(InfoSub::ref isrListener, Json::Value& jvResult, bool a
     // CHECKME: is it necessary to provide a random number here?
     beast::rngfill(uRandom.begin(), uRandom.size(), crypto_prng());
 
-    auto const& feeTrack = registry_.getFeeTrack();
+    auto const& feeTrack = registry_.get().getFeeTrack();
     jvResult[jss::random] = to_string(uRandom);
     jvResult[jss::server_status] = strOperatingMode(admin);
     jvResult[jss::load_base] = feeTrack.getLoadBase();
     jvResult[jss::load_factor] = feeTrack.getLoadFactor();
     jvResult[jss::hostid] = getHostId(admin);
     jvResult[jss::pubkey_node] =
-        toBase58(TokenType::NodePublic, registry_.getApp().nodeIdentity().first);
+        toBase58(TokenType::NodePublic, registry_.get().getApp().nodeIdentity().first);
 
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SServer].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sServer].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4190,7 +4144,7 @@ bool
 NetworkOPsImp::unsubServer(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SServer].erase(uSeq) != 0u;
+    return streamMaps_[sServer].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4198,7 +4152,7 @@ bool
 NetworkOPsImp::subTransactions(InfoSub::ref isrListener)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[STransactions].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sTransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4206,7 +4160,7 @@ bool
 NetworkOPsImp::unsubTransactions(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[STransactions].erase(uSeq) != 0u;
+    return streamMaps_[sTransactions].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4214,7 +4168,7 @@ bool
 NetworkOPsImp::subRTTransactions(InfoSub::ref isrListener)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SRtTransactions].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sRTTransactions].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4222,7 +4176,7 @@ bool
 NetworkOPsImp::unsubRTTransactions(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SRtTransactions].erase(uSeq) != 0u;
+    return streamMaps_[sRTTransactions].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4230,7 +4184,7 @@ bool
 NetworkOPsImp::subValidations(InfoSub::ref isrListener)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SValidations].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sValidations].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 void
@@ -4244,7 +4198,7 @@ bool
 NetworkOPsImp::unsubValidations(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SValidations].erase(uSeq) != 0u;
+    return streamMaps_[sValidations].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4252,7 +4206,7 @@ bool
 NetworkOPsImp::subPeerStatus(InfoSub::ref isrListener)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SPeerStatus].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sPeerStatus].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4260,7 +4214,7 @@ bool
 NetworkOPsImp::unsubPeerStatus(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SPeerStatus].erase(uSeq) != 0u;
+    return streamMaps_[sPeerStatus].erase(uSeq) != 0u;
 }
 
 // <-- bool: true=added, false=already there
@@ -4268,7 +4222,7 @@ bool
 NetworkOPsImp::subConsensus(InfoSub::ref isrListener)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SConsensusPhase].emplace(isrListener->getSeq(), isrListener).second;
+    return streamMaps_[sConsensusPhase].emplace(isrListener->getSeq(), isrListener).second;
 }
 
 // <-- bool: true=erased, false=was not there
@@ -4276,7 +4230,7 @@ bool
 NetworkOPsImp::unsubConsensus(std::uint64_t uSeq)
 {
     std::lock_guard const sl(subLock_);
-    return streamMaps_[SConsensusPhase].erase(uSeq) != 0u;
+    return streamMaps_[sConsensusPhase].erase(uSeq) != 0u;
 }
 
 InfoSub::pointer
@@ -4366,7 +4320,7 @@ NetworkOPsImp::getBookPage(
     STAmount saDirRate;
 
     auto const rate = transferRate(view, book.out.getIssuer());
-    auto viewJ = registry_.getJournal("View");
+    auto viewJ = registry_.get().getJournal("View");
 
     while (!bDone && iLimit-- > 0)
     {
@@ -4659,7 +4613,7 @@ NetworkOPsImp::getBookPage(
 #endif
 
 inline void
-NetworkOPsImp::collectMetrics()
+NetworkOPsImp::collect_metrics()
 {
     auto [counters, mode, start, initialSync] = accounting_.getCounterData();
     auto const current = std::chrono::duration_cast<std::chrono::microseconds>(
@@ -4721,8 +4675,8 @@ NetworkOPsImp::StateAccounting::json(Json::Value& obj) const
          i <= static_cast<std::size_t>(OperatingMode::FULL);
          ++i)
     {
-        obj[jss::state_accounting][kSTATES[i]] = Json::objectValue;
-        auto& state = obj[jss::state_accounting][kSTATES[i]];
+        obj[jss::state_accounting][states_[i]] = Json::objectValue;
+        auto& state = obj[jss::state_accounting][states_[i]];
         state[jss::transitions] = std::to_string(counters[i].transitions);
         state[jss::duration_us] = std::to_string(counters[i].dur.count());
     }
@@ -4739,11 +4693,11 @@ makeNetworkOPs(
     NetworkOPs::clock_type& clock,
     bool standalone,
     std::size_t minPeerCount,
-    bool startvalid,
+    bool startValid,
     JobQueue& jobQueue,
     LedgerMaster& ledgerMaster,
     ValidatorKeys const& validatorKeys,
-    boost::asio::io_context& ioSvc,
+    boost::asio::io_context& ioCtx,
     beast::Journal journal,
     beast::insight::Collector::ptr const& collector)
 {
@@ -4752,11 +4706,11 @@ makeNetworkOPs(
         clock,
         standalone,
         minPeerCount,
-        startvalid,
+        startValid,
         jobQueue,
         ledgerMaster,
         validatorKeys,
-        ioSvc,
+        ioCtx,
         journal,
         collector);
 }

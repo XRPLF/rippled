@@ -54,7 +54,7 @@ class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublis
 
     // Load a signed certificate into the ssl context, and configure
     // the context for use with a server.
-    inline void
+    void
     loadServerCertificate()
     {
         sslCtx_.set_password_callback(
@@ -106,8 +106,11 @@ public:
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
 
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) publicKeyType returns value for valid
+        // keys
         sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
         sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         Serializer s;
         st.add(s);
@@ -365,7 +368,7 @@ X1yu/XxHqchM+DOzzVw6wRKaM7Zsk80=
     static std::string const&
     key()
     {
-        static std::string const kKEY{R"pkey(
+        static std::string const key{R"pkey(
 -----BEGIN RSA PRIVATE KEY-----
 MIIEpAIBAAKCAQEAueZ1hgRxwPgfeVx2AdngUYx7zYcaxcGYXyqi7izJqTuBUcVc
 TRC/9Ip67RAEhfcgGudRS/a4Sv1ljwiRknSCcD/ZjzOFDLgbqYGSZNEs+T/qkwmc
@@ -394,7 +397,7 @@ cK55dMILcbHqeIBq/wR6sIhw6IJcaDBfFfrJiKKDilfij2lHxR2FQrEngtTCCRV+
 ZzARzaWhQPvbDqEtLJDWuXZNXfL8/PTIs5NmuKuQ8F4+gQJpkQgwaw==
 -----END RSA PRIVATE KEY-----
 )pkey"};
-        return kKEY;
+        return key;
     }
 
     static std::string const&
@@ -420,7 +423,7 @@ DQEBCwUAA4IBAQCDPyGKQwQ8Lz0yEgvIl/Uo9BtwAzlvjrLM/39qhStLQqDGSs2Q
 xFIbtjzjuLf5vR3q6OJ62CCvzqXgHkJ+hzVN/tAvyliGTdjJrK+xv1M5a+XipO2f
 c9lb4gRbFL/DyoeoWgb1Rkv3gFf0FlCYH+ZUcYb9ZYCRlGtFgOcxJI2g+T7jSLFp
 8+hSzQ6W5Sp9L6b5iJyCww1vjBvBqzNyZMNeB4gXGtd6z9vMDSvKboTdGD7wcFB+
-rMyNekaRw_+Npy4Hjou5sx272cXHHmPCSF5TjwdaibSaGjx1k0Q50mOf7S9KG5b5
+mRMyNekaRw+Npy4Hjou5sx272cXHHmPCSF5TjwdaibSaGjx1k0Q50mOf7S9KG5b5
 7X1e3FekJlaD02EBEhtkXURIxogOQALdFncj
 -----END CERTIFICATE-----
 )cert"};
@@ -452,8 +455,8 @@ private:
         boost::asio::executor_work_guard<boost::asio::executor> work;
         bool ssl;
 
-        Lambda(int id, TrustedPublisherServer& self_, socket_type&& sock_, bool ssl)
-            : id(id), self(self_), sock(std::move(sock_)), work(sock_.get_executor()), ssl(ssl)
+        Lambda(int id_, TrustedPublisherServer& self_, socket_type&& sock_, bool ssl_)
+            : id(id_), self(self_), sock(std::move(sock_)), work(sock.get_executor()), ssl(ssl_)
         {
         }
 
@@ -509,7 +512,9 @@ private:
             {
                 if (ssl)
                 {
-                    http::read(*ssl_stream, sb, req, ec);
+                    http::read(
+                        *ssl_stream, sb, req, ec);  // NOLINT(bugprone-unchecked-optional-access)
+                                                    // ssl_stream emplaced when ssl==true
                 }
                 else
                 {
@@ -542,8 +547,10 @@ private:
                         int refresh = 5;
                         constexpr char const* kREFRESH_PREFIX = "/validators2/refresh/";
                         if (boost::starts_with(path, kREFRESH_PREFIX))
+                        {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(kREFRESH_PREFIX)));
+                        }
                         res.body() = getList2_(refresh);
                     }
                 }
@@ -564,8 +571,10 @@ private:
                         int refresh = 5;
                         constexpr char const* kREFRESH_PREFIX = "/validators/refresh/";
                         if (boost::starts_with(path, kREFRESH_PREFIX))
+                        {
                             refresh = boost::lexical_cast<unsigned int>(
                                 path.substr(strlen(kREFRESH_PREFIX)));
+                        }
                         res.body() = getList_(refresh);
                     }
                 }
@@ -654,7 +663,8 @@ private:
 
             if (ssl)
             {
-                write(*ssl_stream, res, ec);
+                write(*ssl_stream, res, ec);  // NOLINT(bugprone-unchecked-optional-access)
+                                              // ssl_stream emplaced when ssl==true
             }
             else
             {
@@ -667,7 +677,8 @@ private:
 
         // Perform the SSL shutdown
         if (ssl)
-            ssl_stream->shutdown(ec);
+            ssl_stream->shutdown(ec);  // NOLINT(bugprone-unchecked-optional-access) ssl_stream
+                                       // emplaced when ssl==true
     }
 };
 

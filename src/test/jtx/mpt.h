@@ -259,7 +259,7 @@ public:
     {
         if (!env_.test.BEAST_EXPECT(id_))
             Throw<std::logic_error>("Uninitialized issuanceID");
-        return *id_;
+        return *id_;  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     std::int64_t

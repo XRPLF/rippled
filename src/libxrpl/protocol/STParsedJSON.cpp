@@ -272,7 +272,9 @@ parseUint16(
             }
         }
         if (!ret)
+        {
             return parseUnsigned<STResult, Integer>(field, jsonName, fieldName, name, value, error);
+        }
     }
     catch (std::exception const&)
     {
@@ -773,7 +775,7 @@ parseLeaf(
                             // human account id
                             if (!account.isString())
                             {
-                                error = stringExpected(elementName, "account");
+                                error = stringExpected(elementName, jss::account.c_str());
                                 return ret;
                             }
 
@@ -784,7 +786,7 @@ parseLeaf(
                                 auto const a = parseBase58<AccountID>(account.asString());
                                 if (!a)
                                 {
-                                    error = invalidData(elementName, "account");
+                                    error = invalidData(elementName, jss::account.c_str());
                                     return ret;
                                 }
                                 uAccount = *a;
@@ -796,7 +798,7 @@ parseLeaf(
                             // human asset
                             if (!asset.isString())
                             {
-                                error = stringExpected(elementName, "currency");
+                                error = stringExpected(elementName, assetName.c_str());
                                 return ret;
                             }
 
@@ -807,7 +809,7 @@ parseLeaf(
                                 MPTID u;
                                 if (!u.parseHex(asset.asString()))
                                 {
-                                    error = invalidData(elementName, "currency");
+                                    error = invalidData(elementName, assetName.c_str());
                                     return ret;
                                 }
                                 if (getMPTIssuer(u) == beast::zero)
@@ -837,7 +839,7 @@ parseLeaf(
                             // human account id
                             if (!issuer.isString())
                             {
-                                error = stringExpected(elementName, "issuer");
+                                error = stringExpected(elementName, jss::issuer.c_str());
                                 return ret;
                             }
 
@@ -846,7 +848,7 @@ parseLeaf(
                                 auto const a = parseBase58<AccountID>(issuer.asString());
                                 if (!a)
                                 {
-                                    error = invalidData(elementName, "issuer");
+                                    error = invalidData(elementName, jss::issuer.c_str());
                                     return ret;
                                 }
                                 uIssuer = *a;
@@ -1061,7 +1063,7 @@ parseObject(
     }
     catch (STObject::FieldErr const& e)
     {
-        std::cerr << "template_mismatch: " << e.what() << "\n";
+        std::cerr << "templateMismatch: " << e.what() << "\n";
         error = templateMismatch(inName);
     }
     catch (std::exception const&)
@@ -1111,6 +1113,7 @@ parseArray(
             // first/only key in an object without copying all keys into
             // a vector
             std::string const memberName(json[i].getMemberNames()[0]);
+            ;
             auto const& nameField(SField::getField(memberName));
 
             if (nameField == sfInvalid)

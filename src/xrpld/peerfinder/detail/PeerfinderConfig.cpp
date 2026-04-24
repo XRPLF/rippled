@@ -10,14 +10,8 @@
 
 namespace xrpl::PeerFinder {
 
-Config::Config()
-    : maxPeers(Tuning::DefaultMaxPeers)
-    , outPeers(calcOutPeers())
-    , inPeers(0)
-    , wantIncoming(true)
-    , autoConnect(true)
-    , listeningPort(0)
-    , ipLimit(0)
+Config::Config() : outPeers(calcOutPeers())
+
 {
 }
 

@@ -152,11 +152,11 @@ private:
     clock_type::time_point lastAction_;
 
     std::shared_ptr<Ledger> ledger_;
-    bool haveHeader_;
-    bool haveState_;
-    bool haveTransactions_;
-    bool signaled_;
-    bool byHash_;
+    bool haveHeader_{false};
+    bool haveState_{false};
+    bool haveTransactions_{false};
+    bool signaled_{false};
+    bool byHash_{true};
     std::uint32_t seq_;
     Reason const reason_;
 
@@ -168,7 +168,7 @@ private:
     std::mutex receivedDataLock_;
     std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
         receivedData_;
-    bool receiveDispatched_;
+    bool receiveDispatched_{false};
     std::unique_ptr<PeerSet> peerSet_;
 };
 

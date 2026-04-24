@@ -440,6 +440,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
             auto refHash = hashOfSeq(*ledger, refIndex, j);
             XRPL_ASSERT(refHash, "xrpl::RPC::getOrAcquireLedger : nonzero ledger hash");
 
+            // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
             {
@@ -456,6 +457,7 @@ getOrAcquireLedger(RPC::JsonContext const& context)
                 }
 
                 if (auto il = context.app.getInboundLedgers().find(*refHash))
+                // NOLINTEND(bugprone-unchecked-optional-access)
                 {
                     Json::Value jvResult = RPC::make_error(
                         rpcLGR_NOT_FOUND, "acquiring ledger containing requested index");

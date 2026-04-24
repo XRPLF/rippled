@@ -126,7 +126,9 @@ public:
     async_shutdown(ShutdownHandler handler)
     {
         if (isSecure())
+        {
             socket_->async_shutdown(handler);
+        }
         else
         {
             error_code ec;
@@ -147,7 +149,9 @@ public:
     async_read_some(Seq const& buffers, Handler handler)
     {
         if (isSecure())
+        {
             socket_->async_read_some(buffers, handler);
+        }
         else
         {
             PlainSocket().async_read_some(buffers, handler);
@@ -159,7 +163,9 @@ public:
     async_read_until(Seq const& buffers, Condition condition, Handler handler)
     {
         if (isSecure())
+        {
             boost::asio::async_read_until(*socket_, buffers, condition, handler);
+        }
         else
         {
             boost::asio::async_read_until(PlainSocket(), buffers, condition, handler);
@@ -174,7 +180,9 @@ public:
         Handler handler)
     {
         if (isSecure())
+        {
             boost::asio::async_read_until(*socket_, buffers, delim, handler);
+        }
         else
         {
             boost::asio::async_read_until(PlainSocket(), buffers, delim, handler);
@@ -189,7 +197,9 @@ public:
         Handler handler)
     {
         if (isSecure())
+        {
             boost::asio::async_read_until(*socket_, buffers, cond, handler);
+        }
         else
         {
             boost::asio::async_read_until(PlainSocket(), buffers, cond, handler);
@@ -201,7 +211,9 @@ public:
     async_write(Buf const& buffers, Handler handler)
     {
         if (isSecure())
+        {
             boost::asio::async_write(*socket_, buffers, handler);
+        }
         else
         {
             boost::asio::async_write(PlainSocket(), buffers, handler);
@@ -213,7 +225,9 @@ public:
     async_write(boost::asio::basic_streambuf<Allocator>& buffers, Handler handler)
     {
         if (isSecure())
+        {
             boost::asio::async_write(*socket_, buffers, handler);
+        }
         else
         {
             boost::asio::async_write(PlainSocket(), buffers, handler);
@@ -225,7 +239,9 @@ public:
     async_read(Buf const& buffers, Condition cond, Handler handler)
     {
         if (isSecure())
+        {
             boost::asio::async_read(*socket_, buffers, cond, handler);
+        }
         else
         {
             boost::asio::async_read(PlainSocket(), buffers, cond, handler);
@@ -237,7 +253,9 @@ public:
     async_read(boost::asio::basic_streambuf<Allocator>& buffers, Condition cond, Handler handler)
     {
         if (isSecure())
+        {
             boost::asio::async_read(*socket_, buffers, cond, handler);
+        }
         else
         {
             boost::asio::async_read(PlainSocket(), buffers, cond, handler);
@@ -249,7 +267,9 @@ public:
     async_read(Buf const& buffers, Handler handler)
     {
         if (isSecure())
+        {
             boost::asio::async_read(*socket_, buffers, handler);
+        }
         else
         {
             boost::asio::async_read(PlainSocket(), buffers, handler);
@@ -261,7 +281,9 @@ public:
     async_write_some(Seq const& buffers, Handler handler)
     {
         if (isSecure())
+        {
             socket_->async_write_some(buffers, handler);
+        }
         else
         {
             PlainSocket().async_write_some(buffers, handler);

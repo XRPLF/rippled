@@ -5174,7 +5174,7 @@ class MPToken_test : public beast::unit_test::suite
             mpt.authorize({.account = carol});
             mpt.pay(gw, carol, 200);
 
-            auto const [pathSet, srcAmt, dstAmt] = find_paths(env, carol, dan, MPT(-1));
+            auto const [pathSet, srcAmt, dstAmt] = findPaths(env, carol, dan, MPT(-1));
             BEAST_EXPECT(srcAmt == MPT(200));
             BEAST_EXPECT(dstAmt == MPT(200));
             // Direct payment, no path
@@ -5200,7 +5200,7 @@ class MPToken_test : public beast::unit_test::suite
             env(offer(alice, XRP(100), MPT(100)));
             env.close();
 
-            auto const [pathSet, srcAmt, dstAmt] = find_paths(env, carol, dan, MPT(-1));
+            auto const [pathSet, srcAmt, dstAmt] = findPaths(env, carol, dan, MPT(-1));
             BEAST_EXPECT(srcAmt == XRP(100));
             BEAST_EXPECT(dstAmt == MPT(100));
             if (BEAST_EXPECT(same(pathSet, stpath(IPE(mpt.issuanceID())))))
@@ -5241,7 +5241,7 @@ class MPToken_test : public beast::unit_test::suite
             STPathSet pathSet;
             STAmount srcAmt;
             STAmount dstAmt;
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, MPT(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, MPT(-1));
             BEAST_EXPECT(srcAmt == USD(100));
             BEAST_EXPECT(dstAmt == MPT(100));
             if (BEAST_EXPECT(
@@ -5255,7 +5255,7 @@ class MPToken_test : public beast::unit_test::suite
             }
 
             // Include sendMax
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, MPT(-1), USD(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, MPT(-1), USD(-1));
             BEAST_EXPECT(srcAmt == USD(90));
             BEAST_EXPECT(dstAmt == MPT(90));
             if (BEAST_EXPECT(pathSet.size() == 1 && same(pathSet, stpath(IPE(mpt.issuanceID())))))
@@ -5269,7 +5269,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // Include source token
             std::tie(pathSet, srcAmt, dstAmt) =
-                find_paths(env, carol, dan, MPT(-1), std::nullopt, USD.currency);
+                findPaths(env, carol, dan, MPT(-1), std::nullopt, USD.currency);
             BEAST_EXPECT(srcAmt == USD(80));
             BEAST_EXPECT(dstAmt == MPT(80));
             if (BEAST_EXPECT(
@@ -5311,7 +5311,7 @@ class MPToken_test : public beast::unit_test::suite
             STPathSet pathSet;
             STAmount srcAmt;
             STAmount dstAmt;
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, USD(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, USD(-1));
             BEAST_EXPECT(srcAmt == MPT(100));
             BEAST_EXPECT(dstAmt == USD(100));
             if (BEAST_EXPECT(pathSet.size() == 1 && same(pathSet, stpath(IPE(USD)))))
@@ -5324,7 +5324,7 @@ class MPToken_test : public beast::unit_test::suite
             }
 
             // Include sendMax
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, USD(-1), MPT(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, USD(-1), MPT(-1));
             BEAST_EXPECT(srcAmt == MPT(90));
             BEAST_EXPECT(dstAmt == USD(90));
             if (BEAST_EXPECT(pathSet.size() == 1 && same(pathSet, stpath(IPE(USD)))))
@@ -5338,7 +5338,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // Include source token
             std::tie(pathSet, srcAmt, dstAmt) =
-                find_paths(env, carol, dan, USD(-1), std::nullopt, MPT.mpt());
+                findPaths(env, carol, dan, USD(-1), std::nullopt, MPT.mpt());
             BEAST_EXPECT(srcAmt == MPT(80));
             BEAST_EXPECT(dstAmt == USD(80));
             if (BEAST_EXPECT(pathSet.size() == 1 && same(pathSet, stpath(IPE(USD)))))
@@ -5380,7 +5380,7 @@ class MPToken_test : public beast::unit_test::suite
             STPathSet pathSet;
             STAmount srcAmt;
             STAmount dstAmt;
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, MPT(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, MPT(-1));
             BEAST_EXPECT(srcAmt == MPT1(100));
             BEAST_EXPECT(dstAmt == MPT(100));
             if (BEAST_EXPECT(pathSet.size() == 1 && same(pathSet, stpath(IPE(mpt.issuanceID())))))
@@ -5393,7 +5393,7 @@ class MPToken_test : public beast::unit_test::suite
             }
 
             // Include sendMax
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, MPT(-1), MPT1(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, MPT(-1), MPT1(-1));
             BEAST_EXPECT(srcAmt == MPT1(90));
             BEAST_EXPECT(dstAmt == MPT(90));
             if (BEAST_EXPECT(pathSet.size() == 1 && same(pathSet, stpath(IPE(mpt.issuanceID())))))
@@ -5407,7 +5407,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // Include source token
             std::tie(pathSet, srcAmt, dstAmt) =
-                find_paths(env, carol, dan, MPT(-1), std::nullopt, MPT1.mpt());
+                findPaths(env, carol, dan, MPT(-1), std::nullopt, MPT1.mpt());
             BEAST_EXPECT(srcAmt == MPT1(80));
             BEAST_EXPECT(dstAmt == MPT(80));
             if (BEAST_EXPECT(pathSet.size() == 1 && same(pathSet, stpath(IPE(mpt.issuanceID())))))
@@ -5451,7 +5451,7 @@ class MPToken_test : public beast::unit_test::suite
             STPathSet pathSet;
             STAmount srcAmt;
             STAmount dstAmt;
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, USD(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, USD(-1));
             BEAST_EXPECT(srcAmt == XRP(100));
             BEAST_EXPECT(dstAmt == USD(100));
             if (BEAST_EXPECT(
@@ -5465,7 +5465,7 @@ class MPToken_test : public beast::unit_test::suite
             }
 
             // Include sendMax
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, USD(-1), XRP(100));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, USD(-1), XRP(100));
             BEAST_EXPECT(srcAmt == XRP(90));
             BEAST_EXPECT(dstAmt == USD(90));
             if (BEAST_EXPECT(
@@ -5515,7 +5515,7 @@ class MPToken_test : public beast::unit_test::suite
             STPathSet pathSet;
             STAmount srcAmt;
             STAmount dstAmt;
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, MPT1(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, MPT1(-1));
             BEAST_EXPECT(srcAmt == MPT(100));
             BEAST_EXPECT(dstAmt == MPT1(100));
             if (BEAST_EXPECT(
@@ -5530,7 +5530,7 @@ class MPToken_test : public beast::unit_test::suite
             }
 
             // Include sendMax
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, MPT1(-1), MPT(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, MPT1(-1), MPT(-1));
             BEAST_EXPECT(srcAmt == MPT(90));
             BEAST_EXPECT(dstAmt == MPT1(90));
             if (BEAST_EXPECT(
@@ -5546,7 +5546,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // Include source token
             std::tie(pathSet, srcAmt, dstAmt) =
-                find_paths(env, carol, dan, MPT1(-1), std::nullopt, MPT.mpt());
+                findPaths(env, carol, dan, MPT1(-1), std::nullopt, MPT.mpt());
             BEAST_EXPECT(srcAmt == MPT(80));
             BEAST_EXPECT(dstAmt == MPT1(80));
             if (BEAST_EXPECT(
@@ -5599,7 +5599,7 @@ class MPToken_test : public beast::unit_test::suite
             STPathSet pathSet;
             STAmount srcAmt;
             STAmount dstAmt;
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, MPT2(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, MPT2(-1));
             BEAST_EXPECT(srcAmt == MPT(100));
             BEAST_EXPECT(dstAmt == MPT2(100));
             if (BEAST_EXPECT(
@@ -5614,7 +5614,7 @@ class MPToken_test : public beast::unit_test::suite
             }
 
             // Include sendMax
-            std::tie(pathSet, srcAmt, dstAmt) = find_paths(env, carol, dan, MPT2(-1), MPT(-1));
+            std::tie(pathSet, srcAmt, dstAmt) = findPaths(env, carol, dan, MPT2(-1), MPT(-1));
             BEAST_EXPECT(srcAmt == MPT(90));
             BEAST_EXPECT(dstAmt == MPT2(90));
             if (BEAST_EXPECT(
@@ -5630,7 +5630,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // Include source token
             std::tie(pathSet, srcAmt, dstAmt) =
-                find_paths(env, carol, dan, MPT2(-1), std::nullopt, MPT.mpt());
+                findPaths(env, carol, dan, MPT2(-1), std::nullopt, MPT.mpt());
             BEAST_EXPECT(srcAmt == MPT(80));
             BEAST_EXPECT(dstAmt == MPT2(80));
             if (BEAST_EXPECT(
@@ -5690,7 +5690,7 @@ class MPToken_test : public beast::unit_test::suite
 
             // dan has USD/gw and USD1/gw. Had USD been IOU, it would have
             // been able to ripple through dan's account.
-            auto const [pathSet, srcAmt, dstAmt] = find_paths(env, john, sean, GBP(-1), XRP(-1));
+            auto const [pathSet, srcAmt, dstAmt] = findPaths(env, john, sean, GBP(-1), XRP(-1));
             BEAST_EXPECT(pathSet.empty());
 
             env(pay(john, sean, GBP(10)),

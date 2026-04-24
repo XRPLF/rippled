@@ -6,7 +6,6 @@
 #include <chrono>
 
 namespace beast {
-namespace detail {
 
 /** Manual clock implementation.
 
@@ -76,10 +75,5 @@ public:
         return *this;
     }
 };
-
-}  // namespace detail
-
-template <typename Clock>
-using ManualClock = detail::ManualClock<Clock>;
 
 }  // namespace beast

@@ -76,6 +76,7 @@ public:
     StatsDHookImpl&
     operator=(StatsDHookImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     HandlerType handler_;
 };
@@ -102,6 +103,7 @@ public:
     StatsDCounterImpl&
     operator=(StatsDCounterImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     std::string name_;
     CounterImpl::value_type value_{0};
@@ -159,6 +161,7 @@ public:
     StatsDGaugeImpl&
     operator=(StatsDGaugeImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     std::string name_;
     GaugeImpl::value_type last_value_{0};
@@ -188,6 +191,7 @@ public:
     StatsDMeterImpl&
     operator=(StatsDMeterImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> impl_;
     std::string name_;
     MeterImpl::value_type value_{0};
@@ -201,7 +205,7 @@ class StatsDCollectorImp : public StatsDCollector,
 {
 private:
     enum {
-        // max_packet_size = 484
+        // MaxPacketSize = 484
         MaxPacketSize = 1472
     };
 
@@ -227,10 +231,10 @@ private:
     }
 
 public:
-    StatsDCollectorImp(IP::Endpoint const& address, std::string const& prefix, Journal journal)
+    StatsDCollectorImp(IP::Endpoint address, std::string prefix, Journal journal)
         : journal_(journal)
-        , address_(address)
-        , prefix_(prefix)
+        , address_(std::move(address))
+        , prefix_(std::move(prefix))
         , work_(boost::asio::make_work_guard(io_context_))
         , strand_(boost::asio::make_strand(io_context_))
         , timer_(io_context_)
@@ -384,7 +388,7 @@ public:
             std::size_t const length(s.size());
             XRPL_ASSERT(
                 !s.empty(),
-                "beast::insight::detail::StatsDCollectorImp::send_buffers : "
+                "beast::insight::detail::StatsDCollectorImp::sendBuffers : "
                 "non-empty payload");
             if (!buffers.empty() && (size + length) > MaxPacketSize)
             {
@@ -436,7 +440,7 @@ public:
         if (ec)
         {
             if (auto stream = journal_.error())
-                stream << "on_timer failed: " << ec.message();
+                stream << "onTimer failed: " << ec.message();
             return;
         }
 

@@ -470,7 +470,7 @@ public:
 };
 
 Json::Value
-find_paths_request(
+findPathsRequest(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -481,7 +481,7 @@ find_paths_request(
     std::optional<uint256> const& domain = std::nullopt);
 
 std::tuple<STPathSet, STAmount, STAmount>
-find_paths(
+findPaths(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -492,7 +492,7 @@ find_paths(
     std::optional<uint256> const& domain = std::nullopt);
 
 std::tuple<STPathSet, STAmount, STAmount>
-find_paths_by_element(
+findPathsByElement(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,

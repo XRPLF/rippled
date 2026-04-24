@@ -96,17 +96,11 @@ InboundLedger::InboundLedger(
           app,
           hash,
           kLEDGER_ACQUIRE_TIMEOUT,
-          {jtLEDGER_DATA, "InboundLedger", 5},
+          {.jobType = jtLEDGER_DATA, .jobName = "InboundLedger", .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)
-    , haveHeader_(false)
-    , haveState_(false)
-    , haveTransactions_(false)
-    , signaled_(false)
-    , byHash_(true)
     , seq_(seq)
     , reason_(reason)
-    , receiveDispatched_(false)
     , peerSet_(std::move(peerSet))
 {
     JLOG(journal_.trace()) << "Acquiring ledger " << hash_;

@@ -125,7 +125,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         std::size_t ledgersInQueue,
         std::uint32_t base,
         std::uint32_t reserve,
-        std::uint32_t kINCREMENT)
+        std::uint32_t increment)
     {
         // Run past the flag ledger so that a Fee change vote occurs and
         // lowers the reserve fee. (It also activates all supported
@@ -154,7 +154,7 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         auto const fees = env.current()->fees();
         BEAST_EXPECT(fees.base == XRPAmount{base});
         BEAST_EXPECT(fees.reserve == XRPAmount{reserve});
-        BEAST_EXPECT(fees.increment == XRPAmount{kINCREMENT});
+        BEAST_EXPECT(fees.increment == XRPAmount{increment});
 
         return flagMaxQueue;
     }

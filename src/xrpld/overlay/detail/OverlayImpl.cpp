@@ -690,7 +690,7 @@ OverlayImpl::onManifests(
                     mo,
                     "xrpl::OverlayImpl::onManifests : manifest "
                     "deserialization succeeded");
-
+                // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
                 app_.getOPs().pubManifest(*mo);
 
                 if (app_.getValidators().listed(mo->masterKey))
@@ -698,6 +698,7 @@ OverlayImpl::onManifests(
                     auto db = app_.getWalletDB().checkoutDb();
                     addValidatorManifest(*db, serialized);
                 }
+                // NOLINTEND(bugprone-unchecked-optional-access)
             }
         }
         else

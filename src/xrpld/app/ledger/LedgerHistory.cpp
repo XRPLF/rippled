@@ -485,7 +485,8 @@ LedgerHistory::validatedLedger(
                 hash,
                 entry->builtConsensusHash,
                 consensusHash,
-                entry->consensus.value());
+                entry->consensus.value());  // NOLINT(bugprone-unchecked-optional-access) consensus
+                                            // always emplaced with built
         }
         else
         {

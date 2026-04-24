@@ -22,6 +22,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/Job.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
@@ -198,7 +199,7 @@ pathTestEnv(beast::unit_test::suite& suite)
 }
 
 Json::Value
-find_paths_request(
+findPathsRequest(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -263,7 +264,7 @@ find_paths_request(
 }
 
 std::tuple<STPathSet, STAmount, STAmount>
-find_paths(
+findPaths(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -274,7 +275,7 @@ find_paths(
     std::optional<uint256> const& domain)
 {
     Json::Value result =
-        find_paths_request(env, src, dst, saDstAmount, saSendMax, srcAsset, srcIssuer, domain);
+        findPathsRequest(env, src, dst, saDstAmount, saSendMax, srcAsset, srcIssuer, domain);
     if (result.isMember(jss::error))
         return std::make_tuple(STPathSet{}, STAmount{}, STAmount{});
 
@@ -302,7 +303,8 @@ find_paths(
                 Json::Value p;
                 p["Paths"] = path[jss::paths_computed];
                 STParsedJSONObject po("generic", p);
-                paths = po.object->getFieldPathSet(sfPaths);
+                if (po.object)
+                    paths = po.object->getFieldPathSet(sfPaths);
             }
         }
     }
@@ -311,7 +313,7 @@ find_paths(
 }
 
 std::tuple<STPathSet, STAmount, STAmount>
-find_paths_by_element(
+findPathsByElement(
     jtx::Env& env,
     jtx::Account const& src,
     jtx::Account const& dst,
@@ -321,8 +323,20 @@ find_paths_by_element(
     std::optional<AccountID> const& srcIssuer,
     std::optional<uint256> const& domain)
 {
-    return find_paths(
-        env, src, dst, saDstAmount, saSendMax, srcElement->getPathAsset(), srcIssuer, domain);
+    // srcElement is optional but is expected to always be present
+    XRPL_ASSERT(
+        srcElement.has_value(), "xrpl::test::jtx::findPathsByElement::srcElement : nullptr");
+
+    return findPaths(
+        env,
+        src,
+        dst,
+        saDstAmount,
+        saSendMax,
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+        srcElement->getPathAsset(),
+        srcIssuer,
+        domain);
 }
 
 /******************************************************************************/

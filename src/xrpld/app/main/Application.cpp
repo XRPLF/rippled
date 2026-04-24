@@ -153,7 +153,7 @@ private:
             beast::Journal journal,
             std::chrono::milliseconds interval,
             boost::asio::io_context& ios)
-            : event_(ev), journal_(journal), probe_(interval, ios)
+            : event_(std::move(ev)), journal_(journal), probe_(interval, ios)
         {
         }
 
@@ -232,7 +232,7 @@ public:
     std::unique_ptr<NodeStore::Database> nodeStore_;
     NodeFamily nodeFamily_;
     std::unique_ptr<OrderBookDB> orderBookDB_;
-    std::unique_ptr<PathRequestManager> pathRequests_;
+    std::unique_ptr<PathRequestManager> pathRequestManager_;
     std::unique_ptr<LedgerMaster> ledgerMaster_;
     std::unique_ptr<LedgerCleaner> ledgerCleaner_;
     std::unique_ptr<InboundLedgers> inboundLedgers_;
@@ -390,9 +390,11 @@ public:
 
         , nodeFamily_(*this, *collectorManager_)
 
-        , orderBookDB_(make_OrderBookDB(*this, {config_->PATH_SEARCH_MAX, config_->standalone()}))
+        , orderBookDB_(make_OrderBookDB(
+              *this,
+              {.pathSearchMax = config_->PATH_SEARCH_MAX, .standalone = config_->standalone()}))
 
-        , pathRequests_(
+        , pathRequestManager_(
               std::make_unique<PathRequestManager>(
                   *this,
                   logs_->journal("PathRequest"),
@@ -722,7 +724,7 @@ public:
     PathRequestManager&
     getPathRequestManager() override
     {
-        return *pathRequests_;
+        return *pathRequestManager_;
     }
 
     CachedSLEs&
@@ -812,27 +814,29 @@ public:
     OpenLedger&
     getOpenLedger() override
     {
-        return *openLedger_;
+        return *openLedger_;  // NOLINT(bugprone-unchecked-optional-access) emplaced during
+                              // initialization before any caller
     }
 
     OpenLedger const&
     getOpenLedger() const override
     {
-        return *openLedger_;
+        return *openLedger_;  // NOLINT(bugprone-unchecked-optional-access) emplaced during
+                              // initialization before any caller
     }
 
     Overlay&
     getOverlay() override
     {
         XRPL_ASSERT(overlay_, "xrpl::ApplicationImp::overlay : non-null overlay");
-        return *overlay_;
+        return *overlay_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     TxQ&
     getTxQ() override
     {
         XRPL_ASSERT(txQ_, "xrpl::ApplicationImp::getTxQ : non-null transaction queue");
-        return *txQ_;
+        return *txQ_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     RelationalDatabase&
@@ -841,7 +845,7 @@ public:
         XRPL_ASSERT(
             relationalDatabase_,
             "xrpl::ApplicationImp::getRelationalDatabase : non-null relational database");
-        return *relationalDatabase_;
+        return *relationalDatabase_;  // NOLINT(bugprone-unchecked-optional-access) assert above
     }
 
     DatabaseCon&
@@ -991,6 +995,7 @@ public:
     {
         XRPL_ASSERT(
             relationalDatabase_, "xrpl::ApplicationImp::doSweep : non-null relational database");
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
         if (!config_->standalone() && !relationalDatabase_->transactionDbHasSpace(*config_))
         {
             signalStop("Out of transaction DB space");
@@ -1270,21 +1275,21 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     auto const startUp = config_->START_UP;
     JLOG(journal_.debug()) << "startUp: " << startUp;
-    if (startUp == StartUpType::FRESH)
+    if (startUp == StartUpType::Fresh)
     {
         JLOG(journal_.info()) << "Starting new Ledger";
 
         startGenesisLedger();
     }
     else if (
-        startUp == StartUpType::LOAD || startUp == StartUpType::LoadFile ||
-        startUp == StartUpType::REPLAY)
+        startUp == StartUpType::Load || startUp == StartUpType::LoadFile ||
+        startUp == StartUpType::Replay)
     {
         JLOG(journal_.info()) << "Loading specified Ledger";
 
         if (!loadOldLedger(
                 config_->START_LEDGER,
-                startUp == StartUpType::REPLAY,
+                startUp == StartUpType::Replay,
                 startUp == StartUpType::LoadFile,
                 config_->TRAP_TX_HASH))
         {
@@ -1301,7 +1306,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             }
         }
     }
-    else if (startUp == StartUpType::NETWORK)
+    else if (startUp == StartUpType::Network)
     {
         // This should probably become the default once we have a stable
         // network.
@@ -1456,7 +1461,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                                  "implications and have";
         JLOG(journal_.warn()) << "*** been deprecated. They will be removed "
                                  "in a future release of";
-        JLOG(journal_.warn()) << "*** rippled.";
+        JLOG(journal_.warn()) << "*** xrpld.";
         JLOG(journal_.warn()) << "*** If you do not use them to sign "
                                  "transactions please edit your";
         JLOG(journal_.warn()) << "*** configuration file and remove the [enable_signing] stanza.";
@@ -1692,7 +1697,7 @@ ApplicationImp::fdRequired() const
 void
 ApplicationImp::startGenesisLedger()
 {
-    std::vector<uint256> const initialAmendments = (config_->START_UP == StartUpType::FRESH)
+    std::vector<uint256> const initialAmendments = (config_->START_UP == StartUpType::Fresh)
         ? amendmentTable_->getDesired()
         : std::vector<uint256>{};
 
@@ -2006,7 +2011,7 @@ ApplicationImp::loadOldLedger(
                                    << " UTC.\n"
                                       "This replay will not handle your ledger as it was "
                                       "originally "
-                                      "handled.\nConsider running an earlier version of rippled "
+                                      "handled.\nConsider running an earlier version of xrpld "
                                       "to "
                                       "get the older rules.\n*** CONTINUING ***\n";
         }
@@ -2037,7 +2042,10 @@ ApplicationImp::loadOldLedger(
         if (!loadLedger->isSensible())
         {
             // LCOV_EXCL_START
-            JLOG(journal_.fatal()) << "Ledger is not sensible.";
+            Json::Value j = getJson({*loadLedger, {}});
+            j[jss::accountTreeHash] = to_string(loadLedger->header().accountHash);
+            j[jss::transTreeHash] = to_string(loadLedger->header().txHash);
+            JLOG(journal_.fatal()) << "Ledger is not sensible: " << j;
             UNREACHABLE(
                 "xrpl::ApplicationImp::loadOldLedger : ledger is not "
                 "sensible");
@@ -2073,6 +2081,8 @@ ApplicationImp::loadOldLedger(
 
                 forceValidity(getHashRouter(), txID, Validity::SigGoodOnly);
 
+                // emplaced during initialization before any caller
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 openLedger_->modify([&txID, &s](OpenView& view, beast::Journal j) {
                     view.rawTxInsert(txID, std::move(s), nullptr);
                     return true;

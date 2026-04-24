@@ -447,7 +447,7 @@ issueIOU(
     STAmount const limit(Issue{issue.currency, account});
     STAmount finalBalance = amount;
 
-    finalBalance.setIssuer(noAccount());
+    finalBalance.get<Issue>().account = noAccount();
 
     auto const receiverAccount = view.peek(keylet::account(account));
     if (!receiverAccount)

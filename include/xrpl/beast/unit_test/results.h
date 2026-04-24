@@ -38,9 +38,7 @@ private:
         std::size_t failed_{0};
 
     public:
-        TestsT() : failed_(0)
-        {
-        }
+        TestsT() = default;
 
         /** Returns the total number of test conditions. */
         std::size_t
@@ -72,7 +70,7 @@ private:
         }
     };
 
-    class log_t : public detail::ConstContainer<std::vector<std::string>>
+    class LogT : public detail::ConstContainer<std::vector<std::string>>
     {
     public:
         /** Insert a string into the log. */
@@ -86,7 +84,7 @@ private:
     std::string name_;
 
 public:
-    explicit CaseResults(std::string const& name = "") : name_(name)
+    explicit CaseResults(std::string name = "") : name_(std::move(name))
     {
     }
 
@@ -101,7 +99,7 @@ public:
     TestsT tests;
 
     /** Memberspace for a container of testcase log messages. */
-    log_t log;
+    LogT log;
 };
 
 //--------------------------------------------------------------------------
@@ -115,7 +113,7 @@ private:
     std::size_t failed_ = 0;
 
 public:
-    explicit SuiteResults(std::string const& name = "") : name_(name)
+    explicit SuiteResults(std::string name = "") : name_(std::move(name))
     {
     }
 
@@ -167,14 +165,12 @@ public:
 class Results : public detail::ConstContainer<std::vector<SuiteResults>>
 {
 private:
-    std::size_t cases_;
-    std::size_t total_;
-    std::size_t failed_;
+    std::size_t cases_{0};
+    std::size_t total_{0};
+    std::size_t failed_{0};
 
 public:
-    Results() : cases_(0), total_(0), failed_(0)
-    {
-    }
+    Results() = default;
 
     /** Returns the total number of test cases. */
     std::size_t
