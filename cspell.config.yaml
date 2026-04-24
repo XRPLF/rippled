@@ -220,6 +220,7 @@ words:
   - qalloc
   - queuable
   - Raphson
+  - reparent
   - replayer
   - rerere
   - retriable

@@ -1,3 +1,4 @@
+#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLConsensus.h>
 
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
@@ -225,6 +226,11 @@ RCLConsensus::Adaptor::share(RCLCxTx const& tx)
 void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
+    auto span = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "proposal.send");
+    span.setAttribute(
+        telemetry::cons_span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
+
     JLOG(j_.trace()) << (proposal.isBowOut() ? "We bow out: " : "We propose: ")
                      << xrpl::to_string(proposal.prevLedger()) << " -> "
                      << xrpl::to_string(proposal.position());
@@ -327,6 +333,13 @@ RCLConsensus::Adaptor::onClose(
     NetClock::time_point const& closeTime,
     ConsensusMode mode) -> Result
 {
+    auto span = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "ledger_close");
+    span.setAttribute(
+        telemetry::cons_span::attr::ledgerSeq,
+        static_cast<int64_t>(ledger.ledger_->header().seq + 1));
+    span.setAttribute(telemetry::cons_span::attr::mode, to_string(mode).c_str());
+
     bool const wrongLCL = mode == ConsensusMode::wrongLedger;
     bool const proposing = mode == ConsensusMode::proposing;
 
@@ -435,6 +448,18 @@ RCLConsensus::Adaptor::onAccept(
     Json::Value&& consensusJson,
     bool const validating)
 {
+    {
+        auto span = telemetry::SpanGuard::span(
+            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept");
+        span.setAttribute(
+            telemetry::cons_span::attr::proposers, static_cast<int64_t>(result.proposers));
+        span.setAttribute(
+            telemetry::cons_span::attr::roundTimeMs,
+            static_cast<int64_t>(result.roundTime.read().count()));
+        span.setAttribute(
+            telemetry::cons_span::attr::quorum, static_cast<int64_t>(result.proposers));
+    }
+
     app_.getJobQueue().addJob(
         jtACCEPT,
         "AcceptLedger",
@@ -484,6 +509,41 @@ RCLConsensus::Adaptor::doAccept(
         consensusCloseTime =
             effCloseTime(consensusCloseTime, closeResolution, prevLedger.closeTime());
         closeTimeCorrect = true;
+    }
+
+    auto doAcceptSpan = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq() + 1));
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::closeTime,
+        static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
+    doAcceptSpan.setAttribute(telemetry::cons_span::attr::closeTimeCorrect, closeTimeCorrect);
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::closeResolutionMs,
+        static_cast<int64_t>(
+            std::chrono::duration_cast<std::chrono::milliseconds>(closeResolution).count()));
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::state, std::string(consensusFail ? "moved_on" : "finished"));
+    doAcceptSpan.setAttribute(telemetry::cons_span::attr::proposing, proposing);
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::roundTimeMs,
+        static_cast<int64_t>(result.roundTime.read().count()));
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::parentCloseTime,
+        static_cast<int64_t>(prevLedger.closeTime().time_since_epoch().count()));
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::closeTimeSelf,
+        static_cast<int64_t>(rawCloseTimes.self.time_since_epoch().count()));
+    doAcceptSpan.setAttribute(
+        telemetry::cons_span::attr::closeTimeVoteBins,
+        static_cast<int64_t>(rawCloseTimes.peers.size()));
+    {
+        auto const prevRes = prevLedger.closeTimeResolution();
+        std::string dir = (closeResolution > prevRes) ? "increased"
+            : (closeResolution < prevRes)             ? "decreased"
+                                                      : "unchanged";
+        doAcceptSpan.setAttribute(telemetry::cons_span::attr::resolutionDirection, std::move(dir));
     }
 
     JLOG(j_.debug()) << "Report: Prop=" << (proposing ? "yes" : "no")
@@ -803,6 +863,14 @@ RCLConsensus::Adaptor::buildLCL(
 void
 RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns, bool proposing)
 {
+    auto valSpan = createValidationSpan();
+    if (valSpan)
+    {
+        valSpan->setAttribute(
+            telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(ledger.seq()));
+        valSpan->setAttribute(telemetry::cons_span::attr::proposing, proposing);
+    }
+
     using namespace std::chrono_literals;
 
     auto validationTime = app_.getTimeKeeper().closeTime();
@@ -890,6 +958,11 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 void
 RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
+    auto span = telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "mode_change");
+    span.setAttribute(telemetry::cons_span::attr::modeOld, to_string(before).c_str());
+    span.setAttribute(telemetry::cons_span::attr::modeNew, to_string(after).c_str());
+
     JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
                     << ", after=" << to_string(after);
 
@@ -1012,6 +1085,8 @@ RCLConsensus::Adaptor::preStartRound(RCLCxLedger const& prevLgr, hash_set<NodeID
     if (!nowTrusted.empty())
         nUnlVote_.newValidators(prevLgr.seq() + 1, nowTrusted);
 
+    startRoundTracing(prevLgr);
+
     // propose only if we're in sync with the network (and validating)
     return validating_ && synced;
 }
@@ -1053,6 +1128,67 @@ RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 {
     if ((positions == 0u) && app_.getOPs().isFull())
         app_.getOPs().setMode(OperatingMode::CONNECTED);
+}
+
+void
+RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
+{
+    using namespace telemetry;
+
+    if (roundSpan_)
+    {
+        prevRoundContext_ = roundSpan_->captureContext();
+        roundSpan_.reset();
+    }
+
+    auto const& strategy = app_.getTelemetry().getConsensusTraceStrategy();
+
+    if (strategy == "deterministic")
+    {
+        roundSpan_.emplace(
+            SpanGuard::hashSpan(
+                TraceCategory::Consensus,
+                cons_span::round,
+                prevLgr.id().data(),
+                prevLgr.id().bytes));
+    }
+    else
+    {
+        roundSpan_.emplace(SpanGuard::span(TraceCategory::Consensus, seg::consensus, "round"));
+    }
+
+    if (!*roundSpan_)
+        return;
+
+    if (prevRoundContext_.isValid())
+    {
+        // Create a linked span to establish follows-from relationship
+        // between consecutive rounds, then transfer to roundSpan_.
+        auto linked = SpanGuard::linkedSpan(cons_span::round, prevRoundContext_);
+        if (linked)
+        {
+            roundSpan_.emplace(std::move(linked));
+        }
+    }
+
+    roundSpan_->setAttribute(cons_span::attr::ledgerId, to_string(prevLgr.id()).c_str());
+    roundSpan_->setAttribute(cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq() + 1));
+    roundSpan_->setAttribute(cons_span::attr::mode, to_string(mode_.load()).c_str());
+    roundSpan_->setAttribute(cons_span::attr::traceStrategy, strategy.c_str());
+    roundSpan_->setAttribute(cons_span::attr::roundId, static_cast<int64_t>(prevLgr.seq() + 1));
+
+    roundSpanContext_ = roundSpan_->captureContext();
+}
+
+std::optional<telemetry::SpanGuard>
+RCLConsensus::Adaptor::createValidationSpan()
+{
+    using namespace telemetry;
+
+    if (!roundSpanContext_.isValid())
+        return std::nullopt;
+
+    return SpanGuard::linkedSpan(cons_span::validationSend, roundSpanContext_);
 }
 
 void

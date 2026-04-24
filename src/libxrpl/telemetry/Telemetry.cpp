@@ -192,6 +192,12 @@ public:
         return false;
     }
 
+    std::string const&
+    getConsensusTraceStrategy() const override
+    {
+        return setup_.consensusTraceStrategy;
+    }
+
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>
     getTracer(std::string_view) override
     {
@@ -357,6 +363,12 @@ public:
     shouldTraceLedger() const override
     {
         return setup_.traceLedger;
+    }
+
+    std::string const&
+    getConsensusTraceStrategy() const override
+    {
+        return setup_.consensusTraceStrategy;
     }
 
     opentelemetry::nostd::shared_ptr<trace_api::Tracer>

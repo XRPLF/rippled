@@ -239,6 +239,22 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 "xrpl.consensus.ledger.seq"     = int64    // Ledger sequence
 "xrpl.consensus.tx_count"       = int64    // Transactions in consensus set
 "xrpl.consensus.duration_ms"    = float64  // Round duration
+
+// Phase 4a: Establish-phase gap fill & cross-node correlation
+"xrpl.consensus.round_id"          = int64    // Consensus round number
+"xrpl.consensus.ledger_id"         = string   // previousLedger.id() — shared across nodes
+"xrpl.consensus.trace_strategy"    = string   // "deterministic" or "attribute"
+"xrpl.consensus.converge_percent"  = int64    // Convergence % (0-100+)
+"xrpl.consensus.establish_count"   = int64    // Number of establish iterations
+"xrpl.consensus.disputes_count"    = int64    // Active disputed transactions
+"xrpl.consensus.proposers_agreed"  = int64    // Peers agreeing with our position
+"xrpl.consensus.proposers_total"   = int64    // Total peer positions
+"xrpl.consensus.agree_count"       = int64    // Peers that agree (haveConsensus)
+"xrpl.consensus.disagree_count"    = int64    // Peers that disagree
+"xrpl.consensus.threshold_percent" = int64    // Current threshold (50/65/70/95)
+"xrpl.consensus.result"            = string   // "yes", "no", "moved_on"
+"xrpl.consensus.mode.old"          = string   // Previous consensus mode
+"xrpl.consensus.mode.new"          = string   // New consensus mode
 ```
 
 #### RPC Attributes

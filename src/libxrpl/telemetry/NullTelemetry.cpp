@@ -84,6 +84,12 @@ public:
         return false;
     }
 
+    std::string const&
+    getConsensusTraceStrategy() const override
+    {
+        return setup_.consensusTraceStrategy;
+    }
+
 #ifdef XRPL_ENABLE_TELEMETRY
     opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
     getTracer(std::string_view) override
