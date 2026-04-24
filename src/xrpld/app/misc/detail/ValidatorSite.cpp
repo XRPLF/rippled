@@ -279,7 +279,8 @@ ValidatorSite::makeRequest(
         sp = std::make_shared<detail::WorkSSL>(
             resource->pUrl.domain,
             resource->pUrl.path,
-            std::to_string(*resource->pUrl.port),
+            std::to_string(*resource->pUrl.port),  // NOLINT(bugprone-unchecked-optional-access)
+                                                   // port defaulted at parse time
             app_.getIOContext(),
             j_,
             app_.config(),
@@ -292,7 +293,8 @@ ValidatorSite::makeRequest(
         sp = std::make_shared<detail::WorkPlain>(
             resource->pUrl.domain,
             resource->pUrl.path,
-            std::to_string(*resource->pUrl.port),
+            std::to_string(*resource->pUrl.port),  // NOLINT(bugprone-unchecked-optional-access)
+                                                   // port defaulted at parse time
             app_.getIOContext(),
             sites_[siteIdx].lastRequestEndpoint,
             sites_[siteIdx].lastRequestSuccessful,
