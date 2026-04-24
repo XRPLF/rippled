@@ -3492,11 +3492,17 @@ PeerImp::processLedgerRequest(
                         // we always set the `nodeid` field. However, when it is supported then we
                         // set the `id` field for inner nodes and the `depth` field for leaf nodes.
                         if (!useLedgerNodeDepth)
+                        {
                             node->set_nodeid(d.nodeID.getRawString());
+                        }
                         else if (d.isLeaf)
+                        {
                             node->set_depth(d.nodeID.getDepth());
+                        }
                         else
+                        {
                             node->set_id(d.nodeID.getRawString());
+                        }
                     }
                 }
                 else
