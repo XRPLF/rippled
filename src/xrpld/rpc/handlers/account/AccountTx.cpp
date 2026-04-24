@@ -12,6 +12,7 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/chrono.h>
@@ -28,8 +29,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
-
-#include "xrpl/basics/Expected.h"
 
 #include <cstdint>
 #include <memory>

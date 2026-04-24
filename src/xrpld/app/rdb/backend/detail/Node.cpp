@@ -1011,10 +1011,7 @@ passesDelegateFilter(
 
     AccountID const txOwner = tx.getAccountID(sfAccount);
 
-    // If sfDelegate is present use it directly — the delegatee may have
-    // proven their identity via multi-sig (empty sfSigningPubKey).
-    // Otherwise derive from sfSigningPubKey; skip if empty (multi-signed
-    // non-delegated txns and batch inner txns cannot be delegation txns).
+    // Use delegate if present, otherwise check if multisign is done
     AccountID txSigner;
     if (tx.isFieldPresent(sfDelegate))
     {
