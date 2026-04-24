@@ -33,7 +33,7 @@
 // Keep it sorted in reverse chronological order.
 
 XRPL_FIX   (PermissionedDomainInvariant, Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (Security3_1_3,              Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (Cleanup3_1_3,              Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FIX    (BatchInnerSigs,             Supported::no, VoteBehavior::DefaultNo)
 XRPL_FEATURE(LendingProtocol,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (DirectoryLimit,             Supported::yes, VoteBehavior::DefaultNo)

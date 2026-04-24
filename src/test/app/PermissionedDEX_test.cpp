@@ -1552,13 +1552,13 @@ class PermissionedDEX_test : public beast::unit_test::suite
     void
     testHybridMalformedOffer(FeatureBitset features)
     {
-        bool const fixS313Enabled = features[fixSecurity3_1_3];
+        bool const fixS313Enabled = features[fixCleanup3_1_3];
 
         testcase << "Hybrid offer with empty AdditionalBooks"
-                 << (fixS313Enabled ? " (fixSecurity3_1_3 enabled)"
-                                    : " (fixSecurity3_1_3 disabled)");
+                 << (fixS313Enabled ? " (fixCleanup3_1_3 enabled)"
+                                    : " (fixCleanup3_1_3 disabled)");
 
-        // offerInDomain has two code paths gated by fixSecurity3_1_3:
+        // offerInDomain has two code paths gated by fixCleanup3_1_3:
         //
         // pre-fix:  only rejects a hybrid offer when sfAdditionalBooks is
         //           entirely absent — an empty array (size 0) passes through.
@@ -1585,7 +1585,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         // Directly manipulate the offer SLE in the open ledger so that
         // sfAdditionalBooks is present but empty (size 0). This is the
-        // malformed state that fixSecurity3_1_3 is designed to catch.
+        // malformed state that fixCleanup3_1_3 is designed to catch.
         auto const offerKey = keylet::offer(bob.id(), bobOfferSeq);
         env.app().openLedger().modify(
             [&offerKey](OpenView& view, beast::Journal) {
@@ -1600,7 +1600,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         if (fixS313Enabled)
         {
-            // post-fixSecurity3_1_3: offerInDomain rejects the malformed
+            // post-fixCleanup3_1_3: offerInDomain rejects the malformed
             // offer (size == 0), so no valid domain offer is found.
             env(pay(alice, carol, USD(10)),
                 path(~USD),
@@ -1610,7 +1610,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         }
         else
         {
-            // pre-fixSecurity3_1_3: offerInDomain only checks for a missing
+            // pre-fixCleanup3_1_3: offerInDomain only checks for a missing
             // sfAdditionalBooks field; size == 0 passes through, so the
             // malformed offer is crossed and the payment succeeds.
             env(pay(alice, carol, USD(10)),
@@ -1642,7 +1642,7 @@ public:
         testHybridInvalidOffer(all);
         testHybridOfferDirectories(all);
         testHybridMalformedOffer(all);
-        testHybridMalformedOffer(all - fixSecurity3_1_3);
+        testHybridMalformedOffer(all - fixCleanup3_1_3);
     }
 };
 

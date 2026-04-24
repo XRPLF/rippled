@@ -258,11 +258,11 @@ VaultClawback::assetsToClawback(
     auto const mptIssuanceID = *vault->at(sfShareMPTID);
     MPTIssue const share{mptIssuanceID};
 
-    // Pre-fixSecurity3_1_3: zero-amount clawback returned early without
+    // Pre-fixCleanup3_1_3: zero-amount clawback returned early without
     // clamping to assetsAvailable, allowing more assets to be recovered
     // than available when there was an outstanding loan. Retained for
     // ledger replay compatibility.
-    if (!ctx_.view().rules().enabled(fixSecurity3_1_3) &&
+    if (!ctx_.view().rules().enabled(fixCleanup3_1_3) &&
         clawbackAmount == beast::zero)
     {
         auto const sharesDestroyed = accountHolds(

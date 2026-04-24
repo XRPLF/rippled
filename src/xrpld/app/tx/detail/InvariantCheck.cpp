@@ -405,7 +405,7 @@ NoZeroEscrow::visitEntry(
             bad_ = true;
     };
 
-    bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+    bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
@@ -689,7 +689,7 @@ NoXRPTrustLines::visitEntry(
     std::shared_ptr<SLE const> const&,
     std::shared_ptr<SLE const> const& after)
 {
-    bool const overwriteFixEnabled = isFeatureEnabled(fixSecurity3_1_3, true);
+    bool const overwriteFixEnabled = isFeatureEnabled(fixCleanup3_1_3, true);
 
     if (after && after->getType() == ltRIPPLE_STATE)
     {
@@ -732,7 +732,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
     if (after && after->getType() == ltRIPPLE_STATE)
     {
         bool const overwriteFixEnabled =
-            isFeatureEnabled(fixSecurity3_1_3, true);
+            isFeatureEnabled(fixCleanup3_1_3, true);
 
         std::uint32_t const uFlags = after->getFieldU32(sfFlags);
         bool const lowFreeze = uFlags & lsfLowFreeze;
@@ -1983,7 +1983,7 @@ ValidPermissionedDEX::finalize(
     // For each offercreate transaction, check if
     // permissioned offers are valid
     bool const isMalformed =
-        view.rules().enabled(fixSecurity3_1_3) ? badHybrids_ : badHybridsOld_;
+        view.rules().enabled(fixCleanup3_1_3) ? badHybrids_ : badHybridsOld_;
     if (txType == ttOFFER_CREATE && isMalformed)
     {
         JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
@@ -2634,7 +2634,7 @@ ValidLoanBroker::finalize(
             return false;
         }
 
-        if (view.rules().enabled(fixSecurity3_1_3))
+        if (view.rules().enabled(fixCleanup3_1_3))
         {
             // Don't check the balance when LoanBroker is deleted,
             // sfCoverAvailable is not zeroed

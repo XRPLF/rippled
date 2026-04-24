@@ -2270,7 +2270,7 @@ protected:
                     ter(tecNO_PERMISSION));
 
                 {
-                    env.disableFeature(fixSecurity3_1_3);
+                    env.disableFeature(fixCleanup3_1_3);
                     env(pay(borrower,
                             loanKeylet.key,
                             STAmount{
@@ -2282,7 +2282,7 @@ protected:
                             (Number{15, -1} / loanPaymentsPerFeeIncrement +
                              1)}),
                         ter(temINVALID_FLAG));
-                    env.enableFeature(fixSecurity3_1_3);
+                    env.enableFeature(fixCleanup3_1_3);
                 }
             }
             // Try to send a payment marked as multiple mutually exclusive
@@ -5128,7 +5128,7 @@ protected:
     void
     testDosLoanPay(FeatureBitset features)
     {
-        bool const feeCapped = features[fixSecurity3_1_3];
+        bool const feeCapped = features[fixCleanup3_1_3];
 
         // From FIND-005
         testcase << "DoS LoanPay: fee calculation "
@@ -5147,7 +5147,7 @@ protected:
         env.close();
 
         BEAST_EXPECT(
-            feeCapped == env.current()->rules().enabled(fixSecurity3_1_3));
+            feeCapped == env.current()->rules().enabled(fixCleanup3_1_3));
 
         PrettyAsset const iouAsset = issuer[iouCurrency];
         env(trust(lender, iouAsset(100'000'000)));
@@ -8048,8 +8048,8 @@ public:
         testLoanPayDebtDecreaseInvariant();
         testWrongMaxDebtBehavior();
         testLoanPayComputePeriodicPaymentValidTotalInterestInvariant();
-        testDosLoanPay(all | fixSecurity3_1_3);
-        testDosLoanPay(all - fixSecurity3_1_3);
+        testDosLoanPay(all | fixCleanup3_1_3);
+        testDosLoanPay(all - fixCleanup3_1_3);
         testLoanPayComputePeriodicPaymentValidTotalPrincipalPaidInvariant();
         testLoanPayComputePeriodicPaymentValidTotalInterestPaidInvariant();
         testLoanNextPaymentDueDateOverflow();

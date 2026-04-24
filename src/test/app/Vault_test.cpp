@@ -5631,7 +5631,7 @@ class Vault_test : public beast::unit_test::suite
         using namespace loanBroker;
         using namespace loan;
         Env env(*this);
-        env.enableFeature(fixSecurity3_1_3);
+        env.enableFeature(fixCleanup3_1_3);
 
         auto const setupVault =
             [&](PrettyAsset const& asset,
@@ -6180,14 +6180,14 @@ class Vault_test : public beast::unit_test::suite
         env.close();
         testCase(MPT, "MPT", owner, depositor, issuer);
 
-        // Test pre-fixSecurity3_1_3 legacy path: zero-amount clawback
+        // Test pre-fixCleanup3_1_3 legacy path: zero-amount clawback
         // returns early without clamping to assetsAvailable.
         {
             testcase(
-                "VaultClawback (asset) - IOU pre-fixSecurity3_1_3"
+                "VaultClawback (asset) - IOU pre-fixCleanup3_1_3"
                 " zero-amount clawback unclamped with outstanding loan");
 
-            env.disableFeature(fixSecurity3_1_3);
+            env.disableFeature(fixCleanup3_1_3);
 
             auto [vault, vaultKeylet] =
                 setupVault(IOU, owner, depositor, issuer);
@@ -6247,7 +6247,7 @@ class Vault_test : public beast::unit_test::suite
                 BEAST_EXPECT(sharesAfter == sharesBefore);
             }
 
-            env.enableFeature(fixSecurity3_1_3);
+            env.enableFeature(fixCleanup3_1_3);
         }
     }
 
@@ -6678,7 +6678,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("Vault clawback only recovers unlocked shares");
 
-            Env env{*this, testable_amendments() | fixSecurity3_1_3};
+            Env env{*this, testable_amendments() | fixCleanup3_1_3};
             auto const baseFee = env.current()->fees().base;
             Account const owner{"owner"};
             Account const depositor{"depositor"};
@@ -6776,9 +6776,9 @@ class Vault_test : public beast::unit_test::suite
             testable_amendments() | featureSingleAssetVault;
 
         for (auto const& features :
-             {allAmendments, allAmendments - fixSecurity3_1_3})
+             {allAmendments, allAmendments - fixCleanup3_1_3})
         {
-            bool const withFix = features[fixSecurity3_1_3];
+            bool const withFix = features[fixCleanup3_1_3];
 
             Env env{*this, features};
             Account const owner{"owner"};
@@ -6953,7 +6953,7 @@ class Vault_test : public beast::unit_test::suite
 
             auto const sleMptAfter =
                 env.le(keylet::mptoken(shareMptID, depositor));
-            if (!f[fixSecurity3_1_3])
+            if (!f[fixCleanup3_1_3])
             {
                 // Without the fix, removeEmptyHolding deletes the MPToken
                 // even though sfLockedAmount > 0, leaving the escrow's locked
@@ -6973,7 +6973,7 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        runTest(amendments - fixSecurity3_1_3);
+        runTest(amendments - fixCleanup3_1_3);
         runTest(amendments);
     }
 

@@ -66,7 +66,7 @@ class Invariants_test : public beast::unit_test::suite
     defaultAmendments()
     {
         return ripple::test::jtx::testable_amendments() |
-            featureInvariantsV1_1 | featureSingleAssetVault | fixSecurity3_1_3;
+            featureInvariantsV1_1 | featureSingleAssetVault | fixCleanup3_1_3;
     }
 
     /** Run a specific test case to put the ledger into a state that will be
@@ -1979,9 +1979,9 @@ class Invariants_test : public beast::unit_test::suite
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
         }
 
-        // empty sfAdditionalBooks (size 0) - caught by fixSecurity3_1_3
+        // empty sfAdditionalBooks (size 0) - caught by fixCleanup3_1_3
         {
-            Env env1(*this, defaultAmendments() | fixSecurity3_1_3);
+            Env env1(*this, defaultAmendments() | fixCleanup3_1_3);
 
             Account const A1{"A1"};
             Account const A2{"A2"};
@@ -2518,7 +2518,7 @@ class Invariants_test : public beast::unit_test::suite
             }
 
             // Test: cover available greater than pseudo-account asset balance
-            // (requires fixSecurity3_1_3)
+            // (requires fixCleanup3_1_3)
             doInvariantCheck(
                 {{"Loan Broker cover available is greater than pseudo-account "
                   "asset balance"}},
@@ -4292,7 +4292,7 @@ class Invariants_test : public beast::unit_test::suite
     testInvariantOverwrite(FeatureBitset features)
     {
         using namespace test::jtx;
-        bool const fixEnabled = features[fixSecurity3_1_3];
+        bool const fixEnabled = features[fixCleanup3_1_3];
         std::initializer_list<TER> const failTers = {
             tecINVARIANT_FAILED, tefINVARIANT_FAILED};
         std::initializer_list<TER> const passTers = {tesSUCCESS, tesSUCCESS};
@@ -4590,7 +4590,7 @@ public:
         testValidLoanBroker();
         testVault();
         testInvariantOverwrite(defaultAmendments());
-        testInvariantOverwrite(defaultAmendments() - fixSecurity3_1_3);
+        testInvariantOverwrite(defaultAmendments() - fixCleanup3_1_3);
         testVaultComputeCoarsestScale();
     }
 };
