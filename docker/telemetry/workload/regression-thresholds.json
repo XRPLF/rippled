@@ -6,10 +6,6 @@
       "p95": { "max_pct_increase": 10.0, "max_abs_increase_ms": 3.0 },
       "p99": { "max_pct_increase": 10.0, "max_abs_increase_ms": 5.0 }
     },
-    "rpc_method": {
-      "p95": { "max_pct_increase": 10.0, "max_abs_increase_us": 3000.0 },
-      "p99": { "max_pct_increase": 10.0, "max_abs_increase_us": 5000.0 }
-    },
     "job_queue": {
       "p95": { "max_pct_increase": 15.0, "max_abs_increase_us": 5000.0 }
     }

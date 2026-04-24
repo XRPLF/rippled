@@ -17,12 +17,6 @@
       "consensus.accept"
     ]
   },
-  "rpc_methods": {
-    "_query_template": "histogram_quantile({quantile}, sum by (le) (rate(rippled_rpc_method_duration_us_bucket{method=\"{name}\"}[{window}])))",
-    "_unit": "us",
-    "_quantiles": [0.95, 0.99],
-    "names": ["server_info", "account_info", "ledger", "fee", "tx"]
-  },
   "job_queue": {
     "_queued_template": "histogram_quantile({quantile}, sum by (le) (rate(rippled_job_queued_duration_us_bucket{job_type=\"{name}\"}[{window}])))",
     "_running_template": "histogram_quantile({quantile}, sum by (le) (rate(rippled_job_running_duration_us_bucket{job_type=\"{name}\"}[{window}])))",

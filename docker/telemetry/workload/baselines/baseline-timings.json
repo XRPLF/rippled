@@ -1,10 +1,133 @@
 {
-  "_comment": "Empty baseline placeholder. The first CI run of the regression gate will emit the captured timings JSON to the workflow step summary; copy that JSON over this file (in a PR) to activate the regression gate. See baselines/README.md.",
-  "placeholder": true,
+  "captured_at": "2026-04-24T18:58:51Z",
+  "git_sha": "f11ebc1253cfed8bc2a80647ceead1a17d73f1d8",
+  "metrics": {
+    "job.acceptLedger.queued.p95": {
+      "unit": "us",
+      "value": 64.04761904761904
+    },
+    "job.acceptLedger.running.p95": {
+      "unit": "us",
+      "value": 2494.718309859155
+    },
+    "job.transaction.queued.p95": {
+      "unit": "us",
+      "value": 325.86206896551664
+    },
+    "job.transaction.running.p95": {
+      "unit": "us",
+      "value": 246.37440758293837
+    },
+    "span.consensus.accept.p50": {
+      "unit": "ms",
+      "value": 0.5
+    },
+    "span.consensus.accept.p95": {
+      "unit": "ms",
+      "value": 0.9500000000000001
+    },
+    "span.consensus.accept.p99": {
+      "unit": "ms",
+      "value": 0.99
+    },
+    "span.consensus.ledger_close.p50": {
+      "unit": "ms",
+      "value": 0.5016949152542373
+    },
+    "span.consensus.ledger_close.p95": {
+      "unit": "ms",
+      "value": 0.9532203389830508
+    },
+    "span.consensus.ledger_close.p99": {
+      "unit": "ms",
+      "value": 0.9933559322033899
+    },
+    "span.ledger.build.p50": {
+      "unit": "ms",
+      "value": 0.5227272727272728
+    },
+    "span.ledger.build.p95": {
+      "unit": "ms",
+      "value": 0.9931818181818184
+    },
+    "span.ledger.build.p99": {
+      "unit": "ms",
+      "value": 4.079999999999999
+    },
+    "span.ledger.store.p50": {
+      "unit": "ms",
+      "value": 0.5
+    },
+    "span.ledger.store.p95": {
+      "unit": "ms",
+      "value": 0.9499999999999998
+    },
+    "span.ledger.store.p99": {
+      "unit": "ms",
+      "value": 0.99
+    },
+    "span.ledger.validate.p50": {
+      "unit": "ms",
+      "value": 0.5016891891891893
+    },
+    "span.ledger.validate.p95": {
+      "unit": "ms",
+      "value": 0.9532094594594595
+    },
+    "span.ledger.validate.p99": {
+      "unit": "ms",
+      "value": 0.9933445945945946
+    },
+    "span.rpc.process.p50": {
+      "unit": "ms",
+      "value": null
+    },
+    "span.rpc.process.p95": {
+      "unit": "ms",
+      "value": null
+    },
+    "span.rpc.process.p99": {
+      "unit": "ms",
+      "value": null
+    },
+    "span.rpc.request.p50": {
+      "unit": "ms",
+      "value": null
+    },
+    "span.rpc.request.p95": {
+      "unit": "ms",
+      "value": null
+    },
+    "span.rpc.request.p99": {
+      "unit": "ms",
+      "value": null
+    },
+    "span.tx.apply.p50": {
+      "unit": "ms",
+      "value": 0.5173010380622838
+    },
+    "span.tx.apply.p95": {
+      "unit": "ms",
+      "value": 0.9828719723183392
+    },
+    "span.tx.apply.p99": {
+      "unit": "ms",
+      "value": 3.8039999999999976
+    },
+    "span.tx.process.p50": {
+      "unit": "ms",
+      "value": 0.5
+    },
+    "span.tx.process.p95": {
+      "unit": "ms",
+      "value": 0.95
+    },
+    "span.tx.process.p99": {
+      "unit": "ms",
+      "value": 0.99
+    }
+  },
+  "profile": "full-validation",
   "schema_version": 1,
-  "captured_at": null,
-  "window": null,
-  "git_sha": null,
-  "profile": null,
-  "metrics": {}
+  "window": "3m"
 }
