@@ -5,8 +5,7 @@
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 /* Need to change TableTypeCount if TableType is modified. */
 enum class TableType { Ledgers, Transactions, AccountTransactions };
@@ -402,5 +401,4 @@ getTransaction(
 bool
 dbHasSpace(soci::session& session, Config const& config, beast::Journal j);
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

@@ -1,17 +1,49 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
-#include <xrpld/core/Config.h>
-
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
-namespace xrpl {
-namespace test {
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+namespace xrpl::test {
 
 struct FlowMPT_test : public beast::unit_test::suite
 {
@@ -824,7 +856,8 @@ struct FlowMPT_test : public beast::unit_test::suite
             // available. Consequently, the entire offer is crossed.
             // Note remaining takerGets is 541 rather than 540 due to integral
             // rounding. XRP has a similar result.
-            return TokenData<MPT, MPT>{EUR, USD, EUR(541), USD(450)};
+            return TokenData<MPT, MPT>{
+                .gets = EUR, .pays = USD, .remTakerGets = EUR(541), .remTakerPays = USD(450)};
         };
 
         auto initXRP = [&](Env& env) {
@@ -836,7 +869,11 @@ struct FlowMPT_test : public beast::unit_test::suite
             // available. Consequently, the entire offer is crossed.
             // Note remaining takerGets is 540.000001 rather than 540 due to
             // integral rounding.
-            return TokenData<XRP_t, MPT>{XRP, USD, XRP(540.000001), USD(450)};
+            return TokenData<XRP_t, MPT>{
+                .gets = XRP,
+                .pays = USD,
+                .remTakerGets = XRP(540.000001),
+                .remTakerPays = USD(450)};
         };
 
         auto initIOU = [&](Env& env) {
@@ -848,7 +885,8 @@ struct FlowMPT_test : public beast::unit_test::suite
             // Payment's engine last step is limited by alice's
             // trustline - 606. Therefore, only 6EUR is delivered
             // and the offer is partially crossed.
-            return TokenData<IOU, IOU>{EUR, USD, EUR(594), USD(495)};
+            return TokenData<IOU, IOU>{
+                .gets = EUR, .pays = USD, .remTakerGets = EUR(594), .remTakerPays = USD(495)};
         };
 
         auto initIOU1 = [&](Env& env) {
@@ -860,7 +898,8 @@ struct FlowMPT_test : public beast::unit_test::suite
             // Payment's engine last step is not limited by alice's
             // trustline. Therefore, the entire offer is crossed.
             // This the same result as with MPT.
-            return TokenData<IOU, IOU>{EUR, USD, EUR(540), USD(450)};
+            return TokenData<IOU, IOU>{
+                .gets = EUR, .pays = USD, .remTakerGets = EUR(540), .remTakerPays = USD(450)};
         };
 
         auto test = [&](auto&& initToken) {
@@ -2107,5 +2146,4 @@ struct FlowMPT_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_PRIO(FlowMPT, app, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test
