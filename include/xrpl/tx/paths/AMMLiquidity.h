@@ -60,40 +60,40 @@ public:
      * If clobQuality is provided then AMM offer size is set based on the
      * quality.
      */
-    std::optional<AMMOffer<TIn, TOut>>
+    [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
     getOffer(ReadView const& view, std::optional<Quality> const& clobQuality) const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     ammAccount() const
     {
         return ammAccountID_;
     }
 
-    bool
+    [[nodiscard]] bool
     multiPath() const
     {
         return ammContext_.multiPath();
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     tradingFee() const
     {
         return tradingFee_;
     }
 
-    AMMContext&
+    [[nodiscard]] AMMContext&
     context() const
     {
         return ammContext_;
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     assetIn() const
     {
         return assetIn_;
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     assetOut() const
     {
         return assetOut_;
@@ -102,7 +102,7 @@ public:
 private:
     /** Fetches current AMM balances.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     fetchBalances(ReadView const& view) const;
 
     /** Generate AMM offers with the offer size based on Fibonacci sequence.
@@ -112,7 +112,7 @@ private:
      * If the generated offer exceeds the pool balance then the function
      * throws overflow exception.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     generateFibSeqOffer(TAmounts<TIn, TOut> const& balances) const;
 
     /** Generate max offer.
@@ -124,7 +124,7 @@ private:
      * takerPays = max input amount;
      * takerGets = swapIn(takerPays).
      */
-    std::optional<AMMOffer<TIn, TOut>>
+    [[nodiscard]] std::optional<AMMOffer<TIn, TOut>>
     maxOffer(TAmounts<TIn, TOut> const& balances, Rules const& rules) const;
 };
 

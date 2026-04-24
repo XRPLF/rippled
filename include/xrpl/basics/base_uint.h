@@ -102,7 +102,7 @@ public:
     {
         return reinterpret_cast<pointer>(data_.data());
     }
-    const_pointer
+    [[nodiscard]] const_pointer
     data() const
     {
         return reinterpret_cast<const_pointer>(data_.data());
@@ -118,22 +118,22 @@ public:
     {
         return data() + bytes;
     }
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return data();
     }
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return data() + bytes;
     }
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return data();
     }
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return data() + bytes;
@@ -310,7 +310,7 @@ public:
         return fromVoid(from.data());
     }
 
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const
     {
         for (int i = 0; i < WIDTH; i++)
@@ -433,14 +433,14 @@ public:
         return ret;
     }
 
-    base_uint
+    [[nodiscard]] base_uint
     next() const
     {
         auto ret = *this;
         return ++ret;
     }
 
-    base_uint
+    [[nodiscard]] base_uint
     prev() const
     {
         auto ret = *this;
@@ -517,12 +517,12 @@ public:
     }
 
     // Deprecated.
-    bool
+    [[nodiscard]] bool
     isZero() const
     {
         return *this == beast::zero;
     }
-    bool
+    [[nodiscard]] bool
     isNonZero() const
     {
         return *this != beast::zero;

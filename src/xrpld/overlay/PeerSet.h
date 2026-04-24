@@ -48,7 +48,7 @@ public:
         std::shared_ptr<Peer> const& peer) = 0;
 
     /** get the set of ids of previously added peers */
-    virtual std::set<Peer::id_t> const&
+    [[nodiscard]] virtual std::set<Peer::id_t> const&
     getPeerIds() const = 0;
 };
 

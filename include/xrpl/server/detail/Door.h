@@ -132,7 +132,7 @@ public:
     void
     close() override;
 
-    endpoint_type
+    [[nodiscard]] endpoint_type
     get_endpoint() const
     {
         return acceptor_.local_endpoint();

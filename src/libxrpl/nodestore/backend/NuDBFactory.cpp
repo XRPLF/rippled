@@ -122,7 +122,7 @@ public:
         return name_;
     }
 
-    std::optional<std::size_t>
+    [[nodiscard]] std::optional<std::size_t>
     getBlockSize() const override
     {
         return blockSize_;
@@ -365,7 +365,7 @@ public:
             Throw<nudb::system_error>(ec);
     }
 
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 3;
@@ -427,7 +427,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "NuDB";

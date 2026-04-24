@@ -80,7 +80,7 @@ public:
         };
     }
 
-    path const&
+    [[nodiscard]] path const&
     subdir() const
     {
         return subDir_;
@@ -146,13 +146,13 @@ public:
         };
     }
 
-    path const&
+    [[nodiscard]] path const&
     file() const
     {
         return file_;
     }
 
-    bool
+    [[nodiscard]] bool
     fileExists() const
     {
         return std::filesystem::exists(file_);

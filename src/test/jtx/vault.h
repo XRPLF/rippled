@@ -28,7 +28,7 @@ struct Vault
     };
 
     /** Return a VaultCreate transaction and the Vault's expected keylet. */
-    std::tuple<Json::Value, Keylet>
+    [[nodiscard]] std::tuple<Json::Value, Keylet>
     create(CreateArgs const& args) const;
 
     struct SetArgs

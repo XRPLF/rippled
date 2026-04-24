@@ -59,7 +59,7 @@ struct FeeSetup
      * values.) */
 
     /** Convert to a Fees object for use with Ledger construction. */
-    Fees
+    [[nodiscard]] Fees
     toFees() const
     {
         return Fees{reference_fee, account_reserve, owner_reserve};
@@ -81,7 +81,7 @@ public:
     static char const* const validatorsFileName;
 
     /** Returns the full path and filename of the debug log file. */
-    std::filesystem::path
+    [[nodiscard]] std::filesystem::path
     getDebugLogFile() const;
 
 private:
@@ -301,29 +301,29 @@ public:
     void
     loadFromString(std::string const& fileContents);
 
-    bool
+    [[nodiscard]] bool
     quiet() const
     {
         return QUIET;
     }
-    bool
+    [[nodiscard]] bool
     silent() const
     {
         return SILENT;
     }
-    bool
+    [[nodiscard]] bool
     standalone() const
     {
         return RUN_STANDALONE;
     }
 
-    bool
+    [[nodiscard]] bool
     useTxTables() const
     {
         return USE_TX_TABLES;
     }
 
-    bool
+    [[nodiscard]] bool
     canSign() const
     {
         return signingEnabled_;
@@ -346,10 +346,10 @@ public:
               the underlying system; this means that we can't provide optimal
               defaults in the code for every case.
     */
-    int
+    [[nodiscard]] int
     getValueFor(SizedItem item, std::optional<std::size_t> node = std::nullopt) const;
 
-    beast::Journal
+    [[nodiscard]] beast::Journal
     journal() const
     {
         return j_;

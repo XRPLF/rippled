@@ -57,7 +57,7 @@ private:
     // in the event of a failure, if the option to stop is set.
     struct abort_exception : public std::exception
     {
-        char const*
+        [[nodiscard]] char const*
         what() const noexcept override
         {
             return "test suite aborted";

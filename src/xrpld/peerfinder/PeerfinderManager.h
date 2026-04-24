@@ -65,7 +65,7 @@ struct Config
     Config();
 
     /** Returns a suitable value for outPeers according to the rules. */
-    std::size_t
+    [[nodiscard]] std::size_t
     calcOutPeers() const;
 
     /** Adjusts the values so they follow the business rules. */

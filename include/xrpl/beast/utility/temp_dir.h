@@ -49,7 +49,7 @@ public:
     }
 
     /// Get the native path for the temporary directory
-    std::string
+    [[nodiscard]] std::string
     path() const
     {
         return path_.string();
@@ -59,7 +59,7 @@ public:
 
         The file does not need to exist.
     */
-    std::string
+    [[nodiscard]] std::string
     file(std::string const& name) const
     {
         return (path_ / name).string();

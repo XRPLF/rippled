@@ -76,7 +76,7 @@ public:
         // from commonPragma()
         bool useGlobalPragma = false;
 
-        std::vector<std::string> const*
+        [[nodiscard]] std::vector<std::string> const*
         commonPragma() const
         {
             XRPL_ASSERT(
@@ -91,6 +91,7 @@ public:
         std::array<std::string, 1> lgrPragma;
     };
 
+    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
     struct CheckpointerSetup
     {
         JobQueue* jobQueue{};

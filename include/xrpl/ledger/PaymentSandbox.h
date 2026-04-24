@@ -74,10 +74,10 @@ public:
 
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
-    std::optional<AdjustmentIOU>
+    [[nodiscard]] std::optional<AdjustmentIOU>
     adjustmentsIOU(AccountID const& main, AccountID const& other, Currency const& currency) const;
 
-    std::optional<AdjustmentMPT>
+    [[nodiscard]] std::optional<AdjustmentMPT>
     adjustmentsMPT(MPTID const& mptID) const;
 
     void
@@ -104,7 +104,7 @@ public:
     // Get the adjusted owner count. Since DeferredCredits is meant to be used
     // in payments, and payments only decrease owner counts, return the max
     // remembered owner count.
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     ownerCount(AccountID const& id) const;
 
     void
@@ -179,15 +179,15 @@ public:
     }
     /** @} */
 
-    STAmount
+    [[nodiscard]] STAmount
     balanceHookIOU(AccountID const& account, AccountID const& issuer, STAmount const& amount)
         const override;
 
-    STAmount
+    [[nodiscard]] STAmount
     balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount)
         const override;
 
-    STAmount
+    [[nodiscard]] STAmount
     balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount) const override;
 
     void
@@ -212,7 +212,7 @@ public:
     void
     adjustOwnerCountHook(AccountID const& account, std::uint32_t cur, std::uint32_t next) override;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     ownerCountHook(AccountID const& account, std::uint32_t count) const override;
 
     /** Apply changes to base view.
@@ -229,7 +229,7 @@ public:
     apply(PaymentSandbox& to);
     /** @} */
 
-    XRPAmount
+    [[nodiscard]] XRPAmount
     xrpDestroyed() const;
 
 private:

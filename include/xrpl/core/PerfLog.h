@@ -120,7 +120,7 @@ public:
      *
      * @return Counters Json object
      */
-    virtual Json::Value
+    [[nodiscard]] virtual Json::Value
     countersJson() const = 0;
 
     /**
@@ -128,7 +128,7 @@ public:
      *
      * @return Current executing jobs and RPC calls and durations
      */
-    virtual Json::Value
+    [[nodiscard]] virtual Json::Value
     currentJson() const = 0;
 
     /**
