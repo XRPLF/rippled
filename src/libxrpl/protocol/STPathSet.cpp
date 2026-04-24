@@ -34,8 +34,15 @@ STPathElement::getHash(STPathElement const& element)
     for (auto const x : element.getAccountID())
         hashAccount += (hashAccount * 257) ^ x;
 
-    for (auto const x : element.getCurrency())
-        hashCurrency += (hashCurrency * 509) ^ x;
+    // Check pathAsset type instead of element's type_
+    // In some cases type_ might be account but the asset
+    // is still set to either MPT or currency (see Pathfinder::addLink())
+    element.getPathAsset().visit(
+        [&](MPTID const& mpt) { hashCurrency += beast::uhash<>{}(mpt); },
+        [&](Currency const& currency) {
+            for (auto const x : currency)
+                hashCurrency += (hashCurrency * 509) ^ x;
+        });
 
     for (auto const x : element.getIssuerID())
         hashIssuer += (hashIssuer * 911) ^ x;

@@ -664,7 +664,8 @@ PathRequest::findPaths(
         if (rc.result() == tesSUCCESS)
         {
             Json::Value jvEntry(Json::objectValue);
-            rc.actualAmountIn.setIssuer(sourceAccount);
+            if (rc.actualAmountIn.holds<Issue>())
+                rc.actualAmountIn.get<Issue>().account = sourceAccount;
             jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::kNONE);
             jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::kNONE);
 

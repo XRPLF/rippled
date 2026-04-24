@@ -208,7 +208,7 @@ Pathfinder::Pathfinder(
     , dstAccount_(uDstAccount)
     , effectiveDst_(isXRP(saDstAmount.getIssuer()) ? uDstAccount : saDstAmount.getIssuer())
     , dstAmount_(saDstAmount)
-    , srcCurrency_(uSrcPathAsset.holds<Currency>() ? uSrcPathAsset.get<Currency>() : Currency{})
+    , srcPathAsset_(uSrcPathAsset)
     , srcIssuer_(uSrcIssuer)
     , srcAmount_(srcAmount.value_or(uSrcPathAsset.visit(
           [&](Currency const& c) {
@@ -247,7 +247,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
     }
 
     if (srcAccount_ == dstAccount_ && dstAccount_ == effectiveDst_ &&
-        srcCurrency_ == dstAmount_.getCurrency())
+        srcPathAsset_ == dstAmount_.asset())
     {
         // No need to send to same account with same currency.
         JLOG(j_.debug()) << "Tried to send to same issuer";
@@ -255,24 +255,24 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
         return false;
     }
 
-    if (srcAccount_ == effectiveDst_ && srcCurrency_ == dstAmount_.getCurrency())
+    if (srcAccount_ == effectiveDst_ && srcPathAsset_ == dstAmount_.asset())
     {
         // Default path might work, but any path would loop
         return true;
     }
 
     loadEvent_ = app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "FindPath");
-    auto currencyIsXRP = isXRP(srcCurrency_);
+    auto currencyIsXRP = isXRP(srcPathAsset_);
 
     bool const useIssuerAccount = srcIssuer_ && !currencyIsXRP && !isXRP(*srcIssuer_);
     auto& account = useIssuerAccount ? *srcIssuer_ : srcAccount_;
     auto issuer = currencyIsXRP ? AccountID() : account;
-    source_ = STPathElement(account, srcCurrency_, issuer);
+    source_ = STPathElement(account, srcPathAsset_, issuer);
     auto issuerString = srcIssuer_ ? to_string(*srcIssuer_) : std::string("none");
     JLOG(j_.trace()) << "findPaths>"
                      << " srcAccount_=" << srcAccount_ << " dstAccount_=" << dstAccount_
                      << " dstAmount_=" << dstAmount_.getFullText()
-                     << " srcCurrency_=" << srcCurrency_ << " srcIssuer_=" << issuerString;
+                     << " srcPathAsset_=" << srcPathAsset_ << " srcIssuer_=" << issuerString;
 
     if (!ledger_)
     {
@@ -280,8 +280,8 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
         return false;
     }
 
-    bool const bSrcXrp = isXRP(srcCurrency_);
-    bool const bDstXrp = isXRP(dstAmount_.getCurrency());
+    bool const bSrcXrp = isXRP(srcPathAsset_);
+    bool const bDstXrp = isXRP(dstAmount_.asset());
 
     if (!ledger_->exists(keylet::account(srcAccount_)))
     {
@@ -336,7 +336,7 @@ Pathfinder::findPaths(int searchLevel, std::function<bool(void)> const& continue
         JLOG(j_.debug()) << "non-XRP to XRP payment";
         paymentType = pt_nonXRP_to_XRP;
     }
-    else if (srcCurrency_ == dstAmount_.getCurrency())
+    else if (srcPathAsset_ == dstAmount_.asset())
     {
         // non-XRP -> non-XRP - Same currency
         JLOG(j_.debug()) << "non-XRP to non-XRP - same currency";
@@ -606,7 +606,7 @@ Pathfinder::getBestPaths(
 
     XRPL_ASSERT(
         fullLiquidityPath.empty(), "xrpl::Pathfinder::getBestPaths : first empty path result");
-    bool const issuerIsSender = isXRP(srcCurrency_) || (srcIssuer == srcAccount_);
+    bool const issuerIsSender = isXRP(srcPathAsset_) || (srcIssuer == srcAccount_);
 
     std::vector<PathRank> extraPathRanks;
     rankPaths(maxPaths, extraPaths, extraPathRanks, continueCallback);
@@ -730,13 +730,10 @@ Pathfinder::getBestPaths(
 bool
 Pathfinder::issueMatchesOrigin(Asset const& asset)
 {
-    if (!asset.holds<Issue>())
-        return false;
-    auto const& issue = asset.get<Issue>();
-    bool const matchingCurrency = (issue.currency == srcCurrency_);
-    bool const matchingAccount = isXRP(issue.currency) ||
-        (srcIssuer_ && issue.account == *srcIssuer_) || issue.account == srcAccount_;
-    return matchingCurrency && matchingAccount;
+    bool const matchingAsset = (PathAsset(asset) == srcPathAsset_);
+    bool const matchingAccount = isXRP(asset) || (srcIssuer_ && asset.getIssuer() == *srcIssuer_) ||
+        asset.getIssuer() == srcAccount_;
+    return matchingAsset && matchingAccount;
 }
 
 int
@@ -991,7 +988,6 @@ Pathfinder::addLink(
     std::function<bool(void)> const& continueCallback)
 {
     auto const& pathEnd = currentPath.empty() ? source_ : currentPath.back();
-    auto const& uEndCurrency = pathEnd.getCurrency();
     auto const& uEndIssuer = pathEnd.getIssuerID();
     auto const& uEndAccount = pathEnd.getAccountID();
     PathAsset const uEndPathAsset = pathEnd.getPathAsset();
@@ -1026,7 +1022,7 @@ Pathfinder::addLink(
             if (sleEnd)
             {
                 bool const bRequireAuth((sleEnd->getFieldU32(sfFlags) & lsfRequireAuth) != 0u);
-                bool const bIsEndCurrency(uEndCurrency == dstAmount_.getCurrency());
+                bool const bIsEndAsset(uEndPathAsset == dstAmount_.asset());
                 bool const bIsNoRippleOut(isNoRippleOut(currentPath));
                 bool const bDestOnly((addFlags & afAC_LAST) != 0u);
 
@@ -1111,7 +1107,7 @@ Pathfinder::addLink(
                             else if (bToDestination)
                             {
                                 // destination is always worth trying
-                                if (uEndCurrency == dstAmount_.getCurrency())
+                                if (uEndPathAsset == dstAmount_.asset())
                                 {
                                     // this is a complete path
                                     if (!currentPath.empty())
@@ -1138,7 +1134,7 @@ Pathfinder::addLink(
                                     uEndPathAsset,
                                     acct,
                                     direction,
-                                    bIsEndCurrency,
+                                    bIsEndAsset,
                                     effectiveDst_,
                                     continueCallback);
                                 if (out != 0)
@@ -1192,7 +1188,7 @@ Pathfinder::addLink(
                             return;
                         // Add accounts to incompletePaths
                         STPathElement pathElement(
-                            STPathElement::typeAccount, it->account, uEndCurrency, it->account);
+                            STPathElement::typeAccount, it->account, uEndPathAsset, it->account);
                         incompletePaths.assembleAdd(currentPath, pathElement);
                         ++it;
                     }
@@ -1211,7 +1207,8 @@ Pathfinder::addLink(
         {
             // to XRP only
             if (!bOnXRP &&
-                app_.getOrderBookDB().isBookToXRP(Issue{uEndCurrency, uEndIssuer}, domain_))
+                app_.getOrderBookDB().isBookToXRP(
+                    assetFromPathAsset(uEndPathAsset, uEndIssuer), domain_))
             {
                 STPathElement const pathElement(
                     STPathElement::typeCurrency, xrpAccount(), xrpCurrency(), xrpAccount());
@@ -1221,8 +1218,8 @@ Pathfinder::addLink(
         else
         {
             bool const bDestOnly = (addFlags & afOB_LAST) != 0;
-            auto books =
-                app_.getOrderBookDB().getBooksByTakerPays(Issue{uEndCurrency, uEndIssuer}, domain_);
+            auto books = app_.getOrderBookDB().getBooksByTakerPays(
+                assetFromPathAsset(uEndPathAsset, uEndIssuer), domain_);
             JLOG(j_.trace()) << books.size() << " books found from this currency/issuer";
 
             for (auto const& book : books)
@@ -1242,7 +1239,7 @@ Pathfinder::addLink(
                         newPath.emplace_back(
                             STPathElement::typeCurrency, xrpAccount(), xrpCurrency(), xrpAccount());
 
-                        if (dstAmount_.getCurrency().isZero())
+                        if (isXRP(dstAmount_.asset()))
                         {
                             // destination is XRP, add account and path is
                             // complete

@@ -300,8 +300,21 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
     auto sendAndInitTrustOrMPT = [&](STAmount const& amount) -> TER {
         return amount.asset().visit(
             [&](MPTIssue const& issue) -> TER {
-                auto const mptID = issue.getMptID();
-                if (auto const err = createMPToken(sb, mptID, accountId, 0); !isTesSuccess(err))
+                auto const& mptID = issue.getMptID();
+                std::uint32_t flags = lsfMPTAMM;
+                if (auto const err = requireAuth(ctx.view(), issue, accountId, AuthType::WeakAuth);
+                    !isTesSuccess(err))
+                {
+                    if (err == tecNO_AUTH)
+                    {
+                        flags |= lsfMPTAuthorized;
+                    }
+                    else
+                    {
+                        return err;
+                    }
+                }
+                if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))
                     return err;
                 // Don't adjust AMM owner count.
                 // It's irrelevant for pseudo-account like AMM.

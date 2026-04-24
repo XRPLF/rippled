@@ -172,7 +172,7 @@ private:
     AccountID dstAccount_;
     AccountID effectiveDst_;  // The account the paths need to end at
     STAmount dstAmount_;
-    Currency srcCurrency_;
+    PathAsset srcPathAsset_;
     std::optional<AccountID> srcIssuer_;
     STAmount srcAmount_;
     /** The amount remaining from srcAccount_ after the default liquidity has

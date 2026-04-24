@@ -124,7 +124,7 @@ class Vault_test : public beast::unit_test::suite
             env.memoize(vaultAccount);
 
             // Several 3rd party accounts which cannot receive funds
-            Account const alice{"alice_"};
+            Account const alice{"alice"};
             Account erin{"erin"};  // not authorized by issuer
             env.fund(XRP(1000), alice, erin);
             env(fset(alice, asfDepositAuth));
@@ -1349,8 +1349,8 @@ class Vault_test : public beast::unit_test::suite
             testcase("IOU fail create vault for AMM LPToken");
             Env env{*this, testableAmendments() | featureSingleAssetVault};
             Account const gw("gateway");
-            Account const alice("alice_");
-            Account const carol("carol_");
+            Account const alice("alice");
+            Account const carol("carol");
             IOU const usd = gw["USD"];
 
             auto const [asset1, asset2] = std::pair<STAmount, STAmount>(XRP(10000), usd(10000));
@@ -4870,8 +4870,8 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        Account const owner{"alice_"};
-        Account const depositor{"bob_"};
+        Account const owner{"alice"};
+        Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
         env.fund(XRP(10000), issuer, owner, depositor);
@@ -5369,8 +5369,8 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        Account owner{"alice_"};
-        Account const depositor{"bob_"};
+        Account owner{"alice"};
+        Account const depositor{"bob"};
         Account const issuer{"issuer"};
 
         env.fund(XRP(10000), issuer, owner, depositor);
@@ -5384,8 +5384,8 @@ class Vault_test : public beast::unit_test::suite
         PrettyAsset const iou = issuer["IOU"];
         env(fset(issuer, asfAllowTrustLineClawback));
         env.close();
-        env.trust(iou(1000), owner);
-        env.trust(iou(1000), depositor);
+        env.trust(iou(2000), owner);
+        env.trust(iou(2000), depositor);
         env(pay(issuer, owner, iou(2000)));
         env(pay(issuer, depositor, iou(2000)));
         env.close();

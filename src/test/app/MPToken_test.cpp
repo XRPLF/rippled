@@ -917,8 +917,10 @@ class MPToken_test : public beast::unit_test::suite
 
             mptAlice.authorize({.account = bob});
 
-            for (auto flags : {tfNoRippleDirect, tfLimitQuality})
-                env(pay(alice, bob, mpt(10)), txflags(flags), Ter(temINVALID_FLAG));
+            auto err = !features[featureMPTokensV2] ? Ter(temINVALID_FLAG) : Ter(temRIPPLE_EMPTY);
+            env(pay(alice, bob, mpt(10)), txflags(tfNoRippleDirect), err);
+            err = !features[featureMPTokensV2] ? Ter(temINVALID_FLAG) : Ter(tesSUCCESS);
+            env(pay(alice, bob, mpt(10)), txflags(tfLimitQuality), err);
         }
 
         // Invalid combination of send, sendMax, deliverMin, paths
@@ -937,19 +939,24 @@ class MPToken_test : public beast::unit_test::suite
             // sendMax and DeliverMin are valid XRP amount,
             // but is invalid combination with MPT amount
             auto const mpt = mptAlice["MPT"];
-            env(pay(alice, carol, mpt(100)), sendmax(XRP(100)), Ter(temMALFORMED));
+            auto err = !MPTokensV2 ? Ter(temMALFORMED) : Ter(tecPATH_PARTIAL);
+            env(pay(alice, carol, mpt(100)), sendmax(XRP(100)), err);
             env(pay(alice, carol, mpt(100)), deliver_min(XRP(100)), Ter(temBAD_AMOUNT));
             // sendMax MPT is invalid with IOU or XRP
             auto const usd = alice["USD"];
-            env(pay(alice, carol, usd(100)), sendmax(mpt(100)), Ter(temMALFORMED));
-            env(pay(alice, carol, XRP(100)), sendmax(mpt(100)), Ter(temMALFORMED));
+            err = !MPTokensV2 ? Ter(temMALFORMED) : Ter(tecPATH_DRY);
+            env(pay(alice, carol, usd(100)), sendmax(mpt(100)), err);
+            err = !MPTokensV2 ? Ter(temMALFORMED) : Ter(tecPATH_PARTIAL);
+            env(pay(alice, carol, XRP(100)), sendmax(mpt(100)), err);
             env(pay(alice, carol, usd(100)), deliver_min(mpt(100)), Ter(temBAD_AMOUNT));
             env(pay(alice, carol, XRP(100)), deliver_min(mpt(100)), Ter(temBAD_AMOUNT));
             // sendmax and amount are different MPT issue
             test::jtx::MPT const mpT1("MPT", makeMptID(env.Seq(alice) + 10, alice));
-            env(pay(alice, carol, mpT1(100)), sendmax(mpt(100)), Ter(temMALFORMED));
-            // paths is invalid
-            env(pay(alice, carol, mpt(100)), Path(~usd), Ter(temMALFORMED));
+            err = !MPTokensV2 ? Ter(temMALFORMED) : Ter(tecOBJECT_NOT_FOUND);
+            env(pay(alice, carol, mpT1(100)), sendmax(mpt(100)), err);
+            // "paths" is invalid in V1
+            err = !MPTokensV2 ? Ter(temMALFORMED) : Ter(tesSUCCESS);
+            env(pay(alice, carol, mpt(100)), Path(~usd), err);
         }
 
         // build_path is invalid if MPT
@@ -1572,7 +1579,8 @@ class MPToken_test : public beast::unit_test::suite
 
             // payment between the holders fails without
             // partial payment
-            env(pay(bob, carol, mpt(10'000)), sendmax(mpt(10'000)), Ter(tecPATH_PARTIAL));
+            auto const err = MPTokensV2 ? tecPATH_DRY : tecPATH_PARTIAL;
+            env(pay(bob, carol, mpt(10'000)), sendmax(mpt(10'000)), Ter(err));
         }
 
         // Pay maximum allowed amount
@@ -1628,7 +1636,9 @@ class MPToken_test : public beast::unit_test::suite
             env.fund(XRP(1'000), alice, bob);
 
             STAmount const mpt{MPTID{0}, 100};
-            env(pay(alice, bob, mpt), Ter(tecOBJECT_NOT_FOUND));
+            auto const err =
+                !features[featureMPTokensV2] ? Ter(tecOBJECT_NOT_FOUND) : Ter(temBAD_CURRENCY);
+            env(pay(alice, bob, mpt), err);
         }
 
         // Issuer fails trying to send to an account, which doesn't own MPT for
@@ -1919,22 +1929,6 @@ class MPToken_test : public beast::unit_test::suite
             // Transactions with amount fields, which can't be MPT.
             // Transactions with issue fields, which can't be MPT.
 
-            // AMMCreate
-            auto ammCreate = [&](SField const& field) {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::AMMCreate;
-                jv[jss::Account] = alice.human();
-                jv[jss::Amount] = (field.fieldName == sfAmount.fieldName)
-                    ? mpt.getJson(JsonOptions::kNONE)
-                    : "100000000";
-                jv[jss::Amount2] = (field.fieldName == sfAmount2.fieldName)
-                    ? mpt.getJson(JsonOptions::kNONE)
-                    : "100000000";
-                jv[jss::TradingFee] = 0;
-                test(jv, field.fieldName);
-            };
-            ammCreate(sfAmount);
-            ammCreate(sfAmount2);
             // AMMDeposit
             auto ammDeposit = [&](SField const& field) {
                 Json::Value jv;
@@ -1967,68 +1961,6 @@ class MPToken_test : public beast::unit_test::suite
             };
             ammBid(sfBidMin);
             ammBid(sfBidMax);
-            ammBid(sfAsset);
-            ammBid(sfAsset2);
-            // AMMClawback
-            auto ammClawback = [&](SField const& field) {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::AMMClawback;
-                jv[jss::Account] = alice.human();
-                jv[jss::Holder] = carol.human();
-                setMPTFields(field, jv);
-                test(jv, field.fieldName);
-            };
-            ammClawback(sfAmount);
-            ammClawback(sfAsset);
-            ammClawback(sfAsset2);
-            // AMMDelete
-            auto ammDelete = [&](SField const& field) {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::AMMDelete;
-                jv[jss::Account] = alice.human();
-                setMPTFields(field, jv, false);
-                test(jv, field.fieldName);
-            };
-            ammDelete(sfAsset);
-            ammDelete(sfAsset2);
-            // AMMVote
-            auto ammVote = [&](SField const& field) {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::AMMVote;
-                jv[jss::Account] = alice.human();
-                jv[jss::TradingFee] = 100;
-                setMPTFields(field, jv, false);
-                test(jv, field.fieldName);
-            };
-            ammVote(sfAsset);
-            ammVote(sfAsset2);
-            // CheckCash
-            auto checkCash = [&](SField const& field) {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::CheckCash;
-                jv[jss::Account] = alice.human();
-                jv[sfCheckID.fieldName] = to_string(uint256{1});
-                jv[field.fieldName] = mpt.getJson(JsonOptions::kNONE);
-                test(jv, field.fieldName);
-            };
-            checkCash(sfAmount);
-            checkCash(sfDeliverMin);
-            // CheckCreate
-            {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::CheckCreate;
-                jv[jss::Account] = alice.human();
-                jv[jss::Destination] = carol.human();
-                jv[jss::SendMax] = mpt.getJson(JsonOptions::kNONE);
-                test(jv, jss::SendMax.c_str());
-            }
-            // OfferCreate
-            {
-                Json::Value jv = offer(alice, usd(100), mpt);
-                test(jv, jss::TakerPays.c_str());
-                jv = offer(alice, mpt, usd(100));
-                test(jv, jss::TakerGets.c_str());
-            }
             // PaymentChannelCreate
             {
                 Json::Value jv;

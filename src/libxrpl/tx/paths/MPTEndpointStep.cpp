@@ -851,7 +851,7 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
         // issue
         if (auto book = ctx.prevStep->bookStepBook())
         {
-            if (book->out.get<MPTIssue>() != mptIssue_)
+            if (!book->out.holds<MPTIssue>() || book->out.get<MPTIssue>() != mptIssue_)
                 return temBAD_PATH_LOOP;
         }
     }

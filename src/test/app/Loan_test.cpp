@@ -2138,7 +2138,19 @@ protected:
                         STAmount{broker.asset, state.periodicPayment * Number{15, -1}},
                         tfLoanOverpayment),
                     Fee(XRPAmount{baseFee * (Number{15, -1} / loanPaymentsPerFeeIncrement + 1)}),
-                    Ter(temINVALID_FLAG));
+                    Ter(tecNO_PERMISSION));
+
+                {
+                    env.disableFeature(fixSecurity3_1_3);
+                    env(pay(borrower,
+                            loanKeylet.key,
+                            STAmount{broker.asset, state.periodicPayment * Number{15, -1}},
+                            tfLoanOverpayment),
+                        Fee(XRPAmount{
+                            baseFee * (Number{15, -1} / loanPaymentsPerFeeIncrement + 1)}),
+                        Ter(temINVALID_FLAG));
+                    env.enableFeature(fixSecurity3_1_3);
+                }
             }
             // Try to send a payment marked as multiple mutually exclusive
             // payment types. Do not include `txFlags`, so we don't duplicate
@@ -5310,7 +5322,7 @@ protected:
         using namespace jtx;
         using namespace loanBroker;
 
-        Env env(*this, all_);
+        Env env(*this, feature);
 
         Account const issuer{"issuer"};
         Account const alice{"alice"};
@@ -5352,7 +5364,8 @@ protected:
         env.close();
 
         // Standard Payment path should forbid third-party transfers.
-        env(pay(alice, pseudoAccount, asset(1)), Ter(tecNO_AUTH));
+        auto const err = feature[featureMPTokensV2] ? Ter(tecNO_PERMISSION) : Ter(tecNO_AUTH);
+        env(pay(alice, pseudoAccount, asset(1)), err);
         env.close();
 
         // Cover cannot be transferred to broker account

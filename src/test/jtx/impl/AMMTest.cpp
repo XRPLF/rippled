@@ -175,28 +175,29 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
 
         // asset1/asset2 could be dummy MPT. In this case real MPT
         // is created by fund(), which returns the funded amounts.
-        // The amounts then can be used to figure out the created
-        // MPT if any.
+        // The amounts then can be used to figure out the created MPT if any.
         std::vector<STAmount> funded;
         if (!asset1.native() && !asset2.native())
         {
-            fund(env, gw_, {alice_, carol_}, {toFund1, toFund2}, Fund::All);
+            funded = fund(env, gw_, {alice_, carol_}, {toFund1, toFund2}, Fund::All);
         }
         else if (asset1.native())
         {
-            fund(env, gw_, {alice_, carol_}, toFund1, {toFund2}, Fund::All);
+            funded = fund(env, gw_, {alice_, carol_}, toFund1, {toFund2}, Fund::All);
+            funded.insert(funded.begin(), toFund1);
         }
         else if (asset2.native())
         {
-            fund(env, gw_, {alice_, carol_}, toFund2, {toFund1}, Fund::All);
+            funded = fund(env, gw_, {alice_, carol_}, toFund2, {toFund1}, Fund::All);
+            funded.push_back(toFund2);
         }
 
         auto const pool1 = STAmount{funded[0].asset(), static_cast<Number>(asset1)};
         auto const pool2 = STAmount{funded[1].asset(), static_cast<Number>(asset2)};
 
         AMM ammAlice(
-            env, alice_, asset1, asset2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
-        if (BEAST_EXPECT(ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
+            env, alice_, pool1, pool2, CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
+        if (BEAST_EXPECT(ammAlice.expectBalances(pool1, pool2, ammAlice.tokens())))
             cb(ammAlice, env);
     }
 }

@@ -572,6 +572,33 @@ AMMWithdraw::withdraw(
         return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
     }
 
+    // Updated pool state must be valid - either all balances are zero
+    // or all balances are non-zero.
+    if (view.rules().enabled(featureMPTokensV2))
+    {
+        bool const newBalanceZero = (curBalance - amountWithdrawActual) == beast::zero;
+        bool const newBalance2Zero =
+            (curBalance2 - amount2WithdrawActual.value_or(curBalance2.asset())) == beast::zero;
+        bool const newLPTokensZero = (lpTokensAMMBalance - lpTokensWithdrawActual) == beast::zero;
+        // newBalance2Zero can be zero if that side of the pool is frozen.
+        // ignore newBalance2Zero if one-sided withdrawal.
+        bool const valid = [&]() {
+            if (!amount2WithdrawActual)
+                return newBalanceZero == newLPTokensZero;
+            return newBalanceZero == newBalance2Zero && newBalance2Zero == newLPTokensZero;
+        }();
+        if (!valid)
+        {
+            JLOG(journal.debug()) << "AMM Withdraw: some balances are zero"
+                                  << " curBalance: " << curBalance << " " << amountWithdrawActual
+                                  << " curBalance2: " << curBalance2 << " "
+                                  << (amount2WithdrawActual ? *amount2WithdrawActual : STAmount{})
+                                  << " lpTokensBalance: " << lpTokensWithdraw << " lptBalance "
+                                  << lpTokensAMMBalance;
+            return {tecAMM_BALANCE, STAmount{}, STAmount{}, STAmount{}};
+        }
+    }
+
     // Check the reserve in case a trustline or MPT has to be created
     bool const enabledFixAMMv1_2 = view.rules().enabled(fixAMMv1_2);
     // If seated after a call to sufficientReserve() then MPToken must be
