@@ -138,22 +138,17 @@ static void
 adjustSponsorOwnerCountHlp(
     ApplyView& view,
     SLE::ref sle,
-    SField const& sfield,
-    std::int32_t amount,
-    beast::Journal j)
+    SF_UINT32 const& sfield,
+    AccountID const& accID,
+    std::int32_t adjustment,
+    beast::Journal j,
+    bool callHook = true)
 {
-    auto const accID = sle->getAccountID(sfAccount);
-    std::uint32_t const current{(sle)->getFieldU32(sfield)};
-    std::uint32_t const adjusted = confineOwnerCount(current, amount, accID, j);
-    view.adjustOwnerCountHook(accID, current, adjusted);
-    if (adjusted == 0)
-    {
-        sle->makeFieldAbsent(sfield);
-    }
-    else
-    {
-        sle->setFieldU32(sfield, adjusted);
-    }
+    std::uint32_t const current = sle->at(sfield);
+    std::uint32_t const adjusted = confineOwnerCount(current, adjustment, accID, j);
+    if (callHook)
+        view.adjustOwnerCountHook(accID, current, adjusted);
+    sle->at(sfield) = adjusted;
     view.update(sle);
 }
 
@@ -162,50 +157,34 @@ adjustOwnerCount(
     ApplyView& view,
     SLE::ref accountSle,
     SLE::ref sponsorSle,
-    std::int32_t amount,
+    std::int32_t adjustment,
     beast::Journal j)
 {
     if (!accountSle)
         return;
-    XRPL_ASSERT(amount, "xrpl::adjustOwnerCount : nonzero amount input");
+    XRPL_ASSERT(adjustment, "xrpl::adjustOwnerCount : nonzero adjustment input");
 
+    auto const accountID = accountSle->getAccountID(sfAccount);
     if (sponsorSle)
     {
-        adjustSponsorOwnerCountHlp(view, sponsorSle, sfSponsoringOwnerCount, amount, j);
-        adjustSponsorOwnerCountHlp(view, accountSle, sfSponsoredOwnerCount, amount, j);
+        auto const sponsorID = sponsorSle->getAccountID(sfAccount);
 
-        auto const account = accountSle->getAccountID(sfAccount);
-        auto const sponsorAccountID = (sponsorSle)->getAccountID(sfAccount);
+        adjustSponsorOwnerCountHlp(
+            view, accountSle, sfSponsoredOwnerCount, accountID, adjustment, j);
+        adjustSponsorOwnerCountHlp(
+            view, sponsorSle, sfSponsoringOwnerCount, sponsorID, adjustment, j);
 
-        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorAccountID, account));
-
+        auto sponsorObjSle = view.peek(keylet::sponsor(sponsorID, accountID));
         if (sponsorObjSle)
         {
-            // pre funded
             // update the pre-funded ReserveCount on Sponsorship ledger object
-
-            std::uint32_t const currentReserveCount = sponsorObjSle->getFieldU32(sfReserveCount);
-            // Reserve count moves opposite to amount: +amount => consume reserve (-), -amount =>
-            // payback (+)
-            std::uint32_t const adjusted =
-                confineOwnerCount(currentReserveCount, -amount, sponsorAccountID, j);
-            if (adjusted == 0)
-            {
-                sponsorObjSle->makeFieldAbsent(sfReserveCount);
-            }
-            else
-            {
-                sponsorObjSle->setFieldU32(sfReserveCount, adjusted);
-            }
-            view.update(sponsorObjSle);
+            // Reserve count moves opposite to adjustment: +adjustment => consume reserve (-),
+            // -adjustment => payback (+)
+            adjustSponsorOwnerCountHlp(
+                view, sponsorObjSle, sfReserveCount, sponsorID, -adjustment, j, false);
         }
     }
-    std::uint32_t const current{accountSle->getFieldU32(sfOwnerCount)};
-    AccountID const id = (*accountSle)[sfAccount];
-    std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
-    view.adjustOwnerCountHook(id, current, adjusted);
-    accountSle->at(sfOwnerCount) = adjusted;
-    view.update(accountSle);
+    adjustSponsorOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);
 }
 
 AccountID
