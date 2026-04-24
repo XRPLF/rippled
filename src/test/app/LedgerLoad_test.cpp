@@ -18,16 +18,16 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/erase.hpp>
-#include <filesystem>
-#include <boost/system/detail/error_code.hpp>
 
 #include <cassert>
+#include <filesystem>
 #include <fstream>
 #include <ios>
 #include <memory>
 #include <optional>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 
 namespace xrpl {
 
@@ -161,7 +161,7 @@ class LedgerLoad_test : public beast::unit_test::suite
         });
 
         // make a corrupted version of the ledger file (last 10 bytes removed).
-        boost::system::error_code ec;
+        std::error_code ec;
         auto ledgerFileCorrupt = std::filesystem::path{sd.dbPath} / "ledgerdata_bad.json";
         copy_file(sd.ledgerFile, ledgerFileCorrupt, copy_options::overwrite_existing, ec);
         if (!BEAST_EXPECTS(!ec, ec.message()))

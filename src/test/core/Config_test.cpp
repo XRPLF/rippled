@@ -10,7 +10,6 @@
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
-#include <filesystem>
 #include <boost/format.hpp>  // IWYU pragma: keep
 #include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
@@ -20,6 +19,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <optional>
 #include <ostream>

@@ -9,9 +9,8 @@
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <filesystem>  // VFALCO FIX: This include should not be here
-
 #include <cstdint>
+#include <filesystem>  // VFALCO FIX: This include should not be here
 #include <optional>
 #include <string>
 #include <unordered_set>

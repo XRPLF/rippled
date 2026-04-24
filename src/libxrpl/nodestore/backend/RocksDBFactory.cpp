@@ -9,8 +9,6 @@
 #include <xrpl/nodestore/Types.h>
 
 
-#include <filesystem>
-
 #include <rocksdb/advanced_options.h>
 #include <rocksdb/cache.h>
 #include <rocksdb/compression_type.h>
@@ -26,6 +24,7 @@
 
 #include <bit>
 #include <cstddef>
+#include <filesystem>
 #include <functional>
 #include <stdexcept>
 #include <string>

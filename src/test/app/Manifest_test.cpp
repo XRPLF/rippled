@@ -21,14 +21,12 @@
 #include <xrpl/server/Manifest.h>
 #include <xrpl/server/Wallet.h>
 
-
-#include <filesystem>
-
 #include <algorithm>
 #include <array>
 #include <cassert>
 #include <cstdint>
 #include <exception>
+#include <filesystem>
 #include <limits>
 #include <memory>
 #include <optional>

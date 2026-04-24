@@ -63,8 +63,8 @@ class PerfLog_test : public beast::unit_test::suite
             // The error code is intentionally ignored: if the path doesn't
             // exist (the common case on a clean runner) remove_all returns
             // an error, and that's fine — there's nothing to clean up.
-            using namespace boost::filesystem;
-            boost::system::error_code ec;
+            using namespace std::filesystem;
+            std::error_code ec;
             remove_all(logDir(), ec);
         }
 

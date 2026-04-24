@@ -6,8 +6,6 @@
 #include <xrpl/rdb/SociDB.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-
-#include <filesystem>
 #include <boost/optional/optional.hpp>
 
 #include <soci/into.h>
@@ -18,6 +16,7 @@
 #include <cstdint>
 #include <cstring>
 #include <exception>
+#include <filesystem>
 #include <iterator>
 #include <limits>
 #include <stdexcept>
