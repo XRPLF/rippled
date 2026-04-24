@@ -12,10 +12,12 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>
@@ -67,6 +69,31 @@ class RCLConsensus
 
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
         NegativeUNLVote nUnlVote_;
+
+        /** Span for the current consensus round.
+         *
+         *  Created in preStartRound(), ended (via reset()) when the next
+         *  round begins. When consensusTraceStrategy is "deterministic",
+         *  the trace_id is derived from previousLedger.id() so that all
+         *  validators in the same round share the same trace_id.
+         */
+        std::optional<telemetry::SpanGuard> roundSpan_;
+
+        /** Context captured from the previous consensus round.
+         *
+         *  Used to create span links (follows-from) between consecutive
+         *  rounds, establishing a causal chain in the trace backend.
+         */
+        telemetry::SpanContext prevRoundContext_;
+
+        /** SpanContext snapshot of the current round span.
+         *
+         *  Captured in startRoundTracing() as a lightweight value-type copy
+         *  so that createValidationSpan() — which runs on the jtACCEPT
+         *  worker thread — can build span links without accessing roundSpan_
+         *  across threads.
+         */
+        telemetry::SpanContext roundSpanContext_;
 
     public:
         using Ledger_t = RCLCxLedger;
@@ -155,6 +182,27 @@ class RCLConsensus
         {
             return parms_;
         }
+
+        /** Set up the consensus round span and link it to the previous round.
+         *
+         * Saves the previous round's context for span-link construction,
+         * ends the old round span, and creates a new "consensus.round" span.
+         * Depending on the configured trace strategy the trace_id is either
+         * deterministic (derived from prevLgr hash) or random.
+         *
+         * @param prevLgr  The ledger that will be the prior ledger for the
+         *                 new round.
+         */
+        void
+        startRoundTracing(RCLCxLedger const& prevLgr);
+
+        /** Create the "consensus.validation.send" span linked to the round.
+         *
+         * @return An engaged optional SpanGuard if tracing is active,
+         *         std::nullopt otherwise.
+         */
+        std::optional<telemetry::SpanGuard>
+        createValidationSpan();
 
     private:
         //---------------------------------------------------------------------

@@ -176,6 +176,20 @@ public:
     [[nodiscard]] Json::Value
     getJson() const;
 
+    //! Number of peers voting yes.
+    int
+    getYays() const
+    {
+        return yays_;
+    }
+
+    //! Number of peers voting no.
+    int
+    getNays() const
+    {
+        return nays_;
+    }
+
 private:
     int yays_{0};   //< Number of yes votes
     int nays_{0};   //< Number of no votes

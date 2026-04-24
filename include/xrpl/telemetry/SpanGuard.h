@@ -120,8 +120,10 @@
 #include <array>
 #include <cstdint>
 #include <exception>
+#include <initializer_list>
 #include <memory>
 #include <string_view>
+#include <utility>
 
 namespace xrpl::telemetry {
 
@@ -152,6 +154,11 @@ struct TraceBytes
     /// True if this struct contains valid data from an active span.
     bool valid{false};
 };
+
+/** Key-value pair for span event attributes.
+    Used by addEvent(name, attrs) to attach structured metadata to events.
+*/
+using EventAttribute = std::pair<std::string_view, std::string_view>;
 
 /** Opaque wrapper for an OTel context snapshot.
 
@@ -362,6 +369,14 @@ public:
     void
     addEvent(std::string_view name);
 
+    /** Add a named event with key-value attributes to the span's timeline.
+        No-op on a null guard.
+        @param name   Event name.
+        @param attrs  Attribute pairs (all string_view for simplicity).
+    */
+    void
+    addEvent(std::string_view name, std::initializer_list<EventAttribute> attrs);
+
     /** Record an exception as a span event following OTel semantic
         conventions, and mark the span status as error.
         No-op on a null guard.
@@ -488,6 +503,10 @@ public:
     }
     void
     addEvent(std::string_view)
+    {
+    }
+    void
+    addEvent(std::string_view, std::initializer_list<EventAttribute>)
     {
     }
     void

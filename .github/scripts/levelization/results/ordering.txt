@@ -101,6 +101,7 @@ test.core > xrpl.server
 test.csf > xrpl.basics
 test.csf > xrpld.consensus
 test.csf > xrpl.json
+test.csf > xrpl.telemetry
 test.csf > xrpl.ledger
 test.csf > xrpl.protocol
 test.json > test.jtx
@@ -195,6 +196,7 @@ tests.libxrpl > xrpl.net
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
 tests.libxrpl > xrpl.telemetry
+tests.libxrpl > xrpld.telemetry
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
@@ -253,6 +255,8 @@ xrpld.consensus > xrpl.basics
 xrpld.consensus > xrpl.json
 xrpld.consensus > xrpl.ledger
 xrpld.consensus > xrpl.protocol
+xrpld.consensus > xrpl.telemetry
+xrpld.consensus > xrpld.telemetry
 xrpld.core > xrpl.basics
 xrpld.core > xrpl.core
 xrpld.core > xrpl.net
