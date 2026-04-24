@@ -475,7 +475,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
         std::filesystem::path const p = get(section, "path");
         std::random_device rd;
         std::ostringstream oss;
-        oss << std::hex << std::setfill('0') << std::setw(8) << rd();
+        oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
         newPath = (p / dbPrefix_).string() + "." + oss.str();
     }
     section.set("path", newPath.string());
