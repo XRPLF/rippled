@@ -62,6 +62,11 @@ should trace back to a real CI run so variance characteristics are preserved.
 }
 ```
 
+Placeholder baselines additionally include `"placeholder": true`. The comparator
+detects this field (or an empty `metrics` object) to switch into "populate" mode
+instead of enforcing thresholds. Remove the `placeholder` key when pasting real
+captured timings.
+
 Missing metrics (value `null`) in a captured run do not count as regressions — they
 are reported separately in `regression-report.json` under `missing_in_current`.
 This keeps the gate robust when a profile doesn't exercise every span on every run.

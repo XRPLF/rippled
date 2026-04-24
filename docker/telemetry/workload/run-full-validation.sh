@@ -17,9 +17,9 @@
 #   ./run-full-validation.sh --cleanup
 #
 # Exit codes:
-#   0 — All validation checks passed
-#   1 — One or more validation checks failed
-#   2 — Infrastructure error (cluster/stack failed to start)
+#   0 — All validation checks and the regression gate passed
+#   1 — Validation checks failed OR the regression gate detected a regression
+#   2 — Infrastructure error (cluster/stack failed to start, timing capture failed)
 
 set -euo pipefail
 
@@ -385,6 +385,7 @@ if [ "$SKIP_REGRESSION" != true ]; then
         ok "Timings captured: $TIMINGS_FILE"
     else
         fail "Failed to capture timings — skipping regression comparison."
+        REGRESSION_EXIT=2
         SKIP_REGRESSION=true
     fi
 fi

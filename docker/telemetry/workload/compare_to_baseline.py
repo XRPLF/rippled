@@ -134,7 +134,6 @@ def resolve_thresholds(
     if cat is None:
         return (None, None)
 
-    override_prefix_key = ".".join(parts[:-1])
     override_key = f"{category_key}.{'.'.join(parts[1:-1])}"
     overrides = thresholds.get("overrides", {})
     defaults = thresholds.get("defaults", {}).get(cat, {})
@@ -146,8 +145,34 @@ def resolve_thresholds(
         return (None, None)
 
     pct = rule.get("max_pct_increase")
-    abs_bound = rule.get("max_abs_increase_ms") or rule.get("max_abs_increase_us")
+    abs_bound = rule.get("max_abs_increase_ms")
+    if abs_bound is None:
+        abs_bound = rule.get("max_abs_increase_us")
     return (pct, abs_bound)
+
+
+def _skip_delta(
+    key: str,
+    baseline: float | None,
+    current: float | None,
+    unit: str,
+    thresholds: dict,
+    note: str,
+) -> MetricDelta:
+    """Build a MetricDelta for cases where comparison is not possible."""
+    pct_threshold, abs_threshold = resolve_thresholds(key, thresholds)
+    return MetricDelta(
+        key=key,
+        baseline=baseline,
+        current=current,
+        delta=None,
+        pct_change=None,
+        unit=unit,
+        threshold_pct=pct_threshold,
+        threshold_abs=abs_threshold,
+        regressed=False,
+        note=note,
+    )
 
 
 def compute_delta(
@@ -166,50 +191,22 @@ def compute_delta(
     current = current_entry.get("value") if current_entry else None
     unit = (baseline_entry or current_entry or {}).get("unit", "")
 
-    pct_threshold, abs_threshold = resolve_thresholds(key, thresholds)
-
     if baseline is None and current is None:
-        return MetricDelta(
-            key=key,
-            baseline=None,
-            current=None,
-            delta=None,
-            pct_change=None,
-            unit=unit,
-            threshold_pct=pct_threshold,
-            threshold_abs=abs_threshold,
-            regressed=False,
-            note="no data (neither baseline nor current)",
+        return _skip_delta(
+            key, None, None, unit, thresholds, "no data (neither baseline nor current)"
         )
 
     if baseline is None:
-        return MetricDelta(
-            key=key,
-            baseline=None,
-            current=current,
-            delta=None,
-            pct_change=None,
-            unit=unit,
-            threshold_pct=pct_threshold,
-            threshold_abs=abs_threshold,
-            regressed=False,
-            note="new metric (not in baseline)",
+        return _skip_delta(
+            key, None, current, unit, thresholds, "new metric (not in baseline)"
         )
 
     if current is None:
-        return MetricDelta(
-            key=key,
-            baseline=baseline,
-            current=None,
-            delta=None,
-            pct_change=None,
-            unit=unit,
-            threshold_pct=pct_threshold,
-            threshold_abs=abs_threshold,
-            regressed=False,
-            note="not captured in current run",
+        return _skip_delta(
+            key, baseline, None, unit, thresholds, "not captured in current run"
         )
 
+    pct_threshold, abs_threshold = resolve_thresholds(key, thresholds)
     delta = current - baseline
     pct_change = (delta / baseline * 100.0) if baseline > 0 else None
 

@@ -238,16 +238,27 @@ jobs:
       - name: Print regression summary
         if: always()
         run: |
+          set -euo pipefail
           TIMINGS="/tmp/xrpld-validation/reports/timings.json"
           REGRESSION="/tmp/xrpld-validation/reports/regression-report.json"
           BASELINE="docker/telemetry/workload/baselines/baseline-timings.json"
 
           if [ ! -f "$TIMINGS" ]; then
             echo "## Regression Gate: no timings captured" >> "$GITHUB_STEP_SUMMARY"
+            echo "::warning::capture_timings.py did not produce timings.json — regression gate was not evaluated."
             exit 0
           fi
 
-          IS_PLACEHOLDER=$(jq -r '.placeholder == true or (.metrics | length == 0)' "$BASELINE")
+          if [ ! -f "$BASELINE" ]; then
+            echo "## Regression Gate: baseline file missing" >> "$GITHUB_STEP_SUMMARY"
+            echo "::error::baselines/baseline-timings.json not found in checkout"
+            exit 1
+          fi
+
+          IS_PLACEHOLDER=$(jq -e -r '.placeholder == true or (.metrics | length == 0)' "$BASELINE") || {
+            echo "::error::Failed to parse baseline JSON"
+            exit 1
+          }
 
           echo "## OTel Timings Regression Gate" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
@@ -263,9 +274,9 @@ jobs:
             cat "$TIMINGS" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           elif [ -f "$REGRESSION" ]; then
-            REGR_COUNT=$(jq '.summary.regressions' "$REGRESSION")
-            IMPR_COUNT=$(jq '.summary.improvements' "$REGRESSION")
-            TOTAL=$(jq '.summary.total' "$REGRESSION")
+            REGR_COUNT=$(jq -e '.summary.regressions' "$REGRESSION") || REGR_COUNT=0
+            IMPR_COUNT=$(jq -e '.summary.improvements' "$REGRESSION") || IMPR_COUNT=0
+            TOTAL=$(jq -e '.summary.total' "$REGRESSION") || TOTAL=0
             echo "| Stat | Count |" >> "$GITHUB_STEP_SUMMARY"
             echo "|------|-------|" >> "$GITHUB_STEP_SUMMARY"
             echo "| Metrics compared | $TOTAL |" >> "$GITHUB_STEP_SUMMARY"

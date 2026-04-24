@@ -23,7 +23,7 @@ Usage::
     plan = build_query_plan("regression-metrics.json", window="3m")
     async with aiohttp.ClientSession() as s:
         timings = await run_query_plan(s, "http://localhost:9090", plan)
-    # timings = {"span.tx.process.p99": 12.4, ...}
+    # timings = {"span.tx.process.p99": {"value": 12.4, "unit": "ms"}, ...}
 """
 
 from __future__ import annotations
@@ -56,6 +56,62 @@ class QueryEntry:
     unit: str
 
 
+def _build_simple_entries(
+    cfg: dict,
+    prefix: str,
+    window: str,
+) -> list[QueryEntry]:
+    """Build QueryEntry list for a single-template category (spans, rpc)."""
+    tmpl = cfg.get("_query_template", "")
+    unit = cfg.get("_unit", "ms")
+    entries: list[QueryEntry] = []
+    for name in cfg.get("names", []):
+        for q in cfg.get("_quantiles", []):
+            expr = (
+                tmpl.replace("{quantile}", _format_quantile(q))
+                .replace("{name}", name)
+                .replace("{window}", window)
+            )
+            entries.append(
+                QueryEntry(
+                    key=f"{prefix}.{name}.p{_quantile_label(q)}",
+                    promql=expr,
+                    unit=unit,
+                )
+            )
+    return entries
+
+
+def _build_job_entries(cfg: dict, window: str) -> list[QueryEntry]:
+    """Build QueryEntry list for the job_queue category (multi-phase)."""
+    unit = cfg.get("_unit", "us")
+    phases = cfg.get("_phases", ["queued", "running"])
+    tmpl_map = {
+        "queued": cfg.get("_queued_template", ""),
+        "running": cfg.get("_running_template", ""),
+    }
+    entries: list[QueryEntry] = []
+    for name in cfg.get("names", []):
+        for phase in phases:
+            tmpl = tmpl_map.get(phase, "")
+            if not tmpl:
+                continue
+            for q in cfg.get("_quantiles", []):
+                expr = (
+                    tmpl.replace("{quantile}", _format_quantile(q))
+                    .replace("{name}", name)
+                    .replace("{window}", window)
+                )
+                entries.append(
+                    QueryEntry(
+                        key=f"job.{name}.{phase}.p{_quantile_label(q)}",
+                        promql=expr,
+                        unit=unit,
+                    )
+                )
+    return entries
+
+
 def build_query_plan(metrics_path: str | Path, window: str = "3m") -> list[QueryEntry]:
     """Translate regression-metrics.json into a list of PromQL queries.
 
@@ -73,69 +129,9 @@ def build_query_plan(metrics_path: str | Path, window: str = "3m") -> list[Query
         cfg = json.load(f)
 
     plan: list[QueryEntry] = []
-
-    span_cfg = cfg.get("spans", {})
-    tmpl = span_cfg.get("_query_template", "")
-    unit = span_cfg.get("_unit", "ms")
-    for name in span_cfg.get("names", []):
-        for q in span_cfg.get("_quantiles", []):
-            expr = (
-                tmpl.replace("{quantile}", _format_quantile(q))
-                .replace("{name}", name)
-                .replace("{window}", window)
-            )
-            plan.append(
-                QueryEntry(
-                    key=f"span.{name}.p{_quantile_label(q)}",
-                    promql=expr,
-                    unit=unit,
-                )
-            )
-
-    rpc_cfg = cfg.get("rpc_methods", {})
-    tmpl = rpc_cfg.get("_query_template", "")
-    unit = rpc_cfg.get("_unit", "us")
-    for name in rpc_cfg.get("names", []):
-        for q in rpc_cfg.get("_quantiles", []):
-            expr = (
-                tmpl.replace("{quantile}", _format_quantile(q))
-                .replace("{name}", name)
-                .replace("{window}", window)
-            )
-            plan.append(
-                QueryEntry(
-                    key=f"rpc.{name}.p{_quantile_label(q)}",
-                    promql=expr,
-                    unit=unit,
-                )
-            )
-
-    job_cfg = cfg.get("job_queue", {})
-    unit = job_cfg.get("_unit", "us")
-    phases = job_cfg.get("_phases", ["queued", "running"])
-    tmpl_map = {
-        "queued": job_cfg.get("_queued_template", ""),
-        "running": job_cfg.get("_running_template", ""),
-    }
-    for name in job_cfg.get("names", []):
-        for phase in phases:
-            tmpl = tmpl_map.get(phase, "")
-            if not tmpl:
-                continue
-            for q in job_cfg.get("_quantiles", []):
-                expr = (
-                    tmpl.replace("{quantile}", _format_quantile(q))
-                    .replace("{name}", name)
-                    .replace("{window}", window)
-                )
-                plan.append(
-                    QueryEntry(
-                        key=f"job.{name}.{phase}.p{_quantile_label(q)}",
-                        promql=expr,
-                        unit=unit,
-                    )
-                )
-
+    plan.extend(_build_simple_entries(cfg.get("spans", {}), "span", window))
+    plan.extend(_build_simple_entries(cfg.get("rpc_methods", {}), "rpc", window))
+    plan.extend(_build_job_entries(cfg.get("job_queue", {}), window))
     return plan
 
 
@@ -178,7 +174,9 @@ async def _instant_query(
     """
     url = f"{prom_url.rstrip('/')}/api/v1/query"
     try:
-        async with session.post(url, data={"query": promql}, timeout=30) as resp:
+        async with session.post(
+            url, data={"query": promql}, timeout=aiohttp.ClientTimeout(total=30)
+        ) as resp:
             if resp.status != 200:
                 logger.warning("query HTTP %d: %s", resp.status, promql)
                 return None

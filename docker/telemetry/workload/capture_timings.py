@@ -132,6 +132,12 @@ def main() -> int:
         help="Workload profile used during capture (metadata only)",
     )
     parser.add_argument(
+        "--min-capture-ratio",
+        type=float,
+        default=0.5,
+        help="Fail if fewer than this fraction of metrics are captured (default: 0.5)",
+    )
+    parser.add_argument(
         "--verbose",
         action="store_true",
         help="Enable debug logging",
@@ -160,6 +166,18 @@ def main() -> int:
     captured = sum(1 for v in report["metrics"].values() if v["value"] is not None)
     total = len(report["metrics"])
     logger.info("Wrote %s (%d/%d metrics captured)", args.output, captured, total)
+
+    if total > 0 and (captured / total) < args.min_capture_ratio:
+        logger.error(
+            "Only %d/%d (%.0f%%) metrics captured — below the %.0f%% minimum. "
+            "Is Prometheus reachable at %s?",
+            captured,
+            total,
+            captured / total * 100,
+            args.min_capture_ratio * 100,
+            args.prometheus,
+        )
+        return 1
     return 0
 
 
