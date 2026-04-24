@@ -2254,6 +2254,7 @@ PeerImp::onValidatorListMessage(
                 applyResult.publisherKey,
                 "xrpl::PeerImp::onValidatorListMessage : publisher key is "
                 "set");
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
             auto const& pubKey = *applyResult.publisherKey;
 #ifndef NDEBUG
             if (auto const iter = publisherListSequences_.find(pubKey);
@@ -3463,6 +3464,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
 
             try
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access) nodeids checked in onGetLedger
                 if (map->getNodeFat(*shaMapNodeId, data, fatLeaves, queryDepth))
                 {
                     JLOG(p_journal_.trace())
