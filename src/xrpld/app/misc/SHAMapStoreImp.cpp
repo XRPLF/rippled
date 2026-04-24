@@ -30,6 +30,7 @@
 #include <filesystem>
 #include <functional>
 #include <iomanip>
+#include <ios>
 #include <limits>
 #include <memory>
 #include <mutex>

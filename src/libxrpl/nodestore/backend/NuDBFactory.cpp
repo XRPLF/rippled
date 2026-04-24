@@ -198,8 +198,8 @@ public:
                 std::filesystem::remove_all(name_, fsec);
                 if (fsec)
                 {
-                    JLOG(j_.fatal())
-                        << "Filesystem remove_all of " << name_ << " failed with: " << fsec.message();
+                    JLOG(j_.fatal()) << "Filesystem remove_all of " << name_
+                                     << " failed with: " << fsec.message();
                 }
             }
         }

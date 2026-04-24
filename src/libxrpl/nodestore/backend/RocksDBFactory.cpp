@@ -8,7 +8,6 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
 
-
 #include <rocksdb/advanced_options.h>
 #include <rocksdb/cache.h>
 #include <rocksdb/compression_type.h>
