@@ -94,7 +94,11 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     // which represents 50% of 1,000,000,000
     if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
         sle && sle->isFieldPresent(sfTransferFee))
-        return Rate{1'000'000'000u + (10'000 * sle->getFieldU16(sfTransferFee))};
+    {
+        auto const fee = sle->getFieldU16(sfTransferFee);
+        XRPL_ASSERT(fee <= maxTransferFee, "xrpl::transferRate : fee is too large");
+        return Rate{1'000'000'000u + (10'000 * fee)};
+    }
 
     return parityRate;
 }
@@ -160,7 +164,7 @@ authorizeMPToken(
         // When a holder wants to unauthorize/delete a MPT, the ledger must
         //      - delete mptokenKey from owner directory
         //      - delete the MPToken
-        if ((flags & tfMPTUnauthorize) != 0)
+        if ((flags & tfMPTUnauthorize) != 0u)
         {
             auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
             auto const sleMpt = view.peek(mptokenKey);
@@ -242,7 +246,7 @@ authorizeMPToken(
 
     // Issuer wants to unauthorize the holder, unset lsfMPTAuthorized on
     // their MPToken
-    if ((flags & tfMPTUnauthorize) != 0)
+    if ((flags & tfMPTUnauthorize) != 0u)
     {
         flagsOut &= ~lsfMPTAuthorized;
     }
