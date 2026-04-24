@@ -4,8 +4,7 @@
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/unit_test/suite.h>
 
-#include <boost/system/detail/errc.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <system_error>
 
 namespace xrpl {
 
@@ -16,14 +15,13 @@ public:
     testGetFileContents()
     {
         using namespace xrpl::detail;
-        using namespace boost::system;
 
         constexpr char const* expectedContents = "This file is very short. That's all we need.";
 
         FileDirGuard const file(
             *this, "test_file", "test.txt", "This is temporary text that should get overwritten");
 
-        error_code ec;
+        std::error_code ec;
         auto const path = file.file();
 
         writeFileContents(ec, path, expectedContents);
@@ -46,7 +44,7 @@ public:
         {
             // Test with small max
             auto const bad = getFileContents(ec, path, 16);
-            BEAST_EXPECT(ec && ec.value() == boost::system::errc::file_too_large);
+            BEAST_EXPECT(ec && ec.value() == static_cast<int>(std::errc::file_too_large));
             BEAST_EXPECT(bad.empty());
         }
     }

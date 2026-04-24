@@ -8,8 +8,8 @@
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/Types.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+
+#include <filesystem>
 
 #include <rocksdb/advanced_options.h>
 #include <rocksdb/cache.h>
@@ -265,8 +265,8 @@ public:
             m_db.reset();
             if (m_deletePath)
             {
-                boost::filesystem::path const dir = m_name;
-                boost::filesystem::remove_all(dir);
+                std::filesystem::path const dir = m_name;
+                std::filesystem::remove_all(dir);
             }
         }
     }

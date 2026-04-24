@@ -4,13 +4,9 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/ServiceRegistry.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
-
-#include <soci/blob.h>
-
 #include <cstddef>
 #include <cstdint>
+#include <filesystem>
 #include <mutex>
 #include <stdexcept>
 #include <string>
@@ -44,7 +40,7 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
         Throw<std::runtime_error>(
             "Sqlite databases must specify a dir and a name. Name: " + name + " Dir: " + dir);
     }
-    boost::filesystem::path file(dir);
+    std::filesystem::path file(dir);
     if (is_directory(file))
         file /= name + ext;
     return file.string();

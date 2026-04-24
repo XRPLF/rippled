@@ -5,10 +5,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/filesystem/path.hpp>
 
 #include <chrono>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <iostream>
@@ -53,7 +53,7 @@ Logs::File::isOpen() const noexcept
 }
 
 bool
-Logs::File::open(boost::filesystem::path const& path)
+Logs::File::open(std::filesystem::path const& path)
 {
     close();
 
@@ -112,7 +112,7 @@ Logs::Logs(beast::severities::Severity thresh) : thresh_(thresh)  // default sev
 }
 
 bool
-Logs::open(boost::filesystem::path const& pathToLogFile)
+Logs::open(std::filesystem::path const& pathToLogFile)
 {
     return file_.open(pathToLogFile);
 }

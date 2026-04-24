@@ -9,7 +9,7 @@
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
+#include <filesystem>  // VFALCO FIX: This include should not be here
 
 #include <cstdint>
 #include <optional>
@@ -82,17 +82,17 @@ public:
     static char const* const validatorsFileName;
 
     /** Returns the full path and filename of the debug log file. */
-    boost::filesystem::path
+    std::filesystem::path
     getDebugLogFile() const;
 
 private:
-    boost::filesystem::path CONFIG_FILE;
+    std::filesystem::path CONFIG_FILE;
 
 public:
-    boost::filesystem::path CONFIG_DIR;
+    std::filesystem::path CONFIG_DIR;
 
 private:
-    boost::filesystem::path DEBUG_LOGFILE;
+    std::filesystem::path DEBUG_LOGFILE;
 
     void
     load();

@@ -4,8 +4,8 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <boost/beast/core/string.hpp>
-#include <boost/filesystem.hpp>
 
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <memory>
@@ -88,7 +88,7 @@ private:
             @return `true` if the file was opened.
         */
         bool
-        open(boost::filesystem::path const& path);
+        open(std::filesystem::path const& path);
 
         /** Close and re-open the system file associated with the log
             This assists in interoperating with external log management tools.
@@ -130,7 +130,7 @@ private:
 
     private:
         std::unique_ptr<std::ofstream> m_stream;
-        boost::filesystem::path m_path;
+        std::filesystem::path m_path;
     };
 
     std::mutex mutable mutex_;
@@ -149,7 +149,7 @@ public:
     virtual ~Logs() = default;
 
     bool
-    open(boost::filesystem::path const& pathToLogFile);
+    open(std::filesystem::path const& pathToLogFile);
 
     beast::Journal::Sink&
     get(std::string const& name);

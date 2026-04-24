@@ -7,8 +7,6 @@
 #include <xrpl/proto/org/xrpl/rpc/v1/get_ledger.pb.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 
-#include <boost/filesystem/operations.hpp>
-
 #include <grpcpp/client_context.h>
 #include <grpcpp/create_channel.h>
 #include <grpcpp/grpcpp.h>
@@ -18,7 +16,10 @@
 #include <chrono>
 #include <filesystem>
 #include <fstream>
+#include <iomanip>
 #include <memory>
+#include <random>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 #include <string_view>
@@ -256,9 +257,12 @@ public:
     TemporaryTLSCertificates()
     {
         auto tmpDir = std::filesystem::temp_directory_path();
-        auto uniqueDirName =
-            boost::filesystem::unique_path(std::string(kCERTS_DIR_PREFIX) + "%%%%%%%%");
-        tempDir_ = tmpDir / uniqueDirName.string();
+        // Generate 8 random hex characters to create a unique directory name
+        std::random_device rd;
+        std::ostringstream oss;
+        oss << kCERTS_DIR_PREFIX << std::hex << std::setfill('0') << std::setw(8)
+            << (rd() & 0xFFFFFFFF);
+        tempDir_ = tmpDir / oss.str();
         std::filesystem::create_directories(tempDir_);
 
         writeFile(tempDir_ / kCA_CERT_FILENAME, kCA_CERT_CONTENT);

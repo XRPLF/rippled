@@ -1,8 +1,10 @@
 #pragma once
 
-#include <boost/filesystem.hpp>
-
+#include <filesystem>
+#include <random>
+#include <sstream>
 #include <string>
+#include <system_error>
 
 namespace beast {
 
@@ -13,7 +15,7 @@ namespace beast {
 */
 class temp_dir
 {
-    boost::filesystem::path path_;
+    std::filesystem::path path_;
 
 public:
 #if !GENERATING_DOCS
@@ -25,20 +27,23 @@ public:
     /// Construct a temporary directory.
     temp_dir()
     {
-        auto const dir = boost::filesystem::temp_directory_path();
+        auto const dir = std::filesystem::temp_directory_path();
+        std::random_device rd;
         do
         {
-            path_ = dir / boost::filesystem::unique_path();
-        } while (boost::filesystem::exists(path_));
-        boost::filesystem::create_directory(path_);
+            std::ostringstream oss;
+            oss << std::hex << rd() << rd();
+            path_ = dir / oss.str();
+        } while (std::filesystem::exists(path_));
+        std::filesystem::create_directory(path_);
     }
 
     /// Destroy a temporary directory.
     ~temp_dir()
     {
         // use non-throwing calls in the destructor
-        boost::system::error_code ec;
-        boost::filesystem::remove_all(path_, ec);
+        std::error_code ec;
+        std::filesystem::remove_all(path_, ec);
         // TODO: warn/notify if ec set ?
     }
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <boost/filesystem.hpp>
+#include <filesystem>
 
 namespace xrpl {
 
@@ -12,6 +12,6 @@ namespace xrpl {
     @throws runtime_error
 */
 void
-extractTarLz4(boost::filesystem::path const& src, boost::filesystem::path const& dst);
+extractTarLz4(std::filesystem::path const& src, std::filesystem::path const& dst);
 
 }  // namespace xrpl

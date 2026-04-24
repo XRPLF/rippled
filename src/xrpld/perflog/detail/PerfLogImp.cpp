@@ -13,8 +13,9 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/system/detail/error_code.hpp>
+#include <filesystem>
+#include <system_error>
+
 
 #include <chrono>
 #include <cstdint>
@@ -216,10 +217,10 @@ PerfLogImp::openLog()
         logFile_.close();
 
     auto logDir = setup_.perfLog.parent_path();
-    if (!boost::filesystem::is_directory(logDir))
+    if (!std::filesystem::is_directory(logDir))
     {
-        boost::system::error_code ec;
-        boost::filesystem::create_directories(logDir, ec);
+        std::error_code ec;
+        std::filesystem::create_directories(logDir, ec);
         if (ec)
         {
             JLOG(j_.fatal()) << "Unable to create performance log "
@@ -474,17 +475,17 @@ PerfLogImp::stop()
 //-----------------------------------------------------------------------------
 
 PerfLog::Setup
-setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
+setup_PerfLog(Section const& section, std::filesystem::path const& configDir)
 {
     PerfLog::Setup setup;
     std::string perfLog;
     set(perfLog, "perf_log", section);
     if (!perfLog.empty())
     {
-        setup.perfLog = boost::filesystem::path(perfLog);
+        setup.perfLog = std::filesystem::path(perfLog);
         if (setup.perfLog.is_relative())
         {
-            setup.perfLog = boost::filesystem::absolute(setup.perfLog, configDir);
+            setup.perfLog = configDir / setup.perfLog;
         }
     }
 

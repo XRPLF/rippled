@@ -6,10 +6,10 @@
 
 #include <xrpl/beast/unit_test/runner.h>
 
-#include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/throw_exception.hpp>
 
+#include <filesystem>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -25,7 +25,7 @@ make_reason(String const& reason, char const* file, int line)
     std::string s(reason);
     if (!s.empty())
         s.append(": ");
-    namespace fs = boost::filesystem;
+    namespace fs = std::filesystem;
     s.append(fs::path{file}.filename().string());
     s.append("(");
     s.append(boost::lexical_cast<std::string>(line));

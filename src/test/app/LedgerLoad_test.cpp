@@ -18,7 +18,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string/erase.hpp>
-#include <boost/filesystem/operations.hpp>
+#include <filesystem>
 #include <boost/system/detail/error_code.hpp>
 
 #include <cassert>
@@ -139,7 +139,7 @@ class LedgerLoad_test : public beast::unit_test::suite
     {
         testcase("Load ledger: Bad Files");
         using namespace test::jtx;
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
 
         // empty path
         except([&] {
@@ -162,7 +162,7 @@ class LedgerLoad_test : public beast::unit_test::suite
 
         // make a corrupted version of the ledger file (last 10 bytes removed).
         boost::system::error_code ec;
-        auto ledgerFileCorrupt = boost::filesystem::path{sd.dbPath} / "ledgerdata_bad.json";
+        auto ledgerFileCorrupt = std::filesystem::path{sd.dbPath} / "ledgerdata_bad.json";
         copy_file(sd.ledgerFile, ledgerFileCorrupt, copy_options::overwrite_existing, ec);
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;

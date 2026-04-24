@@ -4,8 +4,6 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/server/Manifest.h>
 
-#include <boost/filesystem.hpp>
-
 namespace xrpl {
 
 struct SavedState

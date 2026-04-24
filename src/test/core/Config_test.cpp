@@ -10,7 +10,7 @@
 #include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem/operations.hpp>
+#include <filesystem>
 #include <boost/format.hpp>  // IWYU pragma: keep
 #include <boost/format/free_funcs.hpp>
 #include <boost/lexical_cast/bad_lexical_cast.hpp>
@@ -179,7 +179,7 @@ public:
     bool
     dataDirExists() const
     {
-        return boost::filesystem::is_directory(dataDir_);
+        return std::filesystem::is_directory(dataDir_);
     }
 
     bool
@@ -192,7 +192,7 @@ public:
     {
         try
         {
-            using namespace boost::filesystem;
+            using namespace std::filesystem;
             if (rmDataDir_)
                 rmDir(dataDir_);
         }
@@ -273,7 +273,7 @@ public:
 class Config_test final : public TestSuite
 {
 private:
-    using path = boost::filesystem::path;
+    using path = std::filesystem::path;
 
 public:
     void
@@ -308,7 +308,7 @@ port_wss_admin
     {
         testcase("config_file");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         auto const cwd = current_path();
 
         // Test both config file names.
@@ -424,7 +424,7 @@ port_wss_admin
     {
         testcase("database_path");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         {
             boost::format cc("[database_path]\n%1%\n");
 
@@ -600,7 +600,7 @@ main
     {
         testcase("validators_file");
 
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         {
             // load should throw for missing specified validators file
             boost::format cc("[validators_file]\n%1%\n");

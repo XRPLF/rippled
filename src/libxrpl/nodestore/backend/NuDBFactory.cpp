@@ -15,8 +15,8 @@
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
 
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+
+#include <filesystem>
 #include <boost/system/detail/errc.hpp>
 
 #include <nudb/context.hpp>
@@ -131,7 +131,7 @@ public:
     void
     open(bool createIfMissing, uint64_t appType, uint64_t uid, uint64_t salt) override
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         if (db_.is_open())
         {
             // LCOV_EXCL_START
@@ -194,11 +194,12 @@ public:
 
             if (deletePath_)
             {
-                boost::filesystem::remove_all(name_, ec);
-                if (ec)
+                std::error_code fsec;
+                std::filesystem::remove_all(name_, fsec);
+                if (fsec)
                 {
                     JLOG(j_.fatal())
-                        << "Filesystem remove_all of " << name_ << " failed with: " << ec.message();
+                        << "Filesystem remove_all of " << name_ << " failed with: " << fsec.message();
                 }
             }
         }
@@ -374,7 +375,7 @@ private:
     static std::size_t
     parseBlockSize(std::string const& name, Section const& keyValues, beast::Journal journal)
     {
-        using namespace boost::filesystem;
+        using namespace std::filesystem;
         auto const folder = path(name);
         auto const kp = (folder / "nudb.key").string();
 

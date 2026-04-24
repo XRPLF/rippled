@@ -10,7 +10,6 @@
 #include <xrpl/protocol/TxSearched.h>
 #include <xrpl/rdb/DatabaseCon.h>
 
-#include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
 
 namespace xrpl {

@@ -22,15 +22,16 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
-#include <boost/filesystem/operations.hpp>
-#include <boost/filesystem/path.hpp>
+
+#include <filesystem>
+#include <system_error>
 #include <boost/format/free_funcs.hpp>
 #include <boost/multiprecision/detail/endian.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>  // IWYU pragma: keep
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_match.hpp>
-#include <boost/system/detail/error_code.hpp>
+
 
 #include <algorithm>
 #include <array>
@@ -313,13 +314,13 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     // directory, use the current working directory as the
     // config directory and that with "db" as the data
     // directory.
-    boost::filesystem::path dataDir;
+    std::filesystem::path dataDir;
 
     if (!strConf.empty())
     {
         // --conf=<path> : everything is relative that file.
         CONFIG_FILE = strConf;
-        CONFIG_DIR = boost::filesystem::absolute(CONFIG_FILE);
+        CONFIG_DIR = std::filesystem::absolute(CONFIG_FILE);
         CONFIG_DIR.remove_filename();
         dataDir = CONFIG_DIR / databaseDirName;
     }
@@ -330,13 +331,13 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
             // Check if either of the config files exist in the current working
             // directory, in which case the databases will be stored in a
             // subdirectory.
-            CONFIG_DIR = boost::filesystem::current_path();
+            CONFIG_DIR = std::filesystem::current_path();
             dataDir = CONFIG_DIR / databaseDirName;
             CONFIG_FILE = CONFIG_DIR / configFileName;
-            if (boost::filesystem::exists(CONFIG_FILE))
+            if (std::filesystem::exists(CONFIG_FILE))
                 break;
             CONFIG_FILE = CONFIG_DIR / configLegacyName;
-            if (boost::filesystem::exists(CONFIG_FILE))
+            if (std::filesystem::exists(CONFIG_FILE))
                 break;
 
             // Check if the home directory is set, and optionally the XDG config
@@ -363,10 +364,10 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
                 dataDir = strXdgDataHome + "/" + systemName();
                 CONFIG_DIR = strXdgConfigHome + "/" + systemName();
                 CONFIG_FILE = CONFIG_DIR / configFileName;
-                if (boost::filesystem::exists(CONFIG_FILE))
+                if (std::filesystem::exists(CONFIG_FILE))
                     break;
                 CONFIG_FILE = CONFIG_DIR / configLegacyName;
-                if (boost::filesystem::exists(CONFIG_FILE))
+                if (std::filesystem::exists(CONFIG_FILE))
                     break;
             }
 
@@ -374,7 +375,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
             dataDir = "/var/opt/" + systemName();
             CONFIG_DIR = "/etc/opt/" + systemName();
             CONFIG_FILE = CONFIG_DIR / configFileName;
-            if (boost::filesystem::exists(CONFIG_FILE))
+            if (std::filesystem::exists(CONFIG_FILE))
                 break;
             CONFIG_FILE = CONFIG_DIR / configLegacyName;
         } while (false);
@@ -387,7 +388,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         std::string const dbPath(legacy("database_path"));
         if (!dbPath.empty())
         {
-            dataDir = boost::filesystem::path(dbPath);
+            dataDir = std::filesystem::path(dbPath);
         }
         else if (RUN_STANDALONE)
         {
@@ -397,13 +398,13 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
 
     if (!dataDir.empty())
     {
-        boost::system::error_code ec;
-        boost::filesystem::create_directories(dataDir, ec);
+        std::error_code ec;
+        std::filesystem::create_directories(dataDir, ec);
 
         if (ec)
             Throw<std::runtime_error>(boost::str(boost::format("Can not create %s") % dataDir));
 
-        legacy("database_path", boost::filesystem::absolute(dataDir).string());
+        legacy("database_path", std::filesystem::absolute(dataDir).string());
     }
 
     HTTPClient::initializeSSLContext(
@@ -456,7 +457,7 @@ Config::load()
     if (!QUIET)
         std::cerr << "Loading: " << CONFIG_FILE << "\n";
 
-    boost::system::error_code ec;
+    std::error_code ec;
     auto const fileContents = getFileContents(ec, CONFIG_FILE);
 
     if (ec)
@@ -509,8 +510,8 @@ Config::loadFromString(std::string const& fileContents)
         std::string dbPath;
         if (getSingleSection(secConfig, "database_path", dbPath, j_))
         {
-            boost::filesystem::path const p(dbPath);
-            legacy("database_path", boost::filesystem::absolute(p).string());
+            std::filesystem::path const p(dbPath);
+            legacy("database_path", std::filesystem::absolute(p).string());
         }
     }
 
@@ -953,7 +954,7 @@ Config::loadFromString(std::string const& fileContents)
         // If no path was specified, then look for validators.txt
         // in the same directory as the config file, but don't complain
         // if we can't find it.
-        boost::filesystem::path validatorsFile;
+        std::filesystem::path validatorsFile;
 
         if (getSingleSection(secConfig, SECTION_VALIDATORS_FILE, strTemp, j_))
         {
@@ -968,7 +969,7 @@ Config::loadFromString(std::string const& fileContents)
             if (!validatorsFile.is_absolute() && !CONFIG_DIR.empty())
                 validatorsFile = CONFIG_DIR / validatorsFile;
 
-            if (!boost::filesystem::exists(validatorsFile))
+            if (!std::filesystem::exists(validatorsFile))
             {
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -977,8 +978,8 @@ Config::loadFromString(std::string const& fileContents)
                     validatorsFile.string());
             }
             else if (
-                !boost::filesystem::is_regular_file(validatorsFile) &&
-                !boost::filesystem::is_symlink(validatorsFile))
+                !std::filesystem::is_regular_file(validatorsFile) &&
+                !std::filesystem::is_symlink(validatorsFile))
             {
                 Throw<std::runtime_error>(
                     "Invalid file specified in [" SECTION_VALIDATORS_FILE "]: " +
@@ -991,24 +992,24 @@ Config::loadFromString(std::string const& fileContents)
 
             if (!validatorsFile.empty())
             {
-                if (!boost::filesystem::exists(validatorsFile))
+                if (!std::filesystem::exists(validatorsFile))
                 {
                     validatorsFile.clear();
                 }
                 else if (
-                    !boost::filesystem::is_regular_file(validatorsFile) &&
-                    !boost::filesystem::is_symlink(validatorsFile))
+                    !std::filesystem::is_regular_file(validatorsFile) &&
+                    !std::filesystem::is_symlink(validatorsFile))
                 {
                     validatorsFile.clear();
                 }
             }
         }
 
-        if (!validatorsFile.empty() && boost::filesystem::exists(validatorsFile) &&
-            (boost::filesystem::is_regular_file(validatorsFile) ||
-             boost::filesystem::is_symlink(validatorsFile)))
+        if (!validatorsFile.empty() && std::filesystem::exists(validatorsFile) &&
+            (std::filesystem::is_regular_file(validatorsFile) ||
+             std::filesystem::is_symlink(validatorsFile)))
         {
-            boost::system::error_code ec;
+            std::error_code ec;
             auto const data = getFileContents(ec, validatorsFile);
             if (ec)
             {
@@ -1134,7 +1135,7 @@ Config::loadFromString(std::string const& fileContents)
     }
 }
 
-boost::filesystem::path
+std::filesystem::path
 Config::getDebugLogFile() const
 {
     auto log_file = DEBUG_LOGFILE;
@@ -1143,17 +1144,17 @@ Config::getDebugLogFile() const
     {
         // Unless an absolute path for the log file is specified, the
         // path is relative to the config file directory.
-        log_file = boost::filesystem::absolute(log_file, CONFIG_DIR);
+        log_file = CONFIG_DIR / log_file;
     }
 
     if (!log_file.empty())
     {
         auto log_dir = log_file.parent_path();
 
-        if (!boost::filesystem::is_directory(log_dir))
+        if (!std::filesystem::is_directory(log_dir))
         {
-            boost::system::error_code ec;
-            boost::filesystem::create_directories(log_dir, ec);
+            std::error_code ec;
+            std::filesystem::create_directories(log_dir, ec);
 
             // If we fail, we warn but continue so that the calling code can
             // decide how to handle this situation.

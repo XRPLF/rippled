@@ -613,7 +613,7 @@ GRPCServerImpl::createServerCredentials()
 
     try
     {
-        boost::system::error_code ec;
+        std::error_code ec;
         grpc::SslServerCredentialsOptions sslOpts;
         grpc::SslServerCredentialsOptions::PemKeyCertPair keyCertPair;
 

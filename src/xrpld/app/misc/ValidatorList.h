@@ -12,6 +12,7 @@
 
 #include <boost/thread/shared_mutex.hpp>
 
+#include <filesystem>
 #include <mutex>
 #include <shared_mutex>
 
@@ -204,7 +205,7 @@ class ValidatorList
     ManifestCache& validatorManifests_;
     ManifestCache& publisherManifests_;
     TimeKeeper& timeKeeper_;
-    boost::filesystem::path const dataPath_;
+    std::filesystem::path const dataPath_;
     beast::Journal const j_;
     std::shared_mutex mutable mutex_;
     using lock_guard = std::lock_guard<decltype(mutex_)>;
@@ -803,7 +804,7 @@ private:
 
     /** Get the filename used for caching UNLs
      */
-    boost::filesystem::path
+    std::filesystem::path
     getCacheFileName(lock_guard const&, PublicKey const& pubKey) const;
 
     /** Build a Json representation of the collection, suitable for

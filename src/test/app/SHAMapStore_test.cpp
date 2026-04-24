@@ -21,7 +21,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-#include <boost/filesystem/path.hpp>
+#include <filesystem>
 
 #include <atomic>
 #include <cstdint>
@@ -491,7 +491,7 @@ public:
     makeBackendRotating(jtx::Env& env, NodeStoreScheduler& scheduler, std::string path)
     {
         Section section{env.app().config().section(ConfigSection::nodeDatabase())};
-        boost::filesystem::path newPath;
+        std::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};
