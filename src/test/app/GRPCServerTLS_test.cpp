@@ -257,12 +257,13 @@ public:
     TemporaryTLSCertificates()
     {
         auto tmpDir = std::filesystem::temp_directory_path();
-        // Generate 8 random hex characters to create a unique directory name
         std::random_device rd;
-        std::ostringstream oss;
-        oss << kCERTS_DIR_PREFIX << std::hex << std::setfill('0') << std::setw(8)
-            << (rd() & 0xFFFFFFFF);
-        tempDir_ = tmpDir / oss.str();
+        do
+        {
+            std::ostringstream oss;
+            oss << kCERTS_DIR_PREFIX << std::hex << std::setfill('0') << std::setw(8) << rd();
+            tempDir_ = tmpDir / oss.str();
+        } while (std::filesystem::exists(tempDir_));
         std::filesystem::create_directories(tempDir_);
 
         writeFile(tempDir_ / kCA_CERT_FILENAME, kCA_CERT_CONTENT);

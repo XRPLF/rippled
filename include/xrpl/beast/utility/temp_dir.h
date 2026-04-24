@@ -1,6 +1,7 @@
 #pragma once
 
 #include <filesystem>
+#include <iomanip>
 #include <random>
 #include <sstream>
 #include <string>
@@ -32,7 +33,7 @@ public:
         do
         {
             std::ostringstream oss;
-            oss << std::hex << rd() << rd();
+            oss << std::hex << std::setfill('0') << std::setw(8) << rd() << std::setw(8) << rd();
             path_ = dir / oss.str();
         } while (std::filesystem::exists(path_));
         std::filesystem::create_directory(path_);

@@ -17,6 +17,7 @@
 
 
 #include <filesystem>
+#include <system_error>
 #include <boost/system/detail/errc.hpp>
 
 #include <nudb/context.hpp>
