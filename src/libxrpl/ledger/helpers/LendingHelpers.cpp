@@ -1,4 +1,4 @@
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
@@ -7,18 +7,19 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/tx/transactors/vault/VaultCreate.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -28,9 +29,18 @@
 namespace xrpl {
 
 bool
-checkLendingProtocolDependencies(PreflightContext const& ctx)
+checkLendingProtocolDependencies(Rules const& rules, STTx const& tx)
 {
-    return ctx.rules.enabled(featureSingleAssetVault) && VaultCreate::checkExtraFeatures(ctx);
+    if (!rules.enabled(featureSingleAssetVault))
+        return false;
+
+    if (!rules.enabled(featureMPTokensV1))
+        return false;
+
+    if (tx.isFieldPresent(sfDomainID) && !rules.enabled(featurePermissionedDomains))
+        return false;
+
+    return true;
 }
 
 LoanPaymentParts&

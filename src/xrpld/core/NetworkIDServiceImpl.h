@@ -22,7 +22,7 @@ public:
 
     ~NetworkIDServiceImpl() override = default;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getNetworkID() const noexcept override;
 
 private:

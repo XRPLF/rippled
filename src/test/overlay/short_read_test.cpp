@@ -424,7 +424,7 @@ private:
             wait();
         }
 
-        endpoint_type const&
+        [[nodiscard]] endpoint_type const&
         endpoint() const
         {
             return endpoint_;

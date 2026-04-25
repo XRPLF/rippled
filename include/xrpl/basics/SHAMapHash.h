@@ -20,7 +20,7 @@ public:
     {
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     as_uint256() const
     {
         return hash_;
@@ -30,17 +30,17 @@ public:
     {
         return hash_;
     }
-    bool
+    [[nodiscard]] bool
     isZero() const
     {
         return hash_.isZero();
     }
-    bool
+    [[nodiscard]] bool
     isNonZero() const
     {
         return hash_.isNonZero();
     }
-    int
+    [[nodiscard]] int
     signum() const
     {
         return hash_.signum();
