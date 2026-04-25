@@ -12,9 +12,9 @@ std::vector<SOElement> const&
 LedgerFormats::getCommonFields()
 {
     static auto const commonFields = std::vector<SOElement>{
-        {sfLedgerIndex, soeOPTIONAL},
-        {sfLedgerEntryType, soeREQUIRED},
-        {sfFlags, soeREQUIRED},
+        {sfLedgerIndex, soeOPTIONAL, soeCONSTANT},
+        {sfLedgerEntryType, soeREQUIRED, soeCONSTANT},
+        {sfFlags, soeREQUIRED, soeNOTCONSTANT},
     };
     return commonFields;
 }

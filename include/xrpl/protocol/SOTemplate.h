@@ -23,6 +23,12 @@ enum SOEStyle {
 /** Amount fields that can support MPT */
 enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
 
+enum SOEConstant {
+    soeCONSTANTINVALID = 0,
+    soeCONSTANT = 1,
+    soeNOTCONSTANT = 2,
+};
+
 //------------------------------------------------------------------------------
 
 /** An element in a SOTemplate. */
@@ -31,6 +37,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
+    SOEConstant constant_ = soeCONSTANTINVALID;
     SOETxMPTIssue supportMpt_ = soeMPTNone;
 
 private:
@@ -52,6 +59,12 @@ public:
         init(fieldName);
     }
 
+    SOElement(SField const& fieldName, SOEStyle style, SOEConstant constant)
+        : sField_(fieldName), style_(style), constant_(constant)
+    {
+        init(fieldName);
+    }
+
     template <typename T>
         requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
     SOElement(
@@ -59,6 +72,18 @@ public:
         SOEStyle style,
         SOETxMPTIssue supportMpt = soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
+    {
+        init(fieldName);
+    }
+
+    template <typename T>
+        requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
+    SOElement(
+        TypedField<T> const& fieldName,
+        SOEStyle style,
+        SOEConstant constant,
+        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        : sField_(fieldName), style_(style), constant_(constant), supportMpt_(supportMpt)
     {
         init(fieldName);
     }
@@ -73,6 +98,12 @@ public:
     style() const
     {
         return style_;
+    }
+
+    [[nodiscard]] SOEConstant
+    constant() const
+    {
+        return constant_;
     }
 
     [[nodiscard]] SOETxMPTIssue

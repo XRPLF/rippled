@@ -36,7 +36,6 @@ XRPL_FEATURE(PermissionedDEX,             Supported::yes, VoteBehavior::DefaultN
 XRPL_FEATURE(Batch,                       Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(SingleAssetVault,            Supported::yes,  VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,          Supported::yes, VoteBehavior::DefaultNo)
-// Check flags in Credential transactions
 XRPL_FIX    (InvalidTxFlags,              Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (FrozenLPTokenTransfer,       Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DeepFreeze,                  Supported::yes, VoteBehavior::DefaultNo)

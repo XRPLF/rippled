@@ -11,6 +11,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -18,6 +19,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
@@ -945,6 +947,73 @@ NoModifiedUnmodifiableFields::visitEntry(
     changedEntries_.emplace(before, after);
 }
 
+// Check whether any constant (or unannotated) fields in the given template
+// have been modified between before and after.  Recurses into STObject and
+// STArray fields using InnerObjectFormats.
+static bool
+hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplate const& tmpl)
+{
+    for (auto const& elem : tmpl)
+    {
+        auto const& sf = elem.sField();
+        auto const constant = elem.constant();
+
+        auto const* bField = before.peekAtPField(sf);
+        auto const* aField = after.peekAtPField(sf);
+        bool const bPresent = bField && bField->getSType() != STI_NOTPRESENT;
+        bool const aPresent = aField && aField->getSType() != STI_NOTPRESENT;
+
+        if (constant == soeCONSTANT || constant == soeCONSTANTINVALID)
+        {
+            // The field must not change at all.
+            if (bPresent != aPresent || (aPresent && *bField != *aField))
+                return true;
+        }
+        else if (constant == soeNOTCONSTANT)
+        {
+            // The field itself may change, but if it is an STObject or
+            // STArray we still need to recurse and check the inner
+            // fields against the inner object template.
+            if (!bPresent || !aPresent)
+                continue;
+
+            if (sf.fieldType == STI_OBJECT)
+            {
+                auto const* innerTmpl =
+                    InnerObjectFormats::getInstance().findSOTemplateBySField(sf);
+                if (innerTmpl)
+                {
+                    auto const& bObj = before.getFieldObject(sf);
+                    auto const& aObj = after.getFieldObject(sf);
+                    if (hasConstantFieldChanged(bObj, aObj, *innerTmpl))
+                        return true;
+                }
+            }
+            else if (sf.fieldType == STI_ARRAY)
+            {
+                auto const& bArr = before.getFieldArray(sf);
+                auto const& aArr = after.getFieldArray(sf);
+                auto const n = std::min(bArr.size(), aArr.size());
+                for (std::size_t i = 0; i < n; ++i)
+                {
+                    auto const& bElem = bArr[i];
+                    auto const& aElem = aArr[i];
+                    // Each element of the array is an STObject whose
+                    // template is determined by its SField name.
+                    auto const* innerTmpl =
+                        InnerObjectFormats::getInstance().findSOTemplateBySField(bElem.getFName());
+                    if (innerTmpl)
+                    {
+                        if (hasConstantFieldChanged(bElem, aElem, *innerTmpl))
+                            return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
 bool
 NoModifiedUnmodifiableFields::finalize(
     STTx const& tx,
@@ -958,23 +1027,31 @@ NoModifiedUnmodifiableFields::finalize(
         bool const afterField = after->isFieldPresent(field);
         return beforeField != afterField || (afterField && before->at(field) != after->at(field));
     };
+
+    bool const useTemplate = view.rules().enabled(featureInvariantsV1_1);
+
     for (auto const& slePair : changedEntries_)
     {
         auto const& before = slePair.first;
         auto const& after = slePair.second;
         auto const type = after->getType();
+
+        // New template-based check
         bool bad = false;
-        [[maybe_unused]] bool enforce = false;
+        {
+            auto const* format = LedgerFormats::getInstance().findByType(type);
+            if (format)
+                bad = hasConstantFieldChanged(*before, *after, format->getSOTemplate());
+        }
+
+        // Old hardcoded check
+        bool badOld = false;
+        [[maybe_unused]] bool enforceOld = false;
         switch (type)
         {
             case ltLOAN_BROKER:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                enforceOld = view.rules().enabled(featureLendingProtocol);
+                badOld = fieldChanged(before, after, sfLedgerEntryType) ||
                     fieldChanged(before, after, sfLedgerIndex) ||
                     fieldChanged(before, after, sfSequence) ||
                     fieldChanged(before, after, sfOwnerNode) ||
@@ -987,13 +1064,8 @@ NoModifiedUnmodifiableFields::finalize(
                     fieldChanged(before, after, sfCoverRateLiquidation);
                 break;
             case ltLOAN:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                enforceOld = view.rules().enabled(featureLendingProtocol);
+                badOld = fieldChanged(before, after, sfLedgerEntryType) ||
                     fieldChanged(before, after, sfLedgerIndex) ||
                     fieldChanged(before, after, sfSequence) ||
                     fieldChanged(before, after, sfOwnerNode) ||
@@ -1015,28 +1087,32 @@ NoModifiedUnmodifiableFields::finalize(
                     fieldChanged(before, after, sfLoanScale);
                 break;
             default:
-                /*
-                 * We check this invariant regardless of lending protocol
-                 * amendment status, allowing for detection and logging of
-                 * potential issues even when the amendment is disabled.
-                 *
-                 * We use the lending protocol as a gate, even though
-                 * all transactions are affected because that's when it
-                 * was added.
-                 */
-                enforce = view.rules().enabled(featureLendingProtocol);
-                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                enforceOld = view.rules().enabled(featureLendingProtocol);
+                badOld = fieldChanged(before, after, sfLedgerEntryType) ||
                     fieldChanged(before, after, sfLedgerIndex);
         }
+
         XRPL_ASSERT(
-            !bad || enforce,
+            !bad || useTemplate,
             "xrpl::NoModifiedUnmodifiableFields::finalize : no bad "
-            "changes or enforce invariant");
+            "changes or enforce invariant (template)");
         if (bad)
         {
             JLOG(j.fatal()) << "Invariant failed: changed an unchangeable field for "
                             << tx.getTransactionID();
-            if (enforce)
+            if (useTemplate)
+                return false;
+        }
+
+        XRPL_ASSERT(
+            !badOld || enforceOld,
+            "xrpl::NoModifiedUnmodifiableFields::finalize : no bad "
+            "changes or enforce invariant");
+        if (badOld)
+        {
+            JLOG(j.fatal()) << "Invariant failed: changed an unchangeable field for "
+                            << tx.getTransactionID();
+            if (!useTemplate && enforceOld)
                 return false;
         }
     }
