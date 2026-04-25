@@ -162,7 +162,7 @@ public:
     operator=(LockFreeStack const&) = delete;
 
     /** Returns true if the stack is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return m_head.load() == &m_end;
@@ -237,25 +237,25 @@ public:
         return iterator(&m_end);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return const_iterator(m_head.load());
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return const_iterator(&m_end);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return const_iterator(m_head.load());
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return const_iterator(&m_end);
