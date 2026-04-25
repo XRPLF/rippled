@@ -88,7 +88,7 @@ public:
     push_back(jtx::Account const& acc);
     Path&
     push_back(STPathElement const& pe);
-    Json::Value
+    [[nodiscard]] Json::Value
     json() const;
 
 private:
@@ -166,7 +166,7 @@ public:
     {
         addHelper(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
-    Json::Value
+    [[nodiscard]] Json::Value
     json() const
     {
         Json::Value v;

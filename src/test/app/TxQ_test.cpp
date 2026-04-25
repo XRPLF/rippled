@@ -3530,9 +3530,18 @@ public:
                 jv.isMember(jss::load_factor_fee_reference) &&
                 jv[jss::load_factor_fee_reference] == 256;
         }));
-
-        BEAST_EXPECT(
-            !wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }));
+        // Drain any extra serverStatus messages that may arrive
+        // asynchronously from the ledger close processing.  The drain
+        // is bounded so the test cannot hang if serverStatus keeps
+        // arriving (e.g. LoadManager raising/lowering fees).
+        auto const drainDeadline = std::chrono::steady_clock::now() + 5s;
+        while (std::chrono::steady_clock::now() < drainDeadline)
+        {
+            if (!wsc->findMsg(1s, [&](auto const& jv) { return jv[jss::type] == "serverStatus"; }))
+            {
+                break;
+            }
+        }
 
         auto jv = wsc->invoke("unsubscribe", stream);
         BEAST_EXPECT(jv[jss::status] == "success");

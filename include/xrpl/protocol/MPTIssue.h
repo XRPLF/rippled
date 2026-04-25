@@ -26,16 +26,16 @@ public:
         return mptID_;
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const;
 
-    constexpr MPTID const&
+    [[nodiscard]] constexpr MPTID const&
     getMptID() const
     {
         return mptID_;
     }
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
     void

@@ -25,11 +25,11 @@ public:
     operator=(Consumer const& other);
 
     /** Return a human readable string uniquely identifying this consumer. */
-    std::string
+    [[nodiscard]] std::string
     to_string() const;
 
     /** Returns `true` if this is a privileged endpoint. */
-    bool
+    [[nodiscard]] bool
     isUnlimited() const;
 
     /** Raise the Consumer's privilege level to a Named endpoint.
@@ -42,7 +42,7 @@ public:
         This should be checked upon creation to determine if the consumer
         should be disconnected immediately.
     */
-    Disposition
+    [[nodiscard]] Disposition
     disposition() const;
 
     /** Apply a load charge to the consumer. */

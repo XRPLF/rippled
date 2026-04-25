@@ -78,7 +78,7 @@ public:
     {
         return &get();
     }
-    STBase const&
+    [[nodiscard]] STBase const&
     get() const
     {
         return *p_;
@@ -129,7 +129,7 @@ private:
     void
     constructST(SerializedTypeID id, int depth, Args&&... arg);
 
-    bool
+    [[nodiscard]] bool
     on_heap() const
     {
         return static_cast<void const*>(p_) != static_cast<void const*>(&d_);

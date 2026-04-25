@@ -228,7 +228,7 @@ public:
         return false;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return selectors_.size();
