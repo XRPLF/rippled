@@ -30,13 +30,13 @@ class TokenCodecErrcCategory : public std::error_category
 {
 public:
     // Return a short descriptive name for the category
-    char const*
+    [[nodiscard]] char const*
     name() const noexcept final
     {
         return "TokenCodecError";
     }
     // Return what each enum means in text
-    std::string
+    [[nodiscard]] std::string
     message(int c) const final
     {
         switch (static_cast<TokenCodecErrc>(c))

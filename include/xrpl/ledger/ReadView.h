@@ -39,22 +39,22 @@ public:
     struct sles_type : detail::ReadViewFwdRange<std::shared_ptr<SLE const>>
     {
         explicit sles_type(ReadView const& view);
-        iterator
+        [[nodiscard]] iterator
         begin() const;
-        iterator
+        [[nodiscard]] iterator
         end() const;
-        iterator
+        [[nodiscard]] iterator
         upper_bound(key_type const& key) const;
     };
 
     struct txs_type : detail::ReadViewFwdRange<tx_type>
     {
         explicit txs_type(ReadView const& view);
-        bool
+        [[nodiscard]] bool
         empty() const;
-        iterator
+        [[nodiscard]] iterator
         begin() const;
-        iterator
+        [[nodiscard]] iterator
         end() const;
     };
 
@@ -78,33 +78,33 @@ public:
     }
 
     /** Returns information about the ledger. */
-    virtual LedgerHeader const&
+    [[nodiscard]] virtual LedgerHeader const&
     header() const = 0;
 
     /** Returns true if this reflects an open ledger. */
-    virtual bool
+    [[nodiscard]] virtual bool
     open() const = 0;
 
     /** Returns the close time of the previous ledger. */
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
         return header().parentCloseTime;
     }
 
     /** Returns the sequence number of the base ledger. */
-    LedgerIndex
+    [[nodiscard]] LedgerIndex
     seq() const
     {
         return header().seq;
     }
 
     /** Returns the fees for the base ledger. */
-    virtual Fees const&
+    [[nodiscard]] virtual Fees const&
     fees() const = 0;
 
     /** Returns the tx processing rules. */
-    virtual Rules const&
+    [[nodiscard]] virtual Rules const&
     rules() const = 0;
 
     /** Determine if a state item exists.
@@ -114,7 +114,7 @@ public:
         @return `true` if a SLE is associated with the
                 specified key.
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     exists(Keylet const& k) const = 0;
 
     /** Return the key of the next state item.
@@ -127,7 +127,7 @@ public:
         the key returned would be outside the open
         interval (key, last).
     */
-    virtual std::optional<key_type>
+    [[nodiscard]] virtual std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const = 0;
 
     /** Return the state item associated with a key.
@@ -143,7 +143,7 @@ public:
         @return `nullptr` if the key is not present or
                 if the type does not match.
     */
-    virtual std::shared_ptr<SLE const>
+    [[nodiscard]] virtual std::shared_ptr<SLE const>
     read(Keylet const& k) const = 0;
 
     // Accounts in a payment are not allowed to use assets acquired during that
@@ -151,7 +151,7 @@ public:
     // changes that accounts make during a payment. `balanceHookIOU` adjusts
     // balances so newly acquired assets are not counted toward the balance.
     // This is required to support PaymentSandbox.
-    virtual STAmount
+    [[nodiscard]] virtual STAmount
     balanceHookIOU(AccountID const& account, AccountID const& issuer, STAmount const& amount) const
     {
         XRPL_ASSERT(amount.holds<Issue>(), "balanceHookIOU: amount is for Issue");
@@ -161,7 +161,7 @@ public:
 
     // balanceHookMPT adjusts balances so newly acquired assets are not counted
     // toward the balance.
-    virtual STAmount
+    [[nodiscard]] virtual STAmount
     balanceHookMPT(AccountID const& account, MPTIssue const& issue, std::int64_t amount) const
     {
         return STAmount{issue, amount};
@@ -171,7 +171,7 @@ public:
     // funds available to issue, which are originally available funds less
     // already self sold MPT amounts (MPT sell offer). This hook is used
     // by issuerFundsToSelfIssue() function.
-    virtual STAmount
+    [[nodiscard]] virtual STAmount
     balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount) const
     {
         return STAmount{issue, amount};
@@ -182,30 +182,30 @@ public:
     // changes that accounts make during a payment. `ownerCountHook` adjusts the
     // ownerCount so it returns the max value of the ownerCount so far.
     // This is required to support PaymentSandbox.
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     ownerCountHook(AccountID const& account, std::uint32_t count) const
     {
         return count;
     }
 
     // used by the implementation
-    virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<sles_type::iter_base>
     slesBegin() const = 0;
 
     // used by the implementation
-    virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<sles_type::iter_base>
     slesEnd() const = 0;
 
     // used by the implementation
-    virtual std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<sles_type::iter_base>
     slesUpperBound(key_type const& key) const = 0;
 
     // used by the implementation
-    virtual std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<txs_type::iter_base>
     txsBegin() const = 0;
 
     // used by the implementation
-    virtual std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] virtual std::unique_ptr<txs_type::iter_base>
     txsEnd() const = 0;
 
     /** Returns `true` if a tx exists in the tx map.
@@ -213,7 +213,7 @@ public:
         A tx exists in the map if it is part of the
         base ledger, or if it is a newly inserted tx.
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     txExists(key_type const& key) const = 0;
 
     /** Read a transaction from the tx map.
@@ -224,7 +224,7 @@ public:
         @return A pair of nullptr if the
                 key is not found in the tx map.
     */
-    virtual tx_type
+    [[nodiscard]] virtual tx_type
     txRead(key_type const& key) const = 0;
 
     //
@@ -257,7 +257,7 @@ public:
 
         @return std::nullopt if the item does not exist.
     */
-    virtual std::optional<digest_type>
+    [[nodiscard]] virtual std::optional<digest_type>
     digest(key_type const& key) const = 0;
 };
 

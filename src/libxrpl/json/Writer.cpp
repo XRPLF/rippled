@@ -72,7 +72,7 @@ public:
     Impl&
     operator=(Impl&&) = delete;
 
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return stack_.empty();
@@ -160,7 +160,7 @@ public:
         output_({&colon, 1});
     }
 
-    bool
+    [[nodiscard]] bool
     isFinished() const
     {
         return isStarted_ && empty();
@@ -187,7 +187,7 @@ public:
         }
     }
 
-    Output const&
+    [[nodiscard]] Output const&
     getOutput() const
     {
         return output_;

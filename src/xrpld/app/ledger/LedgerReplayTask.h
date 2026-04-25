@@ -60,7 +60,7 @@ public:
         update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
         /** check if this task can be merged into an existing task */
-        bool
+        [[nodiscard]] bool
         canMergeInto(TaskParameter const& existingTask) const;
     };
 

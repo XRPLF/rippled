@@ -229,12 +229,12 @@ public:
     [[nodiscard]] bool
     isTransferFeePresent() const;
 
-    Account const&
+    [[nodiscard]] Account const&
     issuer() const
     {
         return issuer_;
     }
-    Account const&
+    [[nodiscard]] Account const&
     holder(std::string const& h) const;
 
     void
@@ -251,10 +251,10 @@ public:
         std::int64_t amount,
         std::optional<TER> err = std::nullopt);
 
-    PrettyAmount
+    [[nodiscard]] PrettyAmount
     mpt(std::int64_t amount) const;
 
-    MPTID const&
+    [[nodiscard]] MPTID const&
     issuanceID() const
     {
         if (!env_.test.BEAST_EXPECT(id_))
@@ -262,7 +262,7 @@ public:
         return *id_;  // NOLINT(bugprone-unchecked-optional-access)
     }
 
-    std::int64_t
+    [[nodiscard]] std::int64_t
     getBalance(Account const& account) const;
 
     MPT
@@ -307,7 +307,7 @@ private:
     static std::unordered_map<std::string, Account>
     makeHolders(std::vector<Account> const& holders);
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getFlags(std::optional<Account> const& holder) const;
 };
 

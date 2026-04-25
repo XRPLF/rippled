@@ -21,7 +21,7 @@ public:
     recorder() = default;
 
     /** Returns a report with the results of all completed suites. */
-    results const&
+    [[nodiscard]] results const&
     report() const
     {
         return m_results;

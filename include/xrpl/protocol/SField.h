@@ -189,19 +189,19 @@ public:
         return getField(field_code(type, value));
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     getName() const
     {
         return fieldName;
     }
 
-    bool
+    [[nodiscard]] bool
     hasName() const
     {
         return fieldCode > 0;
     }
 
-    Json::StaticString const&
+    [[nodiscard]] Json::StaticString const&
     getJsonName() const
     {
         return jsonName;
@@ -212,19 +212,19 @@ public:
         return jsonName;
     }
 
-    bool
+    [[nodiscard]] bool
     isInvalid() const
     {
         return fieldCode == -1;
     }
 
-    bool
+    [[nodiscard]] bool
     isUseful() const
     {
         return fieldCode > 0;
     }
 
-    bool
+    [[nodiscard]] bool
     isBinary() const
     {
         return fieldValue < 256;
@@ -234,18 +234,18 @@ public:
     // should be discarded during serialization,like 'hash'.
     // You cannot serialize an object's hash inside that object,
     // but you can have it in the JSON representation.
-    bool
+    [[nodiscard]] bool
     isDiscardable() const
     {
         return fieldValue > 256;
     }
 
-    int
+    [[nodiscard]] int
     getCode() const
     {
         return fieldCode;
     }
-    int
+    [[nodiscard]] int
     getNum() const
     {
         return fieldNum;
@@ -256,13 +256,13 @@ public:
         return num;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldMeta(int c) const
     {
         return (fieldMeta & c) != 0;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldInclude(bool withSigningField) const
     {
         return (fieldValue < 256) && (withSigningField || (signingField == IsSigning::yes));
