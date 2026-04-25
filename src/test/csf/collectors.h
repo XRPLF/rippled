@@ -226,7 +226,7 @@ struct TxCollector
     }
 
     // Returns the number of txs which were never accepted
-    std::size_t
+    [[nodiscard]] std::size_t
     orphaned() const
     {
         return std::count_if(
@@ -234,7 +234,7 @@ struct TxCollector
     }
 
     // Returns the number of txs which were never validated
-    std::size_t
+    [[nodiscard]] std::size_t
     unvalidated() const
     {
         return std::count_if(
@@ -454,7 +454,7 @@ struct LedgerCollector
         }
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     unvalidated() const
     {
         return std::count_if(ledgers_.begin(), ledgers_.end(), [](auto const& it) {

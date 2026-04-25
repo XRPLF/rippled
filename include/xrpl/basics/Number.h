@@ -252,9 +252,9 @@ public:
     // Assume unsigned values are... unsigned. i.e. positive
     explicit Number(internalrep mantissa, int exponent, normalized);
 
-    constexpr rep
+    [[nodiscard]] constexpr rep
     mantissa() const noexcept;
-    constexpr int
+    [[nodiscard]] constexpr int
     exponent() const noexcept;
 
     constexpr Number
@@ -339,7 +339,7 @@ public:
     }
 
     /** Return the sign of the amount */
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const noexcept
     {
         if (negative_)
@@ -347,7 +347,7 @@ public:
         return (mantissa_ != 0u) ? 1 : 0;
     }
 
-    Number
+    [[nodiscard]] Number
     truncate() const noexcept;
 
     friend constexpr bool
@@ -490,13 +490,13 @@ private:
         MantissaRange::rep const& minMantissa,
         MantissaRange::rep const& maxMantissa);
 
-    bool
+    [[nodiscard]] bool
     isnormal() const noexcept;
 
     // Copy the number, but modify the exponent by "exponentDelta". Because the
     // mantissa doesn't change, the result will be "mostly" normalized, but the
     // exponent could go out of range, so it will be checked.
-    Number
+    [[nodiscard]] Number
     shiftExponent(int exponentDelta) const;
 
     // Safely convert rep (int64) mantissa to internalrep (uint64). If the rep
