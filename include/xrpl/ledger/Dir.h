@@ -31,10 +31,10 @@ public:
 
     Dir(ReadView const&, Keylet const&);
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
 };
 

@@ -47,14 +47,14 @@ public:
     }
 
     //! The unique id/hash of the disputed transaction.
-    TxID_t const&
+    [[nodiscard]] TxID_t const&
     ID() const
     {
         return tx_.id();
     }
 
     //! Our vote on whether the transaction should be included.
-    bool
+    [[nodiscard]] bool
     getOurVote() const
     {
         return ourVote_;
@@ -62,7 +62,7 @@ public:
 
     //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
-    bool
+    [[nodiscard]] bool
     stalled(
         ConsensusParms const& p,
         bool proposing,
@@ -127,7 +127,7 @@ public:
     }
 
     //! The disputed transaction.
-    Tx_t const&
+    [[nodiscard]] Tx_t const&
     tx() const
     {
         return tx_;
@@ -173,7 +173,7 @@ public:
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
     //! JSON representation of dispute, used for debugging
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const;
 
 private:

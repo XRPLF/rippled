@@ -43,14 +43,14 @@ public:
         offer is partially filled; Subsequent partial fills will use the
         original quality.
     */
-    Quality
+    [[nodiscard]] Quality
     quality() const noexcept
     {
         return m_quality;
     }
 
     /** Returns the account id of the offer's owner. */
-    AccountID const&
+    [[nodiscard]] AccountID const&
     owner() const
     {
         return m_account;
@@ -59,14 +59,14 @@ public:
     /** Returns the in and out amounts.
         Some or all of the out amount may be unfunded.
     */
-    TAmounts<TIn, TOut> const&
+    [[nodiscard]] TAmounts<TIn, TOut> const&
     amount() const
     {
         return m_amounts;
     }
 
     /** Returns `true` if no more funds can flow through this offer. */
-    bool
+    [[nodiscard]] bool
     fully_consumed() const
     {
         if (m_amounts.in <= beast::zero)
@@ -91,34 +91,34 @@ public:
         view.update(m_entry);
     }
 
-    std::string
+    [[nodiscard]] std::string
     id() const
     {
         return to_string(m_entry->key());
     }
 
-    std::optional<uint256>
+    [[nodiscard]] std::optional<uint256>
     key() const
     {
         return m_entry->key();
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     assetIn() const;
-    Asset const&
+    [[nodiscard]] Asset const&
     assetOut() const;
 
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
 
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
 
     template <typename... Args>
     static TER
     send(Args&&... args);
 
-    bool
+    [[nodiscard]] bool
     isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds if IOU
@@ -135,7 +135,7 @@ public:
     /** Check any required invariant. Limit order book offer
      * always returns true.
      */
-    bool
+    [[nodiscard]] bool
     checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const
     {
         if (!isFeatureEnabled(fixAMMv1_3))

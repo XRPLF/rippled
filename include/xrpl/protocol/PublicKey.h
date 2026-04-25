@@ -63,7 +63,7 @@ public:
     */
     explicit PublicKey(Slice const& slice);
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return buf_;
@@ -75,31 +75,31 @@ public:
         return size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return buf_ + size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return buf_ + size_;
     }
 
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
         return {buf_, size_};

@@ -68,7 +68,7 @@ public:
         txn_.removeMember(key);
     }
 
-    Json::Value const&
+    [[nodiscard]] Json::Value const&
     getTxn() const
     {
         return txn_;

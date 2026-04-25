@@ -23,25 +23,25 @@ public:
     {
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getLoadFee() const
     {
         return mLoadFee;
     }
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     getReportTime() const
     {
         return mReportTime;
     }
 
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     identity() const
     {
         return identity_;
