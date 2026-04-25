@@ -19,8 +19,9 @@ class PeerReservations_test : public beast::unit_test::suite
         Env env(*this);
 
         std::string const publicKey = "nHBt9fsb4849WmZiCds4r5TXyBeQjqnH5kzPtqgMAQMgi39YZRPa";
-        std::string const validDescription(64, 'a');
-        std::string const invalidDescription(65, 'b');
+        std::size_t const maxDescriptionLength = 64;
+        std::string const validDescription(maxDescriptionLength, 'a');
+        std::string const invalidDescription(maxDescriptionLength + 1, 'b');
 
         auto const addResult = env.rpc("peer_reservations_add", publicKey, validDescription);
         BEAST_EXPECT(!addResult[jss::result].isMember(jss::error));
