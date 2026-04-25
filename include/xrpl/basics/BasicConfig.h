@@ -36,7 +36,7 @@ public:
     explicit Section(std::string name = "");
 
     /** Returns the name of this section. */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
@@ -45,7 +45,7 @@ public:
     /** Returns all the lines in the section.
         This includes everything.
     */
-    std::vector<std::string> const&
+    [[nodiscard]] std::vector<std::string> const&
     lines() const
     {
         return lines_;
@@ -54,7 +54,7 @@ public:
     /** Returns all the values in the section.
         Values are non-empty lines which are not key/value pairs.
     */
-    std::vector<std::string> const&
+    [[nodiscard]] std::vector<std::string> const&
     values() const
     {
         return values_;
@@ -82,7 +82,7 @@ public:
      * @return The retrieved value. A section with an empty legacy value returns
                an empty string.
      */
-    std::string
+    [[nodiscard]] std::string
     legacy() const
     {
         if (lines_.empty())
@@ -117,11 +117,11 @@ public:
     }
 
     /** Returns `true` if a key with the given name exists. */
-    bool
+    [[nodiscard]] bool
     exists(std::string const& name) const;
 
     template <class T = std::string>
-    std::optional<T>
+    [[nodiscard]] std::optional<T>
     get(std::string const& name) const
     {
         auto const iter = lookup_.find(name);
@@ -132,7 +132,7 @@ public:
 
     /// Returns a value if present, else another value.
     template <class T>
-    T
+    [[nodiscard]] T
     value_or(std::string const& name, T const& other) const
     {
         auto const v = get<T>(name);
@@ -141,7 +141,7 @@ public:
 
     // indicates if trailing comments were seen
     // during the appending of any lines/values
-    bool
+    [[nodiscard]] bool
     had_trailing_comments() const
     {
         return had_trailing_comments_;
@@ -151,42 +151,42 @@ public:
     operator<<(std::ostream&, Section const& section);
 
     // Returns `true` if there are no key/value pairs.
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return lookup_.empty();
     }
 
     // Returns the number of key/value pairs.
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return lookup_.size();
     }
 
     // For iteration of key/value pairs.
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return lookup_.cbegin();
     }
 
     // For iteration of key/value pairs.
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return lookup_.cbegin();
     }
 
     // For iteration of key/value pairs.
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return lookup_.cend();
     }
 
     // For iteration of key/value pairs.
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return lookup_.cend();
@@ -206,7 +206,7 @@ private:
 
 public:
     /** Returns `true` if a section with the given name exists. */
-    bool
+    [[nodiscard]] bool
     exists(std::string const& name) const;
 
     /** Returns the section with the given name.
@@ -216,7 +216,7 @@ public:
     Section&
     section(std::string const& name);
 
-    Section const&
+    [[nodiscard]] Section const&
     section(std::string const& name) const;
 
     Section const&
@@ -264,7 +264,7 @@ public:
      *         legacy value.
      *  @return Contents of the legacy value.
      */
-    std::string
+    [[nodiscard]] std::string
     legacy(std::string const& sectionName) const;
 
     friend std::ostream&
@@ -272,7 +272,7 @@ public:
 
     // indicates if trailing comments were seen
     // in any loaded Sections
-    bool
+    [[nodiscard]] bool
     had_trailing_comments() const
     {
         return std::ranges::any_of(map_, [](auto s) { return s.second.had_trailing_comments(); });

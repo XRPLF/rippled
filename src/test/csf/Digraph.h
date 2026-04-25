@@ -94,7 +94,7 @@ public:
         @return optional<Edge> which is std::nullopt if no edge exists
 
     */
-    std::optional<EdgeData>
+    [[nodiscard]] std::optional<EdgeData>
     edge(Vertex source, Vertex target) const
     {
         auto it = graph_.find(source);
@@ -113,7 +113,7 @@ public:
         @param target The target vertex
         @return true if the source has an out edge to target
     */
-    bool
+    [[nodiscard]] bool
     connected(Vertex source, Vertex target) const
     {
         return edge(source, target) != std::nullopt;
@@ -124,7 +124,7 @@ public:
         @return A boost transformed range over the vertices with out edges in
        the graph
     */
-    auto
+    [[nodiscard]] auto
     outVertices() const
     {
         return boost::adaptors::transform(
@@ -136,7 +136,7 @@ public:
         @param source The source vertex
         @return A boost transformed range over the target vertices of source.
      */
-    auto
+    [[nodiscard]] auto
     outVertices(Vertex source) const
     {
         auto transform = [](typename Links::value_type const& link) { return link.first; };
@@ -162,7 +162,7 @@ public:
         @return A boost transformed range of Edge type for all out edges of
                 source.
     */
-    auto
+    [[nodiscard]] auto
     outEdges(Vertex source) const
     {
         auto transform = [source](typename Links::value_type const& link) {
@@ -181,7 +181,7 @@ public:
         @param source The source vertex
         @return The number of outgoing edges from source
     */
-    std::size_t
+    [[nodiscard]] std::size_t
     outDegree(Vertex source) const
     {
         auto it = graph_.find(source);

@@ -37,56 +37,56 @@ public:
     }
 
     //! Sequence number of the ledger.
-    Seq const&
+    [[nodiscard]] Seq const&
     seq() const
     {
         return ledger_->header().seq;
     }
 
     //! Unique identifier (hash) of this ledger.
-    ID const&
+    [[nodiscard]] ID const&
     id() const
     {
         return ledger_->header().hash;
     }
 
     //! Unique identifier (hash) of this ledger's parent.
-    ID const&
+    [[nodiscard]] ID const&
     parentID() const
     {
         return ledger_->header().parentHash;
     }
 
     //! Resolution used when calculating this ledger's close time.
-    NetClock::duration
+    [[nodiscard]] NetClock::duration
     closeTimeResolution() const
     {
         return ledger_->header().closeTimeResolution;
     }
 
     //! Whether consensus process agreed on close time of the ledger.
-    bool
+    [[nodiscard]] bool
     closeAgree() const
     {
         return xrpl::getCloseAgree(ledger_->header());
     }
 
     //! The close time of this ledger
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     closeTime() const
     {
         return ledger_->header().closeTime;
     }
 
     //! The close time of this ledger's parent.
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
         return ledger_->header().parentCloseTime;
     }
 
     //! JSON representation of this ledger.
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const
     {
         return xrpl::getJson({*ledger_, {}});

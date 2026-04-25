@@ -36,13 +36,13 @@ public:
     {
     }
 
-    std::unique_ptr<base_type>
+    [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
         return std::make_unique<txs_iter_impl>(metadata_, iter_);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
         if (auto const p = dynamic_cast<txs_iter_impl const*>(&impl))
@@ -56,7 +56,7 @@ public:
         ++iter_;
     }
 
-    value_type
+    [[nodiscard]] value_type
     dereference() const override
     {
         value_type result;

@@ -53,22 +53,22 @@ public:
     Permission&
     operator=(Permission const&) = delete;
 
-    std::optional<std::string>
+    [[nodiscard]] std::optional<std::string>
     getPermissionName(std::uint32_t const value) const;
 
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
 
-    std::optional<std::string>
+    [[nodiscard]] std::optional<std::string>
     getGranularName(GranularPermissionType const& value) const;
 
-    std::optional<TxType>
+    [[nodiscard]] std::optional<TxType>
     getGranularTxType(GranularPermissionType const& gpType) const;
 
-    std::optional<std::reference_wrapper<uint256 const>>
+    [[nodiscard]] std::optional<std::reference_wrapper<uint256 const>>
     getTxFeature(TxType txType) const;
 
-    bool
+    [[nodiscard]] bool
     isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
 
     // for tx level permission, permission value is equal to tx type plus one

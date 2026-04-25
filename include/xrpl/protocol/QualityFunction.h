@@ -53,13 +53,13 @@ public:
 
     /** Return true if the quality function is constant
      */
-    bool
+    [[nodiscard]] bool
     isConst() const
     {
         return quality_.has_value();
     }
 
-    std::optional<Quality> const&
+    [[nodiscard]] std::optional<Quality> const&
     quality() const
     {
         return quality_;

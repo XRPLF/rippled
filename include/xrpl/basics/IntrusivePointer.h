@@ -159,11 +159,11 @@ public:
     reset();
 
     /** Get the raw pointer */
-    T*
+    [[nodiscard]] T*
     get() const;
 
     /** Return the strong count */
-    std::size_t
+    [[nodiscard]] std::size_t
     use_count() const;
 
     template <class TT, class... Args>
@@ -181,7 +181,7 @@ public:
 
 private:
     /** Return the raw pointer held by this object. */
-    T*
+    [[nodiscard]] T*
     unsafeGetRawPtr() const;
 
     /** Exchange the current raw pointer held by this object with the given
@@ -260,7 +260,7 @@ public:
     lock() const;
 
     /** Return true if the strong count is zero. */
-    bool
+    [[nodiscard]] bool
     expired() const;
 
     /** Set the pointer to null and decrement the weak count.
@@ -339,7 +339,7 @@ public:
        don't lock the weak pointer. Use the `lock` method if that's what's
        needed)
      */
-    SharedIntrusive<T>
+    [[nodiscard]] SharedIntrusive<T>
     getStrong() const;
 
     /** Return true if this is a strong pointer and the strong pointer is
@@ -357,31 +357,31 @@ public:
     /** If this is a strong pointer, return the raw pointer. Otherwise
        return null.
      */
-    T*
+    [[nodiscard]] T*
     get() const;
 
     /** If this is a strong pointer, return the strong count. Otherwise
      * return 0
      */
-    std::size_t
+    [[nodiscard]] std::size_t
     use_count() const;
 
     /** Return true if there is a non-zero strong count. */
-    bool
+    [[nodiscard]] bool
     expired() const;
 
     /** If this is a strong pointer, return the strong pointer. Otherwise
         attempt to lock the weak pointer.
      */
-    SharedIntrusive<T>
+    [[nodiscard]] SharedIntrusive<T>
     lock() const;
 
     /** Return true is this represents a strong pointer. */
-    bool
+    [[nodiscard]] bool
     isStrong() const;
 
     /** Return true is this represents a weak pointer. */
-    bool
+    [[nodiscard]] bool
     isWeak() const;
 
     /** If this is a weak pointer, attempt to convert it to a strong
@@ -412,7 +412,7 @@ private:
 private:
     /** Return the raw pointer held by this object.
      */
-    T*
+    [[nodiscard]] T*
     unsafeGetRawPtr() const;
 
     enum class RefStrength { strong, weak };

@@ -32,25 +32,25 @@ public:
     from_string(std::string const& s);
 
     /** Returns a string representing the endpoint. */
-    std::string
+    [[nodiscard]] std::string
     to_string() const;
 
     /** Returns the port number on the endpoint. */
-    Port
+    [[nodiscard]] Port
     port() const
     {
         return m_port;
     }
 
     /** Returns a new Endpoint with a different port. */
-    Endpoint
+    [[nodiscard]] Endpoint
     at_port(Port port) const
     {
         return Endpoint(m_addr, port);
     }
 
     /** Returns the address portion of this endpoint. */
-    Address const&
+    [[nodiscard]] Address const&
     address() const
     {
         return m_addr;
@@ -58,22 +58,22 @@ public:
 
     /** Convenience accessors for the address part. */
     /** @{ */
-    bool
+    [[nodiscard]] bool
     is_v4() const
     {
         return m_addr.is_v4();
     }
-    bool
+    [[nodiscard]] bool
     is_v6() const
     {
         return m_addr.is_v6();
     }
-    AddressV4
+    [[nodiscard]] AddressV4
     to_v4() const
     {
         return m_addr.to_v4();
     }
-    AddressV6
+    [[nodiscard]] AddressV6
     to_v6() const
     {
         return m_addr.to_v6();
