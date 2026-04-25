@@ -43,7 +43,7 @@ public:
         return *this;
     }
 
-    T const&
+    [[nodiscard]] T const&
     member() const noexcept
     {
         return *this;

@@ -98,11 +98,11 @@ public:
         LoadMonitor& lm,
         std::function<void()> const& job);
 
-    JobType
+    [[nodiscard]] JobType
     getType() const;
 
     /** Returns the time when the job was queued. */
-    clock_type::time_point const&
+    [[nodiscard]] clock_type::time_point const&
     queue_time() const;
 
     void

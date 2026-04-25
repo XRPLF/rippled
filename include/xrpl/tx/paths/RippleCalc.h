@@ -53,7 +53,7 @@ public:
         TER calculationResult_ = temUNKNOWN;
 
     public:
-        TER
+        [[nodiscard]] TER
         result() const
         {
             return calculationResult_;

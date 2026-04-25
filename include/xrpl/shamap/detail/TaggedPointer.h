@@ -192,7 +192,7 @@ public:
 
         @param i index of the requested child
      */
-    std::optional<int>
+    [[nodiscard]] std::optional<int>
     getChildIndex(std::uint16_t isBranch, int i) const;
 };
 

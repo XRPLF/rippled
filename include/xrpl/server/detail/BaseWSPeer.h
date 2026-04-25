@@ -70,19 +70,19 @@ public:
     // WSSession
     //
 
-    Port const&
+    [[nodiscard]] Port const&
     port() const override
     {
         return this->port_;
     }
 
-    http_request_type const&
+    [[nodiscard]] http_request_type const&
     request() const override
     {
         return this->request_;
     }
 
-    boost::asio::ip::tcp::endpoint const&
+    [[nodiscard]] boost::asio::ip::tcp::endpoint const&
     remote_endpoint() const override
     {
         return this->remote_address_;
