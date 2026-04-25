@@ -49,7 +49,7 @@ public:
     }
 
     /** Returns the argument string. */
-    std::string const&
+    [[nodiscard]] std::string const&
     arg() const
     {
         return arg_;

@@ -35,37 +35,37 @@ public:
     explicit Seed(uint128 const& seed);
     /** @} */
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const
     {
         return buf_.data();
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return buf_.size();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_.begin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return buf_.end();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return buf_.cend();

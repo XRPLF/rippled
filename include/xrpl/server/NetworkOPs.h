@@ -90,11 +90,11 @@ public:
     // Network information
     //
 
-    virtual OperatingMode
+    [[nodiscard]] virtual OperatingMode
     getOperatingMode() const = 0;
-    virtual std::string
+    [[nodiscard]] virtual std::string
     strOperatingMode(OperatingMode const mode, bool const admin = false) const = 0;
-    virtual std::string
+    [[nodiscard]] virtual std::string
     strOperatingMode(bool const admin = false) const = 0;
 
     //--------------------------------------------------------------------------

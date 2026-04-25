@@ -21,7 +21,7 @@ public:
     DecodedBlob(void const* key, void const* value, int valueBytes);
 
     /** Determine if the decoding was successful. */
-    bool
+    [[nodiscard]] bool
     wasOk() const noexcept
     {
         return m_success;

@@ -80,7 +80,7 @@ public:
             Undefined result if called concurrently
             with close().
     */
-    bool
+    [[nodiscard]] bool
     closed() const
     {
         return closed_;

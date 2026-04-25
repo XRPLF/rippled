@@ -222,19 +222,19 @@ private:
         {
         }
 
-        bool
+        [[nodiscard]] bool
         isWeak() const
         {
             if (!ptr)
                 return true;
             return ptr.isWeak();
         }
-        bool
+        [[nodiscard]] bool
         isCached() const
         {
             return ptr && ptr.isStrong();
         }
-        bool
+        [[nodiscard]] bool
         isExpired() const
         {
             return ptr.expired();

@@ -91,7 +91,7 @@ public:
     send(std::shared_ptr<Message> const& m) override
     {
     }
-    beast::IP::Endpoint
+    [[nodiscard]] beast::IP::Endpoint
     getRemoteAddress() const override
     {
         return {};
@@ -100,22 +100,22 @@ public:
     charge(Resource::Charge const& fee, std::string const& context = {}) override
     {
     }
-    bool
+    [[nodiscard]] bool
     cluster() const override
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     isHighLatency() const override
     {
         return false;
     }
-    int
+    [[nodiscard]] int
     getScore(bool) const override
     {
         return 0;
     }
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     getNodePublic() const override
     {
         return nodePublicKey_;
@@ -125,12 +125,12 @@ public:
     {
         return {};
     }
-    bool
+    [[nodiscard]] bool
     supportsFeature(ProtocolFeature f) const override
     {
         return false;
     }
-    std::optional<std::size_t>
+    [[nodiscard]] std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
     {
         return {};
@@ -139,13 +139,13 @@ public:
     setPublisherListSequence(PublicKey const&, std::size_t const) override
     {
     }
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getClosedLedgerHash() const override
     {
         static uint256 const hash{};
         return hash;
     }
-    bool
+    [[nodiscard]] bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const override
     {
         return false;
@@ -154,7 +154,7 @@ public:
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const override
     {
     }
-    bool
+    [[nodiscard]] bool
     hasTxSet(uint256 const& hash) const override
     {
         return false;
@@ -168,12 +168,12 @@ public:
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     compressionEnabled() const override
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     txReduceRelayEnabled() const override
     {
         return false;
@@ -421,7 +421,7 @@ public:
         return message_;
     }
 
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     id() const
     {
         return id_;
