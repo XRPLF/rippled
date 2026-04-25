@@ -47,7 +47,10 @@ doPeerReservationsAdd(RPC::JsonContext& context)
             return RPC::expected_field_error(jss::description, "a string");
         desc = params[jss::description].asString();
         if (desc.size() > 64)
-            return rpcError(rpcINVALID_PARAMS);
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::expected_field_message(
+                    jss::description, "<= 64 characters"));
     }
 
     // channel_verify takes a key in both base58 and hex.
