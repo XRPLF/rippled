@@ -31,7 +31,7 @@ public:
     {
     }
 
-    ID const&
+    [[nodiscard]] ID const&
     id() const
     {
         return id_;
@@ -104,14 +104,14 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     exists(Tx::ID const txId) const
     {
         auto it = txs_.find(Tx{txId});
         return it != txs_.end();
     }
 
-    Tx const*
+    [[nodiscard]] Tx const*
     find(Tx::ID const& txId) const
     {
         auto it = txs_.find(Tx{txId});
@@ -120,13 +120,13 @@ public:
         return nullptr;
     }
 
-    TxSetType const&
+    [[nodiscard]] TxSetType const&
     txs() const
     {
         return txs_;
     }
 
-    ID
+    [[nodiscard]] ID
     id() const
     {
         return id_;
@@ -136,7 +136,7 @@ public:
                     it was in this set and not other. False means
                     it was in the other set and not this
     */
-    std::map<Tx::ID, bool>
+    [[nodiscard]] std::map<Tx::ID, bool>
     compare(TxSet const& other) const
     {
         std::map<Tx::ID, bool> res;

@@ -58,7 +58,7 @@ public:
         return ssl_context_;
     }
 
-    bool
+    [[nodiscard]] bool
     sslVerify() const
     {
         return verify_;

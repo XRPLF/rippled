@@ -67,13 +67,13 @@ public:
         set_.insert(amendments.begin(), amendments.end());
     }
 
-    std::unordered_set<uint256, beast::uhash<>> const&
+    [[nodiscard]] std::unordered_set<uint256, beast::uhash<>> const&
     presets() const
     {
         return presets_;
     }
 
-    bool
+    [[nodiscard]] bool
     enabled(uint256 const& feature) const
     {
         if (presets_.contains(feature))

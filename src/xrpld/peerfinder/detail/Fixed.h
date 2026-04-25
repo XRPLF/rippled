@@ -15,7 +15,7 @@ public:
     Fixed(Fixed const&) = default;
 
     /** Returns the time after which we should allow a connection attempt. */
-    clock_type::time_point const&
+    [[nodiscard]] clock_type::time_point const&
     when() const
     {
         return m_when;

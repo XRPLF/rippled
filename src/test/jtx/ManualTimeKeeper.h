@@ -14,7 +14,7 @@ private:
 public:
     ManualTimeKeeper() = default;
 
-    time_point
+    [[nodiscard]] time_point
     now() const override
     {
         return now_.load();
