@@ -26,6 +26,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <filesystem>
 #include <functional>
@@ -39,6 +40,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <system_error>
 #include <thread>
 #include <utility>
 #include <vector>

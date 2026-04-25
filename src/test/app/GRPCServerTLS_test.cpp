@@ -14,6 +14,7 @@
 #include <grpcpp/support/status.h>
 
 #include <chrono>
+#include <cstddef>
 #include <filesystem>
 #include <fstream>
 #include <iomanip>
@@ -271,8 +272,10 @@ public:
             tempDir_.clear();
         }
         if (tempDir_.empty())
+        {
             throw std::runtime_error(
                 "Unable to generate a unique temporary TLS certificate directory");
+        }
         std::filesystem::create_directories(tempDir_);
 
         writeFile(tempDir_ / kCA_CERT_FILENAME, kCA_CERT_CONTENT);
