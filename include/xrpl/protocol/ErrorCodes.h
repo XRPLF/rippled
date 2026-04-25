@@ -48,7 +48,7 @@ enum error_code_i {
 
     // Ledger state
     rpcACT_NOT_FOUND = 19,
-    // unused                  20,
+    rpcLGR_NOT_STANDALONE = 20,
     rpcLGR_NOT_FOUND = 21,
     rpcLGR_NOT_VALIDATED = 22,
     rpcMASTER_DISABLED = 23,

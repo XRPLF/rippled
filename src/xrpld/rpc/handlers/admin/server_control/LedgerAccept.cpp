@@ -18,7 +18,7 @@ doLedgerAccept(RPC::JsonContext& context)
 
     if (!context.app.config().standalone())
     {
-        jvResult[jss::error] = "notStandAlone";
+        jvResult[jss::error] = RPC::make_error(rpcLGR_NOT_STANDALONE);
     }
     else
     {

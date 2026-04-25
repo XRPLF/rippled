@@ -68,6 +68,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcLGR_IDX_MALFORMED,      "lgrIdxMalformed",      "Ledger index malformed.", 400},
     {rpcLGR_NOT_FOUND,          "lgrNotFound",          "Ledger not found.", 404},
     {rpcLGR_NOT_VALIDATED,      "lgrNotValidated",      "Ledger not validated.", 202},
+    {rpcLGR_NOT_STANDALONE,     "lgrNotStandalone",     "Ledger not standalone.", 400},
     {rpcMASTER_DISABLED,        "masterDisabled",       "Master key is disabled.", 403},
     {rpcNOT_ENABLED,            "notEnabled",           "Not enabled in configuration.", 501},
     {rpcNOT_IMPL,               "notImpl",              "Not implemented.", 501},
