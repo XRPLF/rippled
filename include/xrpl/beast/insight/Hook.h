@@ -24,7 +24,7 @@ public:
     {
     }
 
-    std::shared_ptr<HookImpl> const&
+    [[nodiscard]] std::shared_ptr<HookImpl> const&
     impl() const
     {
         return m_impl;

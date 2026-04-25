@@ -24,17 +24,17 @@ public:
     }
 
     template <ValidPathAsset T>
-    constexpr bool
+    [[nodiscard]] constexpr bool
     holds() const;
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     isXRP() const;
 
     template <ValidPathAsset T>
     T const&
     get() const;
 
-    constexpr std::variant<Currency, MPTID> const&
+    [[nodiscard]] constexpr std::variant<Currency, MPTID> const&
     value() const;
 
     // Custom, generic visit implementation
