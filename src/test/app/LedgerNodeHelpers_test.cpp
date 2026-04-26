@@ -163,7 +163,7 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
             innerNode->setChild(0, childNode);
             auto const innerData = serializeNode(innerNode);
             auto const result = getTreeNode(innerData);
-            BEAST_EXPECT(result->isInner());
+            BEAST_EXPECT(result && result->isInner());
         }
 
         // Valid: leaf node.
@@ -171,8 +171,8 @@ class LedgerNodeHelpers_test : public beast::unit_test::suite
             auto const leafItem = makeTestItem(12345);
             auto const leafNode = intr_ptr::make_shared<SHAMapAccountStateLeafNode>(leafItem, 1);
             auto const leafData = serializeNode(leafNode);
-            auto result = getTreeNode(leafData);
-            BEAST_EXPECT(result->isLeaf());
+            auto const result = getTreeNode(leafData);
+            BEAST_EXPECT(result && result->isLeaf());
         }
 
         // Invalid: empty data.
