@@ -1044,6 +1044,26 @@ class AccountTx_test : public beast::unit_test::suite
             p[jss::counter_party] = "not_an_account";
             checkError(p, "actMalformed");
         }
+
+        // Multi-signed non-delegated TX: Alice pays Carol via multi-sig.
+        // sfDelegate is absent and sfSigningPubKey is empty — the filter
+        // must skip it without crashing.
+        {
+            Account const daria{"daria"};
+            Account const edward{"edward"};
+            env.fund(XRP(1000), daria, edward);
+            env.close();
+            env(signers(alice, 2, {{daria, 1}, {edward, 1}}));
+            env.close();
+            env(pay(alice, carol, XRP(1)), fee(drops(30)), msig(daria, edward));
+            env.close();
+
+            // Alice's actor filter should still see only the 1 delegated tx,
+            // not the multi-signed one.
+            Json::Value p;
+            p[jss::delegate_filter] = "actor";
+            BEAST_EXPECT(countTxs(alice.id(), p) == 1);
+        }
     }
 
     void

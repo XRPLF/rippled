@@ -1047,7 +1047,7 @@ passesDelegateFilter(
         }
     }
 
-    return false;
+    return false;  // LCOV_EXCL_LINE
 }
 
 /**
