@@ -9697,16 +9697,26 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Variant C: Cross-transaction ciphertext reuse.
         // Execute a valid send of m1, then build a new send for m2 using
-        // a combined ciphertext oldEnc(m1) + newEnc(m2) = Enc(m1+m2).
+        // a combined ciphertext oldEnc(m1) + newEnc(m2) = Enc(m1+m2),
+        // where oldEnc(m1) is the actual ciphertext from the previous tx.
         // The proof was generated for the new transaction's context, but
         // the ciphertext includes stale randomness from the old Enc(m1).
         {
-            // Execute a valid send to advance bob's sequence/state
-            mptAlice.send({.account = bob, .dest = carol, .amt = m1});
-
-            // Recreate the old Enc(m1) that was used in the previous tx
-            Buffer const oldBf = generateBlindingFactor();
-            auto const oldEncM1 = mptAlice.encryptAmount(carol, m1, oldBf);
+            // Execute a valid send of m1, capturing the actual ciphertext used
+            ConfidentialSendSetup setup1(mptAlice, bob, carol, alice, m1);
+            auto const proof1 = setup1.generateProof(mptAlice, env, bob, carol);
+            if (!BEAST_EXPECT(proof1.has_value()))
+                return;
+            mptAlice.send(
+                {.account = bob,
+                 .dest = carol,
+                 .amt = setup1.sendAmount,
+                 .proof = strHex(*proof1),
+                 .senderEncryptedAmt = setup1.senderAmt,
+                 .destEncryptedAmt = setup1.destAmt,
+                 .issuerEncryptedAmt = setup1.issuerAmt,
+                 .amountCommitment = setup1.amountCommitment,
+                 .balanceCommitment = setup1.balanceCommitment});
 
             ConfidentialSendSetup setup2(mptAlice, bob, carol, alice, m2);
 
@@ -9714,8 +9724,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             if (!BEAST_EXPECT(proof2.has_value()))
                 return;
 
-            // Combine: oldEnc(m1) + newEnc(m2) = Enc(m1+m2)
-            auto const crossCombined = homomorphicAdd(oldEncM1, setup2.destAmt);
+            // Combine the actual prior-tx Enc(m1) with the new Enc(m2)
+            auto const crossCombined = homomorphicAdd(setup1.destAmt, setup2.destAmt);
             BEAST_EXPECT(crossCombined.has_value());
 
             mptAlice.send(
