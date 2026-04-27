@@ -271,6 +271,7 @@ TEST(AccountSet, Domain)
     env.close();
 
     EXPECT_TRUE(env.getAccountRoot(alice).hasDomain());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(*env.getAccountRoot(alice).getDomain(), makeSlice(domain));
 
     // Clear domain by setting empty
@@ -300,6 +301,7 @@ TEST(AccountSet, Domain)
                 tesSUCCESS);
             env.close();
 
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             EXPECT_EQ(*env.getAccountRoot(alice).getDomain(), makeSlice(domain2));
         }
         else
@@ -333,6 +335,7 @@ TEST(AccountSet, MessageKey)
     env.close();
 
     EXPECT_TRUE(env.getAccountRoot(alice).hasMessageKey());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(*env.getAccountRoot(alice).getMessageKey(), rkp.first.slice());
 
     // Clear the message key by setting to empty
@@ -374,6 +377,7 @@ TEST(AccountSet, WalletID)
     env.close();
 
     EXPECT_TRUE(env.getAccountRoot(alice).hasWalletLocator());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(*env.getAccountRoot(alice).getWalletLocator(), locatorHash);
 
     // Clear the wallet locator by setting to zero
@@ -404,6 +408,7 @@ TEST(AccountSet, EmailHash)
     env.close();
 
     EXPECT_TRUE(env.getAccountRoot(alice).hasEmailHash());
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     EXPECT_EQ(*env.getAccountRoot(alice).getEmailHash(), emailHash);
 
     // Clear the email hash by setting to zero
@@ -458,6 +463,7 @@ TEST(AccountSet, TransferRate)
         }
         else
         {
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             EXPECT_EQ(
                 *env.getAccountRoot(alice).getTransferRate(),
                 static_cast<std::uint32_t>(r.get * QUALITY_ONE));

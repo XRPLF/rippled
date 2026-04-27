@@ -74,6 +74,7 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
     // Create a genesis ledger as the base
     closedLedger_ = std::make_shared<Ledger>(
         create_genesis,
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         *rules_,
         fees,
         std::vector<uint256>{featureSet_.begin(), featureSet_.end()},
@@ -90,12 +91,14 @@ TxTest::TxTest(std::optional<FeatureBitset> features)
 bool
 TxTest::isEnabled(uint256 const& feature) const
 {
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     return rules_->enabled(feature);
 }
 
 Rules const&
 TxTest::getRules() const
 {
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
     return *rules_;
 }
 
