@@ -63,7 +63,7 @@ struct abstract_clock_wrapper : public abstract_clock<Facade>
     using typename abstract_clock<Facade>::duration;
     using typename abstract_clock<Facade>::time_point;
 
-    time_point
+    [[nodiscard]] time_point
     now() const override
     {
         return Clock::now();

@@ -1,5 +1,4 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/utility/instrumentation.h>
 
 #include <string>
 #include <string_view>
@@ -72,7 +71,8 @@ setCurrentThreadNameImpl(std::string_view name)
 #if BOOST_OS_LINUX
 #include <pthread.h>
 
-#include <iostream>
+#include <cstdio>
+#include <iostream>  // IWYU pragma: keep
 
 namespace beast::detail {
 

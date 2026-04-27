@@ -1,9 +1,17 @@
 #include <xrpl/ledger/helpers/OfferHelpers.h>
-//
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+
+#include <memory>
 
 namespace xrpl {
 

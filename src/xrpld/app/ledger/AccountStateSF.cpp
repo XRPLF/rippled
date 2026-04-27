@@ -1,5 +1,14 @@
 #include <xrpld/app/ledger/AccountStateSF.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <optional>
+#include <utility>
+
 namespace xrpl {
 
 void

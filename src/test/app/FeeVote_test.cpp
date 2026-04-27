@@ -1,18 +1,40 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Env.h>
 
 #include <xrpld/app/misc/FeeVote.h>
+#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/tx/apply.h>
 
-namespace xrpl {
-namespace test {
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace xrpl::test {
 
 struct FeeSettingsFields
 {
@@ -176,7 +198,7 @@ getTxs(std::shared_ptr<SHAMap> const& txSet)
     {
         auto const data = i->slice();
         auto serialIter = SerialIter(data);
-        txs.push_back(STTx(serialIter));
+        txs.emplace_back(serialIter);
     }
     return txs;
 };
@@ -725,5 +747,4 @@ class FeeVote_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(FeeVote, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

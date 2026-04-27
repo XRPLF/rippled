@@ -61,7 +61,7 @@ template <class E>
 class Unexpected
 {
 public:
-    static_assert(!std::is_same<E, void>::value, "E must not be void");
+    static_assert(!std::is_same_v<E, void>, "E must not be void");
 
     Unexpected() = delete;
 
@@ -73,7 +73,7 @@ public:
     {
     }
 
-    constexpr E const&
+    [[nodiscard]] constexpr E const&
     value() const&
     {
         return val_;
@@ -91,7 +91,7 @@ public:
         return std::move(val_);
     }
 
-    constexpr E const&&
+    [[nodiscard]] constexpr E const&&
     value() const&&
     {
         return std::move(val_);
@@ -125,13 +125,13 @@ public:
     {
     }
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     has_value() const
     {
         return Base::has_value();
     }
 
-    constexpr T const&
+    [[nodiscard]] constexpr T const&
     value() const
     {
         return Base::value();
@@ -143,7 +143,7 @@ public:
         return Base::value();
     }
 
-    constexpr E const&
+    [[nodiscard]] constexpr E const&
     error() const
     {
         return Base::error();
@@ -210,7 +210,7 @@ public:
     {
     }
 
-    constexpr E const&
+    [[nodiscard]] constexpr E const&
     error() const
     {
         return Base::error();

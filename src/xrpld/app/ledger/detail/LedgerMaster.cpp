@@ -1,6 +1,9 @@
-#include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
+
+#include <xrpld/app/consensus/RCLValidations.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerPersistence.h>
+#include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
@@ -8,33 +11,71 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/AmendmentTable.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/OrderBookDB.h>
 #include <xrpl/ledger/PendingSaves.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/rdb/RelationalDatabase.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <boost/icl/concept/interval_set.hpp>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <atomic>
 #include <chrono>
+#include <cstdint>
 #include <cstdlib>
+#include <exception>
+#include <functional>
+#include <iostream>
+#include <iterator>
+#include <map>
 #include <memory>
+#include <mutex>
+#include <optional>
+#include <ostream>
+#include <sstream>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -231,7 +272,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     if (!times.empty() && times.size() >= app_.getValidators().quorum())
     {
         // Calculate the sample median
-        std::sort(times.begin(), times.end());
+        std::ranges::sort(times);
         auto const t0 = times[(times.size() - 1) / 2];
         auto const t1 = times[times.size() / 2];
         signTime = t0 + (t1 - t0) / 2;
@@ -942,12 +983,12 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     {
         auto fees2 = app_.getValidations().fees(ledger->header().parentHash, base);
         fees.reserve(fees.size() + fees2.size());
-        std::copy(fees2.begin(), fees2.end(), std::back_inserter(fees));
+        std::ranges::copy(fees2, std::back_inserter(fees));
     }
     std::uint32_t fee = 0;
     if (!fees.empty())
     {
-        std::sort(fees.begin(), fees.end());
+        std::ranges::sort(fees);
         if (auto stream = m_journal.debug())
         {
             std::stringstream s;
@@ -971,10 +1012,10 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
 
     if (ledger->seq() % 256 == 0)
     {
-        // Check if the majority of validators run a higher version rippled
+        // Check if the majority of validators run a higher version xrpld
         // software. If so print a warning.
         //
-        // Validators include their rippled software version in the validation
+        // Validators include their xrpld software version in the validation
         // messages of every (flag - 1) ledger. We wait for one ledger time
         // before checking the version information to accumulate more validation
         // messages.
@@ -990,28 +1031,28 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
             auto const vals = app_.getValidations().getTrustedForLedger(
                 ledger->header().parentHash, ledger->header().seq - 1);
             std::size_t higherVersionCount = 0;
-            std::size_t rippledCount = 0;
+            std::size_t xrpldCount = 0;
             for (auto const& v : vals)
             {
                 if (v->isFieldPresent(sfServerVersion))
                 {
                     auto version = v->getFieldU64(sfServerVersion);
                     higherVersionCount += BuildInfo::isNewerVersion(version) ? 1 : 0;
-                    rippledCount += BuildInfo::isRippledVersion(version) ? 1 : 0;
+                    xrpldCount += BuildInfo::isXrpldVersion(version) ? 1 : 0;
                 }
             }
             // We report only if (1) we have accumulated validation messages
             // from 90% validators from the UNL, (2) 60% of validators
-            // running the rippled implementation have higher version numbers,
+            // running the xrpld implementation have higher version numbers,
             // and (3) the calculation won't cause divide-by-zero.
-            if (higherVersionCount > 0 && rippledCount > 0)
+            if (higherVersionCount > 0 && xrpldCount > 0)
             {
                 constexpr std::size_t reportingPercent = 90;
                 constexpr std::size_t cutoffPercent = 60;
                 auto const unlSize{app_.getValidators().getQuorumKeys().second.size()};
                 needPrint = unlSize > 0 &&
                     calculatePercent(vals.size(), unlSize) >= reportingPercent &&
-                    calculatePercent(higherVersionCount, rippledCount) >= cutoffPercent;
+                    calculatePercent(higherVersionCount, xrpldCount) >= cutoffPercent;
             }
         }
         // To throttle the warning messages, instead of printing a warning
@@ -2071,9 +2112,6 @@ LedgerMaster::makeFetchPack(
 
         protocol::TMGetObjectByHash reply;
         reply.set_query(false);
-
-        if (request->has_seq())
-            reply.set_seq(request->seq());
 
         reply.set_ledgerhash(request->ledgerhash());
         reply.set_type(protocol::TMGetObjectByHash::otFETCH_PACK);

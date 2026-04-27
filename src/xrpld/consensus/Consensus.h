@@ -295,7 +295,7 @@ class Consensus
         MonitoredMode(ConsensusMode m) : mode_{m}
         {
         }
-        ConsensusMode
+        [[nodiscard]] ConsensusMode
         get() const
         {
             return mode_;
@@ -408,7 +408,7 @@ public:
         return prevLedgerID_;
     }
 
-    ConsensusPhase
+    [[nodiscard]] ConsensusPhase
     phase() const
     {
         return phase_;
@@ -421,7 +421,7 @@ public:
         @param full True if verbose response desired.
         @return     The Json state.
     */
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson(bool full) const;
 
 private:
@@ -500,7 +500,7 @@ private:
      *
      * @return Whether to pause to wait for lagging proposers.
      */
-    bool
+    [[nodiscard]] bool
     shouldPause(std::unique_ptr<std::stringstream> const& clog) const;
 
     // Close the open ledger and establish initial position.
@@ -529,7 +529,7 @@ private:
     leaveConsensus(std::unique_ptr<std::stringstream> const& clog);
 
     // The rounded or effective close time estimate from a proposer
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     asCloseTime(NetClock::time_point raw) const;
 
 private:
@@ -779,9 +779,13 @@ Consensus<Adaptor>::peerProposalInternal(
         }
 
         if (peerPosIt != currPeerPositions_.end())
+        {
             peerPosIt->second = newPeerPos;
+        }
         else
+        {
             currPeerPositions_.emplace(peerID, newPeerPos);
+        }
     }
 
     if (newPeerProp.isInitial())
@@ -803,7 +807,9 @@ Consensus<Adaptor>::peerProposalInternal(
             // spawn a request for it and return nullopt/nullptr.  It will call
             // gotTxSet once it arrives
             if (auto set = adaptor_.acquireTxSet(newPeerProp.position()))
+            {
                 gotTxSet(now_, *set);
+            }
             else
                 JLOG(j_.debug()) << "Don't have tx set for peer";
         }
@@ -843,9 +849,13 @@ Consensus<Adaptor>::timerEntry(
     }
 
     if (phase_ == ConsensusPhase::open)
+    {
         phaseOpen(clog);
+    }
     else if (phase_ == ConsensusPhase::establish)
+    {
         phaseEstablish(clog);
+    }
     CLOG(clog) << "timerEntry finishing in phase " << to_string(phase_) << ". ";
 }
 
@@ -904,12 +914,14 @@ Consensus<Adaptor>::simulate(
     JLOG(j_.info()) << "Simulating consensus";
     now_ = now;
     closeLedger({});
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) closeLedger sets result_
     result_->roundTime.tick(consensusDelay.value_or(100ms));
     result_->proposers = prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
     phase_ = ConsensusPhase::accepted;
     adaptor_.onForceAccept(
         *result_, previousLedger_, closeResolution_, rawCloseTimes_, mode_.get(), getJson(true));
+    // NOLINTEND(bugprone-unchecked-optional-access)
     JLOG(j_.info()) << "Simulation complete";
 }
 
@@ -932,7 +944,9 @@ Consensus<Adaptor>::getJson(bool full) const
         ret["close_granularity"] = static_cast<Int>(closeResolution_.count());
     }
     else
+    {
         ret["synched"] = false;
+    }
 
     ret["phase"] = to_string(phase_);
 
@@ -1137,9 +1151,13 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
             : prevCloseTime_;  // use the time we saw internally
 
         if (now_ >= lastCloseTime)
+        {
             sinceClose = duration_cast<milliseconds>(now_ - lastCloseTime);
+        }
         else
+        {
             sinceClose = -duration_cast<milliseconds>(lastCloseTime - now_);
+        }
         CLOG(clog) << "calculating how long since last ledger's close time "
                       "based on mode : "
                    << to_string(mode) << ", previous closeAgree: " << closeAgree
@@ -1193,16 +1211,23 @@ Consensus<Adaptor>::shouldPause(std::unique_ptr<std::stringstream> const& clog) 
     vars << " consensuslog (working seq: " << previousLedger_.seq() << ", "
          << "validated seq: " << adaptor_.getValidLedgerIndex() << ", "
          << "am validator: " << adaptor_.validator() << ", "
-         << "have validated: " << adaptor_.haveValidated() << ", "
-         << "roundTime: " << result_->roundTime.read().count() << ", "
+         << "have validated: " << adaptor_.haveValidated()
+         << ", "
+         // NOLINTBEGIN(bugprone-unchecked-optional-access) result_ is always set when shouldPause
+         // is called (from phaseEstablish after assert)
+         << "roundTime: " << result_->roundTime.read().count()
+         << ", "
+         // NOLINTEND(bugprone-unchecked-optional-access)
          << "max consensus time: " << parms.ledgerMAX_CONSENSUS.count() << ", "
          << "validators: " << totalValidators << ", "
          << "laggards: " << laggards << ", "
          << "offline: " << offline << ", "
          << "quorum: " << quorum << ")";
 
-    if (!ahead || !laggards || !totalValidators || !adaptor_.validator() ||
-        !adaptor_.haveValidated() || result_->roundTime.read() > parms.ledgerMAX_CONSENSUS)
+    if ((ahead == 0u) || (laggards == 0u) || (totalValidators == 0u) || !adaptor_.validator() ||
+        !adaptor_.haveValidated() ||
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) result_ set as shouldPause called
+        result_->roundTime.read() > parms.ledgerMAX_CONSENSUS)
     {
         j_.debug() << "not pausing (early)" << vars.str();
         CLOG(clog) << "Not pausing (early). ";
@@ -1300,6 +1325,7 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
     CLOG(clog) << "phaseEstablish. ";
     // can only establish consensus if we already took a stance
     XRPL_ASSERT(result_, "xrpl::Consensus::phaseEstablish : result is set");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
     ++peerUnchangedCounter_;
     ++establishCounter_;
@@ -1355,6 +1381,7 @@ Consensus<Adaptor>::phaseEstablish(std::unique_ptr<std::stringstream> const& clo
         mode_.get(),
         getJson(true),
         adaptor_.validating());
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class Adaptor>
@@ -1419,6 +1446,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
 {
     // We must have a position if we are updating it
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1591,6 +1619,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         if (!result_->position.isBowOut() && (mode_.get() == ConsensusMode::proposing))
             adaptor_.propose(result_->position);
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class Adaptor>
@@ -1599,6 +1628,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
 {
     // Must have a stance if we are checking for consensus
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1699,6 +1729,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     }
 
     CLOG(clog) << "Consensus has been reached. ";
+    // NOLINTEND(bugprone-unchecked-optional-access)
     return true;
 }
 
@@ -1726,6 +1757,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::string
 {
     // Cannot create disputes without our stance
     XRPL_ASSERT(result_, "xrpl::Consensus::createDisputes : result is set");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
     // Only create disputes if this is a new set
     auto const emplaced = result_->compares.emplace(o.id()).second;
@@ -1785,6 +1817,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o, std::unique_ptr<std::string
     }
     JLOG(j_.debug()) << dc << " differences found";
     CLOG(clog) << "disputes: " << dc << ". ";
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class Adaptor>
@@ -1793,6 +1826,7 @@ Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
     // Cannot updateDisputes without our stance
     XRPL_ASSERT(result_, "xrpl::Consensus::updateDisputes : result is set");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
     // Ensure we have created disputes against this set if we haven't seen
     // it before
@@ -1805,6 +1839,7 @@ Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
         if (d.setVote(node, other.exists(d.tx().id())))
             peerUnchangedCounter_ = 0;
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class Adaptor>

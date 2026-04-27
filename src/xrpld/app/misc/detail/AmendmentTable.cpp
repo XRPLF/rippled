@@ -1,18 +1,48 @@
-#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/AmendmentTable.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
 
-#include <boost/algorithm/string.hpp>
-#include <boost/format.hpp>
+#include <boost/algorithm/string/join.hpp>
+#include <boost/optional/optional.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
 #include <algorithm>
+#include <chrono>
+#include <cstdint>
+#include <map>
+#include <memory>
 #include <mutex>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -45,7 +75,7 @@ parseSection(Section const& section)
                 "Invalid amendment ID '" + match[1] + "' in [" + section.name() + "]");
         }
 
-        names.push_back(std::make_pair(id, match[2]));
+        names.emplace_back(id, match[2]);
     }
 
     return names;
@@ -191,9 +221,8 @@ public:
         }
 
         // Now remove any expired records from recordedVotes_.
-        std::for_each(
-            recordedVotes_.begin(),
-            recordedVotes_.end(),
+        std::ranges::for_each(
+            recordedVotes_,
             [&closeTime, newTimeout, &j](decltype(recordedVotes_)::value_type& votes) {
                 auto const pkHuman = toBase58(TokenType::NodePublic, votes.first);
                 if (!votes.second.timeout)
@@ -305,7 +334,7 @@ public:
                 amendmentMajorityCalcThreshold.den));
     }
 
-    bool
+    [[nodiscard]] bool
     passes(uint256 const& amendment) const
     {
         auto const& it = votes_.find(amendment);
@@ -321,7 +350,7 @@ public:
         return it->second > threshold_;
     }
 
-    int
+    [[nodiscard]] int
     votes(uint256 const& amendment) const
     {
         auto const& it = votes_.find(amendment);
@@ -332,13 +361,13 @@ public:
         return it->second;
     }
 
-    int
+    [[nodiscard]] int
     trustedValidations() const
     {
         return trustedValidations_;
     }
 
-    int
+    [[nodiscard]] int
     threshold() const
     {
         return threshold_;
@@ -754,7 +783,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
     }
 
     if (!amendments.empty())
-        std::sort(amendments.begin(), amendments.end());
+        std::ranges::sort(amendments);
 
     return amendments;
 }

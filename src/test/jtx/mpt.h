@@ -2,14 +2,14 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/owners.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
 
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class MPTTester;
 
@@ -95,7 +95,7 @@ struct MPTCreate
 
 struct MPTInit
 {
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
@@ -109,10 +109,11 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    Holders holders = {};
+    Holders holders = {};  // NOLINT(readability-redundant-member-init)
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;
@@ -166,11 +167,11 @@ class MPTTester
     bool close_;
 
 public:
-    MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
+    MPTTester(Env& env, Account issuer, MPTInit const& constr = {});
     MPTTester(MPTInitDef const& constr);
     MPTTester(
         Env& env,
-        Account const& issuer,
+        Account issuer,
         MPTID const& id,
         std::vector<Account> const& holders = {},
         bool close = true);
@@ -228,12 +229,12 @@ public:
     [[nodiscard]] bool
     isTransferFeePresent() const;
 
-    Account const&
+    [[nodiscard]] Account const&
     issuer() const
     {
         return issuer_;
     }
-    Account const&
+    [[nodiscard]] Account const&
     holder(std::string const& h) const;
 
     void
@@ -250,18 +251,18 @@ public:
         std::int64_t amount,
         std::optional<TER> err = std::nullopt);
 
-    PrettyAmount
+    [[nodiscard]] PrettyAmount
     mpt(std::int64_t amount) const;
 
-    MPTID const&
+    [[nodiscard]] MPTID const&
     issuanceID() const
     {
         if (!env_.test.BEAST_EXPECT(id_))
             Throw<std::logic_error>("Uninitialized issuanceID");
-        return *id_;
+        return *id_;  // NOLINT(bugprone-unchecked-optional-access)
     }
 
-    std::int64_t
+    [[nodiscard]] std::int64_t
     getBalance(Account const& account) const;
 
     MPT
@@ -271,6 +272,12 @@ public:
     operator()(std::int64_t amount) const;
 
     operator Asset() const;
+
+    friend BookSpec
+    operator~(MPTTester const& mpt)
+    {
+        return ~static_cast<MPT>(mpt);
+    }
 
 private:
     using SLEP = SLE::const_pointer;
@@ -300,10 +307,8 @@ private:
     static std::unordered_map<std::string, Account>
     makeHolders(std::vector<Account> const& holders);
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getFlags(std::optional<Account> const& holder) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

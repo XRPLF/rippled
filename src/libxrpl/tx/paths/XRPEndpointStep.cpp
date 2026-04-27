@@ -1,18 +1,34 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/detail/AmountSpec.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/StepChecks.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 
 #include <boost/container/flat_set.hpp>
 
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -29,7 +45,7 @@ private:
     // for cachedIn and cachedOut and only one will ever be used
     std::optional<XRPAmount> cache_;
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cached() const
     {
         if (!cache_)
@@ -43,13 +59,13 @@ private:
     }
 
 public:
-    AccountID const&
+    [[nodiscard]] AccountID const&
     acc() const
     {
         return acc_;
     }
 
-    std::optional<std::pair<AccountID, AccountID>>
+    [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         if (isLast_)
@@ -57,25 +73,25 @@ public:
         return std::make_pair(acc_, xrpAccount());
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         return cached();
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         return cached();
     }
 
-    DebtDirection
+    [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
         return DebtDirection::issues;
     }
 
-    std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<XRPAmount, XRPAmount>
@@ -96,7 +112,7 @@ public:
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
     // Check for errors and violations of frozen constraints.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
 protected:
@@ -126,7 +142,7 @@ private:
         return !(lhs == rhs);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
         if (auto ds = dynamic_cast<XRPEndpointStep const*>(&rhs))
@@ -163,7 +179,7 @@ public:
         ;
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("XRPEndpointPaymentStep");
@@ -179,13 +195,25 @@ private:
     // because the trust line was created after the XRP was removed.)
     // Return how much the reserve should be reduced.
     //
-    // Note that reduced reserve only happens if the trust line does not
+    // Note that reduced reserve only happens if the trust line or MPT does not
     // currently exist.
     static std::int32_t
     computeReserveReduction(StrandContext const& ctx, AccountID const& acc)
     {
-        if (ctx.isFirst && !ctx.view.read(keylet::line(acc, ctx.strandDeliver)))
-            return -1;
+        if (ctx.isFirst)
+        {
+            return ctx.strandDeliver.visit(
+                [&](Issue const& issue) {
+                    if (!ctx.view.exists(keylet::line(acc, issue)))
+                        return -1;
+                    return 0;
+                },
+                [&](MPTIssue const& issue) {
+                    if (!ctx.view.exists(keylet::mptoken(issue.getMptID(), acc)))
+                        return -1;
+                    return 0;
+                });
+        }
         return 0;
     }
 
@@ -202,7 +230,7 @@ public:
         return xrpLiquidImpl(sb, reserveReduction_);
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("XRPEndpointOfferCrossingStep");
@@ -283,9 +311,9 @@ XRPEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
         return {false, EitherAmount(XRPAmount(beast::zero))};
     }
 
-    XRPL_ASSERT(in.native, "xrpl::XRPEndpointStep::validFwd : input is XRP");
+    XRPL_ASSERT(in.holds<XRPAmount>(), "xrpl::XRPEndpointStep::validFwd : input is XRP");
 
-    auto const& xrpIn = in.xrp;
+    auto const& xrpIn = in.get<XRPAmount>();
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     if (!isLast_ && balance < xrpIn)
@@ -336,7 +364,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return ter;
 
     auto const issuesIndex = isLast_ ? 0 : 1;
-    if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
+    if (!ctx.seenDirectAssets[issuesIndex].insert(xrpIssue()).second)
     {
         JLOG(j_.debug()) << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize << ' '
                          << *this;
