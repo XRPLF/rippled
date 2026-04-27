@@ -13,7 +13,7 @@
 namespace xrpl {
 
 BookTip::BookTip(ApplyView& view, Book const& book)
-    : view_(view), valid_(false), book_(getBookBase(book)), end_(getQualityNext(book_))
+    : view_(view), book_(getBookBase(book)), end_(getQualityNext(book_))
 {
 }
 

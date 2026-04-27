@@ -139,7 +139,7 @@ TxQ::FeeMetrics::update(
     {
         recentTxnCounts_.push_back(mulDiv(size, 100 + setup.normalConsensusIncreasePercent, 100)
                                        .value_or(xrpl::kMULDIV_MAX));
-        auto const iter = std::max_element(recentTxnCounts_.begin(), recentTxnCounts_.end());
+        auto const iter = std::ranges::max_element(recentTxnCounts_);
         BOOST_ASSERT(iter != recentTxnCounts_.end());
         auto const next = [&] {
             // Grow quickly: If the max_element is >= the
@@ -295,7 +295,6 @@ TxQ::MaybeTx::MaybeTx(
     , account(txn->getAccountID(sfAccount))
     , lastValid(getLastLedgerSequence(*txn))
     , seqProxy(txn->getSeqProxy())
-    , retriesRemaining(retriesAllowed)
     , flags(flags)
     , pfResult(pfResult)
 {
@@ -1773,10 +1772,10 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
     std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
     return {
-        mulDiv(fee, baseFee, kBASE_LEVEL)
-            .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
-        accountSeq,
-        availableSeq};
+        .fee = mulDiv(fee, baseFee, kBASE_LEVEL)
+                   .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
+        .accountSeq = accountSeq,
+        .availableSeq = availableSeq};
 }
 
 std::vector<TxQ::TxDetails>

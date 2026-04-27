@@ -209,9 +209,10 @@ CheckCash::preclaim(PreclaimContext const& ctx)
                             return tecNO_AUTH;
                         }
 
-                        // Entries have a canonical representation, determined by a
-                        // lexicographical "greater than" comparison employing strict
-                        // weak ordering. Determine which entry we need to access.
+                        // Entries have a canonical representation,
+                        // determined by a lexicographical "greater than"
+                        // comparison employing strict weak ordering.
+                        // Determine which entry we need to access.
                         bool const canonicalGt(dstId > issuerId);
 
                         bool const isAuthorized(
@@ -220,7 +221,8 @@ CheckCash::preclaim(PreclaimContext const& ctx)
 
                         if (!isAuthorized)
                         {
-                            JLOG(ctx.j.warn()) << "Can't receive IOUs from issuer without auth.";
+                            JLOG(ctx.j.warn()) << "Can't receive IOUs from "
+                                                  "issuer without auth.";
                             return tecNO_AUTH;
                         }
                     }

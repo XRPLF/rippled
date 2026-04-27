@@ -826,7 +826,7 @@ PeerImp::PeerImp(
     , remoteAddress_(slot->remoteEndpoint())
     , overlay_(overlay)
     , inbound_(false)
-    , protocol_(protocol)
+    , protocol_(std::move(protocol))
     , tracking_(Tracking::Unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)

@@ -49,7 +49,7 @@ public:
         return ios_;
     }
 
-    boost::asio::io_context const&
+    [[nodiscard]] boost::asio::io_context const&
     get_io_context() const
     {
         return ios_;

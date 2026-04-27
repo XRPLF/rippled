@@ -22,51 +22,51 @@ public:
     ApplyViewBase(ReadView const* base, ApplyFlags flags);
 
     // ReadView
-    bool
+    [[nodiscard]] bool
     open() const override;
 
-    LedgerHeader const&
+    [[nodiscard]] LedgerHeader const&
     header() const override;
 
-    Fees const&
+    [[nodiscard]] Fees const&
     fees() const override;
 
-    Rules const&
+    [[nodiscard]] Rules const&
     rules() const override;
 
-    bool
+    [[nodiscard]] bool
     exists(Keylet const& k) const override;
 
-    std::optional<key_type>
+    [[nodiscard]] std::optional<key_type>
     succ(key_type const& key, std::optional<key_type> const& last = std::nullopt) const override;
 
-    std::shared_ptr<SLE const>
+    [[nodiscard]] std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<sles_type::iter_base>
     slesBegin() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<sles_type::iter_base>
     slesEnd() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<sles_type::iter_base>
     slesUpperBound(uint256 const& key) const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] std::unique_ptr<txs_type::iter_base>
     txsBegin() const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    [[nodiscard]] std::unique_ptr<txs_type::iter_base>
     txsEnd() const override;
 
-    bool
+    [[nodiscard]] bool
     txExists(key_type const& key) const override;
 
-    tx_type
+    [[nodiscard]] tx_type
     txRead(key_type const& key) const override;
 
     // ApplyView
 
-    ApplyFlags
+    [[nodiscard]] ApplyFlags
     flags() const override;
 
     std::shared_ptr<SLE>

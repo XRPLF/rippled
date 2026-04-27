@@ -164,25 +164,25 @@ public:
             /* bStandalone */ false);
     }
 
-    Config const&
+    [[nodiscard]] Config const&
     config() const
     {
         return config_;
     }
 
-    std::string
+    [[nodiscard]] std::string
     configFile() const
     {
         return file().string();
     }
 
-    bool
+    [[nodiscard]] bool
     dataDirExists() const
     {
         return boost::filesystem::is_directory(dataDir_);
     }
 
-    bool
+    [[nodiscard]] bool
     configFileExists() const
     {
         return fileExists();
@@ -254,13 +254,13 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     validatorsFileExists() const
     {
         return fileExists();
     }
 
-    std::string
+    [[nodiscard]] std::string
     validatorsFile() const
     {
         return absolute(file()).string();
@@ -296,7 +296,8 @@ port_wss_admin
         c.loadFromString(toLoad);
 
         BEAST_EXPECT(c.legacy("ssl_verify") == "0");
-        expectException([&c] { c.legacy("server"); });  // not a single line
+        expectException(
+            [&c] { [[maybe_unused]] auto _ = c.legacy("server"); });  // not a single line
 
         // set a legacy value
         BEAST_EXPECT(c.legacy("not_in_file").empty());
@@ -1423,7 +1424,7 @@ r.ripple.com:51235
             BEAST_EXPECT(s.get<int>("not_a_key") == std::nullopt);
             try
             {
-                s.get<int>("a_string");
+                [[maybe_unused]] auto _ = s.get<int>("a_string");
                 fail();
             }
             catch (boost::bad_lexical_cast&)

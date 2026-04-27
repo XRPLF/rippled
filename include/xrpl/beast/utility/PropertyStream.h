@@ -149,7 +149,7 @@ class PropertyStream::Item : public List<Item>::Node
 {
 public:
     explicit Item(Source* source);
-    Source&
+    [[nodiscard]] Source&
     source() const;
     Source*
     operator->() const;
@@ -217,7 +217,7 @@ public:
 
     PropertyStream&
     stream();
-    PropertyStream const&
+    [[nodiscard]] PropertyStream const&
     stream() const;
 
     template <typename Value>
@@ -287,7 +287,7 @@ public:
 
     PropertyStream&
     stream();
-    PropertyStream const&
+    [[nodiscard]] PropertyStream const&
     stream() const;
 
     template <typename Value>
@@ -323,7 +323,7 @@ public:
     operator=(Source const&) = delete;
 
     /** Returns the name of this source. */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const;
 
     /** Add a child source. */

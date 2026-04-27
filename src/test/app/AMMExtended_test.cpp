@@ -1405,7 +1405,7 @@ private:
         BEAST_EXPECT(sa == XRP(100'000'000));
         // Bob gets ~99.99USD. This is the amount Bob
         // can get out of AMM for 100,000,000XRP.
-        BEAST_EXPECT(equal(da, STAmount{bob_["USD"].issue(), UINT64_C(99'9999000001), -10}));
+        BEAST_EXPECT(equal(da, STAmount{bob_["USD"], UINT64_C(99'9999000001), -10}));
     }
 
     // carol_ holds gateway AUD, sells gateway AUD for XRP
@@ -1983,10 +1983,10 @@ private:
                 };
                 {
                     // BTC -> USD
-                    STPath p1({ipe(USD.issue())});
+                    STPath const p1({ipe(USD)});
                     paths.push_back(p1);
                     // BTC -> EUR -> USD
-                    STPath p2({ipe(EUR.issue()), ipe(USD.issue())});
+                    STPath const p2({ipe(EUR), ipe(USD)});
                     paths.push_back(p2);
                 }
 
@@ -3389,12 +3389,11 @@ private:
             env.trust(EUR(1'000), alice_, bob_);
             env.close();
             fund(env, bob_, {alice_, gw_}, {bobUsd(100), bobEur(100)}, Fund::TokenOnly);
-            env.close();
 
-            AMM ammBobXrpUsd(env, bob_, XRP(100), bobUsd(100));
+            AMM const ammBobXrpUsd(env, bob_, XRP(100), bobUsd(100));
             env(offer(gw_, XRP(100), USD(100)), txflags(tfPassive));
 
-            AMM ammBobUsdEur(env, bob_, bobUsd(100), bobEur(100));
+            AMM const ammBobUsdEur(env, bob_, bobUsd(100), bobEur(100));
             env(offer(gw_, USD(100), EUR(100)), txflags(tfPassive));
 
             TestPath const p = [&] {

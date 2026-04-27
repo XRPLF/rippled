@@ -116,7 +116,7 @@ struct TER_test : public beast::unit_test::suite
         // Examples of each kind of enum.
         static auto const kTER_ENUMS = std::make_tuple(
             telLOCAL_ERROR, temMALFORMED, tefFAILURE, terRETRY, tesSUCCESS, tecCLAIM);
-        static int const kHI_INDEX{std::tuple_size<decltype(kTER_ENUMS)>::value - 1};
+        static int const kHI_INDEX{std::tuple_size_v<decltype(kTER_ENUMS)> - 1};
 
         // Verify that enums cannot be converted to other enum types.
         testIterate<kHI_INDEX, kHI_INDEX, NotConvertible>(kTER_ENUMS, *this);
@@ -225,7 +225,7 @@ struct TER_test : public beast::unit_test::suite
             tecCLAIM,
             NotTEC{telLOCAL_ERROR},
             TER{tecCLAIM});
-        static int const kHI_INDEX{std::tuple_size<decltype(kTERS)>::value - 1};
+        static int const kHI_INDEX{std::tuple_size_v<decltype(kTERS)> - 1};
 
         // Verify that all types in the ters tuple can be compared with all
         // the other types in ters.

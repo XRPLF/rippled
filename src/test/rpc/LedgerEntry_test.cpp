@@ -2926,7 +2926,7 @@ class LedgerEntry_XChain_test : public beast::unit_test::suite,
                     a[i].isMember(jss::Destination) && a[i][jss::Destination] == scCarol.human());
                 BEAST_EXPECT(
                     a[i].isMember(sfAttestationSignerAccount.jsonName) &&
-                    std::any_of(signers.begin(), signers.end(), [&](Signer const& s) {
+                    std::ranges::any_of(signers, [&](Signer const& s) {
                         return a[i][sfAttestationSignerAccount.jsonName] == s.account.human();
                     }));
                 BEAST_EXPECT(

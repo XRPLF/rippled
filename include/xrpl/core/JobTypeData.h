@@ -54,13 +54,13 @@ public:
     JobTypeData&
     operator=(JobTypeData const& other) = delete;
 
-    std::string
+    [[nodiscard]] std::string
     name() const
     {
         return info.name();
     }
 
-    JobType
+    [[nodiscard]] JobType
     type() const
     {
         return info.type();

@@ -169,7 +169,7 @@ STPath::getJson(JsonOptions) const
 {
     Json::Value ret(Json::arrayValue);
 
-    for (auto it : path_)
+    for (auto const& it : path_)
     {
         Json::Value elem(Json::objectValue);
         auto const iType = it.getNodeType();

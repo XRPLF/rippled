@@ -2,7 +2,6 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/Ter.h>
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
@@ -16,6 +15,7 @@
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
 #include <test/jtx/ticket.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/utility.h>
@@ -125,7 +125,7 @@ class Vault_test : public beast::unit_test::suite
 
             // Several 3rd party accounts which cannot receive funds
             Account const alice{"alice"};
-            Account erin{"erin"};  // not authorized by issuer
+            Account const erin{"erin"};  // not authorized by issuer
             env.fund(XRP(1000), alice, erin);
             env(fset(alice, asfDepositAuth));
             env.close();
@@ -4198,7 +4198,7 @@ class Vault_test : public beast::unit_test::suite
 
             // Borrow 40: assetsAvailable=60, assetsTotal=100
             env(set(d.depositor, brokerKeylet.key, STAmount(d.asset, Number(40, 0))),
-                kINTEREST_RATE(TenthBips32(0)),
+                loan::kINTEREST_RATE(TenthBips32(0)),
                 kGRACE_PERIOD(60),
                 kPAYMENT_INTERVAL(120),
                 kPAYMENT_TOTAL(10),
@@ -4715,7 +4715,7 @@ class Vault_test : public beast::unit_test::suite
 
             // Create a simple Loan for the full amount of Vault assets
             env(set(depositor, brokerKeylet.key, asset(100).value()),
-                kINTEREST_RATE(TenthBips32(0)),
+                loan::kINTEREST_RATE(TenthBips32(0)),
                 kGRACE_PERIOD(60),
                 kPAYMENT_INTERVAL(120),
                 kPAYMENT_TOTAL(10),
@@ -5106,7 +5106,7 @@ class Vault_test : public beast::unit_test::suite
                 // Depositor borrows 40 units, reducing assetsAvailable to 60
                 // while assetsTotal stays at 100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    kINTEREST_RATE(TenthBips32(0)),
+                    loan::kINTEREST_RATE(TenthBips32(0)),
                     kGRACE_PERIOD(60),
                     kPAYMENT_INTERVAL(120),
                     kPAYMENT_TOTAL(10),
@@ -5163,7 +5163,7 @@ class Vault_test : public beast::unit_test::suite
 
                 // Depositor borrows 40 units
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    kINTEREST_RATE(TenthBips32(0)),
+                    loan::kINTEREST_RATE(TenthBips32(0)),
                     kGRACE_PERIOD(60),
                     kPAYMENT_INTERVAL(120),
                     kPAYMENT_TOTAL(10),
@@ -5218,7 +5218,7 @@ class Vault_test : public beast::unit_test::suite
 
                 // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    kINTEREST_RATE(TenthBips32(0)),
+                    loan::kINTEREST_RATE(TenthBips32(0)),
                     kGRACE_PERIOD(60),
                     kPAYMENT_INTERVAL(120),
                     kPAYMENT_TOTAL(10),
@@ -5272,7 +5272,7 @@ class Vault_test : public beast::unit_test::suite
 
                 // Depositor borrows 40 units: assetsAvailable=60, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(40).value()),
-                    kINTEREST_RATE(TenthBips32(0)),
+                    loan::kINTEREST_RATE(TenthBips32(0)),
                     kGRACE_PERIOD(60),
                     kPAYMENT_INTERVAL(120),
                     kPAYMENT_TOTAL(10),
@@ -5320,7 +5320,7 @@ class Vault_test : public beast::unit_test::suite
 
                 // Depositor borrows all 100 units: assetsAvailable=0, assetsTotal=100
                 env(set(depositor, brokerKeylet.key, asset(100).value()),
-                    kINTEREST_RATE(TenthBips32(0)),
+                    loan::kINTEREST_RATE(TenthBips32(0)),
                     kGRACE_PERIOD(60),
                     kPAYMENT_INTERVAL(120),
                     kPAYMENT_TOTAL(10),
@@ -5428,7 +5428,7 @@ class Vault_test : public beast::unit_test::suite
             // Depositor borrows 40 units, reducing assetsAvailable to 60
             // while assetsTotal stays at 100
             env(set(depositor, brokerKeylet.key, iou(40).value()),
-                kINTEREST_RATE(TenthBips32(0)),
+                loan::kINTEREST_RATE(TenthBips32(0)),
                 kGRACE_PERIOD(60),
                 kPAYMENT_INTERVAL(120),
                 kPAYMENT_TOTAL(10),

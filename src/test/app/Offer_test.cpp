@@ -1325,7 +1325,7 @@ public:
             auto const gwInitialBalance = drops(1149999730);
             auto const aliceInitialBalance = drops(499946999680);
             auto const bobInitialBalance = drops(10199999920);
-            auto const smallAmount = STAmount{bob["USD"].issue(), UINT64_C(2710505431213761), -33};
+            auto const smallAmount = STAmount{bob["USD"], UINT64_C(2710505431213761), -33};
 
             env.fund(gwInitialBalance, gw);
             env.fund(aliceInitialBalance, alice);
@@ -2247,45 +2247,45 @@ public:
         // clang-format off
         TestData const tests[]{
             // acct                     fundXrp        bookAmt   preTrust  offerAmount                   tec     spentXrp       balanceUSD offers  owners
-            {"ann",             reserve(env, 0) + 0 * f,    1,   NoPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},  // Account is at the reserve, and will dip below once fees are subtracted.
-            {"bev",             reserve(env, 0) + 1 * f,    1,   NoPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},  // Account has just enough for the reserve and the fee.
-            {"cam",             reserve(env, 0) + 2 * f,    0,   NoPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, usd(      0),    0, 0},  // Account has enough for the reserve, the fee and the offer, and a bit more, but not enough for the reserve after the offer is placed.
-            {"deb", drops(10) + reserve(env, 0) + 1 * f,    1,   NoPreTrust, 1000,             tesSUCCESS, drops(10)   + f, usd(0.00001),    0, 1},  // Account has enough to buy a little USD then the offer runs dry.
-            {"eve",             reserve(env, 1) + 0 * f,    0,   NoPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},  // No offer to cross
-            {"flo",             reserve(env, 1) + 0 * f,    1,   NoPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    0, 1},
-            {"gay",             reserve(env, 1) + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP(  50)   + f, usd(     50),    0, 1},
-            {"hye", XRP(1000)                   + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP( 800)   + f, usd(    800),    0, 1},
-            {"ivy", XRP(   1) + reserve(env, 1) + 1 * f,    1,   NoPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    0, 1},
-            {"joy", XRP(   1) + reserve(env, 2) + 1 * f,    1,   NoPreTrust, 1000,             tesSUCCESS, XRP(   1)   + f, usd(      1),    1, 2},
-            {"kim", XRP( 900) + reserve(env, 2) + 1 * f,  999,   NoPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
-            {"liz", XRP( 998) + reserve(env, 0) + 1 * f,  999,   NoPreTrust, 1000,             tesSUCCESS, XRP( 998)   + f, usd(    998),    0, 1},
-            {"meg", XRP( 998) + reserve(env, 1) + 1 * f,  999,   NoPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
-            {"nia", XRP( 998) + reserve(env, 2) + 1 * f,  999,   NoPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    1, 2},
-            {"ova", XRP( 999) + reserve(env, 0) + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP( 999)   + f, usd(    999),    0, 1},
-            {"pam", XRP( 999) + reserve(env, 1) + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP(1000)   + f, usd(   1000),    0, 1},
-            {"rae", XRP( 999) + reserve(env, 2) + 1 * f, 1000,   NoPreTrust, 1000,             tesSUCCESS, XRP(1000)   + f, usd(   1000),    0, 1},
-            {"sue", XRP(1000) + reserve(env, 2) + 1 * f,    0,   NoPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},
+            {.account="ann",             .fundXrp=reserve(env, 0) + 0 * f,    .bookAmount=1,   .preTrust=NoPreTrust, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=0, .owners=0},  // Account is at the reserve, and will dip below once fees are subtracted.
+            {.account="bev",             .fundXrp=reserve(env, 0) + 1 * f,    .bookAmount=1,   .preTrust=NoPreTrust, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=0, .owners=0},  // Account has just enough for the reserve and the fee.
+            {.account="cam",             .fundXrp=reserve(env, 0) + 2 * f,    .bookAmount=0,   .preTrust=NoPreTrust, .offerAmount=1000, .tec=tecINSUF_RESERVE_OFFER,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=0, .owners=0},  // Account has enough for the reserve, the fee and the offer, and a bit more, but not enough for the reserve after the offer is placed.
+            {.account="deb", .fundXrp=drops(10) + reserve(env, 0) + 1 * f,    .bookAmount=1,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=drops(10)   + f, .balanceUsd=usd(0.00001),    .offers=0, .owners=1},  // Account has enough to buy a little USD then the offer runs dry.
+            {.account="eve",             .fundXrp=reserve(env, 1) + 0 * f,    .bookAmount=0,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=1, .owners=1},  // No offer to cross
+            {.account="flo",             .fundXrp=reserve(env, 1) + 0 * f,    .bookAmount=1,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(   1)   + f, .balanceUsd=usd(      1),    .offers=0, .owners=1},
+            {.account="gay",             .fundXrp=reserve(env, 1) + 1 * f, .bookAmount=1000,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(  50)   + f, .balanceUsd=usd(     50),    .offers=0, .owners=1},
+            {.account="hye", .fundXrp=XRP(1000)                   + 1 * f, .bookAmount=1000,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 800)   + f, .balanceUsd=usd(    800),    .offers=0, .owners=1},
+            {.account="ivy", .fundXrp=XRP(   1) + reserve(env, 1) + 1 * f,    .bookAmount=1,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(   1)   + f, .balanceUsd=usd(      1),    .offers=0, .owners=1},
+            {.account="joy", .fundXrp=XRP(   1) + reserve(env, 2) + 1 * f,    .bookAmount=1,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(   1)   + f, .balanceUsd=usd(      1),    .offers=1, .owners=2},
+            {.account="kim", .fundXrp=XRP( 900) + reserve(env, 2) + 1 * f,  .bookAmount=999,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 999)   + f, .balanceUsd=usd(    999),    .offers=0, .owners=1},
+            {.account="liz", .fundXrp=XRP( 998) + reserve(env, 0) + 1 * f,  .bookAmount=999,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 998)   + f, .balanceUsd=usd(    998),    .offers=0, .owners=1},
+            {.account="meg", .fundXrp=XRP( 998) + reserve(env, 1) + 1 * f,  .bookAmount=999,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 999)   + f, .balanceUsd=usd(    999),    .offers=0, .owners=1},
+            {.account="nia", .fundXrp=XRP( 998) + reserve(env, 2) + 1 * f,  .bookAmount=999,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 999)   + f, .balanceUsd=usd(    999),    .offers=1, .owners=2},
+            {.account="ova", .fundXrp=XRP( 999) + reserve(env, 0) + 1 * f, .bookAmount=1000,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 999)   + f, .balanceUsd=usd(    999),    .offers=0, .owners=1},
+            {.account="pam", .fundXrp=XRP( 999) + reserve(env, 1) + 1 * f, .bookAmount=1000,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(1000)   + f, .balanceUsd=usd(   1000),    .offers=0, .owners=1},
+            {.account="rae", .fundXrp=XRP( 999) + reserve(env, 2) + 1 * f, .bookAmount=1000,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(1000)   + f, .balanceUsd=usd(   1000),    .offers=0, .owners=1},
+            {.account="sue", .fundXrp=XRP(1000) + reserve(env, 2) + 1 * f,    .bookAmount=0,   .preTrust=NoPreTrust, .offerAmount=1000,             .tec=tesSUCCESS,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=1, .owners=1},
             //---------------- Pre-established trust lines ---------------------
-            {"abe",             reserve(env, 0) + 0 * f,    1,   GwPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},
-            {"bud",             reserve(env, 0) + 1 * f,    1,   GwPreTrust, 1000,      tecUNFUNDED_OFFER,               f, usd(      0),    0, 0},
-            {"che",             reserve(env, 0) + 2 * f,    0,   GwPreTrust, 1000, tecINSUF_RESERVE_OFFER,               f, usd(      0),    0, 0},
-            {"dan", drops(10) + reserve(env, 0) + 1 * f,    1,   GwPreTrust, 1000,             tesSUCCESS, drops(10)   + f, usd(0.00001),    0, 0},
-            {"eli", XRP(  20) + reserve(env, 0) + 1 * f, 1000,   GwPreTrust, 1000,             tesSUCCESS, XRP(20) + 1 * f, usd(     20),    0, 0},
-            {"fyn",             reserve(env, 1) + 0 * f,    0,   GwPreTrust, 1000,             tesSUCCESS,               f, usd(      0),    1, 1},
-            {"gar",             reserve(env, 1) + 0 * f,    1,   GwPreTrust, 1000,             tesSUCCESS, XRP( 1) +     f, usd(      1),    1, 1},
-            {"hal",             reserve(env, 1) + 1 * f,    1,   GwPreTrust, 1000,             tesSUCCESS, XRP( 1) +     f, usd(      1),    1, 1},
+            {.account="abe",             .fundXrp=reserve(env, 0) + 0 * f,    .bookAmount=1,   .preTrust=GwPreTrust, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=0, .owners=0},
+            {.account="bud",             .fundXrp=reserve(env, 0) + 1 * f,    .bookAmount=1,   .preTrust=GwPreTrust, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=0, .owners=0},
+            {.account="che",             .fundXrp=reserve(env, 0) + 2 * f,    .bookAmount=0,   .preTrust=GwPreTrust, .offerAmount=1000, .tec=tecINSUF_RESERVE_OFFER,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=0, .owners=0},
+            {.account="dan", .fundXrp=drops(10) + reserve(env, 0) + 1 * f,    .bookAmount=1,   .preTrust=GwPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=drops(10)   + f, .balanceUsd=usd(0.00001),    .offers=0, .owners=0},
+            {.account="eli", .fundXrp=XRP(  20) + reserve(env, 0) + 1 * f, .bookAmount=1000,   .preTrust=GwPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(20) + 1 * f, .balanceUsd=usd(     20),    .offers=0, .owners=0},
+            {.account="fyn",             .fundXrp=reserve(env, 1) + 0 * f,    .bookAmount=0,   .preTrust=GwPreTrust, .offerAmount=1000,             .tec=tesSUCCESS,               .spentXrp=f, .balanceUsd=usd(      0),    .offers=1, .owners=1},
+            {.account="gar",             .fundXrp=reserve(env, 1) + 0 * f,    .bookAmount=1,   .preTrust=GwPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 1) +     f, .balanceUsd=usd(      1),    .offers=1, .owners=1},
+            {.account="hal",             .fundXrp=reserve(env, 1) + 1 * f,    .bookAmount=1,   .preTrust=GwPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 1) +     f, .balanceUsd=usd(      1),    .offers=1, .owners=1},
 
-            {"ned",             reserve(env, 1) + 0 * f,    1, AcctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
-            {"ole",             reserve(env, 1) + 1 * f,    1, AcctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
-            {"pat",             reserve(env, 1) + 2 * f,    0, AcctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
-            {"quy",             reserve(env, 1) + 2 * f,    1, AcctPreTrust, 1000,      tecUNFUNDED_OFFER,           2 * f, usd(      0),    0, 1},
-            {"ron",             reserve(env, 1) + 3 * f,    0, AcctPreTrust, 1000, tecINSUF_RESERVE_OFFER,           2 * f, usd(      0),    0, 1},
-            {"syd", drops(10) + reserve(env, 1) + 2 * f,    1, AcctPreTrust, 1000,             tesSUCCESS, drops(10) + 2 * f, usd(0.00001),    0, 1},
-            {"ted", XRP(  20) + reserve(env, 1) + 2 * f, 1000, AcctPreTrust, 1000,             tesSUCCESS, XRP(20) + 2 * f, usd(     20),    0, 1},
-            {"uli",             reserve(env, 2) + 0 * f,    0, AcctPreTrust, 1000, tecINSUF_RESERVE_OFFER,           2 * f, usd(      0),    0, 1},
-            {"vic",             reserve(env, 2) + 0 * f,    1, AcctPreTrust, 1000,             tesSUCCESS, XRP( 1) + 2 * f, usd(      1),    0, 1},
-            {"wes",             reserve(env, 2) + 1 * f,    0, AcctPreTrust, 1000,             tesSUCCESS,           2 * f, usd(      0),    1, 2},
-            {"xan",             reserve(env, 2) + 1 * f,    1, AcctPreTrust, 1000,             tesSUCCESS, XRP( 1) + 2 * f, usd(      1),    1, 2},
+            {.account="ned",             .fundXrp=reserve(env, 1) + 0 * f,    .bookAmount=1, .preTrust=AcctPreTrust, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,           .spentXrp=2 * f, .balanceUsd=usd(      0),    .offers=0, .owners=1},
+            {.account="ole",             .fundXrp=reserve(env, 1) + 1 * f,    .bookAmount=1, .preTrust=AcctPreTrust, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,           .spentXrp=2 * f, .balanceUsd=usd(      0),    .offers=0, .owners=1},
+            {.account="pat",             .fundXrp=reserve(env, 1) + 2 * f,    .bookAmount=0, .preTrust=AcctPreTrust, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,           .spentXrp=2 * f, .balanceUsd=usd(      0),    .offers=0, .owners=1},
+            {.account="quy",             .fundXrp=reserve(env, 1) + 2 * f,    .bookAmount=1, .preTrust=AcctPreTrust, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,           .spentXrp=2 * f, .balanceUsd=usd(      0),    .offers=0, .owners=1},
+            {.account="ron",             .fundXrp=reserve(env, 1) + 3 * f,    .bookAmount=0, .preTrust=AcctPreTrust, .offerAmount=1000, .tec=tecINSUF_RESERVE_OFFER,           .spentXrp=2 * f, .balanceUsd=usd(      0),    .offers=0, .owners=1},
+            {.account="syd", .fundXrp=drops(10) + reserve(env, 1) + 2 * f,    .bookAmount=1, .preTrust=AcctPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=drops(10) + 2 * f, .balanceUsd=usd(0.00001),    .offers=0, .owners=1},
+            {.account="ted", .fundXrp=XRP(  20) + reserve(env, 1) + 2 * f, .bookAmount=1000, .preTrust=AcctPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(20) + 2 * f, .balanceUsd=usd(     20),    .offers=0, .owners=1},
+            {.account="uli",             .fundXrp=reserve(env, 2) + 0 * f,    .bookAmount=0, .preTrust=AcctPreTrust, .offerAmount=1000, .tec=tecINSUF_RESERVE_OFFER,           .spentXrp=2 * f, .balanceUsd=usd(      0),    .offers=0, .owners=1},
+            {.account="vic",             .fundXrp=reserve(env, 2) + 0 * f,    .bookAmount=1, .preTrust=AcctPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 1) + 2 * f, .balanceUsd=usd(      1),    .offers=0, .owners=1},
+            {.account="wes",             .fundXrp=reserve(env, 2) + 1 * f,    .bookAmount=0, .preTrust=AcctPreTrust, .offerAmount=1000,             .tec=tesSUCCESS,           .spentXrp=2 * f, .balanceUsd=usd(      0),    .offers=1, .owners=2},
+            {.account="xan",             .fundXrp=reserve(env, 2) + 1 * f,    .bookAmount=1, .preTrust=AcctPreTrust, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 1) + 2 * f, .balanceUsd=usd(      1),    .offers=1, .owners=2},
         };
         // clang-format on
 
@@ -2325,7 +2325,7 @@ public:
             }
             std::uint32_t const acctOfferSeq = env.Seq(acct) - 1;
 
-            BEAST_EXPECT(env.Balance(acct, usd.issue()) == t.balanceUsd);
+            BEAST_EXPECT(env.Balance(acct, usd) == t.balanceUsd);
             BEAST_EXPECT(env.Balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
             env.Require(offers(acct, t.offers));
             env.Require(Owners(acct, t.owners));
@@ -2351,7 +2351,7 @@ public:
                 else
                 {
                     // Verify that no trustline was created.
-                    auto const sleTrust = env.le(keylet::line(acct, usd.issue()));
+                    auto const sleTrust = env.le(keylet::line(acct, usd));
                     BEAST_EXPECT(!sleTrust);
                 }
             }
@@ -2536,8 +2536,8 @@ public:
         env.Require(offers(bob, 0));
 
         // The two trustlines that were generated by offers should be gone.
-        BEAST_EXPECT(!env.le(keylet::line(alice.id(), eur.issue())));
-        BEAST_EXPECT(!env.le(keylet::line(bob.id(), usd.issue())));
+        BEAST_EXPECT(!env.le(keylet::line(alice.id(), eur)));
+        BEAST_EXPECT(!env.le(keylet::line(bob.id(), usd)));
 
         // Make two more offers that leave one of the offers non-dry. We
         // need to properly sequence the transactions:
@@ -2696,34 +2696,34 @@ public:
 
             // Constructor with takerGets/takerPays
             TestData(
-                std::string&& account,      // Account operated on
-                STAmount const& fundXrp,    // XRP acct funded with
-                STAmount const& fundUsd,    // USD acct funded with
-                STAmount const& gwGets,     // gw's offer
-                STAmount const& gwPays,     //
-                STAmount const& acctGets,   // acct's offer
-                STAmount const& acctPays,   //
-                TER tec,                    // Returned tec code
-                STAmount const& spentXrp,   // Amount removed from fundXrp
-                STAmount const& finalUsd,   // Final USD balance on acct
-                int offers,                 // Offers on acct
-                int owners,                 // Owners on acct
-                STAmount const& takerGets,  // Remainder of acct's offer
-                STAmount const& takerPays)  //
+                std::string&& account,  // Account operated on
+                STAmount fundXrp,       // XRP acct funded with
+                STAmount fundUsd,       // USD acct funded with
+                STAmount gwGets,        // gw's offer
+                STAmount gwPays,        //
+                STAmount acctGets,      // acct's offer
+                STAmount acctPays,      //
+                TER tec,                // Returned tec code
+                STAmount spentXrp,      // Amount removed from fundXrp
+                STAmount finalUsd,      // Final USD balance on acct
+                int offers,             // Offers on acct
+                int owners,             // Owners on acct
+                STAmount takerGets,     // Remainder of acct's offer
+                STAmount takerPays)     //
                 : account(std::move(account))
-                , fundXrp(fundXrp)
-                , fundUSD(fundUsd)
-                , gwGets(gwGets)
-                , gwPays(gwPays)
-                , acctGets(acctGets)
-                , acctPays(acctPays)
+                , fundXrp(std::move(fundXrp))
+                , fundUSD(std::move(fundUsd))
+                , gwGets(std::move(gwGets))
+                , gwPays(std::move(gwPays))
+                , acctGets(std::move(acctGets))
+                , acctPays(std::move(acctPays))
                 , tec(tec)
-                , spentXrp(spentXrp)
-                , finalUsd(finalUsd)
+                , spentXrp(std::move(spentXrp))
+                , finalUsd(std::move(finalUsd))
                 , offers(offers)
                 , owners(owners)
-                , takerGets(takerGets)
-                , takerPays(takerPays)
+                , takerGets(std::move(takerGets))
+                , takerPays(std::move(takerPays))
             {
             }
 
@@ -2815,7 +2815,7 @@ public:
             std::uint32_t const acctOfferSeq = env.Seq(acct) - 1;
 
             // Check results
-            BEAST_EXPECT(env.Balance(acct, usd.issue()) == t.finalUsd);
+            BEAST_EXPECT(env.Balance(acct, usd) == t.finalUsd);
             BEAST_EXPECT(env.Balance(acct, xrpIssue()) == t.fundXrp - t.spentXrp);
             env.Require(offers(acct, t.offers));
             env.Require(Owners(acct, t.owners));
@@ -3336,12 +3336,12 @@ public:
         // clang-format off
         TestData const tests[]{
             // acct                 fundXRP   fundUSD    fundEUR            firstOfferTec           secondOfferTec
-            {"ann", reserve(env, 3) + f * 4, usd(1000), eur(1000),             tesSUCCESS,             tesSUCCESS},
-            {"bev", reserve(env, 3) + f * 4, usd(   1), eur(1000),             tesSUCCESS,             tesSUCCESS},
-            {"cam", reserve(env, 3) + f * 4, usd(1000), eur(   1),             tesSUCCESS,             tesSUCCESS},
-            {"deb", reserve(env, 3) + f * 4, usd(   0), eur(   1),             tesSUCCESS,      tecUNFUNDED_OFFER},
-            {"eve", reserve(env, 3) + f * 4, usd(   1), eur(   0),      tecUNFUNDED_OFFER,             tesSUCCESS},
-            {"flo", reserve(env, 3) +     0, usd(1000), eur(1000), tecINSUF_RESERVE_OFFER, tecINSUF_RESERVE_OFFER},
+            {.acct="ann", .fundXRP=reserve(env, 3) + f * 4, .fundUSD=usd(1000), .fundEUR=eur(1000),             .firstOfferTec=tesSUCCESS,             .secondOfferTec=tesSUCCESS},
+            {.acct="bev", .fundXRP=reserve(env, 3) + f * 4, .fundUSD=usd(   1), .fundEUR=eur(1000),             .firstOfferTec=tesSUCCESS,             .secondOfferTec=tesSUCCESS},
+            {.acct="cam", .fundXRP=reserve(env, 3) + f * 4, .fundUSD=usd(1000), .fundEUR=eur(   1),             .firstOfferTec=tesSUCCESS,             .secondOfferTec=tesSUCCESS},
+            {.acct="deb", .fundXRP=reserve(env, 3) + f * 4, .fundUSD=usd(   0), .fundEUR=eur(   1),             .firstOfferTec=tesSUCCESS,      .secondOfferTec=tecUNFUNDED_OFFER},
+            {.acct="eve", .fundXRP=reserve(env, 3) + f * 4, .fundUSD=usd(   1), .fundEUR=eur(   0),      .firstOfferTec=tecUNFUNDED_OFFER,             .secondOfferTec=tesSUCCESS},
+            {.acct="flo", .fundXRP=reserve(env, 3) +     0, .fundUSD=usd(1000), .fundEUR=eur(1000), .firstOfferTec=tecINSUF_RESERVE_OFFER, .secondOfferTec=tecINSUF_RESERVE_OFFER},
         };
         //clang-format on
 
@@ -3722,7 +3722,7 @@ public:
             BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(
                 offer[sfTakerGets] ==
-                STAmount(jpy.issue(), std::uint64_t(2230682446713524ul), -12));
+                STAmount(jpy, std::uint64_t(2230682446713524ul), -12));
             BEAST_EXPECT(offer[sfTakerPays] == btc(0.035378));
         }
     }
@@ -3759,24 +3759,24 @@ public:
         env(
             pay(gw1,
                 alice,
-                STAmount{usd.issue(), std::uint64_t(2185410179555600), -14}));
+                STAmount{usd, std::uint64_t(2185410179555600), -14}));
         env(
             pay(gw2,
                 bob,
-                STAmount{jpy.issue(), std::uint64_t(6351823459548956), -12}));
+                STAmount{jpy, std::uint64_t(6351823459548956), -12}));
         env.close();
 
         env(offer(
             bob,
-            STAmount{usd.issue(), std::uint64_t(4371257532306000), -17},
-            STAmount{jpy.issue(), std::uint64_t(4573216636606000), -15}));
+            STAmount{usd, std::uint64_t(4371257532306000), -17},
+            STAmount{jpy, std::uint64_t(4573216636606000), -15}));
         env.close();
 
         // This offer did not partially cross correctly.
         env(offer(
             alice,
-            STAmount{jpy.issue(), std::uint64_t(2291181510070762), -12},
-            STAmount{usd.issue(), std::uint64_t(2190218999914694), -14}));
+            STAmount{jpy, std::uint64_t(2291181510070762), -12},
+            STAmount{usd, std::uint64_t(2190218999914694), -14}));
         env.close();
 
         auto const aliceOffers = offersOnAccount(env, alice);
@@ -3787,10 +3787,10 @@ public:
             BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(
                 offer[sfTakerGets] ==
-                STAmount(usd.issue(), std::uint64_t(2185847305256635), -14));
+                STAmount(usd, std::uint64_t(2185847305256635), -14));
             BEAST_EXPECT(
                 offer[sfTakerPays] ==
-                STAmount(jpy.issue(), std::uint64_t(2286608293434156), -12));
+                STAmount(jpy, std::uint64_t(2286608293434156), -12));
         }
     }
 
@@ -3819,21 +3819,21 @@ public:
         // Place alice's tiny offer in the book first.  Let's see what happens
         // when a reasonable offer crosses it.
         STAmount const aliceCnyOffer{
-            cny.issue(), std::uint64_t(4926000000000000), -23};
+            cny, std::uint64_t(4926000000000000), -23};
 
         env(offer(alice, aliceCnyOffer, drops(1), tfPassive));
         env.close();
 
         // bob places an ordinary offer
         STAmount const bobCnyStartBalance{
-            cny.issue(), std::uint64_t(3767479960090235), -15};
+            cny, std::uint64_t(3767479960090235), -15};
         env(pay(gw, bob, bobCnyStartBalance));
         env.close();
 
         env(offer(
             bob,
             drops(203),
-            STAmount{cny.issue(), std::uint64_t(1000000000000000), -20}));
+            STAmount{cny, std::uint64_t(1000000000000000), -20}));
         env.close();
 
         env.Require(Balance(alice, aliceCnyOffer));
@@ -3922,10 +3922,10 @@ public:
         // clang-format off
         TestData const tests[]{
             //        btcStart   --------------------- actor[0] ---------------------    -------------------- actor[1] -------------------
-            {0, 0, 1, btc(20), {{"ann", 0, drops(3900000'000000 - (4 * baseFee)), btc(20.0), usd(3000)}, {"abe", 0, drops(4100000'000000 - (3 * baseFee)), btc( 0), usd(750)}}},  // no BTC xfer fee
-            {0, 1, 0, btc(20), {{"bev", 0, drops(4100000'000000 - (4 * baseFee)), btc( 7.5), usd(2000)}, {"bob", 0, drops(3900000'000000 - (3 * baseFee)), btc(10), usd(  0)}}},  // no USD xfer fee
-            {0, 0, 0, btc(20), {{"cam", 0, drops(4000000'000000 - (5 * baseFee)), btc(20.0), usd(2000)}                                                     }},  // no xfer fee
-            {0, 1, 0, btc( 5), {{"deb", 1, drops(4040000'000000 - (4 * baseFee)), btc( 0.0), usd(2000)}, {"dan", 1, drops(3960000'000000 - (3 * baseFee)), btc( 4), usd(  0)}}},  // no USD xfer fee
+            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(20), .actors={{"ann", 0, drops(3900000'000000 - (4 * baseFee)), btc(20.0), usd(3000)}, {"abe", 0, drops(4100000'000000 - (3 * baseFee)), btc( 0), usd(750)}}},  // no BTC xfer fee
+            {.self=0, .leg0=1, .leg1=0, .btcStart=btc(20), .actors={{"bev", 0, drops(4100000'000000 - (4 * baseFee)), btc( 7.5), usd(2000)}, {"bob", 0, drops(3900000'000000 - (3 * baseFee)), btc(10), usd(  0)}}},  // no USD xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(20), .actors={{"cam", 0, drops(4000000'000000 - (5 * baseFee)), btc(20.0), usd(2000)}                                                     }},  // no xfer fee
+            {.self=0, .leg0=1, .leg1=0, .btcStart=btc( 5), .actors={{"deb", 1, drops(4040000'000000 - (4 * baseFee)), btc( 0.0), usd(2000)}, {"dan", 1, drops(3960000'000000 - (3 * baseFee)), btc( 4), usd(  0)}}},  // no USD xfer fee
         };
         // clang-format on
 
@@ -4070,8 +4070,8 @@ public:
         // clang-format off
         TestData const tests[]{
             //         btcStart    ------------------- actor[0] --------------------    ------------------- actor[1] --------------------
-            {0, 0, 1, btc(5), {{"gay", 1, drops(3950000'000000 - (4 * baseFee)), btc(5), usd(2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), btc(0), usd(1375)}}}, // no BTC xfer fee
-            {0, 0, 0, btc(5), {{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd(2000)}                                                     }}  // no xfer fee
+            {.self=0, .leg0=0, .leg1=1, .btcStart=btc(5), .actors={{"gay", 1, drops(3950000'000000 - (4 * baseFee)), btc(5), usd(2500)}, {"gar", 1, drops(4050000'000000 - (3 * baseFee)), btc(0), usd(1375)}}}, // no BTC xfer fee
+            {.self=0, .leg0=0, .leg1=0, .btcStart=btc(5), .actors={{"hye", 2, drops(4000000'000000 - (5 * baseFee)), btc(5), usd(2000)}                                                     }}  // no xfer fee
         };
         // clang-format on
 

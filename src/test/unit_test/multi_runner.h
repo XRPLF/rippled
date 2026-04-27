@@ -31,7 +31,7 @@ struct case_results
     std::size_t total = 0;
     std::size_t failed = 0;
 
-    explicit case_results(std::string name = "") : name(std::move(name))
+    explicit case_results(std::string name_ = "") : name(std::move(name_))
     {
     }
 };
@@ -44,7 +44,7 @@ struct suite_results
     std::size_t failed = 0;
     typename clock_type::time_point start = clock_type::now();
 
-    explicit suite_results(std::string name = "") : name(std::move(name))
+    explicit suite_results(std::string name_ = "") : name(std::move(name_))
     {
     }
 
@@ -90,7 +90,7 @@ class multi_runner_base
         std::atomic<std::size_t> job_index_{0};
         std::atomic<std::size_t> test_index_{0};
         std::atomic<bool> any_failed_{false};
-        // A parent process will periodically kINCREMENT `keep_alive_`. The child
+        // A parent process will periodically increment `keep_alive_`. The child
         // processes will check if `keep_alive_` is being incremented. If it is
         // not incremented for a sufficiently long time, the child will assume
         // the parent process has died.
@@ -131,7 +131,7 @@ class multi_runner_base
         print_results(S& s);
     };
 
-    static constexpr char const* shared_mem_name__ = "RippledUnitTestSharedMem";
+    static constexpr char const* shared_mem_name_ = "XrpldUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
     static constexpr char const* message_queue_name_ = "XrpldUnitTestMessageQueue";
@@ -175,13 +175,13 @@ public:
     void
     print_results(S& s);
 
-    bool
+    [[nodiscard]] bool
     anyFailed() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     tests() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     suites() const;
 
     void
@@ -214,13 +214,13 @@ public:
     multi_runner_parent();
     ~multi_runner_parent();
 
-    bool
+    [[nodiscard]] bool
     anyFailed() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     tests() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     suites() const;
 
     void
@@ -239,7 +239,7 @@ private:
     detail::results results_;
     detail::suite_results suite_results_;
     detail::case_results case_results_;
-    std::size_t num_jobs__{0};
+    std::size_t num_jobs_{0};
     bool quiet_{false};
     bool print_log_{true};
 
@@ -251,13 +251,13 @@ public:
     multi_runner_child&
     operator=(multi_runner_child const&) = delete;
 
-    multi_runner_child(std::size_t num_jobs_, bool quiet, bool print_log);
-    ~multi_runner_child();
+    multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log);
+    ~multi_runner_child() override;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     tests() const;
 
-    std::size_t
+    [[nodiscard]] std::size_t
     suites() const;
 
     void
@@ -268,25 +268,25 @@ public:
     run_multi(Pred pred);
 
 private:
-    virtual void
+    void
     onSuiteBegin(beast::unit_test::SuiteInfo const& info) override;
 
-    virtual void
+    void
     onSuiteEnd() override;
 
-    virtual void
+    void
     onCaseBegin(std::string const& name) override;
 
-    virtual void
+    void
     onCaseEnd() override;
 
-    virtual void
+    void
     onPass() override;
 
-    virtual void
+    void
     onFail(std::string const& reason) override;
 
-    virtual void
+    void
     onLog(std::string const& s) override;
 };
 
@@ -297,12 +297,12 @@ bool
 multi_runner_child::run_multi(Pred pred)
 {
     auto const& suite = beast::unit_test::global_suites();
-    auto const num_tests_ = suite.size();
+    auto const num_tests = suite.size();
     bool failed = false;
 
     auto get_test = [&]() -> beast::unit_test::SuiteInfo const* {
         auto const cur_test_index = checkoutTestIndex();
-        if (cur_test_index >= num_tests_)
+        if (cur_test_index >= num_tests)
             return nullptr;
         auto iter = suite.begin();
         std::advance(iter, cur_test_index);
@@ -318,7 +318,7 @@ multi_runner_child::run_multi(Pred pred)
         }
         catch (...)
         {
-            if (num_jobs__ <= 1)
+            if (num_jobs_ <= 1)
                 throw;  // a single process can die
 
             // inform the parent

@@ -446,7 +446,7 @@ amm(Asset const& asset1, Asset const& asset2) noexcept
                 return amm(indexHash(
                     LedgerNameSpace::Amm, issue1.getMptID(), issue2.account, issue2.currency));
             }
-            else
+            else if constexpr (std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, MPTIssue>)
             {
                 return amm(indexHash(LedgerNameSpace::Amm, issue1.getMptID(), issue2.getMptID()));
             }

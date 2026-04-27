@@ -189,7 +189,6 @@ OverlayImpl::OverlayImpl(
               collector))
     , resolver_(resolver)
     , next_id_(1)
-    , timer_count_(0)
     , slots_(app, *this, app.config())
     , stats_(
           std::bind(&OverlayImpl::collect_metrics, this),
@@ -1079,7 +1078,7 @@ OverlayImpl::getActivePeers() const
     Overlay::PeerSequence ret;
     ret.reserve(size());
 
-    forEach([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(std::move(sp)); });
+    forEach([&ret](std::shared_ptr<PeerImp> const& sp) { ret.emplace_back(sp); });
 
     return ret;
 }
@@ -1366,7 +1365,7 @@ void
 OverlayImpl::autoConnect()
 {
     auto const result = peerFinder_->autoconnect();
-    for (auto addr : result)
+    for (auto const& addr : result)
         connect(addr);
 }
 

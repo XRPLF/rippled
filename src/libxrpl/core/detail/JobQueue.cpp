@@ -28,9 +28,7 @@ JobQueue::JobQueue(
     Logs& logs,
     perf::PerfLog& perfLog)
     : journal_(journal)
-    , lastJob_(0)
     , invalidJobData_(JobTypes::instance().getInvalid(), collector, logs)
-    , processCount_(0)
     , workers_(*this, &perfLog, "JobQueue", threadCount)
     , perfLog_(perfLog)
     , collector_(collector)
@@ -181,8 +179,7 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
 bool
 JobQueue::isOverloaded()
 {
-    return std::any_of(
-        jobData_.begin(), jobData_.end(), [](auto& entry) { return entry.second.load().isOver(); });
+    return std::ranges::any_of(jobData_, [](auto& entry) { return entry.second.load().isOver(); });
 }
 
 Json::Value
@@ -357,7 +354,7 @@ JobQueue::processTask(int instance)
                 ++processCount_;
             }
             type = job.getType();
-            JobTypeData& data(getJobTypeData(type));
+            JobTypeData const& data(getJobTypeData(type));
             JLOG(journal_.trace()) << "Doing " << data.name() << "job";
 
             // The amount of time that the job was in the queue

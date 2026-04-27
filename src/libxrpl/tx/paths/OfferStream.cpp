@@ -132,7 +132,7 @@ accountFundsHelper(
 template <StepAmount TIn, StepAmount TOut>
 template <class TTakerPays, class TTakerGets>
     requires ValidTaker<TTakerPays, TTakerGets>
-bool
+[[nodiscard]] bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
     // Consider removing the offer if:

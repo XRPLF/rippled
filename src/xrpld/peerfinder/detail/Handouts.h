@@ -85,13 +85,13 @@ public:
     bool
     try_insert(Endpoint const& ep);
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return list_.size() >= Tuning::kREDIRECT_ENDPOINT_COUNT;
     }
 
-    SlotImp::ptr const&
+    [[nodiscard]] SlotImp::ptr const&
     slot() const
     {
         return slot_;
@@ -103,7 +103,7 @@ public:
         return list_;
     }
 
-    std::vector<Endpoint> const&
+    [[nodiscard]] std::vector<Endpoint> const&
     list() const
     {
         return list_;
@@ -169,7 +169,7 @@ public:
     bool
     try_insert(Endpoint const& ep);
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return list_.size() >= Tuning::kNUMBER_OF_ENDPOINTS;
@@ -181,13 +181,13 @@ public:
         list_.push_back(ep);
     }
 
-    SlotImp::ptr const&
+    [[nodiscard]] SlotImp::ptr const&
     slot() const
     {
         return slot_;
     }
 
-    std::vector<Endpoint> const&
+    [[nodiscard]] std::vector<Endpoint> const&
     list() const
     {
         return list_;
@@ -265,13 +265,13 @@ public:
     bool
     try_insert(beast::IP::Endpoint const& endpoint);
 
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return list_.empty();
     }
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return list_.size() >= needed_;
@@ -289,7 +289,7 @@ public:
         return list_;
     }
 
-    list_type const&
+    [[nodiscard]] list_type const&
     list() const
     {
         return list_;

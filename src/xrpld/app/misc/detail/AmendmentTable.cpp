@@ -334,7 +334,7 @@ public:
                 amendmentMajorityCalcThreshold.den));
     }
 
-    bool
+    [[nodiscard]] bool
     passes(uint256 const& amendment) const
     {
         auto const& it = votes_.find(amendment);
@@ -350,7 +350,7 @@ public:
         return it->second > threshold_;
     }
 
-    int
+    [[nodiscard]] int
     votes(uint256 const& amendment) const
     {
         auto const& it = votes_.find(amendment);
@@ -361,13 +361,13 @@ public:
         return it->second;
     }
 
-    int
+    [[nodiscard]] int
     trustedValidations() const
     {
         return trustedValidations_;
     }
 
-    int
+    [[nodiscard]] int
     threshold() const
     {
         return threshold_;

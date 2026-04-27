@@ -19,11 +19,8 @@
 namespace xrpl::PeerFinder {
 
 Bootcache::Bootcache(Store& store, clock_type& clock, beast::Journal journal)
-    : store_(store)
-    , clock_(clock)
-    , journal_(journal)
-    , whenUpdate_(clock_.now())
-    , needsUpdate_(false)
+    : store_(store), clock_(clock), journal_(journal), whenUpdate_(clock_.now())
+
 {
 }
 
@@ -146,7 +143,7 @@ Bootcache::on_success(beast::IP::Endpoint const& endpoint)
         ++entry.valence();
         map_.erase(result.first);
         result = map_.insert(value_type(endpoint, entry));
-        XRPL_ASSERT(result.second, "ripple:PeerFinder::Bootcache::on_success : endpoint inserted");
+        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::on_success : endpoint inserted");
     }
     Entry const& entry(result.first->right);
     JLOG(journal_.info()) << beast::Leftw(18) << "Bootcache connect " << endpoint << " with "
@@ -169,7 +166,7 @@ Bootcache::on_failure(beast::IP::Endpoint const& endpoint)
         --entry.valence();
         map_.erase(result.first);
         result = map_.insert(value_type(endpoint, entry));
-        XRPL_ASSERT(result.second, "ripple:PeerFinder::Bootcache::on_failure : endpoint inserted");
+        XRPL_ASSERT(result.second, "xrpl::PeerFinder::Bootcache::on_failure : endpoint inserted");
     }
     Entry const& entry(result.first->right);
     auto const n(std::abs(entry.valence()));

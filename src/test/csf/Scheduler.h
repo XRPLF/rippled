@@ -104,7 +104,7 @@ private:
 
         ~QueueType();
 
-        bool
+        [[nodiscard]] bool
         empty() const;
 
         iterator
@@ -379,8 +379,10 @@ Scheduler::step()
     if (!stepOne())
         return false;
     for (;;)
+    {
         if (!stepOne())
             break;
+    }
     return true;
 }
 

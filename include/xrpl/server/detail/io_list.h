@@ -80,7 +80,7 @@ public:
             Undefined result if called concurrently
             with close().
     */
-    bool
+    [[nodiscard]] bool
     closed() const
     {
         return closed_;
@@ -189,7 +189,7 @@ template <class T, class... Args>
 std::shared_ptr<T>
 IoList::emplace(Args&&... args)
 {
-    static_assert(std::is_base_of<Work, T>::value, "T must derive from IoList::Work");
+    static_assert(std::is_base_of_v<Work, T>, "T must derive from IoList::Work");
     if (closed_)
         return nullptr;
     auto sp = std::make_shared<T>(std::forward<Args>(args)...);

@@ -44,9 +44,8 @@ TransactionAcquire::TransactionAcquire(
           app,
           hash,
           kTX_ACQUIRE_TIMEOUT,
-          {jtTXN_DATA, "TxAcq", {}},
+          {.jobType = jtTXN_DATA, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
-    , haveRoot_(false)
     , peerSet_(std::move(peerSet))
 {
     map_ = std::make_shared<SHAMap>(SHAMapType::TRANSACTION, hash, app_.getNodeFamily());

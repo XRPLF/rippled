@@ -56,8 +56,8 @@ doPeerReservationsAdd(RPC::JsonContext& context)
         return rpcError(rpcPUBLIC_MALFORMED);
     PublicKey const& nodeId = *optPk;
 
-    auto const previous =
-        context.app.getPeerReservations().insertOrAssign(PeerReservation{nodeId, desc});
+    auto const previous = context.app.getPeerReservations().insertOrAssign(
+        PeerReservation{.nodeId = nodeId, .description = desc});
 
     Json::Value result{Json::objectValue};
     if (previous)

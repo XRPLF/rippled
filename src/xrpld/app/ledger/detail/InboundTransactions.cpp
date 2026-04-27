@@ -131,7 +131,7 @@ public:
         std::shared_ptr<Peer> peer,
         std::shared_ptr<protocol::TMLedgerData> packetPtr) override
     {
-        protocol::TMLedgerData& packet = *packetPtr;
+        protocol::TMLedgerData const& packet = *packetPtr;
 
         JLOG(j_.trace()) << "Got data (" << packet.nodes().size()
                          << ") for acquiring ledger: " << hash;

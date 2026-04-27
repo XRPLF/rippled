@@ -28,9 +28,7 @@ LoadMonitor::Stats::Stats() : latencyAvg(0), latencyPeak(0)
 //------------------------------------------------------------------------------
 
 LoadMonitor::LoadMonitor(beast::Journal j)
-    : counts_(0)
-    , latencyEvents_(0)
-    , latencyMSAvg_(0)
+    : latencyMSAvg_(0)
     , latencyMSPeak_(0)
     , targetLatencyAvg_(0)
     , targetLatencyPk_(0)

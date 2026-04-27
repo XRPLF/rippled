@@ -75,7 +75,7 @@ private:
         std::remove_reference_t<Closure> closure_{};
 
         static_assert(
-            std::is_same<decltype(closure_(std::declval<Args>()...)), Ret>::value,
+            std::is_same_v<decltype(closure_(std::declval<Args>()...)), Ret>,
             "Closure arguments don't match ClosureCounter Ret or Args");
 
     public:

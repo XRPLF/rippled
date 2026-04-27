@@ -92,7 +92,6 @@ ValidatorSite::Site::Resource::Resource(std::string inUri) : uri{std::move(inUri
 ValidatorSite::Site::Site(std::string uri)
     : loadedResource{std::make_shared<Resource>(std::move(uri))}
     , startingResource{loadedResource}
-    , redirCount{0}
     , refreshInterval{kDEFAULT_REFRESH_INTERVAL}
     , nextRefresh{clock_type::now()}
 
@@ -554,7 +553,10 @@ ValidatorSite::onSiteFetch(
                          << endpoint;
         auto onError = [&](std::string const& errMsg, bool retry) {
             sites_[siteIdx].lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::Invalid, errMsg});
+                Site::Status{
+                    .refreshed = clock_type::now(),
+                    .disposition = ListDisposition::Invalid,
+                    .message = errMsg});
             if (retry)
                 sites_[siteIdx].nextRefresh = clock_type::now() + kERROR_RETRY_INTERVAL;
 
@@ -647,7 +649,10 @@ ValidatorSite::onTextFetch(
         {
             JLOG(j_.error()) << "Exception in " << __func__ << ": " << ex.what();
             sites_[siteIdx].lastRefreshStatus.emplace(
-                Site::Status{clock_type::now(), ListDisposition::Invalid, ex.what()});
+                Site::Status{
+                    .refreshed = clock_type::now(),
+                    .disposition = ListDisposition::Invalid,
+                    .message = ex.what()});
         }
         sites_[siteIdx].activeResource.reset();
     }

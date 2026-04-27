@@ -581,7 +581,7 @@ public:
                     toClone.resize(kNUM_THREADS);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
-                    std::fill(toClone.begin(), toClone.end(), strong);
+                    std::ranges::fill(toClone, strong);
                 }
 
                 // ------ Sync Point ------
@@ -597,6 +597,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(kNUM_THREADS);
         for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
@@ -707,7 +708,7 @@ public:
                     toClone.resize(kNUM_THREADS);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
-                    std::fill(toClone.begin(), toClone.end(), strong);
+                    std::ranges::fill(toClone, strong);
                 }
 
                 // ------ Sync Point ------
@@ -742,6 +743,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(kNUM_THREADS);
         for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads.emplace_back(cloneAndDestroy, i);
@@ -827,7 +829,7 @@ public:
                     toLock.resize(kNUM_THREADS);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
-                    std::fill(toLock.begin(), toLock.end(), strong);
+                    std::ranges::fill(toLock, strong);
                 }
 
                 // ------ Sync Point ------
@@ -850,6 +852,7 @@ public:
             }
         };
         std::vector<std::thread> threads;
+        threads.reserve(kNUM_THREADS);
         for (int i = 0; i < kNUM_THREADS; ++i)
         {
             threads.emplace_back(lockAndDestroy, i);

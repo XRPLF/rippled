@@ -8,14 +8,14 @@ namespace xrpl::PeerFinder {
 class Fixed
 {
 public:
-    explicit Fixed(clock_type& clock) : when_(clock.now()), failures_(0)
+    explicit Fixed(clock_type& clock) : when_(clock.now())
     {
     }
 
     Fixed(Fixed const&) = default;
 
     /** Returns the time after which we should allow a connection attempt. */
-    clock_type::time_point const&
+    [[nodiscard]] clock_type::time_point const&
     when() const
     {
         return when_;
@@ -39,7 +39,7 @@ public:
 
 private:
     clock_type::time_point when_;
-    std::size_t failures_;
+    std::size_t failures_{0};
 };
 
 }  // namespace xrpl::PeerFinder

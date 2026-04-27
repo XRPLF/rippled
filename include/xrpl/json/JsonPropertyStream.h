@@ -14,7 +14,7 @@ public:
 
 public:
     JsonPropertyStream();
-    Json::Value const&
+    [[nodiscard]] Json::Value const&
     top() const;
 
 protected:

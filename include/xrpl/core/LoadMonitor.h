@@ -54,8 +54,8 @@ private:
 
     std::mutex mutex_;
 
-    std::uint64_t counts_;
-    int latencyEvents_;
+    std::uint64_t counts_{0};
+    int latencyEvents_{0};
     std::chrono::milliseconds latencyMSAvg_;
     std::chrono::milliseconds latencyMSPeak_;
     std::chrono::milliseconds targetLatencyAvg_;

@@ -32,7 +32,7 @@ public:
 
 private:
     std::shared_ptr<SHAMap> map_;
-    bool haveRoot_;
+    bool haveRoot_{false};
     std::unique_ptr<PeerSet> peerSet_;
 
     void

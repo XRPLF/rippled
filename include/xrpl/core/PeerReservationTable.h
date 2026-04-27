@@ -22,7 +22,7 @@ public:
     PublicKey nodeId;
     std::string description = {};  // NOLINT(readability-redundant-member-init)
 
-    auto
+    [[nodiscard]] auto
     toJson() const -> Json::Value;
 
     template <typename Hasher>

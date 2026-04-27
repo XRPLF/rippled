@@ -58,13 +58,13 @@ public:
         addVote(current_);
     }
 
-    value_type
+    [[nodiscard]] value_type
     current() const
     {
         return current_;
     }
 
-    std::pair<value_type, bool>
+    [[nodiscard]] std::pair<value_type, bool>
     getVotes() const;
 };
 

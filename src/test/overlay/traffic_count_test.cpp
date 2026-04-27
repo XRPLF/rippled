@@ -51,13 +51,13 @@ public:
             TrafficCount traffic;
 
             auto const counts = traffic.getCounts();
-            std::for_each(counts.begin(), counts.end(), [&](auto const& pair) {
+            std::ranges::for_each(counts, [&](auto const& pair) {
                 for (auto i = 0; i < tc.messageCount; ++i)
                     traffic.addCount(pair.first, tc.inbound, tc.size);
             });
 
             auto const countsNew = traffic.getCounts();
-            std::for_each(countsNew.begin(), countsNew.end(), [&](auto const& pair) {
+            std::ranges::for_each(countsNew, [&](auto const& pair) {
                 BEAST_EXPECT(pair.second.bytesIn.load() == tc.expectedBytesIn);
                 BEAST_EXPECT(pair.second.bytesOut.load() == tc.expectedBytesOut);
                 BEAST_EXPECT(pair.second.messagesIn.load() == tc.expectedMessagesIn);

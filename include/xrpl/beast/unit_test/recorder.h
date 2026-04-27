@@ -21,51 +21,51 @@ public:
     recorder() = default;
 
     /** Returns a report with the results of all completed suites. */
-    Results const&
+    [[nodiscard]] Results const&
     report() const
     {
         return results_;
     }
 
 private:
-    virtual void
+    void
     onSuiteBegin(SuiteInfo const& info) override
     {
         suite_ = SuiteResults(info.fullName());
     }
 
-    virtual void
+    void
     onSuiteEnd() override
     {
         results_.insert(std::move(suite_));
     }
 
-    virtual void
+    void
     onCaseBegin(std::string const& name) override
     {
         case_ = CaseResults(name);
     }
 
-    virtual void
+    void
     onCaseEnd() override
     {
-        if (case_.tests.size() > 0)
+        if (!case_.tests.empty())
             suite_.insert(std::move(case_));
     }
 
-    virtual void
+    void
     onPass() override
     {
         case_.tests.pass();
     }
 
-    virtual void
+    void
     onFail(std::string const& reason) override
     {
         case_.tests.fail(reason);
     }
 
-    virtual void
+    void
     onLog(std::string const& s) override
     {
         case_.log.insert(s);

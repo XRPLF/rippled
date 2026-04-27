@@ -69,7 +69,7 @@ class Validations_test : public beast::unit_test::suite
             loadFee_ = fee;
         }
 
-        PeerID
+        [[nodiscard]] PeerID
         nodeID() const
         {
             return nodeID_;
@@ -81,18 +81,18 @@ class Validations_test : public beast::unit_test::suite
             signIdx_++;
         }
 
-        PeerKey
+        [[nodiscard]] PeerKey
         currKey() const
         {
             return std::make_pair(nodeID_, signIdx_);
         }
 
-        PeerKey
+        [[nodiscard]] PeerKey
         masterKey() const
         {
             return std::make_pair(nodeID_, 0);
         }
-        NetClock::time_point
+        [[nodiscard]] NetClock::time_point
         now() const
         {
             return toNetClock(c_);
@@ -100,7 +100,7 @@ class Validations_test : public beast::unit_test::suite
 
         // Issue a new validation with given sequence number and id and
         // with signing and seen times offset from the common clock
-        Validation
+        [[nodiscard]] Validation
         validate(
             Ledger::ID id,
             Ledger::Seq seq,
@@ -122,20 +122,20 @@ class Validations_test : public beast::unit_test::suite
             return v;
         }
 
-        Validation
+        [[nodiscard]] Validation
         validate(Ledger ledger, NetClock::duration signOffset, NetClock::duration seenOffset) const
         {
             return validate(ledger.id(), ledger.seq(), signOffset, seenOffset, true);
         }
 
-        Validation
+        [[nodiscard]] Validation
         validate(Ledger ledger) const
         {
             return validate(
                 ledger.id(), ledger.seq(), NetClock::duration{0}, NetClock::duration{0}, true);
         }
 
-        Validation
+        [[nodiscard]] Validation
         partial(Ledger ledger) const
         {
             return validate(
@@ -171,7 +171,7 @@ class Validations_test : public beast::unit_test::suite
         {
         }
 
-        NetClock::time_point
+        [[nodiscard]] NetClock::time_point
         now() const
         {
             return toNetClock(c_);

@@ -6,7 +6,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/Ledger.h>
-#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/InfoSub.h>

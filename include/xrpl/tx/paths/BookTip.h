@@ -16,7 +16,7 @@ class BookTip
 {
 private:
     ApplyView& view_;
-    bool valid_;
+    bool valid_{false};
     uint256 book_;
     uint256 end_;
     uint256 dir_;
@@ -28,25 +28,25 @@ public:
     /** Create the iterator. */
     BookTip(ApplyView& view, Book const& book);
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     dir() const noexcept
     {
         return dir_;
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     index() const noexcept
     {
         return index_;
     }
 
-    Quality const&
+    [[nodiscard]] Quality const&
     quality() const noexcept
     {
         return quality_;
     }
 
-    SLE::pointer const&
+    [[nodiscard]] SLE::pointer const&
     entry() const noexcept
     {
         return entry_;

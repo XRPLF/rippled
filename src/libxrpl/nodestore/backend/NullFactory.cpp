@@ -90,7 +90,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -112,7 +112,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "none";

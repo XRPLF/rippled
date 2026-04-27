@@ -85,7 +85,7 @@ MPTTester::MPTTester(Env& env, Account issuer, MPTInit const& arg)
     if (arg.fund)
     {
         env_.Require(Owners(issuer_, 0));
-        for (auto it : holders_)
+        for (auto const& it : holders_)
         {
             if (issuer_.id() == it.second.id())
                 Throw<std::runtime_error>("Issuer can't be holder");

@@ -207,7 +207,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
     static auto kLOG10_FLOOR = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l = std::lower_bound(kPOWER_TABLE.begin(), kPOWER_TABLE.end(), v);
+        auto const l = std::ranges::lower_bound(kPOWER_TABLE, v);
         int index = std::distance(kPOWER_TABLE.begin(), l);
         // If we're not equal, subtract to get the floor
         if (*l != v)
@@ -219,7 +219,7 @@ mulRatio(IOUAmount const& amt, std::uint32_t num, std::uint32_t den, bool roundU
     static auto kLOG10_CEIL = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l = std::lower_bound(kPOWER_TABLE.begin(), kPOWER_TABLE.end(), v);
+        auto const l = std::ranges::lower_bound(kPOWER_TABLE, v);
         return int(std::distance(kPOWER_TABLE.begin(), l));
     };
 

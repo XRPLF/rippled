@@ -70,8 +70,8 @@ private:
     Scheduler& scheduler_;
     LockType writeMutex_;
     CondvarType writeCondition_;
-    int writeLoad_;
-    bool writePending_;
+    int writeLoad_{0};
+    bool writePending_{false};
     Batch writeSet_;
 };
 

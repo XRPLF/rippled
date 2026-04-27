@@ -74,49 +74,49 @@ public:
 
         using const_reverse_iterator = reverse_iterator;
 
-        iterator
+        [[nodiscard]] iterator
         begin() const
         {
             return iterator(list_.get().cbegin(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         cbegin() const
         {
             return iterator(list_.get().cbegin(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         end() const
         {
             return iterator(list_.get().cend(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         cend() const
         {
             return iterator(list_.get().cend(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         rbegin() const
         {
             return reverse_iterator(list_.get().crbegin(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         crbegin() const
         {
             return reverse_iterator(list_.get().crbegin(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         rend() const
         {
             return reverse_iterator(list_.get().crend(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         crend() const
         {
             return reverse_iterator(list_.get().crend(), Transform());
@@ -239,13 +239,13 @@ public:
             return iterator(lists_.begin(), Transform<false>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         begin() const
         {
             return const_iterator(lists_.cbegin(), Transform<true>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         cbegin() const
         {
             return const_iterator(lists_.cbegin(), Transform<true>());
@@ -257,13 +257,13 @@ public:
             return iterator(lists_.end(), Transform<false>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         end() const
         {
             return const_iterator(lists_.cend(), Transform<true>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         cend() const
         {
             return const_iterator(lists_.cend(), Transform<true>());
@@ -275,13 +275,13 @@ public:
             return reverse_iterator(lists_.rbegin(), Transform<false>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         rbegin() const
         {
             return const_reverse_iterator(lists_.crbegin(), Transform<true>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         crbegin() const
         {
             return const_reverse_iterator(lists_.crbegin(), Transform<true>());
@@ -293,13 +293,13 @@ public:
             return reverse_iterator(lists_.rend(), Transform<false>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         rend() const
         {
             return const_reverse_iterator(lists_.crend(), Transform<true>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         crend() const
         {
             return const_reverse_iterator(lists_.crend(), Transform<true>());
@@ -309,7 +309,7 @@ public:
         void
         shuffle();
 
-        std::string
+        [[nodiscard]] std::string
         histogram() const;
 
     private:
@@ -327,11 +327,11 @@ public:
 
         friend class Livecache;
         lists_type lists_;
-        Histogram hist_;
+        Histogram hist_{};
     } hops;
 
     /** Returns `true` if the cache is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return cache_.empty();
@@ -490,7 +490,7 @@ Livecache<Allocator>::hops_t::histogram() const
 template <class Allocator>
 Livecache<Allocator>::hops_t::hops_t(Allocator const& alloc)
 {
-    std::fill(hist_.begin(), hist_.end(), 0);
+    std::ranges::fill(hist_, 0);
 }
 
 template <class Allocator>

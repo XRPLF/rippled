@@ -53,9 +53,9 @@ public:
 
         // Invalid tokens pair
         testAMM([&](AMM& ammAlice, Env&) {
-            Account const gw("gw_");
-            auto const usd = gw["USD"];
-            auto const jv = ammAlice.ammRpcInfo({}, {}, usd.issue(), usd.issue());
+            Account const gw("gw");
+            auto const USD = gw["USD"];
+            auto const jv = ammAlice.ammRpcInfo({}, {}, USD, USD);
             BEAST_EXPECT(jv[jss::error_message] == "Account not found.");
         });
 

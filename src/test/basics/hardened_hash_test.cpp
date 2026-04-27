@@ -117,7 +117,7 @@ public:
         return &vec_[0];
     }
 
-    void const*
+    [[nodiscard]] void const*
     data() const noexcept
     {
         return &vec_[0];

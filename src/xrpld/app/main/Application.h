@@ -112,7 +112,7 @@ public:
     run() = 0;
     virtual void
     signalStop(std::string msg) = 0;
-    virtual bool
+    [[nodiscard]] virtual bool
     checkSigs() const = 0;
     virtual void
     checkSigs(bool) = 0;
@@ -122,7 +122,7 @@ public:
     //
 
     /** Returns a 64-bit instance identifier, generated at startup */
-    virtual std::uint64_t
+    [[nodiscard]] virtual std::uint64_t
     instanceID() const = 0;
 
     virtual Config&
@@ -131,7 +131,7 @@ public:
     virtual std::pair<PublicKey, SecretKey> const&
     nodeIdentity() = 0;
 
-    virtual std::optional<PublicKey const>
+    [[nodiscard]] virtual std::optional<PublicKey const>
     getValidationPublicKey() const = 0;
 
     virtual std::chrono::milliseconds
@@ -141,7 +141,7 @@ public:
     serverOkay(std::string& reason) = 0;
 
     /* Returns the number of file descriptors the application needs */
-    virtual int
+    [[nodiscard]] virtual int
     fdRequired() const = 0;
 
     /** Ensure that a newly-started validator does not sign proposals older
@@ -150,7 +150,7 @@ public:
     getMaxDisallowedLedger() = 0;
 
     /** Returns the number of io_context (I/O worker) threads used by the application. */
-    virtual size_t
+    [[nodiscard]] virtual size_t
     getNumberOfThreads() const = 0;
 };
 

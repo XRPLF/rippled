@@ -22,15 +22,15 @@ public:
     incDuplicate();
     void
     reset();
-    int
+    [[nodiscard]] int
     getGood() const;
-    bool
+    [[nodiscard]] bool
     isGood() const;
-    bool
+    [[nodiscard]] bool
     isInvalid() const;
-    bool
+    [[nodiscard]] bool
     isUseful() const;
-    std::string
+    [[nodiscard]] std::string
     get() const;
 
     SHAMapAddNode&

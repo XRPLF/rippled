@@ -7,8 +7,13 @@
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
+// Include only the specific Boost.Coroutine2 headers actually used here.
+// Avoid `boost/coroutine2/all.hpp` because it transitively pulls in
+// `boost/context/pooled_fixedsize_stack.hpp`, whose `.malloc()` / `.free()`
+// member calls on `boost::pool` collide with MSVC's `_CRTDBG_MAP_ALLOC` macros
+// in Debug builds (see cmake/XrplCompiler.cmake).
 #include <boost/context/protected_fixedsize_stack.hpp>
-#include <boost/coroutine2/all.hpp>
+#include <boost/coroutine2/coroutine.hpp>
 
 #include <set>
 
@@ -223,7 +228,7 @@ private:
 
     beast::Journal journal_;
     mutable std::mutex mutex_;
-    std::uint64_t lastJob_;
+    std::uint64_t lastJob_{0};
     std::set<Job> jobSet_;
     JobCounter jobCounter_;
     std::atomic_bool stopping_{false};
@@ -232,7 +237,7 @@ private:
     JobTypeData invalidJobData_;
 
     // The number of jobs currently in processTask()
-    int processCount_;
+    int processCount_{0};
 
     // The number of suspended coroutines
     int nSuspend_ = 0;

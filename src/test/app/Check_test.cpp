@@ -1054,8 +1054,8 @@ class Check_test : public beast::unit_test::suite
                                      double pct,
                                      double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.Balance(alice, usd.issue()).value()};
-            STAmount const bobStart{env.Balance(bob, usd.issue()).value()};
+            STAmount const aliceStart{env.Balance(alice, usd).value()};
+            STAmount const bobStart{env.Balance(bob, usd).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1079,8 +1079,8 @@ class Check_test : public beast::unit_test::suite
                                        double pct,
                                        double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.Balance(alice, usd.issue()).value()};
-            STAmount const bobStart{env.Balance(bob, usd.issue()).value()};
+            STAmount const aliceStart{env.Balance(alice, usd).value()};
+            STAmount const bobStart{env.Balance(bob, usd).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1143,7 +1143,7 @@ class Check_test : public beast::unit_test::suite
                                   double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of a gateway.
-            STAmount const aliceStart{env.Balance(alice, usd.issue()).value()};
+            STAmount const aliceStart{env.Balance(alice, usd).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1176,7 +1176,7 @@ class Check_test : public beast::unit_test::suite
                                     double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of the issuer.
-            STAmount const aliceStart{env.Balance(alice, usd.issue()).value()};
+            STAmount const aliceStart{env.Balance(alice, usd).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
@@ -1361,7 +1361,7 @@ class Check_test : public beast::unit_test::suite
             {
                 IOU const wrongCurrency{gw["EUR"]};
                 STAmount badAmount{amount};
-                badAmount.setIssue(wrongCurrency.issue());
+                badAmount.setIssue(wrongCurrency);
                 env(check::cash(bob, chkId, badAmount), Ter(temMALFORMED));
                 env.close();
             }
@@ -1370,7 +1370,7 @@ class Check_test : public beast::unit_test::suite
             {
                 IOU const wrongIssuer{alice["USD"]};
                 STAmount badAmount{amount};
-                badAmount.setIssue(wrongIssuer.issue());
+                badAmount.setIssue(wrongIssuer);
                 env(check::cash(bob, chkId, badAmount), Ter(temMALFORMED));
                 env.close();
             }
@@ -2065,7 +2065,7 @@ class Check_test : public beast::unit_test::suite
             // Transfer of assets using offers does not require rippling.
             // So bob's offer is successfully crossed which creates the
             // trust line.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
             IOU const oF1 = gw1["OF1"];
             env(offer(alice, XRP(97), oF1(97)));
             env.close();
@@ -2162,7 +2162,7 @@ class Check_test : public beast::unit_test::suite
             // to non-issuer should work.
 
             // Use offers to automatically create the trust line.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
             IOU const oF2 = gw1["OF2"];
             env(offer(alice, XRP(95), oF2(95)));
             env.close();
@@ -2253,7 +2253,7 @@ class Check_test : public beast::unit_test::suite
             // automatic trust line creation.
 
             // Use offers to automatically create the trust line.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
             IOU const oF3 = gw1["OF3"];
             env(offer(alice, XRP(93), oF3(93)));
             env.close();
@@ -2332,7 +2332,7 @@ class Check_test : public beast::unit_test::suite
             // no automatic trust line creation between non-issuers.
 
             // Use offers to automatically create the trust line.
-            AccountOwns gw1{*this, env, "gw1", 0};
+            AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
             IOU const oF4 = gw1["OF4"];
             env(offer(alice, XRP(91), oF4(91)), Ter(tecFROZEN));
             env.close();
@@ -2435,7 +2435,7 @@ class Check_test : public beast::unit_test::suite
             // no automatic trust line creation between non-issuers.
 
             // Use offers to automatically create the trust line.
-            AccountOwns gw2{*this, env, "gw2", 0};
+            AccountOwns const gw2{.suite = *this, .env = env, .acct = "gw2", .owners = 0};
             IOU const oF5 = gw2["OF5"];
             env(offer(alice, XRP(91), oF5(91)), Ter(tecUNFUNDED_OFFER));
             env.close();

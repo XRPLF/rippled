@@ -213,10 +213,10 @@ ApplyView::emptyDirDelete(Keylet const& directory)
     auto nextPage = node->getFieldU64(sfIndexNext);
 
     if (nextPage == kROOT_PAGE && prevPage != kROOT_PAGE)
-        LogicError("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
+        Throw<std::logic_error>("Directory chain: fwd link broken");  // LCOV_EXCL_LINE
 
     if (prevPage == kROOT_PAGE && nextPage != kROOT_PAGE)
-        LogicError("Directory chain: rev link broken");  // LCOV_EXCL_LINE
+        Throw<std::logic_error>("Directory chain: rev link broken");  // LCOV_EXCL_LINE
 
     // Older versions of the code would, in some cases, allow the last
     // page to be empty. Remove such pages:

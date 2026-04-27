@@ -683,7 +683,8 @@ public:
         std::uint32_t const aliceSeq = env.Seq("alice");
 
         // Sign jsonNoop.
-        Json::Value jsonNoop = env.json(noop("alice"), Fee(baseFee), Seq(aliceSeq), Sig("alice"));
+        Json::Value const jsonNoop =
+            env.json(noop("alice"), Fee(baseFee), Seq(aliceSeq), Sig("alice"));
         // Re-sign jsonNoop.
         JTx const jt = env.jt(jsonNoop);
         env(jt);

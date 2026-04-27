@@ -18,13 +18,13 @@ public:
 
     ~NullJournalSink() override = default;
 
-    bool
+    [[nodiscard]] bool
     active(severities::Severity) const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     console() const override
     {
         return false;
@@ -35,7 +35,7 @@ public:
     {
     }
 
-    severities::Severity
+    [[nodiscard]] severities::Severity
     threshold() const override
     {
         return severities::kDisabled;

@@ -106,7 +106,7 @@ public:
 
         @note This function is not thread-safe.
     */
-    int
+    [[nodiscard]] int
     getNumberOfThreads() const noexcept;
 
     /** Set the desired number of threads.
@@ -141,7 +141,7 @@ public:
         While this function is thread-safe, the value may not stay
         accurate for very long. It's mainly for diagnostic purposes.
     */
-    int
+    [[nodiscard]] int
     numberOfCurrentlyRunningTasks() const noexcept;
 
     //--------------------------------------------------------------------------
@@ -197,9 +197,9 @@ private:
     std::string threadNames_;     // The name to give each thread
     std::condition_variable cv_;  // signaled when all threads paused
     std::mutex mut_;
-    bool allPaused_;
+    bool allPaused_{true};
     semaphore semaphore_;                             // each pending task is 1 resource
-    int numberOfThreads_;                             // how many we want active now
+    int numberOfThreads_{0};                          // how many we want active now
     std::atomic<int> activeCount_;                    // to know when all are paused
     std::atomic<int> pauseCount_;                     // how many threads need to pause now
     std::atomic<int> runningTaskCount_;               // how many calls to processTask() active

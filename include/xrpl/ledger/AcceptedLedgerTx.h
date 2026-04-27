@@ -30,47 +30,47 @@ public:
         std::shared_ptr<STTx const> const&,
         std::shared_ptr<STObject const> const&);
 
-    std::shared_ptr<STTx const> const&
+    [[nodiscard]] std::shared_ptr<STTx const> const&
     getTxn() const
     {
         return txn_;
     }
-    TxMeta const&
+    [[nodiscard]] TxMeta const&
     getMeta() const
     {
         return meta_;
     }
 
-    boost::container::flat_set<AccountID> const&
+    [[nodiscard]] boost::container::flat_set<AccountID> const&
     getAffected() const
     {
         return affected_;
     }
 
-    TxID
+    [[nodiscard]] TxID
     getTransactionID() const
     {
         return txn_->getTransactionID();
     }
-    TxType
+    [[nodiscard]] TxType
     getTxnType() const
     {
         return txn_->getTxnType();
     }
-    TER
+    [[nodiscard]] TER
     getResult() const
     {
         return meta_.getResultTER();
     }
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getTxnSeq() const
     {
         return meta_.getIndex();
     }
-    std::string
+    [[nodiscard]] std::string
     getEscMeta() const;
 
-    Json::Value const&
+    [[nodiscard]] Json::Value const&
     getJson() const
     {
         return json_;

@@ -68,8 +68,8 @@ Reader::parse(std::string const& document, Value& root)
 bool
 Reader::parse(std::istream& sin, Value& root)
 {
-    // std::istreaiterator_<char> begin(sin);
-    // std::istreaiterator_<char> end;
+    // std::istream_iterator<char> begin(sin);
+    // std::istream_iterator<char> end;
     // Those would allow streamed input from a file, if parse() were a
     // template function.
 
@@ -365,8 +365,7 @@ Reader::readNumber()
         {
             if (std::isdigit(static_cast<unsigned char>(*current_)) == 0)
             {
-                auto ret =
-                    std::find(std::begin(kEXTENDED_TOKENS), std::end(kEXTENDED_TOKENS), *current_);
+                auto ret = std::ranges::find(kEXTENDED_TOKENS, *current_);
 
                 if (ret == std::end(kEXTENDED_TOKENS))
                     break;

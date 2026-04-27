@@ -145,7 +145,7 @@ public:
         return jv;
     }
 
-    unsigned
+    [[nodiscard]] unsigned
     version() const override
     {
         return rpc_version_;

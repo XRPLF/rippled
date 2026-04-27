@@ -42,13 +42,13 @@ private:
 public:
     ServerDefinitions();
 
-    bool
+    [[nodiscard]] bool
     hashMatches(uint256 hash) const
     {
         return defsHash_ == hash;
     }
 
-    Json::Value const&
+    [[nodiscard]] Json::Value const&
     get() const
     {
         return defs_;
@@ -398,14 +398,14 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    static detail::ServerDefinitions const kDEFS{};
-    if (kDEFS.hashMatches(hash))
+    auto const& defs = detail::getDefinitions();
+    if (defs.hashMatches(hash))
     {
         Json::Value jv = Json::objectValue;
         jv[jss::hash] = to_string(hash);
         return jv;
     }
-    return kDEFS.get();
+    return defs.get();
 }
 
 }  // namespace xrpl

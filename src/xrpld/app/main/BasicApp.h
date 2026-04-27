@@ -24,7 +24,7 @@ public:
         return io_context_;
     }
 
-    size_t
+    [[nodiscard]] size_t
     getNumberOfThreads() const
     {
         return threads_.size();

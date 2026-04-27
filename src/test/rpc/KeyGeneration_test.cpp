@@ -38,45 +38,48 @@ static char const* gMasterSeedHex = "BE6A670A19B209E112146D0A7ED2AAD7";
 }  // namespace common
 
 static KeyStrings const kSECP256K1_STRINGS = {
-    "r4Vtj2jrfmTVZGfSP3gH9hQPMqFPQFin8f",
-    common::gMasterKey,
-    common::gMasterSeed,
-    common::gMasterSeedHex,
-    "aBQxK2YFNqzmAaXNczYcjqDjfiKkLsJUizsr1UBf44RCF8FHdrmX",
-    "038AAE247B2344B1837FBED8F57389C8C11774510A3F7D784F2A09F0CB6843236C",
-    "1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2",
-    common::gPassphrase,
-    "This wallet was generated using a user-supplied "
-    "passphrase that has low entropy and is vulnerable "
-    "to brute-force attacks.",
+    .account_id = "r4Vtj2jrfmTVZGfSP3gH9hQPMqFPQFin8f",
+    .master_key = common::gMasterKey,
+    .master_seed = common::gMasterSeed,
+    .master_seed_hex = common::gMasterSeedHex,
+    .public_key = "aBQxK2YFNqzmAaXNczYcjqDjfiKkLsJUizsr1UBf44RCF8FHdrmX",
+    .public_key_hex = "038AAE247B2344B1837FBED8F57389C8C11774510A3F7D784F2A09F0CB6843236C",
+    .secret_key_hex = "1949ECD889EA71324BC7A30C8E81F4E93CB73EE19D59E9082111E78CC3DDABC2",
+    .passphrase = common::gPassphrase,
+    .passphrase_warning =
+        "This wallet was generated using a user-supplied "
+        "passphrase that has low entropy and is vulnerable "
+        "to brute-force attacks.",
 };
 
 static KeyStrings const kED25519_STRINGS = {
-    "r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1",
-    common::gMasterKey,
-    common::gMasterSeed,
-    common::gMasterSeedHex,
-    "aKEQmgLMyZPMruJFejUuedp169LgW6DbJt1rej1DJ5hWUMH4pHJ7",
-    "ED54C3F5BEDA8BD588B203D23A27398FAD9D20F88A974007D6994659CD7273FE1D",
-    "77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278",
-    common::gPassphrase,
-    "This wallet was generated using a user-supplied "
-    "passphrase that has low entropy and is vulnerable "
-    "to brute-force attacks.",
+    .account_id = "r4qV6xTXerqaZav3MJfSY79ynmc1BSBev1",
+    .master_key = common::gMasterKey,
+    .master_seed = common::gMasterSeed,
+    .master_seed_hex = common::gMasterSeedHex,
+    .public_key = "aKEQmgLMyZPMruJFejUuedp169LgW6DbJt1rej1DJ5hWUMH4pHJ7",
+    .public_key_hex = "ED54C3F5BEDA8BD588B203D23A27398FAD9D20F88A974007D6994659CD7273FE1D",
+    .secret_key_hex = "77AAED2698D56D6676323629160F4EEF21CFD9EE3D0745CC78FA291461F98278",
+    .passphrase = common::gPassphrase,
+    .passphrase_warning =
+        "This wallet was generated using a user-supplied "
+        "passphrase that has low entropy and is vulnerable "
+        "to brute-force attacks.",
 };
 
 static KeyStrings const kSTRONG_BRAIN_STRINGS = {
-    "rBcvXmNb7KPkNdMkpckdWPpbvkWgcV3nir",
-    "TED AVON CAVE HOUR BRAG JEFF RIFT NEAL TOLD FAT SEW SAN",
-    "shKdhWka8hS7Es3bpctCZXBiAwfUN",
-    "74BA8389B44F98CF41E795CD91F9C93F",
-    "aBRL2sqVuzrsM6zikPB4v8UBHGn1aKkrsxhYEffhcQxB2LKyywE5",
-    "03BD334FB9E06C58D69603E9922686528B18A754BC2F2E1ADA095FFE67DE952C64",
-    "84262FB16AA25BE407174C7EDAB531220C30FA4D8A28AA9D564673FB3D34502C",
-    "A4yKIRGdzrw0YQ$2%TFKYG9HP*&ok^!sy7E@RwICs",
-    "This wallet was generated using a user-supplied "
-    "passphrase. It may be vulnerable to brute-force "
-    "attacks.",
+    .account_id = "rBcvXmNb7KPkNdMkpckdWPpbvkWgcV3nir",
+    .master_key = "TED AVON CAVE HOUR BRAG JEFF RIFT NEAL TOLD FAT SEW SAN",
+    .master_seed = "shKdhWka8hS7Es3bpctCZXBiAwfUN",
+    .master_seed_hex = "74BA8389B44F98CF41E795CD91F9C93F",
+    .public_key = "aBRL2sqVuzrsM6zikPB4v8UBHGn1aKkrsxhYEffhcQxB2LKyywE5",
+    .public_key_hex = "03BD334FB9E06C58D69603E9922686528B18A754BC2F2E1ADA095FFE67DE952C64",
+    .secret_key_hex = "84262FB16AA25BE407174C7EDAB531220C30FA4D8A28AA9D564673FB3D34502C",
+    .passphrase = "A4yKIRGdzrw0YQ$2%TFKYG9HP*&ok^!sy7E@RwICs",
+    .passphrase_warning =
+        "This wallet was generated using a user-supplied "
+        "passphrase. It may be vulnerable to brute-force "
+        "attacks.",
 };
 
 class WalletPropose_test : public xrpl::TestSuite

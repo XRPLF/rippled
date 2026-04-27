@@ -56,7 +56,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
             bool done = false;
             boost::system::error_code waitErr;
 
-            while (--numSamples != 0u)
+            while (--numSamples > 0u)
             {
                 auto const start{MeasureClock::now()};
                 done = false;
@@ -163,7 +163,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         auto interval = 99ms;
         auto probeDuration = 1s;
 
-        size_t expectedProbeCountMax = (probeDuration / interval);
+        size_t const expectedProbeCountMax = (probeDuration / interval);
+        // NOLINTNEXTLINE(misc-const-correctness)
         size_t expectedProbeCountMin = expectedProbeCountMax;
 #ifdef XRPL_RUNNING_IN_CI
         // adjust min expected based on measurements

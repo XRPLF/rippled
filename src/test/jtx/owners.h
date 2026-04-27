@@ -36,14 +36,14 @@ private:
     std::uint32_t value_;
 
 public:
-    OwnerCount(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    OwnerCount(Account account, std::uint32_t value) : account_(std::move(account)), value_(value)
     {
     }
 
     void
     operator()(Env& env) const
     {
-        ::xrpl::detail::ownedCountHelper(env, account_.id(), Type, value_);
+        xrpl::detail::ownedCountHelper(env, account_.id(), Type, value_);
     }
 };
 
@@ -55,7 +55,7 @@ private:
     std::uint32_t value_;
 
 public:
-    Owners(Account const& account, std::uint32_t value) : account_(account), value_(value)
+    Owners(Account account, std::uint32_t value) : account_(std::move(account)), value_(value)
     {
     }
 

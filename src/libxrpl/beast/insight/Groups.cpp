@@ -21,12 +21,12 @@ namespace detail {
 
 class GroupImp : public std::enable_shared_from_this<GroupImp>, public Group
 {
+public:
     std::string const name_;
     Collector::ptr collector_;
 
-public:
-    GroupImp(std::string const& name, Collector::ptr const& collector)
-        : name_(name), collector_(collector)
+    GroupImp(std::string name, Collector::ptr collector)
+        : name_(std::move(name)), collector_(std::move(collector))
     {
     }
 
@@ -88,7 +88,7 @@ public:
     Collector::ptr collector;
     Items items;
 
-    explicit GroupsImp(Collector::ptr const& collector) : collector(collector)
+    explicit GroupsImp(Collector::ptr collector) : collector(std::move(collector))
     {
     }
 

@@ -68,7 +68,7 @@ public:
         txn_.removeMember(key);
     }
 
-    Json::Value const&
+    [[nodiscard]] Json::Value const&
     getTxn() const
     {
         return txn_;
@@ -105,16 +105,16 @@ public:
     Account master;
     std::vector<Reg> signers;
 
-    Msig(Account const& masterAccount, std::vector<Reg> s)
-        : master(masterAccount), signers(std::move(s))
+    Msig(Account masterAccount, std::vector<Reg> s)
+        : master(std::move(masterAccount)), signers(std::move(s))
     {
         sortSigners(signers);
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit Msig(Account const& masterAccount, AccountType&& a0, Accounts&&... aN)
-        : master(masterAccount)
+    explicit Msig(Account masterAccount, AccountType&& a0, Accounts&&... aN)
+        : master(std::move(masterAccount))
         , signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {
         sortSigners(signers);

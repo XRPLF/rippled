@@ -152,8 +152,7 @@ PropertyStream::Set::stream() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Source::Source(std::string name)
-    : name_(std::move(name)), item_(this), parent_(nullptr)
+PropertyStream::Source::Source(std::string name) : name_(std::move(name)), item_(this)
 {
 }
 

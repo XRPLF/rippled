@@ -42,10 +42,10 @@ public:
     void
     apply(RawView& to) const;
 
-    bool
+    [[nodiscard]] bool
     exists(ReadView const& base, Keylet const& k) const;
 
-    std::optional<key_type>
+    [[nodiscard]] std::optional<key_type>
     succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
     void
@@ -57,19 +57,19 @@ public:
     void
     replace(std::shared_ptr<SLE> const& sle);
 
-    std::shared_ptr<SLE const>
+    [[nodiscard]] std::shared_ptr<SLE const>
     read(ReadView const& base, Keylet const& k) const;
 
     void
     destroyXRP(XRPAmount const& fee);
 
-    std::unique_ptr<ReadView::sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<ReadView::sles_type::iter_base>
     slesBegin(ReadView const& base) const;
 
-    std::unique_ptr<ReadView::sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<ReadView::sles_type::iter_base>
     slesEnd(ReadView const& base) const;
 
-    std::unique_ptr<ReadView::sles_type::iter_base>
+    [[nodiscard]] std::unique_ptr<ReadView::sles_type::iter_base>
     slesUpperBound(ReadView const& base, uint256 const& key) const;
 
 private:

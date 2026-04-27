@@ -228,7 +228,7 @@ public:
         return false;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return selectors_.size();
@@ -304,6 +304,7 @@ runUnitTests(
             args.emplace_back("--unittest-child");
         }
 
+        children.reserve(numJobs);
         for (std::size_t i = 0; i < numJobs; ++i)
         {
             children.emplace_back(

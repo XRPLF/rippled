@@ -75,9 +75,7 @@ public:
     }
 
     PublicKey nodePublicKey;
-    virtual ~PeerPartial()
-    {
-    }
+    ~PeerPartial() override = default;
     virtual void
     onMessage(MessageSPtr const& m, SquelchCB f) = 0;
     virtual void
@@ -93,7 +91,7 @@ public:
     send(std::shared_ptr<Message> const& m) override
     {
     }
-    beast::IP::Endpoint
+    [[nodiscard]] beast::IP::Endpoint
     getRemoteAddress() const override
     {
         return {};
@@ -102,22 +100,22 @@ public:
     charge(Resource::Charge const& fee, std::string const& context = {}) override
     {
     }
-    bool
+    [[nodiscard]] bool
     cluster() const override
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     isHighLatency() const override
     {
         return false;
     }
-    int
+    [[nodiscard]] int
     getScore(bool) const override
     {
         return 0;
     }
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     getNodePublic() const override
     {
         return nodePublicKey;
@@ -127,12 +125,12 @@ public:
     {
         return {};
     }
-    bool
+    [[nodiscard]] bool
     supportsFeature(ProtocolFeature f) const override
     {
         return false;
     }
-    std::optional<std::size_t>
+    [[nodiscard]] std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
     {
         return {};
@@ -141,13 +139,13 @@ public:
     setPublisherListSequence(PublicKey const&, std::size_t const) override
     {
     }
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getClosedLedgerHash() const override
     {
         static uint256 const kHASH{};
         return kHASH;
     }
-    bool
+    [[nodiscard]] bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const override
     {
         return false;
@@ -156,7 +154,7 @@ public:
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const override
     {
     }
-    bool
+    [[nodiscard]] bool
     hasTxSet(uint256 const& hash) const override
     {
         return false;
@@ -170,12 +168,12 @@ public:
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     compressionEnabled() const override
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     txReduceRelayEnabled() const override
     {
         return false;
@@ -198,10 +196,10 @@ public:
 class ManualClock
 {
 public:
-    typedef uint64_t rep;
-    typedef std::milli period;
-    typedef std::chrono::duration<std::uint32_t, period> duration;
-    typedef std::chrono::time_point<ManualClock> time_point;
+    using rep = uint64_t;
+    using period = std::milli;
+    using duration = std::chrono::duration<std::uint32_t, period>;
+    using time_point = std::chrono::time_point<ManualClock>;
     inline static bool const is_steady = false;
 
     static void
@@ -423,7 +421,7 @@ public:
         return message_;
     }
 
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     id() const
     {
         return id_;
@@ -1483,7 +1481,6 @@ vp_base_squelch_max_selected_peers=2
     struct Handler : public reduce_relay::SquelchHandler
     {
         Handler() = default;
-
         void
         squelch(PublicKey const&, Peer::id_t, std::uint32_t duration) const override
         {
@@ -1493,7 +1490,6 @@ vp_base_squelch_max_selected_peers=2
         unsquelch(PublicKey const&, Peer::id_t) const override
         {
         }
-
         mutable int maxDuration{0};
     };
 

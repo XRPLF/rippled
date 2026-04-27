@@ -45,7 +45,7 @@ public:
             impl_->notify(ceil<value_type>(value));
     }
 
-    std::shared_ptr<EventImpl> const&
+    [[nodiscard]] std::shared_ptr<EventImpl> const&
     impl() const
     {
         return impl_;

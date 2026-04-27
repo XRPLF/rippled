@@ -34,6 +34,7 @@
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -55,7 +56,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 #include <xrpl/tx/transactors/lending/LoanSet.h>
 #include <xrpl/tx/transactors/system/Batch.h>
 
@@ -151,7 +151,7 @@ protected:
         std::string data = {};  // NOLINT(readability-redundant-member-init)
         std::uint32_t flags = 0;
 
-        Number
+        [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
         {
             NumberRoundModeGuard const mg(Number::downward);
@@ -178,26 +178,29 @@ protected:
         uint256 vaultID;
         BrokerParameters params;
         BrokerInfo(
-            jtx::PrettyAsset const& asset,
-            Keylet const& brokerKeylet,
-            Keylet const& vaultKeylet,
-            BrokerParameters const& p)
-            : asset(asset), brokerID(brokerKeylet.key), vaultID(vaultKeylet.key), params(p)
+            jtx::PrettyAsset const& asset_,
+            Keylet const& brokerKeylet_,
+            Keylet const& vaultKeylet_,
+            BrokerParameters p)
+            : asset(asset_)
+            , brokerID(brokerKeylet_.key)
+            , vaultID(vaultKeylet_.key)
+            , params(std::move(p))
         {
         }
 
-        Keylet
+        [[nodiscard]] Keylet
         brokerKeylet() const
         {
             return keylet::loanbroker(brokerID);
         }
-        Keylet
+        [[nodiscard]] Keylet
         vaultKeylet() const
         {
             return keylet::vault(vaultID);
         }
 
-        int
+        [[nodiscard]] int
         vaultScale(jtx::Env const& env) const
         {
             using namespace jtx;
@@ -5364,8 +5367,8 @@ protected:
         env.close();
 
         // Standard Payment path should forbid third-party transfers.
-        auto const err = feature[featureMPTokensV2] ? Ter(tecNO_PERMISSION) : Ter(tecNO_AUTH);
-        env(pay(alice, pseudoAccount, asset(1)), err);
+        auto const err = feature[featureMPTokensV2] ? tecNO_PERMISSION : tecNO_AUTH;
+        env(pay(alice, pseudoAccount, asset(1)), Ter(err));
         env.close();
 
         // Cover cannot be transferred to broker account
@@ -7210,8 +7213,9 @@ public:
         testWithdrawReflectsUnrealizedLoss();
         testInvalidLoanSet();
 
-        testCoverDepositWithdrawNonTransferableMPT(all_);
-        testCoverDepositWithdrawNonTransferableMPT(all_ - featureMPTokensV2);
+        auto const all = jtx::testableAmendments();
+        testCoverDepositWithdrawNonTransferableMPT(all);
+        testCoverDepositWithdrawNonTransferableMPT(all - featureMPTokensV2);
         testPoCUnsignedUnderflowOnFullPayAfterEarlyPeriodic();
 
         testDisabled();

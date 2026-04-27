@@ -61,11 +61,10 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto leftIter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
-        return std::isdigit(c, std::locale::classic());
-    });
+    auto leftIter = std::ranges::find_if_not(
+        input, [](std::string::value_type c) { return std::isdigit(c, std::locale::classic()); });
 
-    std::string item(input.begin(), leftIter);
+    std::string const item(input.begin(), leftIter);
 
     // Must not be empty
     if (item.empty())
@@ -151,13 +150,13 @@ bool
 SemanticVersion::parse(std::string_view input)
 {
     // May not have leading or trailing whitespace
-    auto leftIter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
-        return std::isspace(c, std::locale::classic());
-    });
+    auto leftIter = std::ranges::find_if_not(
+        input, [](std::string::value_type c) { return std::isspace(c, std::locale::classic()); });
 
-    auto rightIter = std::find_if_not(input.rbegin(), input.rend(), [](std::string::value_type c) {
-                         return std::isspace(c, std::locale::classic());
-                     }).base();
+    auto rightIter =
+        std::ranges::find_if_not(std::ranges::reverse_view(input), [](std::string::value_type c) {
+            return std::isspace(c, std::locale::classic());
+        }).base();
 
     // Must not be empty!
     if (leftIter >= rightIter)

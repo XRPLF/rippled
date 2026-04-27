@@ -76,9 +76,7 @@ public:
 
         static std::atomic<std::size_t> kN;
         std::size_t const id(++kN);
-        std::stringstream ss;
-        ss << "rocksdb #" << id;
-        beast::setCurrentThreadName(ss.str());
+        beast::setCurrentThreadName("rocksdb #" + std::to_string(id));
 
         f(a);
     }
@@ -444,7 +442,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return fdMinRequired;
@@ -466,7 +464,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "RocksDB";

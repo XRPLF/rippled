@@ -72,8 +72,8 @@ class FeatureCollections
         uint256 feature;
 
         Feature() = delete;
-        explicit Feature(std::string const& name, uint256 const& feature)
-            : name(name), feature(feature)
+        explicit Feature(std::string name, uint256 const& feature)
+            : name(std::move(name)), feature(feature)
         {
         }
 

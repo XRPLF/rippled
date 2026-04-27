@@ -49,7 +49,7 @@ namespace xrpl {
 ConnectAttempt::ConnectAttempt(
     Application& app,
     boost::asio::io_context& ioContext,
-    endpoint_type const& remoteEndpoint,
+    endpoint_type remoteEndpoint,
     Resource::Consumer usage,
     shared_context const& context,
     std::uint32_t id,
@@ -61,7 +61,7 @@ ConnectAttempt::ConnectAttempt(
     , id_(id)
     , sink_(journal, OverlayImpl::makePrefix(id))
     , journal_(sink_)
-    , remoteEndpoint_(remoteEndpoint)
+    , remoteEndpoint_(std::move(remoteEndpoint))
     , usage_(usage)
     , strand_(boost::asio::make_strand(ioContext))
     , timer_(ioContext)

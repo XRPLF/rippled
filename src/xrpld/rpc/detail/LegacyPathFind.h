@@ -14,7 +14,7 @@ public:
     LegacyPathFind(bool isAdmin, Application& app);
     ~LegacyPathFind();
 
-    bool
+    [[nodiscard]] bool
     isOk() const
     {
         return isOk_;
@@ -23,7 +23,7 @@ public:
 private:
     static std::atomic<int> inProgress;
 
-    bool isOk_;
+    bool isOk_{false};
 };
 
 }  // namespace RPC

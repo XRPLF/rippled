@@ -24,9 +24,7 @@ public:
     using reference = std::
         conditional_t<IsConst, typename Container::const_reference, typename Container::reference>;
 
-    LockFreeStackIterator() : node_()
-    {
-    }
+    LockFreeStackIterator() = default;
 
     LockFreeStackIterator(NodePtr node) : node_(node)
     {
@@ -79,7 +77,7 @@ public:
     }
 
 private:
-    NodePtr node_;
+    NodePtr node_{};
 };
 
 //------------------------------------------------------------------------------
@@ -164,7 +162,7 @@ public:
     operator=(LockFreeStack const&) = delete;
 
     /** Returns true if the stack is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return head_.load() == &end_;
@@ -185,7 +183,7 @@ public:
     bool
     push_front(Node* node)
     {
-        bool first;
+        bool first = false;
         Node* old_head = head_.load(std::memory_order_relaxed);
         do
         {
@@ -209,7 +207,7 @@ public:
     pop_front()
     {
         Node* node = head_.load();
-        Node* new_head;
+        Node* new_head = nullptr;
         do
         {
             if (node == &end_)
@@ -239,25 +237,25 @@ public:
         return iterator(&end_);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return const_iterator(head_.load());
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return const_iterator(&end_);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return const_iterator(head_.load());
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return const_iterator(&end_);

@@ -46,7 +46,7 @@ public:
 
     virtual ~JTxField() = default;
 
-    virtual OV
+    [[nodiscard]] virtual OV
     value() const = 0;
 
     virtual void
@@ -94,7 +94,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.time_since_epoch().count();
@@ -116,7 +116,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return to_string(value_);
@@ -138,7 +138,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return toBase58(value_);
@@ -160,7 +160,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.getJson(JsonOptions::kNONE);
@@ -202,7 +202,7 @@ protected:
 public:
     using JTxField<SF, SV, OV>::JTxField;
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.value();
@@ -367,7 +367,7 @@ void
 stpathAppendOne(STPath& st, Account const& account);
 
 template <class T>
-std::enable_if_t<std::is_constructible<Account, T>::value>
+std::enable_if_t<std::is_constructible_v<Account, T>>
 stpathAppendOne(STPath& st, T const& t)
 {
     stpathAppendOne(st, Account{t});
@@ -397,6 +397,7 @@ stpathsetAppend(STPathSet& st, STPath const& p, Args const&... args)
 bool
 equal(STAmount const& sa1, STAmount const& sa2);
 
+// Issue path element
 STPathElement
 IPE(Issue const& iss);
 

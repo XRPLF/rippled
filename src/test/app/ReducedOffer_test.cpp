@@ -73,7 +73,7 @@ public:
         {
             Env env{*this, testableAmendments()};
 
-            // Make sure kNONE of the offers we generate are under funded.
+            // Make sure none of the offers we generate are under funded.
             env.fund(XRP(10'000'000), gw, alice, bob);
             env.close();
 
@@ -167,7 +167,7 @@ public:
             };
 
             // bob's offer (the new offer) is the same every time:
-            Amounts const bobOffer{STAmount(XRP(1)), STAmount(usd.issue(), 1, 0)};
+            Amounts const bobOffer{STAmount(XRP(1)), STAmount(usd, 1, 0)};
 
             // alice's offer has a slightly smaller TakerPays with each
             // iteration.  This should mean that the size of the offer bob
@@ -205,7 +205,7 @@ public:
         auto const usd = gw["USD"];
 
         {
-            // Make sure kNONE of the offers we generate are under funded.
+            // Make sure none of the offers we generate are under funded.
             Env env{*this, testableAmendments()};
             env.fund(XRP(10'000'000), gw, alice, bob);
             env.close();
@@ -299,7 +299,7 @@ public:
             };
 
             // alice's offer (the old offer) is the same every time:
-            Amounts const aliceOffer{STAmount(XRP(1)), STAmount(usd.issue(), 1, 0)};
+            Amounts const aliceOffer{STAmount(XRP(1)), STAmount(usd, 1, 0)};
 
             // bob's offer has a slightly smaller TakerPays with each iteration.
             // This should mean that the size of the offer alice leaves in the
@@ -424,7 +424,7 @@ public:
         auto const usd = gw["USD"];
         auto const eur = gw["EUR"];
 
-        STAmount const tinyUSD(usd.issue(), /*mantissa*/ 1, /*exponent*/ -81);
+        STAmount const tinyUSD(usd, /*mantissa*/ 1, /*exponent*/ -81);
 
         {
             Env env{*this, testableAmendments()};
@@ -434,10 +434,10 @@ public:
             env.trust(usd(1000), alice, bob);
             env.trust(eur(1000), alice, bob);
 
-            STAmount const eurOffer(eur.issue(), /*mantissa*/ 2957, /*exponent*/ -76);
-            STAmount const usdOffer(usd.issue(), /*mantissa*/ 7109, /*exponent*/ -76);
+            STAmount const eurOffer(eur, /*mantissa*/ 2957, /*exponent*/ -76);
+            STAmount const usdOffer(usd, /*mantissa*/ 7109, /*exponent*/ -76);
 
-            STAmount const endLoop(usd.issue(), /*mantissa*/ 50, /*exponent*/ -81);
+            STAmount const endLoop(usd, /*mantissa*/ 50, /*exponent*/ -81);
 
             int blockedOrderBookCount = 0;
             for (STAmount initialBobUSD = tinyUSD; initialBobUSD <= endLoop;
@@ -537,7 +537,7 @@ public:
         for (FeatureBitset features :
              {testableAmendments() - fixReducedOffersV2, testableAmendments() | fixReducedOffersV2})
         {
-            // Make sure kNONE of the offers we generate are under funded.
+            // Make sure none of the offers we generate are under funded.
             Env env{*this, features};
             env.fund(XRP(10'000'000), gw, alice, bob, carol);
             env.close();
@@ -654,7 +654,7 @@ public:
                 }
             }
 
-            // If fixReducedOffersV2 is enabled, then kNONE of the test cases
+            // If fixReducedOffersV2 is enabled, then none of the test cases
             // should produce a potentially blocking rate.
             //
             // Also verify that if fixReducedOffersV2 is not enabled then

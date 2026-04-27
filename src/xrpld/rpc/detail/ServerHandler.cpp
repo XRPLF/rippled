@@ -856,16 +856,16 @@ ServerHandler::processRequest(
         Resource::Charge loadType = Resource::feeReferenceRPC;
 
         RPC::JsonContext context{
-            {journal_,
-             app_,
-             loadType,
-             networkOPs_,
-             app_.getLedgerMaster(),
-             usage,
-             role,
-             coro,
-             InfoSub::pointer(),
-             apiVersion},
+            {.j = journal_,
+             .app = app_,
+             .loadType = loadType,
+             .netOps = networkOPs_,
+             .ledgerMaster = app_.getLedgerMaster(),
+             .consumer = usage,
+             .role = role,
+             .coro = coro,
+             .infoSub = InfoSub::pointer(),
+             .apiVersion = apiVersion},
             params,
             {.user = user, .forwardedFor = forwardedFor}};
         Json::Value result;

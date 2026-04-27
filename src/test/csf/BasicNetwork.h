@@ -72,7 +72,7 @@ class BasicNetwork
     {
         bool inbound = false;
         duration delay{};
-        time_point established{};
+        time_point established;
         LinkType() = default;
         LinkType(bool inbound, duration delay, time_point established)
             : inbound(inbound), delay(delay), established(established)
@@ -164,7 +164,7 @@ public:
 
     /** Return the underlying digraph
      */
-    Digraph<Peer, LinkType> const&
+    [[nodiscard]] Digraph<Peer, LinkType> const&
     graph() const
     {
         return links_;

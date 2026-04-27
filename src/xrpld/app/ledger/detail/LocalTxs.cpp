@@ -57,31 +57,31 @@ public:
             expire_ = std::min(expire_, txn->getFieldU32(sfLastLedgerSequence) + 1);
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getID() const
     {
         return id_;
     }
 
-    SeqProxy
+    [[nodiscard]] SeqProxy
     getSeqProxy() const
     {
         return seqProxy_;
     }
 
-    bool
+    [[nodiscard]] bool
     isExpired(LedgerIndex i) const
     {
         return i > expire_;
     }
 
-    std::shared_ptr<STTx const> const&
+    [[nodiscard]] std::shared_ptr<STTx const> const&
     getTX() const
     {
         return txn_;
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccount() const
     {
         return account_;

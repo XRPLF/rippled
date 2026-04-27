@@ -103,20 +103,16 @@ results::merge(results const& r)
     failed += r.failed;
 
     // combine the two top collections
-    boost::container::static_vector<run_time, 2 * max_top> topResult;
-    topResult.resize(top.size() + r.top.size());
-    std::merge(
-        top.begin(),
-        top.end(),
-        r.top.begin(),
-        r.top.end(),
-        topResult.begin(),
-        [](run_time const& t1, run_time const& t2) { return t1.second > t2.second; });
+    boost::container::static_vector<run_time, 2 * max_top> top_result;
+    top_result.resize(top.size() + r.top.size());
+    std::ranges::merge(top, r.top, top_result.begin(), [](run_time const& t1, run_time const& t2) {
+        return t1.second > t2.second;
+    });
 
-    if (topResult.size() > max_top)
-        topResult.resize(max_top);
+    if (top_result.size() > max_top)
+        top_result.resize(max_top);
 
-    top = topResult;
+    top = top_result;
 }
 
 template <class S>
@@ -222,7 +218,7 @@ multi_runner_base<IsParent>::multi_runner_base()
         if (IsParent)
         {
             // cleanup any leftover state for any previous failed runs
-            boost::interprocess::shared_memory_object::remove(shared_mem_name__);
+            boost::interprocess::shared_memory_object::remove(shared_mem_name_);
             boost::interprocess::message_queue::remove(message_queue_name_);
         }
 
@@ -231,7 +227,7 @@ multi_runner_base<IsParent>::multi_runner_base()
                 IsParent,
                 boost::interprocess::create_only_t,
                 boost::interprocess::open_only_t>{},
-            shared_mem_name__,
+            shared_mem_name_,
             boost::interprocess::read_write};
 
         if (IsParent)
@@ -263,7 +259,7 @@ multi_runner_base<IsParent>::multi_runner_base()
     {
         if (IsParent)
         {
-            boost::interprocess::shared_memory_object::remove(shared_mem_name__);
+            boost::interprocess::shared_memory_object::remove(shared_mem_name_);
             boost::interprocess::message_queue::remove(message_queue_name_);
         }
         throw;
@@ -276,7 +272,7 @@ multi_runner_base<IsParent>::~multi_runner_base()
     if (IsParent)
     {
         inner_->~inner();
-        boost::interprocess::shared_memory_object::remove(shared_mem_name__);
+        boost::interprocess::shared_memory_object::remove(shared_mem_name_);
         boost::interprocess::message_queue::remove(message_queue_name_);
     }
 }
@@ -485,11 +481,11 @@ multi_runner_parent::addFailures(std::size_t failures)
 
 multi_runner_child::multi_runner_child(std::size_t numJobs, bool quiet, bool printLog)
     : job_index_{checkoutJobIndex()}
-    , num_jobs__{numJobs}
+    , num_jobs_{numJobs}
     , quiet_{quiet}
     , print_log_{!quiet || printLog}
 {
-    if (num_jobs__ > 1)
+    if (num_jobs_ > 1)
     {
         keep_alive_thread_ = std::thread([this] {
             std::size_t lastCount = getKeepAliveCount();
@@ -521,7 +517,7 @@ multi_runner_child::multi_runner_child(std::size_t numJobs, bool quiet, bool pri
 
 multi_runner_child::~multi_runner_child()
 {
-    if (num_jobs__ > 1)
+    if (num_jobs_ > 1)
     {
         continue_keep_alive_ = false;
         keep_alive_thread_.join();
@@ -562,7 +558,7 @@ multi_runner_child::onSuiteEnd()
     if (print_log_ || suite_results_.failed > 0)
     {
         std::stringstream s;
-        if (num_jobs__ > 1)
+        if (num_jobs_ > 1)
             s << job_index_ << "> ";
         s << (suite_results_.failed > 0 ? "failed: " : "") << suite_results_.name << " had "
           << suite_results_.failed << " failures." << std::endl;
@@ -581,7 +577,7 @@ multi_runner_child::onCaseBegin(std::string const& name)
         return;
 
     std::stringstream s;
-    if (num_jobs__ > 1)
+    if (num_jobs_ > 1)
         s << job_index_ << "> ";
     s << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
       << '\n';
@@ -606,7 +602,7 @@ multi_runner_child::onFail(std::string const& reason)
     ++case_results_.failed;
     ++case_results_.total;
     std::stringstream s;
-    if (num_jobs__ > 1)
+    if (num_jobs_ > 1)
         s << job_index_ << "> ";
     s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason << '\n';
     messageQueueSend(MessageType::log, s.str());
@@ -619,7 +615,7 @@ multi_runner_child::onLog(std::string const& msg)
         return;
 
     std::stringstream s;
-    if (num_jobs__ > 1)
+    if (num_jobs_ > 1)
         s << job_index_ << "> ";
     s << msg;
     messageQueueSend(MessageType::log, s.str());

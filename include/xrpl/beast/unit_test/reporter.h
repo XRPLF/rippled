@@ -93,25 +93,25 @@ private:
     static std::string
     fmtdur(typename clock_type::duration const& d);
 
-    virtual void
+    void
     onSuiteBegin(SuiteInfo const& info) override;
 
-    virtual void
+    void
     onSuiteEnd() override;
 
-    virtual void
+    void
     onCaseBegin(std::string const& name) override;
 
-    virtual void
+    void
     onCaseEnd() override;
 
-    virtual void
+    void
     onPass() override;
 
-    virtual void
+    void
     onFail(std::string const& reason) override;
 
-    virtual void
+    void
     onLog(std::string const& s) override;
 };
 

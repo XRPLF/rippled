@@ -126,7 +126,7 @@ public:
         HandlerType handler;
 
         template <class StringSequence>
-        Work(StringSequence const& inNames, HandlerType const& handler) : handler(handler)
+        Work(StringSequence const& inNames, HandlerType handler) : handler(std::move(handler))
         {
             names.reserve(inNames.size());
 
@@ -294,9 +294,10 @@ public:
         auto const findWhitespace =
             std::bind(&std::isspace<std::string::value_type>, std::placeholders::_1, std::locale());
 
-        auto hostFirst = std::find_if_not(str.begin(), str.end(), findWhitespace);
+        auto hostFirst = std::ranges::find_if_not(str, findWhitespace);
 
-        auto portLast = std::find_if_not(str.rbegin(), str.rend(), findWhitespace).base();
+        auto portLast =
+            std::ranges::find_if_not(std::ranges::reverse_view(str), findWhitespace).base();
 
         // This should only happen for all-whitespace strings
         if (hostFirst >= portLast)

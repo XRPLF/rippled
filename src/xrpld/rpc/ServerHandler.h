@@ -115,13 +115,13 @@ public:
     void
     setup(Setup const& setup, beast::Journal journal);
 
-    Setup const&
+    [[nodiscard]] Setup const&
     setup() const
     {
         return setup_;
     }
 
-    Endpoints const&
+    [[nodiscard]] Endpoints const&
     endpoints() const
     {
         return endpoints_;
@@ -187,7 +187,7 @@ private:
         std::string_view forwardedFor,
         std::string_view user);
 
-    Handoff
+    [[nodiscard]] Handoff
     statusResponse(http_request_type const& request) const;
 };
 

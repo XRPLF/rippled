@@ -72,7 +72,7 @@ getNextLedgerTimeResolution(
         previousResolution);
     XRPL_ASSERT(
         iter != std::end(kLEDGER_POSSIBLE_TIME_RESOLUTIONS),
-        "ripple:getNextLedgerTimeResolution : found time resolution");
+        "xrpl::getNextLedgerTimeResolution : found time resolution");
 
     // This should never happen, but just as a precaution
     if (iter == std::end(kLEDGER_POSSIBLE_TIME_RESOLUTIONS))

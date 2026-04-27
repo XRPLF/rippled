@@ -7,7 +7,7 @@ namespace xrpl::test::jtx {
 struct BasicProp
 {
     virtual ~BasicProp() = default;
-    virtual std::unique_ptr<BasicProp>
+    [[nodiscard]] virtual std::unique_ptr<BasicProp>
     clone() const = 0;
     virtual bool
     assignable(BasicProp const*) const = 0;
@@ -23,7 +23,7 @@ struct PropType : BasicProp
     {
     }
 
-    std::unique_ptr<BasicProp>
+    [[nodiscard]] std::unique_ptr<BasicProp>
     clone() const override
     {
         return std::make_unique<PropType<T>>(t);

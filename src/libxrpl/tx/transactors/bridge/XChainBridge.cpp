@@ -347,7 +347,8 @@ onClaim(
     std::unordered_map<AccountID, std::uint32_t> const& signersList,
     beast::Journal j)
 {
-    XChainClaimAttestation::MatchFields toMatch{sendingAmount, wasLockingChainSend, std::nullopt};
+    XChainClaimAttestation::MatchFields const toMatch{
+        sendingAmount, wasLockingChainSend, std::nullopt};
     return claimHelper(attestations, view, toMatch, CheckDst::Ignore, quorum, signersList, j);
 }
 
@@ -528,7 +529,7 @@ struct FinalizeClaimHelperResult
 
     // Helper to check for overall success. If there wasn't overall success the
     // individual ters can be used to decide what needs to be done.
-    bool
+    [[nodiscard]] bool
     isTesSuccess() const
     {
         return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
@@ -536,7 +537,7 @@ struct FinalizeClaimHelperResult
             (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
-    TER
+    [[nodiscard]] TER
     ter() const
     {
         if (isTesSuccess())

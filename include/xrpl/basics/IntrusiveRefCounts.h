@@ -207,7 +207,7 @@ private:
         RefCountPair(CountType s, CountType w) noexcept;
 
         /** Convert back to the packed integer form. */
-        FieldType
+        [[nodiscard]] FieldType
         combinedValue() const noexcept;
 
         static constexpr CountType maxStrongValue =

@@ -19,8 +19,8 @@ private:
     std::string type_;
 
 public:
-    Memo(std::string const& data, std::string const& format, std::string const& type)
-        : data_(data), format_(format), type_(type)
+    Memo(std::string data, std::string format, std::string type)
+        : data_(std::move(data)), format_(std::move(format)), type_(std::move(type))
     {
     }
 
@@ -34,7 +34,7 @@ private:
     std::string s_;
 
 public:
-    MemoData(std::string const& s) : s_(s)
+    MemoData(std::string s) : s_(std::move(s))
     {
     }
 
@@ -48,7 +48,7 @@ private:
     std::string s_;
 
 public:
-    MemoFormat(std::string const& s) : s_(s)
+    MemoFormat(std::string s) : s_(std::move(s))
     {
     }
 
@@ -62,7 +62,7 @@ private:
     std::string s_;
 
 public:
-    MemoType(std::string const& s) : s_(s)
+    MemoType(std::string s) : s_(std::move(s))
     {
     }
 

@@ -673,7 +673,7 @@ struct NetworkHistory
         }
     }
 
-    std::shared_ptr<Ledger const>
+    [[nodiscard]] std::shared_ptr<Ledger const>
     lastLedger() const
     {
         return history.back();

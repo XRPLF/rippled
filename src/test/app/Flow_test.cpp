@@ -487,10 +487,10 @@ struct Flow_test : public beast::unit_test::suite
                 };
                 {
                     // BTC -> USD
-                    STPath p1({ipe(usd.issue())});
+                    STPath const p1({ipe(usd)});
                     paths.push_back(p1);
                     // BTC -> EUR -> USD
-                    STPath p2({ipe(eur.issue()), ipe(usd.issue())});
+                    STPath const p2({ipe(eur), ipe(usd)});
                     paths.push_back(p2);
                 }
 
@@ -913,8 +913,8 @@ struct Flow_test : public beast::unit_test::suite
             env.close();
             env(trust(bob, usd(20)));
 
-            STAmount tinyAmt1{usd.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
-            STAmount tinyAmt3{usd.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt1{usd, 9000000000000000ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt3{usd, 9000000000000003ll, -17, false, STAmount::unchecked{}};
 
             env(offer(gw, drops(9000000000), tinyAmt3));
             env(pay(alice, bob, tinyAmt1),
@@ -937,8 +937,8 @@ struct Flow_test : public beast::unit_test::suite
             env.close();
             env(trust(alice, usd(20)));
 
-            STAmount tinyAmt1{usd.issue(), 9000000000000000ll, -17, false, STAmount::unchecked{}};
-            STAmount tinyAmt3{usd.issue(), 9000000000000003ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt1{usd, 9000000000000000ll, -17, false, STAmount::unchecked{}};
+            STAmount const tinyAmt3{usd, 9000000000000003ll, -17, false, STAmount::unchecked{}};
 
             env(pay(gw, alice, tinyAmt1));
 
@@ -977,30 +977,30 @@ struct Flow_test : public beast::unit_test::suite
             pay(gw,
                 alice,
                 // 12.55....
-                STAmount{usd.issue(), std::uint64_t(1255555555555555ull), -14, false}));
+                STAmount{usd, std::uint64_t(1255555555555555ull), -14, false}));
 
         env(offer(
             gw,
             // 5.0...
-            STAmount{usd.issue(), std::uint64_t(5000000000000000ull), -15, false},
+            STAmount{usd, std::uint64_t(5000000000000000ull), -15, false},
             XRP(1000)));
 
         env(offer(
             gw,
             // .555...
-            STAmount{usd.issue(), std::uint64_t(5555555555555555ull), -16, false},
+            STAmount{usd, std::uint64_t(5555555555555555ull), -16, false},
             XRP(10)));
 
         env(offer(
             gw,
             // 4.44....
-            STAmount{usd.issue(), std::uint64_t(4444444444444444ull), -15, false},
+            STAmount{usd, std::uint64_t(4444444444444444ull), -15, false},
             XRP(.1)));
 
         env(offer(
             alice,
             // 17
-            STAmount{usd.issue(), std::uint64_t(1700000000000000ull), -14, false},
+            STAmount{usd, std::uint64_t(1700000000000000ull), -14, false},
             XRP(.001)));
 
         env(pay(alice, bob, XRP(10000)),

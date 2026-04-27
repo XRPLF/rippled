@@ -6,8 +6,8 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 #include <cstdint>
 #include <string>
@@ -262,7 +262,7 @@ class LendingHelpers_test : public beast::unit_test::suite
         auto const expectedOverpaymentManagementFee = Number{10};   // 10% of 100
         auto const expectedPrincipalPortion = Number{400};          // 1,000 - 100 - 500
 
-        auto const components = detail::computeOverpaymentComponents(
+        auto const components = xrpl::detail::computeOverpaymentComponents(
             iou,
             loanScale,
             overpayment,

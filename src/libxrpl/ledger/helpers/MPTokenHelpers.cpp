@@ -94,7 +94,11 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     // which represents 50% of 1,000,000,000
     if (auto const sle = view.read(keylet::mptIssuance(issuanceID));
         sle && sle->isFieldPresent(sfTransferFee))
-        return Rate{1'000'000'000u + (10'000 * sle->getFieldU16(sfTransferFee))};
+    {
+        auto const fee = sle->getFieldU16(sfTransferFee);
+        XRPL_ASSERT(fee <= maxTransferFee, "xrpl::transferRate : fee is too large");
+        return Rate{1'000'000'000u + (10'000 * fee)};
+    }
 
     return parityRate;
 }
@@ -497,7 +501,7 @@ canTransfer(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if ((sleIssuance->getFieldU32(sfFlags) & lsfMPTCanTransfer) == 0u)
+    if (!sleIssuance->isFlag(lsfMPTCanTransfer))
     {
         if (from != (*sleIssuance)[sfIssuer] && to != (*sleIssuance)[sfIssuer])
             return TER{tecNO_AUTH};

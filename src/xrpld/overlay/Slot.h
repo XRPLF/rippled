@@ -141,35 +141,35 @@ private:
     deletePeer(PublicKey const& validator, id_t id, bool erase);
 
     /** Get the time of the last peer selection round */
-    time_point const&
+    [[nodiscard]] time_point const&
     getLastSelected() const
     {
         return lastSelected_;
     }
 
     /** Return number of peers in state */
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     inState(PeerState state) const;
 
     /** Return number of peers not in state */
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     notInState(PeerState state) const;
 
     /** Return Slot's state */
-    SlotState
+    [[nodiscard]] SlotState
     getState() const
     {
         return state_;
     }
 
     /** Return selected peers */
-    std::set<id_t>
+    [[nodiscard]] std::set<id_t>
     getSelected() const;
 
     /** Get peers info. Return map of peer's state, count, squelch
      * expiration milsec, and last message time milsec.
      */
-    std::unordered_map<id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
+    [[nodiscard]] std::unordered_map<id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
     getPeers() const;
 
     /** Check if peers stopped relaying messages. If a peer is
@@ -214,14 +214,14 @@ private:
     std::unordered_set<id_t> considered_;
 
     // number of peers that reached kMAX_MESSAGE_THRESHOLD
-    std::uint16_t reachedThreshold_{};
+    std::uint16_t reachedThreshold_{0};
 
     // last time peers were selected, used to age the slot
     typename ClockType::time_point lastSelected_;
 
-    SlotState state_{};              // slot's state
-    SquelchHandler const& handler_;  // squelch/unsquelch handler
-    beast::Journal const journal_;   // logging
+    SlotState state_{SlotState::Counting};  // slot's state
+    SquelchHandler const& handler_;         // squelch/unsquelch handler
+    beast::Journal const journal_;          // logging
 
     // the maximum number of peers that should be selected as a validator
     // message source
@@ -409,7 +409,7 @@ Slot<ClockType>::deletePeer(PublicKey const& validator, id_t id, bool erase)
 
         JLOG(journal_.trace()) << "deletePeer: " << Slice(validator) << " " << id << " selected "
                                << (it->second.state == PeerState::Selected) << " considered "
-                               << (considered_.find(id) != considered_.end()) << " erase " << erase;
+                               << (considered_.contains(id)) << " erase " << erase;
         auto now = ClockType::now();
         if (it->second.state == PeerState::Selected)
         {
@@ -609,7 +609,7 @@ public:
     deleteIdlePeers();
 
     /** Return number of peers in state */
-    std::optional<std::uint16_t>
+    [[nodiscard]] std::optional<std::uint16_t>
     inState(PublicKey const& validator, PeerState state) const
     {
         auto const& it = slots_.find(validator);
@@ -619,7 +619,7 @@ public:
     }
 
     /** Return number of peers not in state */
-    std::optional<std::uint16_t>
+    [[nodiscard]] std::optional<std::uint16_t>
     notInState(PublicKey const& validator, PeerState state) const
     {
         auto const& it = slots_.find(validator);
@@ -629,7 +629,7 @@ public:
     }
 
     /** Return true if Slot is in state */
-    bool
+    [[nodiscard]] bool
     inState(PublicKey const& validator, SlotState state) const
     {
         auto const& it = slots_.find(validator);

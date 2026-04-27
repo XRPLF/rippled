@@ -33,8 +33,7 @@ private:
                        std::chrono::milliseconds avgLatency,
                        std::chrono::milliseconds peakLatency) {
             XRPL_ASSERT(
-                map_.find(jt) == map_.end(),
-                "xrpl::JobTypes::JobTypes::add : unique job type input");
+                !map_.contains(jt), "xrpl::JobTypes::JobTypes::add : unique job type input");
 
             [[maybe_unused]] auto const inserted =
                 map_.emplace(
@@ -113,7 +112,7 @@ public:
         return instance().get(jt).name();
     }
 
-    JobTypeInfo const&
+    [[nodiscard]] JobTypeInfo const&
     get(JobType jt) const
     {
         Map::const_iterator const iter(map_.find(jt));
@@ -125,37 +124,37 @@ public:
         return unknown_;
     }
 
-    JobTypeInfo const&
+    [[nodiscard]] JobTypeInfo const&
     getInvalid() const
     {
         return unknown_;
     }
 
-    Map::size_type
+    [[nodiscard]] Map::size_type
     size() const
     {
         return map_.size();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return map_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return map_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return map_.cend();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return map_.cend();

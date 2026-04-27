@@ -11,7 +11,7 @@
 
 namespace xrpl::RPC {
 
-LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app) : isOk_(false)
+LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
 {
     if (isAdmin)
     {

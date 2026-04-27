@@ -880,7 +880,7 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
+        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
                              ->getJson(JsonOptions::kNONE);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);
@@ -922,7 +922,7 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"].issue()))
+        auto const jvL = env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
                              ->getJson(JsonOptions::kNONE);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);
@@ -972,7 +972,7 @@ public:
             })",
             jv);
 
-        auto const jvL = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"].issue()))
+        auto const jvL = env.le(keylet::line(Account("alice").id(), Account("bob")["USD"]))
                              ->getJson(JsonOptions::kNONE);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jvL[it.memberName()]);

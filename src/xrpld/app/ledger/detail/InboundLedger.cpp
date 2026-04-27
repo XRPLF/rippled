@@ -249,10 +249,9 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
     {
         auto makeLedger = [&, this](Blob const& data) {
             JLOG(journal_.trace()) << "Ledger header found in fetch pack";
+            Rules const rules{app_.config().features};
             ledger_ = std::make_shared<Ledger>(
-                deserializePrefixedHeader(makeSlice(data)),
-                Rules{app_.config().features},
-                app_.getNodeFamily());
+                deserializePrefixedHeader(makeSlice(data)), rules, app_.getNodeFamily());
             if (ledger_->header().hash != hash_ || (seq_ != 0 && seq_ != ledger_->header().seq))
             {
                 // We know for a fact the ledger can never be acquired
@@ -555,7 +554,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
                 auto packet = std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
                 auto const& peerIds = peerSet_->getPeerIds();
-                std::for_each(peerIds.begin(), peerIds.end(), [this, &packet](auto id) {
+                std::ranges::for_each(peerIds, [this, &packet](auto id) {
                     if (auto p = app_.getOverlay().findPeerByShortID(id))
                     {
                         byHash_ = false;
@@ -757,14 +756,13 @@ InboundLedger::filterNodes(
 {
     // Sort nodes so that the ones we haven't recently
     // requested come before the ones we have.
-    auto dup = std::stable_partition(nodes.begin(), nodes.end(), [this](auto const& item) {
-        return recentNodes_.count(item.second) == 0;
-    });
+    auto dup = std::ranges::stable_partition(
+        nodes, [this](auto const& item) { return recentNodes_.count(item.second) == 0; });
 
     // If everything is a duplicate we don't want to send
     // any query at all except on a timeout where we need
     // to query everyone:
-    if (dup == nodes.begin())
+    if (dup.begin() == nodes.begin())
     {
         JLOG(journal_.trace()) << "filterNodes: all duplicates";
 
@@ -778,7 +776,7 @@ InboundLedger::filterNodes(
     {
         JLOG(journal_.trace()) << "filterNodes: pruning duplicates";
 
-        nodes.erase(dup, nodes.end());
+        nodes.erase(dup.begin(), dup.end());
     }
 
     std::size_t const limit = (reason == TriggerReason::reply) ? ReqNodesReply : ReqNodes;
@@ -804,8 +802,8 @@ InboundLedger::takeHeader(std::string const& data)
         return true;
 
     auto* f = &app_.getNodeFamily();
-    ledger_ = std::make_shared<Ledger>(
-        deserializeHeader(makeSlice(data)), Rules{app_.config().features}, *f);
+    Rules const rules{app_.config().features};
+    ledger_ = std::make_shared<Ledger>(deserializeHeader(makeSlice(data)), rules, *f);
     if (ledger_->header().hash != hash_ || (seq_ != 0 && seq_ != ledger_->header().seq))
     {
         JLOG(journal_.warn()) << "Acquire hash mismatch: " << ledger_->header().hash

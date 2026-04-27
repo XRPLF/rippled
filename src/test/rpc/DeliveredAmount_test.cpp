@@ -91,7 +91,7 @@ public:
 
     // After all the txns are checked, all the `numExpected` variables should be
     // zero. The `checkTxn` function decrements these variables.
-    bool
+    [[nodiscard]] bool
     checkExpectedCounters() const
     {
         return (numExpectedAvailable_ == 0) && (numExpectedNotSet_ == 0) &&

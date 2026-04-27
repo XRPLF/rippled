@@ -34,13 +34,13 @@ public:
         }
     }
 
-    std::string_view
+    [[nodiscard]] std::string_view
     user() const
     {
         return user_;
     }
 
-    std::string_view
+    [[nodiscard]] std::string_view
     forwarded_for() const
     {
         return fwdfor_;

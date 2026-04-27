@@ -79,7 +79,7 @@ public:
     setPositive() noexcept;
     void
     setNegative() noexcept;
-    bool
+    [[nodiscard]] bool
     isNegative() const noexcept;
 
     // add a digit
@@ -94,7 +94,7 @@ public:
     // Indicate round direction:  1 is up, -1 is down, 0 is even
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
-    int
+    [[nodiscard]] int
     round() const noexcept;
 
     // Modify the result to the correctly rounded value

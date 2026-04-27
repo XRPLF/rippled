@@ -81,7 +81,7 @@ private:
 
 protected:
     template <class... Args>
-    FlagsHelper(Args... args) : mask_(0)
+    FlagsHelper(Args... args)
     {
         setArgs(args...);
     }
@@ -112,7 +112,7 @@ private:
 
 public:
     template <class... Args>
-    Flags(Account const& account, Args... args) : FlagsHelper(args...), account_(account)
+    Flags(Account account, Args... args) : FlagsHelper(args...), account_(std::move(account))
     {
     }
 
@@ -128,7 +128,7 @@ private:
 
 public:
     template <class... Args>
-    Nflags(Account const& account, Args... args) : FlagsHelper(args...), account_(account)
+    Nflags(Account account, Args... args) : FlagsHelper(args...), account_(std::move(account))
     {
     }
 

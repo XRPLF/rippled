@@ -113,10 +113,10 @@ struct MPTInitDef
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = kMPT_DEX_FLAGS;
+    std::optional<std::uint32_t> mutableFlags = std::nullopt;
     bool authHolder = false;
     bool fund = false;
     bool close = true;
-    std::optional<std::uint32_t> mutableFlags = std::nullopt;
     std::optional<std::uint64_t> maxAmt = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
@@ -229,12 +229,12 @@ public:
     [[nodiscard]] bool
     isTransferFeePresent() const;
 
-    Account const&
+    [[nodiscard]] Account const&
     issuer() const
     {
         return issuer_;
     }
-    Account const&
+    [[nodiscard]] Account const&
     holder(std::string const& h) const;
 
     void
@@ -251,10 +251,10 @@ public:
         std::int64_t amount,
         std::optional<TER> err = std::nullopt);
 
-    PrettyAmount
+    [[nodiscard]] PrettyAmount
     mpt(std::int64_t amount) const;
 
-    MPTID const&
+    [[nodiscard]] MPTID const&
     issuanceID() const
     {
         if (!env_.test.BEAST_EXPECT(id_))
@@ -262,7 +262,7 @@ public:
         return *id_;  // NOLINT(bugprone-unchecked-optional-access)
     }
 
-    std::int64_t
+    [[nodiscard]] std::int64_t
     getBalance(Account const& account) const;
 
     MPT
@@ -298,7 +298,7 @@ private:
             env_.Require(Owners(issuer_, *arg.ownerCount));
         if (arg.holderCount)
         {
-            for (auto it : holders_)
+            for (auto const& it : holders_)
                 env_.Require(Owners(it.second, *arg.holderCount));
         }
         return err;
@@ -307,7 +307,7 @@ private:
     static std::unordered_map<std::string, Account>
     makeHolders(std::vector<Account> const& holders);
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getFlags(std::optional<Account> const& holder) const;
 };
 

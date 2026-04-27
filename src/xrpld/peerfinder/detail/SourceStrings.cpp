@@ -14,8 +14,8 @@ namespace xrpl::PeerFinder {
 class SourceStringsImp : public SourceStrings
 {
 public:
-    SourceStringsImp(std::string const& name, Strings const& strings)
-        : name_(name), strings_(strings)
+    SourceStringsImp(std::string name, Strings strings)
+        : name_(std::move(name)), strings_(std::move(strings))
     {
     }
 

@@ -59,48 +59,48 @@ public:
         PathAsset const& asset,
         AccountID const& issuer);
 
-    auto
+    [[nodiscard]] auto
     getNodeType() const;
 
-    bool
+    [[nodiscard]] bool
     isOffer() const;
 
-    bool
+    [[nodiscard]] bool
     isAccount() const;
 
-    bool
+    [[nodiscard]] bool
     hasIssuer() const;
 
-    bool
+    [[nodiscard]] bool
     hasCurrency() const;
 
-    bool
+    [[nodiscard]] bool
     hasMPT() const;
 
-    bool
+    [[nodiscard]] bool
     hasAsset() const;
 
-    bool
+    [[nodiscard]] bool
     isNone() const;
 
     // Nodes are either an account ID or a offer prefix. Offer prefixs denote a
     // class of offers.
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccountID() const;
 
-    PathAsset const&
+    [[nodiscard]] PathAsset const&
     getPathAsset() const;
 
-    Currency const&
+    [[nodiscard]] Currency const&
     getCurrency() const;
 
-    MPTID const&
+    [[nodiscard]] MPTID const&
     getMPTID() const;
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuerID() const;
 
-    bool
+    [[nodiscard]] bool
     isType(Type const& pe) const;
 
     bool
@@ -123,10 +123,10 @@ public:
 
     STPath(std::vector<STPathElement> p);
 
-    std::vector<STPathElement>::size_type
+    [[nodiscard]] std::vector<STPathElement>::size_type
     size() const;
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     void
@@ -136,24 +136,24 @@ public:
     void
     emplace_back(Args&&... args);
 
-    bool
+    [[nodiscard]] bool
     hasSeen(AccountID const& account, PathAsset const& asset, AccountID const& issuer) const;
 
-    Json::Value getJson(JsonOptions) const;
+    [[nodiscard]] Json::Value getJson(JsonOptions) const;
 
-    std::vector<STPathElement>::const_iterator
+    [[nodiscard]] std::vector<STPathElement>::const_iterator
     begin() const;
 
-    std::vector<STPathElement>::const_iterator
+    [[nodiscard]] std::vector<STPathElement>::const_iterator
     end() const;
 
     bool
     operator==(STPath const& t) const;
 
-    std::vector<STPathElement>::const_reference
+    [[nodiscard]] std::vector<STPathElement>::const_reference
     back() const;
 
-    std::vector<STPathElement>::const_reference
+    [[nodiscard]] std::vector<STPathElement>::const_reference
     front() const;
 
     STPathElement&
@@ -182,18 +182,18 @@ public:
     void
     add(Serializer& s) const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
     bool
     assembleAdd(STPath const& base, STPathElement const& tail);
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     // std::vector like interface:
@@ -203,16 +203,16 @@ public:
     std::vector<STPath>::reference
     operator[](std::vector<STPath>::size_type n);
 
-    std::vector<STPath>::const_iterator
+    [[nodiscard]] std::vector<STPath>::const_iterator
     begin() const;
 
-    std::vector<STPath>::const_iterator
+    [[nodiscard]] std::vector<STPath>::const_iterator
     end() const;
 
-    std::vector<STPath>::size_type
+    [[nodiscard]] std::vector<STPath>::size_type
     size() const;
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     void

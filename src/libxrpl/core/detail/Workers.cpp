@@ -17,10 +17,8 @@ Workers::Workers(
     int numberOfThreads)
     : callback_(callback)
     , perfLog_(perfLog)
-    , threadNames_(threadNames)
-    , allPaused_(true)
+    , threadNames_(std::move(threadNames))
     , semaphore_(0)
-    , numberOfThreads_(0)
     , activeCount_(0)
     , pauseCount_(0)
     , runningTaskCount_(0)
@@ -101,8 +99,12 @@ Workers::stop()
 {
     setNumberOfThreads(0);
 
+    // Wait until all workers have paused AND no tasks are actively running.
+    // Both conditions are needed because allPaused_ (mutex-protected) and
+    // runningTaskCount_ (atomic) are not synchronized under the same lock,
+    // so allPaused_ can momentarily be true while a task is still finishing.
     std::unique_lock<std::mutex> lk{mut_};
-    cv_.wait(lk, [this] { return allPaused_; });
+    cv_.wait(lk, [this] { return allPaused_ && numberOfCurrentlyRunningTasks() == 0; });
     lk.unlock();
 }
 
@@ -140,11 +142,8 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 //------------------------------------------------------------------------------
 
 Workers::Worker::Worker(Workers& workers, std::string threadName, int const instance)
-    : workers_{workers}
-    , threadName_{std::move(threadName)}
-    , instance_{instance}
-    , wakeCount_{0}
-    , shouldExit_{false}
+    : workers_{workers}, threadName_{std::move(threadName)}, instance_{instance}
+
 {
     thread_ = std::thread{&Workers::Worker::run, this};
 }

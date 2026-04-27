@@ -45,7 +45,7 @@ private:
 public:
     explicit MemoryFactory(Manager& manager);
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override;
 
     std::unique_ptr<Backend>
@@ -207,7 +207,7 @@ public:
     {
     }
 
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;

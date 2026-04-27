@@ -19,7 +19,7 @@ public:
     using Entry = std::pair<std::string, int>;
     using List = std::vector<Entry>;
 
-    List
+    [[nodiscard]] List
     getCounts(int minimumThreshold) const;
 
 public:
@@ -59,19 +59,19 @@ public:
             return --count_;
         }
 
-        int
+        [[nodiscard]] int
         getCount() const noexcept
         {
             return count_.load();
         }
 
-        Counter*
+        [[nodiscard]] Counter*
         getNext() const noexcept
         {
             return next_;
         }
 
-        std::string const&
+        [[nodiscard]] std::string const&
         getName() const noexcept
         {
             return name_;

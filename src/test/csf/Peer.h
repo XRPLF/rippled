@@ -87,13 +87,13 @@ struct Peer
         // Received delay is the time from receiving the message to actually
         // handling it.
         template <class M>
-        SimDuration
+        [[nodiscard]] SimDuration
         onReceive(M const&) const
         {
             return SimDuration{};
         }
 
-        SimDuration
+        [[nodiscard]] SimDuration
         onReceive(Validation const&) const
         {
             return recvValidation;
@@ -132,7 +132,7 @@ struct Peer
         {
         }
 
-        NetClock::time_point
+        [[nodiscard]] NetClock::time_point
         now() const
         {
             return p_.now();
@@ -352,7 +352,7 @@ struct Peer
 
     /** Create network connection
 
-        Creates a new outbound connection to another Peer if kNONE exists
+        Creates a new outbound connection to another Peer if none exists
 
         @param o The peer with the inbound connection
         @param dur The fixed delay for messages between the two Peers
@@ -527,7 +527,7 @@ struct Peer
         Json::Value const& consensusJson,
         bool const validating)
     {
-        schedule(delays.ledgerAccept, [=, this]() {
+        schedule(delays.ledgerAccept, [mode, result, prevLedger, closeResolution, this]() {
             bool const proposing = mode == ConsensusMode::Proposing;
             bool const consensusFail = result.state == ConsensusState::MovedOn;
 

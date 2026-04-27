@@ -123,7 +123,7 @@ private:
     uint256 root_;
     std::array<std::uint8_t, 33> generator_{};
 
-    uint256
+    [[nodiscard]] uint256
     calculateTweak(std::uint32_t seq) const
     {
         // We fill the buffer with the generator, the provided sequence
@@ -136,7 +136,7 @@ private:
         //      |            generator            | seq| cnt|
 
         std::array<std::uint8_t, 41> buf{};
-        std::copy(generator_.begin(), generator_.end(), buf.begin());
+        std::ranges::copy(generator_, buf.begin());
         copyUint32(buf.data() + 33, seq);
 
         // The odds that this loop executes more than once are negligible

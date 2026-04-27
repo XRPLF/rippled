@@ -125,7 +125,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             // accountSend, no deferredCredits
             ApplyViewImpl av(&*env.current(), tapNONE);
 
-            auto const iss = usdGw1.issue();
+            auto const iss = usdGw1;
             auto const startingAmount =
                 accountHolds(av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
             {
@@ -148,7 +148,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             // directSendNoFee, no deferredCredits
             ApplyViewImpl av(&*env.current(), tapNONE);
 
-            auto const iss = usdGw1.issue();
+            auto const iss = usdGw1;
             auto const startingAmount =
                 accountHolds(av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -168,7 +168,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = usdGw1.issue();
+            auto const iss = usdGw1;
             auto const startingAmount =
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -194,7 +194,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = usdGw1.issue();
+            auto const iss = usdGw1;
             auto const startingAmount =
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -209,7 +209,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = usdGw1.issue();
+            auto const iss = usdGw1;
             auto const startingAmount =
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -224,7 +224,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = usdGw1.issue();
+            auto const iss = usdGw1;
             auto const startingAmount =
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -239,7 +239,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = usdGw1.issue();
+            auto const iss = usdGw1;
             auto const startingAmount =
                 accountHolds(pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -292,7 +292,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         Account const alice("alice");
         auto const usd = gw["USD"];
 
-        auto const issue = usd.issue();
+        auto const issue = usd;
         STAmount const tinyAmt(
             issue, STAmount::cMinValue, STAmount::cMinOffset + 1, false, STAmount::unchecked{});
         STAmount const hugeAmt(
@@ -366,14 +366,14 @@ class PaymentSandbox_test : public beast::unit_test::suite
         // is typically passed to creditHookIOU, since it comes from a trust
         // line.
         Issue tlIssue = noIssue();
-        tlIssue.currency = usd.issue().currency;
+        tlIssue.currency = usd.currency;
 
         sb.creditHookIOU(gw.id(), alice.id(), {usd, 400}, {tlIssue, 600});
         sb.creditHookIOU(gw.id(), alice.id(), {usd, 100}, {tlIssue, 600});
 
         // Expect that the STAmount issuer returned by balanceHookIOU() is correct.
         STAmount const balance = sb.balanceHookIOU(gw.id(), alice.id(), {usd, 600});
-        BEAST_EXPECT(balance.getIssuer() == usd.issue().account);
+        BEAST_EXPECT(balance.getIssuer() == usd.account.id());
     }
 
 public:

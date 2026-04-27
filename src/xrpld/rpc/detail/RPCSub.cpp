@@ -42,9 +42,9 @@ public:
         , io_context_(ioContext)
         , jobQueue_(jobQueue)
         , url_(strUrl)
-        , username_(strUsername)
-        , password_(strPassword)
-        , j_(registry.getLogs().journal("RPCSub"))
+        , username_(std::move(strUsername))
+        , password_(std::move(strPassword))
+        , j_(registry.getJournal("RPCSub"))
         , logs_(registry.getLogs())
     {
         parsedURL pUrl;
@@ -89,7 +89,7 @@ public:
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
 
-        deque_.push_back(std::make_pair(seq_++, jvObj));
+        deque_.emplace_back(seq_++, jvObj);
 
         if (!sending_)
         {

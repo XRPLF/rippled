@@ -87,7 +87,9 @@ LedgerReplayTask::LedgerReplayTask(
           app,
           parameter.finishHash_,
           LedgerReplayParameters::kTASK_TIMEOUT,
-          {jtREPLAY_TASK, "LedReplTask", LedgerReplayParameters::kMAX_QUEUED_TASKS},
+          {.jobType = jtREPLAY_TASK,
+           .jobName = "LedReplTask",
+           .jobLimit = LedgerReplayParameters::kMAX_QUEUED_TASKS},
           app.getJournal("LedgerReplayTask"))
     , inboundLedgers_(inboundLedgers)
     , replayer_(replayer)

@@ -45,7 +45,7 @@ private:
             return valence_;
         }
 
-        int
+        [[nodiscard]] int
         valence() const
         {
             return valence_;
@@ -94,7 +94,7 @@ private:
     clock_type::time_point whenUpdate_;
 
     // Set to true when a database update is needed
-    bool needsUpdate_;
+    bool needsUpdate_{false};
 
 public:
     static constexpr int staticValence = 32;
@@ -108,22 +108,22 @@ public:
     ~Bootcache();
 
     /** Returns `true` if the cache is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     /** Returns the number of entries in the cache. */
-    map_type::size_type
+    [[nodiscard]] map_type::size_type
     size() const;
 
     /** IP::Endpoint iterators that traverse in decreasing valence. */
     /** @{ */
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const;
     void
     clear();

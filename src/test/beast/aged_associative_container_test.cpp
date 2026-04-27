@@ -113,7 +113,7 @@ public:
         // using std::true_type::type = propagate_on_container_swap :;
 
         template <class U>
-        struct Rebind
+        struct rebind
         {
             using other = AllocT<U>;
         };

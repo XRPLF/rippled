@@ -102,7 +102,7 @@ public:
     std::uint32_t
     clampFetchDepth(std::uint32_t fetchDepth) const override
     {
-        return deleteInterval_ ? std::min(fetchDepth, deleteInterval_) : fetchDepth;
+        return (deleteInterval_ != 0u) ? std::min(fetchDepth, deleteInterval_) : fetchDepth;
     }
 
     std::unique_ptr<NodeStore::Database>

@@ -27,7 +27,7 @@ public:
     }
 
     /** Returns `true` if the slot can become active. */
-    bool
+    [[nodiscard]] bool
     can_activate(Slot const& s) const
     {
         // Must be handshaked and in the right state
@@ -45,7 +45,7 @@ public:
     }
 
     /** Returns the number of attempts needed to bring us to the max. */
-    std::size_t
+    [[nodiscard]] std::size_t
     attempts_needed() const
     {
         if (attempts_ >= Tuning::MaxConnectAttempts)
@@ -54,14 +54,14 @@ public:
     }
 
     /** Returns the number of outbound connection attempts. */
-    std::size_t
+    [[nodiscard]] std::size_t
     attempts() const
     {
         return attempts_;
     }
 
     /** Returns the total number of outbound slots. */
-    int
+    [[nodiscard]] int
     out_max() const
     {
         return out_max_;
@@ -70,21 +70,21 @@ public:
     /** Returns the number of outbound peers assigned an open slot.
         Fixed peers do not count towards outbound slots used.
     */
-    int
+    [[nodiscard]] int
     out_active() const
     {
         return out_active_;
     }
 
     /** Returns the number of fixed connections. */
-    std::size_t
+    [[nodiscard]] std::size_t
     fixed() const
     {
         return fixed_;
     }
 
     /** Returns the number of active fixed connections. */
-    std::size_t
+    [[nodiscard]] std::size_t
     fixed_active() const
     {
         return fixed_active_;
@@ -102,42 +102,42 @@ public:
     }
 
     /** Returns the number of accepted connections that haven't handshaked. */
-    int
+    [[nodiscard]] int
     acceptCount() const
     {
         return acceptCount_;
     }
 
     /** Returns the number of connection attempts currently active. */
-    int
+    [[nodiscard]] int
     connectCount() const
     {
         return attempts_;
     }
 
     /** Returns the number of connections that are gracefully closing. */
-    int
+    [[nodiscard]] int
     closingCount() const
     {
         return closingCount_;
     }
 
     /** Returns the total number of inbound slots. */
-    int
+    [[nodiscard]] int
     in_max() const
     {
         return in_max_;
     }
 
     /** Returns the number of inbound peers assigned an open slot. */
-    int
+    [[nodiscard]] int
     inboundActive() const
     {
         return in_active_;
     }
 
     /** Returns the total number of active peers excluding fixed peers. */
-    int
+    [[nodiscard]] int
     totalActive() const
     {
         return in_active_ + out_active_;
@@ -146,7 +146,7 @@ public:
     /** Returns the number of unused inbound slots.
         Fixed peers do not deduct from inbound slots or count towards totals.
     */
-    int
+    [[nodiscard]] int
     inboundSlotsFree() const
     {
         if (in_active_ < in_max_)
@@ -157,7 +157,7 @@ public:
     /** Returns the number of unused outbound slots.
         Fixed peers do not deduct from outbound slots or count towards totals.
     */
-    int
+    [[nodiscard]] int
     outboundSlotsFree() const
     {
         if (out_active_ < out_max_)
@@ -169,7 +169,7 @@ public:
 
     /** Returns true if the slot logic considers us "connected" to the network.
      */
-    bool
+    [[nodiscard]] bool
     isConnectedToNetwork() const
     {
         // We will consider ourselves connected if we have reached
@@ -196,7 +196,7 @@ public:
     }
 
     /** Records the state for diagnostics. */
-    std::string
+    [[nodiscard]] std::string
     state_string() const
     {
         std::stringstream ss;
@@ -239,9 +239,13 @@ private:
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
+                    {
                         in_active_ += n;
+                    }
                     else
+                    {
                         out_active_ += n;
+                    }
                 }
                 active_ += n;
                 break;

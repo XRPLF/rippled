@@ -189,12 +189,12 @@ LedgerMaster::getPublishedLedgerAge()
     std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
     ret -= pubClose;
     ret = (ret > 0s) ? ret : 0s;
-    static std::chrono::seconds kLAST_RET = -1s;
+    static std::chrono::seconds lastRet = -1s;
 
-    if (ret != kLAST_RET)
+    if (ret != lastRet)
     {
         JLOG(journal_.trace()) << "Published ledger age is " << ret.count();
-        kLAST_RET = ret;
+        lastRet = ret;
     }
     return ret;
 }
@@ -214,12 +214,12 @@ LedgerMaster::getValidatedLedgerAge()
     std::chrono::seconds ret = app_.getTimeKeeper().closeTime().time_since_epoch();
     ret -= valClose;
     ret = (ret > 0s) ? ret : 0s;
-    static std::chrono::seconds kLAST_RET = -1s;
+    static std::chrono::seconds lastRet = -1s;
 
-    if (ret != kLAST_RET)
+    if (ret != lastRet)
     {
         JLOG(journal_.trace()) << "Validated ledger age is " << ret.count();
-        kLAST_RET = ret;
+        lastRet = ret;
     }
     return ret;
 }
@@ -451,7 +451,7 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
     bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
-    return ledgerHistory_.insert(std::move(ledger), validated);
+    return ledgerHistory_.insert(ledger, validated);
 }
 
 /** Apply held transactions to the open ledger
@@ -988,7 +988,7 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     std::uint32_t fee = 0;
     if (!fees.empty())
     {
-        std::sort(fees.begin(), fees.end());
+        std::ranges::sort(fees);
         if (auto stream = journal_.debug())
         {
             std::stringstream s;

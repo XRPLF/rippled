@@ -207,13 +207,14 @@ public:
         env(signers(
                 alice,
                 1,
-                std::vector<Signer>{{bogie_, 1}, {demon_, 1}, {ghost_, 1}, {haunt_, 1}, {jinni_, 1},
-                                    {phase_, 1}, {shade_, 1}, {spook_, 1}, {spare, 1},  {acc10_, 1},
-                                    {acc11_, 1}, {acc12_, 1}, {acc13_, 1}, {acc14_, 1}, {acc15_, 1},
-                                    {acc16_, 1}, {acc17_, 1}, {acc18_, 1}, {acc19_, 1}, {acc20_, 1},
-                                    {acc21_, 1}, {acc22_, 1}, {acc23_, 1}, {acc24_, 1}, {acc25_, 1},
-                                    {acc26_, 1}, {acc27_, 1}, {acc28_, 1}, {acc29_, 1}, {acc30_, 1},
-                                    {acc31_, 1}, {acc32_, 1}, {acc33_, 1}}),
+                std::vector<Signer>{
+                    {bogie_, 1}, {demon_, 1}, {ghost_, 1}, {haunt_, 1}, {jinni_, 1}, {phase_, 1},
+                    {shade_, 1}, {spook_, 1}, {spare, 1},  {acc10_, 1}, {acc11_, 1}, {acc12_, 1},
+                    {acc13_, 1}, {acc14_, 1}, {acc15_, 1}, {acc16_, 1}, {acc17_, 1}, {acc18_, 1},
+                    {acc19_, 1}, {acc20_, 1}, {acc21_, 1}, {acc22_, 1}, {acc23_, 1}, {acc24_, 1},
+                    {acc25_, 1}, {acc26_, 1}, {acc27_, 1}, {acc28_, 1}, {acc29_, 1}, {acc30_, 1},
+                    {acc31_, 1}, {acc32_, 1}, {acc33_, 1},
+                }),
             Ter(temMALFORMED));
         // clang-format on
         env.close();
@@ -362,7 +363,7 @@ public:
         env.Require(Owners(alice, 1));
 
         Msig phantoms{bogie_, demon_};
-        std::reverse(phantoms.signers.begin(), phantoms.signers.end());
+        std::ranges::reverse(phantoms.signers);
         std::uint32_t const aliceSeq = env.Seq(alice);
         env(noop(alice),
             phantoms,

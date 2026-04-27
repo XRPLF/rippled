@@ -123,7 +123,7 @@ ApplyContext::checkInvariantsHelper(
         // call each check's finalizer to see that it passes
         if (!std::all_of(finalizers.cbegin(), finalizers.cend(), [](auto const& b) { return b; }))
         {
-            JLOG(journal.fatal()) << "Transaction has failed one or more invariants: "
+            JLOG(journal.fatal()) << "Transaction has failed one or more global invariants: "
                                   << to_string(tx.getJson(JsonOptions::kNONE));
 
             return failInvariantCheck(result);

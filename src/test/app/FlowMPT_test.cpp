@@ -1679,18 +1679,18 @@ struct FlowMPT_test : public beast::unit_test::suite
                 int expGwXRP;  // whole XRP excluding the fees
                 std::uint8_t expOffersGw;
                 bool lastGwBuyUSD;
-                std::uint8_t
+                [[nodiscard]] std::uint8_t
                 expOffersBob() const
                 {
                     return expBobSellUSD == 0 ? 1 : 0;
                 }
-                std::uint8_t
+                [[nodiscard]] std::uint8_t
                 expOffersEd() const
                 {
                     // partially crossed if < 100
                     return expEdBuyUSD < 100 ? 1 : 0;
                 }
-                std::uint8_t
+                [[nodiscard]] std::uint8_t
                 expOffersDan() const
                 {
                     return expDanBuyUSD == 0 ? 1 : 0;
@@ -1850,7 +1850,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 int expGwXRP;  // whole XRP excluding the fees
                 std::uint8_t expOffersGw;
                 bool lastGwBuyUSD;
-                std::uint8_t
+                [[nodiscard]] std::uint8_t
                 expOffersBob() const
                 {
                     // partially crossed if < 100
@@ -1958,7 +1958,7 @@ struct FlowMPT_test : public beast::unit_test::suite
                 int expGwXRP;
                 std::uint8_t expOffersGw;
                 bool lastGwBuyUSD;
-                std::uint8_t
+                [[nodiscard]] std::uint8_t
                 expOffersBob() const
                 {
                     return expBobSellUSD > 0 && expBobSellUSD < 100 ? 1 : 0;

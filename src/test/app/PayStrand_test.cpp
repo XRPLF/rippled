@@ -117,13 +117,13 @@ class ElementComboIter
     // some tests)
     bool const allowCompound_ = false;
 
-    bool
+    [[nodiscard]] bool
     has(SB s) const
     {
         return (state_ & (1 << safe_cast<int>(s))) != 0;
     }
 
-    bool
+    [[nodiscard]] bool
     hasAny(std::initializer_list<SB> sb) const
     {
         for (auto const s : sb)
@@ -134,7 +134,7 @@ class ElementComboIter
         return false;
     }
 
-    size_t
+    [[nodiscard]] size_t
     count(std::initializer_list<SB> sb) const
     {
         size_t result = 0;
@@ -152,7 +152,7 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     valid() const
     {
         return (allowCompound_ || !(has(SB::Acc) && hasAny({SB::Cur, SB::Iss}))) &&
@@ -263,7 +263,7 @@ struct ExistingElementPool
     size_t nextAvailCurrency = 0;
 
     using ResetState = std::tuple<size_t, size_t>;
-    ResetState
+    [[nodiscard]] ResetState
     getResetState() const
     {
         return std::make_tuple(nextAvailAccount, nextAvailCurrency);
@@ -588,7 +588,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     /*deliver*/ xrpIssue(),
                     /*limitQuality*/ std::nullopt,
-                    /*sendMaxIssue*/ eur.issue(),
+                    /*sendMaxIssue*/ eur,
                     path,
                     true,
                     OfferCrossing::no,
@@ -606,7 +606,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     /*deliver*/ xrpIssue(),
                     /*limitQuality*/ std::nullopt,
-                    /*sendMaxIssue*/ eur.issue(),
+                    /*sendMaxIssue*/ eur,
                     path,
                     true,
                     OfferCrossing::no,
@@ -639,7 +639,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 eur,
-                usd.issue(),
+                usd,
                 STPath(),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -650,7 +650,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 eur,
-                usd.issue(),
+                usd,
                 STPath({ipe(eur)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -662,7 +662,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 carol["USD"],
-                usd.issue(),
+                usd,
                 STPath({iape(carol)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -684,7 +684,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 xrpIssue(),
-                usd.issue(),
+                usd,
                 STPath({STPathElement{
                     STPathElement::typeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
                 tesSUCCESS,
@@ -696,7 +696,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 eur,
-                usd.issue(),
+                usd,
                 STPath({cpe(xrpCurrency())}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -718,7 +718,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         xrpAccount(),
                         XRP,
                         std::nullopt,
-                        usd.issue(),
+                        usd,
                         STPath(),
                         true,
                         OfferCrossing::no,
@@ -764,7 +764,7 @@ struct PayStrand_test : public beast::unit_test::suite
             }
 
             // Create an offer with the same in/out issue
-            test(env, eur, usd.issue(), STPath({ipe(usd), ipe(eur)}), temBAD_PATH);
+            test(env, eur, usd, STPath({ipe(usd), ipe(eur)}), temBAD_PATH);
 
             // Path element with type zero
             test(
@@ -780,7 +780,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(env, usd, std::nullopt, STPath({ape(gw), ape(carol)}), temBAD_PATH_LOOP);
 
             // The same offer can't appear more than once on a path
-            test(env, eur, usd.issue(), STPath({ipe(eur), ipe(usd), ipe(eur)}), temBAD_PATH_LOOP);
+            test(env, eur, usd, STPath({ipe(eur), ipe(usd), ipe(eur)}), temBAD_PATH_LOOP);
         }
 
         {
@@ -902,7 +902,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 bob,
                 XRP,
                 std::nullopt,
-                usd.issue(),
+                usd,
                 path,
                 false,
                 OfferCrossing::no,
@@ -910,8 +910,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 std::nullopt,
                 env.app().getJournal("Flow"));
             BEAST_EXPECT(isTesSuccess(ter));
-            BEAST_EXPECT(equal(
-                strand, D{alice, gw, usdC}, B{usd.issue(), xrpIssue(), std::nullopt}, XRPS{bob}));
+            BEAST_EXPECT(
+                equal(strand, D{alice, gw, usdC}, B{usd, xrpIssue(), std::nullopt}, XRPS{bob}));
         }
     }
 
@@ -1069,7 +1069,7 @@ struct PayStrand_test : public beast::unit_test::suite
         Env env(*this, features);
         env.fund(XRP(10000), alice, bob, gw);
 
-        STAmount sendMax{usd.issue(), 100, 1};
+        STAmount const sendMax{usd, 100, 1};
         STAmount const noAccountAmount{Issue{usd.currency, noAccount()}, 100, 1};
         STAmount const deliver;
         AccountID const srcAcc = alice.id();

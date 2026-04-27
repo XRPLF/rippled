@@ -25,7 +25,7 @@ protected:
         return cont_;
     }
 
-    cont_type const&
+    [[nodiscard]] cont_type const&
     cont() const
     {
         return cont_;
@@ -39,14 +39,14 @@ public:
     using const_iterator = typename cont_type::const_iterator;
 
     /** Returns `true` if the container is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return cont_.empty();
     }
 
     /** Returns the number of items in the container. */
-    size_type
+    [[nodiscard]] size_type
     size() const
     {
         return cont_.size();
@@ -54,25 +54,25 @@ public:
 
     /** Returns forward iterators for traversal. */
     /** @{ */
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return cont_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return cont_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return cont_.cend();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return cont_.cend();

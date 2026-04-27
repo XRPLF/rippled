@@ -631,7 +631,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tecEXPIRED, true};
     }
 
-    bool const bOpenLedger = sb.open();
     bool crossed = false;
 
     if (isTesSuccess(result))
@@ -720,7 +719,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << format_amount(placeOffer.out);
         }
 
-        if (result == tecFAILED_PROCESSING && bOpenLedger)
+        if (result == tecFAILED_PROCESSING && sb.open())
             result = telFAILED_PROCESSING;
 
         if (!isTesSuccess(result))
@@ -730,10 +729,10 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         }
 
         XRPL_ASSERT(
-            saTakerGets.issue() == placeOffer.in.issue(),
+            saTakerGets.asset() == placeOffer.in.asset(),
             "xrpl::OfferCreate::applyGuts : taker gets issue match");
         XRPL_ASSERT(
-            saTakerPays.issue() == placeOffer.out.issue(),
+            saTakerPays.asset() == placeOffer.out.asset(),
             "xrpl::OfferCreate::applyGuts : taker pays issue match");
 
         if (takerAmount != placeOffer)

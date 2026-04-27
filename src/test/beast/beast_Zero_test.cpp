@@ -38,7 +38,7 @@ private:
         {
         }
 
-        int
+        [[nodiscard]] int
         signum() const
         {
             return value;

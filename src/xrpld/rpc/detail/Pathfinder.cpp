@@ -723,9 +723,10 @@ Pathfinder::getBestPaths(
 bool
 Pathfinder::issueMatchesOrigin(Asset const& asset)
 {
-    bool const matchingAsset = (PathAsset(asset) == srcPathAsset_);
-    bool const matchingAccount = isXRP(asset) || (srcIssuer_ && asset.getIssuer() == *srcIssuer_) ||
+    bool const matchingAsset = (asset == srcPathAsset_);
+    bool const matchingAccount = isXRP(asset) || (srcIssuer_ && asset.getIssuer() == srcIssuer_) ||
         asset.getIssuer() == srcAccount_;
+
     return matchingAsset && matchingAccount;
 }
 
@@ -769,13 +770,13 @@ Pathfinder::getPathsOut(
     {
         count = app_.getOrderBookDB().getBookSize(asset, domain_);
 
-        pathAsset.visit(
-            [&](Currency const& currency) {
+        asset.visit(
+            [&](Issue const&) {
                 if (auto const lines = rLCache_->getRippleLines(account, direction))
                 {
                     for (auto const& rspEntry : *lines)
                     {
-                        if (currency != rspEntry.getLimit().get<Issue>().currency)
+                        if (pathAsset.get<Currency>() != rspEntry.getLimit().get<Issue>().currency)
                         {
                         }
                         else if (
@@ -787,13 +788,15 @@ Pathfinder::getPathsOut(
                         }
                         else if (isDstAsset && dstAccount == rspEntry.getAccountIDPeer())
                         {
-                            count += 10000;
+                            count += 10000;  // count a path to the destination extra
                         }
                         else if (rspEntry.getNoRipplePeer())
                         {
+                            // This probably isn't a useful path out
                         }
                         else if (rspEntry.getFreezePeer())
                         {
+                            // Not a useful path out
                         }
                         else
                         {
@@ -802,12 +805,12 @@ Pathfinder::getPathsOut(
                     }
                 }
             },
-            [&](MPTID const& mptid) {
+            [&](MPTIssue const&) {
                 if (auto const mpts = rLCache_->getMPTs(account))
                 {
                     for (auto const& mpt : *mpts)
                     {
-                        if (mptid != mpt.getMptID())
+                        if (pathAsset.get<MPTID>() != mpt.getMptID())
                         {
                         }
                         else if (mpt.isZeroBalance() || mpt.isMaxedOut())
@@ -981,9 +984,9 @@ Pathfinder::addLink(
     std::function<bool(void)> const& continueCallback)
 {
     auto const& pathEnd = currentPath.empty() ? source_ : currentPath.back();
+    auto const& uEndPathAsset = pathEnd.getPathAsset();
     auto const& uEndIssuer = pathEnd.getIssuerID();
     auto const& uEndAccount = pathEnd.getAccountID();
-    PathAsset const uEndPathAsset = pathEnd.getPathAsset();
     bool const bOnXRP = isXRP(uEndPathAsset);
 
     // Does pathfinding really need to get this to
@@ -1180,7 +1183,7 @@ Pathfinder::addLink(
                         if (continueCallback && !continueCallback())
                             return;
                         // Add accounts to incompletePaths
-                        STPathElement pathElement(
+                        STPathElement const pathElement(
                             STPathElement::typeAccount, it->account, uEndPathAsset, it->account);
                         incompletePaths.assembleAdd(currentPath, pathElement);
                         ++it;

@@ -145,7 +145,7 @@ PeerImp::PeerImp(
     , remoteAddress_(slot->remoteEndpoint())
     , overlay_(overlay)
     , inbound_(true)
-    , protocol_(protocol)
+    , protocol_(std::move(protocol))
     , tracking_(Tracking::Unknown)
     , trackingTime_(clock_type::now())
     , publicKey_(publicKey)
@@ -365,9 +365,8 @@ PeerImp::sendTxQueue()
     if (!txQueue_.empty())
     {
         protocol::TMHaveTransactions ht;
-        std::for_each(txQueue_.begin(), txQueue_.end(), [&](auto const& hash) {
-            ht.add_hashes(hash.data(), hash.size());
-        });
+        std::ranges::for_each(
+            txQueue_, [&](auto const& hash) { ht.add_hashes(hash.data(), hash.size()); });
         JLOG(pJournal_.trace()) << "sendTxQueue " << txQueue_.size();
         txQueue_.clear();
         send(std::make_shared<Message>(ht, protocol::mtHAVE_TRANSACTIONS));
@@ -1187,7 +1186,7 @@ PeerImp::onMessageBegin(
 {
     auto const name = protocolMessageName(type);
     loadEvent_ = app_.getJobQueue().makeLoadEvent(jtPEER, name);
-    fee_ = {Resource::feeTrivialPeer, name};
+    fee_ = {.fee = Resource::feeTrivialPeer, .context = name};
 
     auto const category =
         TrafficCount::categorize(*m, static_cast<protocol::MessageType>(type), true);

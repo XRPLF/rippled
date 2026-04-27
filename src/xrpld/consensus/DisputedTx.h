@@ -40,21 +40,21 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(Tx const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
-        : yays_(0), nays_(0), ourVote_(ourVote), tx_(tx), j_(j)
+    DisputedTx(Tx tx, bool ourVote, std::size_t numPeers, beast::Journal j)
+        : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
     }
 
     //! The unique id/hash of the disputed transaction.
-    TxID_t const&
+    [[nodiscard]] TxID_t const&
     ID() const
     {
         return tx_.id();
     }
 
     //! Our vote on whether the transaction should be included.
-    bool
+    [[nodiscard]] bool
     getOurVote() const
     {
         return ourVote_;
@@ -62,7 +62,7 @@ public:
 
     //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
-    bool
+    [[nodiscard]] bool
     stalled(
         ConsensusParms const& p,
         bool proposing,
@@ -127,7 +127,7 @@ public:
     }
 
     //! The disputed transaction.
-    Tx const&
+    [[nodiscard]] Tx const&
     tx() const
     {
         return tx_;
@@ -173,7 +173,7 @@ public:
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
     //! JSON representation of dispute, used for debugging
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const;
 
 private:

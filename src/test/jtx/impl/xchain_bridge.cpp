@@ -424,17 +424,19 @@ XChainBridgeObjects::XChainBridgeObjects()
         }
         return r;
     }())
-    , quorum(kUT_XCHAIN_DEFAULT_QUORUM)
     , reward(XRP(1))
-    , split_reward_quorum(divide(reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), reward.asset()))
+    , split_reward_quorum(divide(reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), reward.get<Issue>()))
     , split_reward_everyone(
-          divide(reward, STAmount(kUT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.asset()))
+          divide(reward, STAmount(kUT_XCHAIN_DEFAULT_NUM_SIGNERS), reward.get<Issue>()))
     , tiny_reward(drops(37))
     , tiny_reward_split(
-          (divide(tiny_reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.asset())))
+          (divide(tiny_reward, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.get<Issue>())))
     , tiny_reward_remainder(
           tiny_reward -
-          multiply(tiny_reward_split, STAmount(kUT_XCHAIN_DEFAULT_QUORUM), tiny_reward.asset()))
+          multiply(
+              tiny_reward_split,
+              STAmount(kUT_XCHAIN_DEFAULT_QUORUM),
+              tiny_reward.get<Issue>()))
     , one_xrp(XRP(1))
     , xrp_dust(divide(one_xrp, STAmount(10000), one_xrp.get<Issue>()))
 {

@@ -59,15 +59,15 @@ public:
     createObject(NodeObjectType type, Blob&& data, uint256 const& hash);
 
     /** Returns the type of this object. */
-    NodeObjectType
+    [[nodiscard]] NodeObjectType
     getType() const;
 
     /** Returns the hash of the data. */
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getHash() const;
 
     /** Returns the underlying data. */
-    Blob const&
+    [[nodiscard]] Blob const&
     getData() const;
 
 private:
