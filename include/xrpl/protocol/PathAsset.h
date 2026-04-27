@@ -24,17 +24,17 @@ public:
     }
 
     template <ValidPathAsset T>
-    constexpr bool
+    [[nodiscard]] constexpr bool
     holds() const;
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     isXRP() const;
 
     template <ValidPathAsset T>
     T const&
     get() const;
 
-    constexpr std::variant<Currency, MPTID> const&
+    [[nodiscard]] constexpr std::variant<Currency, MPTID> const&
     value() const;
 
     // Custom, generic visit implementation
@@ -100,9 +100,13 @@ operator==(PathAsset const& lhs, PathAsset const& rhs)
     return std::visit(
         []<ValidPathAsset TLhs, ValidPathAsset TRhs>(TLhs const& lhs_, TRhs const& rhs_) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
+            {
                 return lhs_ == rhs_;
+            }
             else
+            {
                 return false;
+            }
         },
         lhs.value(),
         rhs.value());

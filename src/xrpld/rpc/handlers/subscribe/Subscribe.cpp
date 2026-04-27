@@ -4,13 +4,25 @@
 #include <xrpld/rpc/RPCSub.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/NetworkOPs.h>
+
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -65,7 +77,7 @@ doSubscribe(RPC::JsonContext& context)
                 ispSub =
                     context.netOps.addRpcSub(strUrl, std::dynamic_pointer_cast<InfoSub>(rspSub));
             }
-            catch (std::runtime_error& ex)
+            catch (std::runtime_error const& ex)
             {
                 return RPC::make_param_error(ex.what());
             }

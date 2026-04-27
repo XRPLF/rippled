@@ -11,9 +11,7 @@
 
 #include <functional>
 
-namespace xrpl {
-
-namespace detail {
+namespace xrpl::detail {
 
 // Work over SSL
 class WorkSSL : public WorkBase<WorkSSL>, public std::enable_shared_from_this<WorkSSL>
@@ -37,7 +35,7 @@ public:
         endpoint_type const& lastEndpoint,
         bool lastStatus,
         callback_type cb);
-    ~WorkSSL() = default;
+    ~WorkSSL() override = default;
 
 private:
     stream_type&
@@ -53,6 +51,4 @@ private:
     onHandshake(error_code const& ec);
 };
 
-}  // namespace detail
-
-}  // namespace xrpl
+}  // namespace xrpl::detail

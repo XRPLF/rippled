@@ -1,13 +1,15 @@
 #include <xrpl/core/PeerReservationTable.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/Wallet.h>
 
 #include <algorithm>
 #include <iterator>
 #include <mutex>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -32,9 +34,9 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
     {
         std::lock_guard const lock(mutex_);
         list.reserve(table_.size());
-        std::copy(table_.begin(), table_.end(), std::back_inserter(list));
+        std::ranges::copy(table_, std::back_inserter(list));
     }
-    std::sort(list.begin(), list.end());
+    std::sort(list.begin(), list.end());  // NOLINT(modernize-use-ranges)
     return list;
 }
 
@@ -98,7 +100,7 @@ PeerReservationTable::erase(PublicKey const& nodeId)
 
     std::lock_guard const lock(mutex_);
 
-    auto const it = table_.find({nodeId});
+    auto const it = table_.find({.nodeId = nodeId});
     if (it != table_.end())
     {
         previous = *it;

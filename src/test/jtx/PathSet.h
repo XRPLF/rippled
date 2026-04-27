@@ -6,8 +6,7 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /** Count offer
  */
@@ -89,7 +88,7 @@ public:
     push_back(jtx::Account const& acc);
     Path&
     push_back(STPathElement const& pe);
-    Json::Value
+    [[nodiscard]] Json::Value
     json() const;
 
 private:
@@ -167,7 +166,7 @@ public:
     {
         addHelper(std::forward<First>(first), std::forward<Rest>(rest)...);
     }
-    Json::Value
+    [[nodiscard]] Json::Value
     json() const
     {
         Json::Value v;
@@ -186,5 +185,4 @@ private:
     }
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

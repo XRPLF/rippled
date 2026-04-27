@@ -10,26 +10,26 @@ Checks: "-*,
   bugprone-chained-comparison,
   bugprone-compare-pointer-to-member-virtual-function,
   bugprone-copy-constructor-init,
-  # bugprone-crtp-constructor-accessibility, # has issues
+  bugprone-crtp-constructor-accessibility,
   bugprone-dangling-handle,
   bugprone-dynamic-static-initializers,
-  # bugprone-empty-catch, # has issues
+  bugprone-empty-catch,
   bugprone-fold-init-type,
-  # bugprone-forward-declaration-namespace, # has issues
-  # bugprone-inaccurate-erase,
-  # bugprone-inc-dec-in-conditions,
-  # bugprone-incorrect-enable-if,
-  # bugprone-incorrect-roundings,
-  # bugprone-infinite-loop,
-  # bugprone-integer-division,
+  bugprone-forward-declaration-namespace,
+  bugprone-inaccurate-erase,
+  bugprone-inc-dec-in-conditions,
+  bugprone-incorrect-enable-if,
+  bugprone-incorrect-roundings,
+  bugprone-infinite-loop,
+  bugprone-integer-division,
   bugprone-lambda-function-name,
-  # bugprone-macro-parentheses, # has issues
+  bugprone-macro-parentheses,
   bugprone-macro-repeated-side-effects,
   bugprone-misplaced-operator-in-strlen-in-alloc,
   bugprone-misplaced-pointer-arithmetic-in-alloc,
   bugprone-misplaced-widening-cast,
   bugprone-move-forwarding-reference,
-  # bugprone-multi-level-implicit-pointer-conversion, # has issues
+  bugprone-multi-level-implicit-pointer-conversion,
   bugprone-multiple-new-in-one-expression,
   bugprone-multiple-statement-macro,
   bugprone-no-escape,
@@ -39,13 +39,13 @@ Checks: "-*,
   bugprone-pointer-arithmetic-on-polymorphic-object,
   bugprone-posix-return,
   bugprone-redundant-branch-condition,
-  # bugprone-reserved-identifier, # has issues
-  # bugprone-return-const-ref-from-parameter, # has issues
+  bugprone-reserved-identifier,
+  bugprone-return-const-ref-from-parameter,
   bugprone-shared-ptr-array-mismatch,
   bugprone-signal-handler,
   bugprone-signed-char-misuse,
   bugprone-sizeof-container,
-  # bugprone-sizeof-expression, # has issues
+  bugprone-sizeof-expression,
   bugprone-spuriously-wake-up-functions,
   bugprone-standalone-empty,
   bugprone-string-constructor,
@@ -62,18 +62,18 @@ Checks: "-*,
   bugprone-suspicious-string-compare,
   bugprone-suspicious-stringview-data-usage,
   bugprone-swapped-arguments,
-  # bugprone-switch-missing-default-case, # has issues
+  bugprone-switch-missing-default-case,
   bugprone-terminating-continue,
   bugprone-throw-keyword-missing,
   bugprone-too-small-loop-variable,
-  # bugprone-unchecked-optional-access, # see https://github.com/XRPLF/rippled/pull/6502
+  bugprone-unchecked-optional-access,
   bugprone-undefined-memory-manipulation,
   bugprone-undelegated-constructor,
   bugprone-unhandled-exception-at-new,
   bugprone-unhandled-self-assignment,
   bugprone-unique-ptr-array-mismatch,
   bugprone-unsafe-functions,
-  # bugprone-use-after-move, # has issues
+  bugprone-use-after-move,
   bugprone-unused-raii,
   bugprone-unused-return-value,
   bugprone-unused-local-non-trivial-variable,
@@ -90,15 +90,29 @@ Checks: "-*,
   misc-const-correctness,
   misc-definitions-in-headers,
   misc-header-include-cycle,
+  misc-include-cleaner,
   misc-misplaced-const,
   misc-redundant-expression,
   misc-static-assert,
   misc-throw-by-value-catch-by-reference,
   misc-unused-alias-decls,
   misc-unused-using-decls,
-  modernize-deprecated-headers,
+  modernize-concat-nested-namespaces,
   modernize-make-shared,
   modernize-make-unique,
+  modernize-pass-by-value,
+  modernize-type-traits,
+  modernize-use-designated-initializers,
+  modernize-use-emplace,
+  modernize-use-equals-default,
+  modernize-use-equals-delete,
+  modernize-use-nodiscard,
+  modernize-use-override,
+  modernize-use-ranges,
+  modernize-use-starts-ends-with,
+  modernize-use-std-numbers,
+  modernize-use-using,
+  modernize-deprecated-headers,
   llvm-namespace-comment,
   performance-faster-string-find,
   performance-for-range-copy,
@@ -108,53 +122,38 @@ Checks: "-*,
   performance-move-constructor-init,
   performance-no-automatic-move,
   performance-trivially-destructible,
-  # readability-avoid-nested-conditional-operator, # has issues
-  # readability-avoid-return-with-void-value, # has issues
-  # readability-braces-around-statements, # has issues
-  # readability-const-return-type, # has issues
-  # readability-container-contains, # has issues
-  # readability-container-size-empty, # has issues
-  # readability-convert-member-functions-to-static, # has issues
+  readability-avoid-nested-conditional-operator,
+  readability-avoid-return-with-void-value,
+  readability-braces-around-statements,
+  readability-const-return-type,
+  readability-container-contains,
+  readability-container-size-empty,
+  readability-convert-member-functions-to-static,
   readability-duplicate-include,
-  # readability-else-after-return, # has issues
-  # readability-enum-initial-value, # has issues
-  # readability-implicit-bool-conversion, # has issues
-  # readability-make-member-function-const, # has issues
-  # readability-math-missing-parentheses, # has issues
+  readability-else-after-return,
+  readability-enum-initial-value,
+  readability-implicit-bool-conversion,
+  readability-make-member-function-const,
+  readability-math-missing-parentheses,
   readability-misleading-indentation,
   readability-non-const-parameter,
-  # readability-redundant-casting, # has issues
-  # readability-redundant-declaration, # has issues
-  # readability-redundant-inline-specifier, # has issues
-  # readability-redundant-member-init, # has issues
+  readability-redundant-casting,
+  readability-redundant-declaration,
+  readability-redundant-inline-specifier,
+  readability-redundant-member-init,
   readability-redundant-string-init,
   readability-reference-to-constructed-temporary,
-  # readability-simplify-boolean-expr, # has issues
-  # readability-static-definition-in-anonymous-namespace, # has issues
-  # readability-suspicious-call-argument, # has issues
+  readability-simplify-boolean-expr,
+  readability-static-definition-in-anonymous-namespace,
+  readability-suspicious-call-argument,
   readability-use-std-min-max
   "
 # ---
 # other checks that have issues that need to be resolved:
 #
-# misc-include-cleaner,
-#
 # readability-inconsistent-declaration-parameter-name, # in this codebase this check will break a lot of arg names
 # readability-static-accessed-through-instance,        # this check is probably unnecessary. it makes the code less readable
 # readability-identifier-naming,                       # https://github.com/XRPLF/rippled/pull/6571
-#
-# modernize-concat-nested-namespaces,
-# modernize-pass-by-value,
-# modernize-type-traits,
-# modernize-use-designated-initializers,
-# modernize-use-emplace,
-# modernize-use-equals-default,
-# modernize-use-equals-delete,
-# modernize-use-override,
-# modernize-use-ranges,
-# modernize-use-starts-ends-with,
-# modernize-use-std-numbers,
-# modernize-use-using,
 # ---
 #
 CheckOptions:
@@ -194,7 +193,7 @@ CheckOptions:
   #   readability-identifier-naming.FunctionIgnoredRegexp: ".*tag_invoke.*"
   bugprone-unsafe-functions.ReportMoreUnsafeFunctions: true
   bugprone-unused-return-value.CheckedReturnTypes: ::std::error_code;::std::error_condition;::std::errc
-#   misc-include-cleaner.IgnoreHeaders: '.*/(detail|impl)/.*;.*(expected|unexpected).*;.*ranges_lower_bound\.h;time.h;stdlib.h;__chrono/.*;fmt/chrono.h;boost/uuid/uuid_hash.hpp'
+  misc-include-cleaner.IgnoreHeaders: ".*/(detail|impl)/.*;.*fwd\\.h(pp)?;time.h;stdlib.h;sqlite3.h;netinet/in\\.h;sys/resource\\.h;sys/sysinfo\\.h;linux/sysinfo\\.h;__chrono/.*;bits/.*;_abort\\.h;boost/uuid/uuid_hash.hpp;boost/beast/core/flat_buffer\\.hpp;boost/beast/http/field\\.hpp;boost/beast/http/dynamic_body\\.hpp;boost/beast/http/message\\.hpp;boost/beast/http/read\\.hpp;boost/beast/http/write\\.hpp;openssl/obj_mac\\.h"
 #
 HeaderFilterRegex: '^.*/(test|xrpl|xrpld)/.*\.(h|hpp)$'
 ExcludeHeaderFilterRegex: '^.*/protocol_autogen/.*\.(h|hpp)$'

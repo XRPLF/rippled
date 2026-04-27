@@ -6,6 +6,8 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 
+#include <utility>
+
 namespace xrpl {
 namespace detail {
 
@@ -87,8 +89,7 @@ protected:
 
 }  // namespace detail
 
-namespace test {
-namespace jtx {
+namespace test::jtx {
 
 // JSON generators
 
@@ -111,7 +112,7 @@ private:
 
 public:
     template <class... Args>
-    flags(Account const& account, Args... args) : flags_helper(args...), account_(account)
+    flags(Account account, Args... args) : flags_helper(args...), account_(std::move(account))
     {
     }
 
@@ -127,7 +128,7 @@ private:
 
 public:
     template <class... Args>
-    nflags(Account const& account, Args... args) : flags_helper(args...), account_(account)
+    nflags(Account account, Args... args) : flags_helper(args...), account_(std::move(account))
     {
     }
 
@@ -135,6 +136,6 @@ public:
     operator()(Env& env) const;
 };
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl
