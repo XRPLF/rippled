@@ -357,17 +357,25 @@ private:
             if (iParams >= 4)
             {
                 if (auto const limit = jvParseUInt(jvParams[3u]))
+                {
                     jvRequest[jss::limit] = *limit;
+                }
                 else
+                {
                     return RPC::invalid_field_error(jss::limit);
+                }
             }
 
             if (iParams >= 5)
             {
                 if (auto const offset = jvParseInt(jvParams[4u]))
+                {
                     jvRequest[jss::offset] = *offset;
+                }
                 else
+                {
                     return RPC::invalid_field_error(jss::offset);
+                }
             }
         }
 
@@ -416,7 +424,9 @@ private:
                 jvRequest[jss::limit] = *limit;
             }
             else
+            {
                 return RPC::invalid_field_error(jss::limit);
+            }
         }
 
         if (jvParams.size() == 6)
@@ -439,9 +449,13 @@ private:
         if (input.find_first_not_of("0123456789") == std::string::npos)
         {
             if (auto const seq = jvParseUInt(jvParams[0u]))
+            {
                 jvRequest["can_delete"] = *seq;
+            }
             else
+            {
                 return RPC::invalid_field_error(jss::can_delete);
+            }
         }
         else
         {
@@ -462,9 +476,13 @@ private:
         {
             jvRequest[jss::ip] = ip;
             if (auto const port = jvParseUInt(jvParams[1u]))
+            {
                 jvRequest[jss::port] = *port;
+            }
             else
+            {
                 return RPC::invalid_field_error(jss::port);
+            }
             return jvRequest;
         }
 
@@ -476,9 +494,13 @@ private:
 
             Json::Value const portJson(std::string{ip, colon + 1});
             if (auto const port = jvParseUInt(portJson))
+            {
                 jvRequest[jss::port] = *port;
+            }
             else
+            {
                 return RPC::invalid_field_error(jss::port);
+            }
 
             return jvRequest;
         }
@@ -561,12 +583,16 @@ private:
     {
         Json::Value jvRequest(Json::objectValue);
 
-        if (jvParams.size())
+        if (jvParams.size() != 0u)
         {
             if (auto const minCount = jvParseUInt(jvParams[0u]))
+            {
                 jvRequest[jss::min_count] = *minCount;
+            }
             else
+            {
                 return RPC::invalid_field_error(jss::min_count);
+            }
         }
 
         return jvRequest;
@@ -1195,9 +1221,13 @@ private:
         Json::Value jvRequest{Json::objectValue};
 
         if (auto const start = jvParseUInt(jvParams[0u]))
+        {
             jvRequest[jss::start] = *start;
+        }
         else
+        {
             return RPC::invalid_field_error(jss::start);
+        }
 
         return jvRequest;
     }
