@@ -14,7 +14,7 @@ public:
     using ptr = std::shared_ptr<Group>;
 
     /** Returns the name of this group, for diagnostics. */
-    virtual std::string const&
+    [[nodiscard]] virtual std::string const&
     name() const = 0;
 };
 

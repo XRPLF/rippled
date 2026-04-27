@@ -113,7 +113,7 @@ public:
         return instance().get(jt).name();
     }
 
-    JobTypeInfo const&
+    [[nodiscard]] JobTypeInfo const&
     get(JobType jt) const
     {
         Map::const_iterator const iter(m_map.find(jt));
@@ -125,37 +125,37 @@ public:
         return m_unknown;
     }
 
-    JobTypeInfo const&
+    [[nodiscard]] JobTypeInfo const&
     getInvalid() const
     {
         return m_unknown;
     }
 
-    Map::size_type
+    [[nodiscard]] Map::size_type
     size() const
     {
         return m_map.size();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return m_map.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return m_map.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return m_map.cend();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return m_map.cend();

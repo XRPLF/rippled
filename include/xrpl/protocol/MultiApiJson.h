@@ -156,7 +156,7 @@ struct MultiApiJson
         { return visitor(*self, std::forward<decltype(args)>(args)...); };
     }
 
-    auto
+    [[nodiscard]] auto
     visit() const
     {
         return [self = this](auto... args)
@@ -176,7 +176,7 @@ struct MultiApiJson
     }
 
     template <typename... Args>
-    auto
+    [[nodiscard]] auto
     visit(Args... args) const -> std::invoke_result_t<visitor_t, MultiApiJson const&, Args...>
         requires(sizeof...(args) > 0) &&
         requires { visitor(*this, std::forward<decltype(args)>(args)...); }

@@ -25,7 +25,7 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const = 0;
 
-    virtual std::optional<Blob>
+    [[nodiscard]] virtual std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const = 0;
 };
 

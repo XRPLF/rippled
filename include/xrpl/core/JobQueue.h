@@ -7,7 +7,13 @@
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
-#include <boost/coroutine/all.hpp>
+// Include only the specific Boost.Coroutine2 headers actually used here.
+// Avoid `boost/coroutine2/all.hpp` because it transitively pulls in
+// `boost/context/pooled_fixedsize_stack.hpp`, whose `.malloc()` / `.free()`
+// member calls on `boost::pool` collide with MSVC's `_CRTDBG_MAP_ALLOC` macros
+// in Debug builds (see cmake/XrplCompiler.cmake).
+#include <boost/context/protected_fixedsize_stack.hpp>
+#include <boost/coroutine2/coroutine.hpp>
 
 #include <set>
 

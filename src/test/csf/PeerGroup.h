@@ -56,13 +56,13 @@ public:
         return peers_.end();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return peers_.begin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return peers_.end();
@@ -87,7 +87,7 @@ public:
             peers_.end();
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return peers_.size();
