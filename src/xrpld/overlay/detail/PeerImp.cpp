@@ -16,6 +16,7 @@
 #include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
+#include <xrpld/overlay/detail/PeerSpanNames.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
@@ -1863,6 +1864,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
+    using namespace telemetry;
+    auto span = SpanGuard::span(TraceCategory::Peer, seg::peer, peer_span::op::proposalReceive);
+    span.setAttribute(peer_span::attr::id, static_cast<int64_t>(id_));
+
     protocol::TMProposeSet const& set = *m;
 
     auto const sig = makeSlice(set.signature());
@@ -1889,6 +1894,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
     auto const isTrusted = app_.getValidators().trusted(publicKey);
+    span.setAttribute(peer_span::attr::proposalTrusted, isTrusted);
 
     // If the operator has specified that untrusted proposals be dropped then
     // this happens here I.e. before further wasting CPU verifying the signature
@@ -2459,6 +2465,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidatorListCollection> const& m
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 {
+    using namespace telemetry;
+    auto valSpan =
+        SpanGuard::span(TraceCategory::Peer, seg::peer, peer_span::op::validationReceive);
+    valSpan.setAttribute(peer_span::attr::id, static_cast<int64_t>(id_));
+
     if (m->validation().size() < 50)
     {
         JLOG(p_journal_.warn()) << "Validation: Too small";
@@ -2481,6 +2492,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 false);
             val->setSeen(closeTime);
         }
+        valSpan.setAttribute(
+            peer_span::attr::validationLedgerHash, to_string(val->getLedgerHash()).c_str());
+        valSpan.setAttribute(peer_span::attr::validationFull, val->isFull());
 
         if (!isCurrent(
                 app_.getValidations().parms(),
@@ -2497,6 +2511,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // suppression for 30 seconds to avoid doing a relatively expensive
         // lookup every time a spam packet is received
         auto const isTrusted = app_.getValidators().trusted(val->getSignerPublic());
+        valSpan.setAttribute(peer_span::attr::validationTrusted, isTrusted);
 
         // If the operator has specified that untrusted validations be
         // dropped then this happens here I.e. before further wasting CPU

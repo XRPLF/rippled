@@ -24,10 +24,11 @@ services:
     image: otel/opentelemetry-collector-contrib:0.121.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
-      - "4317:4317" # OTLP gRPC receiver
-      - "4318:4318" # OTLP HTTP receiver (xrpld sends traces here)
-      - "8889:8889" # Prometheus metrics (spanmetrics)
-      - "13133:13133" # Health check endpoint
+      - "4317:4317" # OTLP gRPC
+      - "4318:4318" # OTLP HTTP
+      - "8125:8125/udp" # StatsD UDP (beast::insight metrics)
+      - "8889:8889" # Prometheus metrics (spanmetrics + statsd)
+      - "13133:13133" # Health check
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro

@@ -6,6 +6,7 @@
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/ledger/detail/LedgerSpanNames.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/misc/Transaction.h>
@@ -55,6 +56,7 @@
 #include <xrpl/shamap/SHAMap.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
 #include <boost/icl/concept/interval_set.hpp>
 
@@ -449,6 +451,10 @@ LedgerMaster::fixIndex(LedgerIndex ledgerIndex, LedgerHash const& ledgerHash)
 bool
 LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 {
+    using namespace telemetry;
+    auto span = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::store);
+    span.setAttribute(ledger_span::attr::seq, static_cast<int64_t>(ledger->header().seq));
+
     bool const validated = ledger->header().validated;
     // Returns true if we already had the ledger
     return mLedgerHistory.insert(ledger, validated);
@@ -964,6 +970,11 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         JLOG(m_journal.trace()) << "Only " << tvc << " validations for " << ledger->header().hash;
         return;
     }
+
+    using namespace telemetry;
+    auto valSpan = SpanGuard::span(TraceCategory::Ledger, seg::ledger, ledger_span::op::validate);
+    valSpan.setAttribute(ledger_span::attr::seq, static_cast<int64_t>(ledger->header().seq));
+    valSpan.setAttribute(ledger_span::attr::validations, static_cast<int64_t>(tvc));
 
     JLOG(m_journal.info()) << "Advancing accepted ledger to " << ledger->header().seq
                            << " with >= " << minVal << " validations";

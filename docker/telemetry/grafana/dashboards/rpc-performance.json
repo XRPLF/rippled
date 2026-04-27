@@ -10,6 +10,7 @@
   "panels": [
     {
       "title": "RPC Request Rate by Command",
+      "description": "Per-second rate of RPC command executions, broken down by command name (e.g. server_info, submit). Calculated as rate(traces_span_metrics_calls_total{span_name=~\"rpc.command.*\"}) over a 5m window, grouped by the xrpl.rpc.command span attribute.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -17,13 +18,19 @@
         "x": 0,
         "y": 0
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{xrpl_rpc_command=~\"$command\", exported_instance=~\"$node\", span_name=~\"rpc.command.*\"}[5m]))",
-          "legendFormat": "{{xrpl_rpc_command}}"
+          "expr": "sum by (xrpl_rpc_command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m]))",
+          "legendFormat": "{{xrpl_rpc_command}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -42,6 +49,7 @@
     },
     {
       "title": "RPC Latency P95 by Command",
+      "description": "95th percentile response time for each RPC command. Computed from the spanmetrics duration histogram using histogram_quantile(0.95) over rpc.command.* spans, grouped by xrpl.rpc.command. High values indicate slow commands that may need optimization.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -49,13 +57,19 @@
         "x": 12,
         "y": 0
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, xrpl_rpc_command) (rate(traces_span_metrics_duration_milliseconds_bucket{xrpl_rpc_command=~\"$command\", exported_instance=~\"$node\", span_name=~\"rpc.command.*\"}[5m])))",
-          "legendFormat": "P95 {{xrpl_rpc_command}}"
+          "expr": "histogram_quantile(0.95, sum by (le, xrpl_rpc_command, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
+          "legendFormat": "P95 {{xrpl_rpc_command}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -74,6 +88,7 @@
     },
     {
       "title": "RPC Error Rate",
+      "description": "Percentage of RPC commands that completed with an error status, per command. Calculated as (error calls / total calls) * 100, where errors have status_code=STATUS_CODE_ERROR. Thresholds: green < 1%, yellow 1-5%, red > 5%.",
       "type": "bargauge",
       "gridPos": {
         "h": 8,
@@ -81,13 +96,19 @@
         "x": 0,
         "y": 8
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{xrpl_rpc_command=~\"$command\", exported_instance=~\"$node\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m])) / sum by (xrpl_rpc_command) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) * 100",
-          "legendFormat": "{{xrpl_rpc_command}}"
+          "expr": "sum by (xrpl_rpc_command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m])) / sum by (xrpl_rpc_command, exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) * 100",
+          "legendFormat": "{{xrpl_rpc_command}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
@@ -115,6 +136,7 @@
     },
     {
       "title": "RPC Latency Heatmap",
+      "description": "Distribution of RPC command response times across histogram buckets. Shows the density of requests at each latency level over time. Each cell represents the count of requests that fell into that duration bucket in a 5m window. Useful for spotting bimodal latency patterns.",
       "type": "heatmap",
       "gridPos": {
         "h": 8,
@@ -122,16 +144,181 @@
         "x": 12,
         "y": 8
       },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "yAxis": {
+          "axisLabel": "Duration (ms)"
+        }
+      },
       "targets": [
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{xrpl_rpc_command=~\"$command\", exported_instance=~\"$node\", span_name=~\"rpc.command.*\"}[5m])) by (le)",
+          "expr": "sum(increase(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])) by (le)",
           "legendFormat": "{{le}}",
           "format": "heatmap"
         }
       ]
+    },
+    {
+      "title": "Overall RPC Throughput",
+      "description": "Aggregate RPC throughput showing two layers of the request pipeline. rpc.request is the outer HTTP handler (ServerHandler.cpp:271) that accepts incoming connections. rpc.process is the inner processing layer (ServerHandler.cpp:573) that parses and dispatches. A gap between the two indicates requests being queued or rejected before processing.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=\"rpc.request\"}[5m]))",
+          "legendFormat": "rpc.request / Sec [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=\"rpc.process\"}[5m]))",
+          "legendFormat": "rpc.process / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "custom": {
+            "axisLabel": "Requests / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "RPC Success vs Error",
+      "description": "Aggregate rate of successful vs failed RPC commands across all command types. Success = status_code UNSET (OpenTelemetry default for OK spans). Error = status_code STATUS_CODE_ERROR. A sustained error rate warrants investigation via per-command breakdown above.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_UNSET\"}[5m]))",
+          "legendFormat": "Success [{{exported_instance}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\", status_code=\"STATUS_CODE_ERROR\"}[5m]))",
+          "legendFormat": "Error [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "custom": {
+            "axisLabel": "Commands / Sec",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Top Commands by Volume",
+      "description": "Top 10 most frequently called RPC commands by total invocation count over the last 5 minutes. Uses topk(10, increase(calls_total)) to rank commands. Helps identify the hottest API endpoints driving load on the node.",
+      "type": "bargauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(10, sum by (xrpl_rpc_command, exported_instance) (increase(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=~\"rpc.command.*\"}[5m])))",
+          "legendFormat": "{{xrpl_rpc_command}} [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "WebSocket Message Rate",
+      "description": "Rate of incoming WebSocket RPC messages processed by the server. Sourced from the rpc.ws_message span (ServerHandler.cpp:384). Only active when clients connect via WebSocket instead of HTTP. Zero is normal if only HTTP RPC is in use.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_rpc_command=~\"$command\", span_name=\"rpc.ws_message\"}[5m]))",
+          "legendFormat": "WS Messages / Sec [{{exported_instance}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      }
     }
   ],
   "schemaVersion": 39,
@@ -141,7 +328,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
@@ -184,6 +371,6 @@
     "from": "now-1h",
     "to": "now"
   },
-  "title": "rippled RPC Performance",
+  "title": "RPC Performance",
   "uid": "rippled-rpc-perf"
 }
