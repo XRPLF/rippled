@@ -668,12 +668,17 @@ details.
   thresholds based on `currentAgreeTime`. Threshold values come from
   `ConsensusParms::avalancheCutoffs` (defined in `ConsensusParms.h`).
   The escalation states are `ConsensusParms::AvalancheState::{init, mid, late, stuck}`.
-  Record the effective threshold as an attribute on the span:
-  - `xrpl.consensus.threshold_percent` — current threshold from `avalancheCutoffs`
+  Record the effective threshold and close time consensus state:
+  - `xrpl.consensus.threshold_percent` — consensus threshold (avCT_CONSENSUS_PCT = 75%)
+  - `xrpl.consensus.close_time_threshold` — close time voting threshold (avCT_CONSENSUS_PCT)
+  - `xrpl.consensus.have_close_time_consensus` — whether close time consensus was reached
+  - `xrpl.consensus.avalanche_threshold` — the avalanche-escalated weight from `getNeededWeight()`
+
+  These are recorded on both `consensus.update_positions` and `consensus.check` spans.
 
 **Key modified files**:
 
-- `src/xrpld/consensus/Consensus.h` — `haveConsensus()` method
+- `src/xrpld/consensus/Consensus.h` — `haveConsensus()` and `updateOurPositions()` methods
 
 ---
 

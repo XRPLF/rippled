@@ -100,6 +100,15 @@ inline constexpr auto establishCount = join(xrplConsensus, makeStr("establish_co
 /// "xrpl.consensus.proposers_agreed"
 inline constexpr auto proposersAgreed = join(xrplConsensus, makeStr("proposers_agreed"));
 
+// Avalanche threshold attributes
+/// "xrpl.consensus.avalanche_threshold"
+inline constexpr auto avalancheThreshold = join(xrplConsensus, makeStr("avalanche_threshold"));
+/// "xrpl.consensus.close_time_threshold"
+inline constexpr auto closeTimeThreshold = join(xrplConsensus, makeStr("close_time_threshold"));
+/// "xrpl.consensus.have_close_time_consensus"
+inline constexpr auto haveCloseTimeConsensus =
+    join(xrplConsensus, makeStr("have_close_time_consensus"));
+
 // Consensus check attributes
 /// "xrpl.consensus.agree_count"
 inline constexpr auto agreeCount = join(xrplConsensus, makeStr("agree_count"));
