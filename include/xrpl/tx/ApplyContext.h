@@ -49,7 +49,7 @@ public:
         return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
-    ApplyView const&
+    [[nodiscard]] ApplyView const&
     view() const
     {
         return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
@@ -62,7 +62,7 @@ public:
         return *view_;  // NOLINT(bugprone-unchecked-optional-access) view_ emplaced in constructor
     }
 
-    ApplyFlags const&
+    [[nodiscard]] ApplyFlags const&
     flags() const
     {
         return flags_;

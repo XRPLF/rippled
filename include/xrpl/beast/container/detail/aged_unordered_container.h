@@ -149,7 +149,7 @@ private:
             return *this;
         }
 
-        Hash const&
+        [[nodiscard]] Hash const&
         hash_function() const
         {
             return *this;
@@ -195,7 +195,7 @@ private:
             return *this;
         }
 
-        KeyEqual const&
+        [[nodiscard]] KeyEqual const&
         key_eq() const
         {
             return *this;
@@ -348,7 +348,7 @@ private:
             return *this;
         }
 
-        ValueHash const&
+        [[nodiscard]] ValueHash const&
         value_hash() const
         {
             return *this;
@@ -360,7 +360,7 @@ private:
             return ValueHash::hash_function();
         }
 
-        Hash const&
+        [[nodiscard]] Hash const&
         hash_function() const
         {
             return ValueHash::hash_function();
@@ -372,7 +372,7 @@ private:
             return *this;
         }
 
-        KeyValueEqual const&
+        [[nodiscard]] KeyValueEqual const&
         key_value_equal() const
         {
             return *this;
@@ -384,7 +384,7 @@ private:
             return key_value_equal().key_eq();
         }
 
-        KeyEqual const&
+        [[nodiscard]] KeyEqual const&
         key_eq() const
         {
             return key_value_equal().key_eq();
@@ -396,7 +396,7 @@ private:
             return beast::detail::empty_base_optimization<ElementAllocator>::member();
         }
 
-        ElementAllocator const&
+        [[nodiscard]] ElementAllocator const&
         alloc() const
         {
             return beast::detail::empty_base_optimization<ElementAllocator>::member();
@@ -433,7 +433,7 @@ private:
             m_vec.clear();
         }
 
-        size_type
+        [[nodiscard]] size_type
         max_bucket_count() const
         {
             return m_vec.max_size();
@@ -445,7 +445,7 @@ private:
             return m_max_load_factor;
         }
 
-        float const&
+        [[nodiscard]] float const&
         max_load_factor() const
         {
             return m_max_load_factor;

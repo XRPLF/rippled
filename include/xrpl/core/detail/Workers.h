@@ -106,7 +106,7 @@ public:
 
         @note This function is not thread-safe.
     */
-    int
+    [[nodiscard]] int
     getNumberOfThreads() const noexcept;
 
     /** Set the desired number of threads.
@@ -141,7 +141,7 @@ public:
         While this function is thread-safe, the value may not stay
         accurate for very long. It's mainly for diagnostic purposes.
     */
-    int
+    [[nodiscard]] int
     numberOfCurrentlyRunningTasks() const noexcept;
 
     //--------------------------------------------------------------------------

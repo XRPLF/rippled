@@ -40,7 +40,7 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override;
 
-    std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override;
 
 private:
@@ -164,7 +164,7 @@ public:
         JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
     }
 
-    std::set<Peer::id_t> const&
+    [[nodiscard]] std::set<Peer::id_t> const&
     getPeerIds() const override
     {
         static std::set<Peer::id_t> const emptyPeers;

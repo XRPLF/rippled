@@ -180,7 +180,7 @@ public:
     ~SlabAllocator() = default;
 
     /** Returns the size of the memory block this allocator returns. */
-    constexpr std::size_t
+    [[nodiscard]] constexpr std::size_t
     size() const noexcept
     {
         return itemSize_;

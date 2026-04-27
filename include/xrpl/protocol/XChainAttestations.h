@@ -58,7 +58,7 @@ struct AttestationBase
     operator=(AttestationBase const&) = default;
 
     // verify that the signature attests to the data.
-    bool
+    [[nodiscard]] bool
     verify(STXChainBridge const& bridge) const;
 
 protected:
@@ -285,7 +285,7 @@ struct XChainClaimAttestation
 
     explicit XChainClaimAttestation(Json::Value const& v);
 
-    AttestationMatch
+    [[nodiscard]] AttestationMatch
     match(MatchFields const& rhs) const;
 
     [[nodiscard]] STObject
@@ -336,7 +336,7 @@ struct XChainCreateAccountAttestation
     [[nodiscard]] STObject
     toSTObject() const;
 
-    AttestationMatch
+    [[nodiscard]] AttestationMatch
     match(MatchFields const& rhs) const;
 
     friend bool
@@ -379,10 +379,10 @@ public:
     [[nodiscard]] STArray
     toSTArray() const;
 
-    typename AttCollection::const_iterator
+    [[nodiscard]] typename AttCollection::const_iterator
     begin() const;
 
-    typename AttCollection::const_iterator
+    [[nodiscard]] typename AttCollection::const_iterator
     end() const;
 
     typename AttCollection::iterator
@@ -395,13 +395,13 @@ public:
     std::size_t
     erase_if(F&& f);
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
-    AttCollection const&
+    [[nodiscard]] AttCollection const&
     attestations() const;
 
     template <class T>

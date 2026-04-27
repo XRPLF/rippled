@@ -107,21 +107,21 @@ public:
        Amount of currency computed coming into the Step the last time the
        step ran in reverse.
     */
-    virtual std::optional<EitherAmount>
+    [[nodiscard]] virtual std::optional<EitherAmount>
     cachedIn() const = 0;
 
     /**
        Amount of currency computed coming out of the Step the last time the
        step ran in reverse.
     */
-    virtual std::optional<EitherAmount>
+    [[nodiscard]] virtual std::optional<EitherAmount>
     cachedOut() const = 0;
 
     /**
        If this step is DirectStepI (IOU->IOU direct step), return the src
        account. This is needed for checkNoRipple.
     */
-    virtual std::optional<AccountID>
+    [[nodiscard]] virtual std::optional<AccountID>
     directStepSrcAcct() const
     {
         return std::nullopt;
@@ -129,7 +129,7 @@ public:
 
     // for debugging. Return the src and dst accounts for a direct step
     // For XRP endpoints, one of src or dst will be the root account
-    virtual std::optional<std::pair<AccountID, AccountID>>
+    [[nodiscard]] virtual std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const
     {
         return std::nullopt;
@@ -143,13 +143,13 @@ public:
        @param sb view with the strand's state of balances and offers
        @param dir reverse -> called from rev(); forward -> called from fwd().
     */
-    virtual DebtDirection
+    [[nodiscard]] virtual DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const = 0;
 
     /**
         If this step is a DirectStepI, return the quality in of the dst account.
     */
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     lineQualityIn(ReadView const&) const
     {
         return QUALITY_ONE;
@@ -168,7 +168,7 @@ public:
              rather than `qualityUpperBound`. It could still differ from the actual quality, but
              except for "dust" amounts, it should be a good estimate for the actual quality.
     */
-    virtual std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] virtual std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const = 0;
 
     /** Get QualityFunction. Used in one path optimization where
@@ -178,7 +178,7 @@ public:
      * All steps, except for BookStep have the default
      * implementation.
      */
-    virtual std::pair<std::optional<QualityFunction>, DebtDirection>
+    [[nodiscard]] virtual std::pair<std::optional<QualityFunction>, DebtDirection>
     getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const;
 
     /** Return the number of offers consumed or partially consumed the last time
@@ -188,7 +188,7 @@ public:
         entire payment, it is only the number the last time it ran. Offers may
         be partially consumed multiple times during a payment.
      */
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     offersUsed() const
     {
         return 0;
@@ -197,7 +197,7 @@ public:
     /**
        If this step is a BookStep, return the book.
     */
-    virtual std::optional<Book>
+    [[nodiscard]] virtual std::optional<Book>
     bookStepBook() const
     {
         return std::nullopt;
@@ -206,7 +206,7 @@ public:
     /**
        Check if amount is zero
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     isZero(EitherAmount const& out) const = 0;
 
     /**
@@ -214,7 +214,7 @@ public:
        A strand that has additional liquidity may be marked inactive if a step
        has consumed too many offers.
      */
-    virtual bool
+    [[nodiscard]] virtual bool
     inactive() const
     {
         return false;
@@ -223,13 +223,13 @@ public:
     /**
        Return true if Out of lhs == Out of rhs.
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     equalOut(EitherAmount const& lhs, EitherAmount const& rhs) const = 0;
 
     /**
        Return true if In of lhs == In of rhs.
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     equalIn(EitherAmount const& lhs, EitherAmount const& rhs) const = 0;
 
     /**
@@ -278,10 +278,10 @@ public:
     }
 
 private:
-    virtual std::string
+    [[nodiscard]] virtual std::string
     logString() const = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     equal(Step const& rhs) const = 0;
 };
 
@@ -457,19 +457,19 @@ public:
         return {EitherAmount(r.first), EitherAmount(r.second)};
     }
 
-    bool
+    [[nodiscard]] bool
     isZero(EitherAmount const& out) const override
     {
         return get<TOut>(out) == beast::zero;
     }
 
-    bool
+    [[nodiscard]] bool
     equalOut(EitherAmount const& lhs, EitherAmount const& rhs) const override
     {
         return get<TOut>(lhs) == get<TOut>(rhs);
     }
 
-    bool
+    [[nodiscard]] bool
     equalIn(EitherAmount const& lhs, EitherAmount const& rhs) const override
     {
         return get<TIn>(lhs) == get<TIn>(rhs);
