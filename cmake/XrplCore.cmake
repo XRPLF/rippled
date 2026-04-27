@@ -263,6 +263,8 @@ if(xrpld)
             "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
         )
         target_sources(xrpld PRIVATE ${sources})
+
+        target_link_libraries(xrpld rs_hello_world_cxxbridge)
     endif()
 
     target_link_libraries(xrpld Xrpl::boost Xrpl::opts Xrpl::libs xrpl.libxrpl)

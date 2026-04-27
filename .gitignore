@@ -86,3 +86,6 @@ __pycache__
 
 # clangd cache
 /.cache
+
+# Rust build directory
+crates/target

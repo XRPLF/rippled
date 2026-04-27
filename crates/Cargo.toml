@@ -1,0 +1,18 @@
+[workspace]
+members = ["hello_world"]
+resolver = "3"
+
+[workspace.dependencies]
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+tracing-appender = "0.2.5"
+cxx = { version = "1.0.194", features = ["c++20"] }
+
+[workspace.package]
+edition = "2024"
+
+[profile.release]
+opt-level = 3
+overflow-checks = true
+lto = true
+debug = true

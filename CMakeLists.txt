@@ -131,6 +131,7 @@ if(coverage)
     include(XrplCov)
 endif()
 
+add_subdirectory(crates)
 include(XrplCore)
 include(XrplProtocolAutogen)
 include(XrplInstall)
