@@ -295,7 +295,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
     (or a shared telemetry utility if both need it).
   - Pattern: identical to `createDeterministicContext(uint256 const& ledgerId)` in
     `RCLConsensus.cpp` — take `txHash[0:16]` as trace_id, random span_id via
-    `crypto_prng()`, sampled flag set, `remote=false`.
+    `default_prng()`, sampled flag set, `remote=false`.
   - Guard behind `#ifdef XRPL_ENABLE_TELEMETRY`.
 
   ```cpp
@@ -310,7 +310,8 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
       // Random span_id so each node's span is unique within the trace.
       uint8_t spanIdBytes[8];
-      crypto_prng()(spanIdBytes, sizeof(spanIdBytes));
+      auto const rval = default_prng()();
+      std::memcpy(spanIdBytes, &rval, sizeof(spanIdBytes));
       trace::SpanId spanId(
           opentelemetry::nostd::span<uint8_t const, 8>(spanIdBytes, 8));
 
@@ -368,7 +369,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 - `src/xrpld/overlay/detail/PeerImp.cpp` — restructured span creation
 - `src/xrpld/app/misc/NetworkOPs.cpp` — deterministic context for tx.process
-- `src/xrpld/telemetry/TxSpanNames.h` — new `traceStrategy` attribute constant
+- `src/xrpld/app/misc/TxSpanNames.h` — new `traceStrategy` attribute constant
 - New or shared utility for `createDeterministicTxContext()` (location TBD: could be
   a shared header like `include/xrpl/telemetry/DeterministicContext.h`, or file-local
   if only used in two places)
@@ -394,6 +395,26 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 - [ ] `xrpl.tx.trace_strategy` attribute set to `"deterministic"` on all tx spans
 - [ ] Trace queryable by tx hash (truncate hash → trace_id → direct lookup in Tempo)
 
+**Deliverables implemented (not in original plan)**:
+
+- **`SpanGuard::txSpan()` factory method** (`include/xrpl/telemetry/SpanGuard.h`):
+  Two overloads for creating transaction spans with deterministic trace IDs:
+  - `txSpan(category, group, name, txHash)` — standalone span (deterministic
+    trace_id from `txHash[0:16]`, no parent span_id).
+  - `txSpan(category, group, name, txHash, parentCtx)` — child span (deterministic
+    trace_id combined with protobuf-extracted parent span_id for relay ordering).
+
+- **`TxTracing.h` helper functions** (`src/xrpld/overlay/detail/TxTracing.h`):
+  File-local helpers that wrap `SpanGuard::txSpan()` for the two main PeerImp call
+  sites:
+  - `txReceiveSpan(txHash, parentCtx)` — creates `tx.receive` span with
+    deterministic trace_id and optional protobuf parent context.
+  - `txProcessSpan(txHash)` — creates `tx.process` span with deterministic
+    trace_id only (no protobuf parent, used intra-node).
+  - **Note**: `TxTracing.h` includes `xrpl.pb.h` unconditionally (outside
+    `#ifdef XRPL_ENABLE_TELEMETRY`) because `protocol::TMTransaction` appears in
+    the function signatures regardless of telemetry build mode.
+
 ---
 
 ## Task 3.10: TxQ Instrumentation
@@ -412,7 +433,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
   retries_remaining attributes
 - `txq.cleanup` — wraps `TxQ::processClosedLedger()` with ledger_seq attribute
 
-**New file**: `src/xrpld/telemetry/TxQSpanNames.h`
+**New file**: `src/xrpld/app/misc/detail/TxQSpanNames.h`
 
 **Modified file**: `src/xrpld/app/misc/detail/TxQ.cpp`
 
