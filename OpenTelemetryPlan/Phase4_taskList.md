@@ -356,6 +356,9 @@ on every consensus span. Correlation happens at query time via Tempo/Grafana
 consensus_trace_strategy=deterministic
 ```
 
+The C++ API to query this at runtime is `Telemetry::getConsensusTraceStrategy()`,
+which returns a `std::string const&` (`"deterministic"` or `"attribute"`).
+
 ### Implementation
 
 In `RCLConsensus::Adaptor::startRound()`:
@@ -420,13 +423,22 @@ consensus.round  (root — created in RCLConsensus::startRound, closed at accept
    overload that accepts key-value attributes:
 
    ```cpp
+   using EventAttribute = std::pair<std::string_view, std::string_view>;
+
    void addEvent(std::string_view name,
-       std::initializer_list<
-           std::pair<opentelemetry::nostd::string_view,
-                     opentelemetry::common::AttributeValue>> attributes)
-   {
-       span_->AddEvent(std::string(name), attributes);
-   }
+       std::initializer_list<EventAttribute> attrs);
+   ```
+
+   The `EventAttribute` type alias (defined in `SpanGuard.h`) keeps the
+   public API free of OTel SDK types — callers pass plain `string_view`
+   pairs and the implementation converts internally.
+
+   ```cpp
+   // Example usage:
+   guard.addEvent("dispute.resolve", {
+       {"xrpl.tx.id", txIdStr},
+       {"xrpl.dispute.our_vote", voteStr}
+   });
    ```
 
 2. **Add a `Telemetry::startSpan()` overload that accepts span links** (needed by Tasks 4a.2, 4a.8):
@@ -510,6 +522,21 @@ spans in `Consensus.h`.
   - If a previous round's span context is available, add a **span link**
     (follows-from) to establish the round chain.
 
+- **`SpanGuard::hashSpan()` factory**: The deterministic trace ID logic is
+  encapsulated in a static factory method on `SpanGuard`:
+
+  ```cpp
+  static SpanGuard hashSpan(
+      TraceCategory cat, std::string_view name,
+      std::uint8_t const* hashData, std::size_t hashSize);
+  ```
+
+  `hashSpan()` derives `trace_id = hashData[0:16]` and creates a span whose
+  trace ID matches on every node that shares the same hash input (e.g.
+  `previousLedger.id()`). It is the consensus equivalent of `txSpan()` (which
+  derives trace IDs from transaction hashes). Both factories live in
+  `SpanGuard.h` and compile to no-ops when telemetry is disabled.
+
 - Add `createDeterministicTraceId(hash)` utility to
   `include/xrpl/telemetry/Telemetry.h` (returns 16-byte trace ID from a
   256-bit hash by truncation).
@@ -524,6 +551,7 @@ spans in `Consensus.h`.
 **Key modified files**:
 
 - `src/xrpld/app/consensus/RCLConsensus.cpp`
+- `src/xrpld/app/consensus/ConsensusSpanNames.h` — **(new)** span name constants for consensus spans, following the `*SpanNames.h` colocation pattern (header lives next to its class, not in `telemetry/`)
 - `include/xrpl/telemetry/Telemetry.h` — `createDeterministicTraceId()`
 - `src/xrpld/telemetry/TelemetryConfig.cpp` — parse new config option
 
@@ -768,7 +796,7 @@ and OFF, and don't affect consensus timing.
 | ---- | ------------------------------------------------ | --------- | -------------- | ---------- |
 | 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | 0         | 4              | Phase 4    |
 | 4a.1 | Adaptor `getTelemetry()` method                  | 0         | 2              | Phase 4    |
-| 4a.2 | Switchable round span with deterministic traceID | 0         | 3              | 4a.0, 4a.1 |
+| 4a.2 | Switchable round span with deterministic traceID | 1         | 3              | 4a.0, 4a.1 |
 | 4a.3 | Span members in `Consensus.h`                    | 0         | 1              | 4a.1       |
 | 4a.4 | Instrument `phaseEstablish()`                    | 0         | 1              | 4a.3       |
 | 4a.5 | Instrument `updateOurPositions()`                | 0         | 1              | 4a.0, 4a.3 |
