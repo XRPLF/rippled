@@ -21,7 +21,7 @@ public:
     }
 
     // For unit testing, always generate logging text.
-    bool
+    [[nodiscard]] bool
     active(beast::severities::Severity level) const override
     {
         return true;

@@ -61,7 +61,7 @@ public:
     std::optional<std::string>
     getPermissionName(std::uint32_t value) const;
 
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
 
     std::optional<std::string>

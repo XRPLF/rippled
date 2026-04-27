@@ -108,7 +108,7 @@ public:
     }
     /** @} */
 
-    std::shared_ptr<GaugeImpl> const&
+    [[nodiscard]] std::shared_ptr<GaugeImpl> const&
     impl() const
     {
         return m_impl;
