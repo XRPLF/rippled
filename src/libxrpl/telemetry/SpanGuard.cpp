@@ -250,9 +250,9 @@ SpanGuard::txSpan(
     otel_trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
 
     std::uint8_t spanIdBytes[8];
-    std::random_device rd;
+    thread_local std::mt19937 prng{std::random_device{}()};
     for (auto& b : spanIdBytes)
-        b = static_cast<std::uint8_t>(rd());
+        b = static_cast<std::uint8_t>(prng());
     otel_trace::SpanId spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBytes, 8));
 
     otel_trace::SpanContext syntheticCtx(
