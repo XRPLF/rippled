@@ -226,7 +226,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
         Json::Value innerObj = Json::objectValue;
 
-        uint32_t const type = field->fieldType;
+        int32_t const type = field->fieldType;
 
         innerObj[jss::nth] = field->fieldValue;
 
