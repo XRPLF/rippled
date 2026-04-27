@@ -609,12 +609,19 @@ private:
      */
     std::optional<xrpl::telemetry::SpanGuard> establishSpan_;
 
+    /** Create the establish-phase span if not yet active.
+     *  Called on each phaseEstablish() invocation; no-op while span is live.
+     */
     void
     startEstablishTracing();
 
+    /** Overwrite convergence metrics on the establish span each iteration.
+     *  Final span attributes always reflect the last state before consensus.
+     */
     void
     updateEstablishTracing();
 
+    /** End the establish span when transitioning to the accepted phase. */
     void
     endEstablishTracing();
 
