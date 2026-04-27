@@ -135,7 +135,7 @@ public:
         return ctx_.view();
     }
 
-    ApplyView const&
+    [[nodiscard]] ApplyView const&
     view() const
     {
         return ctx_.view();

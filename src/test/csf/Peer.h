@@ -87,13 +87,13 @@ struct Peer
         // Received delay is the time from receiving the message to actually
         // handling it.
         template <class M>
-        SimDuration
+        [[nodiscard]] SimDuration
         onReceive(M const&) const
         {
             return SimDuration{};
         }
 
-        SimDuration
+        [[nodiscard]] SimDuration
         onReceive(Validation const&) const
         {
             return recvValidation;
@@ -132,7 +132,7 @@ struct Peer
         {
         }
 
-        NetClock::time_point
+        [[nodiscard]] NetClock::time_point
         now() const
         {
             return p_.now();

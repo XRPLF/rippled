@@ -21,22 +21,22 @@ public:
     {
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const
     {
         return account;
     }
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
     void
     setJson(Json::Value& jv) const;
 
-    bool
+    [[nodiscard]] bool
     native() const;
 
-    bool
+    [[nodiscard]] bool
     integral() const;
 
     friend constexpr std::weak_ordering

@@ -41,14 +41,14 @@ private:
         tests_t() = default;
 
         /** Returns the total number of test conditions. */
-        std::size_t
+        [[nodiscard]] std::size_t
         total() const
         {
             return cont().size();
         }
 
         /** Returns the number of failed test conditions. */
-        std::size_t
+        [[nodiscard]] std::size_t
         failed() const
         {
             return failed_;
@@ -89,7 +89,7 @@ public:
     }
 
     /** Returns the name of this testcase. */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
@@ -118,21 +118,21 @@ public:
     }
 
     /** Returns the name of this suite. */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
     /** Returns the total number of test conditions. */
-    std::size_t
+    [[nodiscard]] std::size_t
     total() const
     {
         return total_;
     }
 
     /** Returns the number of failures. */
-    std::size_t
+    [[nodiscard]] std::size_t
     failed() const
     {
         return failed_;
@@ -173,21 +173,21 @@ public:
     results() = default;
 
     /** Returns the total number of test cases. */
-    std::size_t
+    [[nodiscard]] std::size_t
     cases() const
     {
         return m_cases;
     }
 
     /** Returns the total number of test conditions. */
-    std::size_t
+    [[nodiscard]] std::size_t
     total() const
     {
         return total_;
     }
 
     /** Returns the number of failures. */
-    std::size_t
+    [[nodiscard]] std::size_t
     failed() const
     {
         return failed_;

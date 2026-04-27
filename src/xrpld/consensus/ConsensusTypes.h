@@ -120,7 +120,7 @@ class ConsensusTimer
     std::chrono::milliseconds dur_{};
 
 public:
-    std::chrono::milliseconds
+    [[nodiscard]] std::chrono::milliseconds
     read() const
     {
         return dur_;

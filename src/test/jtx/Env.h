@@ -264,7 +264,7 @@ public:
         return *bundle_.app;
     }
 
-    Application const&
+    [[nodiscard]] Application const&
     app() const
     {
         return *bundle_.app;
@@ -331,7 +331,7 @@ public:
         will not be visible.
 
     */
-    std::shared_ptr<OpenView const>
+    [[nodiscard]] std::shared_ptr<OpenView const>
     current() const
     {
         return app().getOpenLedger().current();
@@ -479,7 +479,7 @@ public:
     }
 
     // get rpc retries
-    unsigned
+    [[nodiscard]] unsigned
     retries() const
     {
         return retries_;
@@ -491,55 +491,55 @@ public:
 
     /** Returns the Account given the AccountID. */
     /** @{ */
-    Account const&
+    [[nodiscard]] Account const&
     lookup(AccountID const& id) const;
 
-    Account const&
+    [[nodiscard]] Account const&
     lookup(std::string const& base58ID) const;
     /** @} */
 
     /** Returns the XRP balance on an account.
         Returns 0 if the account does not exist.
     */
-    PrettyAmount
+    [[nodiscard]] PrettyAmount
     balance(Account const& account) const;
 
     /** Returns the next sequence number on account.
         Exceptions:
             Throws if the account does not exist
     */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     seq(Account const& account) const;
 
     /** Return the balance on an account.
         Returns 0 if the trust line does not exist.
     */
     // VFALCO NOTE This should return a unit-less amount
-    PrettyAmount
+    [[nodiscard]] PrettyAmount
     balance(Account const& account, Asset const& asset) const;
 
     /** Returns the IOU limit on an account.
         Returns 0 if the trust line does not exist.
     */
-    PrettyAmount
+    [[nodiscard]] PrettyAmount
     limit(Account const& account, Issue const& issue) const;
 
     /** Return the number of objects owned by an account.
      * Returns 0 if the account does not exist.
      */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     ownerCount(Account const& account) const;
 
     /** Return an account root.
         @return empty if the account does not exist.
     */
-    std::shared_ptr<SLE const>
+    [[nodiscard]] std::shared_ptr<SLE const>
     le(Account const& account) const;
 
     /** Return a ledger entry.
         @return empty if the ledger entry does not exist
     */
-    std::shared_ptr<SLE const>
+    [[nodiscard]] std::shared_ptr<SLE const>
     le(Keylet const& k) const;
 
     /** Create a JTx from parameters. */
@@ -653,7 +653,7 @@ public:
     /** @} */
 
     /** Return the TER for the last JTx. */
-    TER
+    [[nodiscard]] TER
     ter() const
     {
         return ter_;
@@ -684,7 +684,7 @@ public:
         @note Only necessary for JTx submitted
             with via sign-and-submit method.
     */
-    std::shared_ptr<STTx const>
+    [[nodiscard]] std::shared_ptr<STTx const>
     tx() const;
 
     void
@@ -693,7 +693,7 @@ public:
     void
     disableFeature(uint256 const feature);
 
-    bool
+    [[nodiscard]] bool
     enabled(uint256 feature) const
     {
         return current()->rules().enabled(feature);

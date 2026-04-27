@@ -281,7 +281,7 @@ public:
         return std::move(m->jv);
     }
 
-    unsigned
+    [[nodiscard]] unsigned
     version() const override
     {
         return rpc_version_;
