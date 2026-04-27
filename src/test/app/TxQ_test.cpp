@@ -1036,16 +1036,21 @@ public:
         checkMetrics(*this, env, 0, std::nullopt, 0, 3);
 
         // ledgers in queue is 2 because of makeConfig
-        auto const initQueueMax = initFee(env, 3, 2, 10, 200, 50);
+        initFee(env, 3, 2, 10, 200, 50);
+        // Close an empty ledger to shrink queue from the flag-ledger
+        // size to 2*3=6, independent of amendment count.
+        env.close();
+        constexpr std::size_t normalMaxQueue = 6;
+        checkMetrics(*this, env, 0, normalMaxQueue, 0, 3);
 
         // Create several accounts while the fee is cheap so they all apply.
         env.fund(drops(2000), noripple(alice));
         env.fund(XRP(500000), noripple(bob, charlie, daria));
-        checkMetrics(*this, env, 0, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 0, normalMaxQueue, 4, 3);
 
         // Alice - price starts exploding: held
         env(noop(alice), fee(11), queued);
-        checkMetrics(*this, env, 1, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 1, normalMaxQueue, 4, 3);
 
         auto aliceSeq = env.seq(alice);
         auto bobSeq = env.seq(bob);
@@ -1053,28 +1058,28 @@ public:
 
         // Alice - try to queue a second transaction, but leave a gap
         env(noop(alice), seq(aliceSeq + 2), fee(100), ter(telCAN_NOT_QUEUE));
-        checkMetrics(*this, env, 1, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 1, normalMaxQueue, 4, 3);
 
         // Alice - queue a second transaction. Yay!
         env(noop(alice), seq(aliceSeq + 1), fee(13), queued);
-        checkMetrics(*this, env, 2, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 2, normalMaxQueue, 4, 3);
 
         // Alice - queue a third transaction. Yay.
         env(noop(alice), seq(aliceSeq + 2), fee(17), queued);
-        checkMetrics(*this, env, 3, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 3, normalMaxQueue, 4, 3);
 
         // Bob - queue a transaction
         env(noop(bob), queued);
-        checkMetrics(*this, env, 4, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 4, normalMaxQueue, 4, 3);
 
         // Bob - queue a second transaction
         env(noop(bob), seq(bobSeq + 1), fee(50), queued);
-        checkMetrics(*this, env, 5, initQueueMax, 4, 3);
+        checkMetrics(*this, env, 5, normalMaxQueue, 4, 3);
 
         // Charlie - queue a transaction, with a higher fee
         // than default
         env(noop(charlie), fee(15), queued);
-        checkMetrics(*this, env, 6, initQueueMax, 4, 3, 257);
+        checkMetrics(*this, env, 6, normalMaxQueue, 4, 3, 257);
 
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         BEAST_EXPECT(env.seq(bob) == bobSeq);
