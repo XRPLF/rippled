@@ -2,12 +2,19 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol_autogen/ledger_entries/AccountRoot.h>
@@ -17,16 +24,9 @@
 #include <xrpl/protocol_autogen/transactions/TicketCreate.h>
 #include <xrpl/protocol_autogen/transactions/TrustSet.h>
 
-#include "helpers/IOU.h"
-#include "xrpl/beast/utility/Zero.h"
-#include "xrpl/core/ServiceRegistry.h"
-#include "xrpl/protocol/SField.h"
-#include "xrpl/protocol/STArray.h"
-#include "xrpl/protocol/STObject.h"
-#include "xrpl/protocol/STTx.h"
-#include "xrpl/protocol/SecretKey.h"
 #include <gtest/gtest.h>
 #include <helpers/Account.h>
+#include <helpers/IOU.h>
 #include <helpers/TxTest.h>
 
 #include <algorithm>
