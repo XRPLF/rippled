@@ -1055,7 +1055,9 @@ class AccountTx_test : public beast::unit_test::suite
             env.close();
             env(signers(alice, 2, {{daria, 1}, {edward, 1}}));
             env.close();
-            env(pay(alice, carol, XRP(1)), fee(drops(30)), msig(daria, edward));
+            env(pay(alice, carol, XRP(1)),
+                fee(drops(env.current()->fees().increment * 2)),
+                msig(daria, edward));
             env.close();
 
             // Alice's actor filter should still see only the 1 delegated tx,
