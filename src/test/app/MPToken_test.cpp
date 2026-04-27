@@ -6599,8 +6599,6 @@ class MPToken_test : public beast::unit_test::suite
             EUR.authorize({.account = carol});
             env(pay(gw, carol, EUR(1'000'000)));
             USD.set({.mutableFlags = tmfMPTSetRequireAuth});
-            // have to authorize amm account
-            USD.authorize({.account = gw, .holder = Account{"amm", amm.ammAccount()}});
             env.close();
             amm.deposit(
                 {.account = carol, .asset1In = USD(1), .asset2In = EUR(1), .err = ter(tecNO_AUTH)});
@@ -6614,6 +6612,16 @@ class MPToken_test : public beast::unit_test::suite
             // carol is authorized, can deposit
             USD.authorize({.account = gw, .holder = carol});
             amm.deposit({.account = carol, .tokens = 1'000});
+            // Can't authorize or unauthorize AMM pseudo-account
+            USD.authorize(
+                {.account = gw,
+                 .holder = Account{"amm", amm.ammAccount()},
+                 .err = tecNO_PERMISSION});
+            USD.authorize(
+                {.account = gw,
+                 .holder = Account{"amm", amm.ammAccount()},
+                 .flags = tfMPTUnauthorize,
+                 .err = tecNO_PERMISSION});
 
             // MPTCanTransfer is not set
 

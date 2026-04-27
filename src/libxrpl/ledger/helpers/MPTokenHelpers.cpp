@@ -369,10 +369,11 @@ requireAuth(
         // belong to someone who is explicitly authorized e.g. a vault owner.
     }
 
-    if (featureSAVEnabled)
+    bool const featureMPTV2Enabled = view.rules().enabled(featureMPTokensV2);
+    if (featureSAVEnabled || featureMPTV2Enabled)
     {
-        // Implicitly authorize Vault and LoanBroker pseudo-accounts
-        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID}))
+        // Implicitly authorize Vault, LoanBroker, and AMM pseudo-accounts
+        if (isPseudoAccount(view, account, {&sfVaultID, &sfLoanBrokerID, &sfAMMID}))
             return tesSUCCESS;
     }
 

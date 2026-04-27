@@ -304,22 +304,14 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
         // Authorize MPT
         return amount.asset().visit(
             [&](MPTIssue const& issue) -> TER {
-                // Authorize MPT
                 auto const& mptIssue = issue;
                 auto const& mptID = mptIssue.getMptID();
-                std::uint32_t flags = lsfMPTAMM;
-                if (auto const err =
-                        requireAuth(ctx_.view(), mptIssue, accountId, AuthType::WeakAuth);
+                // Implicitly authorize MPT asset for AMM pseudo-account.
+                std::uint32_t flags = lsfMPTAMM | lsfMPTAuthorized;
+                if (auto const err = requireAuth(sb, mptIssue, accountId, AuthType::WeakAuth);
                     !isTesSuccess(err))
                 {
-                    if (err == tecNO_AUTH)
-                    {
-                        flags |= lsfMPTAuthorized;
-                    }
-                    else
-                    {
-                        return err;
-                    }
+                    return err;
                 }
 
                 if (auto const err = createMPToken(sb, mptID, accountId, flags); !isTesSuccess(err))
