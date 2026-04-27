@@ -47,8 +47,7 @@
 #include <tuple>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 enum class TrustFlag { freeze, auth, noripple };
 
@@ -118,13 +117,13 @@ class ElementComboIter
     // some tests)
     bool const allowCompound_ = false;
 
-    bool
+    [[nodiscard]] bool
     has(SB s) const
     {
         return (state_ & (1 << safe_cast<int>(s))) != 0;
     }
 
-    bool
+    [[nodiscard]] bool
     hasAny(std::initializer_list<SB> sb) const
     {
         for (auto const s : sb)
@@ -135,7 +134,7 @@ class ElementComboIter
         return false;
     }
 
-    size_t
+    [[nodiscard]] size_t
     count(std::initializer_list<SB> sb) const
     {
         size_t result = 0;
@@ -153,7 +152,7 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     valid() const
     {
         return (allowCompound_ || !(has(SB::acc) && hasAny({SB::cur, SB::iss}))) &&
@@ -264,7 +263,7 @@ struct ExistingElementPool
     size_t nextAvailCurrency = 0;
 
     using ResetState = std::tuple<size_t, size_t>;
-    ResetState
+    [[nodiscard]] ResetState
     getResetState() const
     {
         return std::make_tuple(nextAvailAccount, nextAvailCurrency);
@@ -1160,5 +1159,4 @@ struct PayStrand_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PayStrand, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

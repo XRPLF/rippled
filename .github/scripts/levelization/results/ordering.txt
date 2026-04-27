@@ -93,6 +93,7 @@ test.core > xrpl.basics
 test.core > xrpl.core
 test.core > xrpld.core
 test.core > xrpl.json
+test.core > xrpl.protocol
 test.core > xrpl.rdb
 test.core > xrpl.server
 test.csf > xrpl.basics

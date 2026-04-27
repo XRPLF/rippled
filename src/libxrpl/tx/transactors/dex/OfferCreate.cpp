@@ -594,7 +594,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
-    // Note that we we use the value from the sequence or ticket as the
+    // Note that we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
     auto const offerSequence = ctx_.tx.getSeqValue();
 
@@ -631,7 +631,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tecEXPIRED, true};
     }
 
-    bool const bOpenLedger = sb.open();
     bool crossed = false;
 
     if (isTesSuccess(result))
@@ -720,7 +719,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << format_amount(place_offer.out);
         }
 
-        if (result == tecFAILED_PROCESSING && bOpenLedger)
+        if (result == tecFAILED_PROCESSING && sb.open())
             result = telFAILED_PROCESSING;
 
         if (!isTesSuccess(result))
@@ -954,6 +953,20 @@ OfferCreate::doApply()
         sbCancel.apply(ctx_.rawView());
     }
     return result.first;
+}
+
+void
+OfferCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+OfferCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

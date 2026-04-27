@@ -65,7 +65,9 @@ public:
         unsigned short const port,
         std::size_t maxResponseSize,
         beast::Journal& j)
-        : mSocket(io_context, httpClientSSLContext->context())
+        : mSocket(
+              io_context,
+              httpClientSSLContext->context())  // NOLINT(bugprone-unchecked-optional-access)
         , mResolver(io_context)
         , mHeader(maxClientHeaderBytes)
         , mPort(port)
@@ -242,6 +244,8 @@ public:
         {
             mShutdown = ecResult
                 ? ecResult
+                // httpClientSSLContext always initialized before use
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 : httpClientSSLContext->preConnectVerify(mSocket.SSLSocket(), mDeqSites[0]);
         }
 
@@ -278,6 +282,8 @@ public:
         {
             JLOG(j_.trace()) << "Connected.";
 
+            // httpClientSSLContext always initialized before use
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             mShutdown = httpClientSSLContext->postConnectVerify(mSocket.SSLSocket(), mDeqSites[0]);
 
             if (mShutdown)

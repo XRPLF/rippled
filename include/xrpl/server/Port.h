@@ -15,13 +15,9 @@
 #include <set>
 #include <string>
 
-namespace boost {
-namespace asio {
-namespace ssl {
+namespace boost::asio::ssl {
 class context;
-}  // namespace ssl
-}  // namespace asio
-}  // namespace boost
+}  // namespace boost::asio::ssl
 
 namespace xrpl {
 
@@ -57,15 +53,15 @@ struct Port
     std::uint16_t ws_queue_limit{};
 
     // Returns `true` if any websocket protocols are specified
-    bool
+    [[nodiscard]] bool
     websockets() const;
 
     // Returns `true` if any secure protocols are specified
-    bool
+    [[nodiscard]] bool
     secure() const;
 
     // Returns a string containing the list of protocols
-    std::string
+    [[nodiscard]] std::string
     protocols() const;
 };
 

@@ -9,9 +9,7 @@
 #include <stdexcept>
 #include <vector>
 
-namespace xrpl {
-
-namespace compression_algorithms {
+namespace xrpl::compression_algorithms {
 
 /** LZ4 block compression.
  * @tparam BufferFactory Callable object or lambda.
@@ -141,6 +139,4 @@ lz4Decompress(
     return lz4Decompress(chunk, inSize, decompressed, decompressedSize);
 }
 
-}  // namespace compression_algorithms
-
-}  // namespace xrpl
+}  // namespace xrpl::compression_algorithms

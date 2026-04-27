@@ -23,8 +23,7 @@
 #include <variant>
 #include <vector>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 /**
 Experimentally, we discovered that using std::barrier performs extremely
@@ -128,7 +127,7 @@ public:
         assert(state.size() > id_);
         state[id_].store(TrackedState::alive, std::memory_order_relaxed);
     }
-    ~TIBase()
+    ~TIBase() override
     {
         using enum TrackedState;
 
@@ -240,7 +239,7 @@ public:
             BEAST_EXPECT(b->use_count() == 1);
             for (int i = 0; i < 10; ++i)
             {
-                weak.push_back(b);
+                weak.emplace_back(b);
                 BEAST_EXPECT(b->use_count() == 1);
             }
             BEAST_EXPECT(TIBase::getState(id) == alive);
@@ -531,11 +530,11 @@ public:
             {
                 if (isStrongDist(eng))
                 {
-                    result.push_back(SharedIntrusive<TIBase>(toClone));
+                    result.emplace_back(SharedIntrusive<TIBase>(toClone));
                 }
                 else
                 {
-                    result.push_back(WeakIntrusive<TIBase>(toClone));
+                    result.emplace_back(WeakIntrusive<TIBase>(toClone));
                 }
             }
             return result;
@@ -582,7 +581,7 @@ public:
                     toClone.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback_ = tracingCallback;
-                    std::fill(toClone.begin(), toClone.end(), strong);
+                    std::ranges::fill(toClone, strong);
                 }
 
                 // ------ Sync Point ------
@@ -662,7 +661,7 @@ public:
             auto numToCreate = toCreateDist(eng);
             result.reserve(numToCreate);
             for (int i = 0; i < numToCreate; ++i)
-                result.push_back(SharedIntrusive<TIBase>(toClone));
+                result.emplace_back(SharedIntrusive<TIBase>(toClone));
             return result;
         };
         constexpr int loopIters = 2 * 1024;
@@ -709,7 +708,7 @@ public:
                     toClone.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback_ = tracingCallback;
-                    std::fill(toClone.begin(), toClone.end(), strong);
+                    std::ranges::fill(toClone, strong);
                 }
 
                 // ------ Sync Point ------
@@ -830,7 +829,7 @@ public:
                     toLock.resize(numThreads);
                     auto strong = make_SharedIntrusive<TIBase>();
                     strong->tracingCallback_ = tracingCallback;
-                    std::fill(toLock.begin(), toLock.end(), strong);
+                    std::ranges::fill(toLock, strong);
                 }
 
                 // ------ Sync Point ------
@@ -877,5 +876,4 @@ public:
 };  // namespace tests
 
 BEAST_DEFINE_TESTSUITE(IntrusiveShared, basics, xrpl);
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

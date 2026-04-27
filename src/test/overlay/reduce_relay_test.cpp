@@ -46,9 +46,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 using namespace std::chrono;
 
@@ -77,9 +75,7 @@ public:
     }
 
     PublicKey nodePublicKey_;
-    virtual ~PeerPartial()
-    {
-    }
+    ~PeerPartial() override = default;
     virtual void
     onMessage(MessageSPtr const& m, SquelchCB f) = 0;
     virtual void
@@ -95,7 +91,7 @@ public:
     send(std::shared_ptr<Message> const& m) override
     {
     }
-    beast::IP::Endpoint
+    [[nodiscard]] beast::IP::Endpoint
     getRemoteAddress() const override
     {
         return {};
@@ -104,22 +100,22 @@ public:
     charge(Resource::Charge const& fee, std::string const& context = {}) override
     {
     }
-    bool
+    [[nodiscard]] bool
     cluster() const override
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     isHighLatency() const override
     {
         return false;
     }
-    int
+    [[nodiscard]] int
     getScore(bool) const override
     {
         return 0;
     }
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     getNodePublic() const override
     {
         return nodePublicKey_;
@@ -129,12 +125,12 @@ public:
     {
         return {};
     }
-    bool
+    [[nodiscard]] bool
     supportsFeature(ProtocolFeature f) const override
     {
         return false;
     }
-    std::optional<std::size_t>
+    [[nodiscard]] std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const override
     {
         return {};
@@ -143,13 +139,13 @@ public:
     setPublisherListSequence(PublicKey const&, std::size_t const) override
     {
     }
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getClosedLedgerHash() const override
     {
         static uint256 const hash{};
         return hash;
     }
-    bool
+    [[nodiscard]] bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const override
     {
         return false;
@@ -158,7 +154,7 @@ public:
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const override
     {
     }
-    bool
+    [[nodiscard]] bool
     hasTxSet(uint256 const& hash) const override
     {
         return false;
@@ -172,12 +168,12 @@ public:
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     compressionEnabled() const override
     {
         return false;
     }
-    bool
+    [[nodiscard]] bool
     txReduceRelayEnabled() const override
     {
         return false;
@@ -200,10 +196,10 @@ public:
 class ManualClock
 {
 public:
-    typedef uint64_t rep;
-    typedef std::milli period;
-    typedef std::chrono::duration<std::uint32_t, period> duration;
-    typedef std::chrono::time_point<ManualClock> time_point;
+    using rep = uint64_t;
+    using period = std::milli;
+    using duration = std::chrono::duration<std::uint32_t, period>;
+    using time_point = std::chrono::time_point<ManualClock>;
     inline static bool const is_steady = false;
 
     static void
@@ -272,11 +268,8 @@ class Link
     using Latency = std::pair<milliseconds, milliseconds>;
 
 public:
-    Link(
-        Validator& validator,
-        PeerSPtr peer,
-        Latency const& latency = {milliseconds(5), milliseconds(15)})
-        : validator_(validator), peer_(peer), latency_(latency)
+    Link(Validator& validator, PeerSPtr peer, Latency latency = {milliseconds(5), milliseconds(15)})
+        : validator_(validator), peer_(peer), latency_(std::move(latency))
     {
         auto sp = peer_.lock();
         assert(sp);
@@ -397,9 +390,7 @@ public:
     for_links(LinkIterCB f, bool simulateSlow = false)
     {
         std::vector<LinkSPtr> v;
-        std::transform(links_.begin(), links_.end(), std::back_inserter(v), [](auto& kv) {
-            return kv.second;
-        });
+        std::ranges::transform(links_, std::back_inserter(v), [](auto& kv) { return kv.second; });
         std::random_device d;
         std::mt19937 g(d());
         std::shuffle(v.begin(), v.end(), g);
@@ -430,7 +421,7 @@ public:
         return message_;
     }
 
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     id() const
     {
         return id_;
@@ -469,7 +460,7 @@ public:
         id_ = sid_++;
     }
 
-    ~PeerSim() = default;
+    ~PeerSim() override = default;
 
     id_t
     id() const override
@@ -503,7 +494,7 @@ public:
     }
 
     /** Remote Peer (Directly connected Peer) */
-    virtual void
+    void
     onMessage(protocol::TMSquelch const& squelch) override
     {
         auto validator = squelch.validatorpubkey();
@@ -537,7 +528,7 @@ public:
     {
     }
 
-    ~OverlaySim() = default;
+    ~OverlaySim() override = default;
 
     void
     clear()
@@ -778,8 +769,7 @@ public:
     void
     enableLink(std::uint16_t validatorId, Peer::id_t peer, bool enable)
     {
-        auto it = std::find_if(
-            validators_.begin(), validators_.end(), [&](auto& v) { return v.id() == validatorId; });
+        auto it = std::ranges::find_if(validators_, [&](auto& v) { return v.id() == validatorId; });
         assert(it != validators_.end());
         if (enable)
         {
@@ -1277,7 +1267,7 @@ protected:
             ManualClock::advance(seconds(601));
             BEAST_EXPECT(propagateAndSquelch(log, true, false));
             auto peers = network_.overlay().getPeers(network_.validator(0));
-            auto it = std::find_if(peers.begin(), peers.end(), [&](auto it) {
+            auto it = std::ranges::find_if(peers, [&](auto it) {
                 return std::get<reduce_relay::PeerState>(it.second) ==
                     reduce_relay::PeerState::Squelched;
             });
@@ -1489,9 +1479,7 @@ vp_base_squelch_max_selected_peers=2
 
     struct Handler : public reduce_relay::SquelchHandler
     {
-        Handler()
-        {
-        }
+        Handler() = default;
         void
         squelch(PublicKey const&, Peer::id_t, std::uint32_t duration) const override
         {
@@ -1683,6 +1671,4 @@ class reduce_relay_simulate_test : public reduce_relay_test
 BEAST_DEFINE_TESTSUITE(reduce_relay, overlay, xrpl);
 BEAST_DEFINE_TESTSUITE_MANUAL(reduce_relay_simulate, overlay, xrpl);
 
-}  // namespace test
-
-}  // namespace xrpl
+}  // namespace xrpl::test

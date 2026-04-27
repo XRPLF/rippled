@@ -15,8 +15,7 @@
 #include <thread>
 #include <vector>
 
-namespace beast {
-namespace test {
+namespace beast::test {
 
 /** Mix-in to support tests using asio coroutines.
 
@@ -125,5 +124,4 @@ enable_yield_to::spawn(F0&& f, FN&&... fn)
     spawn(fn...);
 }
 
-}  // namespace test
-}  // namespace beast
+}  // namespace beast::test

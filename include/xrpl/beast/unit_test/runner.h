@@ -11,8 +11,7 @@
 #include <mutex>
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Unit test runner interface.
 
@@ -48,7 +47,7 @@ public:
     }
 
     /** Returns the argument string. */
-    std::string const&
+    [[nodiscard]] std::string const&
     arg() const
     {
         return arg_;
@@ -277,5 +276,4 @@ runner::log(std::string const& s)
     on_log(s);
 }
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

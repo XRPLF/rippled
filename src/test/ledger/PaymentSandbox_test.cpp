@@ -28,8 +28,7 @@
 
 #include <cstdint>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class PaymentSandbox_test : public beast::unit_test::suite
 {
@@ -398,5 +397,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(PaymentSandbox, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

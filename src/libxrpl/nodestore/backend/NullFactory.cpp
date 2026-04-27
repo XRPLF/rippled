@@ -15,15 +15,14 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NullBackend : public Backend
 {
 public:
     NullBackend() = default;
 
-    ~NullBackend() = default;
+    ~NullBackend() override = default;
 
     std::string
     getName() override
@@ -91,7 +90,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -113,7 +112,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "none";
@@ -132,5 +131,4 @@ registerNullFactory(Manager& manager)
     static NullFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

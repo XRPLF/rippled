@@ -14,8 +14,7 @@
 #include <sstream>
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 namespace detail {
 
@@ -58,7 +57,7 @@ private:
     // in the event of a failure, if the option to stop is set.
     struct abort_exception : public std::exception
     {
-        char const*
+        [[nodiscard]] char const*
         what() const noexcept override
         {
             return "test suite aborted";
@@ -75,7 +74,7 @@ private:
         {
         }
 
-        ~log_buf()
+        ~log_buf() override
         {
             sync();
         }
@@ -573,8 +572,7 @@ suite::run(runner& r)
     ((cond) ? (pass(), true) : (fail((reason), __FILE__, __LINE__), false))
 #endif
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test
 
 //------------------------------------------------------------------------------
 

@@ -81,7 +81,7 @@ private:
 public:
     ServerImpl(Handler& handler, boost::asio::io_context& io_context, beast::Journal journal);
 
-    ~ServerImpl();
+    ~ServerImpl() override;
 
     beast::Journal
     journal() override

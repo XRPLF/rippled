@@ -24,8 +24,7 @@
 #include <chrono>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 // Helper class to track the expected number `delivered_amount` results.
 class CheckDeliveredAmount
@@ -92,7 +91,7 @@ public:
 
     // After all the txns are checked, all the `numExpected` variables should be
     // zero. The `checkTxn` function decrements these variables.
-    bool
+    [[nodiscard]] bool
     checkExpectedCounters() const
     {
         return (numExpectedAvailable_ == 0) && (numExpectedNotSet_ == 0) &&
@@ -422,5 +421,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

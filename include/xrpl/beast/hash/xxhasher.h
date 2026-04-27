@@ -121,13 +121,13 @@ public:
         }
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
+    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
     explicit xxhasher(Seed seed) : seed_(seed)
     {
         resetBuffers();
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
+    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
     xxhasher(Seed seed, Seed) : seed_(seed)
     {
         resetBuffers();

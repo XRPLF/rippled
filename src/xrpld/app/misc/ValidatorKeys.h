@@ -43,7 +43,7 @@ public:
     ValidatorKeys() = delete;
     ValidatorKeys(Config const& config, beast::Journal j);
 
-    bool
+    [[nodiscard]] bool
     configInvalid() const
     {
         return configInvalid_;

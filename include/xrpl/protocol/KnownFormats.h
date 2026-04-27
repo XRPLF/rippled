@@ -38,13 +38,13 @@ public:
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value || std::is_integral<KeyType>::value,
+                std::is_enum_v<KeyType> || std::is_integral_v<KeyType>,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
         /** Retrieve the name of the format.
          */
-        std::string const&
+        [[nodiscard]] std::string const&
         getName() const
         {
             return name_;
@@ -52,13 +52,13 @@ public:
 
         /** Retrieve the transaction type this format represents.
          */
-        KeyType
+        [[nodiscard]] KeyType
         getType() const
         {
             return type_;
         }
 
-        SOTemplate const&
+        [[nodiscard]] SOTemplate const&
         getSOTemplate() const
         {
             return soTemplate_;
@@ -96,7 +96,7 @@ public:
         @param  name The name of the type.
         @return      The type.
     */
-    KeyType
+    [[nodiscard]] KeyType
     findTypeByName(std::string const& name) const
     {
         if (auto const result = findByName(name))
@@ -108,7 +108,7 @@ public:
 
     /** Retrieve a format based on its type.
      */
-    Item const*
+    [[nodiscard]] Item const*
     findByType(KeyType type) const
     {
         auto const itr = types_.find(type);
@@ -118,13 +118,13 @@ public:
     }
 
     // begin() and end() are provided for testing purposes.
-    typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] typename std::forward_list<Item>::const_iterator
     begin() const
     {
         return formats_.begin();
     }
 
-    typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] typename std::forward_list<Item>::const_iterator
     end() const
     {
         return formats_.end();
@@ -133,7 +133,7 @@ public:
 protected:
     /** Retrieve a format based on its name.
      */
-    Item const*
+    [[nodiscard]] Item const*
     findByName(std::string const& name) const
     {
         auto const itr = names_.find(name);
@@ -179,10 +179,10 @@ private:
     // One of the situations where a std::forward_list is useful.  We want to
     // store each Item in a place where its address won't change.  So a node-
     // based container is appropriate.  But we don't need searchability.
-    std::forward_list<Item> formats_;
+    std::forward_list<Item> formats_{};
 
-    boost::container::flat_map<std::string, Item const*> names_;
-    boost::container::flat_map<KeyType, Item const*> types_;
+    boost::container::flat_map<std::string, Item const*> names_{};
+    boost::container::flat_map<KeyType, Item const*> types_{};
     friend Derived;
 };
 

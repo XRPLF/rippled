@@ -24,8 +24,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 struct MemoryDB
 {
@@ -46,7 +45,7 @@ private:
 public:
     explicit MemoryFactory(Manager& manager);
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override;
 
     std::unique_ptr<Backend>
@@ -208,7 +207,7 @@ public:
     {
     }
 
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -239,5 +238,4 @@ MemoryFactory::createInstance(
     return std::make_unique<MemoryBackend>(keyBytes, keyValues, journal);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

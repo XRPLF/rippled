@@ -75,7 +75,7 @@ parseSection(Section const& section)
                 "Invalid amendment ID '" + match[1] + "' in [" + section.name() + "]");
         }
 
-        names.push_back(std::make_pair(id, match[2]));
+        names.emplace_back(id, match[2]);
     }
 
     return names;
@@ -221,9 +221,8 @@ public:
         }
 
         // Now remove any expired records from recordedVotes_.
-        std::for_each(
-            recordedVotes_.begin(),
-            recordedVotes_.end(),
+        std::ranges::for_each(
+            recordedVotes_,
             [&closeTime, newTimeout, &j](decltype(recordedVotes_)::value_type& votes) {
                 auto const pkHuman = toBase58(TokenType::NodePublic, votes.first);
                 if (!votes.second.timeout)
@@ -335,7 +334,7 @@ public:
                 amendmentMajorityCalcThreshold.den));
     }
 
-    bool
+    [[nodiscard]] bool
     passes(uint256 const& amendment) const
     {
         auto const& it = votes_.find(amendment);
@@ -351,7 +350,7 @@ public:
         return it->second > threshold_;
     }
 
-    int
+    [[nodiscard]] int
     votes(uint256 const& amendment) const
     {
         auto const& it = votes_.find(amendment);
@@ -362,13 +361,13 @@ public:
         return it->second;
     }
 
-    int
+    [[nodiscard]] int
     trustedValidations() const
     {
         return trustedValidations_;
     }
 
-    int
+    [[nodiscard]] int
     threshold() const
     {
         return threshold_;
@@ -784,7 +783,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
     }
 
     if (!amendments.empty())
-        std::sort(amendments.begin(), amendments.end());
+        std::ranges::sort(amendments);
 
     return amendments;
 }

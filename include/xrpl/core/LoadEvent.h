@@ -16,20 +16,20 @@ class LoadEvent
 {
 public:
     // VFALCO TODO remove the dependency on LoadMonitor. Is that possible?
-    LoadEvent(LoadMonitor& monitor, std::string const& name, bool shouldStart);
+    LoadEvent(LoadMonitor& monitor, std::string name, bool shouldStart);
     LoadEvent(LoadEvent const&) = delete;
 
     ~LoadEvent();
 
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const;
 
     // The time spent waiting.
-    std::chrono::steady_clock::duration
+    [[nodiscard]] std::chrono::steady_clock::duration
     waitTime() const;
 
     // The time spent running.
-    std::chrono::steady_clock::duration
+    [[nodiscard]] std::chrono::steady_clock::duration
     runTime() const;
 
     void

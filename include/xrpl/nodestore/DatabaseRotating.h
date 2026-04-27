@@ -2,8 +2,7 @@
 
 #include <xrpl/nodestore/Database.h>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /* This class has two key-value store Backend objects for persisting SHAMap
  * records. This facilitates online deletion of data. New backends are
@@ -36,5 +35,4 @@ public:
             f) = 0;
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

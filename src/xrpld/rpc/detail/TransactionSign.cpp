@@ -62,8 +62,7 @@
 #include <stdexcept>
 #include <utility>
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 namespace detail {
 
 // Used to pass extra parameters used when returning a
@@ -87,33 +86,33 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     isMultiSigning() const
     {
         return multiSigningAcctID_ != nullptr;
     }
 
-    bool
+    [[nodiscard]] bool
     isSingleSigning() const
     {
         return !isMultiSigning();
     }
 
     // When multi-signing we should not edit the tx_json fields.
-    bool
+    [[nodiscard]] bool
     editFields() const
     {
         return !isMultiSigning();
     }
 
-    bool
+    [[nodiscard]] bool
     validMultiSign() const
     {
         return isMultiSigning() && multiSignPublicKey_ && !multiSignature_.empty();
     }
 
     // Don't call this method unless isMultiSigning() returns true.
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getSigner() const
     {
         if (multiSigningAcctID_ == nullptr)
@@ -121,7 +120,7 @@ public:
         return *multiSigningAcctID_;
     }
 
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     getPublicKey() const
     {
         if (!multiSignPublicKey_)
@@ -129,13 +128,13 @@ public:
         return *multiSignPublicKey_;
     }
 
-    Buffer const&
+    [[nodiscard]] Buffer const&
     getSignature() const
     {
         return multiSignature_;
     }
 
-    std::optional<std::reference_wrapper<SField const>> const&
+    [[nodiscard]] std::optional<std::reference_wrapper<SField const>> const&
     getSignatureTarget() const
     {
         return signatureTarget_;
@@ -1106,15 +1105,14 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
         return RPC::make_param_error("Signers array may not be empty.");
 
     // Signers must be sorted by Account.
-    std::sort(signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
+    std::ranges::sort(signers, [](STObject const& a, STObject const& b) {
         return (a[sfAccount] < b[sfAccount]);
     });
 
     // Signers may not contain any duplicates.
-    auto const dupIter = std::adjacent_find(
-        signers.begin(), signers.end(), [](STObject const& a, STObject const& b) {
-            return (a[sfAccount] == b[sfAccount]);
-        });
+    auto const dupIter = std::ranges::adjacent_find(
+        signers,
+        [](STObject const& a, STObject const& b) { return (a[sfAccount] == b[sfAccount]); });
 
     if (dupIter != signers.end())
     {
@@ -1125,8 +1123,7 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
     }
 
     // An account may not sign for itself.
-    if (signers.end() !=
-        std::find_if(signers.begin(), signers.end(), [&signingForID](STObject const& elem) {
+    if (signers.end() != std::ranges::find_if(signers, [&signingForID](STObject const& elem) {
             return elem[sfAccount] == signingForID;
         }))
     {
@@ -1391,7 +1388,7 @@ transactionSubmitMultiSigned(
         return RPC::make_param_error("tx_json.Signers array may not be empty.");
 
     // The Signers array may only contain Signer objects.
-    if (std::find_if_not(signers.begin(), signers.end(), [](STObject const& obj) {
+    if (std::ranges::find_if_not(signers, [](STObject const& obj) {
             return (
                 // A Signer object always contains these fields and no
                 // others.
@@ -1428,5 +1425,4 @@ transactionSubmitMultiSigned(
     return transactionFormatResultImpl(txn.second, apiVersion);
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

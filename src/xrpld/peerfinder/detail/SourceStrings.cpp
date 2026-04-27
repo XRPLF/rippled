@@ -7,19 +7,19 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 class SourceStringsImp : public SourceStrings
 {
 public:
-    SourceStringsImp(std::string const& name, Strings const& strings)
-        : m_name(name), m_strings(strings)
+    SourceStringsImp(std::string name, Strings strings)
+        : m_name(std::move(name)), m_strings(std::move(strings))
     {
     }
 
-    ~SourceStringsImp() = default;
+    ~SourceStringsImp() override = default;
 
     std::string const&
     name() override
@@ -55,5 +55,4 @@ SourceStrings::New(std::string const& name, Strings const& strings)
     return std::make_shared<SourceStringsImp>(name, strings);
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

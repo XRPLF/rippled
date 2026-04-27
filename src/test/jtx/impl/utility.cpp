@@ -24,9 +24,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 STObject
 parse(Json::Value const& jv)
@@ -103,6 +101,4 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

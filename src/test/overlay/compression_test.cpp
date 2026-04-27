@@ -50,9 +50,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 using namespace xrpl::test;
 using namespace xrpl::test::jtx;
@@ -79,9 +77,7 @@ class compression_test : public beast::unit_test::suite
     using Algorithm = compression::Algorithm;
 
 public:
-    compression_test()
-    {
-    }
+    compression_test() = default;
 
     template <typename T>
     void
@@ -279,7 +275,6 @@ public:
         getObject->set_type(
             protocol::TMGetObjectByHash_ObjectType::TMGetObjectByHash_ObjectType_otTRANSACTION);
         getObject->set_query(true);
-        getObject->set_seq(123456789);
         uint256 hash(xrpl::sha512Half(123456789));
         getObject->set_ledgerhash(hash.data(), hash.size());
         getObject->set_fat(true);
@@ -466,5 +461,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL(compression, overlay, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

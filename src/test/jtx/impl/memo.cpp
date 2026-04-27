@@ -5,9 +5,7 @@
 
 #include <xrpl/basics/strHex.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 memo::operator()(Env&, JTx& jt) const
@@ -51,6 +49,4 @@ memo_type::operator()(Env&, JTx& jt) const
     m["MemoType"] = strHex(s_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

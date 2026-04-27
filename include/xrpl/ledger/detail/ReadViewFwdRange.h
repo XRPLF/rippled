@@ -27,16 +27,16 @@ public:
 
     virtual ~ReadViewFwdIter() = default;
 
-    virtual std::unique_ptr<ReadViewFwdIter>
+    [[nodiscard]] virtual std::unique_ptr<ReadViewFwdIter>
     copy() const = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     equal(ReadViewFwdIter const& impl) const = 0;
 
     virtual void
     increment() = 0;
 
-    virtual value_type
+    [[nodiscard]] virtual value_type
     dereference() const = 0;
 };
 
@@ -102,7 +102,7 @@ public:
 
     private:
         ReadView const* view_ = nullptr;
-        std::unique_ptr<iter_base> impl_;
+        std::unique_ptr<iter_base> impl_{};
         std::optional<value_type> mutable cache_;
     };
 
