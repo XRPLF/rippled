@@ -702,7 +702,10 @@ LoanPay::doApply()
     }();
 
     // No object changes are made below this point
-    XRPL_ASSERT(Number::getround() == Number::to_nearest);
+    XRPL_ASSERT_PARTS(
+        Number::getround() == Number::to_nearest,
+        "xrpl::LoanPay::doApply",
+        "Number rounding to_nearest");
     NumberRoundModeGuard mg(Number::to_nearest);
 
     auto const accountBalanceBeforeRounded = roundToScale(accountBalanceBefore, balanceScale);
