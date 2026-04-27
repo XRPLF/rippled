@@ -158,7 +158,6 @@ test.resource > test.unit_test
 test.resource > xrpl.basics
 test.resource > xrpl.resource
 test.rpc > test.jtx
-test.rpc > test.toplevel
 test.rpc > xrpl.basics
 test.rpc > xrpl.core
 test.rpc > xrpld.app
