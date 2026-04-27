@@ -11,15 +11,14 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTx.h>
@@ -960,8 +959,8 @@ hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplat
 
         auto const* bField = before.peekAtPField(sf);
         auto const* aField = after.peekAtPField(sf);
-        bool const bPresent = bField && bField->getSType() != STI_NOTPRESENT;
-        bool const aPresent = aField && aField->getSType() != STI_NOTPRESENT;
+        bool const bPresent = (bField != nullptr) && bField->getSType() != STI_NOTPRESENT;
+        bool const aPresent = (aField != nullptr) && aField->getSType() != STI_NOTPRESENT;
 
         XRPL_ASSERT(
             constant != soeCONSTANTINVALID, "xrpl::hasConstantFieldChanged : constant is invalid");
@@ -1016,7 +1015,7 @@ NoModifiedUnmodifiableFields::finalize(
         bool bad = false;
         {
             auto const* format = LedgerFormats::getInstance().findByType(type);
-            if (format)
+            if (format != nullptr)
                 bad = hasConstantFieldChanged(*before, *after, format->getSOTemplate());
 
             // sfLedgerIndex is a non-serialized (discardable) field
