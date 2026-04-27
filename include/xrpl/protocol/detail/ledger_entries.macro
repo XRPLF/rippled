@@ -87,8 +87,8 @@ LEDGER_ENTRY(ltNEGATIVE_UNL, 0x004e, NegativeUNL, nunl, ({
     \sa keylet::nftpage_min, keylet::nftpage_max, keylet::nftpage
  */
 LEDGER_ENTRY(ltNFTOKEN_PAGE, 0x0050, NFTokenPage, nft_page, ({
-    {sfPreviousPageMin,      soeOPTIONAL, soeCONSTANT},
-    {sfNextPageMin,          soeOPTIONAL, soeCONSTANT},
+    {sfPreviousPageMin,      soeOPTIONAL, soeNOTCONSTANT},
+    {sfNextPageMin,          soeOPTIONAL, soeNOTCONSTANT},
     {sfNFTokens,             soeREQUIRED, soeNOTCONSTANT},
     {sfPreviousTxnID,        soeREQUIRED, soeNOTCONSTANT},
     {sfPreviousTxnLgrSeq,    soeREQUIRED, soeNOTCONSTANT},
@@ -106,8 +106,8 @@ LEDGER_ENTRY(ltSIGNER_LIST, 0x0053, SignerList, signer_list, ({
     {sfSignerQuorum,         soeREQUIRED, soeNOTCONSTANT},
     {sfSignerEntries,        soeREQUIRED, soeNOTCONSTANT},
     {sfSignerListID,         soeREQUIRED, soeCONSTANT},
-    {sfPreviousTxnID,        soeREQUIRED, soeCONSTANT},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED, soeCONSTANT},
+    {sfPreviousTxnID,        soeREQUIRED, soeNOTCONSTANT},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED, soeNOTCONSTANT},
 }))
 
 /** A ledger object which describes a ticket.
@@ -261,7 +261,7 @@ LEDGER_ENTRY(ltXCHAIN_OWNED_CLAIM_ID, 0x0071, XChainOwnedClaimID, xchain_owned_c
     {sfXChainBridge,            soeREQUIRED, soeCONSTANT},
     {sfXChainClaimID,           soeREQUIRED, soeCONSTANT},
     {sfOtherChainSource,        soeREQUIRED, soeCONSTANT},
-    {sfXChainClaimAttestations, soeREQUIRED, soeCONSTANT},
+    {sfXChainClaimAttestations, soeREQUIRED, soeNOTCONSTANT},
     {sfSignatureReward,         soeREQUIRED, soeCONSTANT},
     {sfOwnerNode,               soeREQUIRED, soeCONSTANT},
     {sfPreviousTxnID,           soeREQUIRED, soeNOTCONSTANT},
@@ -316,7 +316,7 @@ LEDGER_ENTRY(ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID, 0x0074, XChainOwnedCreateAc
     {sfAccount,                         soeREQUIRED, soeCONSTANT},
     {sfXChainBridge,                    soeREQUIRED, soeCONSTANT},
     {sfXChainAccountCreateCount,        soeREQUIRED, soeCONSTANT},
-    {sfXChainCreateAccountAttestations, soeREQUIRED, soeCONSTANT},
+    {sfXChainCreateAccountAttestations, soeREQUIRED, soeNOTCONSTANT},
     {sfOwnerNode,                       soeREQUIRED, soeCONSTANT},
     {sfPreviousTxnID,                   soeREQUIRED, soeNOTCONSTANT},
     {sfPreviousTxnLgrSeq,               soeREQUIRED, soeNOTCONSTANT},
@@ -352,7 +352,7 @@ LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
     {sfAccount,              soeREQUIRED, soeCONSTANT},
     {sfDestination,          soeREQUIRED, soeCONSTANT},
     {sfSequence,             soeOPTIONAL, soeCONSTANT},
-    {sfAmount,               soeREQUIRED, soeCONSTANT},
+    {sfAmount,               soeREQUIRED, soeNOTCONSTANT},
     {sfBalance,              soeREQUIRED, soeNOTCONSTANT},
     {sfPublicKey,            soeREQUIRED, soeCONSTANT},
     {sfSettleDelay,          soeREQUIRED, soeCONSTANT},
@@ -361,8 +361,8 @@ LEDGER_ENTRY(ltPAYCHAN, 0x0078, PayChannel, payment_channel, ({
     {sfSourceTag,            soeOPTIONAL, soeCONSTANT},
     {sfDestinationTag,       soeOPTIONAL, soeCONSTANT},
     {sfOwnerNode,            soeREQUIRED, soeCONSTANT},
-    {sfPreviousTxnID,        soeREQUIRED, soeCONSTANT},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED, soeCONSTANT},
+    {sfPreviousTxnID,        soeREQUIRED, soeNOTCONSTANT},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED, soeNOTCONSTANT},
     {sfDestinationNode,      soeOPTIONAL, soeCONSTANT},
 }))
 

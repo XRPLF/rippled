@@ -963,53 +963,29 @@ hasConstantFieldChanged(STObject const& before, STObject const& after, SOTemplat
         bool const bPresent = bField && bField->getSType() != STI_NOTPRESENT;
         bool const aPresent = aField && aField->getSType() != STI_NOTPRESENT;
 
-        if (constant == soeCONSTANT || constant == soeCONSTANTINVALID)
+        XRPL_ASSERT(
+            constant != soeCONSTANTINVALID, "xrpl::hasConstantFieldChanged : constant is invalid");
+        if (constant == soeCONSTANT)
         {
-            // The field must not change at all.
-            if (bPresent != aPresent || (aPresent && *bField != *aField))
-                return true;
-        }
-        else if (constant == soeNOTCONSTANT)
-        {
-            // The field itself may change, but if it is an STObject or
-            // STArray we still need to recurse and check the inner
-            // fields against the inner object template.
-            if (!bPresent || !aPresent)
-                continue;
-
-            if (sf.fieldType == STI_OBJECT)
+            if (elem.style() == soeOPTIONAL)
             {
-                auto const* innerTmpl =
-                    InnerObjectFormats::getInstance().findSOTemplateBySField(sf);
-                if (innerTmpl)
-                {
-                    auto const& bObj = before.getFieldObject(sf);
-                    auto const& aObj = after.getFieldObject(sf);
-                    if (hasConstantFieldChanged(bObj, aObj, *innerTmpl))
-                        return true;
-                }
+                // Optional constant fields may be added or removed,
+                // but their value must not change once present.
+                if (bPresent && aPresent && *bField != *aField)
+                    return true;
             }
-            else if (sf.fieldType == STI_ARRAY)
+            else
             {
-                auto const& bArr = before.getFieldArray(sf);
-                auto const& aArr = after.getFieldArray(sf);
-                auto const n = std::min(bArr.size(), aArr.size());
-                for (std::size_t i = 0; i < n; ++i)
-                {
-                    auto const& bElem = bArr[i];
-                    auto const& aElem = aArr[i];
-                    // Each element of the array is an STObject whose
-                    // template is determined by its SField name.
-                    auto const* innerTmpl =
-                        InnerObjectFormats::getInstance().findSOTemplateBySField(bElem.getFName());
-                    if (innerTmpl)
-                    {
-                        if (hasConstantFieldChanged(bElem, aElem, *innerTmpl))
-                            return true;
-                    }
-                }
+                // Required and default constant fields must not
+                // change at all — including transitions between
+                // default (not-present) and explicit values.
+                if (bPresent != aPresent || (bPresent && aPresent && *bField != *aField))
+                    return true;
             }
         }
+        // soeNOTCONSTANT fields may change freely — no recursion
+        // into inner objects/arrays is needed because the parent
+        // field explicitly allows changes to its entire contents.
     }
     return false;
 }
@@ -1042,6 +1018,12 @@ NoModifiedUnmodifiableFields::finalize(
             auto const* format = LedgerFormats::getInstance().findByType(type);
             if (format)
                 bad = hasConstantFieldChanged(*before, *after, format->getSOTemplate());
+
+            // sfLedgerIndex is a non-serialized (discardable) field
+            // that is not reliably present via peekAtPField, so we
+            // check it explicitly.
+            if (!bad)
+                bad = fieldChanged(before, after, sfLedgerIndex);
         }
 
         // Old hardcoded check
@@ -1092,10 +1074,6 @@ NoModifiedUnmodifiableFields::finalize(
                     fieldChanged(before, after, sfLedgerIndex);
         }
 
-        XRPL_ASSERT(
-            !bad || useTemplate,
-            "xrpl::NoModifiedUnmodifiableFields::finalize : no bad "
-            "changes or enforce invariant (template)");
         if (bad)
         {
             JLOG(j.fatal()) << "Invariant failed: changed an unchangeable field for "
