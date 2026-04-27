@@ -316,10 +316,9 @@ SpanGuard::hashSpan(
 
     otel_trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
 
+    auto const rval = default_prng()();
     std::uint8_t spanIdBytes[8];
-    std::random_device rd;
-    for (auto& b : spanIdBytes)
-        b = static_cast<std::uint8_t>(rd());
+    std::memcpy(spanIdBytes, &rval, sizeof(spanIdBytes));
     otel_trace::SpanId spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBytes, 8));
 
     otel_trace::SpanContext syntheticCtx(
