@@ -238,6 +238,11 @@ TxTest::getBalance(AccountID const& account, IOU const& iou) const
     auto const rippleState = ledger_entries::RippleState{sle};
 
     auto balance = rippleState.getBalance();
+    if (iou.issue().account == account)
+    {
+        throw std::logic_error("TxTest::getBalance: account is issuer");
+    }
+
     balance.get<Issue>().account = iou.issue().account;
     if (account > iou.issue().account)
         balance.negate();
