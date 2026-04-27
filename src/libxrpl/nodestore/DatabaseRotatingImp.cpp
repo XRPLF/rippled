@@ -21,8 +21,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
     Scheduler& scheduler,
@@ -199,5 +198,4 @@ DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f
     archive->for_each(f);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

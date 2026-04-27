@@ -24,6 +24,8 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -439,7 +441,7 @@ EscrowCreate::doApply()
             return tecDST_TAG_NEEDED;
     }
 
-    // Create escrow in ledger.  Note that we we use the value from the
+    // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
     Keylet const escrowKeylet = keylet::escrow(account_, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
@@ -523,4 +525,22 @@ EscrowCreate::doApply()
     return tesSUCCESS;
 }
 
+void
+EscrowCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+EscrowCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
 }  // namespace xrpl

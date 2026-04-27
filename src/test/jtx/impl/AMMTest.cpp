@@ -28,9 +28,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 [[maybe_unused]] std::vector<STAmount>
 fund(
@@ -221,6 +219,4 @@ AMMTest::pathTestEnv()
         return cfg;
     }));
 }
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

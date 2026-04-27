@@ -44,7 +44,7 @@ PropertyStream::Item::operator*() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Proxy::Proxy(Map const& map, std::string const& key) : m_map(&map), m_key(key)
+PropertyStream::Proxy::Proxy(Map const& map, std::string key) : m_map(&map), m_key(std::move(key))
 {
 }
 
@@ -152,7 +152,7 @@ PropertyStream::Set::stream() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Source::Source(std::string const& name) : m_name(name), item_(this)
+PropertyStream::Source::Source(std::string name) : m_name(std::move(name)), item_(this)
 {
 }
 

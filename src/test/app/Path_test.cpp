@@ -56,8 +56,7 @@
 #include <tuple>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -156,16 +155,16 @@ public:
         Resource::Consumer c;
 
         RPC::JsonContext context{
-            {env.journal,
-             app,
-             loadType,
-             app.getOPs(),
-             app.getLedgerMaster(),
-             c,
-             Role::USER,
-             {},
-             {},
-             RPC::apiVersionIfUnspecified},
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiVersionIfUnspecified},
             {},
             {}};
 
@@ -267,16 +266,16 @@ public:
         Resource::Consumer c;
 
         RPC::JsonContext context{
-            {env.journal,
-             app,
-             loadType,
-             app.getOPs(),
-             app.getLedgerMaster(),
-             c,
-             Role::USER,
-             {},
-             {},
-             RPC::apiVersionIfUnspecified},
+            {.j = env.journal,
+             .app = app,
+             .loadType = loadType,
+             .netOps = app.getOPs(),
+             .ledgerMaster = app.getLedgerMaster(),
+             .consumer = c,
+             .role = Role::USER,
+             .coro = {},
+             .infoSub = {},
+             .apiVersion = RPC::apiVersionIfUnspecified},
             {},
             {}};
         Json::Value result;
@@ -1913,5 +1912,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Path, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

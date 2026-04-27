@@ -21,9 +21,9 @@
 
 #include <memory>
 #include <thread>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublisherServer>
 {
@@ -75,7 +75,7 @@ class TrustedPublisherServer : public std::enable_shared_from_this<TrustedPublis
 
     struct BlobInfo
     {
-        BlobInfo(std::string b, std::string s) : blob(b), signature(s)
+        BlobInfo(std::string b, std::string s) : blob(std::move(b)), signature(std::move(s))
         {
         }
 
@@ -106,8 +106,11 @@ public:
         st[sfPublicKey] = pk;
         st[sfSigningPubKey] = spk;
 
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) publicKeyType returns value for valid
+        // keys
         sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
         sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         Serializer s;
         st.add(s);
@@ -122,9 +125,10 @@ public:
         auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
         auto const signingKeys = randomKeyPair(KeyType::secp256k1);
         return {
-            masterPublic,
-            signingKeys.first,
-            makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
+            .masterPublic = masterPublic,
+            .signingPublic = signingKeys.first,
+            .manifest =
+                makeManifestString(masterPublic, secret, signingKeys.first, signingKeys.second, 1)};
     }
 
     // TrustedPublisherServer must be accessed through a shared_ptr.
@@ -508,7 +512,9 @@ private:
             {
                 if (ssl)
                 {
-                    http::read(*ssl_stream, sb, req, ec);
+                    http::read(
+                        *ssl_stream, sb, req, ec);  // NOLINT(bugprone-unchecked-optional-access)
+                                                    // ssl_stream emplaced when ssl==true
                 }
                 else
                 {
@@ -657,7 +663,8 @@ private:
 
             if (ssl)
             {
-                write(*ssl_stream, res, ec);
+                write(*ssl_stream, res, ec);  // NOLINT(bugprone-unchecked-optional-access)
+                                              // ssl_stream emplaced when ssl==true
             }
             else
             {
@@ -670,7 +677,8 @@ private:
 
         // Perform the SSL shutdown
         if (ssl)
-            ssl_stream->shutdown(ec);
+            ssl_stream->shutdown(ec);  // NOLINT(bugprone-unchecked-optional-access) ssl_stream
+                                       // emplaced when ssl==true
     }
 };
 
@@ -692,5 +700,4 @@ make_TrustedPublisherServer(
     return r;
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

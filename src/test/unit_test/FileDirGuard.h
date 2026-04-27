@@ -8,8 +8,7 @@
 
 #include <fstream>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 /**
     Create a directory and remove it when it's done
@@ -82,7 +81,7 @@ public:
         };
     }
 
-    path const&
+    [[nodiscard]] path const&
     subdir() const
     {
         return subDir_;
@@ -148,18 +147,17 @@ public:
         };
     }
 
-    path const&
+    [[nodiscard]] path const&
     file() const
     {
         return file_;
     }
 
-    bool
+    [[nodiscard]] bool
     fileExists() const
     {
         return boost::filesystem::exists(file_);
     }
 };
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

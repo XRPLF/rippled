@@ -1,6 +1,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 
 #include <xrpld/core/TimeKeeper.h>
+#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 
@@ -822,10 +823,14 @@ ValidatorList::buildBlobInfos(
 {
     auto const& current = lists.current;
     auto const& remaining = lists.remaining;
-    blobInfos[current.sequence] = {current.rawBlob, current.rawSignature, current.rawManifest};
+    blobInfos[current.sequence] = {
+        .blob = current.rawBlob,
+        .signature = current.rawSignature,
+        .manifest = current.rawManifest};
     for (auto const& [sequence, vl] : remaining)
     {
-        blobInfos[sequence] = {vl.rawBlob, vl.rawSignature, vl.rawManifest};
+        blobInfos[sequence] = {
+            .blob = vl.rawBlob, .signature = vl.rawSignature, .manifest = vl.rawManifest};
     }
 }
 
@@ -943,8 +948,12 @@ ValidatorList::applyListsAndBroadcast(
     // in the config file (Note: Keys specified in the local config file are
     // stored in ValidatorList::localPublisherList data member).
     if (broadcast && result.status <= PublisherStatus::expired && result.publisherKey &&
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) publisherKey checked in condition
+        // above
         publisherLists_[*result.publisherKey].maxSequence)
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) publisherKey and maxSequence checked in
+        // condition above
         auto const& pubCollection = publisherLists_[*result.publisherKey];
 
         broadcastBlobs(
@@ -955,6 +964,7 @@ ValidatorList::applyListsAndBroadcast(
             overlay,
             hashRouter,
             j_);
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return result;
@@ -1005,6 +1015,7 @@ ValidatorList::applyLists(
     // inconsistent
     if (result.publisherKey && publisherLists_.contains(*result.publisherKey))
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) publisherKey checked in condition above
         auto& pubCollection = publisherLists_[*result.publisherKey];
         auto& remaining = pubCollection.remaining;
         auto const& current = pubCollection.current;
@@ -1030,6 +1041,7 @@ ValidatorList::applyLists(
         pubCollection.fullHash = sha512Half(pubCollection);
 
         result.sequence = *pubCollection.maxSequence;
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return result;
@@ -1235,7 +1247,7 @@ ValidatorList::applyList(
                 }
                 else
                 {
-                    publisherList.push_back(PublicKey(Slice{ret->data(), ret->size()}));
+                    publisherList.emplace_back(Slice{ret->data(), ret->size()});
                 }
 
                 if (val.isMember(jss::manifest) && val[jss::manifest].isString())
@@ -1244,7 +1256,7 @@ ValidatorList::applyList(
         }
 
         // Standardize the list order by sorting
-        std::sort(publisherList.begin(), publisherList.end());
+        std::sort(publisherList.begin(), publisherList.end());  // NOLINT(modernize-use-ranges)
     }
     // If this publisher has ever sent a more updated version than the one
     // in this file, keep it. This scenario is unlikely, but legal.
@@ -1794,9 +1806,11 @@ ValidatorList::calculateQuorum(
     // Use quorum if specified via command line.
     if (minimumQuorum_ > 0)
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) minimumQuorum_ > 0 implies it has a value
         JLOG(j_.warn()) << "Using potentially unsafe quorum of " << *minimumQuorum_
                         << " as specified on the command line";
         return *minimumQuorum_;
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     if (!publisherLists_.empty())
@@ -2007,7 +2021,8 @@ ValidatorList::updateTrusted(
         {
             std::optional<PublicKey> const signingKey = validatorManifests_.getSigningKey(k);
             XRPL_ASSERT(signingKey, "xrpl::ValidatorList::updateTrusted : found signing key");
-            trustedSigningKeys_.insert(*signingKey);
+            trustedSigningKeys_.insert(
+                *signingKey);  // NOLINT(bugprone-unchecked-optional-access) assert above
         }
     }
 
@@ -2094,9 +2109,8 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
     if (!negativeUNL_.empty())
     {
         ret.erase(
-            std::remove_if(
-                ret.begin(),
-                ret.end(),
+            std::ranges::remove_if(
+                ret,
                 [&](auto const& v) -> bool {
                     if (auto const masterKey = getTrustedKey(read_lock, v->getSignerPublic());
                         masterKey)
@@ -2105,7 +2119,8 @@ ValidatorList::negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& va
                     }
 
                     return false;
-                }),
+                })
+                .begin(),
             ret.end());
     }
 

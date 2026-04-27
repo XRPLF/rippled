@@ -8,6 +8,7 @@
 #include <xrpl/shamap/SHAMap.h>
 
 #include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -23,8 +24,8 @@ public:
     struct FeatureInfo
     {
         FeatureInfo() = delete;
-        FeatureInfo(std::string const& n, uint256 const& f, VoteBehavior v)
-            : name(n), feature(f), vote(v)
+        FeatureInfo(std::string n, uint256 const& f, VoteBehavior v)
+            : name(std::move(n)), feature(f), vote(v)
         {
         }
 
@@ -35,7 +36,7 @@ public:
 
     virtual ~AmendmentTable() = default;
 
-    virtual uint256
+    [[nodiscard]] virtual uint256
     find(std::string const& name) const = 0;
 
     virtual bool
@@ -46,9 +47,9 @@ public:
     virtual bool
     enable(uint256 const& amendment) = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isEnabled(uint256 const& amendment) const = 0;
-    virtual bool
+    [[nodiscard]] virtual bool
     isSupported(uint256 const& amendment) const = 0;
 
     /**
@@ -57,17 +58,17 @@ public:
      *
      * @return true if an unsupported feature is enabled on the network
      */
-    virtual bool
+    [[nodiscard]] virtual bool
     hasUnsupportedEnabled() const = 0;
 
-    virtual std::optional<NetClock::time_point>
+    [[nodiscard]] virtual std::optional<NetClock::time_point>
     firstUnsupportedExpected() const = 0;
 
-    virtual Json::Value
+    [[nodiscard]] virtual Json::Value
     getJson(bool isAdmin) const = 0;
 
     /** Returns a Json::objectValue. */
-    virtual Json::Value
+    [[nodiscard]] virtual Json::Value
     getJson(uint256 const& amendment, bool isAdmin) const = 0;
 
     /** Called when a new fully-validated ledger is accepted. */
@@ -86,7 +87,7 @@ public:
     /** Called to determine whether the amendment logic needs to process
         a new validated ledger. (If it could have changed things.)
     */
-    virtual bool
+    [[nodiscard]] virtual bool
     needValidatedLedger(LedgerIndex seq) const = 0;
 
     virtual void
@@ -111,14 +112,14 @@ public:
 
     // Called by the consensus code when we need to
     // add feature entries to a validation
-    virtual std::vector<uint256>
+    [[nodiscard]] virtual std::vector<uint256>
     doValidation(std::set<uint256> const& enabled) const = 0;
 
     // The set of amendments to enable in the genesis ledger
     // This will return all known, non-vetoed amendments.
     // If we ever have two amendments that should not both be
     // enabled at the same time, we should ensure one is vetoed.
-    virtual std::vector<uint256>
+    [[nodiscard]] virtual std::vector<uint256>
     getDesired() const = 0;
 
     // The function below adapts the API callers expect to the

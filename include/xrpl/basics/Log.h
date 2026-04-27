@@ -38,7 +38,7 @@ private:
         std::string partition_;
 
     public:
-        Sink(std::string const& partition, beast::severities::Severity thresh, Logs& logs);
+        Sink(std::string partition, beast::severities::Severity thresh, Logs& logs);
 
         Sink(Sink const&) = delete;
         Sink&
@@ -76,7 +76,7 @@ private:
             @return `true` if a system file is associated and opened for
             writing.
         */
-        bool
+        [[nodiscard]] bool
         isOpen() const noexcept;
 
         /** Associate a system file with the log.

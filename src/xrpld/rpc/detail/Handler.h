@@ -12,8 +12,7 @@ namespace Json {
 class Object;
 }  // namespace Json
 
-namespace xrpl {
-namespace RPC {
+namespace xrpl::RPC {
 
 // Under what condition can we call this RPC?
 enum Condition {
@@ -111,5 +110,4 @@ conditionMet(Condition condition_required, T& context)
     return rpcSUCCESS;
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

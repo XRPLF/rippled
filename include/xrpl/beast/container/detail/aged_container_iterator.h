@@ -2,6 +2,7 @@
 
 #include <iterator>
 #include <type_traits>
+#include <utility>
 
 namespace beast {
 
@@ -114,7 +115,7 @@ public:
         return &m_iter->value;
     }
 
-    time_point const&
+    [[nodiscard]] time_point const&
     when() const
     {
         return m_iter->when;
@@ -131,11 +132,11 @@ private:
     friend class aged_container_iterator;
 
     template <class OtherIterator>
-    aged_container_iterator(OtherIterator const& iter) : m_iter(iter)
+    aged_container_iterator(OtherIterator iter) : m_iter(std::move(iter))
     {
     }
 
-    Iterator const&
+    [[nodiscard]] Iterator const&
     iterator() const
     {
         return m_iter;

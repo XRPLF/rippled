@@ -55,22 +55,23 @@ public:
     class Sink
     {
     protected:
-        Sink() = delete;
         explicit Sink(Sink const& sink) = default;
         Sink(Severity thresh, bool console);
-        Sink&
-        operator=(Sink const& lhs) = delete;
 
     public:
         virtual ~Sink() = 0;
 
+        Sink() = delete;
+        Sink&
+        operator=(Sink const& lhs) = delete;
+
         /** Returns `true` if text at the passed severity produces output. */
-        virtual bool
+        [[nodiscard]] virtual bool
         active(Severity level) const;
 
         /** Returns `true` if a message is also written to the Output Window
          * (MSVC). */
-        virtual bool
+        [[nodiscard]] virtual bool
         console() const;
 
         /** Set whether messages are also written to the Output Window (MSVC).
@@ -79,7 +80,7 @@ public:
         console(bool output);
 
         /** Returns the minimum severity level this sink will report. */
-        virtual Severity
+        [[nodiscard]] virtual Severity
         threshold() const;
 
         /** Set the minimum severity this sink will report. */
@@ -203,14 +204,14 @@ public:
         operator=(Stream const& other) = delete;
 
         /** Returns the Sink that this Stream writes to. */
-        Sink&
+        [[nodiscard]] Sink&
         sink() const
         {
             return m_sink;
         }
 
         /** Returns the Severity level of messages this Stream reports. */
-        Severity
+        [[nodiscard]] Severity
         level() const
         {
             return m_level;
@@ -218,7 +219,7 @@ public:
 
         /** Returns `true` if sink logs anything at this stream's level. */
         /** @{ */
-        bool
+        [[nodiscard]] bool
         active() const
         {
             return m_sink.active(m_level);
@@ -266,14 +267,14 @@ public:
     }
 
     /** Returns the Sink associated with this Journal. */
-    Sink&
+    [[nodiscard]] Sink&
     sink() const
     {
         return *m_sink;
     }
 
     /** Returns a stream for this sink, with the specified severity level. */
-    Stream
+    [[nodiscard]] Stream
     stream(Severity level) const
     {
         return Stream(*m_sink, level);
@@ -283,7 +284,7 @@ public:
         For a message to be logged, the severity must be at or above the
         sink's severity threshold.
     */
-    bool
+    [[nodiscard]] bool
     active(Severity level) const
     {
         return m_sink->active(level);
@@ -291,37 +292,37 @@ public:
 
     /** Severity stream access functions. */
     /** @{ */
-    Stream
+    [[nodiscard]] Stream
     trace() const
     {
         return {*m_sink, severities::kTrace};
     }
 
-    Stream
+    [[nodiscard]] Stream
     debug() const
     {
         return {*m_sink, severities::kDebug};
     }
 
-    Stream
+    [[nodiscard]] Stream
     info() const
     {
         return {*m_sink, severities::kInfo};
     }
 
-    Stream
+    [[nodiscard]] Stream
     warn() const
     {
         return {*m_sink, severities::kWarning};
     }
 
-    Stream
+    [[nodiscard]] Stream
     error() const
     {
         return {*m_sink, severities::kError};
     }
 
-    Stream
+    [[nodiscard]] Stream
     fatal() const
     {
         return {*m_sink, severities::kFatal};
@@ -371,10 +372,6 @@ class logstream_buf : public std::basic_stringbuf<CharT, Traits>
 {
     beast::Journal::Stream strm_;
 
-    template <class T>
-    void
-    write(T const*) = delete;
-
     void
     write(char const* s)
     {
@@ -394,7 +391,7 @@ public:
     {
     }
 
-    ~logstream_buf()
+    ~logstream_buf() override
     {
         sync();
     }
@@ -406,6 +403,10 @@ public:
         this->str("");
         return 0;
     }
+
+    template <class T>
+    void
+    write(T const*) = delete;
 };
 
 }  // namespace detail
@@ -413,11 +414,11 @@ public:
 template <class CharT, class Traits = std::char_traits<CharT>>
 class basic_logstream : public std::basic_ostream<CharT, Traits>
 {
-    typedef CharT char_type;
-    typedef Traits traits_type;
-    typedef typename traits_type::int_type int_type;
-    typedef typename traits_type::pos_type pos_type;
-    typedef typename traits_type::off_type off_type;
+    using char_type = CharT;
+    using traits_type = Traits;
+    using int_type = typename traits_type::int_type;
+    using pos_type = typename traits_type::pos_type;
+    using off_type = typename traits_type::off_type;
 
     detail::logstream_buf<CharT, Traits> buf_;
 

@@ -28,8 +28,7 @@
 #include <optional>
 #include <stdexcept>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 class FetchPack_test : public beast::unit_test::suite
 {
@@ -65,7 +64,7 @@ public:
         {
         }
 
-        std::optional<Blob>
+        [[nodiscard]] std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
             Map::iterator const it = mMap.find(nodeHash);
@@ -166,5 +165,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

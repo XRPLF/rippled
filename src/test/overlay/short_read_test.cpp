@@ -424,7 +424,7 @@ private:
             wait();
         }
 
-        endpoint_type const&
+        [[nodiscard]] endpoint_type const&
         endpoint() const
         {
             return endpoint_;
@@ -645,7 +645,7 @@ public:
     {
     }
 
-    ~short_read_test()
+    ~short_read_test() override
     {
         work_.reset();
         thread_.join();

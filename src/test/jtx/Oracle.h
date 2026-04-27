@@ -4,10 +4,7 @@
 
 #include <date/date.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+namespace xrpl::test::jtx::oracle {
 
 using AnyValue = std::variant<std::string, double, Json::Int, Json::UInt>;
 using OraclesData = std::vector<std::pair<std::optional<Account>, std::optional<AnyValue>>>;
@@ -129,7 +126,7 @@ public:
         std::optional<AnyValue> const& trim = std::nullopt,
         std::optional<AnyValue> const& timeThreshold = std::nullopt);
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     documentID() const
     {
         return documentID_;
@@ -157,7 +154,7 @@ public:
         std::optional<AnyValue> const& documentID,
         std::optional<std::string> const& index = std::nullopt);
 
-    Json::Value
+    [[nodiscard]] Json::Value
     ledgerEntry(std::optional<std::string> const& index = std::nullopt) const
     {
         return Oracle::ledgerEntry(env_, owner_, documentID_, index);
@@ -177,7 +174,4 @@ public:
     }
 };
 
-}  // namespace oracle
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

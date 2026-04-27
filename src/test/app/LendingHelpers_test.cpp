@@ -6,15 +6,14 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 #include <cstdint>
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LendingHelpers_test : public beast::unit_test::suite
 {
@@ -1209,5 +1208,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LendingHelpers, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

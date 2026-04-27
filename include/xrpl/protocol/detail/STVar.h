@@ -7,8 +7,7 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace xrpl {
-namespace detail {
+namespace xrpl::detail {
 
 struct defaultObject_t
 {
@@ -79,7 +78,7 @@ public:
     {
         return &get();
     }
-    STBase const&
+    [[nodiscard]] STBase const&
     get() const
     {
         return *p_;
@@ -130,7 +129,7 @@ private:
     void
     constructST(SerializedTypeID id, int depth, Args&&... arg);
 
-    bool
+    [[nodiscard]] bool
     on_heap() const
     {
         return static_cast<void const*>(p_) != static_cast<void const*>(&d_);
@@ -158,5 +157,4 @@ operator!=(STVar const& lhs, STVar const& rhs)
     return !(lhs == rhs);
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

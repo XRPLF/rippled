@@ -12,9 +12,7 @@
 #include <memory>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class Env;
 
@@ -80,7 +78,7 @@ struct JTx
     }
 
     template <class Prop>
-    Prop const*
+    [[nodiscard]] Prop const*
     get() const
     {
         for (auto& prop : props_.list)
@@ -152,6 +150,4 @@ private:
     prop_list props_;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

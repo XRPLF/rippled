@@ -11,9 +11,7 @@
 #include <ostream>
 #include <tuple>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 //  A collector is any class that implements
 //
@@ -228,7 +226,7 @@ struct TxCollector
     }
 
     // Returns the number of txs which were never accepted
-    std::size_t
+    [[nodiscard]] std::size_t
     orphaned() const
     {
         return std::count_if(
@@ -236,7 +234,7 @@ struct TxCollector
     }
 
     // Returns the number of txs which were never validated
-    std::size_t
+    [[nodiscard]] std::size_t
     unvalidated() const
     {
         return std::count_if(
@@ -456,7 +454,7 @@ struct LedgerCollector
         }
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     unvalidated() const
     {
         return std::count_if(ledgers_.begin(), ledgers_.end(), [](auto const& it) {
@@ -633,7 +631,7 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-            closeJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
+            closeJumps.emplace_back(Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
     }
 
     void
@@ -641,10 +639,11 @@ struct JumpCollector
     {
         // Not a direct child -> parent switch
         if (e.ledger.parentID() != e.prior.id())
-            fullyValidatedJumps.emplace_back(Jump{who, when, e.prior, e.ledger});
+        {
+            fullyValidatedJumps.emplace_back(
+                Jump{.id = who, .when = when, .from = e.prior, .to = e.ledger});
+        }
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

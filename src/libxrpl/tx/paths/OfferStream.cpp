@@ -83,7 +83,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::find(v.begin(), v.end(), tip_.index()));
+    auto it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {
@@ -132,7 +132,7 @@ accountFundsHelper(
 template <StepAmount TIn, StepAmount TOut>
 template <class TTakerPays, class TTakerGets>
     requires ValidTaker<TTakerPays, TTakerGets>
-bool
+[[nodiscard]] bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
     // Consider removing the offer if:
@@ -149,6 +149,9 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         // don't need this extra check.
         return false;
     }
+
+    if (!ownerFunds_)
+        return false;
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};

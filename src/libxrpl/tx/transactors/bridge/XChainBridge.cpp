@@ -23,6 +23,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STXChainBridge.h>
@@ -328,7 +329,7 @@ onNewAttestations(
         j);
 
     if (!r.has_value())
-        return {std::nullopt, changed};
+        return {.rewardAccounts = std::nullopt, .changed = changed};
 
     return {std::move(r.value()), changed};
 };
@@ -528,7 +529,7 @@ struct FinalizeClaimHelperResult
 
     // Helper to check for overall success. If there wasn't overall success the
     // individual ters can be used to decide what needs to be done.
-    bool
+    [[nodiscard]] bool
     isTesSuccess() const
     {
         return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
@@ -536,7 +537,7 @@ struct FinalizeClaimHelperResult
             (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
-    TER
+    [[nodiscard]] TER
     ter() const
     {
         if (isTesSuccess())
@@ -1778,11 +1779,11 @@ XChainClaim::doApply()
             return Unexpected(claimR.error());
 
         return ScopeResult{
-            claimR.value(),
-            (*sleClaimID)[sfAccount],
-            sendingAmount,
-            srcChain,
-            (*sleClaimID)[sfSignatureReward],
+            .rewardAccounts = claimR.value(),
+            .rewardPoolSrc = (*sleClaimID)[sfAccount],
+            .sendingAmount = sendingAmount,
+            .srcChain = srcChain,
+            .signatureReward = (*sleClaimID)[sfSignatureReward],
         };
     }();
 
@@ -1919,7 +1920,9 @@ XChainCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sleAccount)[sfBalance]};
+        .account = account_,
+        .preFeeBalance_ = preFeeBalance_,
+        .postFeeBalance = (*sleAccount)[sfBalance]};
 
     auto const thTer = transferHelper(
         psb,
@@ -2194,7 +2197,7 @@ XChainCreateAccountCommit::doApply()
 
     // Support dipping into reserves to pay the fee
     TransferHelperSubmittingAccountInfo submittingAccountInfo{
-        account_, preFeeBalance_, (*sle)[sfBalance]};
+        .account = account_, .preFeeBalance_ = preFeeBalance_, .postFeeBalance = (*sle)[sfBalance]};
     STAmount const toTransfer = amount + reward;
     auto const thTer = transferHelper(
         psb,
@@ -2217,6 +2220,153 @@ XChainCreateAccountCommit::doApply()
     psb.apply(ctx_.rawView());
 
     return tesSUCCESS;
+}
+
+void
+XChainCreateBridge::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+XChainCreateBridge::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
+void
+BridgeModify::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+BridgeModify::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
+void
+XChainClaim::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+XChainClaim::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
+}
+
+void
+XChainCommit::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+XChainCommit::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
+void
+XChainCreateClaimID::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+XChainCreateClaimID::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
+void
+XChainAddClaimAttestation::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+XChainAddClaimAttestation::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
+void
+XChainAddAccountCreateAttestation::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+XChainAddAccountCreateAttestation::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
+
+void
+XChainCreateAccountCommit::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+XChainCreateAccountCommit::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

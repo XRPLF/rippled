@@ -41,7 +41,7 @@ public:
     virtual void
     send(std::shared_ptr<Message> const& m) = 0;
 
-    virtual beast::IP::Endpoint
+    [[nodiscard]] virtual beast::IP::Endpoint
     getRemoteAddress() const = 0;
 
     /** Send aggregated transactions' hashes. */
@@ -64,57 +64,57 @@ public:
     // Identity
     //
 
-    virtual id_t
+    [[nodiscard]] virtual id_t
     id() const = 0;
 
     /** Returns `true` if this connection is a member of the cluster. */
-    virtual bool
+    [[nodiscard]] virtual bool
     cluster() const = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isHighLatency() const = 0;
 
-    virtual int
+    [[nodiscard]] virtual int
     getScore(bool) const = 0;
 
-    virtual PublicKey const&
+    [[nodiscard]] virtual PublicKey const&
     getNodePublic() const = 0;
 
     virtual Json::Value
     json() = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     supportsFeature(ProtocolFeature f) const = 0;
 
-    virtual std::optional<std::size_t>
+    [[nodiscard]] virtual std::optional<std::size_t>
     publisherListSequence(PublicKey const&) const = 0;
 
     virtual void
     setPublisherListSequence(PublicKey const&, std::size_t const) = 0;
 
-    virtual std::string const&
+    [[nodiscard]] virtual std::string const&
     fingerprint() const = 0;
     //
     // Ledger
     //
 
-    virtual uint256 const&
+    [[nodiscard]] virtual uint256 const&
     getClosedLedgerHash() const = 0;
-    virtual bool
+    [[nodiscard]] virtual bool
     hasLedger(uint256 const& hash, std::uint32_t seq) const = 0;
     virtual void
     ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const = 0;
-    virtual bool
+    [[nodiscard]] virtual bool
     hasTxSet(uint256 const& hash) const = 0;
     virtual void
     cycleStatus() = 0;
     virtual bool
     hasRange(std::uint32_t uMin, std::uint32_t uMax) = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     compressionEnabled() const = 0;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     txReduceRelayEnabled() const = 0;
 };
 

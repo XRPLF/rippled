@@ -58,6 +58,17 @@ class PerfLog_test : public beast::unit_test::suite
 
         explicit Fixture(Application& app, beast::Journal j) : app_(app), j_(j)
         {
+            // Clean up any stale state from a previous test run.  On
+            // self-hosted CI runners the temp directory persists between
+            // runs, so the "nasty file" test may have left a regular file
+            // (or a non-empty directory) at the logDir path.
+            //
+            // The error code is intentionally ignored: if the path doesn't
+            // exist (the common case on a clean runner) remove_all returns
+            // an error, and that's fine — there's nothing to clean up.
+            using namespace boost::filesystem;
+            boost::system::error_code ec;
+            remove_all(logDir(), ec);
         }
 
         ~Fixture()
@@ -105,7 +116,7 @@ class PerfLog_test : public beast::unit_test::suite
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
-                withFile == WithFile::no ? "" : logFile(), logInterval()};
+                .perfLog = withFile == WithFile::no ? "" : logFile(), .logInterval = logInterval()};
             return perf::make_PerfLog(setup, app_, j_, [this]() {
                 signalStop();
                 return;
@@ -178,7 +189,7 @@ class PerfLog_test : public beast::unit_test::suite
 
         // Note that the longest durations should be at the front of the
         // vector since they were started first.
-        std::sort(currents.begin(), currents.end(), [](Cur const& lhs, Cur const& rhs) {
+        std::ranges::sort(currents, [](Cur const& lhs, Cur const& rhs) {
             if (lhs.dur != rhs.dur)
                 return (rhs.dur < lhs.dur);
             return (lhs.name < rhs.name);

@@ -34,12 +34,11 @@
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 #include <vector>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 mptflags::operator()(Env& env) const
@@ -72,8 +71,8 @@ MPTTester::makeHolders(std::vector<Account> const& holders)
     return accounts;
 }
 
-MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
-    : env_(env), issuer_(issuer), holders_(makeHolders(arg.holders)), close_(arg.close)
+MPTTester::MPTTester(Env& env, Account issuer, MPTInit const& arg)
+    : env_(env), issuer_(std::move(issuer)), holders_(makeHolders(arg.holders)), close_(arg.close)
 {
     if (arg.fund)
     {
@@ -99,11 +98,11 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
 
 MPTTester::MPTTester(
     Env& env,
-    Account const& issuer,
+    Account issuer,
     MPTID const& id,
     std::vector<Account> const& holders,
     bool close)
-    : env_(env), issuer_(issuer), holders_(makeHolders(holders)), id_(id), close_(close)
+    : env_(env), issuer_(std::move(issuer)), holders_(makeHolders(holders)), id_(id), close_(close)
 {
 }
 
@@ -698,6 +697,4 @@ MPTTester::operator()(std::int64_t amount) const
     return MPT("", issuanceID())(amount);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

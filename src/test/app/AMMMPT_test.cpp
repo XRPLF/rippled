@@ -53,8 +53,7 @@
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Basic tests of AMM functionality involving MPT assets, excluding those that
@@ -6355,8 +6354,11 @@ private:
                     // CLOB and AMM, AMM is not selected
                     if (i == 2)
                     {
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access) i==2 implies amm is
+                        // emplaced (i>0)
                         BEAST_EXPECT(amm->expectBalances(
                             USD(1'000'000'000), ETH(1'000'000'000), amm->tokens()));
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
                     env.require(balance(bob, USD(2'100'000'000)));
                     q[i] = Quality(
@@ -6394,8 +6396,10 @@ private:
                 // AMM is not selected
                 if (i > 0)
                 {
+                    // NOLINTBEGIN(bugprone-unchecked-optional-access) emplaced when i > 0
                     BEAST_EXPECT(
                         amm->expectBalances(USD(1'000'000'000), ETH(1'000'000'000), amm->tokens()));
+                    // NOLINTEND(bugprone-unchecked-optional-access)
                 }
                 if (i == 0 || i == 2)
                 {
@@ -6439,8 +6443,10 @@ private:
                     // AMM and CLOB are selected
                     if (i > 0)
                     {
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access) emplaced when i > 0
                         BEAST_EXPECT(!amm->expectBalances(
                             USD(1'000'000'000), ETH(1'000'000'000), amm->tokens()));
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
 
                     if (i == 2)
@@ -6501,8 +6507,10 @@ private:
                 // AMM is selected in both cases
                 if (i > 0)
                 {
+                    // NOLINTBEGIN(bugprone-unchecked-optional-access) emplaced when i > 0
                     BEAST_EXPECT(!amm->expectBalances(
                         USD(1'000'000'000), ETH(1'000'000'000), amm->tokens()));
+                    // NOLINTEND(bugprone-unchecked-optional-access)
                 }
                 // Partially crosses, AMM is selected, CLOB fails
                 // limitQuality
@@ -6585,6 +6593,8 @@ private:
 
                     if (i == 2)
                     {
+                        // NOLINTBEGIN(bugprone-unchecked-optional-access) i==2 implies amm is
+                        // emplaced (i>0)
                         if (rates.first == lowRate)
                         {
                             // Liquidity is consumed from AMM strand only
@@ -6608,6 +6618,7 @@ private:
                                       USD(281'976'305),
                                   }}}));
                         }
+                        // NOLINTEND(bugprone-unchecked-optional-access)
                     }
                     q[i] = Quality(
                         Amounts{
@@ -7084,5 +7095,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AMMMPT, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

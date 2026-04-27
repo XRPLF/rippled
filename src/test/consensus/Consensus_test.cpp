@@ -29,8 +29,7 @@
 #include <string>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Consensus_test : public beast::unit_test::suite
 {
@@ -1051,7 +1050,7 @@ public:
 
         // Simulate clients submitting 1 tx every 5 seconds to a random
         // validator
-        Rate const rate{1, 5s};
+        Rate const rate{.count = 1, .duration = 5s};
         auto peerSelector = makeSelector(
             network.begin(), network.end(), std::vector<double>(network.size(), 1.), sim.rng);
         auto txSubmitter = makeSubmitter(
@@ -1444,5 +1443,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(Consensus, consensus, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

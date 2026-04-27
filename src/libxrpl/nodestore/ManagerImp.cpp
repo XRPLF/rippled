@@ -21,9 +21,7 @@
 #include <string>
 #include <utility>
 
-namespace xrpl {
-
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 ManagerImp&
 ManagerImp::instance()
@@ -106,8 +104,8 @@ void
 ManagerImp::erase(Factory& factory)
 {
     std::lock_guard const _(mutex_);
-    auto const iter = std::find_if(
-        list_.begin(), list_.end(), [&factory](Factory* other) { return other == &factory; });
+    auto const iter =
+        std::ranges::find_if(list_, [&factory](Factory* other) { return other == &factory; });
     XRPL_ASSERT(iter != list_.end(), "xrpl::NodeStore::ManagerImp::erase : valid input");
     list_.erase(iter);
 }
@@ -116,9 +114,8 @@ Factory*
 ManagerImp::find(std::string const& name)
 {
     std::lock_guard const _(mutex_);
-    auto const iter = std::find_if(list_.begin(), list_.end(), [&name](Factory* other) {
-        return boost::iequals(name, other->getName());
-    });
+    auto const iter = std::ranges::find_if(
+        list_, [&name](Factory* other) { return boost::iequals(name, other->getName()); });
     if (iter == list_.end())
         return nullptr;
     return *iter;
@@ -132,5 +129,4 @@ Manager::instance()
     return ManagerImp::instance();
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

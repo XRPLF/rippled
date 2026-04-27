@@ -20,8 +20,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class LPTokenTransfer_test : public jtx::AMMTest
 {
@@ -450,5 +449,4 @@ public:
 };
 
 BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

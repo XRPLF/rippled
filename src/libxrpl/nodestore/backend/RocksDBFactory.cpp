@@ -46,8 +46,7 @@
 #include <atomic>
 #include <memory>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class RocksDBEnv : public rocksdb::EnvWrapper
 {
@@ -444,7 +443,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return fdRequired_;
@@ -466,7 +465,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "RocksDB";
@@ -490,7 +489,6 @@ registerRocksDBFactory(Manager& manager)
     static RocksDBFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore
 
 #endif

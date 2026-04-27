@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <ostream>
+#include <utility>
 
 namespace xrpl {
 
@@ -29,12 +30,12 @@ struct TAmounts
     {
     }
 
-    TAmounts(In const& in_, Out const& out_) : in(in_), out(out_)
+    TAmounts(In in_, Out out_) : in(std::move(in_)), out(std::move(out_))
     {
     }
 
     /** Returns `true` if either quantity is not positive. */
-    bool
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return in <= beast::zero || out <= beast::zero;
@@ -144,7 +145,7 @@ public:
     /** @} */
 
     /** Returns the quality as STAmount. */
-    STAmount
+    [[nodiscard]] STAmount
     rate() const
     {
         return amountFromQuality(m_value);
@@ -153,7 +154,7 @@ public:
     /** Returns the quality rounded up to the specified number
         of decimal digits.
     */
-    Quality
+    [[nodiscard]] Quality
     round(int tickSize) const;
 
     /** Returns the scaled amount with in capped.

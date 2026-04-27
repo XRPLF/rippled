@@ -28,10 +28,7 @@
 #include <string>
 #include <variant>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+namespace xrpl::test::jtx::oracle {
 
 Oracle::Oracle(Env& env, CreateArg const& arg, bool submit) : env_(env)
 {
@@ -137,7 +134,7 @@ Oracle::expectPrice(DataSeries const& series) const
             return false;
         for (auto const& data : series)
         {
-            if (std::find_if(leSeries.begin(), leSeries.end(), [&](STObject const& o) -> bool {
+            if (std::ranges::find_if(leSeries, [&](STObject const& o) -> bool {
                     auto const& baseAsset = o.getFieldCurrency(sfBaseAsset);
                     auto const& quoteAsset = o.getFieldCurrency(sfQuoteAsset);
                     auto const& price = o.getFieldU64(sfAssetPrice);
@@ -412,8 +409,8 @@ validDocumentID(AnyValue const& v)
     {
         Json::Value jv;
         toJson(jv, v);
-        jv.asUInt();
-        jv.isNumeric();
+        [[maybe_unused]] auto unused1 = jv.asUInt();
+        [[maybe_unused]] auto unused2 = jv.isNumeric();
         return true;
     }
     catch (...)
@@ -422,7 +419,4 @@ validDocumentID(AnyValue const& v)
     }
 }
 
-}  // namespace oracle
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

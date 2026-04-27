@@ -17,8 +17,8 @@ template <class T>
 using Result = boost::outcome_v2::result<T, std::error_code>;
 
 #ifndef _MSC_VER
-namespace b58_fast {
-namespace detail {
+
+namespace b58_fast::detail {
 
 // This optimizes to what hand written asm would do (single divide)
 [[nodiscard]] inline std::tuple<std::uint64_t, std::uint64_t>
@@ -170,8 +170,8 @@ b58_10_to_b58_be(std::uint64_t input)
 
     return result;
 }
-}  // namespace detail
-}  // namespace b58_fast
+}  // namespace b58_fast::detail
+
 #endif
 
 }  // namespace xrpl
