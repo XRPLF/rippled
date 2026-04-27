@@ -74,7 +74,7 @@ public:
         @note The return type is guaranteed to be a pointer
               to a single byte, to facilitate pointer arithmetic.
     */
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const noexcept
     {
         return data_;
@@ -123,25 +123,25 @@ public:
         size_ -= n;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return data_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return data_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return data_ + size_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return data_ + size_;
@@ -158,7 +158,7 @@ public:
         @returns The requested subslice, if the request is valid.
         @throws std::out_of_range if pos > size()
      */
-    Slice
+    [[nodiscard]] Slice
     substr(std::size_t pos, std::size_t count = std::numeric_limits<std::size_t>::max()) const
     {
         if (pos > size())

@@ -25,7 +25,7 @@ struct Entry : public beast::List<Entry>::Node
     {
     }
 
-    std::string
+    [[nodiscard]] std::string
     to_string() const
     {
         return getFingerprint(key->address, publicKey);
@@ -36,7 +36,7 @@ struct Entry : public beast::List<Entry>::Node
      * resource limits applied--it is still possible for certain RPC commands
      * to be forbidden, but that depends on Role.
      */
-    bool
+    [[nodiscard]] bool
     isUnlimited() const
     {
         return key->kind == kindUnlimited;

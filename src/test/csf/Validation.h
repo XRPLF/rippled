@@ -64,67 +64,67 @@ public:
     {
     }
 
-    Ledger::ID
+    [[nodiscard]] Ledger::ID
     ledgerID() const
     {
         return ledgerID_;
     }
 
-    Ledger::Seq
+    [[nodiscard]] Ledger::Seq
     seq() const
     {
         return seq_;
     }
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     signTime() const
     {
         return signTime_;
     }
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     seenTime() const
     {
         return seenTime_;
     }
 
-    PeerKey const&
+    [[nodiscard]] PeerKey const&
     key() const
     {
         return key_;
     }
 
-    PeerID const&
+    [[nodiscard]] PeerID const&
     nodeID() const
     {
         return nodeID_;
     }
 
-    bool
+    [[nodiscard]] bool
     trusted() const
     {
         return trusted_;
     }
 
-    bool
+    [[nodiscard]] bool
     full() const
     {
         return full_;
     }
 
-    std::uint64_t
+    [[nodiscard]] std::uint64_t
     cookie() const
     {
         return cookie_;
     }
 
-    std::optional<std::uint32_t>
+    [[nodiscard]] std::optional<std::uint32_t>
     loadFee() const
     {
         return loadFee_;
     }
 
-    Validation const&
+    [[nodiscard]] Validation const&
     unwrap() const
     {
         // For the xrpld implementation in which RCLValidation wraps
@@ -133,7 +133,7 @@ public:
         return *this;
     }
 
-    auto
+    [[nodiscard]] auto
     asTie() const
     {
         // trusted is a status set by the receiver, so it is not part of the tie

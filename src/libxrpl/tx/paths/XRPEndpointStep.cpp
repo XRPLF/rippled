@@ -45,7 +45,7 @@ private:
     // for cachedIn and cachedOut and only one will ever be used
     std::optional<XRPAmount> cache_;
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cached() const
     {
         if (!cache_)
@@ -59,13 +59,13 @@ private:
     }
 
 public:
-    AccountID const&
+    [[nodiscard]] AccountID const&
     acc() const
     {
         return acc_;
     }
 
-    std::optional<std::pair<AccountID, AccountID>>
+    [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         if (isLast_)
@@ -73,25 +73,25 @@ public:
         return std::make_pair(acc_, xrpAccount());
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         return cached();
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         return cached();
     }
 
-    DebtDirection
+    [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
         return DebtDirection::issues;
     }
 
-    std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
     std::pair<XRPAmount, XRPAmount>
@@ -112,7 +112,7 @@ public:
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
     // Check for errors and violations of frozen constraints.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
 protected:
@@ -142,7 +142,7 @@ private:
         return !(lhs == rhs);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
         if (auto ds = dynamic_cast<XRPEndpointStep const*>(&rhs))
@@ -179,7 +179,7 @@ public:
         ;
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("XRPEndpointPaymentStep");
@@ -230,7 +230,7 @@ public:
         return xrpLiquidImpl(sb, reserveReduction_);
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("XRPEndpointOfferCrossingStep");

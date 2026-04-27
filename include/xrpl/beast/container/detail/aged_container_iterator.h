@@ -115,7 +115,7 @@ public:
         return &m_iter->value;
     }
 
-    time_point const&
+    [[nodiscard]] time_point const&
     when() const
     {
         return m_iter->when;
@@ -136,7 +136,7 @@ private:
     {
     }
 
-    Iterator const&
+    [[nodiscard]] Iterator const&
     iterator() const
     {
         return m_iter;
