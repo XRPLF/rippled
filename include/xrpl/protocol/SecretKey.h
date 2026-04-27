@@ -40,13 +40,13 @@ public:
     SecretKey(std::array<std::uint8_t, size_> const& data);
     SecretKey(Slice const& slice);
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const
     {
         return buf_;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return sizeof(buf_);
@@ -57,28 +57,28 @@ public:
         @note The operator<< function is deliberately omitted
         to avoid accidental exposure of secret key material.
     */
-    std::string
+    [[nodiscard]] std::string
     to_string() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_;
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return buf_ + sizeof(buf_);
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return buf_ + sizeof(buf_);

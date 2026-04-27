@@ -42,13 +42,13 @@ private:
 public:
     ServerDefinitions();
 
-    bool
+    [[nodiscard]] bool
     hashMatches(uint256 hash) const
     {
         return defsHash_ == hash;
     }
 
-    Json::Value const&
+    [[nodiscard]] Json::Value const&
     get() const
     {
         return defs_;

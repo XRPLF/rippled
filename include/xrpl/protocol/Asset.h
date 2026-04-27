@@ -68,7 +68,7 @@ public:
     {
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const;
 
     template <ValidIssueType TIss>
@@ -80,16 +80,16 @@ public:
     get();
 
     template <ValidIssueType TIss>
-    constexpr bool
+    [[nodiscard]] constexpr bool
     holds() const;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
-    constexpr value_type const&
+    [[nodiscard]] constexpr value_type const&
     value() const;
 
-    constexpr token_type
+    [[nodiscard]] constexpr token_type
     token() const;
 
     void
@@ -98,7 +98,7 @@ public:
     STAmount
     operator()(Number const&) const;
 
-    constexpr AmtType
+    [[nodiscard]] constexpr AmtType
     getAmountType() const;
 
     // Custom, generic visit implementation
@@ -111,7 +111,7 @@ public:
         return detail::visit(issue_, std::forward<Visitors>(visitors)...);
     }
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     native() const
     {
         return visit(
@@ -119,7 +119,7 @@ public:
             [&](MPTIssue const&) { return false; });
     }
 
-    bool
+    [[nodiscard]] bool
     integral() const
     {
         return visit(
@@ -169,7 +169,7 @@ Asset::holds() const
 }
 
 template <ValidIssueType TIss>
-constexpr TIss const&
+[[nodiscard]] constexpr TIss const&
 Asset::get() const
 {
     if (!std::holds_alternative<TIss>(issue_))

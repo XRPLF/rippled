@@ -63,7 +63,7 @@ public:
     }
     /** @} */
 
-    std::shared_ptr<MeterImpl> const&
+    [[nodiscard]] std::shared_ptr<MeterImpl> const&
     impl() const
     {
         return m_impl;

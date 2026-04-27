@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
@@ -17,7 +18,6 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 #include <memory>
 
@@ -26,7 +26,7 @@ namespace xrpl {
 bool
 LoanBrokerCoverWithdraw::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC

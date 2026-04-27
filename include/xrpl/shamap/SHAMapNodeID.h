@@ -24,29 +24,29 @@ public:
     SHAMapNodeID&
     operator=(SHAMapNodeID const& other) = default;
 
-    bool
+    [[nodiscard]] bool
     isRoot() const
     {
         return depth_ == 0;
     }
 
     // Get the wire format (256-bit nodeID, 1-byte depth)
-    std::string
+    [[nodiscard]] std::string
     getRawString() const;
 
-    unsigned int
+    [[nodiscard]] unsigned int
     getDepth() const
     {
         return depth_;
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getNodeID() const
     {
         return id_;
     }
 
-    SHAMapNodeID
+    [[nodiscard]] SHAMapNodeID
     getChildNodeID(unsigned int m) const;
 
     /**
