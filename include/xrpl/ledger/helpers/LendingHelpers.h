@@ -363,10 +363,13 @@ tryOverpayment(
     TenthBips16 const managementFeeRate,
     beast::Journal j);
 
-Number
-computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining);
+[[nodiscard]] Number
+computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
-Number
+[[nodiscard]] Number
+computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRemaining);
+
+[[nodiscard]] Number
 computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining);
 
 std::pair<Number, Number>

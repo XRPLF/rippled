@@ -110,14 +110,90 @@ LoanStateDeltas::nonNegative()
         managementFee = numZero;
 }
 
-/* Computes (1 + periodicRate)^paymentsRemaining for amortization calculations.
+/* Computes (1 + r)^n - 1 accurately even for near-zero r, where direct
+ * subtraction of `power(1 + r, n) - 1` suffers catastrophic cancellation.
  *
- * Equation (5) from XLS-66 spec, Section A-2 Equation Glossary
+ * The binomial expansion gives
+ *   (1 + r)^n - 1 = sum_{k=1}^{n} C(n,k) r^k
+ *                 = nr + C(n,2) r^2 + ... + r^n
+ * which is a sum of positive terms when r >= 0, avoiding cancellation.
+ * Each term is computed from the previous via
+ *   term_{k+1} = term_k * r * (n - k) / (k + 1)
+ *
+ * The loop terminates early once the next term is below Number precision.
+ *
+ * Precondition: r >= 0. Negative rates would produce alternating-sign
+ * terms; the early-termination check (next == sum) could exit before the
+ * series stabilizes, yielding an incorrect result. The lending protocol
+ * derives rates from `TenthBips32` (unsigned), so this is always met in
+ * production paths.
  */
 Number
-computeRaisedRate(Number const& periodicRate, std::uint32_t paymentsRemaining)
+computePowerMinusOne(Number const& periodicRate, std::uint32_t paymentsRemaining)
 {
-    return power(1 + periodicRate, paymentsRemaining);
+    XRPL_ASSERT_PARTS(
+        periodicRate >= beast::zero,
+        "xrpl::detail::computePowerMinusOne",
+        "periodicRate is non-negative");
+
+    if (paymentsRemaining == 0 || periodicRate == beast::zero)
+        return numZero;
+
+    // k = 1 term: C(n, 1) * r = n * r
+    Number term = paymentsRemaining * periodicRate;
+    Number sum = term;
+    for (std::uint32_t k = 1; k < paymentsRemaining; ++k)
+    {
+        // term_{k+1} from term_k: multiply by r * (n - k) / (k + 1)
+        term = term * periodicRate * (paymentsRemaining - k) / (k + 1);
+        Number const next = sum + term;
+        // adding this term fell below Number's precision
+        if (next == sum)
+            break;
+        sum = next;
+    }
+    return sum;
+}
+
+/* Hybrid evaluator of (1 + r)^n - 1.
+ *
+ * The closed-form `power(1 + r, n) - 1` loses sig digits to cancellation
+ * when `r * n` is small: the result `~r*n` sits well below the `1` that
+ * dominates `(1+r)^n`, so most of Number's stored precision is consumed
+ * by the leading `1`. The lending code path uses Number's large-mantissa
+ * range (mantissa in `[10^18, 10^19)` — 19 significant digits).
+ *
+ * Repeated squaring in `power(...)` contributes roughly `log2(n)` ULPs of
+ * error at the scale of `(1+r)^n` (~1 for small `r*n`), so the absolute
+ * error after the subtraction is around `log2(n) * 1e-18`. To retain at
+ * least ~10 significant digits of `(1+r)^n - 1`, we need
+ * `r*n >= log2(n) * 1e-18 * 1e9 ~ 1e-9` across realistic `n`. A threshold
+ * of `1e-9` preserves the closed-form path for any rate the lending code
+ * actually sees in practice (fixtures at moderate rates are bit-exact),
+ * while routing the pathological near-zero regime through the binomial
+ * expansion where cancellation is severe.
+ */
+Number
+computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRemaining)
+{
+    XRPL_ASSERT_PARTS(
+        periodicRate >= beast::zero,
+        "xrpl::detail::computePowerMinusOneHybrid",
+        "periodicRate is non-negative");
+
+    if (paymentsRemaining == 0 || periodicRate == beast::zero)
+        return numZero;
+
+    // Threshold 1e-9 retains ~10 sig digits of (1+r)^n - 1 against
+    // Number's 19-digit mantissa: the leading "1" of (1+r)^n consumes
+    // ~log10(1/(r*n)) digits before the subtraction. Above this point
+    // closed form is accurate and ~30-500x faster than the binomial
+    // expansion.
+    Number const cancellationThreshold{1, -9};
+    if (paymentsRemaining * periodicRate >= cancellationThreshold)
+        return power(1 + periodicRate, paymentsRemaining) - 1;
+
+    return computePowerMinusOne(periodicRate, paymentsRemaining);
 }
 
 /* Computes the payment factor used in standard amortization formulas.
@@ -135,9 +211,10 @@ computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining
     if (periodicRate == beast::zero)
         return Number{1} / paymentsRemaining;
 
-    Number const raisedRate = computeRaisedRate(periodicRate, paymentsRemaining);
+    Number const raisedRateMinusOne = computePowerMinusOneHybrid(periodicRate, paymentsRemaining);
+    Number const raisedRate = 1 + raisedRateMinusOne;
 
-    return (periodicRate * raisedRate) / (raisedRate - 1);
+    return (periodicRate * raisedRate) / raisedRateMinusOne;
 }
 
 /* Calculates the periodic payment amount using standard amortization formula.
