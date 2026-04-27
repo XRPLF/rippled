@@ -1616,6 +1616,10 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         }
     }
 
+    span.setAttribute(cons_span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
+    span.setAttribute(
+        cons_span::attr::closeTimeThreshold, static_cast<int64_t>(parms.avCT_CONSENSUS_PCT));
+
     if (!ourNewSet &&
         ((consensusCloseTime != asCloseTime(result_->position.closeTime())) ||
          result_->position.isStale(ourCutoff)))
@@ -1771,6 +1775,10 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     span.setAttribute(cons_span::attr::agreeCount, static_cast<int64_t>(agree));
     span.setAttribute(cons_span::attr::disagreeCount, static_cast<int64_t>(disagree));
     span.setAttribute(cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
+    span.setAttribute(cons_span::attr::haveCloseTimeConsensus, haveCloseTimeConsensus_);
+    span.setAttribute(
+        cons_span::attr::thresholdPercent,
+        static_cast<int64_t>(adaptor_.parms().avCT_CONSENSUS_PCT));
 
     char const* stateStr = "no";
     if (result_->state == ConsensusState::Yes)
