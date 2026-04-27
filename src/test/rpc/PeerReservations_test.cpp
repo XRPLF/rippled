@@ -33,6 +33,9 @@ class PeerReservations_test : public beast::unit_test::suite
 
         auto const rejectResult = env.rpc("peer_reservations_add", publicKey, invalidDescription);
         BEAST_EXPECT(rejectResult[jss::result][jss::error] == "invalidParams");
+        BEAST_EXPECT(
+            rejectResult[jss::result][jss::error_message] ==
+            "Invalid field 'description', not a string with at most 64 characters.");
 
         auto const listAfterReject = env.rpc("peer_reservations_list")[jss::result];
         BEAST_EXPECT(listAfterReject[jss::reservations].size() == 1);
