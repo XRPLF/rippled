@@ -117,7 +117,7 @@ TEST(AccountSet, MostFlags)
                 // and are tested elsewhere
                 continue;
             }
-            if (std::find(goodFlags.begin(), goodFlags.end(), flag) != goodFlags.end())
+            if (std::ranges::find(goodFlags, flag) != goodFlags.end())
             {
                 // Good flag
                 EXPECT_FALSE(env.getAccountRoot(alice).isFlag(asfToLsf(flag)));
