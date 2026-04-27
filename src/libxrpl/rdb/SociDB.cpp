@@ -43,7 +43,7 @@ getSociSqliteInit(std::string const& name, std::string const& dir, std::string c
             "Sqlite databases must specify a dir and a name. Name: " + name + " Dir: " + dir);
     }
     std::filesystem::path file(dir);
-    if (is_directory(file))
+    if (std::filesystem::is_directory(file))
         file /= name + ext;
     return file.string();
 }
