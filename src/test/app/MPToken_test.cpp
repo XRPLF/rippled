@@ -1868,8 +1868,8 @@ class MPToken_test : public beast::unit_test::suite
                 // Transaction has amount/issue fields.
                 // Exclude pseudo-transaction SetFee. Don't consider
                 // the Fee field since it's included in every transaction.
-                if (e.supportMPT() == SOETxMPTIssue::soeMPTNotSupported &&
-                    e.sField().getName() != jss::Fee && format.getName() != jss::SetFee)
+                if (e.supportMPT() == soeMPTNotSupported && e.sField().getName() != jss::Fee &&
+                    format.getName() != jss::SetFee)
                 {
                     txWithAmounts.insert(format.getName() + e.sField().fieldName);
                     break;

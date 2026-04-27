@@ -22,8 +22,9 @@ enum SOEStyle {
                       // constructed with STObject::makeInnerObject()
 };
 
-/** Amount fields that can support MPT */
-enum class SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+// Part of a Python-parsed DSL (transactions.macro); bare enumerator names required by the parser
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
+enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
 
 //------------------------------------------------------------------------------
 
@@ -33,7 +34,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOETxMPTIssue supportMpt_ = SOETxMPTIssue::soeMPTNone;
+    SOETxMPTIssue supportMpt_ = soeMPTNone;
 
 private:
     void
@@ -59,7 +60,7 @@ public:
     SOElement(
         TypedField<T> const& fieldName,
         SOEStyle style,
-        SOETxMPTIssue supportMpt = SOETxMPTIssue::soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
