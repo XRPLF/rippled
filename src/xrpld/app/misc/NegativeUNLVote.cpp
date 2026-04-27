@@ -308,7 +308,7 @@ NegativeUNLVote::findAllCandidates(
 void
 NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrusted)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     for (auto const& n : nowTrusted)
     {
         if (!newValidators_.contains(n))
@@ -322,7 +322,7 @@ NegativeUNLVote::newValidators(LedgerIndex seq, hash_set<NodeID> const& nowTrust
 void
 NegativeUNLVote::purgeNewValidators(LedgerIndex seq)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     auto i = newValidators_.begin();
     while (i != newValidators_.end())
     {

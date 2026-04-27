@@ -1021,7 +1021,7 @@ InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> const& data)
 {
-    std::lock_guard const sl(mReceivedDataLock);
+    std::scoped_lock const sl(mReceivedDataLock);
 
     if (isDone())
         return false;
@@ -1233,7 +1233,7 @@ InboundLedger::runData()
         data.clear();
 
         {
-            std::lock_guard const sl(mReceivedDataLock);
+            std::scoped_lock const sl(mReceivedDataLock);
 
             if (mReceivedData.empty())
             {

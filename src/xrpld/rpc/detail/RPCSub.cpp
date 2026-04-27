@@ -84,7 +84,7 @@ public:
     void
     send(Json::Value const& jvObj, bool broadcast) override
     {
-        std::lock_guard const sl(mLock);
+        std::scoped_lock const sl(mLock);
 
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
@@ -104,7 +104,7 @@ public:
     void
     setUsername(std::string const& strUsername) override
     {
-        std::lock_guard const sl(mLock);
+        std::scoped_lock const sl(mLock);
 
         mUsername = strUsername;
     }
@@ -112,7 +112,7 @@ public:
     void
     setPassword(std::string const& strPassword) override
     {
-        std::lock_guard const sl(mLock);
+        std::scoped_lock const sl(mLock);
 
         mPassword = strPassword;
     }
@@ -130,7 +130,7 @@ private:
         {
             {
                 // Obtain the lock to manipulate the queue and change sending.
-                std::lock_guard const sl(mLock);
+                std::scoped_lock const sl(mLock);
 
                 if (mDeque.empty())
                 {
