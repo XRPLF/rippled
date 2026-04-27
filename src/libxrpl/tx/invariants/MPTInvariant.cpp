@@ -18,6 +18,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <cstddef>
 #include <cstdint>
 #include <memory>
 
