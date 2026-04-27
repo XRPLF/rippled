@@ -217,7 +217,7 @@ struct XChainBridgeObjects
             fromIdx);
     }
 
-    Json::Value
+    [[nodiscard]] Json::Value
     create_bridge(
         Account const& acc,
         Json::Value const& bridge = Json::nullValue,

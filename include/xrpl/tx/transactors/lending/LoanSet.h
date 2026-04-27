@@ -1,7 +1,7 @@
 #pragma once
 
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
 namespace xrpl {
 

@@ -30,7 +30,7 @@ public:
         return db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return db_;

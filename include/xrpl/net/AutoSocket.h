@@ -43,7 +43,7 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     isSecure() const
     {
         return mSecure;

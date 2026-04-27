@@ -107,7 +107,7 @@ public:
         return true;
     }
 
-    Seq
+    [[nodiscard]] Seq
     largest() const
     {
         return seq_;
