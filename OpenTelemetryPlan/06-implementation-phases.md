@@ -224,8 +224,8 @@ See [Phase4_taskList.md](./Phase4_taskList.md) for the full spec and implementat
 **Objective**: Fill tracing gaps in the establish phase and establish cross-node
 correlation using deterministic trace IDs derived from `previousLedger.id()`.
 
-**Approach**: Direct instrumentation in `Consensus.h`. Long-lived spans use
-direct SpanGuard members; short-lived scoped spans use `XRPL_TRACE_*` macros.
+**Approach**: Direct instrumentation in `Consensus.h` and `RCLConsensus.cpp`.
+All spans use `SpanGuard` factory methods with `TraceCategory::Consensus` gating.
 
 ### Tasks
 
@@ -288,15 +288,15 @@ See [Phase4_taskList.md § Phase 4b](./Phase4_taskList.md) for full design.
 
 ### Tasks
 
-| Task | Description                   |
-| ---- | ----------------------------- |
-| 5.1  | Operator runbook              |
-| 5.2  | Grafana dashboards            |
-| 5.3  | Alert definitions             |
-| 5.4  | Collector deployment examples |
-| 5.5  | Developer documentation       |
-| 5.6  | Training materials            |
-| 5.7  | Final integration testing     |
+| Task | Description                   | Status              |
+| ---- | ----------------------------- | ------------------- |
+| 5.1  | Operator runbook              | Complete            |
+| 5.2  | Grafana dashboards            | Complete            |
+| 5.3  | Alert definitions             | Deferred — post-MVP |
+| 5.4  | Collector deployment examples | Complete            |
+| 5.5  | Developer documentation       | Complete            |
+| 5.6  | Training materials            | Deferred — post-MVP |
+| 5.7  | Final integration testing     | Complete            |
 
 ---
 
