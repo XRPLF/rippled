@@ -1,9 +1,29 @@
-#include <test/jtx.h>
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+
+#include <cstdint>
+#include <exception>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
 
 namespace xrpl {
 
@@ -21,24 +41,24 @@ public:
     }
 
     //--------------------------------------------------------------------------
-    STAmount
+    static STAmount
     roundSelf(STAmount const& amount)
     {
         if (amount.native())
             return amount;
 
         std::uint64_t mantissa = amount.mantissa();
-        std::uint64_t valueDigits = mantissa % 1000000000;
+        std::uint64_t const valueDigits = mantissa % 1000000000;
 
         if (valueDigits == 1)
         {
             mantissa--;
 
             if (mantissa < STAmount::cMinValue)
-                return {amount.issue(), mantissa, amount.exponent(), amount.negative()};
+                return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
-                amount.issue(),
+                amount.asset(),
                 mantissa,
                 amount.exponent(),
                 amount.negative(),
@@ -50,10 +70,10 @@ public:
             mantissa++;
 
             if (mantissa > STAmount::cMaxValue)
-                return {amount.issue(), mantissa, amount.exponent(), amount.negative()};
+                return {amount.asset(), mantissa, amount.exponent(), amount.negative()};
 
             return {
-                amount.issue(),
+                amount.asset(),
                 mantissa,
                 amount.exponent(),
                 amount.negative(),
@@ -67,19 +87,19 @@ public:
     roundTest(int n, int d, int m)
     {
         // check STAmount rounding
-        STAmount num(noIssue(), n);
-        STAmount den(noIssue(), d);
-        STAmount mul(noIssue(), m);
-        STAmount quot = divide(STAmount(n), STAmount(d), noIssue());
-        STAmount res = roundSelf(multiply(quot, mul, noIssue()));
+        STAmount const num(noIssue(), n);
+        STAmount const den(noIssue(), d);
+        STAmount const mul(noIssue(), m);
+        STAmount const quot = divide(STAmount(n), STAmount(d), noIssue());
+        STAmount const res = roundSelf(multiply(quot, mul, noIssue()));
 
         BEAST_EXPECT(!res.native());
 
-        STAmount cmp(noIssue(), (n * m) / d);
+        STAmount const cmp(noIssue(), (n * m) / d);
 
         BEAST_EXPECT(!cmp.native());
 
-        BEAST_EXPECT(cmp.issue().currency == res.issue().currency);
+        BEAST_EXPECT(cmp.get<Issue>().currency == res.get<Issue>().currency);
 
         if (res != cmp)
         {
@@ -93,13 +113,14 @@ public:
     void
     mulTest(int a, int b)
     {
-        STAmount aa(noIssue(), a);
-        STAmount bb(noIssue(), b);
-        STAmount prod1(multiply(aa, bb, noIssue()));
+        STAmount const aa(noIssue(), a);
+        STAmount const bb(noIssue(), b);
+        STAmount const prod1(multiply(aa, bb, noIssue()));
 
         BEAST_EXPECT(!prod1.native());
 
-        STAmount prod2(noIssue(), static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b));
+        STAmount const prod2(
+            noIssue(), static_cast<std::uint64_t>(a) * static_cast<std::uint64_t>(b));
 
         if (prod1 != prod2)
         {
@@ -196,7 +217,11 @@ public:
     testNativeCurrency()
     {
         testcase("native currency");
-        STAmount zeroSt, one(1), hundred(100);
+
+        STAmount const zeroSt;
+        STAmount const one(1);
+        STAmount const hundred(100);
+
         // VFALCO NOTE Why repeat "STAmount fail" so many times??
         unexpected(serializeAndDeserialize(zeroSt) != zeroSt, "STAmount fail");
         unexpected(serializeAndDeserialize(one) != one, "STAmount fail");
@@ -206,60 +231,60 @@ public:
         unexpected(zeroSt != beast::zero, "STAmount fail");
         unexpected(one == beast::zero, "STAmount fail");
         unexpected(hundred == beast::zero, "STAmount fail");
-        unexpected((zeroSt < zeroSt), "STAmount fail");
+        unexpected((zeroSt < zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt < one), "STAmount fail");
         unexpected(!(zeroSt < hundred), "STAmount fail");
         unexpected((one < zeroSt), "STAmount fail");
-        unexpected((one < one), "STAmount fail");
+        unexpected((one < one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one < hundred), "STAmount fail");
         unexpected((hundred < zeroSt), "STAmount fail");
         unexpected((hundred < one), "STAmount fail");
-        unexpected((hundred < hundred), "STAmount fail");
-        unexpected((zeroSt > zeroSt), "STAmount fail");
+        unexpected((hundred < hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected((zeroSt > zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt > one), "STAmount fail");
         unexpected((zeroSt > hundred), "STAmount fail");
         unexpected(!(one > zeroSt), "STAmount fail");
-        unexpected((one > one), "STAmount fail");
+        unexpected((one > one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one > hundred), "STAmount fail");
         unexpected(!(hundred > zeroSt), "STAmount fail");
         unexpected(!(hundred > one), "STAmount fail");
-        unexpected((hundred > hundred), "STAmount fail");
-        unexpected(!(zeroSt <= zeroSt), "STAmount fail");
+        unexpected((hundred > hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt <= zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt <= one), "STAmount fail");
         unexpected(!(zeroSt <= hundred), "STAmount fail");
         unexpected((one <= zeroSt), "STAmount fail");
-        unexpected(!(one <= one), "STAmount fail");
+        unexpected(!(one <= one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one <= hundred), "STAmount fail");
         unexpected((hundred <= zeroSt), "STAmount fail");
         unexpected((hundred <= one), "STAmount fail");
-        unexpected(!(hundred <= hundred), "STAmount fail");
-        unexpected(!(zeroSt >= zeroSt), "STAmount fail");
+        unexpected(!(hundred <= hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt >= zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt >= one), "STAmount fail");
         unexpected((zeroSt >= hundred), "STAmount fail");
         unexpected(!(one >= zeroSt), "STAmount fail");
-        unexpected(!(one >= one), "STAmount fail");
+        unexpected(!(one >= one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one >= hundred), "STAmount fail");
         unexpected(!(hundred >= zeroSt), "STAmount fail");
         unexpected(!(hundred >= one), "STAmount fail");
-        unexpected(!(hundred >= hundred), "STAmount fail");
-        unexpected(!(zeroSt == zeroSt), "STAmount fail");
+        unexpected(!(hundred >= hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt == zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt == one), "STAmount fail");
         unexpected((zeroSt == hundred), "STAmount fail");
         unexpected((one == zeroSt), "STAmount fail");
-        unexpected(!(one == one), "STAmount fail");
+        unexpected(!(one == one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one == hundred), "STAmount fail");
         unexpected((hundred == zeroSt), "STAmount fail");
         unexpected((hundred == one), "STAmount fail");
-        unexpected(!(hundred == hundred), "STAmount fail");
-        unexpected((zeroSt != zeroSt), "STAmount fail");
+        unexpected(!(hundred == hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected((zeroSt != zeroSt), "STAmount fail");     // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt != one), "STAmount fail");
         unexpected(!(zeroSt != hundred), "STAmount fail");
         unexpected(!(one != zeroSt), "STAmount fail");
-        unexpected((one != one), "STAmount fail");
+        unexpected((one != one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one != hundred), "STAmount fail");
         unexpected(!(hundred != zeroSt), "STAmount fail");
         unexpected(!(hundred != one), "STAmount fail");
-        unexpected((hundred != hundred), "STAmount fail");
+        unexpected((hundred != hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(STAmount().getText() != "0", "STAmount fail");
         unexpected(STAmount(31).getText() != "31", "STAmount fail");
         unexpected(STAmount(310).getText() != "310", "STAmount fail");
@@ -279,7 +304,11 @@ public:
     testCustomCurrency()
     {
         testcase("custom currency");
-        STAmount zeroSt(noIssue()), one(noIssue(), 1), hundred(noIssue(), 100);
+
+        STAmount const zeroSt(noIssue());
+        STAmount const one(noIssue(), 1);
+        STAmount const hundred(noIssue(), 100);
+
         unexpected(serializeAndDeserialize(zeroSt) != zeroSt, "STAmount fail");
         unexpected(serializeAndDeserialize(one) != one, "STAmount fail");
         unexpected(serializeAndDeserialize(hundred) != hundred, "STAmount fail");
@@ -288,60 +317,60 @@ public:
         unexpected(zeroSt != beast::zero, "STAmount fail");
         unexpected(one == beast::zero, "STAmount fail");
         unexpected(hundred == beast::zero, "STAmount fail");
-        unexpected((zeroSt < zeroSt), "STAmount fail");
+        unexpected((zeroSt < zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt < one), "STAmount fail");
         unexpected(!(zeroSt < hundred), "STAmount fail");
         unexpected((one < zeroSt), "STAmount fail");
-        unexpected((one < one), "STAmount fail");
+        unexpected((one < one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one < hundred), "STAmount fail");
         unexpected((hundred < zeroSt), "STAmount fail");
         unexpected((hundred < one), "STAmount fail");
-        unexpected((hundred < hundred), "STAmount fail");
-        unexpected((zeroSt > zeroSt), "STAmount fail");
+        unexpected((hundred < hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected((zeroSt > zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt > one), "STAmount fail");
         unexpected((zeroSt > hundred), "STAmount fail");
         unexpected(!(one > zeroSt), "STAmount fail");
-        unexpected((one > one), "STAmount fail");
+        unexpected((one > one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one > hundred), "STAmount fail");
         unexpected(!(hundred > zeroSt), "STAmount fail");
         unexpected(!(hundred > one), "STAmount fail");
-        unexpected((hundred > hundred), "STAmount fail");
-        unexpected(!(zeroSt <= zeroSt), "STAmount fail");
+        unexpected((hundred > hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt <= zeroSt), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt <= one), "STAmount fail");
         unexpected(!(zeroSt <= hundred), "STAmount fail");
         unexpected((one <= zeroSt), "STAmount fail");
-        unexpected(!(one <= one), "STAmount fail");
+        unexpected(!(one <= one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one <= hundred), "STAmount fail");
         unexpected((hundred <= zeroSt), "STAmount fail");
         unexpected((hundred <= one), "STAmount fail");
-        unexpected(!(hundred <= hundred), "STAmount fail");
-        unexpected(!(zeroSt >= zeroSt), "STAmount fail");
+        unexpected(!(hundred <= hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt >= zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt >= one), "STAmount fail");
         unexpected((zeroSt >= hundred), "STAmount fail");
         unexpected(!(one >= zeroSt), "STAmount fail");
-        unexpected(!(one >= one), "STAmount fail");
+        unexpected(!(one >= one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one >= hundred), "STAmount fail");
         unexpected(!(hundred >= zeroSt), "STAmount fail");
         unexpected(!(hundred >= one), "STAmount fail");
-        unexpected(!(hundred >= hundred), "STAmount fail");
-        unexpected(!(zeroSt == zeroSt), "STAmount fail");
+        unexpected(!(hundred >= hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected(!(zeroSt == zeroSt), "STAmount fail");    // NOLINT(misc-redundant-expression)
         unexpected((zeroSt == one), "STAmount fail");
         unexpected((zeroSt == hundred), "STAmount fail");
         unexpected((one == zeroSt), "STAmount fail");
-        unexpected(!(one == one), "STAmount fail");
+        unexpected(!(one == one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected((one == hundred), "STAmount fail");
         unexpected((hundred == zeroSt), "STAmount fail");
         unexpected((hundred == one), "STAmount fail");
-        unexpected(!(hundred == hundred), "STAmount fail");
-        unexpected((zeroSt != zeroSt), "STAmount fail");
+        unexpected(!(hundred == hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
+        unexpected((zeroSt != zeroSt), "STAmount fail");     // NOLINT(misc-redundant-expression)
         unexpected(!(zeroSt != one), "STAmount fail");
         unexpected(!(zeroSt != hundred), "STAmount fail");
         unexpected(!(one != zeroSt), "STAmount fail");
-        unexpected((one != one), "STAmount fail");
+        unexpected((one != one), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(!(one != hundred), "STAmount fail");
         unexpected(!(hundred != zeroSt), "STAmount fail");
         unexpected(!(hundred != one), "STAmount fail");
-        unexpected((hundred != hundred), "STAmount fail");
+        unexpected((hundred != hundred), "STAmount fail");  // NOLINT(misc-redundant-expression)
         unexpected(STAmount(noIssue()).getText() != "0", "STAmount fail");
         unexpected(STAmount(noIssue(), 31).getText() != "31", "STAmount fail");
         unexpected(STAmount(noIssue(), 31, 1).getText() != "310", "STAmount fail");
@@ -382,7 +411,8 @@ public:
             divide(STAmount(noIssue(), 60), STAmount(noIssue(), 3), xrpIssue()).getText() != "20",
             "STAmount divide fail");
 
-        STAmount a1(noIssue(), 60), a2(noIssue(), 10, -1);
+        STAmount const a1(noIssue(), 60);
+        STAmount const a2(noIssue(), 10, -1);
 
         unexpected(
             divide(a2, a1, noIssue()) != amountFromQuality(getRate(a1, a2)),
@@ -464,14 +494,14 @@ public:
     {
         testcase("underflow");
 
-        STAmount bigNative(STAmount::cMaxNative / 2);
-        STAmount bigValue(
+        STAmount const bigNative(STAmount::cMaxNative / 2);
+        STAmount const bigValue(
             noIssue(), (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMaxOffset - 1);
-        STAmount smallValue(
+        STAmount const smallValue(
             noIssue(), (STAmount::cMinValue + STAmount::cMaxValue) / 2, STAmount::cMinOffset + 1);
-        STAmount zeroSt(noIssue(), 0);
+        STAmount const zeroSt(noIssue(), 0);
 
-        STAmount smallXSmall = multiply(smallValue, smallValue, noIssue());
+        STAmount const smallXSmall = multiply(smallValue, smallValue, noIssue());
 
         BEAST_EXPECT(smallXSmall == beast::zero);
 
@@ -822,43 +852,43 @@ public:
 
         // Adding zero
         {
-            STAmount amt1(XRPAmount(0));
-            STAmount amt2(XRPAmount(1000));
+            STAmount const amt1(XRPAmount(0));
+            STAmount const amt2(XRPAmount(1000));
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding zero
         {
-            STAmount amt1(XRPAmount(1000));
-            STAmount amt2(XRPAmount(0));
+            STAmount const amt1(XRPAmount(1000));
+            STAmount const amt2(XRPAmount(0));
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding two positive XRP amounts
         {
-            STAmount amt1(XRPAmount(500));
-            STAmount amt2(XRPAmount(1500));
+            STAmount const amt1(XRPAmount(500));
+            STAmount const amt2(XRPAmount(1500));
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding two negative XRP amounts
         {
-            STAmount amt1(XRPAmount(-500));
-            STAmount amt2(XRPAmount(-1500));
+            STAmount const amt1(XRPAmount(-500));
+            STAmount const amt2(XRPAmount(-1500));
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding a positive and a negative XRP amount
         {
-            STAmount amt1(XRPAmount(1000));
-            STAmount amt2(XRPAmount(-1000));
+            STAmount const amt1(XRPAmount(1000));
+            STAmount const amt2(XRPAmount(-1000));
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Overflow check for max XRP amounts
         {
-            STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
-            STAmount amt2(XRPAmount(1));
+            STAmount const amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount const amt2(XRPAmount(1));
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
@@ -866,7 +896,7 @@ public:
         {
             STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
             amt1 += XRPAmount(1);
-            STAmount amt2(XRPAmount(-1));
+            STAmount const amt2(XRPAmount(-1));
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
     }
@@ -881,50 +911,50 @@ public:
 
         // Adding two IOU amounts
         {
-            STAmount amt1(usd, 500);
-            STAmount amt2(usd, 1500);
+            STAmount const amt1(usd, 500);
+            STAmount const amt2(usd, 1500);
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding a positive and a negative IOU amount
         {
-            STAmount amt1(usd, 1000);
-            STAmount amt2(usd, -1000);
+            STAmount const amt1(usd, 1000);
+            STAmount const amt2(usd, -1000);
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Overflow check for max IOU amounts
         {
-            STAmount amt1(usd, std::numeric_limits<int64_t>::max());
-            STAmount amt2(usd, 1);
+            STAmount const amt1(usd, std::numeric_limits<int64_t>::max());
+            STAmount const amt2(usd, 1);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Overflow check for min IOU amounts
         {
-            STAmount amt1(usd, std::numeric_limits<std::int64_t>::min());
-            STAmount amt2(usd, -1);
+            STAmount const amt1(usd, std::numeric_limits<std::int64_t>::min());
+            STAmount const amt2(usd, -1);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Adding XRP and IOU
         {
-            STAmount amt1(XRPAmount(1));
-            STAmount amt2(usd, 1);
+            STAmount const amt1(XRPAmount(1));
+            STAmount const amt2(usd, 1);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Adding different IOU issues (non zero)
         {
-            STAmount amt1(usd, 1000);
-            STAmount amt2(eur, 500);
+            STAmount const amt1(usd, 1000);
+            STAmount const amt2(eur, 500);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Adding different IOU issues (zero)
         {
-            STAmount amt1(usd, 0);
-            STAmount amt2(eur, 500);
+            STAmount const amt1(usd, 0);
+            STAmount const amt2(eur, 500);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
     }
@@ -939,43 +969,43 @@ public:
 
         // Adding zero
         {
-            STAmount amt1(mpt, 0);
-            STAmount amt2(mpt, 1000);
+            STAmount const amt1(mpt, 0);
+            STAmount const amt2(mpt, 1000);
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding zero
         {
-            STAmount amt1(mpt, 1000);
-            STAmount amt2(mpt, 0);
+            STAmount const amt1(mpt, 1000);
+            STAmount const amt2(mpt, 0);
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding two positive MPT amounts
         {
-            STAmount amt1(mpt, 500);
-            STAmount amt2(mpt, 1500);
+            STAmount const amt1(mpt, 500);
+            STAmount const amt2(mpt, 1500);
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding two negative MPT amounts
         {
-            STAmount amt1(mpt, -500);
-            STAmount amt2(mpt, -1500);
+            STAmount const amt1(mpt, -500);
+            STAmount const amt2(mpt, -1500);
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Adding a positive and a negative MPT amount
         {
-            STAmount amt1(mpt, 1000);
-            STAmount amt2(mpt, -1000);
+            STAmount const amt1(mpt, 1000);
+            STAmount const amt2(mpt, -1000);
             BEAST_EXPECT(canAdd(amt1, amt2) == true);
         }
 
         // Overflow check for max MPT amounts
         {
-            STAmount amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
-            STAmount amt2(mpt, 1);
+            STAmount const amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount const amt2(mpt, 1);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
@@ -985,22 +1015,22 @@ public:
 
         // Adding MPT and XRP
         {
-            STAmount amt1(XRPAmount(1000));
-            STAmount amt2(mpt, 1000);
+            STAmount const amt1(XRPAmount(1000));
+            STAmount const amt2(mpt, 1000);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Adding different MPT issues (non zero)
         {
-            STAmount amt1(mpt2, 500);
-            STAmount amt2(mpt, 500);
+            STAmount const amt1(mpt2, 500);
+            STAmount const amt2(mpt, 500);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Adding different MPT issues (non zero)
         {
-            STAmount amt1(mpt2, 0);
-            STAmount amt2(mpt, 500);
+            STAmount const amt1(mpt2, 0);
+            STAmount const amt2(mpt, 500);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
     }
@@ -1012,36 +1042,36 @@ public:
 
         // Subtracting zero
         {
-            STAmount amt1(XRPAmount(1000));
-            STAmount amt2(XRPAmount(0));
+            STAmount const amt1(XRPAmount(1000));
+            STAmount const amt2(XRPAmount(0));
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
         // Subtracting zero
         {
-            STAmount amt1(XRPAmount(0));
-            STAmount amt2(XRPAmount(1000));
+            STAmount const amt1(XRPAmount(0));
+            STAmount const amt2(XRPAmount(1000));
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
         // Subtracting two positive XRP amounts
         {
-            STAmount amt1(XRPAmount(1500));
-            STAmount amt2(XRPAmount(500));
+            STAmount const amt1(XRPAmount(1500));
+            STAmount const amt2(XRPAmount(500));
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
         // Subtracting two negative XRP amounts
         {
-            STAmount amt1(XRPAmount(-1500));
-            STAmount amt2(XRPAmount(-500));
+            STAmount const amt1(XRPAmount(-1500));
+            STAmount const amt2(XRPAmount(-500));
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
         // Subtracting a positive and a negative XRP amount
         {
-            STAmount amt1(XRPAmount(1000));
-            STAmount amt2(XRPAmount(-1000));
+            STAmount const amt1(XRPAmount(1000));
+            STAmount const amt2(XRPAmount(-1000));
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
@@ -1049,14 +1079,14 @@ public:
         {
             STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
             amt1 += XRPAmount(1);
-            STAmount amt2(XRPAmount(1));
+            STAmount const amt2(XRPAmount(1));
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
         // Overflow check for max XRP amounts
         {
-            STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
-            STAmount amt2(XRPAmount(-1));
+            STAmount const amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount const amt2(XRPAmount(-1));
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
     }
@@ -1070,29 +1100,29 @@ public:
 
         // Subtracting two IOU amounts
         {
-            STAmount amt1(usd, 1500);
-            STAmount amt2(usd, 500);
+            STAmount const amt1(usd, 1500);
+            STAmount const amt2(usd, 500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
         // Subtracting XRP and IOU
         {
-            STAmount amt1(XRPAmount(1000));
-            STAmount amt2(usd, 1000);
+            STAmount const amt1(XRPAmount(1000));
+            STAmount const amt2(usd, 1000);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
         // Subtracting different IOU issues (non zero)
         {
-            STAmount amt1(usd, 1000);
-            STAmount amt2(eur, 500);
+            STAmount const amt1(usd, 1000);
+            STAmount const amt2(eur, 500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
         // Subtracting different IOU issues (zero)
         {
-            STAmount amt1(usd, 0);
-            STAmount amt2(eur, 500);
+            STAmount const amt1(usd, 0);
+            STAmount const amt2(eur, 500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
     }
@@ -1107,36 +1137,36 @@ public:
 
         // Subtracting zero
         {
-            STAmount amt1(mpt, 1000);
-            STAmount amt2(mpt, 0);
+            STAmount const amt1(mpt, 1000);
+            STAmount const amt2(mpt, 0);
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
         // Subtracting zero
         {
-            STAmount amt1(mpt, 0);
-            STAmount amt2(mpt, 1000);
+            STAmount const amt1(mpt, 0);
+            STAmount const amt2(mpt, 1000);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
         // Subtracting two positive MPT amounts
         {
-            STAmount amt1(mpt, 1500);
-            STAmount amt2(mpt, 500);
+            STAmount const amt1(mpt, 1500);
+            STAmount const amt2(mpt, 500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
         // Subtracting two negative MPT amounts
         {
-            STAmount amt1(mpt, -1500);
-            STAmount amt2(mpt, -500);
+            STAmount const amt1(mpt, -1500);
+            STAmount const amt2(mpt, -500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
         // Subtracting a positive and a negative MPT amount
         {
-            STAmount amt1(mpt, 1000);
-            STAmount amt2(mpt, -1000);
+            STAmount const amt1(mpt, 1000);
+            STAmount const amt2(mpt, -1000);
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
@@ -1146,29 +1176,29 @@ public:
 
         // Overflow check for max positive MPT amounts (should fail)
         {
-            STAmount amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
-            STAmount amt2(mpt, -2);
+            STAmount const amt1(mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount const amt2(mpt, -2);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
         // Subtracting MPT and XRP
         {
-            STAmount amt1(XRPAmount(1000));
-            STAmount amt2(mpt, 1000);
+            STAmount const amt1(XRPAmount(1000));
+            STAmount const amt2(mpt, 1000);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
         // Subtracting different MPT issues (non zero)
         {
-            STAmount amt1(mpt, 1000);
-            STAmount amt2(mpt2, 500);
+            STAmount const amt1(mpt, 1000);
+            STAmount const amt2(mpt2, 500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
         // Subtracting different MPT issues (zero)
         {
-            STAmount amt1(mpt, 0);
-            STAmount amt2(mpt2, 500);
+            STAmount const amt1(mpt, 0);
+            STAmount const amt2(mpt2, 500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
     }

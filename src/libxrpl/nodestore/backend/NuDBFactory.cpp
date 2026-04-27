@@ -1,24 +1,50 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
 
-#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/system/detail/errc.hpp>
 
-#include <nudb/nudb.hpp>
+#include <nudb/context.hpp>
+#include <nudb/create.hpp>  // IWYU pragma: keep
+#include <nudb/detail/buffer.hpp>
+#include <nudb/error.hpp>
+#include <nudb/file.hpp>
+#include <nudb/progress.hpp>
+#include <nudb/store.hpp>
+#include <nudb/verify.hpp>  // IWYU pragma: keep
+#include <nudb/visit.hpp>   // IWYU pragma: keep
+#include <nudb/xxhasher.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NuDBBackend : public Backend
 {
@@ -96,7 +122,7 @@ public:
         return name_;
     }
 
-    std::optional<std::size_t>
+    [[nodiscard]] std::optional<std::size_t>
     getBlockSize() const override
     {
         return blockSize_;
@@ -181,7 +207,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
-        Status status;
+        Status status = ok;
         pno->reset();
         nudb::error_code ec;
         db_.fetch(
@@ -214,11 +240,15 @@ public:
         for (auto const& h : hashes)
         {
             std::shared_ptr<NodeObject> nObj;
-            Status status = fetch(h, &nObj);
+            Status const status = fetch(h, &nObj);
             if (status != ok)
+            {
                 results.push_back({});
+            }
             else
+            {
                 results.push_back(nObj);
+            }
         }
 
         return {results, ok};
@@ -227,7 +257,7 @@ public:
     void
     do_insert(std::shared_ptr<NodeObject> const& no)
     {
-        EncodedBlob e(no);
+        EncodedBlob const e(no);
         nudb::error_code ec;
         nudb::detail::buffer bf;
         auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);
@@ -239,7 +269,7 @@ public:
     void
     store(std::shared_ptr<NodeObject> const& no) override
     {
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = 1;
         auto const start = std::chrono::steady_clock::now();
         do_insert(no);
@@ -251,7 +281,7 @@ public:
     void
     storeBatch(Batch const& batch) override
     {
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = batch.size();
         auto const start = std::chrono::steady_clock::now();
         for (auto const& e : batch)
@@ -334,7 +364,7 @@ public:
             Throw<nudb::system_error>(ec);
     }
 
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 3;
@@ -349,7 +379,7 @@ private:
         auto const kp = (folder / "nudb.key").string();
 
         std::size_t const defaultSize = nudb::block_size(kp);  // Default 4K from NuDB
-        std::size_t blockSize = defaultSize;
+        std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
         if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
@@ -396,7 +426,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "NuDB";
@@ -430,8 +460,7 @@ public:
 void
 registerNuDBFactory(Manager& manager)
 {
-    static NuDBFactory instance{manager};
+    static NuDBFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

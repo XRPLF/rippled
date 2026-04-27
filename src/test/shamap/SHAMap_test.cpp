@@ -3,12 +3,27 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapLeafNode.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-namespace xrpl {
-namespace tests {
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace xrpl::tests {
 
 #ifndef __INTELLISENSE__
 static_assert(std::is_nothrow_destructible<SHAMap>{}, "");
@@ -110,9 +125,13 @@ public:
     run(bool backed, beast::Journal const& journal)
     {
         if (backed)
+        {
             testcase("add/traverse backed");
+        }
         else
+        {
             testcase("add/traverse unbacked");
+        }
 
         tests::TestNodeFamily f(journal);
 
@@ -163,12 +182,16 @@ public:
         unexpected(i != e, "bad traverse");
 
         if (backed)
+        {
             testcase("snapshot backed");
+        }
         else
+        {
             testcase("snapshot unbacked");
+        }
 
-        SHAMapHash mapHash = sMap.getHash();
-        std::shared_ptr<SHAMap> map2 = sMap.snapShot(false);
+        SHAMapHash const mapHash = sMap.getHash();
+        std::shared_ptr<SHAMap> const map2 = sMap.snapShot(false);
         map2->invariants();
         unexpected(sMap.getHash() != mapHash, "bad snapshot");
         unexpected(map2->getHash() != mapHash, "bad snapshot");
@@ -191,9 +214,13 @@ public:
         sMap.dump();
 
         if (backed)
+        {
             testcase("build/tear backed");
+        }
         else
+        {
             testcase("build/tear unbacked");
+        }
         {
             constexpr std::array keys{
                 uint256(
@@ -269,9 +296,13 @@ public:
         }
 
         if (backed)
+        {
             testcase("iterate backed");
+        }
         else
+        {
             testcase("iterate unbacked");
+        }
 
         {
             constexpr std::array keys{
@@ -354,7 +385,7 @@ class SHAMapPathProof_test : public beast::unit_test::suite
                 path->insert(path->begin(), path->front());
                 BEAST_EXPECT(!map.verifyProofPath(root, k, *path));
                 // wrong key
-                uint256 wrongKey(c + 1);
+                uint256 const wrongKey(c + 1);
                 BEAST_EXPECT(!map.getProofPath(wrongKey));
             }
             if (c == 99)
@@ -393,5 +424,4 @@ class SHAMapPathProof_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(SHAMap, shamap, xrpl);
 BEAST_DEFINE_TESTSUITE(SHAMapPathProof, shamap, xrpl);
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

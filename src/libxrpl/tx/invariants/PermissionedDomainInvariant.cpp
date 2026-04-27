@@ -1,10 +1,22 @@
 #include <xrpl/tx/invariants/PermissionedDomainInvariant.h>
-//
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/CredentialHelpers.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <vector>
 
 namespace xrpl {
 
@@ -23,7 +35,11 @@ ValidPermissionedDomain::visitEntry(
         auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
         auto const sorted = credentials::makeSorted(credentials);
 
-        SleStatus ss{credentials.size(), false, !sorted.empty(), isDel};
+        SleStatus ss{
+            .credentialsSize_ = credentials.size(),
+            .isSorted_ = false,
+            .isUnique_ = !sorted.empty(),
+            .isDelete_ = isDel};
 
         // If array have duplicates then all the other checks are invalid
         if (ss.isUnique_)
@@ -38,7 +54,7 @@ ValidPermissionedDomain::visitEntry(
                     break;
             }
         }
-        sleStatus.emplace_back(std::move(ss));
+        sleStatus.emplace_back(ss);
     };
 
     if (after)
@@ -89,10 +105,11 @@ ValidPermissionedDomain::finalize(
     if (view.rules().enabled(fixPermissionedDomainInvariant))
     {
         // No permissioned domains should be affected if the transaction failed
-        if (result != tesSUCCESS)
-            // If nothing changed, all is good. If there were changes, that's
-            // bad.
+        if (!isTesSuccess(result))
+        {
+            // If nothing changed, all is good. If there were changes, that's bad.
             return sleStatus_.empty();
+        }
 
         if (sleStatus_.size() > 1)
         {
@@ -152,7 +169,7 @@ ValidPermissionedDomain::finalize(
     }
     else
     {
-        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS ||
+        if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || !isTesSuccess(result) ||
             sleStatus_.empty())
             return true;
         return check(sleStatus_[0], j);

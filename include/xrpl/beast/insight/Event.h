@@ -5,8 +5,7 @@
 #include <chrono>
 #include <memory>
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 /** A metric for reporting event timing.
 
@@ -25,9 +24,7 @@ public:
     /** Create a null metric.
         A null metric reports no information.
     */
-    Event()
-    {
-    }
+    Event() = default;
 
     /** Create the metric reference the specified implementation.
         Normally this won't be called directly. Instead, call the appropriate
@@ -48,7 +45,7 @@ public:
             m_impl->notify(ceil<value_type>(value));
     }
 
-    std::shared_ptr<EventImpl> const&
+    [[nodiscard]] std::shared_ptr<EventImpl> const&
     impl() const
     {
         return m_impl;
@@ -58,5 +55,4 @@ private:
     std::shared_ptr<EventImpl> m_impl;
 };
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

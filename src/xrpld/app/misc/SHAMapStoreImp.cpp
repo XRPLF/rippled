@@ -1,29 +1,58 @@
-#include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
+
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 void
 SHAMapStoreImp::SavedStateDB::init(BasicConfig const& config, std::string const& dbName)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     initStateDB(sqlDb_, config, dbName);
 }
 
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return xrpl::getCanDelete(sqlDb_);
 }
@@ -31,7 +60,7 @@ SHAMapStoreImp::SavedStateDB::getCanDelete()
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return xrpl::setCanDelete(sqlDb_, canDelete);
 }
@@ -39,7 +68,7 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 SavedState
 SHAMapStoreImp::SavedStateDB::getState()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return xrpl::getSavedState(sqlDb_);
 }
@@ -47,14 +76,14 @@ SHAMapStoreImp::SavedStateDB::getState()
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     xrpl::setSavedState(sqlDb_, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     xrpl::setLastRotated(sqlDb_, seq);
 }
 
@@ -93,11 +122,11 @@ SHAMapStoreImp::SHAMapStoreImp(
 
     get_if_exists(section, "online_delete", deleteInterval_);
 
-    if (deleteInterval_)
+    if (deleteInterval_ != 0u)
     {
         // Configuration that affects the behavior of online delete
         get_if_exists(section, "delete_batch", deleteBatch_);
-        std::uint32_t temp;
+        std::uint32_t temp = 0;
         if (get_if_exists(section, "back_off_milliseconds", temp) ||
             // Included for backward compatibility with an undocumented setting
             get_if_exists(section, "backOff", temp))
@@ -138,12 +167,12 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
     auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
     std::unique_ptr<NodeStore::Database> db;
 
-    if (deleteInterval_)
+    if (deleteInterval_ != 0u)
     {
         SavedState state = state_db_.getState();
         auto writableBackend = makeBackendRotating(state.writableDb);
         auto archiveBackend = makeBackendRotating(state.archiveDb);
-        if (!state.writableDb.size())
+        if (state.writableDb.empty())
         {
             state.writableDb = writableBackend->getName();
             state.archiveDb = archiveBackend->getName();
@@ -158,7 +187,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             std::move(writableBackend),
             std::move(archiveBackend),
             nscfg,
-            app_.logs().journal(nodeStoreName_));
+            app_.getJournal(nodeStoreName_));
         fdRequired_ += dbr->fdRequired();
         dbRotating_ = dbr.get();
         db.reset(dynamic_cast<NodeStore::Database*>(dbr.release()));
@@ -170,7 +199,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
             scheduler_,
             readThreads,
             nscfg,
-            app_.logs().journal(nodeStoreName_));
+            app_.getJournal(nodeStoreName_));
         fdRequired_ += db->fdRequired();
     }
     return db;
@@ -180,7 +209,7 @@ void
 SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
 {
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         newLedger_ = ledger;
         working_ = true;
     }
@@ -209,7 +238,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
     // Copy a single record from node to dbRotating_
     dbRotating_->fetchNodeObject(
         node.getHash().as_uint256(), 0, NodeStore::FetchType::synchronous, true);
-    if (!(++nodeCount % checkHealthInterval_))
+    if ((++nodeCount % checkHealthInterval_) == 0u)
     {
         if (healthWait() == stopping)
             return false;
@@ -248,11 +277,13 @@ SHAMapStoreImp::run()
                 validatedLedger = std::move(newLedger_);
             }
             else
+            {
                 continue;
+            }
         }
 
         LedgerIndex const validatedSeq = validatedLedger->header().seq;
-        if (!lastRotated)
+        if (lastRotated == 0u)
         {
             lastRotated = validatedSeq;
             state_db_.setLastRotated(lastRotated);
@@ -336,7 +367,7 @@ SHAMapStoreImp::run()
 void
 SHAMapStoreImp::dbPaths()
 {
-    Section section{app_.config().section(ConfigSection::nodeDatabase())};
+    Section const section{app_.config().section(ConfigSection::nodeDatabase())};
     boost::filesystem::path dbPath = get(section, "path");
 
     if (boost::filesystem::exists(dbPath))
@@ -384,16 +415,22 @@ SHAMapStoreImp::dbPaths()
          it != boost::filesystem::directory_iterator();
          ++it)
     {
-        if (!state.writableDb.compare(it->path().string()))
+        if (state.writableDb.compare(it->path().string()) == 0)
+        {
             writableDbExists = true;
-        else if (!state.archiveDb.compare(it->path().string()))
+        }
+        else if (state.archiveDb.compare(it->path().string()) == 0)
+        {
             archiveDbExists = true;
-        else if (!dbPrefix_.compare(it->path().stem().string()))
+        }
+        else if (dbPrefix_.compare(it->path().stem().string()) == 0)
+        {
             pathsToDelete.push_back(it->path());
+        }
     }
 
-    if ((!writableDbExists && state.writableDb.size()) ||
-        (!archiveDbExists && state.archiveDb.size()) || (writableDbExists != archiveDbExists) ||
+    if ((!writableDbExists && !state.writableDb.empty()) ||
+        (!archiveDbExists && !state.archiveDb.empty()) || (writableDbExists != archiveDbExists) ||
         state.writableDb.empty() != state.archiveDb.empty())
     {
         boost::filesystem::path stateDbPathName = app_.config().legacy("database_path");
@@ -418,7 +455,7 @@ SHAMapStoreImp::dbPaths()
     }
 
     // The necessary directories exist. Now, remove any others.
-    for (boost::filesystem::path& p : pathsToDelete)
+    for (boost::filesystem::path const& p : pathsToDelete)
         boost::filesystem::remove_all(p);
 }
 
@@ -428,7 +465,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
     Section section{app_.config().section(ConfigSection::nodeDatabase())};
     boost::filesystem::path newPath;
 
-    if (path.size())
+    if (!path.empty())
     {
         newPath = path;
     }
@@ -445,7 +482,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
         section,
         megabytes(app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
         scheduler_,
-        app_.logs().journal(nodeStoreName_))};
+        app_.getJournal(nodeStoreName_))};
     backend->open();
     return backend;
 }
@@ -587,7 +624,7 @@ SHAMapStoreImp::stop()
     if (thread_.joinable())
     {
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }
@@ -600,7 +637,7 @@ SHAMapStoreImp::minimumOnline() const
 {
     // minimumOnline_ with 0 value is equivalent to unknown/not set.
     // Don't attempt to acquire ledgers if that value is unknown.
-    if (deleteInterval_ && minimumOnline_)
+    if ((deleteInterval_ != 0u) && (minimumOnline_ != 0u))
         return minimumOnline_.load();
     return app_.getLedgerMaster().minSqlSeq();
 }

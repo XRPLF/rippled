@@ -1,7 +1,15 @@
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Permissions.h>
-#include <xrpl/protocol/jss.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>  // IWYU pragma: keep
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/TxFormats.h>
+
+#include <cstdint>
+#include <functional>
+#include <optional>
+#include <string>
 
 namespace xrpl {
 
@@ -67,11 +75,18 @@ Permission::Permission()
 #pragma pop_macro("PERMISSION")
     };
 
+    XRPL_ASSERT(
+        txFeatureMap_.size() == delegableTx_.size(),
+        "xrpl::Permission : txFeatureMap_ and delegableTx_ must have same "
+        "size");
+
     for ([[maybe_unused]] auto const& permission : granularPermissionMap_)
+    {
         XRPL_ASSERT(
             permission.second > UINT16_MAX,
             "xrpl::Permission::granularPermissionMap_ : granular permission "
             "value must not exceed the maximum uint16_t value.");
+    }
 }
 
 Permission const&
@@ -126,7 +141,7 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
     return std::nullopt;
 }
 
-std::optional<std::reference_wrapper<uint256 const>> const
+std::optional<std::reference_wrapper<uint256 const>>
 Permission::getTxFeature(TxType txType) const
 {
     auto const txFeaturesIt = txFeatureMap_.find(txType);
@@ -145,8 +160,10 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
     auto const granularPermission =
         getGranularName(static_cast<GranularPermissionType>(permissionValue));
     if (granularPermission)
+    {
         // granular permissions are always allowed to be delegated
         return true;
+    }
 
     auto const txType = permissionToTxType(permissionValue);
     auto const it = delegableTx_.find(txType);
@@ -172,13 +189,13 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
 }
 
 uint32_t
-Permission::txToPermissionType(TxType const& type) const
+Permission::txToPermissionType(TxType const& type)
 {
     return static_cast<uint32_t>(type) + 1;
 }
 
 TxType
-Permission::permissionToTxType(uint32_t const& value) const
+Permission::permissionToTxType(uint32_t const& value)
 {
     return static_cast<TxType>(value - 1);
 }

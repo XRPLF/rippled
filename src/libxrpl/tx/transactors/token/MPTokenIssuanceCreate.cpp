@@ -1,7 +1,27 @@
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/token/MPTokenIssuanceCreate.h>
+
+#include <xrpl/basics/Expected.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -31,8 +51,8 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 {
     // If the mutable flags field is included, at least one flag must be
     // specified.
-    if (auto const mutableFlags = ctx.tx[~sfMutableFlags];
-        mutableFlags && (!*mutableFlags || *mutableFlags & tmfMPTokenIssuanceCreateMutableMask))
+    if (auto const mutableFlags = ctx.tx[~sfMutableFlags]; mutableFlags &&
+        ((*mutableFlags == 0u) || ((*mutableFlags & tmfMPTokenIssuanceCreateMutableMask) != 0u)))
         return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
@@ -58,7 +78,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
 
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
-        if (metadata->length() == 0 || metadata->length() > maxMPTokenMetadataLength)
+        if (metadata->empty() || metadata->length() > maxMPTokenMetadataLength)
             return temMALFORMED;
     }
 
@@ -138,7 +158,7 @@ MPTokenIssuanceCreate::doApply()
         view(),
         j_,
         {
-            .priorBalance = mPriorBalance,
+            .priorBalance = preFeeBalance_,
             .account = account_,
             .sequence = tx.getSeqValue(),
             .flags = tx.getFlags(),
@@ -150,6 +170,25 @@ MPTokenIssuanceCreate::doApply()
             .mutableFlags = tx[~sfMutableFlags],
         });
     return result ? tesSUCCESS : result.error();
+}
+
+void
+MPTokenIssuanceCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+MPTokenIssuanceCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

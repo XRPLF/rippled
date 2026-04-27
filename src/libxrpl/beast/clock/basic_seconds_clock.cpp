@@ -1,4 +1,5 @@
 #include <xrpl/beast/clock/basic_seconds_clock.h>
+
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
@@ -16,7 +17,7 @@ class seconds_clock_thread
 {
     using Clock = basic_seconds_clock::Clock;
 
-    bool stop_;
+    bool stop_{false};
     std::mutex mut_;
     std::condition_variable cv_;
     std::thread thread_;
@@ -41,15 +42,14 @@ seconds_clock_thread::~seconds_clock_thread()
     XRPL_ASSERT(
         thread_.joinable(), "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
     {
-        std::lock_guard lock(mut_);
+        std::lock_guard const lock(mut_);
         stop_ = true;
     }  // publish stop_ asap so if waiting thread times-out, it will see it
     cv_.notify_one();
     thread_.join();
 }
 
-seconds_clock_thread::seconds_clock_thread()
-    : stop_{false}, tp_{Clock::now().time_since_epoch().count()}
+seconds_clock_thread::seconds_clock_thread() : tp_{Clock::now().time_since_epoch().count()}
 {
     thread_ = std::thread(&seconds_clock_thread::run, this);
 }

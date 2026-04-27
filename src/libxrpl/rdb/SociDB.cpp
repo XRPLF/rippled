@@ -1,3 +1,21 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/ServiceRegistry.h>
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <soci/blob.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 #if defined(__clang__)
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated"
@@ -8,9 +26,7 @@
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/rdb/SociDB.h>
 
-#include <boost/filesystem.hpp>
-
-#include <soci/sqlite3/soci-sqlite3.h>
+#include <soci/sqlite3/soci-sqlite3.h>  // IWYU pragma: keep
 
 #include <memory>
 
@@ -50,7 +66,7 @@ getSociInit(BasicConfig const& config, std::string const& dbName)
 
 }  // namespace detail
 
-DBConfig::DBConfig(std::string const& dbPath) : connectionString_(dbPath)
+DBConfig::DBConfig(std::string dbPath) : connectionString_(std::move(dbPath))
 {
 }
 
@@ -81,20 +97,24 @@ void
 open(soci::session& s, std::string const& beName, std::string const& connectionString)
 {
     if (beName == "sqlite")
+    {
         s.open(soci::sqlite3, connectionString);
+    }
     else
+    {
         Throw<std::runtime_error>("Unsupported soci backend: " + beName);
+    }
 }
 
 static sqlite_api::sqlite3*
 getConnection(soci::session& s)
 {
-    sqlite_api::sqlite3* result = nullptr;
+    sqlite_api::sqlite3* result = nullptr;  // NOLINT(misc-const-correctness)
     auto be = s.get_backend();
     if (auto b = dynamic_cast<soci::sqlite3_session_backend*>(be))
         result = b->conn_;
 
-    if (!result)
+    if (result == nullptr)
         Throw<std::logic_error>("Didn't get a database connection.");
 
     return result;
@@ -103,7 +123,7 @@ getConnection(soci::session& s)
 std::uint32_t
 getKBUsedAll(soci::session& s)
 {
-    if (!getConnection(s))
+    if (getConnection(s) == nullptr)
         Throw<std::logic_error>("No connection found.");
     return static_cast<size_t>(sqlite_api::sqlite3_memory_used() / kilobytes(1));
 }
@@ -143,18 +163,26 @@ void
 convert(std::vector<std::uint8_t> const& from, soci::blob& to)
 {
     if (!from.empty())
+    {
         to.write(0, reinterpret_cast<char const*>(&from[0]), from.size());
+    }
     else
+    {
         to.trim(0);
+    }
 }
 
 void
 convert(std::string const& from, soci::blob& to)
 {
     if (!from.empty())
+    {
         to.write(0, from.data(), from.size());
+    }
     else
+    {
         to.trim(0);
+    }
 }
 
 namespace {
@@ -175,8 +203,11 @@ public:
         std::uintptr_t id,
         std::weak_ptr<soci::session> session,
         JobQueue& q,
-        Logs& logs)
-        : id_(id), session_(std::move(session)), jobQueue_(q), j_(logs.journal("WALCheckpointer"))
+        ServiceRegistry& registry)
+        : id_(id)
+        , session_(std::move(session))
+        , jobQueue_(q)
+        , j_(registry.getJournal("WALCheckpointer"))
     {
         if (auto [conn, keepAlive] = getConnection(); conn)
         {
@@ -207,7 +238,7 @@ public:
     schedule() override
     {
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             if (running_)
                 return;
             running_ = true;
@@ -227,7 +258,7 @@ public:
                         self->checkpoint();
                 }))
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             running_ = false;
         }
     }
@@ -237,13 +268,14 @@ public:
     {
         auto [conn, keepAlive] = getConnection();
         (void)keepAlive;
-        if (!conn)
+        if (conn == nullptr)
             return;
 
         int log = 0, ckpt = 0;
-        int ret = sqlite3_wal_checkpoint_v2(conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
+        int const ret = sqlite_api::sqlite3_wal_checkpoint_v2(
+            conn, nullptr, SQLITE_CHECKPOINT_PASSIVE, &log, &ckpt);
 
-        auto fname = sqlite3_db_filename(conn, "main");
+        auto fname = sqlite_api::sqlite3_db_filename(conn, "main");
         if (ret != SQLITE_OK)
         {
             auto jm = (ret == SQLITE_LOCKED) ? j_.trace() : j_.warn();
@@ -254,7 +286,7 @@ public:
             JLOG(j_.trace()) << "WAL(" << fname << "): frames=" << log << ", written=" << ckpt;
         }
 
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         running_ = false;
     }
 
@@ -295,9 +327,9 @@ makeCheckpointer(
     std::uintptr_t id,
     std::weak_ptr<soci::session> session,
     JobQueue& queue,
-    Logs& logs)
+    ServiceRegistry& registry)
 {
-    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, logs);
+    return std::make_shared<WALCheckpointer>(id, std::move(session), queue, registry);
 }
 
 }  // namespace xrpl

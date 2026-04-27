@@ -1,12 +1,16 @@
 #include <test/jtx/ticket.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
 
-namespace ticket {
+namespace xrpl::test::jtx::ticket {
 
 Json::Value
 create(Account const& account, std::uint32_t count)
@@ -26,8 +30,4 @@ use::operator()(Env&, JTx& jt) const
     jt[sfTicketSequence.jsonName] = ticketSeq_;
 }
 
-}  // namespace ticket
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::ticket

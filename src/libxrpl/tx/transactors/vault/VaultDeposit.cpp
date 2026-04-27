@@ -1,16 +1,27 @@
-#include <xrpl/ledger/CredentialHelpers.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/tx/transactors/vault/VaultDeposit.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/helpers/CredentialHelpers.h>
+#include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/ledger/helpers/VaultHelpers.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STTakesAsset.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
-#include <xrpl/tx/transactors/vault/VaultDeposit.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -101,7 +112,9 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
                 return err;
         }
         else
+        {
             return tecNO_AUTH;
+        }
     }
 
     // Source MPToken must exist (if asset is an MPT)
@@ -146,7 +159,7 @@ VaultDeposit::doApply()
     if (vault->isFlag(lsfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssuanceID, account_, mPriorBalance, j_);
+                ctx_.view(), mptIssuanceID, account_, preFeeBalance_, j_);
             !isTesSuccess(err))
             return err;
     }
@@ -156,7 +169,7 @@ VaultDeposit::doApply()
         if (!view().exists(keylet::mptoken(mptIssuanceID, account_)))
         {
             if (auto const err = authorizeMPToken(
-                    view(), mPriorBalance, mptIssuanceID->value(), account_, ctx_.journal);
+                    view(), preFeeBalance_, mptIssuanceID->value(), account_, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -169,7 +182,7 @@ VaultDeposit::doApply()
                 account_ == vault->at(sfOwner), "xrpl::VaultDeposit::doApply : account is owner");
             if (auto const err = authorizeMPToken(
                     view(),
-                    mPriorBalance,              // priorBalance
+                    preFeeBalance_,             // priorBalance
                     mptIssuanceID->value(),     // mptIssuanceID
                     sleIssuance->at(sfIssuer),  // account
                     ctx_.journal,
@@ -196,8 +209,10 @@ VaultDeposit::doApply()
 
         auto const maybeAssets = sharesToAssetsDeposit(vault, sleIssuance, sharesCreated);
         if (!maybeAssets)
+        {
             return tecINTERNAL;  // LCOV_EXCL_LINE
-        else if (*maybeAssets > amount)
+        }
+        if (*maybeAssets > amount)
         {
             // LCOV_EXCL_START
             JLOG(j_.error()) << "VaultDeposit: would take more than offered.";
@@ -261,6 +276,25 @@ VaultDeposit::doApply()
     associateAsset(*vault, vaultAsset);
 
     return tesSUCCESS;
+}
+
+void
+VaultDeposit::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+VaultDeposit::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

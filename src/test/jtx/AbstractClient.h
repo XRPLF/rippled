@@ -2,13 +2,12 @@
 
 #include <xrpl/json/json_value.h>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
-/* Abstract Ripple Client interface.
+/* Abstract XRPL client interface.
 
    This abstracts the transport layer, allowing
-   commands to be submitted to a rippled server.
+   commands to be submitted to an xrpld server.
 */
 class AbstractClient
 {
@@ -34,9 +33,8 @@ public:
     invoke(std::string const& cmd, Json::Value const& params = {}) = 0;
 
     /// Get RPC 1.0 or RPC 2.0
-    virtual unsigned
+    [[nodiscard]] virtual unsigned
     version() const = 0;
 };
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

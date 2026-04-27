@@ -108,11 +108,11 @@ struct ValidatorBlobInfo
     Trusted Validators List
     -----------------------
 
-    Rippled accepts ledger proposals and validations from trusted validator
+    Xrpld accepts ledger proposals and validations from trusted validator
     nodes. A ledger is considered fully-validated once the number of received
     trusted validations for a ledger meets or exceeds a quorum value.
 
-    This class manages the set of validation public keys the local rippled node
+    This class manages the set of validation public keys the local xrpld node
     trusts. The list of trusted keys is populated using the keys listed in the
     configuration file as well as lists signed by trusted publishers. The
     trusted publisher public keys are specified in the config.
@@ -121,9 +121,9 @@ struct ValidatorBlobInfo
 
     @li @c "blob": Base64-encoded JSON string containing a @c "sequence", @c
         "validFrom", @c "validUntil", and @c "validators" field. @c "validFrom"
-        contains the Ripple timestamp (seconds since January 1st, 2000 (00:00
+        contains the XRPL timestamp (seconds since January 1st, 2000 (00:00
         UTC)) for when the list becomes valid. @c "validUntil" contains the
-        Ripple timestamp for when the list expires. @c "validators" contains
+        XRPL timestamp for when the list expires. @c "validators" contains
         an array of objects with a @c "validation_public_key" and optional
         @c "manifest" field. @c "validation_public_key" should be the
         hex-encoded master public key. @c "manifest" should be the
@@ -157,7 +157,7 @@ class ValidatorList
 
         std::vector<PublicKey> list;
         std::vector<std::string> manifests;
-        std::size_t sequence;
+        std::size_t sequence{};
         TimeKeeper::time_point validFrom;
         TimeKeeper::time_point validUntil;
         std::string siteUri;
@@ -173,7 +173,7 @@ class ValidatorList
 
     struct PublisherListCollection
     {
-        PublisherStatus status;
+        PublisherStatus status = PublisherStatus::unavailable;
         /*
         The `current` VL is the one which
          1. Has the largest sequence number that
@@ -223,7 +223,7 @@ class ValidatorList
     hash_set<PublicKey> trustedMasterKeys_;
 
     // Minimum number of lists on which a trusted validator must appear on
-    std::size_t listThreshold_;
+    std::size_t listThreshold_{1};
 
     // The current list of trusted signing keys. For those validators using
     // a manifest, the signing key is the ephemeral key. For the ones using
@@ -274,9 +274,9 @@ public:
         explicit PublisherListStats(ListDisposition d);
         PublisherListStats(ListDisposition d, PublicKey key, PublisherStatus stat, std::size_t seq);
 
-        ListDisposition
+        [[nodiscard]] ListDisposition
         bestDisposition() const;
-        ListDisposition
+        [[nodiscard]] ListDisposition
         worstDisposition() const;
         void
         mergeDispositions(PublisherListStats const& src);
@@ -646,7 +646,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        shared_lock read_lock{mutex_};
+        shared_lock const read_lock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 

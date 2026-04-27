@@ -1,12 +1,26 @@
-#include <test/jtx.h>
-#include <test/jtx/WSClient.h>
-#include <test/rpc/GRPCTestClientBase.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <array>
+#include <cstdint>
+#include <optional>
+#include <string_view>
+#include <utility>
+
+namespace xrpl::test {
 
 class AccountInfo_test : public beast::unit_test::suite
 {
@@ -529,7 +543,7 @@ public:
             env.close();
             auto const f1 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set a flag and check that account_info returns results
             // as expected
@@ -537,7 +551,7 @@ public:
             env.close();
             auto const f2 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         static constexpr std::array<std::pair<std::string_view, std::uint32_t>, 4>
@@ -555,7 +569,7 @@ public:
             env.close();
             auto const f1 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set a flag and check that account_info returns results
             // as expected
@@ -563,7 +577,7 @@ public:
             env.close();
             auto const f2 = getAccountFlag(asf.first, alice);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         static constexpr std::pair<std::string_view, std::uint32_t> allowTrustLineClawbackFlag{
@@ -574,14 +588,14 @@ public:
             // must use bob's account because alice has noFreeze set
             auto const f1 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineClawback
             env(fset(bob, allowTrustLineClawbackFlag.second));
             env.close();
             auto const f2 = getAccountFlag(allowTrustLineClawbackFlag.first, bob);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {
@@ -595,14 +609,14 @@ public:
         {
             auto const f1 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
             BEAST_EXPECT(f1.has_value());
-            BEAST_EXPECT(!f1.value());
+            BEAST_EXPECT(!f1.value());  // NOLINT(bugprone-unchecked-optional-access)
 
             // Set allowTrustLineLocking
             env(fset(bob, allowTrustLineLockingFlag.second));
             env.close();
             auto const f2 = getAccountFlag(allowTrustLineLockingFlag.first, bob);
             BEAST_EXPECT(f2.has_value());
-            BEAST_EXPECT(f2.value());
+            BEAST_EXPECT(f2.value());  // NOLINT(bugprone-unchecked-optional-access)
         }
         else
         {
@@ -627,5 +641,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AccountInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

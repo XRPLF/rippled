@@ -18,13 +18,13 @@ public:
 
     ~NullJournalSink() override = default;
 
-    bool
+    [[nodiscard]] bool
     active(severities::Severity) const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     console() const override
     {
         return false;
@@ -35,7 +35,7 @@ public:
     {
     }
 
-    severities::Severity
+    [[nodiscard]] severities::Severity
     threshold() const override
     {
         return severities::kDisabled;
@@ -124,9 +124,13 @@ Journal::ScopedStream::~ScopedStream()
     if (!s.empty())
     {
         if (s == "\n")
+        {
             m_sink.write(m_level, "");
+        }
         else
+        {
             m_sink.write(m_level, s);
+        }
     }
 }
 

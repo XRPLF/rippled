@@ -1,20 +1,39 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/envconfig.h>
 
 #include <xrpld/rpc/detail/Handler.h>
 
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypes.h>
 #include <xrpl/core/PerfLog.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 
-#include <atomic>
+#include <boost/filesystem/file_status.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <algorithm>
 #include <chrono>
-#include <cmath>
+#include <cstdint>
+#include <fstream>
+#include <ios>
+#include <iterator>
+#include <limits>
+#include <memory>
+#include <ostream>
+#include <random>
 #include <string>
 #include <thread>
+#include <utility>
+#include <vector>
 
 //------------------------------------------------------------------------------
 
@@ -29,7 +48,7 @@ class PerfLog_test : public beast::unit_test::suite
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
     test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j_{env_.app().journal("PerfLog_test")};
+    beast::Journal j_{env_.app().getJournal("PerfLog_test")};
 
     struct Fixture
     {
@@ -39,6 +58,17 @@ class PerfLog_test : public beast::unit_test::suite
 
         explicit Fixture(Application& app, beast::Journal j) : app_(app), j_(j)
         {
+            // Clean up any stale state from a previous test run.  On
+            // self-hosted CI runners the temp directory persists between
+            // runs, so the "nasty file" test may have left a regular file
+            // (or a non-empty directory) at the logDir path.
+            //
+            // The error code is intentionally ignored: if the path doesn't
+            // exist (the common case on a clean runner) remove_all returns
+            // an error, and that's fine — there's nothing to clean up.
+            using namespace boost::filesystem;
+            boost::system::error_code ec;
+            remove_all(logDir(), ec);
         }
 
         ~Fixture()
@@ -63,21 +93,21 @@ class PerfLog_test : public beast::unit_test::suite
             stopSignaled = true;
         }
 
-        path
-        logDir() const
+        static path
+        logDir()
         {
             using namespace boost::filesystem;
             return temp_directory_path() / "perf_log_test_dir";
         }
 
-        path
-        logFile() const
+        static path
+        logFile()
         {
             return logDir() / "perf_log.txt";
         }
 
-        std::chrono::milliseconds
-        logInterval() const
+        static std::chrono::milliseconds
+        logInterval()
         {
             return std::chrono::milliseconds{10};
         }
@@ -86,15 +116,18 @@ class PerfLog_test : public beast::unit_test::suite
         perfLog(WithFile withFile)
         {
             perf::PerfLog::Setup const setup{
-                withFile == WithFile::no ? "" : logFile(), logInterval()};
-            return perf::make_PerfLog(setup, app_, j_, [this]() { return signalStop(); });
+                .perfLog = withFile == WithFile::no ? "" : logFile(), .logInterval = logInterval()};
+            return perf::make_PerfLog(setup, app_, j_, [this]() {
+                signalStop();
+                return;
+            });
         }
 
         // Block until the log file has grown in size, indicating that the
         // PerfLog has written new values to the file and _should_ have the
         // latest update.
-        void
-        wait() const
+        static void
+        wait()
         {
             using namespace boost::filesystem;
 
@@ -156,7 +189,7 @@ class PerfLog_test : public beast::unit_test::suite
 
         // Note that the longest durations should be at the front of the
         // vector since they were started first.
-        std::sort(currents.begin(), currents.end(), [](Cur const& lhs, Cur const& rhs) {
+        std::ranges::sort(currents, [](Cur const& lhs, Cur const& rhs) {
             if (lhs.dur != rhs.dur)
                 return (rhs.dur < lhs.dur);
             return (lhs.name < rhs.name);
@@ -451,8 +484,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -770,8 +805,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             validateFinalCounters(parsedLastLine[jss::counters]);
@@ -793,7 +830,7 @@ public:
         perfLog->start();
 
         // Randomly select a job type and its name.
-        JobType jobType;
+        JobType jobType = jtINVALID;
         std::string jobTypeName;
         {
             auto const& jobTypes = JobTypes::instance();
@@ -908,8 +945,10 @@ public:
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
             if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            {
                 // Avoid cascade of failures
                 return;
+            }
 
             // Validate the contents of the last line of the log.
             verifyCounters(parsedLastLine[jss::counters], 2, 2, 24, 36);

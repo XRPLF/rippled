@@ -107,7 +107,7 @@ jobs:
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Prepare runner
-        uses: XRPLF/actions/prepare-runner@2cbf481018d930656e9276fcc20dc0e3a0be5b6d
+        uses: XRPLF/actions/prepare-runner@90f11ee655d1687824fb8793db770477d52afbab
         with:
           enable_ccache: ${{ inputs.ccache_enabled }}
 
@@ -153,6 +153,32 @@ jobs:
             ${CMAKE_ARGS} \
             ..
 
+      - name: Check protocol autogen files are up-to-date
+        working-directory: ${{ env.BUILD_DIR }}
+        env:
+          MESSAGE: |
+
+            The generated protocol wrapper classes are out of date.
+
+            This typically happens when the macro files or generator scripts
+            have changed but the generated files were not regenerated.
+
+            To fix this:
+              1. Run: cmake --build . --target setup_code_gen
+              2. Run: cmake --build . --target code_gen
+              3. Commit and push the regenerated files
+        run: |
+          set -e
+          cmake --build . --target setup_code_gen
+          cmake --build . --target code_gen
+          DIFF=$(git -C .. status --porcelain -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen)
+          if [ -n "${DIFF}" ]; then
+            echo "::error::Generated protocol files are out of date"
+            git -C .. diff -- include/xrpl/protocol_autogen src/tests/libxrpl/protocol_autogen
+            echo "${MESSAGE}"
+            exit 1
+          fi
+
       - name: Build the binary
         working-directory: ${{ env.BUILD_DIR }}
         env:
@@ -176,11 +202,27 @@ jobs:
           fi
 
       - name: Upload the binary (Linux)
-        if: ${{ github.repository == 'XRPLF/rippled' && runner.os == 'Linux' }}
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        if: ${{ github.event.repository.visibility == 'public' && runner.os == 'Linux' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: xrpld-${{ inputs.config_name }}
           path: ${{ env.BUILD_DIR }}/xrpld
+          retention-days: 3
+          if-no-files-found: error
+
+      - name: Export server definitions
+        if: ${{ runner.os != 'Windows' && !inputs.build_only && env.VOIDSTAR_ENABLED != 'true' }}
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          set -o pipefail
+          ./xrpld --definitions | python3 -m json.tool > server_definitions.json
+
+      - name: Upload server definitions
+        if: ${{ github.event.repository.visibility == 'public' && inputs.config_name == 'debian-bookworm-gcc-13-amd64-release' }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: server-definitions
+          path: ${{ env.BUILD_DIR }}/server_definitions.json
           retention-days: 3
           if-no-files-found: error
 
@@ -207,14 +249,14 @@ jobs:
         env:
           CONFIG_NAME: ${{ inputs.config_name }}
         run: |
-          ASAN_OPTS="halt_on_error=0:use_sigaltstack=0:print_stacktrace=1:detect_container_overflow=0:detect_stack_use_after_return=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp"
+          ASAN_OPTS="include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-asan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/asan.supp"
           if [[ "${CONFIG_NAME}" == *gcc* ]]; then
             ASAN_OPTS="${ASAN_OPTS}:alloc_dealloc_mismatch=0"
           fi
           echo "ASAN_OPTIONS=${ASAN_OPTS}" >> ${GITHUB_ENV}
-          echo "TSAN_OPTIONS=second_deadlock_stack=1:halt_on_error=0:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/tsan.supp" >> ${GITHUB_ENV}
-          echo "UBSAN_OPTIONS=suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/ubsan.supp" >> ${GITHUB_ENV}
-          echo "LSAN_OPTIONS=suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/lsan.supp" >> ${GITHUB_ENV}
+          echo "TSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-tsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/tsan.supp" >> ${GITHUB_ENV}
+          echo "UBSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-ubsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/ubsan.supp" >> ${GITHUB_ENV}
+          echo "LSAN_OPTIONS=include=${GITHUB_WORKSPACE}/sanitizers/suppressions/runtime-lsan-options.txt:suppressions=${GITHUB_WORKSPACE}/sanitizers/suppressions/lsan.supp" >> ${GITHUB_ENV}
 
       - name: Run the separate tests
         if: ${{ !inputs.build_only }}
@@ -275,7 +317,7 @@ jobs:
 
       - name: Upload coverage report
         if: ${{ github.repository == 'XRPLF/rippled' && !inputs.build_only && env.COVERAGE_ENABLED == 'true' }}
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           disable_search: true
           disable_telem: true

@@ -1,21 +1,24 @@
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/core/PerfLog.h>
 #include <xrpl/core/detail/Workers.h>
+
+#include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/core/LockFreeStack.h>
+#include <xrpl/core/PerfLog.h>
+
+#include <mutex>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
 Workers::Workers(
     Callback& callback,
     perf::PerfLog* perfLog,
-    std::string const& threadNames,
+    std::string threadNames,
     int numberOfThreads)
     : m_callback(callback)
     , perfLog_(perfLog)
-    , m_threadNames(threadNames)
-    , m_allPaused(true)
+    , m_threadNames(std::move(threadNames))
     , m_semaphore(0)
-    , m_numberOfThreads(0)
     , m_activeCount(0)
     , m_pauseCount(0)
     , m_runningTaskCount(0)
@@ -47,7 +50,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
     if (m_numberOfThreads == numberOfThreads)
         return;
 
-    if (perfLog_)
+    if (perfLog_ != nullptr)
         perfLog_->resizeJobs(numberOfThreads);
 
     if (numberOfThreads > m_numberOfThreads)
@@ -96,11 +99,13 @@ Workers::stop()
 {
     setNumberOfThreads(0);
 
+    // Wait until all workers have paused AND no tasks are actively running.
+    // Both conditions are needed because m_allPaused (mutex-protected) and
+    // m_runningTaskCount (atomic) are not synchronized under the same lock,
+    // so m_allPaused can momentarily be true while a task is still finishing.
     std::unique_lock<std::mutex> lk{m_mut};
-    m_cv.wait(lk, [this] { return m_allPaused; });
+    m_cv.wait(lk, [this] { return m_allPaused && numberOfCurrentlyRunningTasks() == 0; });
     lk.unlock();
-
-    XRPL_ASSERT(numberOfCurrentlyRunningTasks() == 0, "xrpl::Workers::stop : zero running tasks");
 }
 
 void
@@ -120,7 +125,7 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 {
     for (;;)
     {
-        Worker* const worker = stack.pop_front();
+        Worker const* const worker = stack.pop_front();
 
         if (worker != nullptr)
         {
@@ -136,12 +141,9 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 
 //------------------------------------------------------------------------------
 
-Workers::Worker::Worker(Workers& workers, std::string const& threadName, int const instance)
-    : m_workers{workers}
-    , threadName_{threadName}
-    , instance_{instance}
-    , wakeCount_{0}
-    , shouldExit_{false}
+Workers::Worker::Worker(Workers& workers, std::string threadName, int const instance)
+    : m_workers{workers}, threadName_{std::move(threadName)}, instance_{instance}
+
 {
     thread_ = std::thread{&Workers::Worker::run, this};
 }
@@ -149,7 +151,7 @@ Workers::Worker::Worker(Workers& workers, std::string const& threadName, int con
 Workers::Worker::~Worker()
 {
     {
-        std::lock_guard lock{mutex_};
+        std::lock_guard const lock{mutex_};
         ++wakeCount_;
         shouldExit_ = true;
     }
@@ -161,7 +163,7 @@ Workers::Worker::~Worker()
 void
 Workers::Worker::notify()
 {
-    std::lock_guard lock{mutex_};
+    std::lock_guard const lock{mutex_};
     ++wakeCount_;
     wakeup_.notify_one();
 }
@@ -177,7 +179,7 @@ Workers::Worker::run()
         //
         if (++m_workers.m_activeCount == 1)
         {
-            std::lock_guard lk{m_workers.m_mut};
+            std::lock_guard const lk{m_workers.m_mut};
             m_workers.m_allPaused = false;
         }
 
@@ -205,11 +207,9 @@ Workers::Worker::run()
                     // We got paused
                     break;
                 }
-                else
-                {
-                    // Undo our decrement
-                    ++m_workers.m_pauseCount;
-                }
+
+                // Undo our decrement
+                ++m_workers.m_pauseCount;
             }
 
             // We couldn't pause so we must have gotten
@@ -217,7 +217,18 @@ Workers::Worker::run()
             //
             ++m_workers.m_runningTaskCount;
             m_workers.m_callback.processTask(instance_);
-            --m_workers.m_runningTaskCount;
+
+            // When the running task count drops to zero, wake stop() which
+            // may be waiting for both m_allPaused and zero running tasks.
+            // Locking m_mut before notify_all() prevents a lost wakeup:
+            // it serializes against the predicate check inside stop()'s
+            // cv.wait(), ensuring the notification is not missed between
+            // the predicate evaluation and the actual sleep.
+            if (--m_workers.m_runningTaskCount == 0)
+            {
+                std::lock_guard const lk{m_workers.m_mut};
+                m_workers.m_cv.notify_all();
+            }
         }
 
         // Any worker that goes into the paused list must
@@ -231,7 +242,7 @@ Workers::Worker::run()
         //
         if (--m_workers.m_activeCount == 0)
         {
-            std::lock_guard lk{m_workers.m_mut};
+            std::lock_guard const lk{m_workers.m_mut};
             m_workers.m_allPaused = true;
             m_workers.m_cv.notify_all();
         }

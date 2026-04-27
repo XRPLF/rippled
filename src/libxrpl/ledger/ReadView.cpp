@@ -1,5 +1,16 @@
 #include <xrpl/ledger/ReadView.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/ledger/detail/ReadViewFwdRange.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+
+#include <optional>
+#include <unordered_set>
+
 namespace xrpl {
 
 ReadView::sles_type::sles_type(ReadView const& view) : ReadViewFwdRange(view)
@@ -58,7 +69,7 @@ makeRulesGivenLedger(
     std::unordered_set<uint256, beast::uhash<>> const& presets)
 {
     Keylet const k = keylet::amendments();
-    std::optional digest = ledger.digest(k.key);
+    std::optional const digest = ledger.digest(k.key);
     if (digest)
     {
         auto const sle = ledger.read(k);

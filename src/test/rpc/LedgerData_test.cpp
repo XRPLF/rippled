@@ -1,7 +1,30 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/ticket.h>
 
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+
+#include <chrono>
+#include <cstdint>
+#include <string>
 
 namespace xrpl {
 
@@ -13,7 +36,7 @@ public:
     checkMarker(Json::Value const& val)
     {
         return val.isMember(jss::marker) && val[jss::marker].isString() &&
-            val[jss::marker].asString().size() > 0;
+            !val[jss::marker].asString().empty();
     }
 
     void
@@ -198,8 +221,10 @@ public:
             jvParams[jss::ledger_index] = "closed";
             auto jrr = env.rpc("json", "ledger_data", to_string(jvParams))[jss::result];
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
+            {
                 BEAST_EXPECT(
                     jrr[jss::ledger][jss::ledger_hash] == to_string(env.closed()->header().hash));
+            }
         }
         {
             // Closed ledger with binary form
@@ -210,7 +235,7 @@ public:
             if (BEAST_EXPECT(jrr.isMember(jss::ledger)))
             {
                 auto data = strUnHex(jrr[jss::ledger][jss::ledger_data].asString());
-                if (BEAST_EXPECT(data))
+                if (BEAST_EXPECT(data); data.has_value())
                 {
                     Serializer s(data->data(), data->size());
                     std::uint32_t seq = 0;

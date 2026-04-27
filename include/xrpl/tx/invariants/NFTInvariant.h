@@ -35,8 +35,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -63,8 +63,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 }  // namespace xrpl

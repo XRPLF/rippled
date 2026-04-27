@@ -7,6 +7,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/tx/invariants/AMMInvariant.h>
 #include <xrpl/tx/invariants/FreezeInvariant.h>
+#include <xrpl/tx/invariants/LoanBrokerInvariant.h>
 #include <xrpl/tx/invariants/LoanInvariant.h>
 #include <xrpl/tx/invariants/MPTInvariant.h>
 #include <xrpl/tx/invariants/NFTInvariant.h>
@@ -111,7 +112,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    static bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
@@ -131,8 +132,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -151,8 +152,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -197,8 +198,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -214,8 +215,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -232,8 +233,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -251,8 +252,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -270,8 +271,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -286,8 +287,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -306,8 +307,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -327,8 +328,8 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
-    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+    [[nodiscard]] bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
 /**
@@ -397,7 +398,8 @@ using InvariantChecks = std::tuple<
     ValidPseudoAccounts,
     ValidLoanBroker,
     ValidLoan,
-    ValidVault>;
+    ValidVault,
+    ValidMPTPayment>;
 
 /**
  * @brief get a tuple of all invariant checks

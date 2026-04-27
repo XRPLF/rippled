@@ -1,12 +1,29 @@
-#include <xrpl/basics/IntrusivePointer.ipp>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+
+#include <xrpl/basics/IntrusivePointer.h>    // IWYU pragma: keep
+#include <xrpl/basics/IntrusivePointer.ipp>  // IWYU pragma: keep
+#include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/spinlock.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/shamap/detail/TaggedPointer.h>
 #include <xrpl/shamap/detail/TaggedPointer.ipp>
+
+#include <cstddef>
+#include <cstdint>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -20,7 +37,7 @@ SHAMapInnerNode::~SHAMapInnerNode() = default;
 void
 SHAMapInnerNode::partialDestructor()
 {
-    intr_ptr::SharedPtr<SHAMapTreeNode>* children;
+    intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, std::ignore, children) = hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) { children[indexNum].reset(); });
@@ -61,8 +78,8 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
-    SHAMapHash *cloneHashes, *thisHashes;
-    intr_ptr::SharedPtr<SHAMapTreeNode>*cloneChildren, *thisChildren;
+    SHAMapHash *cloneHashes = nullptr, *thisHashes = nullptr;
+    intr_ptr::SharedPtr<SHAMapTreeNode>*cloneChildren = nullptr, *thisChildren = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
         p->hashesAndChildren_.getHashesAndChildren();
@@ -82,7 +99,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     }
 
     spinlock sl(lock_);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
 
     if (thisIsSparse)
     {
@@ -125,9 +142,13 @@ SHAMapInnerNode::makeFullInner(Slice data, SHAMapHash const& hash, bool hashVali
     ret->resizeChildArrays(ret->getBranchCount());
 
     if (hashValid)
+    {
         ret->hash_ = hash;
+    }
     else
+    {
         ret->updateHash();
+    }
 
     return ret;
 }
@@ -185,8 +206,8 @@ SHAMapInnerNode::updateHash()
 void
 SHAMapInnerNode::updateHashDeep()
 {
-    SHAMapHash* hashes;
-    intr_ptr::SharedPtr<SHAMapTreeNode>* children;
+    SHAMapHash* hashes = nullptr;
+    intr_ptr::SharedPtr<SHAMapTreeNode>* children = nullptr;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, hashes, children) = hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
@@ -253,9 +274,11 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 
     auto const dstIsBranch = [&] {
         if (child)
+        {
             return isBranch_ | (1u << m);
-        else
-            return isBranch_ & ~(1u << m);
+        }
+
+        return isBranch_ & ~(1u << m);
     }();
 
     auto const dstToAllocate = popcnt16(dstIsBranch);
@@ -268,7 +291,8 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 
     if (child)
     {
-        auto const childIndex = *getChildIndex(m);
+        auto const childIndex =
+            *getChildIndex(m);  // NOLINT(bugprone-unchecked-optional-access) isBranch_ set above
         auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
         hashes[childIndex].zero();
         children[childIndex] = std::move(child);
@@ -292,6 +316,7 @@ SHAMapInnerNode::shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& ch
     XRPL_ASSERT(child.get() != this, "xrpl::SHAMapInnerNode::shareChild : valid child input");
 
     XRPL_ASSERT(!isEmptyBranch(m), "xrpl::SHAMapInnerNode::shareChild : non-empty branch input");
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
     hashesAndChildren_.getChildren()[*getChildIndex(m)] = child;
 }
 
@@ -304,10 +329,11 @@ SHAMapInnerNode::getChildPointer(int branch)
     XRPL_ASSERT(
         !isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChildPointer : non-empty branch input");
 
-    auto const index = *getChildIndex(branch);
+    auto const index =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
 
     packed_spinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
     return hashesAndChildren_.getChildren()[index].get();
 }
 
@@ -319,10 +345,11 @@ SHAMapInnerNode::getChild(int branch)
         "xrpl::SHAMapInnerNode::getChild : valid branch input");
     XRPL_ASSERT(!isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChild : non-empty branch input");
 
-    auto const index = *getChildIndex(branch);
+    auto const index =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
 
     packed_spinlock sl(lock_, index);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
     return hashesAndChildren_.getChildren()[index];
 }
 
@@ -347,7 +374,8 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
     XRPL_ASSERT(
         !isEmptyBranch(branch),
         "xrpl::SHAMapInnerNode::canonicalizeChild : non-empty branch input");
-    auto const childIndex = *getChildIndex(branch);
+    auto const childIndex =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
     auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
     XRPL_ASSERT(
         node->getHash() == hashes[childIndex],
@@ -355,7 +383,7 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
         "hash do match");
 
     packed_spinlock sl(lock_, childIndex);
-    std::lock_guard lock(sl);
+    std::lock_guard const lock(sl);
 
     if (children[childIndex])
     {

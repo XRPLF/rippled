@@ -1,17 +1,28 @@
 #include <xrpld/app/consensus/RCLValidations.h>
+
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/consensus/Validations.h>
 #include <xrpld/core/TimeKeeper.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/core/PerfLog.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/tokens.h>
 
+#include <algorithm>
 #include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -100,7 +111,7 @@ RCLValidationsAdaptor::RCLValidationsAdaptor(Application& app, beast::Journal j)
 NetClock::time_point
 RCLValidationsAdaptor::now() const
 {
-    return app_.timeKeeper().closeTime();
+    return app_.getTimeKeeper().closeTime();
 }
 
 std::optional<RCLValidatedLedger>
@@ -132,7 +143,7 @@ RCLValidationsAdaptor::acquire(LedgerHash const& hash)
     XRPL_ASSERT(
         ledger->header().hash == hash, "xrpl::RCLValidationsAdaptor::acquire : ledger hash match");
 
-    return RCLValidatedLedger(std::move(ledger), j_);
+    return RCLValidatedLedger(ledger, j_);
 }
 
 void
@@ -148,14 +159,14 @@ handleNewValidation(
     auto const seq = val->getFieldU32(sfLedgerSequence);
 
     // Ensure validation is marked as trusted if signer currently trusted
-    auto masterKey = app.validators().getTrustedKey(signingKey);
+    auto masterKey = app.getValidators().getTrustedKey(signingKey);
 
     if (!val->isTrusted() && masterKey)
         val->setTrusted();
 
     // If not currently trusted, see if signer is currently listed
     if (!masterKey)
-        masterKey = app.validators().getListedKey(signingKey);
+        masterKey = app.getValidators().getListedKey(signingKey);
 
     auto& validations = app.getValidations();
 
@@ -205,14 +216,18 @@ handleNewValidation(
         }();
 
         if (outcome == ValStatus::conflicting)
+        {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Conflicting validation for " << seq << "!\n["
                << val->getSerializer().slice() << "]";
+        }
 
         if (outcome == ValStatus::multiple)
+        {
             ls << "Byzantine Behavior Detector: " << (val->isTrusted() ? "trusted " : "untrusted ")
                << id << ": Multiple validations for " << seq << "/" << hash << "!\n["
                << val->getSerializer().slice() << "]";
+        }
     }
 }
 

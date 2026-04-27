@@ -1,11 +1,37 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/check.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <set>
 
 namespace xrpl {
 
@@ -19,9 +45,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const G1{"G1"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
 
         env.fund(XRP(1000), G1, alice, bob);
         env.close();
@@ -168,8 +194,8 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A1{"A1"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
 
         env.fund(XRP(10000), G1, A1);
         env.close();
@@ -259,8 +285,8 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A1{"A1"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
 
         env.fund(XRP(10000), G1, A1);
         env.close();
@@ -308,8 +334,8 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A1{"A1"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
 
         env.fund(XRP(10000), G1, A1);
         env.close();
@@ -347,11 +373,11 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account A4{"A4"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const A4{"A4"};
 
         env.fund(XRP(12000), G1);
         env.fund(XRP(1000), A1);
@@ -497,10 +523,10 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account frozenAcc{"A2"};
-        Account deepFrozenAcc{"A3"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const frozenAcc{"A2"};
+        Account const deepFrozenAcc{"A3"};
 
         env.fund(XRP(12000), G1);
         env.fund(XRP(1000), A1);
@@ -608,10 +634,10 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account A4{"A4"};
+        Account const G1{"G1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const A4{"A4"};
 
         env.fund(XRP(1000), G1, A3, A4);
         env.fund(XRP(2000), A2);
@@ -705,10 +731,10 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2, A3);
@@ -935,9 +961,9 @@ class Freeze_test : public beast::unit_test::suite
         using path = test::jtx::path;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -1161,9 +1187,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -1283,9 +1309,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env(*this, features);
 
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -1578,9 +1604,9 @@ class Freeze_test : public beast::unit_test::suite
         using path = test::jtx::path;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -1593,7 +1619,7 @@ class Freeze_test : public beast::unit_test::suite
         env(pay(G1, A2, USD(1000)));
         env.close();
 
-        AMM ammG1(env, G1, XRP(1'000), USD(1'000));
+        AMM const ammG1(env, G1, XRP(1'000), USD(1'000));
         env.close();
 
         // Testing basic payment using AMM when freezing one of the trust lines.
@@ -1668,9 +1694,9 @@ class Freeze_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env(*this, features);
-        Account G1{"G1"};
-        Account A1{"A1"};
-        Account A2{"A2"};
+        Account const G1{"G1"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
         auto const USD{G1["USD"]};
 
         env.fund(XRP(10000), G1, A1, A2);
@@ -1829,7 +1855,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing brokered offer acceptance
         if (features[featureDeepFreeze] && features[fixEnforceNFTokenTrustlineV2])
         {
-            Account broker{"broker"};
+            Account const broker{"broker"};
             env.fund(XRP(10000), broker);
             env.close();
             env(trust(G1, broker["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
@@ -1855,7 +1881,7 @@ class Freeze_test : public beast::unit_test::suite
         // Testing transfer fee
         if (features[featureDeepFreeze] && features[fixEnforceNFTokenTrustlineV2])
         {
-            Account minter{"minter"};
+            Account const minter{"minter"};
             env.fund(XRP(10000), minter);
             env.close();
             env(trust(G1, minter["USD"](1000)));
@@ -1907,13 +1933,13 @@ class Freeze_test : public beast::unit_test::suite
     }
 
     // Helper function that returns the index of the next check on account
-    uint256
+    static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
     {
         return keylet::check(account, uSequence).key;
     }
 
-    uint256
+    static uint256
     createNFTSellOffer(
         test::jtx::Env& env,
         test::jtx::Account const& account,

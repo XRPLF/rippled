@@ -1,12 +1,24 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
+#include <cstdint>
 
 namespace xrpl {
 
@@ -24,13 +36,13 @@ class Discrepancy_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, features};
 
-        Account A1{"A1"};
-        Account A2{"A2"};
-        Account A3{"A3"};
-        Account A4{"A4"};
-        Account A5{"A5"};
-        Account A6{"A6"};
-        Account A7{"A7"};
+        Account const A1{"A1"};
+        Account const A2{"A2"};
+        Account const A3{"A3"};
+        Account const A4{"A4"};
+        Account const A5{"A5"};
+        Account const A6{"A6"};
+        Account const A7{"A7"};
 
         env.fund(XRP(2000), A1);
         env.fund(XRP(1000), A2, A6, A7);
@@ -68,7 +80,7 @@ class Discrepancy_test : public beast::unit_test::suite
         env(offer(A7, XRP(1233), A6["CNY"](25)));
         env.close();
 
-        test::PathSet payPaths{
+        test::PathSet const payPaths{
             test::Path{A2["JPY"], A2},
             test::Path{XRP, A2["JPY"], A2},
             test::Path{A6, XRP, A2["JPY"], A2}};
@@ -84,7 +96,7 @@ class Discrepancy_test : public beast::unit_test::suite
         jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::none)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
-        uint64_t fee{jrr[jss::Fee].asUInt()};
+        uint64_t const fee{jrr[jss::Fee].asUInt()};
         auto meta = jrr[jss::meta];
         uint64_t sumPrev{0};
         uint64_t sumFinal{0};
@@ -93,11 +105,17 @@ class Discrepancy_test : public beast::unit_test::suite
         {
             Json::Value node;
             if (an.isMember(sfCreatedNode.fieldName))
+            {
                 node = an[sfCreatedNode.fieldName];
+            }
             else if (an.isMember(sfModifiedNode.fieldName))
+            {
                 node = an[sfModifiedNode.fieldName];
+            }
             else if (an.isMember(sfDeletedNode.fieldName))
+            {
                 node = an[sfDeletedNode.fieldName];
+            }
 
             if (node && node[sfLedgerEntryType.fieldName] == jss::AccountRoot)
             {
@@ -108,11 +126,15 @@ class Discrepancy_test : public beast::unit_test::suite
                     ? node[sfFinalFields.fieldName]
                     : node[sfNewFields.fieldName];
                 if (prevFields)
+                {
                     sumPrev += beast::lexicalCastThrow<std::uint64_t>(
                         prevFields[sfBalance.fieldName].asString());
+                }
                 if (finalFields)
+                {
                     sumFinal += beast::lexicalCastThrow<std::uint64_t>(
                         finalFields[sfBalance.fieldName].asString());
+                }
             }
         }
         // the difference in balances (final and prev) should be the

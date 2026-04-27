@@ -149,7 +149,7 @@ class PropertyStream::Item : public List<Item>::Node
 {
 public:
     explicit Item(Source* source);
-    Source&
+    [[nodiscard]] Source&
     source() const;
     Source*
     operator->() const;
@@ -174,7 +174,7 @@ private:
     std::ostringstream mutable m_ostream;
 
 public:
-    Proxy(Map const& map, std::string const& key);
+    Proxy(Map const& map, std::string key);
     Proxy(Proxy const& other);
     ~Proxy();
 
@@ -217,7 +217,7 @@ public:
 
     PropertyStream&
     stream();
-    PropertyStream const&
+    [[nodiscard]] PropertyStream const&
     stream() const;
 
     template <typename Value>
@@ -287,7 +287,7 @@ public:
 
     PropertyStream&
     stream();
-    PropertyStream const&
+    [[nodiscard]] PropertyStream const&
     stream() const;
 
     template <typename Value>
@@ -311,11 +311,11 @@ private:
     std::string const m_name;
     std::recursive_mutex lock_;
     Item item_;
-    Source* parent_;
+    Source* parent_{nullptr};
     List<Item> children_;
 
 public:
-    explicit Source(std::string const& name);
+    explicit Source(std::string name);
     virtual ~Source();
 
     Source(Source const&) = delete;
@@ -323,7 +323,7 @@ public:
     operator=(Source const&) = delete;
 
     /** Returns the name of this source. */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const;
 
     /** Add a child source. */

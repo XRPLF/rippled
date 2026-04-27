@@ -1,9 +1,24 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
+
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <iterator>
+#include <map>
+#include <memory>
 
 namespace xrpl {
 
@@ -95,7 +110,8 @@ class Feature_test : public beast::unit_test::suite
         {
             (void)vote;
             auto const registered = getRegisteredFeature(feature);
-            if (BEAST_EXPECT(registered))
+
+            if (BEAST_EXPECT(registered); registered.has_value())
             {
                 BEAST_EXPECT(featureToName(*registered) == feature);
                 BEAST_EXPECT(
@@ -104,7 +120,7 @@ class Feature_test : public beast::unit_test::suite
         }
 
         // Test an arbitrary unknown feature
-        uint256 zero{0};
+        uint256 const zero{0};
         BEAST_EXPECT(featureToName(zero) == to_string(zero));
         BEAST_EXPECT(
             featureToName(zero) ==
@@ -142,8 +158,9 @@ class Feature_test : public beast::unit_test::suite
                 return;
             // default config - so all should be disabled, and
             // supported. Some may be vetoed.
-            bool expectVeto = (votes.at(feature[jss::name].asString()) == VoteBehavior::DefaultNo);
-            bool expectObsolete =
+            bool const expectVeto =
+                (votes.at(feature[jss::name].asString()) == VoteBehavior::DefaultNo);
+            bool const expectObsolete =
                 (votes.at(feature[jss::name].asString()) == VoteBehavior::Obsolete);
             BEAST_EXPECTS(
                 feature.isMember(jss::enabled) && !feature[jss::enabled].asBool(),
@@ -277,8 +294,8 @@ class Feature_test : public beast::unit_test::suite
                 (void)id.parseHex(it.key().asString().c_str());
                 if (!BEAST_EXPECT((*it).isMember(jss::name)))
                     return;
-                bool expectEnabled = env.app().getAmendmentTable().isEnabled(id);
-                bool expectSupported = env.app().getAmendmentTable().isSupported(id);
+                bool const expectEnabled = env.app().getAmendmentTable().isEnabled(id);
+                bool const expectSupported = env.app().getAmendmentTable().isSupported(id);
                 BEAST_EXPECTS(
                     (*it).isMember(jss::enabled) && (*it)[jss::enabled].asBool() == expectEnabled,
                     (*it)[jss::name].asString() + " enabled");
@@ -338,17 +355,22 @@ class Feature_test : public beast::unit_test::suite
             (void)id.parseHex(it.key().asString().c_str());
             if (!BEAST_EXPECT((*it).isMember(jss::name)))
                 return;
-            bool expectEnabled = env.app().getAmendmentTable().isEnabled(id);
-            bool expectSupported = env.app().getAmendmentTable().isSupported(id);
-            bool expectVeto = (votes.at((*it)[jss::name].asString()) == VoteBehavior::DefaultNo);
-            bool expectObsolete = (votes.at((*it)[jss::name].asString()) == VoteBehavior::Obsolete);
+            bool const expectEnabled = env.app().getAmendmentTable().isEnabled(id);
+            bool const expectSupported = env.app().getAmendmentTable().isSupported(id);
+            bool const expectVeto =
+                (votes.at((*it)[jss::name].asString()) == VoteBehavior::DefaultNo);
+            bool const expectObsolete =
+                (votes.at((*it)[jss::name].asString()) == VoteBehavior::Obsolete);
             BEAST_EXPECTS(
                 (*it).isMember(jss::enabled) && (*it)[jss::enabled].asBool() == expectEnabled,
                 (*it)[jss::name].asString() + " enabled");
             if (expectEnabled)
+            {
                 BEAST_EXPECTS(
                     !(*it).isMember(jss::vetoed), (*it)[jss::name].asString() + " vetoed");
+            }
             else
+            {
                 BEAST_EXPECTS(
                     (*it).isMember(jss::vetoed) && (*it)[jss::vetoed].isBool() == !expectObsolete &&
                         (!(*it)[jss::vetoed].isBool() ||
@@ -356,6 +378,7 @@ class Feature_test : public beast::unit_test::suite
                         ((*it)[jss::vetoed].isBool() ||
                          (*it)[jss::vetoed].asString() == "Obsolete"),
                     (*it)[jss::name].asString() + " vetoed");
+            }
             BEAST_EXPECTS(
                 (*it).isMember(jss::supported) && (*it)[jss::supported].asBool() == expectSupported,
                 (*it)[jss::name].asString() + " supported");
@@ -416,8 +439,9 @@ class Feature_test : public beast::unit_test::suite
         {
             if (!BEAST_EXPECT(feature.isMember(jss::name)))
                 return;
-            bool expectVeto = (votes.at(feature[jss::name].asString()) == VoteBehavior::DefaultNo);
-            bool expectObsolete =
+            bool const expectVeto =
+                (votes.at(feature[jss::name].asString()) == VoteBehavior::DefaultNo);
+            bool const expectObsolete =
                 (votes.at(feature[jss::name].asString()) == VoteBehavior::Obsolete);
             BEAST_EXPECTS(
                 (expectVeto || expectObsolete) ^ feature.isMember(jss::majority),
@@ -496,11 +520,10 @@ class Feature_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this};
 
-        auto const& supportedAmendments = detail::supportedAmendments();
-        auto obsoleteFeature = std::find_if(
-            std::begin(supportedAmendments), std::end(supportedAmendments), [](auto const& pair) {
-                return pair.second == VoteBehavior::Obsolete;
-            });
+        auto const& supportedAmendments = xrpl::detail::supportedAmendments();
+        auto obsoleteFeature = std::ranges::find_if(supportedAmendments, [](auto const& pair) {
+            return pair.second == VoteBehavior::Obsolete;
+        });
 
         if (obsoleteFeature == std::end(supportedAmendments))
         {

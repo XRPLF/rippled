@@ -1,10 +1,18 @@
 #include <xrpld/rpc/Status.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace RPC {
+#include <algorithm>
+#include <cstddef>
+#include <exception>
+#include <string>
+
+namespace xrpl::RPC {
 
 class codeString_test : public beast::unit_test::suite
 {
@@ -136,7 +144,8 @@ private:
         expect(m == message, m + " != " + message);
 
         auto d = error[jss::data];
-        size_t s1 = d.size(), s2 = messages.size();
+        size_t const s1 = d.size();
+        size_t const s2 = messages.size();
         expect(
             s1 == s2,
             prefix + "Data sizes differ " + std::to_string(s1) + " != " + std::to_string(s2));
@@ -195,5 +204,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(fillJson, rpc, RPC);
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC

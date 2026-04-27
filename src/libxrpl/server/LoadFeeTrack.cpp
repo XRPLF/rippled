@@ -1,17 +1,22 @@
+#include <xrpl/server/LoadFeeTrack.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Units.h>
-#include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <mutex>
+#include <stdexcept>
 
 namespace xrpl {
 
 bool
 LoadFeeTrack::raiseLocalFee()
 {
-    std::lock_guard sl(lock_);
+    std::lock_guard const sl(lock_);
 
     if (++raiseCount_ < 2)
         return false;
@@ -19,14 +24,12 @@ LoadFeeTrack::raiseLocalFee()
     std::uint32_t const origFee = localTxnLoadFee_;
 
     // make sure this fee takes effect
-    if (localTxnLoadFee_ < remoteTxnLoadFee_)
-        localTxnLoadFee_ = remoteTxnLoadFee_;
+    localTxnLoadFee_ = std::max(localTxnLoadFee_, remoteTxnLoadFee_);
 
     // Increase slowly
     localTxnLoadFee_ += (localTxnLoadFee_ / lftFeeIncFraction);
 
-    if (localTxnLoadFee_ > lftFeeMax)
-        localTxnLoadFee_ = lftFeeMax;
+    localTxnLoadFee_ = std::min(localTxnLoadFee_, lftFeeMax);
 
     if (origFee == localTxnLoadFee_)
         return false;
@@ -38,15 +41,14 @@ LoadFeeTrack::raiseLocalFee()
 bool
 LoadFeeTrack::lowerLocalFee()
 {
-    std::lock_guard sl(lock_);
+    std::lock_guard const sl(lock_);
     std::uint32_t const origFee = localTxnLoadFee_;
     raiseCount_ = 0;
 
     // Reduce slowly
     localTxnLoadFee_ -= (localTxnLoadFee_ / lftFeeDecFraction);
 
-    if (localTxnLoadFee_ < lftNormalFee)
-        localTxnLoadFee_ = lftNormalFee;
+    localTxnLoadFee_ = std::max(localTxnLoadFee_, lftNormalFee);
 
     if (origFee == localTxnLoadFee_)
         return false;

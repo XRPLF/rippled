@@ -1,21 +1,37 @@
 #include <test/jtx/JSONRPCClient.h>
 
+#include <test/jtx/AbstractClient.h>
+
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
 
-#include <boost/asio.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address_v4.hpp>
+#include <boost/asio/ip/address_v6.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/verb.hpp>
 #include <boost/beast/http/write.hpp>
 
+#include <iostream>
+#include <memory>
+#include <sstream>
+#include <stdexcept>
 #include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class JSONRPCClient : public AbstractClient
 {
@@ -31,17 +47,19 @@ class JSONRPCClient : public AbstractClient
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if (pp.protocol.count("http") == 0)
+            if (not pp.protocol.contains("http"))
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
+            {
                 *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
                                         : address{address_v4::loopback()};
+            }
 
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");
 
-            return {*pp.ip, *pp.port};
+            return {*pp.ip, *pp.port};  // NOLINT(bugprone-unchecked-optional-access)
         }
         Throw<std::runtime_error>("Missing HTTP port");
         return {};  // Silence compiler control paths return value warning
@@ -70,12 +88,6 @@ public:
         : ep_(getEndpoint(cfg)), stream_(ios_), rpc_version_(rpc_version)
     {
         stream_.connect(ep_);
-    }
-
-    ~JSONRPCClient() override
-    {
-        // stream_.shutdown(boost::asio::ip::tcp::socket::shutdown_both);
-        // stream_.close();
     }
 
     /*
@@ -133,7 +145,7 @@ public:
         return jv;
     }
 
-    unsigned
+    [[nodiscard]] unsigned
     version() const override
     {
         return rpc_version_;
@@ -146,5 +158,4 @@ makeJSONRPCClient(Config const& cfg, unsigned rpc_version)
     return std::make_unique<JSONRPCClient>(cfg, rpc_version);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

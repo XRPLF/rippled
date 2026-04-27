@@ -1,14 +1,22 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/misc/Transaction.h>
-#include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/RPCErr.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/misc/Transaction.h>
+#include <xrpld/rpc/Context.h>
 
-namespace xrpl {
-namespace RPC {
+#include <xrpl/basics/chrono.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/jss.h>
+
+#include <chrono>
+#include <memory>
+#include <optional>
+
+namespace xrpl::RPC {
 
 /*
   GetLedgerIndex and GetCloseTime are lambdas that allow the close time and
@@ -71,13 +79,8 @@ canHaveDeliveredAmount(
     TxType const tt{serializedTx->getTxnType()};
     // Transaction type should be ttPAYMENT, ttACCOUNT_DELETE or ttCHECK_CASH
     // and if the transaction failed nothing could have been delivered.
-    if ((tt == ttPAYMENT || tt == ttCHECK_CASH || tt == ttACCOUNT_DELETE) &&
-        transactionMeta.getResultTER() == tesSUCCESS)
-    {
-        return true;
-    }
-
-    return false;
+    return (tt == ttPAYMENT || tt == ttCHECK_CASH || tt == ttACCOUNT_DELETE) &&
+        transactionMeta.getResultTER() == tesSUCCESS;
 }
 
 void
@@ -175,5 +178,4 @@ insertDeliveredAmount(
     }
 }
 
-}  // namespace RPC
-}  // namespace xrpl
+}  // namespace xrpl::RPC
