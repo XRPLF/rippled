@@ -13,11 +13,8 @@
 #include <xrpld/app/misc/TxSpanNames.h>
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/telemetry/SpanGuard.h>
-
-#ifdef XRPL_ENABLE_TELEMETRY
 #include <xrpl/proto/xrpl.pb.h>
-#endif
+#include <xrpl/telemetry/SpanGuard.h>
 
 namespace xrpl {
 namespace telemetry {

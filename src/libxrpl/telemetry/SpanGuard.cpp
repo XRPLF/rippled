@@ -20,6 +20,7 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/basics/random.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
@@ -38,7 +39,7 @@
 #include <opentelemetry/trace/trace_id.h>
 #include <opentelemetry/trace/tracer.h>
 
-#include <random>
+#include <cstring>
 #include <string>
 #include <utility>
 
@@ -248,10 +249,9 @@ SpanGuard::txSpan(
 
     otel_trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
 
+    auto const rval = default_prng()();
     std::uint8_t spanIdBytes[8];
-    thread_local std::mt19937 prng{std::random_device{}()};
-    for (auto& b : spanIdBytes)
-        b = static_cast<std::uint8_t>(prng());
+    std::memcpy(spanIdBytes, &rval, sizeof(spanIdBytes));
     otel_trace::SpanId spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(spanIdBytes, 8));
 
     otel_trace::SpanContext syntheticCtx(
