@@ -397,6 +397,263 @@
           "format": "heatmap"
         }
       ]
+    },
+    {
+      "title": "Close Time: Raw Proposals (Per Node)",
+      "description": "Each node's raw proposed close time (xrpl.consensus.close_time_self) \u2014 the unrounded wall clock value at the moment the node closed its ledger. Compare across nodes to see clock drift.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeFromNow",
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 6,
+            "showPoints": "always"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_time_self)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Close Time: Effective / Quantized",
+      "description": "The consensus-agreed close time after rounding to the current resolution bin (xrpl.consensus.close_time). This is the value written to the ledger header. All nodes in agreement produce the same value.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "dateTimeFromNow",
+          "custom": {
+            "drawStyle": "points",
+            "pointSize": 6,
+            "showPoints": "always"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_time)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Close Time Vote Bins & Resolution",
+      "description": "Number of distinct close time vote bins (xrpl.consensus.close_time_vote_bins) and the bin size / resolution in ms (xrpl.consensus.close_resolution_ms). More bins = more clock disagreement. Resolution adapts: finer (10s) when validators agree, coarser (120s) when they disagree.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "stepAfter",
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Vote Bins"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "left"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Resolution"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["mean", "max"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_time_vote_bins)",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_resolution_ms)",
+          "refId": "B"
+        }
+      ]
+    },
+    {
+      "title": "Close Time Resolution Direction",
+      "description": "Whether close time resolution increased (coarser bins, more disagreement), decreased (finer bins, better agreement), or stayed unchanged relative to the previous ledger. Based on xrpl.consensus.resolution_direction attribute.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "bars",
+            "fillOpacity": 40,
+            "pointSize": 5,
+            "showPoints": "auto"
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["lastNotNull"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\" && span.xrpl.consensus.resolution_direction=~\"$resolution_direction\"} | select(span.xrpl.consensus.resolution_direction)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "title": "Close Time Bin Distribution",
+      "description": "Distribution of raw proposed close times across quantized bins. Shows how many nodes' proposals landed in each resolution bin per consensus round. A single dominant bin indicates good clock agreement; spread across bins indicates drift or network latency.",
+      "type": "barchart",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "fillOpacity": 60
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        },
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": ["sum"]
+        },
+        "xTickLabelRotation": -45,
+        "barWidth": 0.8,
+        "stacking": "normal"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "tempo"
+          },
+          "queryType": "traceql",
+          "query": "{name=\"consensus.accept.apply\" && resource.service.instance.id=~\"$node\" && span.xrpl.consensus.close_time_correct=~\"$close_time_correct\"} | select(span.xrpl.consensus.close_time, span.xrpl.consensus.close_time_vote_bins)",
+          "refId": "A"
+        }
+      ]
     }
   ],
   "schemaVersion": 39,
@@ -406,7 +663,7 @@
       {
         "name": "node",
         "label": "Node",
-        "description": "Filter by rippled node (service.instance.id — e.g. Node-1)",
+        "description": "Filter by rippled node (service.instance.id \u2014 e.g. Node-1)",
         "type": "query",
         "query": "label_values(traces_span_metrics_calls_total, exported_instance)",
         "datasource": {
@@ -442,6 +699,71 @@
         "multi": true,
         "refresh": 2,
         "sort": 1
+      },
+      {
+        "name": "close_time_correct",
+        "label": "Close Time Agreed",
+        "type": "custom",
+        "query": "true,false",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "options": [
+          {
+            "text": "All",
+            "value": "$__all",
+            "selected": true
+          },
+          {
+            "text": "true",
+            "value": "true",
+            "selected": false
+          },
+          {
+            "text": "false",
+            "value": "false",
+            "selected": false
+          }
+        ]
+      },
+      {
+        "name": "resolution_direction",
+        "label": "Resolution Direction",
+        "type": "custom",
+        "query": "increased,decreased,unchanged",
+        "current": {
+          "text": "All",
+          "value": "$__all"
+        },
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": true,
+        "options": [
+          {
+            "text": "All",
+            "value": "$__all",
+            "selected": true
+          },
+          {
+            "text": "increased",
+            "value": "increased",
+            "selected": false
+          },
+          {
+            "text": "decreased",
+            "value": "decreased",
+            "selected": false
+          },
+          {
+            "text": "unchanged",
+            "value": "unchanged",
+            "selected": false
+          }
+        ]
       }
     ]
   },
