@@ -2111,6 +2111,14 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .err = temMALFORMED,
             });
 
+            // can not send to issuer
+            mptAlice.send({
+                .account = bob,
+                .dest = alice,
+                .amt = 10,
+                .err = temMALFORMED,
+            });
+
             // sender encrypted amount wrong length
             mptAlice.send({
                 .account = bob,

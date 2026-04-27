@@ -95,7 +95,8 @@ ConfidentialMPTClawback::preclaim(PreclaimContext const& ctx)
 
     // Sanity check: claw amount can not exceed confidential outstanding amount
     auto const amount = ctx.tx[sfMPTAmount];
-    if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0))
+    if (amount > (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0) ||
+        amount > (*sleIssuance)[sfOutstandingAmount])
         return tecINSUFFICIENT_FUNDS;
 
     auto const contextHash =
@@ -162,10 +163,14 @@ ConfidentialMPTClawback::doApply()
 
     // Decrease Global Confidential Outstanding Amount
     auto const oldCOA = (*sleIssuance)[sfConfidentialOutstandingAmount];
+    if (clawAmount > oldCOA)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfConfidentialOutstandingAmount] = oldCOA - clawAmount;
 
     // Decrease Global Total Outstanding Amount
     auto const oldOA = (*sleIssuance)[sfOutstandingAmount];
+    if (clawAmount > oldOA)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfOutstandingAmount] = oldOA - clawAmount;
 
     view().update(sleHolderMPToken);

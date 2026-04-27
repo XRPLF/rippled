@@ -139,7 +139,8 @@ ConfidentialMPTConvertBack::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount))
+    if (!sleIssuance->isFlag(lsfMPTCanConfidentialAmount) ||
+        !sleIssuance->isFieldPresent(sfIssuerEncryptionKey))
         return tecNO_PERMISSION;
 
     bool const hasAuditor = ctx.tx.isFieldPresent(sfAuditorEncryptedAmount);
@@ -209,9 +210,14 @@ ConfidentialMPTConvertBack::doApply()
 
     // Converting back increases regular balance and decreases confidential
     // outstanding. This is the inverse of Convert.
+    if (amt > maxMPTokenAmount - amtToConvertBack)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleMptoken)[sfMPTAmount] = amt + amtToConvertBack;
-    (*sleIssuance)[sfConfidentialOutstandingAmount] =
-        (*sleIssuance)[sfConfidentialOutstandingAmount] - amtToConvertBack;
+
+    auto const coa = (*sleIssuance)[~sfConfidentialOutstandingAmount].value_or(0);
+    if (coa < amtToConvertBack)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    (*sleIssuance)[sfConfidentialOutstandingAmount] = coa - amtToConvertBack;
 
     std::optional<Slice> const auditorEc = ctx_.tx[~sfAuditorEncryptedAmount];
 
