@@ -212,6 +212,7 @@ TxTest::close()
     pendingTxs_.clear();
 
     openLedger_ =
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         std::make_shared<OpenView>(open_ledger, closedLedger_.get(), *rules_, closedLedger_);
 }
 
