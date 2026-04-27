@@ -809,6 +809,8 @@ private:
 
     SubAccountHistoryMapType mSubAccountHistory;
 
+    // Used as array indices; converting to enum class would require casts at ~40 call sites.
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum SubTypes {
         sLedger,          // Accepted ledgers.
         sManifests,       // Received validator manifests.
