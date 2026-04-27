@@ -9,22 +9,24 @@
 
     Dependency diagram:
 
-        +-------------------------------------------+
-        |              SpanGuard                     |
-        +-------------------------------------------+
-        | - impl_ : unique_ptr<Impl>  (pimpl)       |
-        +-------------------------------------------+
-        | + span(cat, prefix, name)         [static] |
-        | + childSpan(name) : SpanGuard              |
-        | + linkedSpan(name) : SpanGuard             |
-        | + captureContext() : SpanContext            |
-        | + setAttribute(key, value)                 |
-        | + setOk() / setError(desc)                 |
-        | + addEvent(name)                           |
-        | + recordException(e)                       |
-        | + discard()                                |
-        | + operator bool()                          |
-        +-------------------------------------------+
+        +------------------------------------------------+
+        |                 SpanGuard                      |
+        +------------------------------------------------+
+        | - impl_ : unique_ptr<Impl>  (pimpl)            |
+        +------------------------------------------------+
+        | + span(cat, prefix, name)              [static] |
+        | + childSpan(name) : SpanGuard                   |
+        | + linkedSpan(name) : SpanGuard                  |
+        | + txSpan(prefix, name, hash)           [static] |
+        | + txSpan(prefix, name, hash, parent)   [static] |
+        | + captureContext() : SpanContext                 |
+        | + setAttribute(key, value)                      |
+        | + setOk() / setError(desc)                      |
+        | + addEvent(name)                                |
+        | + recordException(e)                            |
+        | + discard()                                     |
+        | + operator bool()                               |
+        +------------------------------------------------+
                         |  hides (pimpl)
                 +-------+-------+
                 |               |
