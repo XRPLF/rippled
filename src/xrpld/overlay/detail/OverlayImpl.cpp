@@ -1,30 +1,93 @@
+#include <xrpld/overlay/detail/OverlayImpl.h>
+
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
+#include <xrpld/overlay/detail/Handshake.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/overlay/predicates.h>
+#include <xrpld/peerfinder/PeerfinderManager.h>
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/make_Manager.h>
+#include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/handlers/admin/status/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Resolver.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/WrappedSink.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/rdb/RelationalDatabase.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Manifest.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/Wallet.h>
+#include <xrpl/server/Writer.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/dispatch.hpp>
+#include <boost/asio/error.hpp>
 #include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/post.hpp>
+#include <boost/asio/strand.hpp>
+#include <boost/beast/http/empty_body.hpp>
+#include <boost/beast/http/field.hpp>
+#include <boost/beast/http/status.hpp>
+#include <boost/lexical_cast.hpp>
+#include <boost/lexical_cast/bad_lexical_cast.hpp>
+#include <boost/lexical_cast/try_lexical_convert.hpp>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iomanip>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -102,7 +165,7 @@ OverlayImpl::Timer::on_timer(error_code ec)
 
 OverlayImpl::OverlayImpl(
     Application& app,
-    Setup const& setup,
+    Setup setup,
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
@@ -113,7 +176,7 @@ OverlayImpl::OverlayImpl(
     , io_context_(io_context)
     , work_(std::in_place, boost::asio::make_work_guard(io_context_))
     , strand_(boost::asio::make_strand(io_context_))
-    , setup_(setup)
+    , setup_(std::move(setup))
     , journal_(app_.getJournal("Overlay"))
     , serverHandler_(serverHandler)
     , m_resourceManager(resourceManager)
@@ -192,7 +255,7 @@ OverlayImpl::onHandoff(
 
     {
         auto const types = beast::rfc2616::split_commas(request["Connect-As"]);
-        if (std::find_if(types.begin(), types.end(), [](std::string const& s) {
+        if (std::ranges::find_if(types, [](std::string const& s) {
                 return boost::iequals(s, "peer");
             }) == types.end())
         {
@@ -461,16 +524,16 @@ OverlayImpl::start()
     if (bootstrapIps.empty())
     {
         // Pool of servers operated by Ripple Labs Inc. - https://ripple.com
-        bootstrapIps.push_back("r.ripple.com 51235");
+        bootstrapIps.emplace_back("r.ripple.com 51235");
 
         // Pool of servers operated by ISRDC - https://isrdc.in
-        bootstrapIps.push_back("sahyadri.isrdc.in 51235");
+        bootstrapIps.emplace_back("sahyadri.isrdc.in 51235");
 
         // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
-        bootstrapIps.push_back("hubs.xrpkuwait.com 51235");
+        bootstrapIps.emplace_back("hubs.xrpkuwait.com 51235");
 
         // Pool of servers operated by XRPL Commons - https://xrpl-commons.org
-        bootstrapIps.push_back("hub.xrpl-commons.org 51235");
+        bootstrapIps.emplace_back("hub.xrpl-commons.org 51235");
     }
 
     m_resolver.resolve(
@@ -626,7 +689,7 @@ OverlayImpl::onManifests(
                     mo,
                     "xrpl::OverlayImpl::onManifests : manifest "
                     "deserialization succeeded");
-
+                // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
                 app_.getOPs().pubManifest(*mo);
 
                 if (app_.getValidators().listed(mo->masterKey))
@@ -634,6 +697,7 @@ OverlayImpl::onManifests(
                     auto db = app_.getWalletDB().checkoutDb();
                     addValidatorManifest(*db, serialized);
                 }
+                // NOLINTEND(bugprone-unchecked-optional-access)
             }
         }
         else

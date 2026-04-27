@@ -1,13 +1,28 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
+#include <xrpld/app/main/Application.h>
+#include <xrpld/rpc/detail/AssetCache.h>
+#include <xrpld/rpc/detail/PathRequest.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -134,17 +149,16 @@ PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::remove_if(
-                    requests_.begin(), requests_.end(), [&removed, &request](auto const& wl) {
-                        auto r = wl.lock();
+                auto ret = std::ranges::remove_if(requests_, [&removed, &request](auto const& wl) {
+                    auto r = wl.lock();
 
-                        if (r && r != request)
-                            return false;
-                        ++removed;
-                        return true;
-                    });
+                    if (r && r != request)
+                        return false;
+                    ++removed;
+                    return true;
+                });
 
-                requests_.erase(ret, requests_.end());
+                requests_.erase(ret.begin(), ret.end());
             }
 
             mustBreak = !newRequests && app_.getLedgerMaster().isNewPathRequest();
@@ -203,7 +217,7 @@ PathRequestManager::insertPathRequest(PathRequest::pointer const& req)
 
     // Insert after any older unserviced requests but before
     // any serviced requests
-    auto ret = std::find_if(requests_.begin(), requests_.end(), [](auto const& wl) {
+    auto ret = std::ranges::find_if(requests_, [](auto const& wl) {
         auto r = wl.lock();
 
         // We come before handled requests

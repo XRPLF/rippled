@@ -28,25 +28,25 @@ public:
     /** Create the iterator. */
     BookTip(ApplyView& view, Book const& book);
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     dir() const noexcept
     {
         return m_dir;
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     index() const noexcept
     {
         return m_index;
     }
 
-    Quality const&
+    [[nodiscard]] Quality const&
     quality() const noexcept
     {
         return m_quality;
     }
 
-    SLE::pointer const&
+    [[nodiscard]] SLE::pointer const&
     entry() const noexcept
     {
         return m_entry;

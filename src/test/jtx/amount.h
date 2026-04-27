@@ -13,6 +13,7 @@
 #include <ostream>
 #include <string>
 #include <type_traits>
+#include <utility>
 
 namespace xrpl {
 namespace detail {
@@ -24,8 +25,7 @@ struct epsilon_multiple
 
 }  // namespace detail
 
-namespace test {
-namespace jtx {
+namespace test::jtx {
 
 /*
 
@@ -74,7 +74,8 @@ public:
     PrettyAmount&
     operator=(PrettyAmount const&) = default;
 
-    PrettyAmount(STAmount const& amount, std::string const& name) : amount_(amount), name_(name)
+    PrettyAmount(STAmount amount, std::string name)
+        : amount_(std::move(amount)), name_(std::move(name))
     {
     }
 
@@ -102,25 +103,25 @@ public:
     {
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     value() const
     {
         return amount_;
     }
 
-    Number
+    [[nodiscard]] Number
     number() const
     {
         return amount_;
     }
 
-    inline int
+    [[nodiscard]] int
     signum() const
     {
         return amount_.signum();
@@ -171,7 +172,7 @@ public:
     {
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     raw() const
     {
         return asset_;
@@ -208,20 +209,20 @@ public:
         return {asset_};
     }
 
-    bool
+    [[nodiscard]] bool
     integral() const
     {
         return asset_.integral();
     }
 
-    bool
+    [[nodiscard]] bool
     native() const
     {
         return asset_.native();
     }
 
     template <ValidIssueType TIss>
-    bool
+    [[nodiscard]] bool
     holds() const
     {
         return asset_.holds<TIss>();
@@ -257,8 +258,8 @@ struct XRP_t
         return xrpIssue();
     }
 
-    bool
-    integral() const
+    static bool
+    integral()
     {
         return true;
     }
@@ -360,9 +361,7 @@ drops(XRPAmount i)
 // The smallest possible IOU STAmount
 struct epsilon_t
 {
-    epsilon_t()
-    {
-    }
+    epsilon_t() = default;
 
     detail::epsilon_multiple
     operator()(std::size_t n) const
@@ -386,22 +385,22 @@ public:
     Account account;
     xrpl::Currency currency;
 
-    IOU(Account const& account_, xrpl::Currency const& currency_)
-        : account(account_), currency(currency_)
+    IOU(Account account_, xrpl::Currency const& currency_)
+        : account(std::move(account_)), currency(currency_)
     {
     }
 
-    Issue
+    [[nodiscard]] Issue
     issue() const
     {
         return {currency, account.id()};
     }
-    Asset
+    [[nodiscard]] Asset
     asset() const
     {
         return issue();
     }
-    bool
+    [[nodiscard]] bool
     integral() const
     {
         return issue().integral();
@@ -427,7 +426,7 @@ public:
 
     template <
         class T,
-        class = std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_arithmetic<T>::value>>
+        class = std::enable_if_t<sizeof(T) >= sizeof(int) && std::is_arithmetic_v<T>>>
     PrettyAmount
     operator()(T v) const
     {
@@ -476,21 +475,20 @@ public:
     std::string name;
     xrpl::MPTID issuanceID;
 
-    MPT(std::string const& n, xrpl::MPTID const& issuanceID_) : name(n), issuanceID(issuanceID_)
+    MPT(std::string n, xrpl::MPTID const& issuanceID_) : name(std::move(n)), issuanceID(issuanceID_)
     {
     }
-    MPT(std::string const& n = "") : name(n), issuanceID(noMPT())
+    MPT(std::string n = "") : name(std::move(n)), issuanceID(noMPT())
     {
     }
-    MPT(Asset const& asset) : name(""), issuanceID(asset.get<MPTIssue>())
+    MPT(Asset const& asset) : issuanceID(asset.get<MPTIssue>())
     {
     }
-    MPT(AccountID const& account, std::int32_t seq = 0)
-        : name(""), issuanceID(makeMptID(seq, account))
+    MPT(AccountID const& account, std::int32_t seq = 0) : issuanceID(makeMptID(seq, account))
     {
     }
 
-    xrpl::MPTID const&
+    [[nodiscard]] xrpl::MPTID const&
     mpt() const
     {
         return issuanceID;
@@ -498,18 +496,18 @@ public:
 
     /** Explicit conversion to MPTIssue or asset.
      */
-    xrpl::MPTIssue
+    [[nodiscard]] xrpl::MPTIssue
     mptIssue() const
     {
         return MPTIssue{issuanceID};
     }
-    Asset
+    [[nodiscard]] Asset
     asset() const
     {
         return mptIssue();
     }
-    bool
-    integral() const
+    static bool
+    integral()
     {
         return true;
     }
@@ -586,11 +584,11 @@ struct AnyAmount
     AnyAmount&
     operator=(AnyAmount const&) = default;
 
-    AnyAmount(STAmount const& amount) : is_any(false), value(amount)
+    AnyAmount(STAmount amount) : is_any(false), value(std::move(amount))
     {
     }
 
-    AnyAmount(STAmount const& amount, any_t const*) : is_any(true), value(amount)
+    AnyAmount(STAmount amount, any_t const*) : is_any(true), value(std::move(amount))
     {
     }
 
@@ -615,6 +613,6 @@ any_t::operator()(STAmount const& sta) const
 */
 extern any_t const any;
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl

@@ -68,7 +68,7 @@ public:
     {
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const;
 
     template <ValidIssueType TIss>
@@ -80,16 +80,16 @@ public:
     get();
 
     template <ValidIssueType TIss>
-    constexpr bool
+    [[nodiscard]] constexpr bool
     holds() const;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const;
 
-    constexpr value_type const&
+    [[nodiscard]] constexpr value_type const&
     value() const;
 
-    constexpr token_type
+    [[nodiscard]] constexpr token_type
     token() const;
 
     void
@@ -98,7 +98,7 @@ public:
     STAmount
     operator()(Number const&) const;
 
-    constexpr AmtType
+    [[nodiscard]] constexpr AmtType
     getAmountType() const;
 
     // Custom, generic visit implementation
@@ -111,7 +111,7 @@ public:
         return detail::visit(issue_, std::forward<Visitors>(visitors)...);
     }
 
-    constexpr bool
+    [[nodiscard]] constexpr bool
     native() const
     {
         return visit(
@@ -119,7 +119,7 @@ public:
             [&](MPTIssue const&) { return false; });
     }
 
-    bool
+    [[nodiscard]] bool
     integral() const
     {
         return visit(
@@ -169,7 +169,7 @@ Asset::holds() const
 }
 
 template <ValidIssueType TIss>
-constexpr TIss const&
+[[nodiscard]] constexpr TIss const&
 Asset::get() const
 {
     if (!std::holds_alternative<TIss>(issue_))
@@ -221,9 +221,13 @@ operator==(Asset const& lhs, Asset const& rhs)
     return std::visit(
         [&]<typename TLhs, typename TRhs>(TLhs const& issLhs, TRhs const& issRhs) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
+            {
                 return issLhs == issRhs;
+            }
             else
+            {
                 return false;
+            }
         },
         lhs.issue_,
         rhs.issue_);
@@ -235,11 +239,17 @@ operator<=>(Asset const& lhs, Asset const& rhs)
     return std::visit(
         []<ValidIssueType TLhs, ValidIssueType TRhs>(TLhs const& lhs_, TRhs const& rhs_) {
             if constexpr (std::is_same_v<TLhs, TRhs>)
+            {
                 return std::weak_ordering(lhs_ <=> rhs_);
+            }
             else if constexpr (is_issue_v<TLhs> && is_mptissue_v<TRhs>)
+            {
                 return std::weak_ordering::greater;
+            }
             else
+            {
                 return std::weak_ordering::less;
+            }
         },
         lhs.issue_,
         rhs.issue_);
@@ -267,11 +277,17 @@ equalTokens(Asset const& lhs, Asset const& rhs)
     return std::visit(
         [&]<typename TLhs, typename TRhs>(TLhs const& issLhs, TRhs const& issRhs) {
             if constexpr (std::is_same_v<TLhs, Issue> && std::is_same_v<TRhs, Issue>)
+            {
                 return issLhs.currency == issRhs.currency;
+            }
             else if constexpr (std::is_same_v<TLhs, MPTIssue> && std::is_same_v<TRhs, MPTIssue>)
+            {
                 return issLhs.getMptID() == issRhs.getMptID();
+            }
             else
+            {
                 return false;
+            }
         },
         lhs.issue_,
         rhs.issue_);
@@ -291,9 +307,6 @@ validJSONAsset(Json::Value const& jv);
 
 Asset
 assetFromJson(Json::Value const& jv);
-
-Json::Value
-to_json(Asset const& asset);
 
 inline bool
 isConsistent(Asset const& asset)

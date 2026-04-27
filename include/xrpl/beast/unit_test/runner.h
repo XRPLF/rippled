@@ -11,8 +11,7 @@
 #include <mutex>
 #include <string>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Unit test runner interface.
 
@@ -48,7 +47,7 @@ public:
     }
 
     /** Returns the argument string. */
-    std::string const&
+    [[nodiscard]] std::string const&
     arg() const
     {
         return arg_;
@@ -198,8 +197,10 @@ runner::run_if(FwdIter first, FwdIter last, Pred pred)
 {
     bool failed(false);
     for (; first != last; ++first)
+    {
         if (pred(*first))
             failed = run(*first) || failed;
+    }
     return failed;
 }
 
@@ -219,8 +220,10 @@ runner::run_each_if(SequenceContainer const& c, Pred pred)
 {
     bool failed(false);
     for (auto const& s : c)
+    {
         if (pred(s))
             failed = run(s) || failed;
+    }
     return failed;
 }
 
@@ -273,5 +276,4 @@ runner::log(std::string const& s)
     on_log(s);
 }
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

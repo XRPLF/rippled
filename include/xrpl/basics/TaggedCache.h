@@ -222,19 +222,19 @@ private:
         {
         }
 
-        bool
+        [[nodiscard]] bool
         isWeak() const
         {
             if (!ptr)
                 return true;
             return ptr.isWeak();
         }
-        bool
+        [[nodiscard]] bool
         isCached() const
         {
             return ptr && ptr.isStrong();
         }
-        bool
+        [[nodiscard]] bool
         isExpired() const
         {
             return ptr.expired();
@@ -251,7 +251,7 @@ private:
         }
     };
 
-    typedef typename std::conditional<IsKeyCache, KeyOnlyEntry, ValueEntry>::type Entry;
+    using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
 
     using KeyOnlyCacheType = hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
 
