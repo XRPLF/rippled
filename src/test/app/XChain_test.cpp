@@ -4034,8 +4034,6 @@ private:
         st_closed,
     };
 
-    enum Act_Flags { af_a2b = 1 << 0 };
-
     // --------------------------------------------------
     template <class T>
     class SmBase

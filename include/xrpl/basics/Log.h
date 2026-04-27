@@ -15,6 +15,7 @@
 namespace xrpl {
 
 // DEPRECATED use beast::severities::Severity instead
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum LogSeverity {
     lsINVALID = -1,  // used to indicate an invalid severity
     lsTRACE = 0,     // Very low-level progress information, details inside
