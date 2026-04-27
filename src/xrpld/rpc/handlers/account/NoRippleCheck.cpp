@@ -21,6 +21,8 @@
 
 #include <cstdint>
 #include <memory>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -66,7 +68,7 @@ doNoRippleCheck(RPC::JsonContext& context)
     {
         return rpcError(rpcACT_MALFORMED);
     }
-    auto const accountID{std::move(id.value())};
+    auto const accountID{id.value()};
 
     // check role param
     if (!params.isMember(jss::role))
@@ -76,9 +78,13 @@ doNoRippleCheck(RPC::JsonContext& context)
     {
         std::string const role = params[jss::role].asString();
         if (role == jss::gateway)
+        {
             roleGateway = true;
+        }
         else if (role != jss::user)
+        {
             return RPC::invalid_field_error(jss::role);
+        }
     }
 
     unsigned int limit = 0;
@@ -114,7 +120,7 @@ doNoRippleCheck(RPC::JsonContext& context)
 
     Json::Value& problems = (result[jss::problems] = Json::arrayValue);
 
-    bool const defaultRipple = sle->getFieldU32(sfFlags) & lsfDefaultRipple;
+    bool const defaultRipple = (sle->getFieldU32(sfFlags) & lsfDefaultRipple) != 0u;
 
     Json::Value jvTransactions = Json::arrayValue;
 
