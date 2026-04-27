@@ -146,7 +146,7 @@ InnerObjectFormats::InnerObjectFormats()
         {{sfAccount, soeREQUIRED, soeCONSTANT},
          {sfSigningPubKey, soeOPTIONAL, soeCONSTANT},
          {sfTxnSignature, soeOPTIONAL, soeCONSTANT},
-         {sfSigners, soeOPTIONAL}});
+         {sfSigners, soeOPTIONAL, soeCONSTANT}});
 
     add(sfBook.jsonName,
         sfBook.getCode(),
