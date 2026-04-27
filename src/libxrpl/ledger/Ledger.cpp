@@ -493,14 +493,14 @@ void
 Ledger::rawErase(std::shared_ptr<SLE> const& sle)
 {
     if (!stateMap_.delItem(sle->key()))
-        Throw<std::logic_error>("Ledger::rawErase: key not found");
+        LogicError("Ledger::rawErase: key not found");
 }
 
 void
 Ledger::rawErase(uint256 const& key)
 {
     if (!stateMap_.delItem(key))
-        Throw<std::logic_error>("Ledger::rawErase: key not found");
+        LogicError("Ledger::rawErase: key not found");
 }
 
 void
@@ -510,7 +510,7 @@ Ledger::rawInsert(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_.addGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
-        Throw<std::logic_error>("Ledger::rawInsert: key already exists");
+        LogicError("Ledger::rawInsert: key already exists");
 }
 
 void
@@ -520,7 +520,7 @@ Ledger::rawReplace(std::shared_ptr<SLE> const& sle)
     sle->add(ss);
     if (!stateMap_.updateGiveItem(
             SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(sle->key(), ss.slice())))
-        Throw<std::logic_error>("Ledger::rawReplace: key not found");
+        LogicError("Ledger::rawReplace: key not found");
 }
 
 void
@@ -536,7 +536,7 @@ Ledger::rawTxInsert(
     s.addVL(txn->peekData());
     s.addVL(metaData->peekData());
     if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, make_shamapitem(key, s.slice())))
-        Throw<std::logic_error>("duplicate_tx: " + to_string(key));
+        LogicError("duplicate_tx: " + to_string(key));
 }
 
 uint256
