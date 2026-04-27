@@ -1261,7 +1261,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     {
         // cached bad
         JLOG(m_journal.warn()) << transaction->getID() << ": cached bad!\n";
-        transaction->setStatus(INVALID);
+        transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         return false;
     }
@@ -1274,7 +1274,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     auto const sttx = *transaction->getSTransaction();
     if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatch))
     {
-        transaction->setStatus(INVALID);
+        transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temINVALID_FLAG);
         registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
         return false;
@@ -1292,7 +1292,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     if (validity == Validity::SigBad)
     {
         JLOG(m_journal.info()) << "Transaction has bad signature: " << reason;
-        transaction->setStatus(INVALID);
+        transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
         return false;
@@ -1408,7 +1408,7 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
         std::string reason;
         auto transaction = std::make_shared<Transaction>(tx, reason, registry_.get().getApp());
 
-        if (transaction->getStatus() == INVALID)
+        if (transaction->getStatus() == TransStatus::INVALID)
         {
             if (!reason.empty())
             {
@@ -1559,7 +1559,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             if (isTesSuccess(e.result))
             {
                 JLOG(m_journal.debug()) << "Transaction is now included in open ledger";
-                e.transaction->setStatus(INCLUDED);
+                e.transaction->setStatus(TransStatus::INCLUDED);
 
                 // Pop as many "reasonable" transactions for this account as
                 // possible. "Reasonable" means they have sequential sequence
@@ -1588,14 +1588,14 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 // duplicate or conflict
                 JLOG(m_journal.info()) << "Transaction is obsolete";
-                e.transaction->setStatus(OBSOLETE);
+                e.transaction->setStatus(TransStatus::OBSOLETE);
             }
             else if (e.result == terQUEUED)
             {
                 JLOG(m_journal.debug()) << "Transaction is likely to claim a"
                                         << " fee, but is queued until fee drops";
 
-                e.transaction->setStatus(HELD);
+                e.transaction->setStatus(TransStatus::HELD);
                 // Add to held transactions, because it could get
                 // kicked out of the queue, and this will try to
                 // put it back.
@@ -1634,7 +1634,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     {
                         // transaction should be held
                         JLOG(m_journal.debug()) << "Transaction should be held: " << e.result;
-                        e.transaction->setStatus(HELD);
+                        e.transaction->setStatus(TransStatus::HELD);
                         m_ledgerMaster.addHeldTransaction(e.transaction);
                         e.transaction->setKept();
                     }
@@ -1649,7 +1649,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             else
             {
                 JLOG(m_journal.debug()) << "Status other than success " << e.result;
-                e.transaction->setStatus(INVALID);
+                e.transaction->setStatus(TransStatus::INVALID);
             }
 
             auto const enforceFailHard = e.failType == FailHard::yes && !isTesSuccess(e.result);
@@ -3267,8 +3267,8 @@ NetworkOPsImp::transJson(
                 *ledger,
                 account,
                 amount,
-                fhIGNORE_FREEZE,
-                ahIGNORE_AUTH,
+                FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
                 registry_.get().getJournal("View"));
             jvObj[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }
@@ -3471,7 +3471,7 @@ NetworkOPsImp::pubAccountTransaction(
             jvObj.set(jss::account_history_boundary, true);
 
         XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::none,
+            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::IsMemberResult::none,
             "xrpl::NetworkOPsImp::pubAccountTransaction : "
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
@@ -3550,7 +3550,7 @@ NetworkOPsImp::pubProposedAccountTransaction(
         }
 
         XRPL_ASSERT(
-            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::none,
+            jvObj.isMember(jss::account_history_tx_stream) == MultiApiJson::IsMemberResult::none,
             "xrpl::NetworkOPs::pubProposedAccountTransaction : "
             "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
@@ -4400,8 +4400,8 @@ NetworkOPsImp::getBookPage(
                             view,
                             uOfferOwnerID,
                             book.out,
-                            fhZERO_IF_FROZEN,
-                            ahZERO_IF_UNAUTHORIZED,
+                            FreezeHandling::fhZERO_IF_FROZEN,
+                            AuthHandling::ahZERO_IF_UNAUTHORIZED,
                             viewJ);
 
                         if (saOwnerFunds < beast::zero)
@@ -4545,7 +4545,10 @@ NetworkOPsImp::getBookPage(
                     // Did not find balance in table.
 
                     saOwnerFunds = lesActive.accountHolds(
-                        uOfferOwnerID, book.out.currency, book.out.account, fhZERO_IF_FROZEN);
+                        uOfferOwnerID,
+                        book.out.currency,
+                        book.out.account,
+                        FreezeHandling::fhZERO_IF_FROZEN);
 
                     if (saOwnerFunds.isNegative())
                     {

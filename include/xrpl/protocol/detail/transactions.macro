@@ -30,12 +30,12 @@ TRANSACTION(ttPAYMENT, 0, Payment,
     createAcct | mayCreateMPT,
     ({
     {sfDestination, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
-    {sfSendMax, soeOPTIONAL, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfSendMax, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
     {sfPaths, soeDEFAULT},
     {sfInvoiceID, soeOPTIONAL},
     {sfDestinationTag, soeOPTIONAL},
-    {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
+    {sfDeliverMin, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
     {sfCredentialIDs, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL},
 }))
@@ -50,7 +50,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     noPriv,
     ({
     {sfDestination, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfCondition, soeOPTIONAL},
     {sfCancelAfter, soeOPTIONAL},
     {sfFinishAfter, soeOPTIONAL},
@@ -131,8 +131,8 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
     uint256{},
     mayCreateMPT,
     ({
-    {sfTakerPays, soeREQUIRED, soeMPTSupported},
-    {sfTakerGets, soeREQUIRED, soeMPTSupported},
+    {sfTakerPays, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfTakerGets, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfExpiration, soeOPTIONAL},
     {sfOfferSequence, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL},
@@ -239,7 +239,7 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate,
     noPriv,
     ({
     {sfDestination, soeREQUIRED},
-    {sfSendMax, soeREQUIRED, soeMPTSupported},
+    {sfSendMax, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfExpiration, soeOPTIONAL},
     {sfDestinationTag, soeOPTIONAL},
     {sfInvoiceID, soeOPTIONAL},
@@ -255,8 +255,8 @@ TRANSACTION(ttCHECK_CASH, 17, CheckCash,
     mayCreateMPT,
     ({
     {sfCheckID, soeREQUIRED},
-    {sfAmount, soeOPTIONAL, soeMPTSupported},
-    {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
+    {sfAmount, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
+    {sfDeliverMin, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
 }))
 
 /** This transaction type cancels an existing check. */
@@ -398,7 +398,7 @@ TRANSACTION(ttCLAWBACK, 30, Clawback,
     featureClawback,
     noPriv,
     ({
-    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfHolder, soeOPTIONAL},
 }))
 
@@ -412,9 +412,9 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
     mayDeleteAcct | overrideFreeze | mayAuthorizeMPT,
     ({
     {sfHolder, soeREQUIRED},
-    {sfAsset, soeREQUIRED, soeMPTSupported},
-    {sfAsset2, soeREQUIRED, soeMPTSupported},
-    {sfAmount, soeOPTIONAL, soeMPTSupported},
+    {sfAsset, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAsset2, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAmount, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
 }))
 
 /** This transaction type creates an AMM instance */
@@ -426,8 +426,8 @@ TRANSACTION(ttAMM_CREATE, 35, AMMCreate,
     featureAMM,
     createPseudoAcct | mayCreateMPT,
     ({
-    {sfAmount, soeREQUIRED, soeMPTSupported},
-    {sfAmount2, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAmount2, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfTradingFee, soeREQUIRED},
 }))
 
@@ -440,10 +440,10 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit,
     featureAMM,
     noPriv,
     ({
-    {sfAsset, soeREQUIRED, soeMPTSupported},
-    {sfAsset2, soeREQUIRED, soeMPTSupported},
-    {sfAmount, soeOPTIONAL, soeMPTSupported},
-    {sfAmount2, soeOPTIONAL, soeMPTSupported},
+    {sfAsset, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAsset2, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAmount, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
+    {sfAmount2, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
     {sfEPrice, soeOPTIONAL},
     {sfLPTokenOut, soeOPTIONAL},
     {sfTradingFee, soeOPTIONAL},
@@ -458,10 +458,10 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw,
     featureAMM,
     mayDeleteAcct | mayAuthorizeMPT,
     ({
-    {sfAsset, soeREQUIRED, soeMPTSupported},
-    {sfAsset2, soeREQUIRED, soeMPTSupported},
-    {sfAmount, soeOPTIONAL, soeMPTSupported},
-    {sfAmount2, soeOPTIONAL, soeMPTSupported},
+    {sfAsset, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAsset2, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAmount, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
+    {sfAmount2, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
     {sfEPrice, soeOPTIONAL},
     {sfLPTokenIn, soeOPTIONAL},
 }))
@@ -475,8 +475,8 @@ TRANSACTION(ttAMM_VOTE, 38, AMMVote,
     featureAMM,
     noPriv,
     ({
-    {sfAsset, soeREQUIRED, soeMPTSupported},
-    {sfAsset2, soeREQUIRED, soeMPTSupported},
+    {sfAsset, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAsset2, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfTradingFee, soeREQUIRED},
 }))
 
@@ -489,8 +489,8 @@ TRANSACTION(ttAMM_BID, 39, AMMBid,
     featureAMM,
     noPriv,
     ({
-    {sfAsset, soeREQUIRED, soeMPTSupported},
-    {sfAsset2, soeREQUIRED, soeMPTSupported},
+    {sfAsset, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAsset2, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfBidMin, soeOPTIONAL},
     {sfBidMax, soeOPTIONAL},
     {sfAuthAccounts, soeOPTIONAL},
@@ -505,8 +505,8 @@ TRANSACTION(ttAMM_DELETE, 40, AMMDelete,
     featureAMM,
     mustDeleteAcct | mayDeleteMPT,
     ({
-    {sfAsset, soeREQUIRED, soeMPTSupported},
-    {sfAsset2, soeREQUIRED, soeMPTSupported},
+    {sfAsset, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
+    {sfAsset2, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
 }))
 
 /** This transactions creates a crosschain sequence number */
@@ -852,7 +852,7 @@ TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     featureSingleAssetVault,
     createPseudoAcct | createMPTIssuance | mustModifyVault,
     ({
-    {sfAsset, soeREQUIRED, soeMPTSupported},
+    {sfAsset, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfAssetsMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL},
@@ -898,7 +898,7 @@ TRANSACTION(ttVAULT_DEPOSIT, 68, VaultDeposit,
     mayAuthorizeMPT | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
 }))
 
 /** This transaction trades shares for assets with a vault. */
@@ -911,7 +911,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 69, VaultWithdraw,
     mayDeleteMPT | mayAuthorizeMPT | mustModifyVault,
     ({
     {sfVaultID, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfDestination, soeOPTIONAL},
     {sfDestinationTag, soeOPTIONAL},
 }))
@@ -927,7 +927,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
-    {sfAmount, soeOPTIONAL, soeMPTSupported},
+    {sfAmount, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
 }))
 
 /** This transaction type batches together transactions. */
@@ -982,7 +982,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit,
     featureLendingProtocol,
     noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
 }))
 
 /** This transaction withdraws First Loss Capital from a Loan Broker */
@@ -994,7 +994,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw,
     featureLendingProtocol,
     mayAuthorizeMPT, ({
     {sfLoanBrokerID, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
     {sfDestination, soeOPTIONAL},
     {sfDestinationTag, soeOPTIONAL},
 }))
@@ -1009,7 +1009,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_CLAWBACK, 78, LoanBrokerCoverClawback,
     featureLendingProtocol,
     noPriv, ({
     {sfLoanBrokerID, soeOPTIONAL},
-    {sfAmount, soeOPTIONAL, soeMPTSupported},
+    {sfAmount, soeOPTIONAL, SOETxMPTIssue::soeMPTSupported},
 }))
 
 /** This transaction creates a Loan */
@@ -1073,7 +1073,7 @@ TRANSACTION(ttLOAN_PAY, 84, LoanPay,
     featureLendingProtocol,
     mayAuthorizeMPT | mustModifyVault, ({
     {sfLoanID, soeREQUIRED},
-    {sfAmount, soeREQUIRED, soeMPTSupported},
+    {sfAmount, soeREQUIRED, SOETxMPTIssue::soeMPTSupported},
 }))
 
 /** This system-generated transaction type is used to update the status of the various amendments.

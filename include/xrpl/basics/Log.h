@@ -207,6 +207,8 @@ public:
     fromString(std::string const& s);
 
 private:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // Maximum line length for log messages.
         // If the message exceeds this length it will be truncated with

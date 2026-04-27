@@ -204,6 +204,8 @@ class StatsDCollectorImp : public StatsDCollector,
                            public std::enable_shared_from_this<StatsDCollectorImp>
 {
 private:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // max_packet_size = 484
         max_packet_size = 1472

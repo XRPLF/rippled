@@ -240,7 +240,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
         node.getHash().as_uint256(), 0, NodeStore::FetchType::synchronous, true);
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
-        if (healthWait() == stopping)
+        if (healthWait() == HealthResult::stopping)
             return false;
     }
 
@@ -290,7 +290,7 @@ SHAMapStoreImp::run()
         }
 
         bool const readyToRotate = validatedSeq >= lastRotated + deleteInterval_ &&
-            canDelete_ >= lastRotated - 1 && healthWait() == keepGoing;
+            canDelete_ >= lastRotated - 1 && healthWait() == HealthResult::keepGoing;
 
         // will delete up to (not including) lastRotated
         if (readyToRotate)
@@ -302,7 +302,7 @@ SHAMapStoreImp::run()
                                   << ledgerMaster_->getValidatedLedgerAge().count() << 's';
 
             clearPrior(lastRotated);
-            if (healthWait() == stopping)
+            if (healthWait() == HealthResult::stopping)
                 return;
 
             JLOG(journal_.debug()) << "copying ledger " << validatedSeq;
@@ -324,7 +324,7 @@ SHAMapStoreImp::run()
                 continue;
             }
 
-            if (healthWait() == stopping)
+            if (healthWait() == HealthResult::stopping)
                 return;
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug())
@@ -332,7 +332,7 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.debug()) << "freshening caches";
             freshenCaches();
-            if (healthWait() == stopping)
+            if (healthWait() == HealthResult::stopping)
                 return;
             // Only log if we completed without a "health" abort
             JLOG(journal_.debug()) << validatedSeq << " freshened caches";
@@ -342,7 +342,7 @@ SHAMapStoreImp::run()
             JLOG(journal_.debug()) << validatedSeq << " new backend " << newBackend->getName();
 
             clearCaches(validatedSeq);
-            if (healthWait() == stopping)
+            if (healthWait() == HealthResult::stopping)
                 return;
 
             lastRotated = validatedSeq;
@@ -506,7 +506,7 @@ SHAMapStoreImp::clearSql(
         min = *m;
     }
 
-    if (min > lastRotated || healthWait() == stopping)
+    if (min > lastRotated || healthWait() == HealthResult::stopping)
         return;
     if (min == lastRotated)
     {
@@ -525,11 +525,11 @@ SHAMapStoreImp::clearSql(
         deleteBeforeSeq(min);
         JLOG(journal_.trace()) << "End: Delete up to " << deleteBatch_ << " rows with LedgerSeq < "
                                << min << " from: " << TableName;
-        if (healthWait() == stopping)
+        if (healthWait() == HealthResult::stopping)
             return;
         if (min < lastRotated)
             std::this_thread::sleep_for(backOff_);
-        if (healthWait() == stopping)
+        if (healthWait() == HealthResult::stopping)
             return;
     }
     JLOG(journal_.debug()) << "finished deleting from: " << TableName;
@@ -563,7 +563,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
     JLOG(journal_.trace()) << "Begin: Clear internal ledgers up to " << lastRotated;
     ledgerMaster_->clearPriorLedgers(lastRotated);
     JLOG(journal_.trace()) << "End: Clear internal ledgers up to " << lastRotated;
-    if (healthWait() == stopping)
+    if (healthWait() == HealthResult::stopping)
         return;
 
     auto& db = app_.getRelationalDatabase();
@@ -573,7 +573,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Ledgers",
         [&db]() -> std::optional<LedgerIndex> { return db.getMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == HealthResult::stopping)
         return;
 
     if (!app_.config().useTxTables())
@@ -584,7 +584,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "Transactions",
         [&db]() -> std::optional<LedgerIndex> { return db.getTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteTransactionsBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == HealthResult::stopping)
         return;
 
     clearSql(
@@ -592,7 +592,7 @@ SHAMapStoreImp::clearPrior(LedgerIndex lastRotated)
         "AccountTransactions",
         [&db]() -> std::optional<LedgerIndex> { return db.getAccountTransactionsMinLedgerSeq(); },
         [&db](LedgerIndex min) -> void { db.deleteAccountTransactionsBeforeLedgerSeq(min); });
-    if (healthWait() == stopping)
+    if (healthWait() == HealthResult::stopping)
         return;
 }
 
@@ -615,7 +615,7 @@ SHAMapStoreImp::healthWait()
         lock.lock();
     }
 
-    return stop_ ? stopping : keepGoing;
+    return stop_ ? HealthResult::stopping : HealthResult::keepGoing;
 }
 
 void

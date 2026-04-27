@@ -1860,10 +1860,10 @@ class Delegate_test : public beast::unit_test::suite
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegable, ...) \
-    if (delegable == xrpl::delegable)                 \
-    {                                                 \
-        delegableCount++;                             \
+#define TRANSACTION(tag, value, name, txDelegable, ...) \
+    if (txDelegable == xrpl::Delegation::delegable)     \
+    {                                                   \
+        delegableCount++;                               \
     }
 
 #include <xrpl/protocol/detail/transactions.macro>

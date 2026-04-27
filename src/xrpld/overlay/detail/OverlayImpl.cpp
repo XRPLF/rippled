@@ -92,6 +92,8 @@
 namespace xrpl {
 
 namespace CrawlOptions {
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     Disabled = 0,
     Overlay = (1 << 0),
@@ -1452,7 +1454,7 @@ OverlayImpl::updateSlotAndSquelch(
     for (auto id : peers)
     {
         slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
-            reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+            reportInboundTraffic(TrafficCount::category::squelch_ignored, 0);
         });
     }
 }
@@ -1481,7 +1483,7 @@ OverlayImpl::updateSlotAndSquelch(
     }
 
     slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
-        reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+        reportInboundTraffic(TrafficCount::category::squelch_ignored, 0);
     });
 }
 

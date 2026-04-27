@@ -408,8 +408,8 @@ PeerImp::removeTxQueue(uint256 const& hash)
 void
 PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 {
-    if ((usage_.charge(fee, context) == Resource::drop) && usage_.disconnect(p_journal_) &&
-        strand_.running_in_this_thread())
+    if ((usage_.charge(fee, context) == Resource::Disposition::drop) &&
+        usage_.disconnect(p_journal_) && strand_.running_in_this_thread())
     {
         // Sever the connection
         overlay_.incPeerDisconnectCharges();
@@ -2925,7 +2925,8 @@ PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& pack
         auto sttx = txn->getSTransaction();
         sttx->add(s);
         tx->set_rawtransaction(s.data(), s.size());
-        tx->set_status(txn->getStatus() == INCLUDED ? protocol::tsCURRENT : protocol::tsNEW);
+        tx->set_status(
+            txn->getStatus() == TransStatus::INCLUDED ? protocol::tsCURRENT : protocol::tsNEW);
         tx->set_receivetimestamp(app_.getTimeKeeper().now().time_since_epoch().count());
         tx->set_deferred(txn->getSubmitResult().queued);
     }
@@ -2989,10 +2990,10 @@ PeerImp::checkTransaction(
             std::string reason;
             auto tx = std::make_shared<Transaction>(stx, reason, app_);
             XRPL_ASSERT(
-                tx->getStatus() == NEW,
+                tx->getStatus() == TransStatus::NEW,
                 "xrpl::PeerImp::checkTransaction Transaction created "
                 "correctly");
-            if (tx->getStatus() == NEW)
+            if (tx->getStatus() == TransStatus::NEW)
             {
                 JLOG(p_journal_.debug()) << "Processing " << (batch ? "batch" : "unsolicited")
                                          << " pseudo-transaction tx " << tx->getID();
@@ -3044,7 +3045,7 @@ PeerImp::checkTransaction(
         std::string reason;
         auto tx = std::make_shared<Transaction>(stx, reason, app_);
 
-        if (tx->getStatus() == INVALID)
+        if (tx->getStatus() == TransStatus::INVALID)
         {
             if (!reason.empty())
             {

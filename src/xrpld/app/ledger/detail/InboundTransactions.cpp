@@ -27,6 +27,8 @@
 
 namespace xrpl {
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Ideal number of peers to start with
     startPeers = 2,

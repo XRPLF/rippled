@@ -16,7 +16,8 @@ validateSTObject(STObject const& obj, SOTemplate const& format)
             return false;  // LCOV_EXCL_LINE
         }
 
-        if (field.supportMPT() == soeMPTNotSupported && obj.isFieldPresent(field.sField()))
+        if (field.supportMPT() == SOETxMPTIssue::soeMPTNotSupported &&
+            obj.isFieldPresent(field.sField()))
         {
             if (field.sField().fieldType == STI_AMOUNT)
             {

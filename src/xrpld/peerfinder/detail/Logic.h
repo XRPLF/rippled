@@ -350,7 +350,7 @@ public:
 
         // Update counts
         counts_.remove(*slot);
-        slot->state(Slot::connected);
+        slot->state(Slot::State::connected);
         counts_.add(*slot);
         return true;
     }
@@ -372,7 +372,7 @@ public:
             "xrpl::PeerFinder::Logic::activate : valid slot input");
         // Must be accepted or connected
         XRPL_ASSERT(
-            slot->state() == Slot::accept || slot->state() == Slot::connected,
+            slot->state() == Slot::State::accept || slot->state() == Slot::State::connected,
             "xrpl::PeerFinder::Logic::activate : valid slot state");
 
         // Check for duplicate connection by key
@@ -574,7 +574,7 @@ public:
                 slots.reserve(slots_.size());
                 std::for_each(
                     slots_.cbegin(), slots_.cend(), [&slots](Slots::value_type const& value) {
-                        if (value.second->state() == Slot::active)
+                        if (value.second->state() == Slot::State::active)
                             slots.emplace_back(value.second);
                     });
                 std::shuffle(slots.begin(), slots.end(), default_prng());
@@ -747,7 +747,7 @@ public:
 
         // Must be handshaked!
         XRPL_ASSERT(
-            slot->state() == Slot::active,
+            slot->state() == Slot::State::active,
             "xrpl::PeerFinder::Logic::on_endpoints : valid slot state");
 
         clock_type::time_point const now(m_clock.now());
@@ -878,7 +878,7 @@ public:
         beast::Journal const journal{sink};
 
         // Mark fixed slot failure
-        if (slot->fixed() && !slot->inbound() && slot->state() != Slot::active)
+        if (slot->fixed() && !slot->inbound() && slot->state() != Slot::State::active)
         {
             auto iter(fixed_.find(slot->remote_endpoint()));
             if (iter == fixed_.end())
@@ -895,12 +895,12 @@ public:
         // Do state specific bookkeeping
         switch (slot->state())
         {
-            case Slot::accept:
+            case Slot::State::accept:
                 JLOG(journal.trace()) << "Logic accept failed";
                 break;
 
-            case Slot::connect:
-            case Slot::connected:
+            case Slot::State::connect:
+            case Slot::State::connected:
                 bootcache_.on_failure(slot->remote_endpoint());
                 // VFALCO TODO If the address exists in the ephemeral/live
                 //             endpoint livecache then we should mark the
@@ -909,11 +909,11 @@ public:
                 // avoid propagating the address.
                 break;
 
-            case Slot::active:
+            case Slot::State::active:
                 JLOG(journal.trace()) << "Logic close";
                 break;
 
-            case Slot::closing:
+            case Slot::State::closing:
                 JLOG(journal.trace()) << "Logic finished";
                 break;
 
@@ -1174,15 +1174,15 @@ public:
     {
         switch (state)
         {
-            case Slot::accept:
+            case Slot::State::accept:
                 return "accept";
-            case Slot::connect:
+            case Slot::State::connect:
                 return "connect";
-            case Slot::connected:
+            case Slot::State::connected:
                 return "connected";
-            case Slot::active:
+            case Slot::State::active:
                 return "active";
-            case Slot::closing:
+            case Slot::State::closing:
                 return "closing";
             default:
                 break;

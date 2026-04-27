@@ -38,6 +38,8 @@ protected:
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using yield_context = boost::asio::yield_context;
 
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         // Size of our read/write buffer
         bufferSize = 4 * 1024,

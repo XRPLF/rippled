@@ -11,6 +11,8 @@
 namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
+// 2026 usages, 129 files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SOEStyle {
     soeINVALID = -1,
     soeREQUIRED = 0,  // required
@@ -21,7 +23,7 @@ enum SOEStyle {
 };
 
 /** Amount fields that can support MPT */
-enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+enum class SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
 
 //------------------------------------------------------------------------------
 
@@ -31,7 +33,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOETxMPTIssue supportMpt_ = soeMPTNone;
+    SOETxMPTIssue supportMpt_ = SOETxMPTIssue::soeMPTNone;
 
 private:
     void
@@ -57,7 +59,7 @@ public:
     SOElement(
         TypedField<T> const& fieldName,
         SOEStyle style,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = SOETxMPTIssue::soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);

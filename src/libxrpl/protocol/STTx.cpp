@@ -203,7 +203,7 @@ STTx::getSeqProxy() const
         return SeqProxy::sequence(seq);
     }
 
-    return SeqProxy{SeqProxy::ticket, *ticketSeq};
+    return SeqProxy{SeqProxy::Type::ticket, *ticketSeq};
 }
 
 std::uint32_t
@@ -707,7 +707,7 @@ invalidMPTAmountInTx(STObject const& tx)
     {
         for (auto const& e : item->getSOTemplate())
         {
-            if (tx.isFieldPresent(e.sField()) && e.supportMPT() != soeMPTNone)
+            if (tx.isFieldPresent(e.sField()) && e.supportMPT() != SOETxMPTIssue::soeMPTNone)
             {
                 if (auto const& field = tx.peekAtField(e.sField());
                     (field.getSType() == STI_AMOUNT &&
@@ -715,7 +715,7 @@ invalidMPTAmountInTx(STObject const& tx)
                     (field.getSType() == STI_ISSUE &&
                      safe_downcast<STIssue const&>(field).holds<MPTIssue>()))
                 {
-                    if (e.supportMPT() != soeMPTSupported)
+                    if (e.supportMPT() != SOETxMPTIssue::soeMPTSupported)
                         return true;
                 }
             }
