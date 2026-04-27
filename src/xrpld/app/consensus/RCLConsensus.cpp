@@ -1183,17 +1183,6 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     if (!*roundSpan_)
         return;
 
-    if (prevRoundContext_.isValid())
-    {
-        // Create a linked span to establish follows-from relationship
-        // between consecutive rounds, then transfer to roundSpan_.
-        auto linked = SpanGuard::linkedSpan(cons_span::round, prevRoundContext_);
-        if (linked)
-        {
-            roundSpan_.emplace(std::move(linked));
-        }
-    }
-
     roundSpan_->setAttribute(cons_span::attr::ledgerId, to_string(prevLgr.id()).c_str());
     roundSpan_->setAttribute(cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq() + 1));
     roundSpan_->setAttribute(cons_span::attr::mode, to_string(mode_.load()).c_str());
