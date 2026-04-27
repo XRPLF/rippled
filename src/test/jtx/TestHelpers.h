@@ -46,7 +46,7 @@ public:
 
     virtual ~JTxField() = default;
 
-    virtual OV
+    [[nodiscard]] virtual OV
     value() const = 0;
 
     virtual void
@@ -94,7 +94,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.time_since_epoch().count();
@@ -116,7 +116,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return to_string(value_);
@@ -138,7 +138,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return toBase58(value_);
@@ -160,7 +160,7 @@ public:
     {
     }
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.getJson(JsonOptions::none);
@@ -202,7 +202,7 @@ protected:
 public:
     using JTxField<SF, SV, OV>::JTxField;
 
-    OV
+    [[nodiscard]] OV
     value() const override
     {
         return value_.value();

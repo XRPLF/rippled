@@ -529,7 +529,7 @@ struct FinalizeClaimHelperResult
 
     // Helper to check for overall success. If there wasn't overall success the
     // individual ters can be used to decide what needs to be done.
-    bool
+    [[nodiscard]] bool
     isTesSuccess() const
     {
         return (!mainFundsTer || xrpl::isTesSuccess(*mainFundsTer)) &&
@@ -537,7 +537,7 @@ struct FinalizeClaimHelperResult
             (!rmSleTer || xrpl::isTesSuccess(*rmSleTer));
     }
 
-    TER
+    [[nodiscard]] TER
     ter() const
     {
         if (isTesSuccess())

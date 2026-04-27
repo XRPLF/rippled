@@ -26,7 +26,7 @@ struct Handoff
     // When set, this will be sent back
     std::shared_ptr<Writer> response;
 
-    bool
+    [[nodiscard]] bool
     handled() const
     {
         return moved || response;

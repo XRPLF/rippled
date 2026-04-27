@@ -494,7 +494,7 @@ public:
         std::swap(cur_, next_);
     }
 
-    Strand const*
+    [[nodiscard]] Strand const*
     get(size_t i) const
     {
         if (i >= cur_.size())
@@ -522,7 +522,7 @@ public:
         next_.insert(next_.end(), std::next(cur_.begin(), i), cur_.end());
     }
 
-    auto
+    [[nodiscard]] auto
     size() const
     {
         return cur_.size();

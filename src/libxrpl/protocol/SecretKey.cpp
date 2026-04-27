@@ -123,7 +123,7 @@ private:
     uint256 root_;
     std::array<std::uint8_t, 33> generator_{};
 
-    uint256
+    [[nodiscard]] uint256
     calculateTweak(std::uint32_t seq) const
     {
         // We fill the buffer with the generator, the provided sequence

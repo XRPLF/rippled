@@ -54,13 +54,13 @@ class PerfLogTest : public PerfLog
     {
     }
 
-    Json::Value
+    [[nodiscard]] Json::Value
     countersJson() const override
     {
         return Json::Value();
     }
 
-    Json::Value
+    [[nodiscard]] Json::Value
     currentJson() const override
     {
         return Json::Value();
