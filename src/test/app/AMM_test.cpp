@@ -7140,10 +7140,14 @@ private:
         }
         // sfAuthAccounts behaviour depends on the fix.
         if (features[fixCleanup3_2_0])
+        {
             BEAST_EXPECT(!slot.isFieldPresent(sfAuthAccounts));
+        }
         else
+        {
             BEAST_EXPECT(
                 slot.isFieldPresent(sfAuthAccounts) && !slot.getFieldArray(sfAuthAccounts).empty());
+        }
     }
 
     void
