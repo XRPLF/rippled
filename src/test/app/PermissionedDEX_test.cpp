@@ -1395,6 +1395,28 @@ class PermissionedDEX_test : public beast::unit_test::suite
     {
         testcase("Expired credential cleanup");
 
+        // Post-fix: payment referencing a non-existent domain is rejected in
+        // preclaim via the fixSecurity3_1_3 sleDomain null check.
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+
+            uint256 const badDomain{
+                "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
+                "E5"};
+
+            env(offer(bob, XRP(10), USD(10)), domain(domainID));
+            env.close();
+
+            env(pay(alice, bob, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(badDomain),
+                ter(tecNO_PERMISSION));
+            env.close();
+        }
+
         // Pre-fix: without fixSecurity3_1_3, expired credential returns
         // tecNO_PERMISSION and the credential SLE is NOT deleted.
         {
