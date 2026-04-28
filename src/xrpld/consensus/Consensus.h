@@ -1557,7 +1557,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
                 auto const yaysStr = std::to_string(dispute.getYays());
                 auto const naysStr = std::to_string(dispute.getNays());
                 span.addEvent(
-                    "dispute.resolve",
+                    cons_span::event::disputeResolve,
                     {{cons_span::attr::txId, to_string(txId)},
                      {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"},
                      {cons_span::attr::disputeYays, yaysStr},
