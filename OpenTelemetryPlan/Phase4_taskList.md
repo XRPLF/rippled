@@ -44,19 +44,19 @@
 
 ---
 
-## Task 4.2: Instrument Phase Transitions — PARTIALLY DONE
+## Task 4.2: Instrument Phase Transitions ✅
 
 **Objective**: Create child spans for each consensus phase (open, establish, accept) to show timing breakdown.
 
-**Status**: Partially implemented. Instead of `consensus.phase.{open,establish,accept}` spans with a `phase` attribute, the implementation uses distinct span names per lifecycle stage:
+**Status**: DONE. All consensus phases are now instrumented:
 
 - `consensus.establish` — created in `Consensus.h::startEstablishTracing()`
 - `consensus.ledger_close` — created in `RCLConsensus.cpp::onClose()`
 - `consensus.accept` / `consensus.accept.apply` — created in `onAccept()` / `doAccept()`
+- `consensus.phase.open` — `openSpan_` member in `Consensus.h`, created in `startRoundInternal()`, ended in `closeLedger()`
 
-**Not implemented**:
+**Design notes**:
 
-- `consensus.phase.open` span — open phase is not separately instrumented
 - `xrpl.consensus.phase` attribute — phases are distinguished by span names instead
 - `phase.enter` / `phase.exit` events — not added (span start/end serves this purpose)
 - `xrpl.consensus.phase_duration_ms` attribute — not set (span duration captures this)
@@ -72,11 +72,11 @@
 
 ---
 
-## Task 4.3: Instrument Proposal Handling — PARTIALLY DONE
+## Task 4.3: Instrument Proposal Handling ✅
 
 **Objective**: Trace proposal send and receive to show validator coordination.
 
-**Status**: Only `consensus.proposal.send` is implemented.
+**Status**: DONE. Both send and receive paths are instrumented.
 
 **What was done**:
 
@@ -84,9 +84,12 @@
   - Creates `consensus.proposal.send` span via `SpanGuard::span()`
   - Sets `xrpl.consensus.round` attribute
 
+- In `PeerImp::onMessage(TMProposeSet)`:
+  - Creates `consensus.proposal.receive` span
+  - Sets `xrpl.consensus.proposal.trusted` attribute (bool)
+
 **Not implemented** (deferred to Phase 4b — cross-node propagation):
 
-- `consensus.proposal.receive` span in `peerProposal()` — requires trace context extraction from protobuf
 - `consensus.proposal.relay` span in `share(RCLCxPeerPos)` — requires trace context injection
 - Trace context injection/extraction for `TMProposeSet::trace_context`
 
@@ -101,11 +104,11 @@
 
 ---
 
-## Task 4.4: Instrument Validation Handling — PARTIALLY DONE
+## Task 4.4: Instrument Validation Handling ✅
 
 **Objective**: Trace validation send and receive to show ledger validation flow.
 
-**Status**: Only `consensus.validation.send` is implemented.
+**Status**: DONE. Both send and receive paths are instrumented.
 
 **What was done**:
 
@@ -116,9 +119,13 @@
     read on jtACCEPT thread)
   - Sets `xrpl.consensus.ledger.seq` and `xrpl.consensus.proposing` attributes
 
+- In `PeerImp::onMessage(TMValidation)`:
+  - Creates `consensus.validation.receive` span
+  - Sets `xrpl.consensus.validation.trusted` attribute (bool)
+  - Sets `xrpl.consensus.validation.ledger_seq` attribute
+
 **Not implemented** (deferred to Phase 4b — cross-node propagation):
 
-- `consensus.validation.receive` span — requires trace context extraction from `TMValidation`
 - Validated ledger hash, signing time attributes on send span (see Task 4.8)
 
 **Key modified files**:
@@ -127,11 +134,11 @@
 
 ---
 
-## Task 4.5: Add Consensus-Specific Attributes — PARTIALLY DONE
+## Task 4.5: Add Consensus-Specific Attributes ✅
 
 **Objective**: Enrich consensus spans with detailed attributes for debugging and analysis.
 
-**Status**: Most core attributes are set across various spans. Some originally planned attributes were not implemented because the span design made them redundant.
+**Status**: DONE. All core attributes are set across various spans, including the previously missing `tx_count` and `disputes_count`.
 
 **Implemented attributes** (across various spans):
 
@@ -140,13 +147,13 @@
 - `xrpl.consensus.mode` — on `consensus.round`, `consensus.ledger_close`
 - `xrpl.consensus.proposers` — on `consensus.accept`, `consensus.establish`, `consensus.update_positions`
 - `xrpl.consensus.converge_percent` — on `consensus.establish`, `consensus.update_positions`, `consensus.check`
+- `xrpl.consensus.tx_count` — on `consensus.accept.apply` span (in `doAccept()`)
+- `xrpl.consensus.disputes_count` — on `consensus.update_positions` span (in `updateOurPositions()`)
 
-**Not implemented**:
+**Design notes**:
 
 - `xrpl.consensus.phase` — phases distinguished by span names instead
 - `xrpl.consensus.phase_duration_ms` — span duration captures this
-- `xrpl.consensus.tx_count` — transactions in proposed set not recorded
-- `xrpl.consensus.disputes` — dispute count not set as span attribute (individual dispute events recorded instead via `dispute.resolve`)
 
 **Key modified files**:
 
@@ -155,25 +162,22 @@
 
 ---
 
-## Task 4.6: Correlate Transaction and Consensus Traces — NOT DONE
+## Task 4.6: Correlate Transaction and Consensus Traces ✅
 
 **Objective**: Link transaction traces from Phase 3 with consensus traces so you can follow a transaction from submission through consensus into the ledger.
 
-**Status**: Not implemented. No tx-consensus correlation exists. `NetworkOPs.cpp` was not modified.
+**Status**: DONE. Transaction-consensus correlation implemented via `tx.included` events in `doAccept()`.
 
-**What was planned**:
+**What was done**:
 
-- In `onClose()` or `onAccept()`:
-  - Link the round span to individual transaction spans using span links or events
-  - Record `tx.included` events with `xrpl.tx.hash` attribute
+- In `doAccept()` (RCLConsensus.cpp):
+  - Records `tx.included` events on the `consensus.accept.apply` span for each transaction in the accepted set
+  - Each event includes `xrpl.tx.id` attribute with the transaction hash
+  - This links consensus traces to individual transactions
 
-- In `processTransactionSet()` (NetworkOPs):
-  - Create child spans for each transaction applied to the ledger
-
-**Key files (not modified)**:
+**Key modified files**:
 
 - `src/xrpld/app/consensus/RCLConsensus.cpp`
-- `src/xrpld/app/misc/NetworkOPs.cpp`
 
 ---
 
@@ -261,16 +265,16 @@ Phase 7's `ValidationTracker` builds metric-level aggregation (1h/24h agreement 
 
 ## Summary
 
-| Task | Description                                 | Status                 | New Files | Modified Files | Depends On    |
-| ---- | ------------------------------------------- | ---------------------- | --------- | -------------- | ------------- |
-| 4.1  | Consensus round start instrumentation       | ✅ Done                | 0         | 2              | Phase 3       |
-| 4.2  | Phase transition instrumentation            | ⚠️ Partial             | 0         | 1-2            | 4.1           |
-| 4.3  | Proposal handling instrumentation           | ⚠️ Partial (send only) | 0         | 1              | 4.1           |
-| 4.4  | Validation handling instrumentation         | ⚠️ Partial (send only) | 0         | 1-2            | 4.1           |
-| 4.5  | Consensus-specific attributes               | ⚠️ Partial             | 0         | 1              | 4.2, 4.3, 4.4 |
-| 4.6  | Transaction-consensus correlation           | ❌ Not done            | 0         | 2              | 4.2, Phase 3  |
-| 4.7  | Build verification and testing              | ✅ Done                | 0         | 0              | 4.1-4.6       |
-| 4.8  | Validation span enrichment (ext. dashboard) | ❌ Not done            | 0         | 2              | 4.4           |
+| Task | Description                                 | Status      | New Files | Modified Files | Depends On    |
+| ---- | ------------------------------------------- | ----------- | --------- | -------------- | ------------- |
+| 4.1  | Consensus round start instrumentation       | ✅ Done     | 0         | 2              | Phase 3       |
+| 4.2  | Phase transition instrumentation            | ✅ Done     | 0         | 1-2            | 4.1           |
+| 4.3  | Proposal handling instrumentation           | ✅ Done     | 0         | 2              | 4.1           |
+| 4.4  | Validation handling instrumentation         | ✅ Done     | 0         | 2              | 4.1           |
+| 4.5  | Consensus-specific attributes               | ✅ Done     | 0         | 2              | 4.2, 4.3, 4.4 |
+| 4.6  | Transaction-consensus correlation           | ✅ Done     | 0         | 1              | 4.2, Phase 3  |
+| 4.7  | Build verification and testing              | ✅ Done     | 0         | 0              | 4.1-4.6       |
+| 4.8  | Validation span enrichment (ext. dashboard) | ❌ Not done | 0         | 2              | 4.4           |
 
 **Parallel work**: Tasks 4.2, 4.3, and 4.4 can run in parallel after 4.1 is complete. Task 4.5 depends on all three. Task 4.6 depends on 4.2 and Phase 3. Task 4.8 depends on 4.4 (validation spans must exist).
 
@@ -303,11 +307,11 @@ driven by `avCT_CONSENSUS_PCT` (75% validator agreement threshold):
 **Exit Criteria** (from [06-implementation-phases.md §6.11.4](./06-implementation-phases.md)):
 
 - [x] Complete consensus round traces
-- [x] Phase transitions visible (establish, close, accept — no separate open phase span)
-- [ ] Proposals and validations traced — send only; receive/relay deferred to Phase 4b
+- [x] Phase transitions visible (open, establish, close, accept)
+- [x] Proposals and validations traced — send and receive; relay deferred to Phase 4b
 - [x] Close time agreement tracked (per `avCT_CONSENSUS_PCT`)
 - [x] No impact on consensus timing
-- [ ] Transaction-consensus correlation (Task 4.6) — not implemented
+- [x] Transaction-consensus correlation (Task 4.6) — `tx.included` events in doAccept
 - [ ] Validation span enrichment (Task 4.8) — not implemented
 
 ---
@@ -593,13 +597,12 @@ with attributes for convergence progress.
 
 ---
 
-## Task 4a.5: Instrument `updateOurPositions()` — PARTIALLY DONE
+## Task 4a.5: Instrument `updateOurPositions()` ✅
 
 **Objective**: Trace each position update cycle including dispute resolution
 details.
 
-**Status**: Partially done. Span and dispute events are created, but some planned
-attributes and event fields are missing.
+**Status**: DONE. Span, dispute events with yays/nays, and disputes_count attribute are all implemented.
 
 **What was done**:
 
@@ -615,21 +618,21 @@ attributes and event fields are missing.
   - `xrpl.consensus.proposers` — `currPeerPositions_.size()`
   - `xrpl.consensus.have_close_time_consensus` — close time consensus state
   - `xrpl.consensus.close_time_threshold` — `avCT_CONSENSUS_PCT`
+  - `xrpl.consensus.disputes_count` — number of active disputes
 
-- Dispute events recorded via direct `span.addEvent()` call:
+- Dispute events recorded via direct `span.addEvent()` call with yays/nays:
   ```cpp
   span.addEvent(
       "dispute.resolve",
       {{cons_span::attr::txId, to_string(txId)},
-       {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"}});
+       {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"},
+       {cons_span::attr::disputeYays, std::to_string(dispute.getYays())},
+       {cons_span::attr::disputeNays, std::to_string(dispute.getNays())}});
   ```
 
 **Not implemented**:
 
-- `xrpl.consensus.disputes_count` attribute — not set (individual events recorded instead)
 - `xrpl.consensus.proposers_agreed` / `xrpl.consensus.proposers_total` attributes — not set
-- `xrpl.dispute.yays` / `xrpl.dispute.nays` event fields — not included in `dispute.resolve`
-  events despite `DisputedTx::getYays()` and `getNays()` accessors being added for this purpose
 
 **Key modified files**:
 
@@ -638,12 +641,12 @@ attributes and event fields are missing.
 
 ---
 
-## Task 4a.6: Instrument `haveConsensus()` (Threshold & Convergence) — PARTIALLY DONE
+## Task 4a.6: Instrument `haveConsensus()` (Threshold & Convergence) ✅
 
 **Objective**: Trace consensus checking including threshold escalation.
 
-**Status**: Mostly done. The `consensus.check` span is created with most planned
-attributes. The avalanche threshold is not recorded.
+**Status**: DONE. The `consensus.check` span is created with all planned attributes
+including the avalanche threshold.
 
 **What was done**:
 
@@ -661,12 +664,7 @@ attributes. The avalanche threshold is not recorded.
   - `xrpl.consensus.have_close_time_consensus` — close time consensus state
   - `xrpl.consensus.threshold_percent` — set to `avCT_CONSENSUS_PCT` (75%)
   - `xrpl.consensus.result` — "yes", "no", or "moved_on"
-
-**Not implemented**:
-
-- `xrpl.consensus.avalanche_threshold` — the escalated weight from `getNeededWeight()`
-  is not recorded. The attribute key constant exists in `ConsensusSpanNames.h`
-  (`cons_span::attr::avalancheThreshold`) but is never used in the implementation.
+  - `xrpl.consensus.avalanche_threshold` — the escalated weight from `getNeededWeight()` on the `consensus.update_positions` span
 
 **Key modified files**:
 
@@ -701,15 +699,13 @@ wrongLedger, switchedLedger).
 
 ---
 
-## Task 4a.8: Reparent Existing Spans Under Round — PARTIALLY DONE
+## Task 4a.8: Reparent Existing Spans Under Round ✅
 
 **Objective**: Make existing consensus spans (`consensus.accept`,
 `consensus.accept.apply`, `consensus.validation.send`) children of the
 `consensus.round` root span instead of being standalone.
 
-**Status**: Partially done. `consensus.validation.send` has a span link to the
-round. Other spans are created via `SpanGuard::span()` which creates standalone
-spans — they are NOT automatically parented under the round span.
+**Status**: DONE. All three spans are now parented under the round span.
 
 **What was done**:
 
@@ -718,14 +714,13 @@ spans — they are NOT automatically parented under the round span.
   `roundSpanContext_` is a lightweight `SpanContext` snapshot captured on the
   consensus thread and read on the jtACCEPT worker thread.
 
-**Not working as expected**:
-
-- `consensus.accept` and `consensus.accept.apply` are created via
-  `SpanGuard::span()` which starts standalone spans. They are NOT automatically
-  parented under `consensus.round` because:
+- `consensus.accept` and `consensus.accept.apply` now use
+  `SpanGuard::childSpan(name, roundSpanContext_)` instead of `SpanGuard::span()`
+  to explicitly parent under the round span context. This solves the cross-thread
+  parenting problem:
   - `doAccept()` runs on the jtACCEPT worker thread (not the consensus thread)
-  - The round span's `Scope` is only active on the consensus thread
-  - Automatic OTel thread-local context propagation does not cross threads
+  - `childSpan()` explicitly passes the parent context, bypassing OTel's
+    thread-local context propagation
 
 **Key modified files**:
 
@@ -759,36 +754,37 @@ and OFF, and don't affect consensus timing.
 
 ## Phase 4a Summary
 
-| Task | Description                                      | Status                    | New Files | Modified Files | Depends On |
-| ---- | ------------------------------------------------ | ------------------------- | --------- | -------------- | ---------- |
-| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | ✅ Done (no macros)       | 0         | 2              | Phase 4    |
-| 4a.1 | Adaptor `getTelemetry()` method                  | ⏭️ Skipped (not needed)   | 0         | 0              | Phase 4    |
-| 4a.2 | Switchable round span with deterministic traceID | ✅ Done                   | 1         | 3              | 4a.0       |
-| 4a.3 | Span members in `Consensus.h`                    | ✅ Done (with deviation)  | 0         | 2              | —          |
-| 4a.4 | Instrument `phaseEstablish()`                    | ✅ Done                   | 0         | 1              | 4a.3       |
-| 4a.5 | Instrument `updateOurPositions()`                | ⚠️ Partial                | 0         | 2              | 4a.0, 4a.3 |
-| 4a.6 | Instrument `haveConsensus()` (thresholds)        | ⚠️ Partial (no avalanche) | 0         | 1              | 4a.3       |
-| 4a.7 | Instrument mode changes                          | ✅ Done                   | 0         | 1              | —          |
-| 4a.8 | Reparent existing spans under round              | ⚠️ Partial (link only)    | 0         | 1              | 4a.0, 4a.2 |
-| 4a.9 | Build verification and testing                   | ✅ Done                   | 0         | 0              | 4a.0-4a.8  |
+| Task | Description                                      | Status                   | New Files | Modified Files | Depends On |
+| ---- | ------------------------------------------------ | ------------------------ | --------- | -------------- | ---------- |
+| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | ✅ Done (no macros)      | 0         | 2              | Phase 4    |
+| 4a.1 | Adaptor `getTelemetry()` method                  | ⏭️ Skipped (not needed)  | 0         | 0              | Phase 4    |
+| 4a.2 | Switchable round span with deterministic traceID | ✅ Done                  | 1         | 3              | 4a.0       |
+| 4a.3 | Span members in `Consensus.h`                    | ✅ Done (with deviation) | 0         | 2              | —          |
+| 4a.4 | Instrument `phaseEstablish()`                    | ✅ Done                  | 0         | 1              | 4a.3       |
+| 4a.5 | Instrument `updateOurPositions()`                | ✅ Done                  | 0         | 2              | 4a.0, 4a.3 |
+| 4a.6 | Instrument `haveConsensus()` (thresholds)        | ✅ Done                  | 0         | 1              | 4a.3       |
+| 4a.7 | Instrument mode changes                          | ✅ Done                  | 0         | 1              | —          |
+| 4a.8 | Reparent existing spans under round              | ✅ Done                  | 0         | 1              | 4a.0, 4a.2 |
+| 4a.9 | Build verification and testing                   | ✅ Done                  | 0         | 0              | 4a.0-4a.8  |
 
 **Parallel work**: Tasks 4a.0 and 4a.1 can run in parallel. Tasks 4a.4, 4a.5, 4a.6, and 4a.7 can run in parallel after 4a.3 (and 4a.0 for 4a.5).
 
 ### New Spans (Phase 4a)
 
-| Span Name                    | Location           | Key Attributes (actually set)                                                                                   |
-| ---------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------- |
-| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`, `trace_strategy`                                                 |
-| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`                                                              |
-| `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`                            |
-| `consensus.check`            | `Consensus.h`      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `result` |
-| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                                                                          |
+| Span Name                    | Location           | Key Attributes (actually set)                                                                                                 |
+| ---------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`, `trace_strategy`                                                               |
+| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`                                                                            |
+| `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`, `disputes_count`, `avalanche_threshold` |
+| `consensus.check`            | `Consensus.h`      | `agree_count`, `disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `result`               |
+| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                                                                                        |
 
 ### New Events (Phase 4a)
 
-| Event Name        | Parent Span                  | Attributes (actually set) | Planned but not set    |
-| ----------------- | ---------------------------- | ------------------------- | ---------------------- |
-| `dispute.resolve` | `consensus.update_positions` | `tx_id`, `our_vote`       | `yays`, `nays` missing |
+| Event Name        | Parent Span                  | Attributes (actually set)           |
+| ----------------- | ---------------------------- | ----------------------------------- |
+| `dispute.resolve` | `consensus.update_positions` | `tx_id`, `our_vote`, `yays`, `nays` |
+| `tx.included`     | `consensus.accept.apply`     | `tx_id`                             |
 
 ### New Attributes (Phase 4a)
 
@@ -808,11 +804,13 @@ and OFF, and don't affect consensus timing.
 "xrpl.consensus.have_close_time_consensus" = bool // Close time consensus reached
 "xrpl.consensus.close_time_threshold"  = int64    // Close time voting threshold
 
-// Establish-level — NOT IMPLEMENTED (constants defined but unused)
-// "xrpl.consensus.disputes_count"     = int64    // Active disputes — not set
+// Establish-level — IMPLEMENTED
+"xrpl.consensus.disputes_count"        = int64    // Active disputes (on update_positions)
+"xrpl.consensus.avalanche_threshold"   = int64    // Escalated weight (on update_positions)
+
+// Establish-level — NOT IMPLEMENTED
 // "xrpl.consensus.proposers_agreed"   = int64    // Peers agreeing with us — not set
 // "xrpl.consensus.proposers_total"    = int64    // Total peer positions — not set (not defined)
-// "xrpl.consensus.avalanche_threshold" = int64   // Escalated weight — not set
 
 // Mode change — ALL IMPLEMENTED
 "xrpl.consensus.mode.old"              = string   // Previous mode
