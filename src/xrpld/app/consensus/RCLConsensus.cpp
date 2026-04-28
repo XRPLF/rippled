@@ -227,7 +227,9 @@ void
 RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
 {
     auto span = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "proposal.send");
+        telemetry::TraceCategory::Consensus,
+        telemetry::seg::consensus,
+        telemetry::cons_span::op::proposalSend);
     span.setAttribute(
         telemetry::cons_span::attr::round, static_cast<int64_t>(proposal.proposeSeq()));
 
@@ -334,7 +336,9 @@ RCLConsensus::Adaptor::onClose(
     ConsensusMode mode) -> Result
 {
     auto span = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "ledger_close");
+        telemetry::TraceCategory::Consensus,
+        telemetry::seg::consensus,
+        telemetry::cons_span::op::ledgerClose);
     span.setAttribute(
         telemetry::cons_span::attr::ledgerSeq,
         static_cast<int64_t>(ledger.ledger_->header().seq + 1));
@@ -435,7 +439,15 @@ RCLConsensus::Adaptor::onForceAccept(
     ConsensusMode const& mode,
     Json::Value&& consensusJson)
 {
-    doAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(consensusJson));
+    auto acceptSpan = makeAcceptSpan(result);
+    doAccept(
+        result,
+        prevLedger,
+        closeResolution,
+        rawCloseTimes,
+        mode,
+        std::move(consensusJson),
+        std::move(acceptSpan));
 }
 
 void
@@ -448,32 +460,43 @@ RCLConsensus::Adaptor::onAccept(
     Json::Value&& consensusJson,
     bool const validating)
 {
-    {
-        auto span =
-            telemetry::SpanGuard::childSpan(telemetry::cons_span::accept, roundSpanContext_);
-        span.setAttribute(
-            telemetry::cons_span::attr::proposers, static_cast<int64_t>(result.proposers));
-        span.setAttribute(
-            telemetry::cons_span::attr::roundTimeMs,
-            static_cast<int64_t>(result.roundTime.read().count()));
-        span.setAttribute(
-            telemetry::cons_span::attr::quorum, static_cast<int64_t>(result.proposers));
-    }
+    auto acceptSpan = makeAcceptSpan(result);
 
     app_.getJobQueue().addJob(
         jtACCEPT,
         "AcceptLedger",
         // NOLINTNEXTLINE(cppcoreguidelines-misleading-capture-default-by-value)
-        [=, this, cj = std::move(consensusJson)]() mutable {
+        [=, this, cj = std::move(consensusJson), sp = std::move(acceptSpan)]() mutable {
             // Note that no lock is held or acquired during this job.
             // This is because generic Consensus guarantees that once a ledger
             // is accepted, the consensus results and capture by reference state
             // will not change until startRound is called (which happens via
             // endConsensus).
             RclConsensusLogger clog("onAccept", validating, j_);
-            this->doAccept(result, prevLedger, closeResolution, rawCloseTimes, mode, std::move(cj));
+            this->doAccept(
+                result,
+                prevLedger,
+                closeResolution,
+                rawCloseTimes,
+                mode,
+                std::move(cj),
+                std::move(sp));
             this->app_.getOPs().endConsensus(clog.ss());
         });
+}
+
+std::shared_ptr<telemetry::SpanGuard>
+RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
+{
+    auto span = std::make_shared<telemetry::SpanGuard>(
+        telemetry::SpanGuard::childSpan(telemetry::cons_span::accept, roundSpanContext_));
+    span->setAttribute(
+        telemetry::cons_span::attr::proposers, static_cast<int64_t>(result.proposers));
+    span->setAttribute(
+        telemetry::cons_span::attr::roundTimeMs,
+        static_cast<int64_t>(result.roundTime.read().count()));
+    span->setAttribute(telemetry::cons_span::attr::quorum, static_cast<int64_t>(result.proposers));
+    return span;
 }
 
 void
@@ -483,7 +506,8 @@ RCLConsensus::Adaptor::doAccept(
     NetClock::duration closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    Json::Value&& consensusJson,
+    std::shared_ptr<telemetry::SpanGuard> acceptSpan)
 {
     prevProposers_ = result.proposers;
     prevRoundTime_ = result.roundTime.read();
@@ -511,8 +535,9 @@ RCLConsensus::Adaptor::doAccept(
         closeTimeCorrect = true;
     }
 
-    auto doAcceptSpan =
-        telemetry::SpanGuard::childSpan(telemetry::cons_span::acceptApply, roundSpanContext_);
+    auto doAcceptSpan = acceptSpan
+        ? acceptSpan->childSpan(telemetry::cons_span::acceptApply)
+        : telemetry::SpanGuard::childSpan(telemetry::cons_span::acceptApply, roundSpanContext_);
     doAcceptSpan.setAttribute(
         telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq() + 1));
     doAcceptSpan.setAttribute(
@@ -964,7 +989,9 @@ void
 RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
     auto span = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "mode_change");
+        telemetry::TraceCategory::Consensus,
+        telemetry::seg::consensus,
+        telemetry::cons_span::op::modeChange);
     span.setAttribute(telemetry::cons_span::attr::modeOld, to_string(before).c_str());
     span.setAttribute(telemetry::cons_span::attr::modeNew, to_string(after).c_str());
 
@@ -1141,10 +1168,7 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     using namespace telemetry;
 
     if (roundSpan_)
-    {
-        prevRoundContext_ = roundSpan_->captureContext();
         roundSpan_.reset();
-    }
 
     auto const& strategy = app_.getTelemetry().getConsensusTraceStrategy();
 
@@ -1159,7 +1183,8 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
     }
     else
     {
-        roundSpan_.emplace(SpanGuard::span(TraceCategory::Consensus, seg::consensus, "round"));
+        roundSpan_.emplace(
+            SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::round));
     }
 
     if (!*roundSpan_)
