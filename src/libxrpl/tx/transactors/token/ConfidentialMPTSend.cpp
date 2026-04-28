@@ -37,6 +37,10 @@ ConfidentialMPTSend::preflight(PreflightContext const& ctx)
     if (account == ctx.tx[sfDestination])
         return temMALFORMED;
 
+    // Issuer cannot be the destination
+    if (ctx.tx[sfDestination] == issuer)
+        return temMALFORMED;
+
     // Check the length of the encrypted amounts
     if (ctx.tx[sfSenderEncryptedAmount].length() != ecGamalEncryptedTotalLength ||
         ctx.tx[sfDestinationEncryptedAmount].length() != ecGamalEncryptedTotalLength ||

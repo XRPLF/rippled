@@ -164,10 +164,14 @@ ConfidentialMPTClawback::doApply()
 
     // Decrease Global Confidential Outstanding Amount
     auto const oldCOA = (*sleIssuance)[sfConfidentialOutstandingAmount];
+    if (clawAmount > oldCOA)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfConfidentialOutstandingAmount] = oldCOA - clawAmount;
 
     // Decrease Global Total Outstanding Amount
     auto const oldOA = (*sleIssuance)[sfOutstandingAmount];
+    if (clawAmount > oldOA)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     (*sleIssuance)[sfOutstandingAmount] = oldOA - clawAmount;
 
     view().update(sleHolderMPToken);
