@@ -43,6 +43,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -57,6 +58,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/tx/apply.h>
 
 #include <chrono>
 #include <cstdint>
@@ -1693,6 +1695,42 @@ public:
                 env.close();
                 BEAST_EXPECT(!env.le(keylet::sponsor(sponsor, alice))->isFieldPresent(sfFeeAmount));
             }
+        }
+
+        // MaxFee cap is enforced in reset() for tec-failing transactions.
+        // On a closed ledger view (!view.open()), checkFee returns tecINSUFF_FEE when
+        // fee > MaxFee (not terINSUF_FEE_B), triggering reset()
+        {
+            Env env{*this, testable_amendments()};
+            Account const alice("alice");
+            Account const carol("sponsor");
+
+            env.fund(XRP(10000), alice, carol);
+            env.close();
+
+            // FeeAmount=1000 drops, MaxFee=10 drops
+            env(sponsor::set_fee(carol, 0, drops(1000), drops(10)), sponsor::sponseeAcc(alice));
+            env.close();
+
+            // Apply directly against the closed ledger view (open_ = false) so that
+            // checkFee returns tecINSUFF_FEE and reset() is invoked.
+            OpenView overlay(&*env.closed());
+
+            auto jt = env.jt(
+                noop(alice),
+                fee(drops(1000)),
+                seq(env.seq(alice)),
+                sponsor::as(carol, spfSponsorFee));
+
+            auto const result = xrpl::apply(env.app(), overlay, *jt.stx, tapNONE, env.journal);
+            BEAST_EXPECT(result.ter == tecINSUFF_FEE);
+            BEAST_EXPECT(result.applied);
+
+            // Only MaxFee (10 drops) must be deducted, not the full 1000 drops.
+            auto const sle = overlay.read(keylet::sponsor(carol.id(), alice.id()));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->isFieldPresent(sfFeeAmount));
+            BEAST_EXPECT(sle->getFieldAmount(sfFeeAmount) == drops(990));  // 1000 - MaxFee(10)
         }
 
         // test lsfSponsorshipRequireSignForFee

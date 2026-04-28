@@ -1243,6 +1243,12 @@ Transactor::reset(XRPAmount fee)
 
     auto const balance = payerSle->getFieldAmount(payer.balanceField).xrp();
 
+    if (payer.type == FeePayerType::SponsorPreFunded && payerSle->isFieldPresent(sfMaxFee))
+    {
+        auto const cap = payerSle->getFieldAmount(sfMaxFee).xrp();
+        fee = std::min(fee, cap);
+    }
+
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
         balance != beast::zero && (!view().open() || balance >= fee),
