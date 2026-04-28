@@ -35,6 +35,11 @@ inline constexpr auto receive = makeStr("receive");
 inline constexpr auto process = makeStr("process");
 }  // namespace op
 
+// ===== Full span names (prefix.op) =========================================
+
+inline constexpr auto receive = join(prefix::tx, op::receive);
+inline constexpr auto process = join(prefix::tx, op::process);
+
 // ===== Attribute keys ======================================================
 
 namespace attr {

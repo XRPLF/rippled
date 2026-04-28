@@ -33,9 +33,9 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
         auto const& tc = msg.trace_context();
         if (tc.has_span_id() && tc.span_id().size() == 8)
         {
-            return SpanGuard::txSpan(
-                tx_span::prefix::tx,
-                tx_span::op::receive,
+            return SpanGuard::hashSpan(
+                TraceCategory::Transactions,
+                tx_span::receive,
                 txID.data(),
                 txID.bytes,
                 reinterpret_cast<std::uint8_t const*>(tc.span_id().data()),
@@ -45,7 +45,8 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
         }
     }
 #endif
-    return SpanGuard::txSpan(tx_span::prefix::tx, tx_span::op::receive, txID.data(), txID.bytes);
+    return SpanGuard::hashSpan(
+        TraceCategory::Transactions, tx_span::receive, txID.data(), txID.bytes);
 }
 
 /** Create a "tx.process" span for transaction processing in NetworkOPs.
@@ -54,7 +55,8 @@ txReceiveSpan(uint256 const& txID, [[maybe_unused]] protocol::TMTransaction cons
 inline SpanGuard
 txProcessSpan(uint256 const& txID)
 {
-    return SpanGuard::txSpan(tx_span::prefix::tx, tx_span::op::process, txID.data(), txID.bytes);
+    return SpanGuard::hashSpan(
+        TraceCategory::Transactions, tx_span::process, txID.data(), txID.bytes);
 }
 
 }  // namespace telemetry

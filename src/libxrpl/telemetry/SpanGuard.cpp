@@ -20,9 +20,9 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpl/basics/random.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
+#include <xrpl/basics/random.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
@@ -233,11 +233,11 @@ SpanGuard::linkedSpan(std::string_view name, SpanContext const& linkCtx)
             opts)));
 }
 
-// ===== Transaction span with hash-derived trace ID ========================
+// ===== Hash-derived span (category-gated) ==================================
 
 SpanGuard
-SpanGuard::txSpan(
-    std::string_view prefix,
+SpanGuard::hashSpan(
+    TraceCategory cat,
     std::string_view name,
     std::uint8_t const* hashData,
     std::size_t hashSize)
@@ -245,7 +245,7 @@ SpanGuard::txSpan(
     if (hashSize < 16)
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !tel->shouldTraceTransactions())
+    if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
 
     otel_trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
@@ -263,13 +263,12 @@ SpanGuard::txSpan(
         opentelemetry::nostd::shared_ptr<otel_trace::Span>(
             new otel_trace::DefaultSpan(syntheticCtx)));
 
-    auto fullName = std::string(prefix) + "." + std::string(name);
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, parentCtx)));
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
 }
 
 SpanGuard
-SpanGuard::txSpan(
-    std::string_view prefix,
+SpanGuard::hashSpan(
+    TraceCategory cat,
     std::string_view name,
     std::uint8_t const* hashData,
     std::size_t hashSize,
@@ -280,7 +279,7 @@ SpanGuard::txSpan(
     if (hashSize < 16 || parentSpanSize != 8)
         return {};
     auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled() || !tel->shouldTraceTransactions())
+    if (!tel || !tel->isEnabled() || !isCategoryEnabled(*tel, cat))
         return {};
 
     otel_trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(hashData, 16));
@@ -296,8 +295,7 @@ SpanGuard::txSpan(
         opentelemetry::nostd::shared_ptr<otel_trace::Span>(
             new otel_trace::DefaultSpan(combinedCtx)));
 
-    auto fullName = std::string(prefix) + "." + std::string(name);
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(fullName, parentCtx)));
+    return SpanGuard(std::make_unique<Impl>(tel->startSpan(std::string(name), parentCtx)));
 }
 
 // ===== Context capture =====================================================
