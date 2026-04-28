@@ -817,7 +817,7 @@ initializeFeeAuctionVote(
         auctionSlot.makeFieldAbsent(sfDiscountedFee);  // LCOV_EXCL_LINE
     }
     // Clear stale auth accounts from any previous auction slot holder.
-    if (rules.enabled(fixCleanup_320) && auctionSlot.isFieldPresent(sfAuthAccounts))
+    if (rules.enabled(fixCleanup3_2_0) && auctionSlot.isFieldPresent(sfAuthAccounts))
         auctionSlot.makeFieldAbsent(sfAuthAccounts);
 }
 
