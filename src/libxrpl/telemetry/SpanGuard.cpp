@@ -27,6 +27,7 @@
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
 
+#include <opentelemetry/common/attribute_value.h>
 #include <opentelemetry/context/runtime_context.h>
 #include <opentelemetry/nostd/shared_ptr.h>
 #include <opentelemetry/trace/context.h>
@@ -396,12 +397,11 @@ SpanGuard::addEvent(std::string_view name, std::initializer_list<EventAttribute>
 {
     if (!impl_)
         return;
-    // Own the strings to ensure lifetime safety through the AddEvent call.
-    std::vector<std::pair<std::string, std::string>> owned;
-    owned.reserve(attrs.size());
+    std::vector<std::pair<std::string_view, opentelemetry::common::AttributeValue>> otelAttrs;
+    otelAttrs.reserve(attrs.size());
     for (auto const& [k, v] : attrs)
-        owned.emplace_back(std::string(k), std::string(v));
-    impl_->span->AddEvent(std::string(name), owned);
+        otelAttrs.emplace_back(k, opentelemetry::common::AttributeValue{v});
+    impl_->span->AddEvent(std::string(name), otelAttrs);
 }
 
 void

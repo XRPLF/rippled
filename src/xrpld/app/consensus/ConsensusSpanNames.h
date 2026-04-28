@@ -2,26 +2,78 @@
 
 /** Compile-time span name constants for consensus tracing.
  *
- *  Used by RCLConsensus (app) and Consensus.h (template) for
- *  consensus lifecycle spans. Built on StaticStr/join() from SpanNames.h.
+ *  Used by RCLConsensus (app), Consensus.h (template), and PeerImp
+ *  (overlay) for consensus lifecycle spans.
+ *  Built on StaticStr/join() from SpanNames.h.
  *
- *  Span hierarchy:
+ *  ## Span Hierarchy
  *
- *    consensus.round (deterministic trace_id from ledger hash)
+ *  Root span created in Adaptor::startRoundTracing().  In "deterministic"
+ *  strategy the trace-id is derived from the previous ledger hash so all
+ *  nodes tracing the same round share a trace.
+ *
+ *    consensus.round                             [main thread, root]
+ *    |  Created: Adaptor::startRoundTracing()
+ *    |  Attrs:   ledger_id, ledger.seq, mode, trace_strategy, round_id
  *    |
- *    +-- consensus.phase.open
- *    +-- consensus.proposal.send
- *    +-- consensus.ledger_close
- *    +-- consensus.establish
- *    +-- consensus.update_positions
- *    +-- consensus.check
- *    +-- consensus.accept
- *    +-- consensus.accept.apply     (jtACCEPT thread)
- *    +-- consensus.validation.send  (jtACCEPT thread, linked)
- *    +-- consensus.mode_change
+ *    +-- consensus.phase.open                    [main thread, child]
+ *    |     Created: Consensus::startRoundInternal()
+ *    |     Ended:   Consensus::closeLedger()
+ *    |
+ *    +-- consensus.proposal.send                 [main thread]
+ *    |     Created: Adaptor::propose()
+ *    |     Attrs:   round (proposeSeq)
+ *    |
+ *    +-- consensus.ledger_close                  [main thread]
+ *    |     Created: Adaptor::onClose()
+ *    |     Attrs:   ledger.seq, mode
+ *    |
+ *    +-- consensus.establish                     [main thread, child]
+ *    |     Created: Consensus::startEstablishTracing()
+ *    |     Ended:   Consensus::phaseEstablish() on accept
+ *    |     Attrs:   converge_percent, tx_count, disputes_count
+ *    |
+ *    +-- consensus.update_positions              [main thread]
+ *    |     Created: Consensus::updateOurPositions()
+ *    |     Attrs:   converge_percent, proposers, disputes_count
+ *    |     Events:  per-dispute vote details (tx_id, our_vote, yays, nays)
+ *    |
+ *    +-- consensus.check                         [main thread]
+ *    |     Created: Consensus::haveConsensus()
+ *    |     Attrs:   agree/disagree counts, threshold_percent, result
+ *    |
+ *    +-- consensus.accept                        [main thread, child of round]
+ *    |     Created: Adaptor::makeAcceptSpan(), shared_ptr kept alive
+ *    |              until doAccept() completes on jtACCEPT thread
+ *    |     Attrs:   proposers, round_time_ms, quorum
+ *    |   |
+ *    |   +-- consensus.accept.apply              [jtACCEPT thread, child of accept]
+ *    |         Created: Adaptor::doAccept()
+ *    |     Attrs:   ledger.seq, close_time, close_time_correct,
+ *    |              close_resolution_ms, state, proposing, round_time_ms,
+ *    |              parent_close_time, close_time_self, close_time_vote_bins,
+ *    |              resolution_direction, tx_count
+ *    |     Events:  tx.included (per tx)
+ *    |
+ *    +~~~ consensus.validation.send              [jtACCEPT thread, linked]
+ *    |     Created: Adaptor::createValidationSpan() (follows-from link)
+ *    |     Attrs:   ledger.seq, proposing
+ *    |
+ *    +-- consensus.mode_change                   [main thread]
+ *          Created: Adaptor::onModeChange()
+ *          Attrs:   mode.old, mode.new
  *
- *    consensus.proposal.receive     (standalone, PeerImp)
- *    consensus.validation.receive   (standalone, PeerImp)
+ *  Standalone spans (no parent, created per-message in overlay):
+ *
+ *    consensus.proposal.receive                  [PeerImp I/O thread]
+ *      Created: PeerImp::onMessage(TMProposeSet)
+ *
+ *    consensus.validation.receive                [PeerImp I/O thread]
+ *      Created: PeerImp::onMessage(TMValidation)
+ *
+ *  Legend:
+ *    +--  child-of relationship (same trace)
+ *    +~~~ follows-from link (separate sub-tree, causal link)
  */
 
 #include <xrpl/telemetry/SpanNames.h>
@@ -32,20 +84,27 @@ namespace cons_span {
 
 // ===== Span name segments ====================================================
 
+namespace part {
+inline constexpr auto proposal = makeStr("proposal");
+inline constexpr auto validation = makeStr("validation");
+inline constexpr auto accept = makeStr("accept");
+inline constexpr auto phase = makeStr("phase");
+}  // namespace part
+
 namespace op {
 inline constexpr auto round = makeStr("round");
-inline constexpr auto proposalSend = makeStr("proposal.send");
+inline constexpr auto proposalSend = join(part::proposal, makeStr("send"));
 inline constexpr auto ledgerClose = makeStr("ledger_close");
 inline constexpr auto establish = makeStr("establish");
 inline constexpr auto updatePositions = makeStr("update_positions");
 inline constexpr auto check = makeStr("check");
 inline constexpr auto accept = makeStr("accept");
-inline constexpr auto acceptApply = makeStr("accept.apply");
-inline constexpr auto validationSend = makeStr("validation.send");
+inline constexpr auto acceptApply = join(part::accept, makeStr("apply"));
+inline constexpr auto validationSend = join(part::validation, makeStr("send"));
 inline constexpr auto modeChange = makeStr("mode_change");
-inline constexpr auto proposalReceive = makeStr("proposal.receive");
-inline constexpr auto validationReceive = makeStr("validation.receive");
-inline constexpr auto phaseOpen = makeStr("phase.open");
+inline constexpr auto proposalReceive = join(part::proposal, makeStr("receive"));
+inline constexpr auto validationReceive = join(part::validation, makeStr("receive"));
+inline constexpr auto phaseOpen = join(part::phase, makeStr("open"));
 }  // namespace op
 
 // ===== Full span names (prefix.op) ===========================================
@@ -72,7 +131,7 @@ inline constexpr auto xrplConsensus = join(seg::xrpl, seg::consensus);
 /// "xrpl.consensus.ledger_id"
 inline constexpr auto ledgerId = join(xrplConsensus, makeStr("ledger_id"));
 /// "xrpl.consensus.ledger.seq"
-inline constexpr auto ledgerSeq = join(xrplConsensus, makeStr("ledger.seq"));
+inline constexpr auto ledgerSeq = join(join(xrplConsensus, makeStr("ledger")), makeStr("seq"));
 /// "xrpl.consensus.mode"
 inline constexpr auto mode = join(xrplConsensus, makeStr("mode"));
 /// "xrpl.consensus.round"
@@ -141,9 +200,9 @@ inline constexpr auto roundId = join(xrplConsensus, makeStr("round_id"));
 
 // Mode change attributes
 /// "xrpl.consensus.mode.old"
-inline constexpr auto modeOld = join(xrplConsensus, makeStr("mode.old"));
+inline constexpr auto modeOld = join(join(xrplConsensus, makeStr("mode")), makeStr("old"));
 /// "xrpl.consensus.mode.new"
-inline constexpr auto modeNew = join(xrplConsensus, makeStr("mode.new"));
+inline constexpr auto modeNew = join(join(xrplConsensus, makeStr("mode")), makeStr("new"));
 
 // Dispute event attributes
 /// "xrpl.tx.id"

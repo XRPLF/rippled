@@ -79,13 +79,6 @@ class RCLConsensus
          */
         std::optional<telemetry::SpanGuard> roundSpan_;
 
-        /** Context captured from the previous consensus round.
-         *
-         *  Used to create span links (follows-from) between consecutive
-         *  rounds, establishing a causal chain in the trace backend.
-         */
-        telemetry::SpanContext prevRoundContext_;
-
         /** SpanContext snapshot of the current round span.
          *
          *  Captured in startRoundTracing() as a lightweight value-type copy
@@ -374,8 +367,17 @@ class RCLConsensus
         void
         notify(protocol::NodeEvent ne, RCLCxLedger const& ledger, bool haveCorrectLCL);
 
+        /** Create a consensus.accept span as a child of the round span.
+            Returned via shared_ptr so it can be captured into the
+            jtACCEPT lambda and live until doAccept completes.
+         */
+        std::shared_ptr<telemetry::SpanGuard>
+        makeAcceptSpan(Result const& result);
+
         /** Accept a new ledger based on the given transactions.
 
+            @param acceptSpan  Parent span created by makeAcceptSpan();
+                               accept.apply is created as its child.
             @ref onAccept
          */
         void
@@ -385,7 +387,8 @@ class RCLConsensus
             NetClock::duration closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            Json::Value&& consensusJson,
+            std::shared_ptr<telemetry::SpanGuard> acceptSpan);
 
         /** Build the new last closed ledger.
 

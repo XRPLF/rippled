@@ -1488,7 +1488,8 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, "update_positions");
+    auto span =
+        SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::updatePositions);
     span.setAttribute(cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
     span.setAttribute(cons_span::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
     span.setAttribute(
@@ -1690,7 +1691,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, "check");
+    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::check);
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1934,7 +1935,9 @@ Consensus<Adaptor>::startEstablishTracing()
         return;
     establishSpan_.emplace(
         telemetry::SpanGuard::span(
-            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "establish"));
+            telemetry::TraceCategory::Consensus,
+            telemetry::seg::consensus,
+            telemetry::cons_span::op::establish));
 }
 
 template <class Adaptor>
