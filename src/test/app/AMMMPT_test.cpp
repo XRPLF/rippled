@@ -2239,23 +2239,22 @@ private:
             Env env{*this};
             env.fund(XRP(30'000), gw, alice);
             env.close();
-            auto BTCM = MPTTester(
+            auto BTC = MPTTester(
                 {.env = env,
                  .issuer = gw,
                  .holders = {alice},
                  .pay = 30'000,
-                 .flags = tfMPTCanTrade,
+                 .flags = MPTDEXFlags,
+                 .mutableFlags = tmfMPTCanMutateCanTransfer,
                  .authHolder = true});
-            MPT const BTC = BTCM;
 
             AMM amm(env, gw, XRP(10'000), BTC(10'000));
+            amm.deposit(DepositArg{.account = alice, .asset1In = XRP(200), .asset2In = BTC(200)});
 
+            // Allow to withdraw if transfer is disabled
+            BTC.set({.mutableFlags = tmfMPTClearCanTransfer});
             amm.withdraw(
-                WithdrawArg{
-                    .account = alice,
-                    .asset1Out = BTC(100),
-                    .assets = {{XRP, BTC}},
-                    .err = ter(tecNO_AUTH)});
+                WithdrawArg{.account = alice, .asset1Out = BTC(100), .assets = {{XRP, BTC}}});
         }
 
         // Globally locked MPT

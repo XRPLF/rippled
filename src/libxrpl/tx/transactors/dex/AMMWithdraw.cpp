@@ -255,11 +255,6 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
                                     << to_string(accountID) << " " << to_string(amount->asset());
                 return ter;
             }
-
-            if (auto const ter =
-                    canMPTTradeAndTransfer(ctx.view, amount->asset(), accountID, accountID);
-                !isTesSuccess(ter))
-                return ter;
         }
         return tesSUCCESS;
     };

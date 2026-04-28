@@ -6703,32 +6703,38 @@ class MPToken_test : public beast::unit_test::suite
             USD.authorize({.account = gw, .holder = carol});
             amm.withdraw({.account = carol, .asset1Out = USD(1), .asset2Out = EUR(1)});
 
-            // MPTCanTransfer is not set
+            // MPTCanTransfer is not set, allow to withdraw
 
             USD.set({.mutableFlags = tmfMPTClearRequireAuth});
             USD.set({.mutableFlags = tmfMPTClearCanTransfer});
-            // carol can't withdraw
-            amm.withdraw(
-                {.account = carol,
-                 .asset1Out = USD(1),
-                 .asset2Out = EUR(1),
-                 .err = ter(tecNO_AUTH)});
+            // carol can withdraw
+            amm.withdraw({.account = carol, .asset1Out = USD(1), .asset2Out = EUR(1)});
             // can withdraw another asset
             amm.withdraw(
                 {.account = carol, .asset1Out = EUR(1), .assets = std::make_pair(EUR, USD)});
             // issuer can withdraw
             amm.withdraw({.account = gw, .asset1Out = USD(1), .asset2Out = EUR(1)});
+            // Holder can't transfer to another holder
+            env.fund(XRP(1'000), bob);
+            USD.authorize({.account = bob});
+            env(pay(carol, bob, USD(1)), ter(tecNO_AUTH));
+            USD.authorize({.account = bob, .flags = tfMPTUnauthorize});
+            // Can redeem
+            env(pay(carol, gw, USD(1)));
             // carol can withdraw
             USD.set({.mutableFlags = tmfMPTSetCanTransfer});
             amm.withdraw({.account = carol, .asset1Out = USD(1), .asset2Out = EUR(1)});
 
             USD.set({.mutableFlags = tmfMPTSetCanTransfer});
 
-            // MPTCanTrade is not set
+            // MPTCanTrade is not set, allow to withdraw
 
             USD.set({.mutableFlags = tmfMPTClearCanTrade});
-            amm.withdraw({.account = gw, .tokens = 1'000, .err = ter(tecNO_PERMISSION)});
-            amm.withdraw({.account = carol, .tokens = 1'000, .err = ter(tecNO_PERMISSION)});
+            amm.withdraw({.account = gw, .tokens = 1'000});
+            amm.withdraw({.account = carol, .tokens = 1'000});
+            // Can't DEX
+            amm.deposit(
+                DepositArg{.account = carol, .asset1In = USD(1), .err = ter(tecNO_PERMISSION)});
             USD.set({.mutableFlags = tmfMPTSetCanTrade});
 
             // MPToken created on withdraw

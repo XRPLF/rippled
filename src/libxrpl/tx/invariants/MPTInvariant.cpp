@@ -444,11 +444,11 @@ ValidMPTTransfer::finalize(
     if (hasPrivilege(tx, overrideFreeze))
         return true;
 
-    // DEX transactions (AMM[Create,Deposit,Withdraw], cross-currency payments, offer creates) are
+    // DEX transactions (AMM[Create,Deposit], cross-currency payments, offer creates) are
     // subject to the MPTCanTrade flag in addition to the standard transfer rules.
     // A payment is only DEX if it is a cross-currency payment.
-    auto const isDEX = [&tx] {
-        auto const txnType = tx.getTxnType();
+    auto const txnType = tx.getTxnType();
+    auto const isDEX = [&] {
         if (txnType == ttPAYMENT)
         {
             // A payment is cross-currency (and thus DEX) only if SendMax is present
@@ -456,8 +456,7 @@ ValidMPTTransfer::finalize(
             auto const amount = tx[sfAmount];
             return tx[~sfSendMax].value_or(amount).asset() != amount.asset();
         }
-        return txnType == ttAMM_CREATE || txnType == ttAMM_DEPOSIT || txnType == ttAMM_WITHDRAW ||
-            txnType == ttOFFER_CREATE;
+        return txnType == ttAMM_CREATE || txnType == ttAMM_DEPOSIT || txnType == ttOFFER_CREATE;
     }();
 
     // Only enforce once MPTokensV2 is enabled to preserve consensus with non-V2 nodes.
@@ -475,7 +474,9 @@ ValidMPTTransfer::finalize(
             continue;
         }
 
-        auto const canTransfer = sleIssuance->isFlag(lsfMPTCanTransfer);
+        // Allow AMMWithdraw if MPTCanTransfer is not set
+        auto const canTransfer =
+            sleIssuance->isFlag(lsfMPTCanTransfer) || txnType == ttAMM_WITHDRAW;
         auto const canTrade = sleIssuance->isFlag(lsfMPTCanTrade);
         auto const reqAuth = sleIssuance->isFlag(lsfMPTRequireAuth);
 

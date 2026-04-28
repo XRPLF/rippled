@@ -4117,7 +4117,9 @@ class Invariants_test : public beast::unit_test::suite
                 {
                     MPTID id{};
                     auto const isSuccess = !enabled || flag == 0 ||
-                        (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade));
+                        (tx == ttPAYMENT && !crossCurrencyPayment && (flag == ~lsfMPTCanTrade)) ||
+                        (tx == ttAMM_WITHDRAW &&
+                         (flag == ~lsfMPTCanTrade || flag == ~lsfMPTCanTransfer));
                     std::pair<TER, TER> const error = isSuccess
                         ? std::make_pair(TER(tesSUCCESS), TER(tesSUCCESS))
                         : std::make_pair(TER(tecINVARIANT_FAILED), TER(tefINVARIANT_FAILED));
