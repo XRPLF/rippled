@@ -2183,6 +2183,47 @@ public:
                 });
         }
         {
+            // AMMDeposit single-asset XRP: reserve sponsor covers LP trustline reserve
+            // but depositor's own liquid XRP is insufficient for the deposit → tecUNFUNDED_AMM
+            Env env{*this, testable_amendments()};
+            env.fund(XRP(10000), alice, bob, gw, sponsor);
+            env.close();
+
+            env(trust(bob, USD(10000)));
+            env(trust(alice, USD(10000)));
+            env.close();
+            env(pay(gw, bob, USD(1000)));
+            env.close();
+
+            AMM amm(env, bob, XRP(1000), USD(100));
+
+            // alice has 1 owner object (USD trust line); give her reserve + 5 XRP liquid
+            adjustAccountXRPBalance(env, alice, reserve(env, ownerCount(env, alice)) + XRP(5));
+
+            auto const jv = AMM::depositJv(
+                {.account = alice,
+                 .asset1In = XRP(10),
+                 .assets = std::make_pair(Asset{xrpIssue()}, Asset{USD.issue()})});
+
+            if (cosigning)
+            {
+                env(jv,
+                    sponsor::as(sponsor, spfSponsorReserve),
+                    sig(sfSponsorSignature, sponsor),
+                    ter(tecINSUF_RESERVE_LINE));
+            }
+            else
+            {
+                env(sponsor::set_reserve(sponsor, 0, 1), sponsor::sponseeAcc(alice));
+                env.close();
+                env(jv, sponsor::as(sponsor, spfSponsorReserve), ter(tecINSUF_RESERVE_LINE));
+                env(sponsor::del(sponsor), sponsor::sponseeAcc(alice));
+            }
+            env.close();
+
+            BEAST_EXPECT(ownerCount(env, alice) == 1);  // no LP token was created
+        }
+        {
             // AMMWithdraw
             {
                 // Single Asset Withdraw

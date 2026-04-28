@@ -239,6 +239,15 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
 
             auto const sponsorSle = getTxReserveSponsor(ctx.view, ctx.tx);
             auto const accountSle = ctx.view.read(keylet::account(accountID));
+            auto const reserveAdj = (sponsorSle || sle) ? 0 : 1;
+
+            if (xrpLiquid(ctx.view, accountID, reserveAdj, ctx.j) < deposit)
+            {
+                if (sle)
+                    return tecUNFUNDED_AMM;
+                return tecINSUF_RESERVE_LINE;
+            }
+
             if (auto const ret = checkInsufficientReserve(
                     ctx.view,
                     ctx.tx,
@@ -247,11 +256,10 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     sponsorSle,
                     1,
                     !sle);
-                isTesSuccess(ret))
-                return TER(tesSUCCESS);
-            if (sle)
-                return tecUNFUNDED_AMM;
-            return tecINSUF_RESERVE_LINE;
+                sponsorSle && !isTesSuccess(ret))
+                return tecINSUF_RESERVE_LINE;
+
+            return tesSUCCESS;
         }
         return accountFunds(
                    ctx.view,
@@ -556,9 +564,8 @@ AMMDeposit::deposit(
             // Adjust the reserve if LP doesn't have LPToken trustline
             auto const trustlineExists =
                 view.exists(keylet::line(account_, lpIssue.account, lpIssue.currency));
-            auto const ownerCountAdj = trustlineExists ? 0 : 1;
-            if (xrpLiquid(view, sponsor.value_or(account_), sponsor ? ownerCountAdj : 0, j_) >=
-                depositAmount)
+            auto const reserveAdj = (sponsor || trustlineExists) ? 0 : 1;
+            if (xrpLiquid(view, account_, reserveAdj, j_) >= depositAmount)
                 return tesSUCCESS;
         }
         else if (
