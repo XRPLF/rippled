@@ -34,7 +34,7 @@ getFailHard(RPC::JsonContext const& context)
         return Unexpected(RPC::expected_field_error(jss::fail_hard, "boolean"));
     }
     return NetworkOPs::doFailHard(
-        context.params.isMember("fail_hard") && context.params["fail_hard"].asBool());
+        context.params.isMember(jss::fail_hard) && context.params[jss::fail_hard].asBool());
 }
 
 // {
