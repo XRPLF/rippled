@@ -1,21 +1,53 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
-
-#include <xrpld/core/Config.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <initializer_list>
 #include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 enum class TrustFlag { freeze, auth, noripple };
 
@@ -85,13 +117,13 @@ class ElementComboIter
     // some tests)
     bool const allowCompound_ = false;
 
-    bool
+    [[nodiscard]] bool
     has(SB s) const
     {
         return (state_ & (1 << safe_cast<int>(s))) != 0;
     }
 
-    bool
+    [[nodiscard]] bool
     hasAny(std::initializer_list<SB> sb) const
     {
         for (auto const s : sb)
@@ -102,7 +134,7 @@ class ElementComboIter
         return false;
     }
 
-    size_t
+    [[nodiscard]] size_t
     count(std::initializer_list<SB> sb) const
     {
         size_t result = 0;
@@ -120,7 +152,7 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     valid() const
     {
         return (allowCompound_ || !(has(SB::acc) && hasAny({SB::cur, SB::iss}))) &&
@@ -231,7 +263,7 @@ struct ExistingElementPool
     size_t nextAvailCurrency = 0;
 
     using ResetState = std::tuple<size_t, size_t>;
-    ResetState
+    [[nodiscard]] ResetState
     getResetState() const
     {
         return std::make_tuple(nextAvailAccount, nextAvailCurrency);
@@ -1127,5 +1159,4 @@ struct PayStrand_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PayStrand, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

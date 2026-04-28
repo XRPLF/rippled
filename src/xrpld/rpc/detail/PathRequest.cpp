@@ -1,21 +1,50 @@
+#include <xrpld/rpc/detail/PathRequest.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/AccountAssets.h>
-#include <xrpld/rpc/detail/PathRequest.h>
 #include <xrpld/rpc/detail/PathRequestManager.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
 #include <xrpld/rpc/detail/PathfinderUtils.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/PathAsset.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/LoadFeeTrack.h>
-#include <xrpl/server/NetworkOPs.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 
+#include <algorithm>
+#include <chrono>
+#include <functional>
+#include <memory>
+#include <mutex>
 #include <optional>
-#include <tuple>
+#include <string>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -478,6 +507,7 @@ PathRequest::getPathFinder(
     auto i = pathasset_map.find(asset);
     if (i != pathasset_map.end())
         return i->second;
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
     auto pathfinder = std::make_unique<Pathfinder>(
         cache,
         *raSrcAccount,
@@ -488,6 +518,7 @@ PathRequest::getPathFinder(
         saSendMax,
         domain,
         app_);
+    // NOLINTEND(bugprone-unchecked-optional-access)
     if (pathfinder->findPaths(level, continueCallback))
     {
         pathfinder->computePathRanks(max_paths_, continueCallback);
@@ -513,8 +544,10 @@ PathRequest::findPaths(
     }
     if (sourceAssets.empty())
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto assets = accountSourceAssets(*raSrcAccount, cache, true);
         bool const sameAccount = *raSrcAccount == *raDstAccount;
+        // NOLINTEND(bugprone-unchecked-optional-access)
         for (auto const& asset : assets)
         {
             if (!std::visit(
@@ -592,13 +625,15 @@ PathRequest::findPaths(
         auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), tapNONE);
         auto rc = path::RippleCalc::rippleCalculate(
             *sandbox,
-            saMaxAmount,    // --> Amount to send is unlimited
-                            //     to get an estimate.
-            dst_amount,     // --> Amount to deliver.
+            saMaxAmount,  // --> Amount to send is unlimited
+                          //     to get an estimate.
+            dst_amount,   // --> Amount to deliver.
+            // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
             *raDstAccount,  // --> Account to deliver to.
             *raSrcAccount,  // --> Account sending from.
-            ps,             // --> Path set.
-            domain,         // --> Domain.
+            // NOLINTEND(bugprone-unchecked-optional-access)
+            ps,      // --> Path set.
+            domain,  // --> Domain.
             app_,
             &rcInput);
 
@@ -611,13 +646,15 @@ PathRequest::findPaths(
             sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), tapNONE);
             rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
-                saMaxAmount,    // --> Amount to send is unlimited
-                                //     to get an estimate.
-                dst_amount,     // --> Amount to deliver.
+                saMaxAmount,  // --> Amount to send is unlimited
+                              //     to get an estimate.
+                dst_amount,   // --> Amount to deliver.
+                // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
                 *raDstAccount,  // --> Account to deliver to.
                 *raSrcAccount,  // --> Account sending from.
-                ps,             // --> Path set.
-                domain,         // --> Domain.
+                // NOLINTEND(bugprone-unchecked-optional-access)
+                ps,      // --> Path set.
+                domain,  // --> Domain.
                 app_);
 
             if (!isTesSuccess(rc.result()))
@@ -689,13 +726,16 @@ PathRequest::doUpdate(
     {
         // Old ripple_path_find API gives destination_currencies
         auto& destAssets = (newStatus[jss::destination_currencies] = Json::arrayValue);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
         auto const assets = accountDestAssets(*raDstAccount, cache, true);
         for (auto const& asset : assets)
             destAssets.append(to_string(asset));
     }
 
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
     newStatus[jss::source_account] = toBase58(*raSrcAccount);
     newStatus[jss::destination_account] = toBase58(*raDstAccount);
+    // NOLINTEND(bugprone-unchecked-optional-access)
     newStatus[jss::destination_amount] = saDstAmount.getJson(JsonOptions::none);
     newStatus[jss::full_reply] = !fast;
 

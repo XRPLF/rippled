@@ -1,12 +1,34 @@
+#include <xrpl/tx/paths/OfferStream.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
-#include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/PermissionedDEXHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/tx/paths/OfferStream.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <algorithm>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -61,7 +83,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::find(v.begin(), v.end(), tip_.index()));
+    auto it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {
@@ -110,7 +132,7 @@ accountFundsHelper(
 template <StepAmount TIn, StepAmount TOut>
 template <class TTakerPays, class TTakerGets>
     requires ValidTaker<TTakerPays, TTakerGets>
-bool
+[[nodiscard]] bool
 TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
 {
     // Consider removing the offer if:
@@ -127,6 +149,9 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
         // don't need this extra check.
         return false;
     }
+
+    if (!ownerFunds_)
+        return false;
 
     TAmounts<TTakerPays, TTakerGets> const ofrAmts{
         toAmount<TTakerPays>(offer_.amount().in), toAmount<TTakerGets>(offer_.amount().out)};
@@ -225,13 +250,13 @@ TOfferStreamBase<TIn, TOut>::step()
             continue;
         }
 
-        // Without fixPermissionDEX1_1: validate domain membership for any book
+        // Without fixCleanup3_2_0: validate domain membership for any book
         // (original behaviour).
-        // With fixPermissionDEX1_1: only validate when walking a domain book.
+        // With fixCleanup3_2_0: only validate when walking a domain book.
         // Hybrid offers carry sfDomainID but also participate in the open
         // book; expiry of the owner's domain credential should not evict
         // the offer from the open book.
-        if ((!view_.rules().enabled(fixPermissionDEX1_1) || book_.domain.has_value()) &&
+        if ((!view_.rules().enabled(fixCleanup3_2_0) || book_.domain.has_value()) &&
             entry->isFieldPresent(sfDomainID) &&
             !permissioned_dex::offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID), j_))

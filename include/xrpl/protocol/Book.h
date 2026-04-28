@@ -19,9 +19,7 @@ public:
     Asset out;
     std::optional<uint256> domain;
 
-    Book()
-    {
-    }
+    Book() = default;
 
     Book(Asset const& in_, Asset const& out_, std::optional<uint256> const& domain_)
         : in(in_), out(out_), domain(domain_)
@@ -53,7 +51,7 @@ reversed(Book const& book);
 
 /** Equality comparison. */
 /** @{ */
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(Book const& lhs, Book const& rhs)
 {
     return (lhs.in == rhs.in) && (lhs.out == rhs.out) && (lhs.domain == rhs.domain);
@@ -62,7 +60,7 @@ operator==(Book const& lhs, Book const& rhs)
 
 /** Strict weak ordering. */
 /** @{ */
-[[nodiscard]] inline constexpr std::weak_ordering
+[[nodiscard]] constexpr std::weak_ordering
 operator<=>(Book const& lhs, Book const& rhs)
 {
     if (auto const c{lhs.in <=> rhs.in}; c != 0)

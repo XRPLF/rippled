@@ -49,7 +49,7 @@ public:
         return m_ios;
     }
 
-    boost::asio::io_context const&
+    [[nodiscard]] boost::asio::io_context const&
     get_io_context() const
     {
         return m_ios;
@@ -184,7 +184,7 @@ private:
         void
         operator()() const
         {
-            if (!m_probe)
+            if (m_probe == nullptr)
                 return;
             typename Clock::time_point const now(Clock::now());
             typename Clock::duration const elapsed(now - m_start);
@@ -202,7 +202,7 @@ private:
                 // Calculate when we want to sample again, and
                 // adjust for the expected latency.
                 //
-                typename Clock::time_point const when(now + m_probe->m_period - 2 * elapsed);
+                typename Clock::time_point const when(now + m_probe->m_period - (2 * elapsed));
 
                 if (when <= now)
                 {
@@ -224,7 +224,7 @@ private:
         void
         operator()(boost::system::error_code const& ec)
         {
-            if (!m_probe)
+            if (m_probe == nullptr)
                 return;
             typename Clock::time_point const now(Clock::now());
             boost::asio::post(

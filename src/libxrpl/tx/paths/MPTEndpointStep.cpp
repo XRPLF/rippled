@@ -1,16 +1,34 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/PaymentSandbox.h>
-#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <boost/container/flat_set.hpp>
 
 #include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -53,19 +71,19 @@ protected:
     // the best available quality.
     // return: first element is max amount that can flow,
     //         second is the debt direction of the source w.r.t. the dst
-    std::pair<MPTAmount, DebtDirection>
+    [[nodiscard]] std::pair<MPTAmount, DebtDirection>
     maxPaymentFlow(ReadView const& sb) const;
 
     // Compute srcQOut and dstQIn when the source redeems.
-    std::pair<std::uint32_t, std::uint32_t>
+    [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualitiesSrcRedeems(ReadView const& sb) const;
 
     // Compute srcQOut and dstQIn when the source issues.
-    std::pair<std::uint32_t, std::uint32_t>
+    [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualitiesSrcIssues(ReadView const& sb, DebtDirection prevStepDebtDirection) const;
 
     // Returns srcQOut, dstQIn
-    std::pair<std::uint32_t, std::uint32_t>
+    [[nodiscard]] std::pair<std::uint32_t, std::uint32_t>
     qualities(ReadView const& sb, DebtDirection srcDebtDir, StrandDirection strandDir) const;
 
     void
@@ -94,23 +112,23 @@ private:
     }
 
 public:
-    AccountID const&
+    [[nodiscard]] AccountID const&
     src() const
     {
         return src_;
     }
-    AccountID const&
+    [[nodiscard]] AccountID const&
     dst() const
     {
         return dst_;
     }
-    MPTID const&
+    [[nodiscard]] MPTID const&
     mptID() const
     {
         return mptIssue_.getMptID();
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         if (!cache_)
@@ -118,7 +136,7 @@ public:
         return EitherAmount(cache_->in);
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         if (!cache_)
@@ -126,25 +144,25 @@ public:
         return EitherAmount(cache_->out);
     }
 
-    std::optional<AccountID>
+    [[nodiscard]] std::optional<AccountID>
     directStepSrcAcct() const override
     {
         return src_;
     }
 
-    std::optional<std::pair<AccountID, AccountID>>
+    [[nodiscard]] std::optional<std::pair<AccountID, AccountID>>
     directStepAccts() const override
     {
         return std::make_pair(src_, dst_);
     }
 
-    DebtDirection
+    [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     lineQualityIn(ReadView const& v) const override;
 
-    std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection dir) const override;
 
     std::pair<MPTAmount, MPTAmount>
@@ -166,7 +184,7 @@ public:
 
     // Check for error, existing liquidity, and violations of auth/frozen
     // constraints.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
     void
@@ -199,7 +217,7 @@ protected:
     }
 
 private:
-    bool
+    [[nodiscard]] bool
     equal(Step const& rhs) const override
     {
         if (auto ds = dynamic_cast<MPTEndpointStep const*>(&rhs))
@@ -245,10 +263,10 @@ public:
 
     // Verify the consistency of the step.  These checks are specific to
     // payments and assume that general checks were already performed.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc) const;
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("MPTEndpointPaymentStep");
@@ -296,7 +314,7 @@ public:
     static TER
     check(StrandContext const& ctx, std::shared_ptr<const SLE> const& sleSrc);
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return logStringImpl("MPTEndpointOfferCrossingStep");
@@ -538,6 +556,8 @@ MPTEndpointStep<TDerived>::setCacheLimiting(
     MPTAmount const& fwdOut,
     DebtDirection srcDebtDir)
 {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) cache_ always set before setCacheLimiting is
+    // called
     if (cache_->in < fwdIn)
     {
         MPTAmount const smallDiff(1);
@@ -567,6 +587,7 @@ MPTEndpointStep<TDerived>::setCacheLimiting(
     if (fwdOut < cache_->out)
         cache_->out = fwdOut;
     cache_->srcDebtDir = srcDebtDir;
+    // NOLINTEND(bugprone-unchecked-optional-access)
 };
 
 template <class TDerived>
@@ -578,6 +599,7 @@ MPTEndpointStep<TDerived>::fwdImp(
     MPTAmount const& in)
 {
     XRPL_ASSERT(cache_, "MPTEndpointStep<TDerived>::fwdImp : valid cache");
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
 
     auto const [maxSrcToDst, srcDebtDir] = static_cast<TDerived const*>(this)->maxPaymentFlow(sb);
 
@@ -651,6 +673,7 @@ MPTEndpointStep<TDerived>::fwdImp(
                          << " srcToDst: " << to_string(srcToDst) << " out: " << to_string(out);
     }
     return {cache_->in, cache_->out};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class TDerived>
@@ -680,6 +703,7 @@ MPTEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
         return {false, EitherAmount(MPTAmount(beast::zero))};
     }
 
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success
     if (maxSrcToDst < cache_->srcToDst)
     {
         JLOG(j_.warn()) << "MPTEndpointStep: Strand re-execute check failed."
@@ -699,6 +723,7 @@ MPTEndpointStep<TDerived>::validFwd(PaymentSandbox& sb, ApplyView& afView, Eithe
         return {false, EitherAmount(cache_->out)};
     }
     return {true, EitherAmount(cache_->out)};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 // Returns srcQOut, dstQIn
