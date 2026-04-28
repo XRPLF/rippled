@@ -1,5 +1,6 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 
+#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -1943,6 +1944,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         }
     }
 
+    {
+        using namespace telemetry;
+        auto span = SpanGuard::span(
+            TraceCategory::Consensus, seg::consensus, cons_span::op::proposalReceive);
+        span.setAttribute(cons_span::attr::trusted, isTrusted);
+    }
+
     JLOG(p_journal_.trace()) << "Proposal: " << (isTrusted ? "trusted" : "untrusted");
 
     auto proposal = RCLCxPeerPos(
@@ -2532,6 +2540,19 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
             JLOG(p_journal_.trace()) << "Validation: duplicate";
             return;
+        }
+
+        {
+            using namespace telemetry;
+            auto span = SpanGuard::span(
+                TraceCategory::Consensus, seg::consensus, cons_span::op::validationReceive);
+            span.setAttribute(cons_span::attr::trusted, isTrusted);
+            if (val->isFieldPresent(sfLedgerSequence))
+            {
+                span.setAttribute(
+                    cons_span::attr::ledgerSeq,
+                    static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
+            }
         }
 
         if (!isTrusted && (tracking_.load() == Tracking::diverged))

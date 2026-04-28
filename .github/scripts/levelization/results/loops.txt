@@ -5,7 +5,10 @@ Loop: test.jtx test.unit_test
   test.unit_test ~= test.jtx
 
 Loop: xrpl.telemetry xrpld.rpc
-  xrpld.rpc ~= xrpl.telemetry
+  xrpld.rpc > xrpl.telemetry
+
+Loop: xrpld.app xrpld.consensus
+  xrpld.app > xrpld.consensus
 
 Loop: xrpld.app xrpld.overlay
   xrpld.app > xrpld.overlay
@@ -18,6 +21,9 @@ Loop: xrpld.app xrpld.rpc
 
 Loop: xrpld.app xrpld.shamap
   xrpld.shamap > xrpld.app
+
+Loop: xrpld.app xrpld.telemetry
+  xrpld.telemetry == xrpld.app
 
 Loop: xrpld.overlay xrpld.rpc
   xrpld.rpc ~= xrpld.overlay

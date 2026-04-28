@@ -1,6 +1,6 @@
-#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLConsensus.h>
 
+#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
@@ -449,8 +449,8 @@ RCLConsensus::Adaptor::onAccept(
     bool const validating)
 {
     {
-        auto span = telemetry::SpanGuard::span(
-            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept");
+        auto span =
+            telemetry::SpanGuard::childSpan(telemetry::cons_span::accept, roundSpanContext_);
         span.setAttribute(
             telemetry::cons_span::attr::proposers, static_cast<int64_t>(result.proposers));
         span.setAttribute(
@@ -511,8 +511,8 @@ RCLConsensus::Adaptor::doAccept(
         closeTimeCorrect = true;
     }
 
-    auto doAcceptSpan = telemetry::SpanGuard::span(
-        telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "accept.apply");
+    auto doAcceptSpan =
+        telemetry::SpanGuard::childSpan(telemetry::cons_span::acceptApply, roundSpanContext_);
     doAcceptSpan.setAttribute(
         telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq() + 1));
     doAcceptSpan.setAttribute(
@@ -563,12 +563,16 @@ RCLConsensus::Adaptor::doAccept(
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
+    int64_t txCount = 0;
     for (auto const& item : *result.txns.map_)
     {
         try
         {
             retriableTxs.insert(std::make_shared<STTx const>(SerialIter{item.slice()}));
             JLOG(j_.debug()) << "    Tx: " << item.key();
+            ++txCount;
+            auto const txHash = to_string(item.key());
+            doAcceptSpan.addEvent("tx.included", {{telemetry::cons_span::attr::txId, txHash}});
         }
         catch (std::exception const& ex)
         {
@@ -576,6 +580,7 @@ RCLConsensus::Adaptor::doAccept(
             JLOG(j_.warn()) << "    Tx: " << item.key() << " throws: " << ex.what();
         }
     }
+    doAcceptSpan.setAttribute(telemetry::cons_span::attr::txCount, txCount);
 
     auto built = buildLCL(
         prevLedger,
