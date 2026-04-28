@@ -8,6 +8,9 @@
 
 namespace xrpl::PeerFinder {
 
+/** Direction of a slot count adjustment. */
+enum class CountAdjustment : int { Decrement = -1, Increment = 1 };
+
 /** Manages the count of available connections for the various slots. */
 class Counts
 {
@@ -16,14 +19,14 @@ public:
     void
     add(Slot const& s)
     {
-        adjust(s, 1);
+        adjust(s, CountAdjustment::Increment);
     }
 
     /** Removes the slot state and properties from the slot counts. */
     void
     remove(Slot const& s)
     {
-        adjust(s, -1);
+        adjust(s, CountAdjustment::Decrement);
     }
 
     /** Returns `true` if the slot can become active. */
@@ -207,21 +210,40 @@ public:
 
     //--------------------------------------------------------------------------
 private:
+    /** Increments or decrements a counter based on the adjustment direction. */
+    template <typename T>
+    static void
+    adjustCounter(T& counter, CountAdjustment dir)
+    {
+        switch (dir)
+        {
+            case CountAdjustment::Increment:
+                ++counter;
+                break;
+            case CountAdjustment::Decrement:
+                --counter;
+                break;
+        }
+    }
+
     // Adjusts counts based on the specified slot, in the direction indicated.
+    // Using ++/-- instead of += on std::size_t counters avoids UBSan
+    // unsigned-integer-overflow from implicit conversion of -1 to SIZE_MAX.
+    // A decrement on a zero counter is a real bug that UBSan should catch.
     void
-    adjust(Slot const& s, int const n)
+    adjust(Slot const& s, CountAdjustment const dir)
     {
         if (s.fixed())
-            m_fixed += n;
+            adjustCounter(m_fixed, dir);
 
         if (s.reserved())
-            m_reserved += n;
+            adjustCounter(m_reserved, dir);
 
         switch (s.state())
         {
             case Slot::accept:
                 XRPL_ASSERT(s.inbound(), "xrpl::PeerFinder::Counts::adjust : input is inbound");
-                m_acceptCount += n;
+                adjustCounter(m_acceptCount, dir);
                 break;
 
             case Slot::connect:
@@ -230,28 +252,28 @@ private:
                     !s.inbound(),
                     "xrpl::PeerFinder::Counts::adjust : input is not "
                     "inbound");
-                m_attempts += n;
+                adjustCounter(m_attempts, dir);
                 break;
 
             case Slot::active:
                 if (s.fixed())
-                    m_fixed_active += n;
+                    adjustCounter(m_fixed_active, dir);
                 if (!s.fixed() && !s.reserved())
                 {
                     if (s.inbound())
                     {
-                        m_in_active += n;
+                        adjustCounter(m_in_active, dir);
                     }
                     else
                     {
-                        m_out_active += n;
+                        adjustCounter(m_out_active, dir);
                     }
                 }
-                m_active += n;
+                adjustCounter(m_active, dir);
                 break;
 
             case Slot::closing:
-                m_closingCount += n;
+                adjustCounter(m_closingCount, dir);
                 break;
 
             // LCOV_EXCL_START
