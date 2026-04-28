@@ -7118,38 +7118,32 @@ private:
             500);
 
         auto const ammSle = env.current()->read(keylet::amm(amm[0], amm[1]));
-        if (!BEAST_EXPECT(ammSle && ammSle->isFieldPresent(sfAuctionSlot)))
-            return;
+        BEAST_EXPECT(ammSle && ammSle->isFieldPresent(sfAuctionSlot));
         auto const& slot = safe_downcast<STObject const&>(ammSle->peekAtField(sfAuctionSlot));
 
-        if (features[fixCleanup3_2_0])
+        // sfDiscountedFee = 500 / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION = 50,
+        // sfPrice = 0 (reset on init), time interval = 0 (freshly issued slot).
+        BEAST_EXPECT(amm.expectAuctionSlot(50, 0, IOUAmount{0}));
+        // sfAccount must be the re-initializing depositor, not the previous
+        // slot holder (carol).
+        BEAST_EXPECT(slot[sfAccount] == ed.id());
+        // sfTradingFee on the AMM SLE must reflect ed's deposit fee.
+        BEAST_EXPECT(ammSle->getFieldU16(sfTradingFee) == 500);
+        // sfVoteSlots must be reset to a single entry for ed.
+        auto const& votes = ammSle->getFieldArray(sfVoteSlots);
+        BEAST_EXPECT(votes.size() == 1);
+        if (!votes.empty())
         {
-            // sfDiscountedFee = 500 / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION = 50,
-            // sfPrice = 0 (reset on init), time interval = 0 (freshly issued slot).
-            BEAST_EXPECT(amm.expectAuctionSlot(50, 0, IOUAmount{0}));
-            // sfAccount must be the re-initializing depositor, not the previous
-            // slot holder (carol).
-            BEAST_EXPECT(slot[sfAccount] == ed.id());
-            // sfAuthAccounts must be absent after re-init.
-            BEAST_EXPECT(!slot.isFieldPresent(sfAuthAccounts));
-            // sfTradingFee on the AMM SLE must reflect ed's deposit fee.
-            BEAST_EXPECT(ammSle->getFieldU16(sfTradingFee) == 500);
-            // sfVoteSlots must be reset to a single entry for ed.
-            auto const& votes = ammSle->getFieldArray(sfVoteSlots);
-            BEAST_EXPECT(votes.size() == 1);
-            if (!votes.empty())
-            {
-                BEAST_EXPECT(votes[0].getAccountID(sfAccount) == ed.id());
-                BEAST_EXPECT(votes[0].getFieldU16(sfTradingFee) == 500);
-                BEAST_EXPECT(votes[0].getFieldU32(sfVoteWeight) == VOTE_WEIGHT_SCALE_FACTOR);
-            }
+            BEAST_EXPECT(votes[0].getAccountID(sfAccount) == ed.id());
+            BEAST_EXPECT(votes[0].getFieldU16(sfTradingFee) == 500);
+            BEAST_EXPECT(votes[0].getFieldU32(sfVoteWeight) == VOTE_WEIGHT_SCALE_FACTOR);
         }
+        // sfAuthAccounts behaviour depends on the fix.
+        if (features[fixCleanup3_2_0])
+            BEAST_EXPECT(!slot.isFieldPresent(sfAuthAccounts));
         else
-        {
-            // Without fixCleanup3_2_0: stale sfAuthAccounts survive re-init.
             BEAST_EXPECT(
                 slot.isFieldPresent(sfAuthAccounts) && !slot.getFieldArray(sfAuthAccounts).empty());
-        }
     }
 
     void
