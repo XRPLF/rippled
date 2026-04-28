@@ -14,7 +14,9 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -27,20 +29,27 @@
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <openssl/rand.h>
 #include <utility/mpt_utility.h>
 
+#include <secp256k1.h>
 #include <secp256k1_mpt.h>
 
+#include <algorithm>
+#include <array>
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
+#include <functional>
 #include <initializer_list>
+#include <limits>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <vector>
@@ -226,8 +235,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             , senderPubKey(*mpt.getPubKey(sender))
             , destPubKey(*mpt.getPubKey(dest))
             , issuerPubKey(*mpt.getPubKey(issuer))
-            , auditorPubKey(
-                  auditor ? std::optional<Buffer>(*mpt.getPubKey(auditor->get())) : std::nullopt)
+            , auditorPubKey(auditor ? mpt.getPubKey(auditor->get()) : std::nullopt)
             , prevSpending(
                   *mpt.getDecryptedBalance(sender, test::jtx::MPTTester::HOLDER_ENCRYPTED_SPENDING))
             , prevEncryptedSpending(
@@ -8757,7 +8765,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
         // Generate a valid proof for a legitimate amount, then corrupt
         // the bulletproof segment to simulate a forged range proof.
-        ConfidentialSendSetup setup(mptAlice, bob, carol, alice, 10);
+        ConfidentialSendSetup const setup(mptAlice, bob, carol, alice, 10);
         auto const validProof = setup.generateProof(mptAlice, env, bob, carol);
         if (!BEAST_EXPECT(validProof.has_value()))
             return;
@@ -9541,7 +9549,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             STObject obj(sit, sfTransaction);
 
             auto const origDestAmt = obj.getFieldVL(sfDestinationEncryptedAmount);
-            Buffer origBuf(origDestAmt.data(), origDestAmt.size());
+            Buffer const origBuf(origDestAmt.data(), origDestAmt.size());
             auto const negDestAmt = negateCiphertext(origBuf);
             obj.setFieldVL(
                 sfDestinationEncryptedAmount, Slice(negDestAmt.data(), negDestAmt.size()));
@@ -9794,7 +9802,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
 
             // Replace C1 in the dest ciphertext
             auto const origDestAmt = obj.getFieldVL(sfDestinationEncryptedAmount);
-            Buffer origBuf(origDestAmt.data(), origDestAmt.size());
+            Buffer const origBuf(origDestAmt.data(), origDestAmt.size());
             auto const rerandomized = substituteC1(origBuf, otherCt);
             obj.setFieldVL(
                 sfDestinationEncryptedAmount, Slice(rerandomized.data(), rerandomized.size()));
