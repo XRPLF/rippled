@@ -9,6 +9,7 @@
  *
  *    consensus.round (deterministic trace_id from ledger hash)
  *    |
+ *    +-- consensus.phase.open
  *    +-- consensus.proposal.send
  *    +-- consensus.ledger_close
  *    +-- consensus.establish
@@ -18,6 +19,9 @@
  *    +-- consensus.accept.apply     (jtACCEPT thread)
  *    +-- consensus.validation.send  (jtACCEPT thread, linked)
  *    +-- consensus.mode_change
+ *
+ *    consensus.proposal.receive     (standalone, PeerImp)
+ *    consensus.validation.receive   (standalone, PeerImp)
  */
 
 #include <xrpl/telemetry/SpanNames.h>
@@ -39,6 +43,9 @@ inline constexpr auto accept = makeStr("accept");
 inline constexpr auto acceptApply = makeStr("accept.apply");
 inline constexpr auto validationSend = makeStr("validation.send");
 inline constexpr auto modeChange = makeStr("mode_change");
+inline constexpr auto proposalReceive = makeStr("proposal.receive");
+inline constexpr auto validationReceive = makeStr("validation.receive");
+inline constexpr auto phaseOpen = makeStr("phase.open");
 }  // namespace op
 
 // ===== Full span names (prefix.op) ===========================================
@@ -53,6 +60,9 @@ inline constexpr auto accept = join(seg::consensus, op::accept);
 inline constexpr auto acceptApply = join(seg::consensus, op::acceptApply);
 inline constexpr auto validationSend = join(seg::consensus, op::validationSend);
 inline constexpr auto modeChange = join(seg::consensus, op::modeChange);
+inline constexpr auto proposalReceive = join(seg::consensus, op::proposalReceive);
+inline constexpr auto validationReceive = join(seg::consensus, op::validationReceive);
+inline constexpr auto phaseOpen = join(seg::consensus, op::phaseOpen);
 
 // ===== Attribute keys ========================================================
 
@@ -145,6 +155,13 @@ inline constexpr auto disputeOurVote =
 inline constexpr auto disputeYays = join(join(seg::xrpl, makeStr("dispute")), makeStr("yays"));
 /// "xrpl.dispute.nays"
 inline constexpr auto disputeNays = join(join(seg::xrpl, makeStr("dispute")), makeStr("nays"));
+
+/// "xrpl.consensus.tx_count"
+inline constexpr auto txCount = join(xrplConsensus, makeStr("tx_count"));
+/// "xrpl.consensus.disputes_count"
+inline constexpr auto disputesCount = join(xrplConsensus, makeStr("disputes_count"));
+/// "xrpl.consensus.trusted"
+inline constexpr auto trusted = join(xrplConsensus, makeStr("trusted"));
 }  // namespace attr
 
 // ===== Attribute values ======================================================

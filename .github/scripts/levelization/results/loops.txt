@@ -7,6 +7,9 @@ Loop: test.jtx test.unit_test
 Loop: xrpl.telemetry xrpld.rpc
   xrpld.rpc > xrpl.telemetry
 
+Loop: xrpld.app xrpld.consensus
+  xrpld.app > xrpld.consensus
+
 Loop: xrpld.app xrpld.overlay
   xrpld.app > xrpld.overlay
 
