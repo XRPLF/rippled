@@ -1842,12 +1842,12 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 // Without fixAMMv1_3: sub-method returns tecAMM_BALANCE early.
-                // With fixAMMv1_3 but without fixCleanup_320: sub-method succeeds
+                // With fixAMMv1_3 but without fixCleanup3_2_0: sub-method succeeds
                 //   but invariant check catches the precision violation.
-                // With fixCleanup_320: caught in the transaction layer before
+                // With fixCleanup3_2_0: caught in the transaction layer before
                 //   the invariant checker runs.
                 auto const err = !env.enabled(fixAMMv1_3) ? ter(tecAMM_BALANCE)
-                    : env.enabled(fixCleanup_320)         ? ter(tecPRECISION_LOSS)
+                    : env.enabled(fixCleanup3_2_0)        ? ter(tecPRECISION_LOSS)
                                                           : ter(tecINVARIANT_FAILED);
                 ammAlice.withdraw(
                     alice,
@@ -1856,7 +1856,7 @@ private:
                     std::nullopt,
                     err);
             },
-            {.features = {all, all - fixAMMv1_3, all - fixCleanup_320}, .noLog = true});
+            {.features = {all, all - fixAMMv1_3, all - fixCleanup3_2_0}, .noLog = true});
 
         // Tiny withdraw
         testAMM([&](AMM& ammAlice, Env&) {

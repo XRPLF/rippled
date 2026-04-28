@@ -53,7 +53,7 @@ public:
         return str_;
     }
 
-    constexpr char const*
+    [[nodiscard]] constexpr char const*
     c_str() const
     {
         return str_;
@@ -158,11 +158,11 @@ private:
         operator<(CZString const& other) const;
         bool
         operator==(CZString const& other) const;
-        int
+        [[nodiscard]] int
         index() const;
-        char const*
+        [[nodiscard]] char const*
         c_str() const;
-        bool
+        [[nodiscard]] bool
         isStaticString() const;
 
     private:
@@ -223,60 +223,60 @@ public:
     void
     swap(Value& other) noexcept;
 
-    ValueType
+    [[nodiscard]] ValueType
     type() const;
 
-    char const*
+    [[nodiscard]] char const*
     asCString() const;
     /** Returns the unquoted string value. */
-    std::string
+    [[nodiscard]] std::string
     asString() const;
-    Int
+    [[nodiscard]] Int
     asInt() const;
-    UInt
+    [[nodiscard]] UInt
     asUInt() const;
-    double
+    [[nodiscard]] double
     asDouble() const;
-    bool
+    [[nodiscard]] bool
     asBool() const;
 
     /** Correct absolute value from int or unsigned int */
-    UInt
+    [[nodiscard]] UInt
     asAbsUInt() const;
 
     // TODO: What is the "empty()" method this docstring mentions?
     /** isNull() tests to see if this field is null.  Don't use this method to
         test for emptiness: use empty(). */
-    bool
+    [[nodiscard]] bool
     isNull() const;
-    bool
+    [[nodiscard]] bool
     isBool() const;
-    bool
+    [[nodiscard]] bool
     isInt() const;
-    bool
+    [[nodiscard]] bool
     isUInt() const;
-    bool
+    [[nodiscard]] bool
     isIntegral() const;
-    bool
+    [[nodiscard]] bool
     isDouble() const;
-    bool
+    [[nodiscard]] bool
     isNumeric() const;
-    bool
+    [[nodiscard]] bool
     isString() const;
-    bool
+    [[nodiscard]] bool
     isArray() const;
-    bool
+    [[nodiscard]] bool
     isArrayOrNull() const;
-    bool
+    [[nodiscard]] bool
     isObject() const;
-    bool
+    [[nodiscard]] bool
     isObjectOrNull() const;
 
-    bool
+    [[nodiscard]] bool
     isConvertibleTo(ValueType other) const;
 
     /// Number of values in array or object
-    UInt
+    [[nodiscard]] UInt
     size() const;
 
     /** Returns false if this is an empty array, empty object, empty string,
@@ -304,10 +304,10 @@ public:
     operator[](UInt index) const;
     /// If the array contains at least index+1 elements, returns the element
     /// value, otherwise returns defaultValue.
-    Value
+    [[nodiscard]] Value
     get(UInt index, Value const& defaultValue) const;
     /// Return true if index < size().
-    bool
+    [[nodiscard]] bool
     isValidIndex(UInt index) const;
     /// \brief Append value to array at the end.
     ///
@@ -355,7 +355,7 @@ public:
     Value
     get(char const* key, Value const& defaultValue) const;
     /// Return the member named key if it exist, defaultValue otherwise.
-    Value
+    [[nodiscard]] Value
     get(std::string const& key, Value const& defaultValue) const;
 
     /// \brief Remove and return the named member.
@@ -374,10 +374,10 @@ public:
     bool
     isMember(char const* key) const;
     /// Return true if the object has a member named key.
-    bool
+    [[nodiscard]] bool
     isMember(std::string const& key) const;
     /// Return true if the object has a member named key.
-    bool
+    [[nodiscard]] bool
     isMember(StaticString const& key) const;
 
     /// \brief Return a list of the member names.
@@ -385,15 +385,15 @@ public:
     /// If null, return an empty list.
     /// \pre type() is objectValue or nullValue
     /// \post if type() was nullValue, it remains nullValue
-    Members
+    [[nodiscard]] Members
     getMemberNames() const;
 
-    std::string
+    [[nodiscard]] std::string
     toStyledString() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
 
     iterator
@@ -513,20 +513,20 @@ public:
 
     /// Return either the index or the member name of the referenced value as a
     /// Value.
-    Value
+    [[nodiscard]] Value
     key() const;
 
     /// Return the index of the referenced Value. -1 if it is not an arrayValue.
-    UInt
+    [[nodiscard]] UInt
     index() const;
 
     /// Return the member name of the referenced Value. "" if it is not an
     /// objectValue.
-    char const*
+    [[nodiscard]] char const*
     memberName() const;
 
 protected:
-    Value&
+    [[nodiscard]] Value&
     deref() const;
 
     void
@@ -535,10 +535,10 @@ protected:
     void
     decrement();
 
-    difference_type
+    [[nodiscard]] difference_type
     computeDistance(SelfType const& other) const;
 
-    bool
+    [[nodiscard]] bool
     isEqual(SelfType const& other) const;
 
     void

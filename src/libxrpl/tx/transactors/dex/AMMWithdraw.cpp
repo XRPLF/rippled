@@ -412,7 +412,7 @@ AMMWithdraw::applyGuts(Sandbox& sb)
     if (!isTesSuccess(result))
         return {result, false};
 
-    if (sb.rules().enabled(fixCleanup_320) && sb.rules().enabled(fixAMMv1_3))
+    if (sb.rules().enabled(fixCleanup3_2_0) && sb.rules().enabled(fixAMMv1_3))
     {
         if (auto const ter = checkAMMPrecisionLoss(
                 sb, ammAccountID, ctx_.tx[sfAsset], ctx_.tx[sfAsset2], newLPTokenBalance, j_);

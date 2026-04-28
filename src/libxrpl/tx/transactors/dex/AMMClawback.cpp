@@ -263,7 +263,7 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!isTesSuccess(result))
         return result;  // LCOV_EXCL_LINE
 
-    if (sb.rules().enabled(fixCleanup_320) && sb.rules().enabled(fixAMMv1_3))
+    if (sb.rules().enabled(fixCleanup3_2_0) && sb.rules().enabled(fixAMMv1_3))
     {
         if (auto const ter =
                 checkAMMPrecisionLoss(sb, ammAccount, asset, asset2, newLPTokenBalance, j_);

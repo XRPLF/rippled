@@ -78,7 +78,7 @@ struct JTx
     }
 
     template <class Prop>
-    Prop const*
+    [[nodiscard]] Prop const*
     get() const
     {
         for (auto& prop : props_.list)

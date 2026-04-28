@@ -74,49 +74,49 @@ public:
 
         using const_reverse_iterator = reverse_iterator;
 
-        iterator
+        [[nodiscard]] iterator
         begin() const
         {
             return iterator(m_list.get().cbegin(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         cbegin() const
         {
             return iterator(m_list.get().cbegin(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         end() const
         {
             return iterator(m_list.get().cend(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         cend() const
         {
             return iterator(m_list.get().cend(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         rbegin() const
         {
             return reverse_iterator(m_list.get().crbegin(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         crbegin() const
         {
             return reverse_iterator(m_list.get().crbegin(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         rend() const
         {
             return reverse_iterator(m_list.get().crend(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         crend() const
         {
             return reverse_iterator(m_list.get().crend(), Transform());
@@ -239,13 +239,13 @@ public:
             return iterator(m_lists.begin(), Transform<false>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         begin() const
         {
             return const_iterator(m_lists.cbegin(), Transform<true>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         cbegin() const
         {
             return const_iterator(m_lists.cbegin(), Transform<true>());
@@ -257,13 +257,13 @@ public:
             return iterator(m_lists.end(), Transform<false>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         end() const
         {
             return const_iterator(m_lists.cend(), Transform<true>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         cend() const
         {
             return const_iterator(m_lists.cend(), Transform<true>());
@@ -275,13 +275,13 @@ public:
             return reverse_iterator(m_lists.rbegin(), Transform<false>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         rbegin() const
         {
             return const_reverse_iterator(m_lists.crbegin(), Transform<true>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         crbegin() const
         {
             return const_reverse_iterator(m_lists.crbegin(), Transform<true>());
@@ -293,13 +293,13 @@ public:
             return reverse_iterator(m_lists.rend(), Transform<false>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         rend() const
         {
             return const_reverse_iterator(m_lists.crend(), Transform<true>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         crend() const
         {
             return const_reverse_iterator(m_lists.crend(), Transform<true>());
@@ -309,7 +309,7 @@ public:
         void
         shuffle();
 
-        std::string
+        [[nodiscard]] std::string
         histogram() const;
 
     private:
@@ -331,7 +331,7 @@ public:
     } hops;
 
     /** Returns `true` if the cache is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return m_cache.empty();

@@ -2486,9 +2486,9 @@ class AMMClawback_test : public beast::unit_test::suite
             else if (!features[fixAMMClawbackRounding])
             {
                 // sqrt(amount * amount2) >= LPTokens and exceeds the allowed tolerance.
-                // With fixCleanup_320 this is caught in the transaction layer;
+                // With fixCleanup3_2_0 this is caught in the transaction layer;
                 // without it the invariant checker fires instead.
-                if (features[fixCleanup_320])
+                if (features[fixCleanup3_2_0])
                 {
                     env(amm::ammClawback(gw, alice, USD, EUR, USD(1)), ter(tecPRECISION_LOSS));
                     BEAST_EXPECT(amm.ammExists());
@@ -2523,10 +2523,10 @@ class AMMClawback_test : public beast::unit_test::suite
         testFeatureDisabled(all - featureAMMClawback);
         for (auto const& features :
              {all - fixAMMv1_3 - fixAMMClawbackRounding - featureMPTokensV2,
-              // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup_320 off:
+              // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_2_0 off:
               // precision loss caught by invariant checker -> tecINVARIANT_FAILED
-              all - fixAMMClawbackRounding - fixCleanup_320 - featureMPTokensV2,
-              // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup_320 on:
+              all - fixAMMClawbackRounding - fixCleanup3_2_0 - featureMPTokensV2,
+              // fixAMMv1_3 on, fixAMMClawbackRounding off, fixCleanup3_2_0 on:
               // precision loss caught in transaction layer -> tecPRECISION_LOSS
               all - fixAMMClawbackRounding - featureMPTokensV2,
               all - featureMPTokensV2,

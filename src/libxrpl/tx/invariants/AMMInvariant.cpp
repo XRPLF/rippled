@@ -152,6 +152,8 @@ ValidAMM::finalizeCreate(
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
         // all balances are greater than zero
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceAfter_ set with ammAccount_
+        // in visitEntry
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
             ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) != *lptAMMBalanceAfter_)
         {
@@ -160,6 +162,7 @@ ValidAMM::finalizeCreate(
             if (enforce)
                 return false;
         }
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return true;
@@ -204,6 +207,8 @@ ValidAMM::generalInvariant(
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) ammAccount_ and lptAMMBalanceAfter_ set
+    // together in visitEntry; callers only invoke this inside else-of-if(!ammAccount_)
     auto const [amount, amount2] = ammPoolHolds(
         view, *ammAccount_, tx[sfAsset], tx[sfAsset2], fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
     // Deposit and Withdrawal invariant:
@@ -215,7 +220,7 @@ ValidAMM::generalInvariant(
         validBalances(amount, amount2, *lptAMMBalanceAfter_, zeroAllowed);
     bool const strongInvariantCheck = poolProductMean >= *lptAMMBalanceAfter_;
     // Allow for a small relative error if strongInvariantCheck fails.
-    // With fixCleanup_320, the "both fail" case is caught earlier in the
+    // With fixCleanup3_2_0, the "both fail" case is caught earlier in the
     // transaction layer (tecPRECISION_LOSS), so this invariant is only
     // reached when the strong check passes or the weak check saves it.
     auto weakInvariantCheck = [&]() {
@@ -233,6 +238,7 @@ ValidAMM::generalInvariant(
                                 : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));
         return false;
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return true;
 }
