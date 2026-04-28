@@ -4530,41 +4530,11 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const dpIssuer("dpIssuer");
         char const credType[] = "KYC";
 
-        // Common setup: create MPT with privacy, convert carol and bob to confidential
-        auto setupBasic = [&](Env& env, MPTTester& mpt) {
-            mpt.create({
-                .ownerCount = 1,
-                .flags = tfMPTCanTransfer | tfMPTCanLock | tfMPTCanConfidentialAmount,
-            });
-            mpt.authorize({
-                .account = bob,
-            });
-            mpt.authorize({
-                .account = carol,
-            });
-            mpt.pay(alice, bob, 100);
-            mpt.pay(alice, carol, 100);
-
-            mpt.generateKeyPair(alice);
-            mpt.generateKeyPair(bob);
-            mpt.generateKeyPair(carol);
-            mpt.set({.account = alice, .issuerPubKey = mpt.getPubKey(alice)});
-
-            mpt.convert({.account = carol, .amt = 50, .holderPubKey = mpt.getPubKey(carol)});
-            mpt.convert({.account = bob, .amt = 50, .holderPubKey = mpt.getPubKey(bob)});
-            mpt.mergeInbox({
-                .account = carol,
-            });
-            mpt.mergeInbox({
-                .account = bob,
-            });
-        };
-
         // TEST 1: Preflight - Empty Credentials Array
         {
             Env env(*this, features);
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             mpt.send({
                 .account = carol,
@@ -4578,8 +4548,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // TEST 2: Preflight - Credentials Array Too Large
         {
             Env env(*this, features);
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             std::vector<std::string> tooManyCredentials;
             tooManyCredentials.reserve(9);
@@ -4600,8 +4570,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             env(credentials::create(carol, dpIssuer, credType));
             env.close();
@@ -4623,8 +4593,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         // TEST 4: Preclaim - Credential Doesn't Exist
         {
             Env env(*this, features);
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             std::string const fakeCredIdx = to_string(uint256(999));
             mpt.send({
@@ -4641,8 +4611,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             // Create credential for BOB (not carol)
             env(credentials::create(bob, dpIssuer, credType));
@@ -4667,8 +4637,8 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
             Env env(*this, features);
             env.fund(XRP(50000), dpIssuer);
             env.close();
-            MPTTester mpt(env, alice, {.holders = {bob, carol}});
-            setupBasic(env, mpt);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
 
             // Create credential but DON'T accept it
             env(credentials::create(carol, dpIssuer, credType));
@@ -4683,6 +4653,28 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
                 .amt = 10,
                 .credentials = {{credIdx}},
                 .err = tecBAD_CREDENTIALS,
+            });
+        }
+
+        // TEST 7: Preflight - sfCredentialIDs requires featureCredentials.
+        // Even with featureConfidentialTransfer enabled, supplying
+        // CredentialIDs while featureCredentials is disabled must be
+        // rejected in preflight via checkExtraFeatures.
+        {
+            Env env(*this, features - featureCredentials);
+            ConfidentialEnv confEnv{env, alice, {{bob, 100, 50}, {carol, 100, 50}}};
+            auto& mpt = confEnv.mpt;
+
+            std::string const credIdx =
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4";
+
+            mpt.send({
+                .account = carol,
+                .dest = bob,
+                .amt = 10,
+                .credentials = {{credIdx}},
+                .err = temDISABLED,
             });
         }
     }
