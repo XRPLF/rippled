@@ -706,7 +706,7 @@ LoanPay::doApply()
         Number::getround() == Number::to_nearest,
         "xrpl::LoanPay::doApply",
         "Number rounding to_nearest");
-    NumberRoundModeGuard mg(Number::to_nearest);
+    NumberRoundModeGuard const mg(Number::to_nearest);
 
     auto const accountBalanceBeforeRounded = roundToScale(accountBalanceBefore, balanceScale);
     auto const vaultBalanceBeforeRounded = roundToScale(vaultBalanceBefore, balanceScale);
