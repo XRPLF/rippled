@@ -1904,6 +1904,30 @@ public:
     }
 };
 
+class NumberPerf_test : public Number_test
+{
+    void
+    run() override
+    {
+        // This suite will give the most accurate results when run
+        // single threaded, suppressing non-log output.
+        // "--unittest=NumberPerf --quiet --unittest-log"
+        using clock_type = std::chrono::steady_clock;
+
+        int limit = 100000;
+        auto const start = clock_type::now();
+        for (int i = 0; i < limit; ++i)
+        {
+            Number_test::run();
+        }
+        auto const duration =
+            std::chrono::duration_cast<std::chrono::milliseconds>(clock_type::now() - start);
+
+        log << "Number test repeated " << limit << " times took " << duration << "\n";
+    }
+};
+
 BEAST_DEFINE_TESTSUITE(Number, basics, xrpl);
+BEAST_DEFINE_TESTSUITE_MANUAL(NumberPerf, tx, xrpl);
 
 }  // namespace xrpl
