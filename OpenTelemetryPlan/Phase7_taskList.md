@@ -333,12 +333,63 @@ validatorHealthGauge_ = meter_->CreateDoubleObservableGauge(
 | `unl_expiry_days`   | double | `app_.validators().expires()` → days until expiry |
 | `validation_quorum` | int64  | `app_.validators().quorum()`                      |
 
+### Sub-task 7.10a: Per-Validator Validation Count (Flag Ledger Window)
+
+**Objective**: Track how many ledgers each UNL validator has validated over
+the last 256 consecutive ledgers (one flag ledger window). This is the key
+UNL participation metric — validators consistently below threshold may be
+candidates for removal from the UNL.
+
+**What to do**:
+
+- Add a new observable gauge:
+
+```cpp
+validatorParticipationGauge_ = meter_->CreateInt64ObservableGauge(
+    "rippled_validator_participation",
+    "Per-validator validation count over the last 256 ledgers");
+```
+
+- The callback queries `app_.getValidations()` to get the trusted
+  validation set for each of the last 256 ledger hashes (from
+  `LedgerMaster::getValidatedLedger()` walking backwards). For each
+  validator public key in the UNL, count how many of those 256 ledgers
+  have a matching validation.
+
+- **Label dimensions**:
+  - `validator` — base58-encoded validator master public key
+  - `exported_instance` — this node's identity (standard)
+
+- **Emission**: every flag ledger (256 ledgers, ~15 minutes) or on a
+  10-second async gauge callback with cached results (recompute only
+  at flag ledger boundaries).
+
+- **Data source**: `RCLValidations::getTrustedForLedger(hash, seq)` returns
+  `std::vector<std::shared_ptr<STValidation>>` with `getSignerPublic()`
+  for each. The UNL list is from `app_.getValidators().getTrustedMasterKeys()`.
+
+- **Dashboard panel**: Add a table panel to the Validator Health dashboard
+  showing `rippled_validator_participation` grouped by `validator` label,
+  with a threshold color (green >= 240, yellow >= 200, red < 200).
+
 **Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
 
 **Exit Criteria**:
 
-- [ ] All 4 label values emitted every 10s
+- [ ] Gauge emits one time series per UNL validator
+- [ ] Values range 0-256 and update at flag ledger boundaries
+- [ ] Grafana table panel shows per-validator participation
+- [ ] Validators below 75% participation are highlighted in red
+
+---
+
+**Key modified files**: `src/xrpld/telemetry/MetricsRegistry.h/.cpp`
+
+**Exit Criteria**:
+
+- [ ] All 4 base label values emitted every 10s
 - [ ] `unl_expiry_days` is negative when expired, positive when active
+- [ ] Per-validator participation gauge emits at flag ledger boundaries
 - [ ] Values visible in Prometheus
 
 ---
