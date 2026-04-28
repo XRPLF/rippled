@@ -120,8 +120,7 @@
 #include <memory>
 #include <string_view>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 /** Trace subsystem categories for conditional span creation.
 
@@ -152,14 +151,16 @@ public:
 
     /** @return true if this context holds a valid trace context. */
 #ifdef XRPL_ENABLE_TELEMETRY
-    bool
+    [[nodiscard]] bool
     isValid() const;
 #else
-    bool
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+    [[nodiscard]] bool
     isValid() const
     {
         return false;
     }
+    // NOLINTEND(readability-convert-member-functions-to-static)
 #endif
 };
 
@@ -200,7 +201,7 @@ public:
         @param prefix  Span name prefix (e.g. "rpc.command").
         @param name    Span name suffix (e.g. "submit").
     */
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     span(TraceCategory cat, std::string_view prefix, std::string_view name);
 
     // --- Child / linked span creation ----------------------------------
@@ -209,7 +210,7 @@ public:
         @param name  Span name for the child.
         @return A new guard, or null if this guard is inactive.
     */
-    SpanGuard
+    [[nodiscard]] SpanGuard
     childSpan(std::string_view name) const;
 
     /** Create a child span parented to an explicit captured context.
@@ -217,7 +218,7 @@ public:
         @param parentCtx  Context captured via captureContext().
         @return A new guard, or null if parentCtx is invalid.
     */
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     childSpan(std::string_view name, SpanContext const& parentCtx);
 
     /** Create a span linked (follows-from) to this guard's span.
@@ -226,7 +227,7 @@ public:
         @param name  Span name for the linked span.
         @return A new guard, or null if this guard is inactive.
     */
-    SpanGuard
+    [[nodiscard]] SpanGuard
     linkedSpan(std::string_view name) const;
 
     /** Create a span linked to an explicit captured context.
@@ -234,7 +235,7 @@ public:
         @param linkCtx  Context to link from.
         @return A new guard, or null if linkCtx is invalid.
     */
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     linkedSpan(std::string_view name, SpanContext const& linkCtx);
 
     // --- Context capture -----------------------------------------------
@@ -242,7 +243,7 @@ public:
     /** Snapshot the current thread's OTel context for cross-thread use.
         @return An opaque SpanContext, or an invalid one if null guard.
     */
-    SpanContext
+    [[nodiscard]] SpanContext
     captureContext() const;
 
     // --- Attribute setters (explicit overloads, no OTel types) ---------
@@ -322,38 +323,40 @@ public:
     SpanGuard&
     operator=(SpanGuard const&) = delete;
 
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     span(TraceCategory, std::string_view, std::string_view)
     {
         return {};
     }
 
-    SpanGuard
+    // NOLINTBEGIN(readability-convert-member-functions-to-static)
+    [[nodiscard]] SpanGuard
     childSpan(std::string_view) const
     {
         return {};
     }
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     childSpan(std::string_view, SpanContext const&)
     {
         return {};
     }
-    SpanGuard
+    [[nodiscard]] SpanGuard
     linkedSpan(std::string_view) const
     {
         return {};
     }
-    static SpanGuard
+    [[nodiscard]] static SpanGuard
     linkedSpan(std::string_view, SpanContext const&)
     {
         return {};
     }
 
-    SpanContext
+    [[nodiscard]] SpanContext
     captureContext() const
     {
         return {};
     }
+    // NOLINTEND(readability-convert-member-functions-to-static)
 
     void
     setAttribute(std::string_view, std::string_view)
@@ -406,5 +409,4 @@ public:
 
 #endif  // XRPL_ENABLE_TELEMETRY
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
