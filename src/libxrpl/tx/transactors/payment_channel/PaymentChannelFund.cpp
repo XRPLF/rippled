@@ -5,6 +5,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/PaymentChannelHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -86,12 +87,12 @@ PaymentChannelFund::doApply()
         auto const balance = (*sle)[sfBalance];
         auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
         if (auto const ret =
-                checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 0);
+                checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 0, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, balance - ctx_.tx[sfAmount], {}, 0);
+                ctx_.view(), ctx_.tx, sle, balance - ctx_.tx[sfAmount], {}, 0, 0, j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }

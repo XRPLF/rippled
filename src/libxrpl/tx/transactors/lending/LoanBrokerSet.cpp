@@ -239,15 +239,15 @@ LoanBrokerSet::doApply()
 
         auto const sponsor = getTxReserveSponsor(view, tx);
 
-        if (auto const ret =
-                checkInsufficientReserve(view, tx, owner, preFeeBalance_, {}, sponsor ? 1 : 2);
+        if (auto const ret = checkInsufficientReserve(
+                view, tx, owner, preFeeBalance_, {}, sponsor ? 1 : 2, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
         if (sponsor)
         {
             if (auto const ret =
-                    checkInsufficientReserve(view, tx, owner, preFeeBalance_, sponsor, 1);
+                    checkInsufficientReserve(view, tx, owner, preFeeBalance_, sponsor, 1, 0, j_);
                 !isTesSuccess(ret))
                 return ret;
         }

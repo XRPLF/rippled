@@ -63,7 +63,8 @@ escrowUnlockApplyHelper<Issue>(
         std::shared_ptr<SLE> sponsorSle = {};
         if (sponsorAccountID)
             sponsorSle = view.peek(keylet::account(*sponsorAccountID));
-        if (auto const ret = checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1);
+        if (auto const ret =
+                checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
@@ -192,7 +193,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         std::shared_ptr<SLE> sponsorSle = {};
         if (sponsorAccountID)
             sponsorSle = view.peek(keylet::account(*sponsorAccountID));
-        if (auto const ret = checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1);
+        if (auto const ret =
+                checkInsufficientReserve(view, tx, sleDest, xrpBalance, sponsorSle, 1, 0, journal);
             !isTesSuccess(ret))
             return ret;
 

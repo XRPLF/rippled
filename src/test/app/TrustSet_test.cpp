@@ -15,6 +15,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -191,7 +192,7 @@ public:
 
         auto const txFee = env.current()->fees().base;
         auto const baseReserve = env.current()->fees().reserve;
-        auto const threelineReserve = env.current()->fees().accountReserve(3);
+        auto const threelineReserve = baseAccountReserve(*env.current(), 3);
 
         env.fund(XRP(10000), gwA, gwB, assistor);
 

@@ -23,6 +23,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Seed.h>
@@ -503,7 +504,7 @@ class Ticket_test : public beast::unit_test::suite
         Account const alice{"alice"};
 
         // Fund alice not quite enough to make the reserve for a Ticket.
-        env.fund(env.current()->fees().accountReserve(1) - drops(1), alice);
+        env.fund(baseAccountReserve(*env.current(), 1) - drops(1), alice);
         env.close();
 
         env(ticket::create(alice, 1), ter(tecINSUFFICIENT_RESERVE));
@@ -511,7 +512,7 @@ class Ticket_test : public beast::unit_test::suite
         env.require(owners(alice, 0), tickets(alice, 0));
 
         // Give alice enough to exactly meet the reserve for one Ticket.
-        env(pay(env.master, alice, env.current()->fees().accountReserve(1) - env.balance(alice)));
+        env(pay(env.master, alice, baseAccountReserve(*env.current(), 1) - env.balance(alice)));
         env.close();
 
         env(ticket::create(alice, 1));
@@ -524,7 +525,7 @@ class Ticket_test : public beast::unit_test::suite
         env(
             pay(env.master,
                 alice,
-                env.current()->fees().accountReserve(250) - drops(1) - env.balance(alice)));
+                baseAccountReserve(*env.current(), 250) - drops(1) - env.balance(alice)));
         env.close();
 
         // alice doesn't quite have the reserve for a total of 250
@@ -535,7 +536,7 @@ class Ticket_test : public beast::unit_test::suite
 
         // Give alice enough so she can make the reserve for all 250
         // Tickets.
-        env(pay(env.master, alice, env.current()->fees().accountReserve(250) - env.balance(alice)));
+        env(pay(env.master, alice, baseAccountReserve(*env.current(), 250) - env.balance(alice)));
         env.close();
 
         std::uint32_t const ticketSeq{env.seq(alice) + 1};

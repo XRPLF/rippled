@@ -109,8 +109,8 @@ PermissionedDomainSet::doApply()
         // Check reserve availability for new object creation
         auto const balance = STAmount((*ownerSle)[sfBalance]).xrp();
         auto const sponsor = getTxReserveSponsor(ctx_.view(), ctx_.tx);
-        if (auto const ret =
-                checkInsufficientReserve(ctx_.view(), ctx_.tx, ownerSle, balance, sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(
+                ctx_.view(), ctx_.tx, ownerSle, balance, sponsor, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 

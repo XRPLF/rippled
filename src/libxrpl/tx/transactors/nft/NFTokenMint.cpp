@@ -7,6 +7,7 @@
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -347,7 +348,9 @@ NFTokenMint::doApply()
                 view().read(keylet::account(account_)),
                 preFeeBalance_,
                 sponsor,
-                0);
+                0,
+                0,
+                j_);
             !isTesSuccess(ret))
             return ret;
     }

@@ -650,7 +650,7 @@ Payment::doApply()
 
     // the number of reserves in this ledger for this account that require a
     // reserve.
-    auto const reserve = calculateReserve(sleSrc, view().fees());
+    auto const reserve = accountReserve(view(), sleSrc, j_);
 
     // In a delegated payment, the fee payer is the delegated account,
     // not the source account (account_).

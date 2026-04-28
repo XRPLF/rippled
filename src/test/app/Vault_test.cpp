@@ -1874,7 +1874,7 @@ class Vault_test : public beast::unit_test::suite
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testable_amendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / DROPS_PER_XRP.drops(),
+                baseAccountReserve(*env.current(), 0).drops() / DROPS_PER_XRP.drops(),
                 env.current()->fees().increment.drops() / DROPS_PER_XRP.drops()};
         }();
 
@@ -2834,7 +2834,7 @@ class Vault_test : public beast::unit_test::suite
         auto const [acctReserve, incReserve] = [this]() -> std::pair<int, int> {
             Env const env{*this, testable_amendments()};
             return {
-                env.current()->fees().accountReserve(0).drops() / DROPS_PER_XRP.drops(),
+                baseAccountReserve(*env.current(), 0).drops() / DROPS_PER_XRP.drops(),
                 env.current()->fees().increment.drops() / DROPS_PER_XRP.drops()};
         }();
 

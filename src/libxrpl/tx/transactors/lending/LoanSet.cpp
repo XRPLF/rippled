@@ -509,7 +509,7 @@ LoanSet::doApply()
         auto const balance =
             account_ == borrower ? preFeeBalance_ : borrowerSle->at(sfBalance).value().xrp();
         if (auto const ret =
-                checkInsufficientReserve(view, tx, borrowerSle, balance, sponsorSle, 1);
+                checkInsufficientReserve(view, tx, borrowerSle, balance, sponsorSle, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
     }

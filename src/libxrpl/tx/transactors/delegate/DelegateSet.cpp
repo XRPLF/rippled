@@ -98,8 +98,8 @@ DelegateSet::doApply()
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret =
-            checkInsufficientReserve(view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1);
+    if (auto const ret = checkInsufficientReserve(
+            view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1, 0, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 

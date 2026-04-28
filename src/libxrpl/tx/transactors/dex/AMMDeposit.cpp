@@ -256,7 +256,8 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     accountSle->getFieldAmount(sfBalance) - deposit,
                     sponsorSle,
                     1,
-                    !sle);
+                    !sle,
+                    ctx.j);
                 sponsorSle && !isTesSuccess(ret))
                 return tecINSUF_RESERVE_LINE;
 
@@ -390,7 +391,9 @@ AMMDeposit::preclaim(PreclaimContext const& ctx)
                     accountSle,
                     accountSle->getFieldAmount(sfBalance),
                     sponsor,
-                    1);
+                    1,
+                    0,
+                    ctx.j);
                 !isTesSuccess(ret))
             {
                 JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";

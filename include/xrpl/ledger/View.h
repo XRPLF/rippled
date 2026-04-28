@@ -125,22 +125,6 @@ areCompatible(
     beast::Journal::Stream& s,
     char const* reason);
 
-uint32_t
-ownerCount(SLE::const_ref sponsorSle);
-
-XRPAmount
-calculateReserve(SLE::const_ref sle, Fees const& fees);
-
-TER
-checkInsufficientReserve(
-    ReadView const& view,
-    STTx const& tx,
-    SLE::const_ref accSle,
-    STAmount const& accBalance,
-    SLE::const_ref sponsorSle,
-    std::int32_t ownerCountDelta,
-    std::int32_t accountCountDelta = 0);
-
 //------------------------------------------------------------------------------
 //
 // Modifiers

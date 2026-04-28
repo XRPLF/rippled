@@ -151,7 +151,14 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         // Insufficient reserve
         auto const accountSle = ctx.view.read(keylet::account(accountID));
         if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, accountSle, accountSle->getFieldAmount(sfBalance), sponsorSle, 1);
+                ctx.view,
+                ctx.tx,
+                accountSle,
+                accountSle->getFieldAmount(sfBalance),
+                sponsorSle,
+                1,
+                0,
+                ctx.j);
             !isTesSuccess(ret))
         {
             JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";

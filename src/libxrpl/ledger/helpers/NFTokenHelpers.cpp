@@ -1001,7 +1001,7 @@ tokenOfferCreateApply(
     Keylet const acctKeylet = keylet::account(acctID);
     auto const acct = view.read(acctKeylet);
     auto const sponsor = getTxReserveSponsor(view, tx);
-    if (auto const ret = checkInsufficientReserve(view, tx, acct, priorBalance, sponsor, 1);
+    if (auto const ret = checkInsufficientReserve(view, tx, acct, priorBalance, sponsor, 1, 0, j);
         !isTesSuccess(ret))
         return ret;
 

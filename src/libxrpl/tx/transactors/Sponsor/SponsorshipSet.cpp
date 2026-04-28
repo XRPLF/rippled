@@ -257,7 +257,7 @@ SponsorshipSet::doApply()
                 sponsorAccSle,
                 STAmount{(*sponsorAccSle)[sfBalance]}.xrp(),
                 reserveSponsorAccSle,
-                1);
+                1, 0, ctx_.journal);
             !isTesSuccess(ret))
             return tecUNFUNDED;
 
@@ -323,7 +323,7 @@ SponsorshipSet::doApply()
                     sponsorAccSle,
                     STAmount{(*sponsorAccSle)[sfBalance]}.xrp(),
                     reserveSponsorAccSle,
-                    0);
+                    0, 0, ctx_.journal);
                 !isTesSuccess(ret))
                 return tecUNFUNDED;
         }

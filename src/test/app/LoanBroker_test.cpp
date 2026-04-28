@@ -26,6 +26,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/AccountID.h>
@@ -1093,7 +1094,7 @@ class LoanBroker_test : public beast::unit_test::suite
             }
 
             auto const amt =
-                env.balance(alice) - env.current()->fees().accountReserve(env.ownerCount(alice));
+                env.balance(alice) - accountReserve(*env.current(), alice.id(), env.journal);
             env(pay(alice, issuer, amt));
 
             // preclaim:: tecINSUFFICIENT_RESERVE

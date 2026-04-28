@@ -112,7 +112,7 @@ MPTokenIssuanceCreate::create(
     if (args.priorBalance)
     {
         if (auto const ret =
-                checkInsufficientReserve(view, tx, acct, *(args.priorBalance), sponsor, 1);
+                checkInsufficientReserve(view, tx, acct, *(args.priorBalance), sponsor, 1, 0, journal);
             !isTesSuccess(ret))
             return Unexpected(ret);  // tecINSUFFICIENT_RESERVE
     }

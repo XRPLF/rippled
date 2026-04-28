@@ -81,12 +81,13 @@ PaymentChannelCreate::preclaim(PreclaimContext const& ctx)
     {
         auto const balance = (*sle)[sfBalance];
         auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
-        if (auto const ret = checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, sponsor, 1);
+        if (auto const ret =
+                checkInsufficientReserve(ctx.view, ctx.tx, sle, balance, sponsor, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return ret;
 
         if (auto const ret = checkInsufficientReserve(
-                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsor, 1);
+                ctx.view, ctx.tx, sle, balance - ctx.tx[sfAmount], sponsor, 1, 0, ctx.j);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }

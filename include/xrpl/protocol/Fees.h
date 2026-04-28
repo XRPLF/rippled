@@ -33,31 +33,6 @@ struct Fees
         : base(base_), reserve(reserve_), increment(increment_)
     {
     }
-
-    /** Returns the account reserve given the owner count, in drops.
-
-        The reserve is calculated as the reserve base plus
-        the reserve increment times the number of increments.
-    */
-    [[nodiscard]] XRPAmount
-    accountReserve(
-        std::size_t ownerCount,
-        std::size_t sponsoredOwnerCount = 0,
-        std::size_t sponsoringOwnerCount = 0,
-        bool isAccountSponsored = false,
-        std::size_t sponsoringAccountCount = 0) const
-    {
-        auto const accountReserveUnits = (isAccountSponsored ? 0 : 1) + sponsoringAccountCount;
-
-        XRPL_ASSERT(
-            ownerCount >= sponsoredOwnerCount,
-            "xrpl::Fees::accountReserve : OwnerCount must be greater than or equal to "
-            "SponsoredOwnerCount");
-
-        auto const ownerReserveUnits = (ownerCount - sponsoredOwnerCount) + sponsoringOwnerCount;
-
-        return (reserve * accountReserveUnits) + (increment * ownerReserveUnits);
-    }
 };
 
 }  // namespace xrpl

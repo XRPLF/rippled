@@ -163,8 +163,8 @@ DepositPreauth::doApply()
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
         auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-        if (auto const ret =
-                checkInsufficientReserve(view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(
+                view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 
@@ -209,8 +209,8 @@ DepositPreauth::doApply()
         // check the starting balance because we want to allow dipping into the
         // reserve to pay fees.
         auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-        if (auto const ret =
-                checkInsufficientReserve(view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1);
+        if (auto const ret = checkInsufficientReserve(
+                view(), ctx_.tx, sleOwner, preFeeBalance_, sponsor, 1, 0, j_);
             !isTesSuccess(ret))
             return ret;
 

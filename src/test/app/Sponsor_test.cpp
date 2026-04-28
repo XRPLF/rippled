@@ -43,6 +43,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -78,7 +79,7 @@ accountReserve(jtx::Env& env, std::uint32_t count = 1)
 static STAmount
 reserve(jtx::Env& env, std::uint32_t count)
 {
-    return env.current()->fees().accountReserve(count);
+    return baseAccountReserve(*env.current(), count);
 }
 
 static void
@@ -1808,7 +1809,7 @@ public:
 
         // Account is not sponsored by normal Sponsor specification
         {
-            env(pay(alice, bob, drops(env.current()->fees().accountReserve(0))),
+            env(pay(alice, bob, drops(baseAccountReserve(*env.current(), 0))),
                 sponsor::as(sponsor, spfSponsorReserve),
                 sig(sfSponsorSignature, sponsor));
             env.close();
