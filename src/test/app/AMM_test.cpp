@@ -7064,7 +7064,7 @@ private:
     void
     testStaleAuthAccountsAfterReinit(FeatureBitset features)
     {
-        testcase("Stale AuthAccounts persist after tfTwoAssetIfEmpty re-init");
+        testcase("Test AuthAccounts reset after empty pool reinitialization");
         using namespace jtx;
 
         Env env(
