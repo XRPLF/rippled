@@ -74,8 +74,8 @@ addSLE(ApplyContext& ctx, std::shared_ptr<SLE> const& sle, AccountID const& owne
     // Check reserve availability for new object creation
     auto const sponsor = getTxReserveSponsor(ctx.view(), ctx.tx);
     auto const balance = STAmount((*sleAccount)[sfBalance]).xrp();
-    if (auto const ret =
-            checkInsufficientReserve(ctx.view(), ctx.tx, sleAccount, balance, sponsor, 1);
+    if (auto const ret = checkInsufficientReserve(
+            ctx.view(), ctx.tx, sleAccount, balance, sponsor, 1, 0, ctx.journal);
         !isTesSuccess(ret))
         return ret;
 

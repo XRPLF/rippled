@@ -98,8 +98,8 @@ CredentialAccept::doApply()
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const newSponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret =
-            checkInsufficientReserve(view(), ctx_.tx, sleSubject, preFeeBalance_, newSponsor, 1);
+    if (auto const ret = checkInsufficientReserve(
+            view(), ctx_.tx, sleSubject, preFeeBalance_, newSponsor, 1, 0, ctx_.journal);
         !isTesSuccess(ret))
         return ret;
 

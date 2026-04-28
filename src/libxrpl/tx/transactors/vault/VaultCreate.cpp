@@ -161,7 +161,7 @@ VaultCreate::doApply()
         adjustOwnerCount(view(), owner, sponsor, 2, j_);
         addSponsorToLedgerEntry(vault, sponsor);
         if (auto const ret =
-                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 0);
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 0, 0, j_);
             !isTesSuccess(ret))
             return ret;
     }
@@ -169,7 +169,7 @@ VaultCreate::doApply()
     {
         // after Sponsor Amendment, check insufficient reserve first
         if (auto const ret =
-                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 2);
+                checkInsufficientReserve(view(), tx, owner, preFeeBalance_, sponsor, 2, 0, j_);
             !isTesSuccess(ret))
             return ret;
         adjustOwnerCount(view(), owner, sponsor, 2, j_);

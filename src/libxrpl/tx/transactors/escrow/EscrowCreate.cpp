@@ -422,7 +422,8 @@ EscrowCreate::doApply()
 
     auto const balance = sle->getFieldAmount(sfBalance).xrp();
     auto const sponsor = getTxReserveSponsor(view(), ctx_.tx);
-    if (auto const ret = checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 1);
+    if (auto const ret =
+            checkInsufficientReserve(ctx_.view(), ctx_.tx, sle, balance, sponsor, 1, 0, j_);
         !isTesSuccess(ret))
         return ret;
 
@@ -430,7 +431,7 @@ EscrowCreate::doApply()
     if (isXRP(amount))
     {
         if (auto const ret = checkInsufficientReserve(
-                ctx_.view(), ctx_.tx, sle, balance - STAmount(amount).xrp(), {}, 1);
+                ctx_.view(), ctx_.tx, sle, balance - STAmount(amount).xrp(), {}, 1, 0, j_);
             !isTesSuccess(ret))
             return tecUNFUNDED;
     }

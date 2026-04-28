@@ -14,6 +14,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -197,7 +198,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
 XRPAmount
 AMMTest::reserve(jtx::Env& env, std::uint32_t count)
 {
-    return env.current()->fees().accountReserve(count);
+    return baseAccountReserve(*env.current(), count);
 }
 
 XRPAmount

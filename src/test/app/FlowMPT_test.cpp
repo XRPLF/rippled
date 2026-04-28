@@ -20,6 +20,7 @@
 #include <xrpl/ledger/OpenView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
 #include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
@@ -726,7 +727,7 @@ struct FlowMPT_test : public beast::unit_test::suite
     static XRPAmount
     reserve(jtx::Env& env, std::uint32_t count)
     {
-        return env.current()->fees().accountReserve(count);
+        return baseAccountReserve(*env.current(), count);
     }
 
     // Helper function that returns the Offers on an account.

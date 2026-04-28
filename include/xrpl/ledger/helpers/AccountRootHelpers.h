@@ -34,6 +34,52 @@ isGlobalFrozen(ReadView const& view, AccountID const& issuer);
 [[nodiscard]] XRPAmount
 xrpLiquid(ReadView const& view, AccountID const& id, std::int32_t ownerCountAdj, beast::Journal j);
 
+/** Returns the account reserve, in drops.
+    Actual owner count can be adjusted by delta in ownerCountAdj
+    The reserve is calculated as
+       (ownerCount + "sponsoring object count" - "sponsored object count" + additionalOwnerCount) *
+   increment + (1 if not sponsored account + sponsoringAccountCount) * "reserve base"
+*/
+XRPAmount
+accountReserve(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& sle,
+    beast::Journal j,
+    std::int32_t ownerCountAdj = 0,
+    std::int32_t reserveCountAdj = 0);
+
+inline XRPAmount
+accountReserve(
+    ReadView const& view,
+    AccountID const& id,
+    beast::Journal j,
+    std::int32_t ownerCountAdj = 0,
+    std::int32_t reserveCountAdj = 0)
+{
+    return accountReserve(view, view.read(keylet::account(id)), j, ownerCountAdj, reserveCountAdj);
+}
+
+XRPAmount
+baseAccountReserve(ReadView const& view, std::int32_t ownerCount);
+
+TER
+checkInsufficientReserve(
+    ReadView const& view,
+    STTx const& tx,
+    SLE::const_ref accSle,
+    STAmount const& accBalance,
+    SLE::const_ref sponsorSle,  
+    std::int32_t ownerCountDelta,
+    std::int32_t accountCountDelta = 0,
+    beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+
+std::uint32_t
+ownerCount(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& sle,
+    beast::Journal j,
+    std::int32_t ownerCountAdj = 0);
+
 /** Adjust the owner count up or down. */
 void
 adjustOwnerCount(

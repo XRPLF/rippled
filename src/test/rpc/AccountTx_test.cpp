@@ -28,6 +28,7 @@
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -775,7 +776,7 @@ class AccountTx_test : public beast::unit_test::suite
 
         // All it takes is a large enough XRP payment to resurrect
         // becky's account.  Try too small a payment.
-        env(pay(alice, becky, drops(env.current()->fees().accountReserve(0)) - XRP(1)),
+        env(pay(alice, becky, drops(baseAccountReserve(*env.current(), 0)) - XRP(1)),
             ter(tecNO_DST_INSUF_XRP));
         env.close();
 

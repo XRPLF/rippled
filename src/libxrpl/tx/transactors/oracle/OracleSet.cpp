@@ -191,7 +191,7 @@ OracleSet::preclaim(PreclaimContext const& ctx)
     auto const& balance = sleSetter->getFieldAmount(sfBalance);
     auto const sponsor = getTxReserveSponsor(ctx.view, ctx.tx);
     if (auto const ret =
-            checkInsufficientReserve(ctx.view, ctx.tx, sleSetter, balance, sponsor, adjustReserve);
+            checkInsufficientReserve(ctx.view, ctx.tx, sleSetter, balance, sponsor, adjustReserve,0, ctx.j);
         !isTesSuccess(ret))
         return ret;
 

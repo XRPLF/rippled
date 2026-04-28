@@ -648,7 +648,8 @@ AMMWithdraw::withdraw(
             auto const sponsorSle = getTxReserveSponsor(view, tx);
 
             auto const balance = (*sleAccount)[sfBalance]->xrp();
-            std::uint32_t const count = ownerCount(sponsorSle ? sponsorSle : sleAccount);
+            std::uint32_t const count =
+                ownerCount(view, sponsorSle ? sponsorSle : sleAccount, journal);
             // See also TrustSet::doApply() and MPTokenAuthorize::authorize()
             if (count >= 2)
             {
@@ -659,7 +660,9 @@ AMMWithdraw::withdraw(
                         std::max(priorBalance, balance),
                         sponsor ? view.read(keylet::account(*sponsor))
                                 : std::shared_ptr<SLE const>(),
-                        1);
+                        1,
+                        0,
+                        journal);
                     !isTesSuccess(ret))
                     return ret;
             }

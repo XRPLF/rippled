@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
@@ -399,7 +400,7 @@ NFTokenAcceptOffer::transferNFToken(
             auto const sponsorSle = account_ == buyer ? getTxReserveSponsor(ctx_.view(), ctx_.tx)
                                                       : std::shared_ptr<SLE const>();
             if (auto const ret = checkInsufficientReserve(
-                    ctx_.view(), ctx_.tx, sleBuyer, buyerBalance, sponsorSle, 0);
+                    ctx_.view(), ctx_.tx, sleBuyer, buyerBalance, sponsorSle, 0, 0, j_);
                 !isTesSuccess(ret))
                 return ret;
         }

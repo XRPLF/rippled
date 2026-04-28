@@ -37,6 +37,7 @@
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
@@ -541,7 +542,7 @@ private:
         //  1 for each trust limit == 3 (alice < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
         auto const starting_xrp =
-            XRP(100) + env.current()->fees().accountReserve(3) + env.current()->fees().base * 4;
+            XRP(100) + baseAccountReserve(*env.current(), 3) + env.current()->fees().base * 4;
 
         env.fund(starting_xrp, gw1, gw2, gw3, alice);
         env.fund(XRP(2'000), bob);

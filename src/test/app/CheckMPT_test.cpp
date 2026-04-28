@@ -24,6 +24,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
@@ -408,7 +409,7 @@ class CheckMPT_test : public beast::unit_test::suite
 
         // Insufficient reserve.
         Account const cheri{"cheri"};
-        env.fund(env.current()->fees().accountReserve(1) - drops(1), cheri);
+        env.fund(baseAccountReserve(*env.current(), 1) - drops(1), cheri);
 
         env(check::create(cheri, bob, USD(50)),
             fee(drops(env.current()->fees().base)),

@@ -7,6 +7,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
@@ -269,7 +270,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             if (!newSponsor)
                 return tecNO_PERMISSION;
 
-            // check object is already sponsored
+            // check object is already ctx.sponsored
             if (!sle->isFieldPresent(sponsorField))
                 return tecNO_PERMISSION;
         }
@@ -295,7 +296,9 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 sponseeSle,
                 sponseeSle->getFieldAmount(sfBalance),
                 newSponsor,
-                ownerCountDelta);
+                ownerCountDelta,
+                0,
+                ctx.j);
             !isTesSuccess(ter))
             return ter;
     }
@@ -345,7 +348,8 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
                 sponseeSle->getFieldAmount(sfBalance),
                 newSponsor,
                 0,
-                1);
+                1,
+                ctx.j);
             !isTesSuccess(ter))
             return ter;
     }
