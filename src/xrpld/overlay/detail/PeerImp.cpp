@@ -1442,11 +1442,11 @@ PeerImp::handleTransaction(
         uint256 const txID = stx->getTransactionID();
 
         using namespace telemetry;
-        auto span = txReceiveSpan(txID, *m);
-        span.setAttribute(tx_span::attr::hash, to_string(txID).c_str());
-        span.setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+        span->setAttribute(tx_span::attr::hash, to_string(txID).c_str());
+        span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
         if (auto const version = getVersion(); !version.empty())
-            span.setAttribute(tx_span::attr::peerVersion, version.c_str());
+            span->setAttribute(tx_span::attr::peerVersion, version.c_str());
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
@@ -1480,11 +1480,11 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
         {
-            span.setAttribute(tx_span::attr::suppressed, true);
+            span->setAttribute(tx_span::attr::suppressed, true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
-                span.setAttribute(tx_span::attr::status, tx_span::val::knownBad);
+                span->setAttribute(tx_span::attr::status, tx_span::val::knownBad);
                 fee_.update(Resource::feeUselessData, "known bad");
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
             }
@@ -1542,7 +1542,8 @@ PeerImp::handleTransaction(
                  flags,
                  checkSignature,
                  batch,
-                 stx]() {
+                 stx,
+                 sp = std::move(span)]() {
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags, checkSignature, stx, batch);
                 });
