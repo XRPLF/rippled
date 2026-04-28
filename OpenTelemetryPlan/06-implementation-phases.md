@@ -163,11 +163,11 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 | Task | Description                                    | Status             |
 | ---- | ---------------------------------------------- | ------------------ |
 | 4.1  | Instrument `RCLConsensusAdaptor::startRound()` | ✅ Done (via 4a.2) |
-| 4.2  | Instrument phase transitions                   | ⚠️ Partial         |
-| 4.3  | Instrument proposal handling                   | ⚠️ Partial (send)  |
-| 4.4  | Instrument validation handling                 | ⚠️ Partial (send)  |
-| 4.5  | Add consensus-specific attributes              | ⚠️ Partial         |
-| 4.6  | Correlate with transaction traces              | ❌ Not done        |
+| 4.2  | Instrument phase transitions                   | ✅ Done            |
+| 4.3  | Instrument proposal handling                   | ✅ Done            |
+| 4.4  | Instrument validation handling                 | ✅ Done            |
+| 4.5  | Add consensus-specific attributes              | ✅ Done            |
+| 4.6  | Correlate with transaction traces              | ✅ Done            |
 | 4.7  | Build verification and testing                 | ✅ Done            |
 | 4.8  | Validation span enrichment (ext. dashboard)    | ❌ Not done        |
 
@@ -190,15 +190,15 @@ SHAMap tracing are not implemented.
 ### Exit Criteria
 
 - [x] Complete consensus round traces
-- [x] Phase transitions visible (establish, close, accept — no separate open phase span)
-- [ ] Proposals and validations traced — send only; receive/relay deferred to Phase 4b
+- [x] Phase transitions visible (open, establish, close, accept)
+- [x] Proposals and validations traced — send and receive; relay deferred to Phase 4b
 - [x] Close time agreement tracked (per `avCT_CONSENSUS_PCT`)
 - [x] No impact on consensus timing
 - [ ] Multi-validator test network validated
-- [ ] Transaction-consensus correlation (Task 4.6) — not implemented
+- [x] Transaction-consensus correlation (Task 4.6) — `tx.included` events in doAccept
 - [ ] Validation span enrichment (Task 4.8) — not implemented
 
-### Implementation Status — Phase 4a Mostly Complete
+### Implementation Status — Phase 4a Complete
 
 Phase 4a (establish-phase gap fill & cross-node correlation) adds:
 
@@ -234,35 +234,35 @@ with `TraceCategory::Consensus` gating. No macros used — all tracing via direc
 
 ### Tasks
 
-| Task | Description                                      | Effort | Risk   | Status                    |
-| ---- | ------------------------------------------------ | ------ | ------ | ------------------------- |
-| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | 1d     | Medium | ✅ Done (no macros)       |
-| 4a.1 | Adaptor `getTelemetry()` method                  | 0.5d   | Low    | ⏭️ Skipped (not needed)   |
-| 4a.2 | Switchable round span with deterministic traceID | 2d     | High   | ✅ Done                   |
-| 4a.3 | Span members in `Consensus.h`                    | 0.5d   | Medium | ✅ Done (with deviation)  |
-| 4a.4 | Instrument `phaseEstablish()`                    | 1d     | Medium | ✅ Done                   |
-| 4a.5 | Instrument `updateOurPositions()`                | 1d     | Medium | ⚠️ Partial                |
-| 4a.6 | Instrument `haveConsensus()` (thresholds)        | 1d     | Medium | ⚠️ Partial (no avalanche) |
-| 4a.7 | Instrument mode changes                          | 0.5d   | Low    | ✅ Done                   |
-| 4a.8 | Reparent existing spans under round              | 0.5d   | Low    | ⚠️ Partial (link only)    |
-| 4a.9 | Build verification and testing                   | 1d     | Low    | ✅ Done                   |
+| Task | Description                                      | Effort | Risk   | Status                   |
+| ---- | ------------------------------------------------ | ------ | ------ | ------------------------ |
+| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | 1d     | Medium | ✅ Done (no macros)      |
+| 4a.1 | Adaptor `getTelemetry()` method                  | 0.5d   | Low    | ⏭️ Skipped (not needed)  |
+| 4a.2 | Switchable round span with deterministic traceID | 2d     | High   | ✅ Done                  |
+| 4a.3 | Span members in `Consensus.h`                    | 0.5d   | Medium | ✅ Done (with deviation) |
+| 4a.4 | Instrument `phaseEstablish()`                    | 1d     | Medium | ✅ Done                  |
+| 4a.5 | Instrument `updateOurPositions()`                | 1d     | Medium | ✅ Done                  |
+| 4a.6 | Instrument `haveConsensus()` (thresholds)        | 1d     | Medium | ✅ Done                  |
+| 4a.7 | Instrument mode changes                          | 0.5d   | Low    | ✅ Done                  |
+| 4a.8 | Reparent existing spans under round              | 0.5d   | Low    | ✅ Done                  |
+| 4a.9 | Build verification and testing                   | 1d     | Low    | ✅ Done                  |
 
 **Total Effort**: 9 days
 
 ### Spans Produced
 
-| Span Name                    | Location           | Key Attributes (actually set)                                                                          |
-| ---------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------ |
-| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`, `trace_strategy`                                        |
-| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`                                                     |
-| `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`                   |
-| `consensus.check`            | `Consensus.h`      | `agree/disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `result` |
-| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                                                                 |
+| Span Name                    | Location           | Key Attributes (actually set)                                                                                                 |
+| ---------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`, `trace_strategy`                                                               |
+| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`                                                                            |
+| `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`, `disputes_count`, `avalanche_threshold` |
+| `consensus.check`            | `Consensus.h`      | `agree/disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `result`                        |
+| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                                                                                        |
 
 ### Exit Criteria
 
 - [x] Establish phase internals traced (establish, update_positions, check spans)
-- [ ] Establish phase fully traced — missing: `disputes_count`, `proposers_agreed`/`total`, `avalanche_threshold`, dispute `yays`/`nays`
+- [x] Establish phase fully traced — `disputes_count`, `avalanche_threshold`, dispute `yays`/`nays` all implemented
 - [x] Cross-node correlation works via deterministic trace_id
 - [x] Strategy switchable via config (`deterministic` / `attribute`)
 - [x] Consecutive rounds linked via follows-from spans
