@@ -1121,8 +1121,8 @@ Transactor::trapTransaction(uint256 txHash) const
     JLOG(j_.debug()) << "Transaction trapped: " << txHash;
 }
 
-void
-Transactor::processPersistentChanges(TER& result, XRPAmount& fee, bool& applied)
+std::tuple<TER, XRPAmount, bool>
+Transactor::processPersistentChanges(TER result, XRPAmount fee)
 {
     JLOG(j_.trace()) << "reapplying because of " << transToken(result);
 
@@ -1228,7 +1228,7 @@ Transactor::processPersistentChanges(TER& result, XRPAmount& fee, bool& applied)
         }
     }
 
-    applied = isTecClaim(result);
+    return {result, fee, isTecClaim(result)};
 }
 
 [[nodiscard]] TER
@@ -1353,7 +1353,7 @@ Transactor::operator()()
         (result == tecOVERSIZE) || (result == tecKILLED) || (result == tecINCOMPLETE) ||
         (result == tecEXPIRED) || (isTecClaimHardFail(result, view().flags())))
     {
-        processPersistentChanges(result, fee, applied);
+        std::tie(result, fee, applied) = processPersistentChanges(result, fee);
     }
 
     if (applied)
