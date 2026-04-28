@@ -23,10 +23,10 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
 #include <initializer_list>
@@ -37,7 +37,6 @@
 namespace xrpl {
 
 // Forward declaration for function that remains in View.h/cpp
-
 
 //------------------------------------------------------------------------------
 //
@@ -472,11 +471,14 @@ removeEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            if constexpr (std::is_same_v<TIss, Issue>) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+            {
                 return removeEmptyHolding(view, accountID, issue, journal);
-            } else {
+            }
+            else
+            {
                 return removeEmptyHolding(view, tx, accountID, issue, journal);
-}
+            }
         },
         asset.value());
 }
@@ -711,10 +713,11 @@ directSendNoLimitIOU(
     TER terResult =
         directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, sponsorAccountID, j);
 
-    if (tesSUCCESS == terResult) {
+    if (tesSUCCESS == terResult)
+    {
         terResult =
             directSendNoFeeIOU(view, uSenderID, issuer, saActual, true, sponsorAccountID, j);
-}
+    }
 
     return terResult;
 }

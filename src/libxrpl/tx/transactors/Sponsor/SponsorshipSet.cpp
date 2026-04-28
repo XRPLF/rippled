@@ -1,22 +1,23 @@
 #include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/beast/utility/Zero.h>
-#include <xrpl/core/ServiceRegistry.h>
-#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/tx/Transactor.h>
+
 #include <cstdint>
 #include <memory>
 #include <unordered_set>
@@ -130,10 +131,11 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
     loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
 
     auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
-        ((txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee)) != 0u);
+        ((txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee)) !=
+         0u);
     auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
         ((txFlags &
-         (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve)) != 0u);
+          (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve)) != 0u);
 
     if (sponsoringFee && !granularPermissions.contains(SponsorFee))
         return terNO_DELEGATE_PERMISSION;
@@ -306,11 +308,14 @@ SponsorshipSet::doApply()
         {
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
 
-            if (*feeAmount == XRPAmount(0)) {
+            if (*feeAmount == XRPAmount(0))
+            {
                 (*sponsorObjSle).makeFieldAbsent(sfFeeAmount);
-            } else {
+            }
+            else
+            {
                 (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
-}
+            }
 
             if (auto const ret = checkInsufficientReserve(
                     ctx_.view(),
@@ -326,20 +331,26 @@ SponsorshipSet::doApply()
 
     if (maxFee)
     {
-        if (*maxFee == XRPAmount(0)) {
+        if (*maxFee == XRPAmount(0))
+        {
             (*sponsorObjSle).makeFieldAbsent(sfMaxFee);
-        } else {
+        }
+        else
+        {
             (*sponsorObjSle)[sfMaxFee] = *maxFee;
-}
+        }
     }
 
     if (reserveCount)
     {
-        if (*reserveCount == 0) {
+        if (*reserveCount == 0)
+        {
             (*sponsorObjSle).makeFieldAbsent(sfReserveCount);
-        } else {
+        }
+        else
+        {
             (*sponsorObjSle)[sfReserveCount] = *reserveCount;
-}
+        }
     }
 
     // update Flags

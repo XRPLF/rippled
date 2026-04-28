@@ -18,6 +18,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
@@ -30,7 +31,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol/Fees.h>
 
 #include <cstdint>
 #include <memory>
@@ -340,10 +340,11 @@ checkInsufficientReserve(
         auto const sle = view.read(
             keylet::sponsor(sponsorSle->getAccountID(sfAccount), accSle->getAccountID(sfAccount)));
 
-        if (!isCoSigning && !sle) {
+        if (!isCoSigning && !sle)
+        {
             // prefunded sponsor should have a sponsorship entry
             return tecINTERNAL;  // LCOV_EXCL_LINE
-}
+        }
 
         if (sle)
         {

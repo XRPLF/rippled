@@ -5,6 +5,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -22,7 +23,6 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <boost/endian/conversion.hpp>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <array>
 #include <cstdint>

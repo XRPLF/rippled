@@ -1,6 +1,7 @@
 #include <xrpl/tx/transactors/token/MPTokenIssuanceDestroy.h>
 
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -8,7 +9,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <memory>
 

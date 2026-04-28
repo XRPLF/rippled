@@ -2,8 +2,10 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
@@ -18,8 +20,6 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/ApplyContext.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <chrono>
 #include <cstddef>
@@ -165,11 +165,14 @@ OracleSet::preclaim(PreclaimContext const& ctx)
         auto const currentSponsor = getLedgerEntryReserveSponsorAccountID(sle);
         auto const newSponsor = getTxReserveSponsorAccountID(ctx.tx);
         if ((!currentSponsor && !newSponsor) ||
-            (currentSponsor && newSponsor && *currentSponsor == *newSponsor)) {
+            (currentSponsor && newSponsor && *currentSponsor == *newSponsor))
+        {
             adjustReserve = newCount - oldCount;
-        } else {
+        }
+        else
+        {
             adjustReserve = newCount;
-}
+        }
     }
     else
     {

@@ -12,12 +12,14 @@
 #include <xrpl/json/to_string.h>  // IWYU pragma: keep
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/CredentialHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/OfferHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -40,8 +42,6 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -376,10 +376,12 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     auto const sponsorFlags = tx.getFieldU32(sfSponsorFlags);
 
-    if (((sponsorFlags & spfSponsorFee) != 0u) && sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
+    if (((sponsorFlags & spfSponsorFee) != 0u) &&
+        sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
         return terNO_SPONSORSHIP;
 
-    if (((sponsorFlags & spfSponsorReserve) != 0u) && sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    if (((sponsorFlags & spfSponsorReserve) != 0u) &&
+        sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
         return terNO_SPONSORSHIP;
 
     return tesSUCCESS;
@@ -484,10 +486,11 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (!payerSle)
     {
-        if (payer.type == FeePayerType::SponsorPreFunded) {
+        if (payer.type == FeePayerType::SponsorPreFunded)
+        {
             // Sanity check: already checked in checkSponsor
             return tefINTERNAL;  // LCOV_EXCL_LINE
-}
+        }
 
         return terNO_ACCOUNT;
     }
@@ -563,12 +566,15 @@ Transactor::payFee()
 
     auto const feeAmountAfter = sle->getFieldAmount(payer.balanceField) - feePaid;
 
-    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount) {
+    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount)
+    {
         // Because ltSponsorship.sfFeeAmount is soeOptional
         sle->makeFieldAbsent(payer.balanceField);
-    } else {
+    }
+    else
+    {
         sle->setFieldAmount(payer.balanceField, feeAmountAfter);
-}
+    }
 
     view().update(sle);
 
@@ -1255,12 +1261,15 @@ Transactor::reset(XRPAmount fee)
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
     auto const feeAmountAfter = balance - fee;
-    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount) {
+    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount)
+    {
         // Because ltSponsorship.sfFeeAmount is soeOptional
         payerSle->makeFieldAbsent(payer.balanceField);
-    } else {
+    }
+    else
+    {
         payerSle->setFieldAmount(payer.balanceField, feeAmountAfter);
-}
+    }
 
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
@@ -1286,21 +1295,27 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         auto const sponsorshipKeylet = keylet::sponsor(sponsorAccountID, sponseeAccountID);
 
         // if pre-funded sponsorship exists, prefer it
-        if (hasSponsorSignature && !view.exists(sponsorshipKeylet)) {
+        if (hasSponsorSignature && !view.exists(sponsorshipKeylet))
+        {
             // co-signed
             return FeePayer{
-                .entry=keylet::account(sponsorAccountID), .balanceField=sfBalance, .type=FeePayerType::SponsorCoSigned};
-}
+                .entry = keylet::account(sponsorAccountID),
+                .balanceField = sfBalance,
+                .type = FeePayerType::SponsorCoSigned};
+        }
 
         // pre funded
-        return FeePayer{.entry=sponsorshipKeylet, .balanceField=sfFeeAmount, .type=FeePayerType::SponsorPreFunded};
+        return FeePayer{
+            .entry = sponsorshipKeylet,
+            .balanceField = sfFeeAmount,
+            .type = FeePayerType::SponsorPreFunded};
     }
 
     auto const payerAccountKeylet = keylet::account(tx.getFeePayer());
     auto const payerType =
         tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
 
-    return FeePayer{.entry=payerAccountKeylet, .balanceField=sfBalance, .type=payerType};
+    return FeePayer{.entry = payerAccountKeylet, .balanceField = sfBalance, .type = payerType};
 }
 
 // The sole purpose of this function is to provide a convenient, named

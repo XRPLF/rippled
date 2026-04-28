@@ -71,7 +71,8 @@ private:
     std::uint32_t value_;
 
 public:
-    sponsored_owners(Account  account, std::uint32_t value) : account_(std::move(account)), value_(value)
+    sponsored_owners(Account account, std::uint32_t value)
+        : account_(std::move(account)), value_(value)
     {
     }
 
@@ -87,7 +88,7 @@ private:
     std::uint32_t value_;
 
 public:
-    sponsoring_owners(Account  account, std::uint32_t value)
+    sponsoring_owners(Account account, std::uint32_t value)
         : account_(std::move(account)), value_(value)
     {
     }
@@ -104,7 +105,7 @@ private:
     std::uint32_t value_;
 
 public:
-    sponsoring_account_count(Account  account, std::uint32_t value)
+    sponsoring_account_count(Account account, std::uint32_t value)
         : account_(std::move(account)), value_(value)
     {
     }
