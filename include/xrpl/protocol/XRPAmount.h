@@ -146,7 +146,7 @@ public:
     }
 
     /** Return the sign of the amount */
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const noexcept
     {
         if (drops_ < 0)
@@ -155,17 +155,17 @@ public:
     }
 
     /** Returns the number of drops */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     drops() const
     {
         return drops_;
     }
 
-    constexpr double
+    [[nodiscard]] constexpr double
     decimalXRP() const;
 
     template <class Dest>
-    std::optional<Dest>
+    [[nodiscard]] std::optional<Dest>
     dropsAs() const
     {
         if ((drops_ > std::numeric_limits<Dest>::max()) ||
@@ -185,7 +185,7 @@ public:
     }
 
     template <class Dest>
-    Dest
+    [[nodiscard]] Dest
     dropsAs(XRPAmount defaultValue) const
     {
         return dropsAs<Dest>().value_or(defaultValue.drops());
@@ -195,7 +195,7 @@ public:
      * in contexts that don't expect the value to ever approach
      * the 32-bit limits (i.e. fees and reserves).
      */
-    Json::Value
+    [[nodiscard]] Json::Value
     jsonClipped() const
     {
         static_assert(
@@ -216,7 +216,7 @@ public:
         function unless the type has been abstracted away,
         e.g. in a templated function.
     */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     value() const
     {
         return drops_;

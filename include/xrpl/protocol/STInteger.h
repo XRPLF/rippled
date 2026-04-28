@@ -19,27 +19,27 @@ public:
     STInteger(SField const& n, Integer v = 0);
     STInteger(SerialIter& sit, SField const& name);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    [[nodiscard]] Json::Value getJson(JsonOptions) const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
     STInteger&
     operator=(value_type const& v);
 
-    value_type
+    [[nodiscard]] value_type
     value() const noexcept;
 
     void

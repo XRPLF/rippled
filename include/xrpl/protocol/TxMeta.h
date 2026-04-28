@@ -18,27 +18,27 @@ public:
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getTxID() const
     {
         return transactionID_;
     }
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getLgrSeq() const
     {
         return ledgerSeq_;
     }
-    int
+    [[nodiscard]] int
     getResult() const
     {
         return result_;
     }
-    TER
+    [[nodiscard]] TER
     getResultTER() const
     {
         return TER::fromInt(result_);
     }
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     getIndex() const
     {
         return index_;
@@ -52,10 +52,10 @@ public:
     getAffectedNode(uint256 const&);
 
     /** Return a list of accounts affected by this transaction */
-    boost::container::flat_set<AccountID>
+    [[nodiscard]] boost::container::flat_set<AccountID>
     getAffectedAccounts() const;
 
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson(JsonOptions p) const
     {
         return getAsObject().getJson(p);
@@ -63,14 +63,14 @@ public:
     void
     addRaw(Serializer&, TER, std::uint32_t index);
 
-    STObject
+    [[nodiscard]] STObject
     getAsObject() const;
     STArray&
     getNodes()
     {
         return nodes_;
     }
-    STArray const&
+    [[nodiscard]] STArray const&
     getNodes() const
     {
         return nodes_;
@@ -86,7 +86,7 @@ public:
             parentBatchID_ = obj.getFieldH256(sfParentBatchID);
     }
 
-    std::optional<STAmount> const&
+    [[nodiscard]] std::optional<STAmount> const&
     getDeliveredAmount() const
     {
         return deliveredAmount_;

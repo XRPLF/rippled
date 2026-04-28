@@ -35,7 +35,7 @@ struct TAmounts
     }
 
     /** Returns `true` if either quantity is not positive. */
-    bool
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return in <= beast::zero || out <= beast::zero;
@@ -145,7 +145,7 @@ public:
     /** @} */
 
     /** Returns the quality as STAmount. */
-    STAmount
+    [[nodiscard]] STAmount
     rate() const
     {
         return amountFromQuality(m_value);
@@ -154,7 +154,7 @@ public:
     /** Returns the quality rounded up to the specified number
         of decimal digits.
     */
-    Quality
+    [[nodiscard]] Quality
     round(int tickSize) const;
 
     /** Returns the scaled amount with in capped.

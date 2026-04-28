@@ -277,7 +277,8 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
     auto const totalFeeLevel =
         mulDiv(multiplier, sumNlast.second - sumNcurrent.second, target * target);
 
-    return {totalFeeLevel.has_value(), *totalFeeLevel};
+    return {
+        totalFeeLevel.has_value(), *totalFeeLevel};  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 LedgerHash TxQ::MaybeTx::parentHashComp{};
@@ -306,6 +307,7 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
     XRPL_ASSERT(pfResult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
     NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     if (pfResult->rules != view.rules() || pfResult->flags != flags)
     {
         JLOG(j.debug()) << "Queued transaction " << txID
@@ -316,6 +318,7 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
     }
 
     auto pcresult = preclaim(*pfResult, app, view);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return doApply(pcresult, app, view);
 }
@@ -833,6 +836,7 @@ TxQ::apply(
                              << ".  Account has other queued transactions.";
             return {telCAN_NOT_QUEUE_BLOCKS, false};
         }
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) acctTxCount == 1 implies txIter is set
         if (acctTxCount == 1 && (txSeqProx != txIter->first->first))
         {
             // The blocker is not replacing the lone queued transaction.
@@ -872,8 +876,10 @@ TxQ::apply(
         //
         // We only need to check if txIter->first is a blocker because we
         // require that a blocker be alone in the account's queue.
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount == 1 implies txIter is set
         if (acctTxCount == 1 && txIter->first->second.consequences().isBlocker() &&
             (txIter->first->first != txSeqProx))
+        // NOLINTEND(bugprone-unchecked-optional-access)
         {
             return {telCAN_NOT_QUEUE_BLOCKED, false};
         }
@@ -988,6 +994,8 @@ TxQ::apply(
             //  o The current first thing in the queue has a Ticket and
             //    * The tx has a Ticket that precedes it or
             //    * txSeqProx == acctSeqProx.
+            // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount > 0 in else branch
+            // implies txIter is set
             XRPL_ASSERT(prevIter != txIter->end, "xrpl::TxQ::apply : not end");
             if (prevIter == txIter->end || txSeqProx < prevIter->first)
             {
@@ -1040,6 +1048,7 @@ TxQ::apply(
                     potentialSpend += pfResult.consequences.potentialSpend();
                 }
             }
+            // NOLINTEND(bugprone-unchecked-optional-access)
 
             /* Check if the total fees in flight are greater
                 than the account's current balance, or the

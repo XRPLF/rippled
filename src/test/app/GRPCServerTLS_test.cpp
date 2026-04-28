@@ -370,10 +370,12 @@ public:
         // Verify the server actually started by checking the port
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
 
         // Test 1: Plaintext client should connect successfully
         std::string const serverAddress = "localhost:" + std::to_string(*grpcPort);
+        // NOLINTEND(bugprone-unchecked-optional-access)
         auto plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
             grpc::CreateChannel(serverAddress, grpc::InsecureChannelCredentials()));
         BEAST_EXPECT(makeTestGRPCCall(plaintextStub));
@@ -394,9 +396,11 @@ public:
         // Verify the server actually started by checking the port
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
 
         std::string const serverAddress = "localhost:" + std::to_string(*grpcPort);
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         // Test 1: Plaintext client should FAIL against TLS server
         auto plaintextStub = org::xrpl::rpc::v1::XRPLedgerAPIService::NewStub(
@@ -429,9 +433,11 @@ public:
         // Verify the server actually started by checking the port
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
 
         auto const serverAddress = "localhost:" + std::to_string(*grpcPort);
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         // Test 1: TLS client WITHOUT client certificate should FAIL (mTLS requires client cert)
         grpc::SslCredentialsOptions sslOptsNoClient;
@@ -651,9 +657,11 @@ public:
         // Verify the server actually started by checking the port
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
 
         auto const serverAddress = "localhost:" + std::to_string(*grpcPort);
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         // Test: TLS client should be able to connect (no client cert required)
         grpc::SslCredentialsOptions sslOpts;
@@ -686,7 +694,7 @@ public:
         // Server should fail to start - verify port is 0
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
-        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+        BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     void
@@ -707,7 +715,7 @@ public:
         // Server should fail to start - verify port is 0
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
-        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+        BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     void
@@ -729,7 +737,7 @@ public:
         // Server should fail to start - verify port is 0
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
-        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+        BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     void
@@ -751,7 +759,7 @@ public:
         // Server should fail to start - verify port is 0
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
-        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+        BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     void
@@ -778,7 +786,7 @@ public:
         // Server should fail to start due to empty CA file
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
-        BEAST_EXPECT(*grpcPort == 0);  // Server should not have started
+        BEAST_EXPECT(*grpcPort == 0);  // NOLINT(bugprone-unchecked-optional-access)
     }
 
     void
@@ -803,9 +811,11 @@ public:
         // Verify the server started successfully
         auto const grpcPort = env.app().config()[SECTION_PORT_GRPC].get<unsigned int>("port");
         BEAST_EXPECT(grpcPort.has_value());
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) grpcPort.has_value() checked above
         BEAST_EXPECT(*grpcPort > 0);
 
         auto const serverAddress = "localhost:" + std::to_string(*grpcPort);
+        // NOLINTEND(bugprone-unchecked-optional-access)
 
         // Test 1: TLS client WITHOUT client certificate should FAIL (mTLS requires client cert)
         grpc::SslCredentialsOptions sslOptsNoClient;

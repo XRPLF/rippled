@@ -22,7 +22,7 @@ struct AuthorizeCredentials
     auto
     operator<=>(AuthorizeCredentials const&) const = default;
 
-    Json::Value
+    [[nodiscard]] Json::Value
     toJson() const
     {
         Json::Value jv;
@@ -32,7 +32,7 @@ struct AuthorizeCredentials
     }
 
     // "ledger_entry" uses a different naming convention
-    Json::Value
+    [[nodiscard]] Json::Value
     toLEJson() const
     {
         Json::Value jv;
