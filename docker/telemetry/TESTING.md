@@ -1,6 +1,6 @@
 # OpenTelemetry Integration Testing Guide
 
-This document describes how to verify the rippled OpenTelemetry telemetry
+This document describes how to verify the xrpld OpenTelemetry telemetry
 pipeline end-to-end, from span generation through the observability stack
 (otel-collector, Tempo, Prometheus, Grafana).
 
@@ -118,25 +118,25 @@ Wait 5 seconds for the batch export, then:
 ```bash
 TEMPO="http://localhost:3200"
 
-# Check rippled service is registered
+# Check xrpld service is registered
 curl -s "$TEMPO/api/v2/search/tag/resource.service.name/values" | jq '.tagValues[].value'
 
 # Check RPC spans
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.request"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.request"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.process"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.process"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="rippled" && name="rpc.command.server_info"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="rpc.command.server_info"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 
 # Check transaction spans
 curl -s "$TEMPO/api/search" \
-  --data-urlencode 'q={resource.service.name="rippled" && name="tx.process"}' \
+  --data-urlencode 'q={resource.service.name="xrpld" && name="tx.process"}' \
   --data-urlencode 'limit=5' | jq '.traces | length'
 ```
 
@@ -412,7 +412,7 @@ for op in "rpc.request" "rpc.process" \
           "consensus.accept" "consensus.accept.apply" \
           "consensus.validation.send"; do
   count=$(curl -s "$TEMPO/api/search" \
-    --data-urlencode "q={resource.service.name=\"rippled\" && name=\"$op\"}" \
+    --data-urlencode "q={resource.service.name=\"xrpld\" && name=\"$op\"}" \
     --data-urlencode "limit=5" \
     | jq '.traces | length')
   printf "%-35s %s traces\n" "$op" "$count"

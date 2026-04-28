@@ -1,8 +1,8 @@
-# rippled Telemetry Operator Runbook
+# xrpld Telemetry Operator Runbook
 
 ## Overview
 
-rippled supports OpenTelemetry distributed tracing to provide visibility into RPC requests, transaction processing, and consensus rounds.
+xrpld supports OpenTelemetry distributed tracing to provide visibility into RPC requests, transaction processing, and consensus rounds.
 
 ## Quick Start
 
@@ -19,7 +19,7 @@ This starts:
 - **Prometheus** on http://localhost:9090
 - **Grafana** on http://localhost:3000
 
-### 2. Enable telemetry in rippled
+### 2. Enable telemetry in xrpld
 
 Add to your `xrpld.cfg`:
 
@@ -58,7 +58,7 @@ cmake --build --preset default
 
 ## Span Reference
 
-All spans instrumented in rippled, grouped by subsystem:
+All spans instrumented in xrpld, grouped by subsystem:
 
 ### RPC Spans (Phase 2)
 
@@ -104,7 +104,7 @@ All spans instrumented in rippled, grouped by subsystem:
 
 ## Prometheus Metrics (Spanmetrics)
 
-The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in rippled.
+The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
 
 ### Generated Metric Names
 
@@ -123,7 +123,7 @@ Every metric carries these standard labels:
 | -------------- | ------------------ | ---------------------------------------- |
 | `span_name`    | Span name          | `rpc.command.server_info`                |
 | `status_code`  | Span status        | `STATUS_CODE_UNSET`, `STATUS_CODE_ERROR` |
-| `service_name` | Resource attribute | `rippled`                                |
+| `service_name` | Resource attribute | `xrpld`                                  |
 | `span_kind`    | Span kind          | `SPAN_KIND_INTERNAL`                     |
 
 Additionally, span attributes configured as dimensions in the collector become metric labels (dots → underscores):
@@ -147,7 +147,7 @@ Configured in `otel-collector-config.yaml`:
 
 Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
-### RPC Performance (`rippled-rpc-perf`)
+### RPC Performance (`xrpld-rpc-perf`)
 
 | Panel                       | Type       | PromQL                                                                                                                                             | Labels Used                       |
 | --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -156,7 +156,7 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | RPC Error Rate              | bargauge   | Error spans / total spans × 100, grouped by `xrpl_rpc_command`                                                                                     | `xrpl_rpc_command`, `status_code` |
 | RPC Latency Heatmap         | heatmap    | `sum(increase(traces_span_metrics_duration_milliseconds_bucket{span_name=~"rpc.command.*"}[5m])) by (le)`                                          | `le` (bucket boundaries)          |
 
-### Transaction Overview (`rippled-transactions`)
+### Transaction Overview (`xrpld-transactions`)
 
 | Panel                             | Type       | PromQL                                                                                       | Labels Used     |
 | --------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | --------------- |
@@ -165,7 +165,7 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Transaction Path Distribution     | piechart   | `sum by (xrpl_tx_local) (rate(traces_span_metrics_calls_total{span_name="tx.process"}[5m]))` | `xrpl_tx_local` |
 | Transaction Receive vs Suppressed | timeseries | `rate(traces_span_metrics_calls_total{span_name="tx.receive"}[5m])`                          | —               |
 
-### Consensus Health (`rippled-consensus`)
+### Consensus Health (`xrpld-consensus`)
 
 | Panel                         | Type       | PromQL                                                                             | Labels Used |
 | ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | ----------- |
@@ -195,7 +195,7 @@ Three dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### No traces appearing in Jaeger
 
-1. Check rippled logs for `Telemetry starting` message
+1. Check xrpld logs for `Telemetry starting` message
 2. Verify `enabled=1` in the `[telemetry]` config section
 3. Test collector connectivity: `curl -v http://localhost:4318/v1/traces`
 4. Check collector logs: `docker compose logs otel-collector`
