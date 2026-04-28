@@ -46,10 +46,8 @@ gantt
     Consensus Tracing         :p4, after p3, 2w
     Consensus Round Spans     :p4a, after p3, 3d
     Proposal Handling         :p4b, after p4a, 3d
-    Validator List & Manifest Tracing :p4f, after p4b, 2d
-    Amendment Voting Tracing  :p4g, after p4f, 2d
-    SHAMap Sync Tracing       :p4h, after p4g, 2d
-    Validation Tests          :p4c, after p4h, 4d
+    Establish Phase (4a)      :p4f, after p4b, 3d
+    Validation Tests          :p4c, after p4f, 4d
     Buffer & Review           :p4e, after p4c, 4d
 
     section Phase 5
@@ -162,19 +160,22 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 
 ### Tasks
 
-| Task | Description                                    |
-| ---- | ---------------------------------------------- |
-| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` |
-| 4.2  | Instrument phase transitions                   |
-| 4.3  | Instrument proposal handling                   |
-| 4.4  | Instrument validation handling                 |
-| 4.5  | Add consensus-specific attributes              |
-| 4.6  | Correlate with transaction traces              |
-| 4.7  | Validator list and manifest tracing            |
-| 4.8  | Amendment voting tracing                       |
-| 4.9  | SHAMap sync tracing                            |
-| 4.10 | Multi-validator integration tests              |
-| 4.11 | Performance validation                         |
+| Task | Description                                    | Status             |
+| ---- | ---------------------------------------------- | ------------------ |
+| 4.1  | Instrument `RCLConsensusAdaptor::startRound()` | ✅ Done (via 4a.2) |
+| 4.2  | Instrument phase transitions                   | ⚠️ Partial         |
+| 4.3  | Instrument proposal handling                   | ⚠️ Partial (send)  |
+| 4.4  | Instrument validation handling                 | ⚠️ Partial (send)  |
+| 4.5  | Add consensus-specific attributes              | ⚠️ Partial         |
+| 4.6  | Correlate with transaction traces              | ❌ Not done        |
+| 4.7  | Build verification and testing                 | ✅ Done            |
+| 4.8  | Validation span enrichment (ext. dashboard)    | ❌ Not done        |
+
+**Note**: The original plan doc listed tasks 4.7-4.11 as "Validator list tracing",
+"Amendment voting tracing", "SHAMap sync tracing", "Multi-validator integration tests",
+and "Performance validation". These were descoped and replaced by the tasklist's 4.7
+(build verification) and 4.8 (validation span enrichment). Validator, amendment, and
+SHAMap tracing are not implemented.
 
 ### Spans Produced
 
@@ -189,13 +190,15 @@ and [Phase3_taskList.md Task 3.9](./Phase3_taskList.md) for the full implementat
 ### Exit Criteria
 
 - [x] Complete consensus round traces
-- [x] Phase transitions visible
-- [x] Proposals and validations traced
+- [x] Phase transitions visible (establish, close, accept — no separate open phase span)
+- [ ] Proposals and validations traced — send only; receive/relay deferred to Phase 4b
 - [x] Close time agreement tracked (per `avCT_CONSENSUS_PCT`)
 - [x] No impact on consensus timing
 - [ ] Multi-validator test network validated
+- [ ] Transaction-consensus correlation (Task 4.6) — not implemented
+- [ ] Validation span enrichment (Task 4.8) — not implemented
 
-### Implementation Status — Phase 4a Complete
+### Implementation Status — Phase 4a Mostly Complete
 
 Phase 4a (establish-phase gap fill & cross-node correlation) adds:
 
@@ -224,44 +227,47 @@ See [Phase4_taskList.md](./Phase4_taskList.md) for the full spec and implementat
 **Objective**: Fill tracing gaps in the establish phase and establish cross-node
 correlation using deterministic trace IDs derived from `previousLedger.id()`.
 
-**Approach**: Direct instrumentation in `Consensus.h`. Long-lived spans use
-direct SpanGuard members; short-lived scoped spans use `XRPL_TRACE_*` macros.
+**Approach**: Direct instrumentation in `Consensus.h` and `RCLConsensus.cpp`.
+All spans use `SpanGuard` factory methods (`span()`, `hashSpan()`, `linkedSpan()`)
+with `TraceCategory::Consensus` gating. No macros used — all tracing via direct
+`SpanGuard` API calls.
 
 ### Tasks
 
-| Task | Description                                      | Effort | Risk   |
-| ---- | ------------------------------------------------ | ------ | ------ |
-| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | 1d     | Medium |
-| 4a.1 | Adaptor `getTelemetry()` method                  | 0.5d   | Low    |
-| 4a.2 | Switchable round span with deterministic traceID | 2d     | High   |
-| 4a.3 | Span members in `Consensus.h`                    | 0.5d   | Medium |
-| 4a.4 | Instrument `phaseEstablish()`                    | 1d     | Medium |
-| 4a.5 | Instrument `updateOurPositions()`                | 1d     | Medium |
-| 4a.6 | Instrument `haveConsensus()` (thresholds)        | 1d     | Medium |
-| 4a.7 | Instrument mode changes                          | 0.5d   | Low    |
-| 4a.8 | Reparent existing spans under round              | 0.5d   | Low    |
-| 4a.9 | Build verification and testing                   | 1d     | Low    |
+| Task | Description                                      | Effort | Risk   | Status                    |
+| ---- | ------------------------------------------------ | ------ | ------ | ------------------------- |
+| 4a.0 | Prerequisites: extend SpanGuard & Telemetry APIs | 1d     | Medium | ✅ Done (no macros)       |
+| 4a.1 | Adaptor `getTelemetry()` method                  | 0.5d   | Low    | ⏭️ Skipped (not needed)   |
+| 4a.2 | Switchable round span with deterministic traceID | 2d     | High   | ✅ Done                   |
+| 4a.3 | Span members in `Consensus.h`                    | 0.5d   | Medium | ✅ Done (with deviation)  |
+| 4a.4 | Instrument `phaseEstablish()`                    | 1d     | Medium | ✅ Done                   |
+| 4a.5 | Instrument `updateOurPositions()`                | 1d     | Medium | ⚠️ Partial                |
+| 4a.6 | Instrument `haveConsensus()` (thresholds)        | 1d     | Medium | ⚠️ Partial (no avalanche) |
+| 4a.7 | Instrument mode changes                          | 0.5d   | Low    | ✅ Done                   |
+| 4a.8 | Reparent existing spans under round              | 0.5d   | Low    | ⚠️ Partial (link only)    |
+| 4a.9 | Build verification and testing                   | 1d     | Low    | ✅ Done                   |
 
 **Total Effort**: 9 days
 
 ### Spans Produced
 
-| Span Name                    | Location           | Key Attributes                                                   |
-| ---------------------------- | ------------------ | ---------------------------------------------------------------- |
-| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`; link → prev round |
-| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`               |
-| `consensus.update_positions` | `Consensus.h`      | `disputes_count`, `converge_percent`, `proposers_agreed/total`   |
-| `consensus.check`            | `Consensus.h`      | `agree/disagree_count`, `threshold_percent`, `result`            |
-| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                           |
+| Span Name                    | Location           | Key Attributes (actually set)                                                                          |
+| ---------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------ |
+| `consensus.round`            | `RCLConsensus.cpp` | `round_id`, `ledger_id`, `ledger.seq`, `mode`, `trace_strategy`                                        |
+| `consensus.establish`        | `Consensus.h`      | `converge_percent`, `establish_count`, `proposers`                                                     |
+| `consensus.update_positions` | `Consensus.h`      | `converge_percent`, `proposers`, `have_close_time_consensus`, `close_time_threshold`                   |
+| `consensus.check`            | `Consensus.h`      | `agree/disagree_count`, `converge_percent`, `have_close_time_consensus`, `threshold_percent`, `result` |
+| `consensus.mode_change`      | `RCLConsensus.cpp` | `mode.old`, `mode.new`                                                                                 |
 
 ### Exit Criteria
 
-- [ ] Establish phase internals fully traced (disputes, convergence, thresholds)
-- [ ] Cross-node correlation works via deterministic trace_id
-- [ ] Strategy switchable via config (`deterministic` / `attribute`)
-- [ ] Consecutive rounds linked via follows-from spans
-- [ ] Build passes with telemetry ON and OFF
-- [ ] No impact on consensus timing
+- [x] Establish phase internals traced (establish, update_positions, check spans)
+- [ ] Establish phase fully traced — missing: `disputes_count`, `proposers_agreed`/`total`, `avalanche_threshold`, dispute `yays`/`nays`
+- [x] Cross-node correlation works via deterministic trace_id
+- [x] Strategy switchable via config (`deterministic` / `attribute`)
+- [x] Consecutive rounds linked via follows-from spans
+- [x] Build passes with telemetry ON and OFF
+- [x] No impact on consensus timing
 
 See [Phase4_taskList.md](./Phase4_taskList.md) for full task details.
 
@@ -368,7 +374,7 @@ flowchart TB
 
     subgraph run["🏃 RUN (Week 6-9)"]
         direction LR
-        r1[Consensus Tracing] ~~~ r2[Validator, Amendment,<br/>SHAMap Tracing] ~~~ r3[Full Correlation] ~~~ r4[Production Deploy]
+        r1[Consensus Tracing] ~~~ r2[Establish Phase<br/>& Cross-Node Correlation] ~~~ r3[StatsD Integration] ~~~ r4[Production Deploy]
     end
 
     crawl --> walk --> run
@@ -396,7 +402,7 @@ flowchart TB
 
 - **CRAWL (Weeks 1-2)**: Minimal investment -- set up the SDK, instrument RPC and PathFinding/TxQ handlers, and verify on a single node. Delivers immediate latency visibility.
 - **WALK (Weeks 3-5)**: Expand to transaction lifecycle tracing, fee escalation, cross-node context propagation, and basic Grafana dashboards. This is where distributed tracing starts working.
-- **RUN (Weeks 6-9)**: Full consensus instrumentation, validator/amendment/SHAMap tracing, end-to-end correlation, and production deployment with sampling and alerting.
+- **RUN (Weeks 6-9)**: Full consensus instrumentation, establish-phase gap fill, cross-node correlation, StatsD integration, and production deployment with sampling and alerting.
 - **Arrows (crawl → walk → run)**: Each phase builds on the prior one; you cannot skip ahead because later phases depend on infrastructure established earlier.
 
 ### 6.9.2 Quick Wins (Immediate Value)
@@ -461,17 +467,17 @@ flowchart TB
 - Complete consensus round visibility
 - Phase transition timing
 - Validator proposal tracking
-- Validator list and manifest tracing
-- Amendment voting tracing
-- SHAMap sync tracing
-- Full end-to-end traces (client → RPC → TX → consensus → ledger)
+- ~~Validator list and manifest tracing~~ — descoped
+- ~~Amendment voting tracing~~ — descoped
+- ~~SHAMap sync tracing~~ — descoped
+- Full end-to-end traces (client → RPC → TX → consensus → ledger) — partial (tx-consensus correlation not yet done)
 
-**Code Changes**: ~100 lines across 3 consensus files, plus validator/amendment/SHAMap modules
+**Code Changes**: ~100 lines across 3 consensus files
 
 **Why Do This Last**:
 
 - Highest complexity (consensus is critical path)
-- Validator, amendment, and SHAMap components are lower priority
+- Validator, amendment, and SHAMap components were descoped (lower priority)
 - Requires thorough testing
 - Lower relative value (consensus issues are rarer)
 
