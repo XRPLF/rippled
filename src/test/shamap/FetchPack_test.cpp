@@ -64,7 +64,7 @@ public:
         {
         }
 
-        std::optional<Blob>
+        [[nodiscard]] std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
             Map::iterator const it = mMap.find(nodeHash);

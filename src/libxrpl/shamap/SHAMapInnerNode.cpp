@@ -291,7 +291,8 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 
     if (child)
     {
-        auto const childIndex = *getChildIndex(m);
+        auto const childIndex =
+            *getChildIndex(m);  // NOLINT(bugprone-unchecked-optional-access) isBranch_ set above
         auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
         hashes[childIndex].zero();
         children[childIndex] = std::move(child);
@@ -315,6 +316,7 @@ SHAMapInnerNode::shareChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> const& ch
     XRPL_ASSERT(child.get() != this, "xrpl::SHAMapInnerNode::shareChild : valid child input");
 
     XRPL_ASSERT(!isEmptyBranch(m), "xrpl::SHAMapInnerNode::shareChild : non-empty branch input");
+    // NOLINTNEXTLINE(bugprone-unchecked-optional-access) assert above
     hashesAndChildren_.getChildren()[*getChildIndex(m)] = child;
 }
 
@@ -327,7 +329,8 @@ SHAMapInnerNode::getChildPointer(int branch)
     XRPL_ASSERT(
         !isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChildPointer : non-empty branch input");
 
-    auto const index = *getChildIndex(branch);
+    auto const index =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
 
     packed_spinlock sl(lock_, index);
     std::lock_guard const lock(sl);
@@ -342,7 +345,8 @@ SHAMapInnerNode::getChild(int branch)
         "xrpl::SHAMapInnerNode::getChild : valid branch input");
     XRPL_ASSERT(!isEmptyBranch(branch), "xrpl::SHAMapInnerNode::getChild : non-empty branch input");
 
-    auto const index = *getChildIndex(branch);
+    auto const index =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
 
     packed_spinlock sl(lock_, index);
     std::lock_guard const lock(sl);
@@ -370,7 +374,8 @@ SHAMapInnerNode::canonicalizeChild(int branch, intr_ptr::SharedPtr<SHAMapTreeNod
     XRPL_ASSERT(
         !isEmptyBranch(branch),
         "xrpl::SHAMapInnerNode::canonicalizeChild : non-empty branch input");
-    auto const childIndex = *getChildIndex(branch);
+    auto const childIndex =
+        *getChildIndex(branch);  // NOLINT(bugprone-unchecked-optional-access) assert above
     auto [_, hashes, children] = hashesAndChildren_.getHashesAndChildren();
     XRPL_ASSERT(
         node->getHash() == hashes[childIndex],

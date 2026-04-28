@@ -25,17 +25,17 @@ public:
     {
         return mptID_;
     }
-    MPTID const&
+    [[nodiscard]] MPTID const&
     getMptID() const
     {
         return mptID_;
     }
-    bool
+    [[nodiscard]] bool
     isZeroBalance() const
     {
         return zeroBalance_;
     }
-    bool
+    [[nodiscard]] bool
     isMaxedOut() const
     {
         return maxedOut_;

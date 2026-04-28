@@ -54,19 +54,19 @@ public:
         bool isDryRun,
         beast::Journal j);
 
-    bool
+    [[nodiscard]] bool
     exists(ReadView const& base, Keylet const& k) const;
 
-    std::optional<key_type>
+    [[nodiscard]] std::optional<key_type>
     succ(ReadView const& base, key_type const& key, std::optional<key_type> const& last) const;
 
-    std::shared_ptr<SLE const>
+    [[nodiscard]] std::shared_ptr<SLE const>
     read(ReadView const& base, Keylet const& k) const;
 
     std::shared_ptr<SLE>
     peek(ReadView const& base, Keylet const& k);
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
     void
@@ -97,7 +97,7 @@ public:
     destroyXRP(XRPAmount const& fee);
 
     // For debugging
-    XRPAmount const&
+    [[nodiscard]] XRPAmount const&
     dropsDestroyed() const
     {
         return dropsDestroyed_;

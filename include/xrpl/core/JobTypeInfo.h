@@ -40,37 +40,37 @@ public:
     {
     }
 
-    JobType
+    [[nodiscard]] JobType
     type() const
     {
         return m_type;
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return m_name;
     }
 
-    int
+    [[nodiscard]] int
     limit() const
     {
         return m_limit;
     }
 
-    bool
+    [[nodiscard]] bool
     special() const
     {
         return m_limit == 0;
     }
 
-    std::chrono::milliseconds
+    [[nodiscard]] std::chrono::milliseconds
     getAverageLatency() const
     {
         return m_avgLatency;
     }
 
-    std::chrono::milliseconds
+    [[nodiscard]] std::chrono::milliseconds
     getPeakLatency() const
     {
         return m_peakLatency;

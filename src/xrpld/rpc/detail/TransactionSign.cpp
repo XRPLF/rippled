@@ -86,33 +86,33 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     isMultiSigning() const
     {
         return multiSigningAcctID_ != nullptr;
     }
 
-    bool
+    [[nodiscard]] bool
     isSingleSigning() const
     {
         return !isMultiSigning();
     }
 
     // When multi-signing we should not edit the tx_json fields.
-    bool
+    [[nodiscard]] bool
     editFields() const
     {
         return !isMultiSigning();
     }
 
-    bool
+    [[nodiscard]] bool
     validMultiSign() const
     {
         return isMultiSigning() && multiSignPublicKey_ && !multiSignature_.empty();
     }
 
     // Don't call this method unless isMultiSigning() returns true.
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getSigner() const
     {
         if (multiSigningAcctID_ == nullptr)
@@ -120,7 +120,7 @@ public:
         return *multiSigningAcctID_;
     }
 
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     getPublicKey() const
     {
         if (!multiSignPublicKey_)
@@ -128,13 +128,13 @@ public:
         return *multiSignPublicKey_;
     }
 
-    Buffer const&
+    [[nodiscard]] Buffer const&
     getSignature() const
     {
         return multiSignature_;
     }
 
-    std::optional<std::reference_wrapper<SField const>> const&
+    [[nodiscard]] std::optional<std::reference_wrapper<SField const>> const&
     getSignatureTarget() const
     {
         return signatureTarget_;

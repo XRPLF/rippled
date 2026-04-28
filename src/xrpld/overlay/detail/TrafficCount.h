@@ -217,7 +217,7 @@ public:
 
         @return an object which satisfies the requirements of Container
      */
-    auto const&
+    [[nodiscard]] auto const&
     getCounts() const
     {
         return counts_;

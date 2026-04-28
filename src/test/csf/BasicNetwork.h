@@ -164,7 +164,7 @@ public:
 
     /** Return the underlying digraph
      */
-    Digraph<Peer, link_type> const&
+    [[nodiscard]] Digraph<Peer, link_type> const&
     graph() const
     {
         return links_;

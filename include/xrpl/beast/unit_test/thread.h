@@ -47,13 +47,13 @@ public:
         t_ = std::thread(&Thread::run, this, std::move(b));
     }
 
-    bool
+    [[nodiscard]] bool
     joinable() const
     {
         return t_.joinable();
     }
 
-    std::thread::id
+    [[nodiscard]] std::thread::id
     get_id() const
     {
         return t_.get_id();
