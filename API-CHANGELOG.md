@@ -26,6 +26,10 @@ This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-R
 
 This section contains changes targeting a future version.
 
+### Breaking Changes
+
+- `book_offers`: the `proof` parameter has been removed from the CLI interface and is no longer processed by the server. For HTTP and WebSocket API requests, `proof` is still accepted and ignored if present, so this is not a breaking change.
+
 ### Additions
 
 - `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):

@@ -143,7 +143,7 @@ printHelp(po::options_description const& desc)
                  "]]] [binary]\n"
                  "     book_changes [<ledger hash|id>]\n"
                  "     book_offers <taker_pays> <taker_gets> [<taker [<ledger> "
-                 "[<limit> [<proof> [<marker>]]]]]\n"
+                 "[<limit> [<marker>]]]]\n"
                  "     can_delete [<ledgerid>|<ledgerhash>|now|always|never]\n"
                  "     channel_authorize <private_key> <channel_id> <drops>\n"
                  "     channel_verify <public_key> <channel_id> <drops> <signature>\n"

@@ -149,7 +149,6 @@ public:
         std::shared_ptr<ReadView const>& lpLedger,
         Book const& book,
         AccountID const& uTakerID,
-        bool const bProof,
         unsigned int iLimit,
         Json::Value const& jvMarker,
         Json::Value& jvResult) = 0;

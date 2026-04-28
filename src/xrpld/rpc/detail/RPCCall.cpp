@@ -44,6 +44,7 @@
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -151,6 +152,41 @@ private:
 
         return RPC::make_param_error(
             std::string("Invalid currency/issuer '") + strCurrencyIssuer + "'");
+    }
+
+    static std::optional<std::int32_t>
+    jvParseInt(Json::Value const& param)
+    {
+        if (param.isInt())
+            return param.asInt();
+
+        if (param.isUInt() && param.asUInt() <= std::numeric_limits<std::int32_t>::max())
+            return param.asInt();
+
+        if (param.isString())
+        {
+            std::int32_t v = 0;
+            if (beast::lexicalCastChecked(v, param.asString()))
+                return v;
+        }
+
+        return std::nullopt;
+    }
+
+    static std::optional<std::uint32_t>
+    jvParseUInt(Json::Value const& param)
+    {
+        if (param.isUInt() || (param.isInt() && param.asInt() >= 0))
+            return param.asUInt();
+
+        if (param.isString())
+        {
+            std::uint32_t v = 0;
+            if (beast::lexicalCastChecked(v, param.asString()))
+                return v;
+        }
+
+        return std::nullopt;
     }
 
     static bool
@@ -286,31 +322,68 @@ private:
         }
         else
         {
-            std::int64_t const uLedgerMin = jvParams[1u].asInt();
-            std::int64_t const uLedgerMax = jvParams[2u].asInt();
+            std::int32_t ledgerMin = 0,
+                         ledgerMax = 0;  // note: these are only used when properly set
+            if (auto const ledgerMinOpt = jvParseInt(jvParams[1u]); ledgerMinOpt.has_value())
+            {
+                ledgerMin = *ledgerMinOpt;
+            }
+            else
+            {
+                return rpcError(rpcINVALID_LGR_RANGE);
+            }
 
-            if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
+            if (auto const ledgerMaxOpt = jvParseInt(jvParams[2u]); ledgerMaxOpt.has_value())
+            {
+                ledgerMax = *ledgerMaxOpt;
+            }
+            else
+            {
+                return rpcError(rpcINVALID_LGR_RANGE);
+            }
+
+            // `-1` means "most recent validated ledger version available"
+            static std::int32_t const USE_MOST_RECENT_LEDGER = -1;
+            if (ledgerMax != USE_MOST_RECENT_LEDGER && ledgerMax < ledgerMin)
             {
                 if (apiVersion_ == 1)
                     return rpcError(rpcLGR_IDXS_INVALID);
                 return rpcError(rpcNOT_SYNCED);
             }
 
-            jvRequest[jss::ledger_index_min] = jvParams[1u].asInt();
-            jvRequest[jss::ledger_index_max] = jvParams[2u].asInt();
+            jvRequest[jss::ledger_index_min] = ledgerMin;
+            jvRequest[jss::ledger_index_max] = ledgerMax;
 
             if (iParams >= 4)
-                jvRequest[jss::limit] = jvParams[3u].asInt();
+            {
+                if (auto const limit = jvParseUInt(jvParams[3u]))
+                {
+                    jvRequest[jss::limit] = *limit;
+                }
+                else
+                {
+                    return RPC::invalid_field_error(jss::limit);
+                }
+            }
 
             if (iParams >= 5)
-                jvRequest[jss::offset] = jvParams[4u].asInt();
+            {
+                if (auto const offset = jvParseInt(jvParams[4u]))
+                {
+                    jvRequest[jss::offset] = *offset;
+                }
+                else
+                {
+                    return RPC::invalid_field_error(jss::offset);
+                }
+            }
         }
 
         return jvRequest;
     }
 
     // book_offers <taker_pays> <taker_gets> [<taker> [<ledger> [<limit>
-    // [<proof> [<marker>]]]]] limit: 0 = no limit proof: 0 or 1
+    // [<marker>]]]] limit: 0 = no limit
     //
     // Mnemonic: taker pays --> offer --> taker gets
     Json::Value
@@ -346,35 +419,18 @@ private:
 
         if (jvParams.size() >= 5)
         {
-            try
+            if (auto const limit = jvParseUInt(jvParams[4u]))
             {
-                int const iLimit = jvParams[4u].asInt();
-
-                if (iLimit > 0)
-                    jvRequest[jss::limit] = iLimit;
+                jvRequest[jss::limit] = *limit;
             }
-            catch (std::exception const&)
+            else
             {
                 return RPC::invalid_field_error(jss::limit);
             }
         }
 
-        if (jvParams.size() >= 6)
-        {
-            try
-            {
-                int const bProof = jvParams[5u].asInt();
-                if (bProof != 0)
-                    jvRequest[jss::proof] = true;
-            }
-            catch (std::exception const&)
-            {
-                return RPC::invalid_field_error(jss::proof);
-            }
-        }
-
-        if (jvParams.size() == 7)
-            jvRequest[jss::marker] = jvParams[6u];
+        if (jvParams.size() == 6)
+            jvRequest[jss::marker] = jvParams[5u];
 
         return jvRequest;
     }
@@ -392,7 +448,14 @@ private:
         std::string const input = jvParams[0u].asString();
         if (input.find_first_not_of("0123456789") == std::string::npos)
         {
-            jvRequest["can_delete"] = jvParams[0u].asUInt();
+            if (auto const seq = jvParseUInt(jvParams[0u]))
+            {
+                jvRequest["can_delete"] = *seq;
+            }
+            else
+            {
+                return RPC::invalid_field_error(jss::can_delete);
+            }
         }
         else
         {
@@ -412,7 +475,14 @@ private:
         if (jvParams.size() == 2)
         {
             jvRequest[jss::ip] = ip;
-            jvRequest[jss::port] = jvParams[1u].asUInt();
+            if (auto const port = jvParseUInt(jvParams[1u]))
+            {
+                jvRequest[jss::port] = *port;
+            }
+            else
+            {
+                return RPC::invalid_field_error(jss::port);
+            }
             return jvRequest;
         }
 
@@ -421,7 +491,17 @@ private:
         {
             std::size_t const colon = ip.find_last_of(':');
             jvRequest[jss::ip] = std::string{ip, 0, colon};
-            jvRequest[jss::port] = Json::Value{std::string{ip, colon + 1}}.asUInt();
+
+            Json::Value const portJson(std::string{ip, colon + 1});
+            if (auto const port = jvParseUInt(portJson))
+            {
+                jvRequest[jss::port] = *port;
+            }
+            else
+            {
+                return RPC::invalid_field_error(jss::port);
+            }
+
             return jvRequest;
         }
 
@@ -504,7 +584,16 @@ private:
         Json::Value jvRequest(Json::objectValue);
 
         if (jvParams.size() != 0u)
-            jvRequest[jss::min_count] = jvParams[0u].asUInt();
+        {
+            if (auto const minCount = jvParseUInt(jvParams[0u]))
+            {
+                jvRequest[jss::min_count] = *minCount;
+            }
+            else
+            {
+                return RPC::invalid_field_error(jss::min_count);
+            }
+        }
 
         return jvRequest;
     }
@@ -1131,7 +1220,14 @@ private:
     {
         Json::Value jvRequest{Json::objectValue};
 
-        jvRequest[jss::start] = jvParams[0u].asUInt();
+        if (auto const start = jvParseUInt(jvParams[0u]))
+        {
+            jvRequest[jss::start] = *start;
+        }
+        else
+        {
+            return RPC::invalid_field_error(jss::start);
+        }
 
         return jvRequest;
     }
@@ -1314,7 +1410,7 @@ public:
             {.name = "book_offers",
              .parse = &RPCParser::parseBookOffers,
              .minParams = 2,
-             .maxParams = 7},
+             .maxParams = 6},
             {.name = "can_delete",
              .parse = &RPCParser::parseCanDelete,
              .minParams = 0,
