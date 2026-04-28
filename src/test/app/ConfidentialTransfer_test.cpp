@@ -1793,7 +1793,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Env env{*this, features};
         Account const alice("alice");
         Account const bob("bob");
-        ConfidentialEnv confEnv{env, alice, {{bob, 100, 40}}};
+        ConfidentialEnv const confEnv{env, alice, {{bob, 100, 40}}};
     }
 
     void
@@ -7998,7 +7998,7 @@ class ConfidentialTransfer_test : public beast::unit_test::suite
         Account const carol{"carol"};
         Account const dave{"dave"};
 
-        ConfidentialEnv confEnv{
+        ConfidentialEnv const confEnv{
             env,
             alice,
             {{bob, 100, 50}, {carol, 100, 100}},
