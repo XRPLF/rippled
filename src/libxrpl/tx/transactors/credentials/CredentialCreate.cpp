@@ -20,6 +20,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <chrono>
 #include <cstdint>

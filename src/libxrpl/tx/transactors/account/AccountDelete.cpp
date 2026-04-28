@@ -30,7 +30,6 @@
 #include <xrpl/tx/transactors/did/DIDDelete.h>
 #include <xrpl/tx/transactors/oracle/OracleDelete.h>
 #include <xrpl/tx/transactors/payment/DepositPreauth.h>
-#include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
 #include <cstdint>
 #include <memory>
@@ -417,16 +416,18 @@ AccountDelete::doApply()
 
         auto const sponsoringAccountCount = sponsorSle->getFieldU32(sfSponsoringAccountCount);
 
-        if (sponsoringAccountCount == 0)
+        if (sponsoringAccountCount == 0) {
             // sanity check
             // Since sfSponsoringAccountCount is set to soeDEFAULT, the field will not be
             // populated with a value of 0.
             return tefINTERNAL;  // LCOV_EXCL_LINE
+}
 
-        if (sponsoringAccountCount == 1)
+        if (sponsoringAccountCount == 1) {
             sponsorSle->makeFieldAbsent(sfSponsoringAccountCount);
-        else
+        } else {
             sponsorSle->setFieldU32(sfSponsoringAccountCount, sponsoringAccountCount - 1);
+}
         view().update(sponsorSle);
 
         // Following line might look redundant, but without it, sfSponsor

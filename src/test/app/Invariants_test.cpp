@@ -1771,20 +1771,20 @@ class Invariants_test : public beast::unit_test::suite
                 .func = [](SLE::pointer& sle) { sle->at(sfRegularKey) = Account("regular").id(); },
             },
             {
-                "pseudo-account has a sponsorship field",
-                [](SLE::pointer& sle) { sle->at(sfSponsoredOwnerCount) = 1; },
+                .expectedFailure="pseudo-account has a sponsorship field",
+                .func=[](SLE::pointer& sle) { sle->at(sfSponsoredOwnerCount) = 1; },
             },
             {
-                "pseudo-account has a sponsorship field",
-                [](SLE::pointer& sle) { sle->at(sfSponsoringOwnerCount) = 1; },
+                .expectedFailure="pseudo-account has a sponsorship field",
+                .func=[](SLE::pointer& sle) { sle->at(sfSponsoringOwnerCount) = 1; },
             },
             {
-                "pseudo-account has a sponsorship field",
-                [](SLE::pointer& sle) { sle->at(sfSponsoringAccountCount) = 1; },
+                .expectedFailure="pseudo-account has a sponsorship field",
+                .func=[](SLE::pointer& sle) { sle->at(sfSponsoringAccountCount) = 1; },
             },
             {
-                "pseudo-account has a sponsorship field",
-                [](SLE::pointer& sle) { sle->at(sfSponsor) = Account("sponsor").id(); },
+                .expectedFailure="pseudo-account has a sponsorship field",
+                .func=[](SLE::pointer& sle) { sle->at(sfSponsor) = Account("sponsor").id(); },
             },
         });
 

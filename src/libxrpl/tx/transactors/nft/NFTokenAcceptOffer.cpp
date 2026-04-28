@@ -19,6 +19,7 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <cstdint>
 #include <memory>

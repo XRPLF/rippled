@@ -3,6 +3,16 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <cstdint>
+#include <memory>
 
 namespace xrpl {
 
@@ -96,7 +106,7 @@ SponsorshipOwnerCountsMatch::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (deltaSponsoredOwnerCount_ != deltaSponsoringOwnerCount_)
     {
@@ -153,7 +163,7 @@ SponsorshipAccountCountMatchesField::finalize(
     TER const,
     XRPAmount const,
     ReadView const&,
-    beast::Journal const& j)
+    beast::Journal const& j) const
 {
     if (deltaSponsoringAccountCount_ != deltaSponsorFieldPresence_)
     {

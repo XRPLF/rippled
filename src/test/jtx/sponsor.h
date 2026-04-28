@@ -4,11 +4,13 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/SignerUtils.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
 
-namespace sponsor {
+
+
+
+
+namespace xrpl::test::jtx::sponsor {
 
 Json::Value
 set(jtx::Account const& account,
@@ -45,7 +47,7 @@ private:
     jtx::Account sponsor_;
 
 public:
-    counterpartySponsor(jtx::Account const& account) : sponsor_(account)
+    counterpartySponsor(jtx::Account  account) : sponsor_(std::move(account))
     {
     }
 
@@ -59,7 +61,7 @@ private:
     jtx::Account sponsee_;
 
 public:
-    sponseeAcc(jtx::Account const& account) : sponsee_(account)
+    sponseeAcc(jtx::Account  account) : sponsee_(std::move(account))
     {
     }
 
@@ -74,7 +76,7 @@ private:
     std::uint32_t flags;
 
 public:
-    as(jtx::Account const& account, std::uint32_t flags = 0) : sponsor_(account), flags(flags)
+    as(jtx::Account  account, std::uint32_t flags = 0) : sponsor_(std::move(account)), flags(flags)
     {
     }
 
@@ -85,7 +87,7 @@ public:
 Json::Value
 ledgerEntry(jtx::Env& env, jtx::Account const& sponsor, jtx::Account const& sponsee);
 
-}  // namespace sponsor
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+} // namespace xrpl::test::jtx::sponsor
+
+
+

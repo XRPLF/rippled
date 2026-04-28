@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <cstddef>
 #include <cstdint>

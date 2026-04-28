@@ -13,7 +13,7 @@ namespace xrpl {
 inline bool
 isReserveSponsored(STTx const& tx)
 {
-    return tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve;
+    return (tx.getFieldU32(sfSponsorFlags) & spfSponsorReserve) != 0u;
 }
 
 inline bool

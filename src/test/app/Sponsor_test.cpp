@@ -1,4 +1,3 @@
-#include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/check.h>
 #include <test/jtx/did.h>
@@ -9,9 +8,63 @@
 
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
+#include <test/jtx/AMM.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Oracle.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/delegate.h>
+#include <test/jtx/deposit.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpld/core/Config.h>
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+
+namespace xrpl::test {
 
 static STAmount
 accountReserve(jtx::Env& env, std::uint32_t count = 1)
@@ -35,13 +88,14 @@ adjustAccountXRPBalance(jtx::Env& env, jtx::Account const& account, STAmount con
         return;
 
     auto const baseFee = env.current()->fees().base;
-    if (currentBalance > balanceTo)
+    if (currentBalance > balanceTo) {
         env(pay(account, env.master, currentBalance - (balanceTo)),
             fee(XRP(1)),
             sponsor::as(env.master, spfSponsorFee),
             sig(sfSponsorSignature, env.master));
-    else
+    } else {
         env(pay(env.master, account, balanceTo - currentBalance), fee(baseFee));
+}
 
     env.close();
 }
@@ -1966,10 +2020,11 @@ public:
 
         auto submit = [&](TER _ter) {
             return [&, _ter](Json::Value const& jv, auto const&... fN) {
-                if (sponsorSig)
+                if (sponsorSig) {
                     env(jv, fN..., sponsor::as(sponsor, spfSponsorReserve), *sponsorSig, ter(_ter));
-                else
+                } else {
                     env(jv, fN..., sponsor::as(sponsor, spfSponsorReserve), ter(_ter));
+}
             };
         };
 
@@ -1991,13 +2046,14 @@ public:
                     env.close();
                 }
 
-                if (sponsorReserveCount - 1 > 0)
+                if (sponsorReserveCount - 1 > 0) {
                     env(sponsor::set(sponsor, 0, sponsorReserveCount - 1, XRP(1)),
                         sponsor::sponseeAcc(sponsee));
-                else
+                } else {
                     // just create sponsor object
                     env(sponsor::set(sponsor, 0, std::nullopt, XRP(1)),
                         sponsor::sponseeAcc(sponsee));
+}
                 env.close();
             }
             callback(env, submit(insufficientReserveResult));
@@ -2030,9 +2086,9 @@ public:
             }
         }
 
-        if (expected)
+        if (expected) {
             (*expected)();
-        else
+        } else
         {
             BEAST_EXPECT(ownerCount(env, sponsee) - sponseeOwnerCountBefore == reserveCount);
             BEAST_EXPECT(
@@ -2195,7 +2251,7 @@ public:
             env(pay(gw, bob, USD(1000)));
             env.close();
 
-            AMM amm(env, bob, XRP(1000), USD(100));
+            AMM const amm(env, bob, XRP(1000), USD(100));
 
             // alice has 1 owner object (USD trust line); give her reserve + 5 XRP liquid
             adjustAccountXRPBalance(env, alice, reserve(env, ownerCount(env, alice)) + XRP(5));
@@ -5864,5 +5920,5 @@ BEAST_DEFINE_TESTSUITE(Sponsor, app, xrpl);
 BEAST_DEFINE_TESTSUITE(SponsorTxCosigning, app, xrpl);
 BEAST_DEFINE_TESTSUITE(SponsorTxPrefunded, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+} // namespace xrpl::test
+

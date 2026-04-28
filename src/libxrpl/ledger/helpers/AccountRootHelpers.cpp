@@ -146,10 +146,11 @@ adjustSponsorOwnerCountHlp(
     std::uint32_t const current{(sle)->getFieldU32(sfield)};
     std::uint32_t const adjusted = confineOwnerCount(current, amount, accID, j);
     view.adjustOwnerCountHook(accID, current, adjusted);
-    if (adjusted == 0)
+    if (adjusted == 0) {
         sle->makeFieldAbsent(sfield);
-    else
+    } else {
         sle->setFieldU32(sfield, adjusted);
+}
     view.update(sle);
 }
 
@@ -185,10 +186,11 @@ adjustOwnerCount(
             // payback (+)
             std::uint32_t const adjusted =
                 confineOwnerCount(currentReserveCount, -amount, sponsorAccountID, j);
-            if (adjusted == 0)
+            if (adjusted == 0) {
                 sponsorObjSle->makeFieldAbsent(sfReserveCount);
-            else
+            } else {
                 sponsorObjSle->setFieldU32(sfReserveCount, adjusted);
+}
             view.update(sponsorObjSle);
         }
     }

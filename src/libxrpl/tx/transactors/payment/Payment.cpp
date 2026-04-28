@@ -36,9 +36,12 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/paths/RippleCalc.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <algorithm>
 #include <cstdint>
+#include <limits>
 #include <memory>
 #include <optional>
 #include <unordered_set>

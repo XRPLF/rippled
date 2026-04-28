@@ -17,6 +17,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <memory>
 

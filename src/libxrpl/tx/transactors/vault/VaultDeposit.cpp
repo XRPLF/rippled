@@ -19,8 +19,10 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <memory>
+#include <optional>
 #include <stdexcept>
 
 namespace xrpl {

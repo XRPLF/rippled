@@ -26,21 +26,18 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/STTx.h>
 
 #include <cstdint>
 #include <initializer_list>
+#include <optional>
 #include <string>
 #include <variant>
 
 namespace xrpl {
 
 // Forward declaration for function that remains in View.h/cpp
-bool
-isLPTokenFrozen(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset,
-    Asset const& asset2);
+
 
 //------------------------------------------------------------------------------
 //
@@ -475,10 +472,11 @@ removeEmptyHolding(
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-            if constexpr (std::is_same_v<TIss, Issue>)
+            if constexpr (std::is_same_v<TIss, Issue>) {
                 return removeEmptyHolding(view, accountID, issue, journal);
-            else
+            } else {
                 return removeEmptyHolding(view, tx, accountID, issue, journal);
+}
         },
         asset.value());
 }
@@ -713,9 +711,10 @@ directSendNoLimitIOU(
     TER terResult =
         directSendNoFeeIOU(view, issuer, uReceiverID, saAmount, true, sponsorAccountID, j);
 
-    if (tesSUCCESS == terResult)
+    if (tesSUCCESS == terResult) {
         terResult =
             directSendNoFeeIOU(view, uSenderID, issuer, saActual, true, sponsorAccountID, j);
+}
 
     return terResult;
 }

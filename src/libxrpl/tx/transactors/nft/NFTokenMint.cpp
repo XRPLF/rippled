@@ -22,6 +22,7 @@
 #include <xrpl/tx/Transactor.h>
 
 #include <boost/endian/conversion.hpp>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <array>
 #include <cstdint>

@@ -2,14 +2,25 @@
 
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Asset.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+#include <bit>
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -30,7 +41,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (flags & tfSponsorshipCreate)
+    if ((flags & tfSponsorshipCreate) != 0u)
     {
         if (!isReserveSponsored(ctx.tx))
         {
@@ -45,7 +56,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
     }
-    if (flags & tfSponsorshipReassign)
+    if ((flags & tfSponsorshipReassign) != 0u)
     {
         if (!isReserveSponsored(ctx.tx))
         {
@@ -60,7 +71,7 @@ SponsorshipTransfer::preflight(PreflightContext const& ctx)
             return temMALFORMED;
         }
     }
-    if (flags & tfSponsorshipEnd)
+    if ((flags & tfSponsorshipEnd) != 0u)
     {
         if (isReserveSponsored(ctx.tx))
         {
@@ -243,7 +254,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
 
         auto const& sponsorField = getLedgerEntrySponsorField(sle, *owner);
 
-        if (flags & tfSponsorshipCreate)
+        if ((flags & tfSponsorshipCreate) != 0u)
         {
             if (!newSponsor)
                 return tecNO_PERMISSION;
@@ -252,7 +263,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             if (sle->isFieldPresent(sponsorField))
                 return tecNO_PERMISSION;
         }
-        else if (flags & tfSponsorshipReassign)
+        else if ((flags & tfSponsorshipReassign) != 0u)
         {
             if (!newSponsor)
                 return tecNO_PERMISSION;
@@ -261,7 +272,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             if (!sle->isFieldPresent(sponsorField))
                 return tecNO_PERMISSION;
         }
-        else if (flags & tfSponsorshipEnd)
+        else if ((flags & tfSponsorshipEnd) != 0u)
         {
             if (newSponsor)
                 return tecNO_PERMISSION;
@@ -289,7 +300,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
     }
     else
     {
-        if (flags & tfSponsorshipCreate)
+        if ((flags & tfSponsorshipCreate) != 0u)
         {
             if (!newSponsor)
                 return tecNO_PERMISSION;
@@ -298,7 +309,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             if (sponseeSle->isFieldPresent(sfSponsor))
                 return tecNO_PERMISSION;
         }
-        else if (flags & tfSponsorshipReassign)
+        else if ((flags & tfSponsorshipReassign) != 0u)
         {
             if (!newSponsor)
                 return tecNO_PERMISSION;
@@ -307,7 +318,7 @@ SponsorshipTransfer::preclaim(PreclaimContext const& ctx)
             if (!sponseeSle->isFieldPresent(sfSponsor))
                 return tecNO_PERMISSION;
         }
-        else if (flags & tfSponsorshipEnd)
+        else if ((flags & tfSponsorshipEnd) != 0u)
         {
             if (newSponsor)
                 return tecNO_PERMISSION;
@@ -423,7 +434,7 @@ SponsorshipTransfer::doApply()
 
         auto const& sponsorField = getLedgerEntrySponsorField(objSle, *ownerAccountID);
 
-        if (flags & tfSponsorshipCreate)
+        if ((flags & tfSponsorshipCreate) != 0u)
         {
             auto const newSponsorAccountID = tx.getAccountID(sfSponsor);
             XRPL_ASSERT(!!newSponsorAccountID, "New sponsor is required when creating sponsorship");
@@ -452,7 +463,7 @@ SponsorshipTransfer::doApply()
                     return ter;
             }
         }
-        else if (flags & tfSponsorshipReassign)
+        else if ((flags & tfSponsorshipReassign) != 0u)
         {
             auto const newSponsorAccountID = tx.getAccountID(sfSponsor);
             XRPL_ASSERT(
@@ -500,7 +511,7 @@ SponsorshipTransfer::doApply()
                     return ter;
             }
         }
-        else if (flags & tfSponsorshipEnd)
+        else if ((flags & tfSponsorshipEnd) != 0u)
         {
             auto const oldSponsorAccountID = objSle->getAccountID(sponsorField);
             XRPL_ASSERT(!!oldSponsorAccountID, "Old sponsor is required when ending sponsorship");
@@ -535,7 +546,7 @@ SponsorshipTransfer::doApply()
     }
     else
     {
-        if (flags & tfSponsorshipCreate)
+        if ((flags & tfSponsorshipCreate) != 0u)
         {
             // create account sponsor
             // increment new sponsoring count
@@ -550,7 +561,7 @@ SponsorshipTransfer::doApply()
             sponseeSle->setAccountID(sfSponsor, newSponsorAccountID);
             view().update(sponseeSle);
         }
-        else if (flags & tfSponsorshipReassign)
+        else if ((flags & tfSponsorshipReassign) != 0u)
         {
             // reassign account sponsor
             // increment new sponsoring count
@@ -573,7 +584,7 @@ SponsorshipTransfer::doApply()
             sponseeSle->setAccountID(sfSponsor, newSponsorAccountID);
             view().update(sponseeSle);
         }
-        else if (flags & tfSponsorshipEnd)
+        else if ((flags & tfSponsorshipEnd) != 0u)
         {
             // dissolve account sponsor
             auto const oldSponsorAccountID = sponseeSle->getAccountID(sfSponsor);

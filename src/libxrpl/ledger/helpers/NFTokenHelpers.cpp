@@ -28,6 +28,9 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/STTx.h>
 
 #include <algorithm>
 #include <cstddef>

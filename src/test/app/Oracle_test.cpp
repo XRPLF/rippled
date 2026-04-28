@@ -26,6 +26,7 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/LedgerFormats.h>
 
 #include <chrono>
 #include <cstdint>

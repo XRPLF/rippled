@@ -6,6 +6,20 @@
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/tx/Transactor.h>
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -20,11 +34,11 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
 {
     auto const flags = ctx.tx.getFlags();
 
-    if ((flags & tfSponsorshipSetRequireSignForFee) &&
-        (flags & tfSponsorshipClearRequireSignForFee))
+    if (((flags & tfSponsorshipSetRequireSignForFee) != 0u) &&
+        ((flags & tfSponsorshipClearRequireSignForFee) != 0u))
         return temINVALID_FLAG;
-    if ((flags & tfSponsorshipSetRequireSignForReserve) &&
-        (flags & tfSponsorshipClearRequireSignForReserve))
+    if (((flags & tfSponsorshipSetRequireSignForReserve) != 0u) &&
+        ((flags & tfSponsorshipClearRequireSignForReserve) != 0u))
         return temINVALID_FLAG;
 
     auto const account = ctx.tx.getAccountID(sfAccount);
@@ -48,7 +62,7 @@ SponsorshipSet::preflight(PreflightContext const& ctx)
             tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForFee |
             tfSponsorshipClearRequireSignForReserve;
 
-        if (flags & modifyFlags)
+        if ((flags & modifyFlags) != 0u)
             return temINVALID_FLAG;
 
         // can not include these fields when deleting
@@ -109,17 +123,17 @@ SponsorshipSet::checkPermission(ReadView const& view, STTx const& tx)
 
     // this is added in case more flags will be added for SponsorshipSet
     // in the future. Currently unreachable.
-    if (txFlags & tfSponsorshipSetPermissionMask)
+    if ((txFlags & tfSponsorshipSetPermissionMask) != 0u)
         return terNO_DELEGATE_PERMISSION;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttSPONSORSHIP_SET, granularPermissions);
 
     auto const sponsoringFee = tx.isFieldPresent(sfFeeAmount) || tx.isFieldPresent(sfMaxFee) ||
-        (txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee));
+        ((txFlags & (tfSponsorshipSetRequireSignForFee | tfSponsorshipClearRequireSignForFee)) != 0u);
     auto const sponsoringReserve = tx.isFieldPresent(sfReserveCount) ||
-        (txFlags &
-         (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve));
+        ((txFlags &
+         (tfSponsorshipSetRequireSignForReserve | tfSponsorshipClearRequireSignForReserve)) != 0u);
 
     if (sponsoringFee && !granularPermissions.contains(SponsorFee))
         return terNO_DELEGATE_PERMISSION;
@@ -292,10 +306,11 @@ SponsorshipSet::doApply()
         {
             (*sponsorAccSle)[sfBalance] -= feeAmountDelta;
 
-            if (*feeAmount == XRPAmount(0))
+            if (*feeAmount == XRPAmount(0)) {
                 (*sponsorObjSle).makeFieldAbsent(sfFeeAmount);
-            else
+            } else {
                 (*sponsorObjSle).setFieldAmount(sfFeeAmount, *feeAmount);
+}
 
             if (auto const ret = checkInsufficientReserve(
                     ctx_.view(),
@@ -311,18 +326,20 @@ SponsorshipSet::doApply()
 
     if (maxFee)
     {
-        if (*maxFee == XRPAmount(0))
+        if (*maxFee == XRPAmount(0)) {
             (*sponsorObjSle).makeFieldAbsent(sfMaxFee);
-        else
+        } else {
             (*sponsorObjSle)[sfMaxFee] = *maxFee;
+}
     }
 
     if (reserveCount)
     {
-        if (*reserveCount == 0)
+        if (*reserveCount == 0) {
             (*sponsorObjSle).makeFieldAbsent(sfReserveCount);
-        else
+        } else {
             (*sponsorObjSle)[sfReserveCount] = *reserveCount;
+}
     }
 
     // update Flags

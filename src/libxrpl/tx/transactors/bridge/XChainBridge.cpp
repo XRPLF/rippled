@@ -38,6 +38,8 @@
 #include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <cstdint>
 #include <limits>

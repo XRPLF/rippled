@@ -41,6 +41,7 @@
 #include <xrpl/tx/applySteps.h>
 #include <xrpl/tx/paths/Flow.h>
 #include <xrpl/tx/paths/detail/Steps.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <algorithm>
 #include <cstdint>

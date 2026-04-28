@@ -27,7 +27,6 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>  // IWYU pragma: keep
@@ -41,7 +40,10 @@
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
+#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <exception>
@@ -187,7 +189,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return temDISABLED;
 
     if (hasSponsorFlags &&
-        ctx.tx.getFieldU32(sfSponsorFlags) & ~(spfSponsorFee | spfSponsorReserve))
+        ((ctx.tx.getFieldU32(sfSponsorFlags) & ~(spfSponsorFee | spfSponsorReserve)) != 0u))
     {
         JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
         return temINVALID_FLAG;
@@ -210,7 +212,7 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     else if (hasSponsorFlags)
     {
         auto const sponsorFlags = ctx.tx.getFieldU32(sfSponsorFlags);
-        if ((sponsorFlags & ~(spfSponsorFee | spfSponsorReserve)) || sponsorFlags == 0)
+        if (((sponsorFlags & ~(spfSponsorFee | spfSponsorReserve)) != 0u) || sponsorFlags == 0)
         {
             JLOG(ctx.j.debug()) << "preflight1: invalid sponsor flags";
             return temINVALID_FLAG;
@@ -374,10 +376,10 @@ Transactor::checkSponsor(ReadView const& view, STTx const& tx)
 
     auto const sponsorFlags = tx.getFieldU32(sfSponsorFlags);
 
-    if (sponsorFlags & spfSponsorFee && sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
+    if (((sponsorFlags & spfSponsorFee) != 0u) && sponsorSle->isFlag(lsfSponsorshipRequireSignForFee))
         return terNO_SPONSORSHIP;
 
-    if (sponsorFlags & spfSponsorReserve && sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
+    if (((sponsorFlags & spfSponsorReserve) != 0u) && sponsorSle->isFlag(lsfSponsorshipRequireSignForReserve))
         return terNO_SPONSORSHIP;
 
     return tesSUCCESS;
@@ -482,9 +484,10 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (!payerSle)
     {
-        if (payer.type == FeePayerType::SponsorPreFunded)
+        if (payer.type == FeePayerType::SponsorPreFunded) {
             // Sanity check: already checked in checkSponsor
             return tefINTERNAL;  // LCOV_EXCL_LINE
+}
 
         return terNO_ACCOUNT;
     }
@@ -560,11 +563,12 @@ Transactor::payFee()
 
     auto const feeAmountAfter = sle->getFieldAmount(payer.balanceField) - feePaid;
 
-    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount)
+    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount) {
         // Because ltSponsorship.sfFeeAmount is soeOptional
         sle->makeFieldAbsent(payer.balanceField);
-    else
+    } else {
         sle->setFieldAmount(payer.balanceField, feeAmountAfter);
+}
 
     view().update(sle);
 
@@ -1251,11 +1255,12 @@ Transactor::reset(XRPAmount fee)
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
     auto const feeAmountAfter = balance - fee;
-    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount)
+    if (feeAmountAfter == beast::zero && payer.balanceField == sfFeeAmount) {
         // Because ltSponsorship.sfFeeAmount is soeOptional
         payerSle->makeFieldAbsent(payer.balanceField);
-    else
+    } else {
         payerSle->setFieldAmount(payer.balanceField, feeAmountAfter);
+}
 
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(isTesSuccess(ter), "xrpl::Transactor::reset : result is tesSUCCESS");
@@ -1273,7 +1278,7 @@ Transactor::reset(XRPAmount fee)
 FeePayer
 Transactor::getFeePayer(ReadView const& view, STTx const& tx)
 {
-    if (tx.isFieldPresent(sfSponsor) && (tx.getFieldU32(sfSponsorFlags) & spfSponsorFee))
+    if (tx.isFieldPresent(sfSponsor) && ((tx.getFieldU32(sfSponsorFlags) & spfSponsorFee) != 0u))
     {
         auto const sponsorAccountID = tx.getAccountID(sfSponsor);
         auto const sponseeAccountID = tx.getAccountID(sfAccount);
@@ -1281,20 +1286,21 @@ Transactor::getFeePayer(ReadView const& view, STTx const& tx)
         auto const sponsorshipKeylet = keylet::sponsor(sponsorAccountID, sponseeAccountID);
 
         // if pre-funded sponsorship exists, prefer it
-        if (hasSponsorSignature && !view.exists(sponsorshipKeylet))
+        if (hasSponsorSignature && !view.exists(sponsorshipKeylet)) {
             // co-signed
             return FeePayer{
-                keylet::account(sponsorAccountID), sfBalance, FeePayerType::SponsorCoSigned};
+                .entry=keylet::account(sponsorAccountID), .balanceField=sfBalance, .type=FeePayerType::SponsorCoSigned};
+}
 
         // pre funded
-        return FeePayer{sponsorshipKeylet, sfFeeAmount, FeePayerType::SponsorPreFunded};
+        return FeePayer{.entry=sponsorshipKeylet, .balanceField=sfFeeAmount, .type=FeePayerType::SponsorPreFunded};
     }
 
     auto const payerAccountKeylet = keylet::account(tx.getFeePayer());
     auto const payerType =
         tx.isFieldPresent(sfDelegate) ? FeePayerType::Delegate : FeePayerType::Account;
 
-    return FeePayer{payerAccountKeylet, sfBalance, payerType};
+    return FeePayer{.entry=payerAccountKeylet, .balanceField=sfBalance, .type=payerType};
 }
 
 // The sole purpose of this function is to provide a convenient, named

@@ -51,7 +51,7 @@ adjustOwnerCount(
     std::int32_t amount,
     beast::Journal j)
 {
-    return adjustOwnerCount(
+    adjustOwnerCount(
         view,
         view.peek(keylet::account(account)),
         sponsor ? view.peek(keylet::account(*sponsor)) : std::shared_ptr<SLE>(),

@@ -23,6 +23,8 @@
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/SignerEntries.h>
 #include <xrpl/tx/Transactor.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/helpers/SponsorHelpers.h>
 
 #include <algorithm>
 #include <cstddef>

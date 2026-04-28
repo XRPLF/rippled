@@ -31,6 +31,7 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/transactors/nft/NFTokenMint.h>
+#include <xrpl/protocol/Indexes.h>
 
 #include <algorithm>
 #include <cstdint>
