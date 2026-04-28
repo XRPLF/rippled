@@ -14,9 +14,7 @@
 
 #include <nudb/detail/stream.hpp>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class LPToken
 {
@@ -33,12 +31,12 @@ public:
     LPToken(STAmount tokens) : tokens_(tokens), asset_(tokens.asset())
     {
     }
-    STAmount
+    [[nodiscard]] STAmount
     tokens() const
     {
         return STAmount{asset_, tokens_};
     }
-    STAmount
+    [[nodiscard]] STAmount
     tokens(Issue const& ammIssue) const
     {
         return STAmount{ammIssue, tokens_};
@@ -99,7 +97,7 @@ struct BidArg
     std::optional<Account> account = std::nullopt;
     std::optional<std::variant<int, IOUAmount, STAmount>> bidMin = std::nullopt;
     std::optional<std::variant<int, IOUAmount, STAmount>> bidMax = std::nullopt;
-    std::vector<Account> authAccounts = {};
+    std::vector<Account> authAccounts = {};  // NOLINT(readability-redundant-member-init)
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::pair<Asset, Asset>> assets = std::nullopt;
 };
@@ -139,9 +137,9 @@ class AMM
 
 public:
     AMM(Env& env,
-        Account const& account,
-        STAmount const& asset1,
-        STAmount const& asset2,
+        Account account,
+        STAmount asset1,
+        STAmount asset2,
         bool log = false,
         std::uint16_t tfee = 0,
         std::uint32_t fee = 0,
@@ -172,7 +170,7 @@ public:
 
     /** Send amm_info RPC command
      */
-    Json::Value
+    [[nodiscard]] Json::Value
     ammRpcInfo(
         std::optional<AccountID> const& account = std::nullopt,
         std::optional<std::string> const& ledgerIndex = std::nullopt,
@@ -193,13 +191,13 @@ public:
 
     /** Get AMM balances for the token pair.
      */
-    std::tuple<STAmount, STAmount, STAmount>
+    [[nodiscard]] std::tuple<STAmount, STAmount, STAmount>
     balances(
         Asset const& asset1,
         Asset const& asset2,
         std::optional<AccountID> const& account = std::nullopt) const;
 
-    std::tuple<STAmount, STAmount, STAmount>
+    [[nodiscard]] std::tuple<STAmount, STAmount, STAmount>
     balances(std::optional<AccountID> const& account = std::nullopt) const
     {
         return balances(asset1_.asset(), asset2_.asset(), account);
@@ -342,25 +340,25 @@ public:
     void
     clawback(ClawbackArg const& arg);
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     ammAccount() const
     {
         return ammAccount_;
     }
 
-    Issue
+    [[nodiscard]] Issue
     lptIssue() const
     {
         return lptIssue_;
     }
 
-    IOUAmount
+    [[nodiscard]] IOUAmount
     tokens() const
     {
         return initialLPTokens_;
     }
 
-    IOUAmount
+    [[nodiscard]] IOUAmount
     getLPTokensBalance(std::optional<AccountID> const& account = std::nullopt) const;
 
     friend std::ostream&
@@ -372,13 +370,13 @@ public:
     }
 
     std::string
-    operator[](AccountID const& lp)
+    operator[](AccountID const& lp) const
     {
         return ammRpcInfo(lp).toStyledString();
     }
 
     Json::Value
-    operator()(AccountID const& lp)
+    operator()(AccountID const& lp) const
     {
         return ammRpcInfo(lp);
     }
@@ -395,7 +393,7 @@ public:
         doClose_ = close;
     }
 
-    uint256
+    [[nodiscard]] uint256
     ammID() const
     {
         return ammID_;
@@ -425,9 +423,13 @@ public:
             auto const& jr = p.amm.ammRpcInfo();
             auto out = [&](Json::Value const& jv) {
                 if (jv.isMember(jss::value))
+                {
                     std::cout << jv[jss::value].asString();
+                }
                 else
+                {
                     std::cout << jv.asString();
+                }
                 std::cout << " ";
             };
             if (p.names.empty())
@@ -456,9 +458,13 @@ public:
         {
             auto out = [&](Json::Value const& jv) {
                 if (jv.isMember(jss::value))
+                {
                     s << jv[jss::value].asString();
+                }
                 else
+                {
                     s << jv;
+                }
             };
             for (auto const& o : offers.jv[jss::offers])
             {
@@ -517,6 +523,4 @@ ammClawback(
     std::optional<STAmount> const& amount);
 }  // namespace amm
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

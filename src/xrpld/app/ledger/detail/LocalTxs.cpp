@@ -1,7 +1,19 @@
 #include <xrpld/app/ledger/LocalTxs.h>
 
-#include <xrpl/ledger/Ledger.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+
+#include <algorithm>
+#include <cstddef>
+#include <list>
+#include <memory>
+#include <mutex>
 
 /*
  This code prevents scenarios like the following:
@@ -45,31 +57,31 @@ public:
             m_expire = std::min(m_expire, txn->getFieldU32(sfLastLedgerSequence) + 1);
     }
 
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getID() const
     {
         return m_id;
     }
 
-    SeqProxy
+    [[nodiscard]] SeqProxy
     getSeqProxy() const
     {
         return m_seqProxy;
     }
 
-    bool
+    [[nodiscard]] bool
     isExpired(LedgerIndex i) const
     {
         return i > m_expire;
     }
 
-    std::shared_ptr<STTx const> const&
+    [[nodiscard]] std::shared_ptr<STTx const> const&
     getTX() const
     {
         return m_txn;
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccount() const
     {
         return m_account;

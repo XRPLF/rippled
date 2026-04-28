@@ -71,6 +71,20 @@ public:
     TER
     doApply() override;
 
+    void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
+
     /** Equal-asset withdrawal (LPTokens) of some AMM instance pools
      * shares represented by the number of LPTokens .
      * The trading fee is not charged.

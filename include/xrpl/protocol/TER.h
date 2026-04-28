@@ -487,8 +487,7 @@ public:
 template <typename L, typename R>
 constexpr auto
 operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) == TERtoInt(rhs);
@@ -497,8 +496,7 @@ operator==(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) != TERtoInt(rhs);
@@ -507,8 +505,7 @@ operator!=(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) < TERtoInt(rhs);
@@ -517,8 +514,7 @@ operator<(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) <= TERtoInt(rhs);
@@ -527,8 +523,7 @@ operator<=(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) > TERtoInt(rhs);
@@ -537,8 +532,7 @@ operator>(L const& lhs, R const& rhs) -> std::enable_if_t<
 template <typename L, typename R>
 constexpr auto
 operator>=(L const& lhs, R const& rhs) -> std::enable_if_t<
-    std::is_same<decltype(TERtoInt(lhs)), int>::value &&
-        std::is_same<decltype(TERtoInt(rhs)), int>::value,
+    std::is_same_v<decltype(TERtoInt(lhs)), int> && std::is_same_v<decltype(TERtoInt(rhs)), int>,
     bool>
 {
     return TERtoInt(lhs) >= TERtoInt(rhs);

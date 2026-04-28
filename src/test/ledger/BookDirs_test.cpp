@@ -1,10 +1,21 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/ledger/BookDirs.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/SField.h>
 
-namespace xrpl {
-namespace test {
+#include <iterator>
+#include <optional>
+
+namespace xrpl::test {
 
 struct BookDirs_test : public beast::unit_test::suite
 {
@@ -88,5 +99,4 @@ struct BookDirs_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(BookDirs, ledger, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -208,10 +208,10 @@ getAMMOfferStartWithTakerGets(
 
     // Try to reduce the offer size to improve the quality.
     // The quality might still not match the targetQuality for a tiny offer.
-    if (auto amounts = getAmounts(*nTakerGets); Quality{amounts} < targetQuality)
+    auto amounts = getAmounts(*nTakerGets);
+    if (Quality{amounts} < targetQuality)
         return getAmounts(detail::reduceOffer(amounts.out));
-    else
-        return amounts;
+    return amounts;
 }
 
 /** Generate AMM offer starting with takerPays when AMM pool
@@ -275,10 +275,10 @@ getAMMOfferStartWithTakerPays(
 
     // Try to reduce the offer size to improve the quality.
     // The quality might still not match the targetQuality for a tiny offer.
-    if (auto amounts = getAmounts(*nTakerPays); Quality{amounts} < targetQuality)
+    auto amounts = getAmounts(*nTakerPays);
+    if (Quality{amounts} < targetQuality)
         return getAmounts(detail::reduceOffer(amounts.in));
-    else
-        return amounts;
+    return amounts;
 }
 
 /**   Generate AMM offer so that either updated Spot Price Quality (SPQ)
@@ -318,9 +318,12 @@ changeSpotPriceQuality(
         auto const& a = f;
         auto const b = pool.in * (1 + f);
         Number const c = pool.in * pool.in - pool.in * pool.out * quality.rate();
-        if (auto const res = b * b - 4 * a * c; res < 0)
+        auto const res = b * b - 4 * a * c;
+        if (res < 0)
+        {
             return std::nullopt;  // LCOV_EXCL_LINE
-        else if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
+        }
+        if (auto const nTakerPaysPropose = (-b + root2(res)) / (2 * a); nTakerPaysPropose > 0)
         {
             auto const nTakerPays = [&]() {
                 // The fee might make the AMM offer quality less than CLOB
@@ -465,13 +468,11 @@ swapAssetIn(TAmounts<TIn, TOut> const& pool, TIn const& assetIn, std::uint16_t t
 
         return toAmount<TOut>(getAsset(pool.out), swapOut, Number::downward);
     }
-    else
-    {
-        return toAmount<TOut>(
-            getAsset(pool.out),
-            pool.out - (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
-            Number::downward);
-    }
+
+    return toAmount<TOut>(
+        getAsset(pool.out),
+        pool.out - (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
+        Number::downward);
 }
 
 /** Swap assetOut out of the pool and swap in a proportional amount
@@ -533,13 +534,11 @@ swapAssetOut(TAmounts<TIn, TOut> const& pool, TOut const& assetOut, std::uint16_
 
         return toAmount<TIn>(getAsset(pool.in), swapIn, Number::upward);
     }
-    else
-    {
-        return toAmount<TIn>(
-            getAsset(pool.in),
-            ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) / feeMult(tfee),
-            Number::upward);
-    }
+
+    return toAmount<TIn>(
+        getAsset(pool.in),
+        ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) / feeMult(tfee),
+        Number::upward);
 }
 
 /** Return square of n.
@@ -623,9 +622,13 @@ getRoundedAsset(Rules const& rules, STAmount const& balance, A const& frac, IsDe
     if (!rules.enabled(fixAMMv1_3))
     {
         if constexpr (std::is_same_v<A, STAmount>)
+        {
             return multiply(balance, frac, balance.asset());
+        }
         else
+        {
             return toSTAmount(balance.asset(), balance * frac);
+        }
     }
     auto const rm = detail::getAssetRounding(isDeposit);
     return multiply(balance, frac, rm);

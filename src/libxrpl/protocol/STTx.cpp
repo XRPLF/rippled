@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STTx.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
@@ -24,18 +26,14 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
-#include <boost/format/format_fwd.hpp>
 #include <boost/format/free_funcs.hpp>
 
 #include <array>
@@ -50,6 +48,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 

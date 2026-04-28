@@ -1,7 +1,27 @@
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
 
-namespace xrpl {
-namespace NodeStore {
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/DatabaseRotating.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <utility>
+
+namespace xrpl::NodeStore {
 
 DatabaseRotatingImp::DatabaseRotatingImp(
     Scheduler& scheduler,
@@ -178,5 +198,4 @@ DatabaseRotatingImp::for_each(std::function<void(std::shared_ptr<NodeObject>)> f
     archive->for_each(f);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

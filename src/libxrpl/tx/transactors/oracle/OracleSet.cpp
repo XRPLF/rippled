@@ -1,12 +1,31 @@
-#include <xrpl/ledger/Sandbox.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/tx/transactors/oracle/OracleSet.h>
+
+#include <xrpl/basics/chrono.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/digest.h>
-#include <xrpl/tx/transactors/oracle/OracleSet.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <memory>
+#include <set>
+#include <utility>
 
 namespace xrpl {
 
@@ -339,6 +358,20 @@ OracleSet::doApply()
     }
 
     return tesSUCCESS;
+}
+
+void
+OracleSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+OracleSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

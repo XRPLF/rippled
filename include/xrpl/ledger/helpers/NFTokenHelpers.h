@@ -8,9 +8,9 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nft.h>
 
-namespace xrpl {
+#include <utility>
 
-namespace nft {
+namespace xrpl::nft {
 
 /** Delete up to a specified number of offers from the specified token offer
  * directory. */
@@ -19,10 +19,6 @@ removeTokenOffersWithLimit(
     ApplyView& view,
     Keylet const& directory,
     std::size_t maxDeletableOffers);
-
-/** Returns tesSUCCESS if NFToken has few enough offers that it can be burned */
-TER
-notTooManyOffers(ReadView const& view, uint256 const& nftokenID);
 
 /** Finds the specified token in the owner's token directory. */
 std::optional<STObject>
@@ -34,8 +30,8 @@ struct TokenAndPage
     STObject token;
     std::shared_ptr<SLE> page;
 
-    TokenAndPage(STObject const& token_, std::shared_ptr<SLE> page_)
-        : token(token_), page(std::move(page_))
+    TokenAndPage(STObject token_, std::shared_ptr<SLE> page_)
+        : token(std::move(token_)), page(std::move(page_))
     {
     }
 };
@@ -146,6 +142,4 @@ checkTrustlineDeepFrozen(
     beast::Journal const j,
     Issue const& issue);
 
-}  // namespace nft
-
-}  // namespace xrpl
+}  // namespace xrpl::nft

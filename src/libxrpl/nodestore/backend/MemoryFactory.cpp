@@ -1,16 +1,30 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
 #include <boost/beast/core/string.hpp>
 #include <boost/core/ignore_unused.hpp>
 
+#include <cstddef>
+#include <functional>
 #include <map>
 #include <memory>
 #include <mutex>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 struct MemoryDB
 {
@@ -31,7 +45,7 @@ private:
 public:
     explicit MemoryFactory(Manager& manager);
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override;
 
     std::unique_ptr<Backend>
@@ -193,7 +207,7 @@ public:
     {
     }
 
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -224,5 +238,4 @@ MemoryFactory::createInstance(
     return std::make_unique<MemoryBackend>(keyBytes, keyValues, journal);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

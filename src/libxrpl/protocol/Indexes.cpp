@@ -1,3 +1,5 @@
+#include <xrpl/protocol/Indexes.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
@@ -5,8 +7,10 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Concepts.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STXChainBridge.h>
@@ -23,6 +27,7 @@
 #include <cstring>
 #include <set>
 #include <utility>
+#include <variant>
 #include <vector>
 
 namespace xrpl {

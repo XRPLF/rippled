@@ -1,10 +1,11 @@
+#include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
+
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/SponsorHelpers.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/sponsor/SponsorshipSet.h>
 
 namespace xrpl {
 
@@ -344,6 +345,25 @@ SponsorshipSet::doApply()
     view().update(sponsorObjSle);
 
     return tesSUCCESS;
+}
+
+void
+SponsorshipSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+SponsorshipSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

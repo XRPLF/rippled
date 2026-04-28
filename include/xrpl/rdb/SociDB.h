@@ -39,11 +39,11 @@ class BasicConfig;
 class DBConfig
 {
     std::string connectionString_;
-    explicit DBConfig(std::string const& dbPath);
+    explicit DBConfig(std::string dbPath);
 
 public:
     DBConfig(BasicConfig const& config, std::string const& dbName);
-    std::string
+    [[nodiscard]] std::string
     connectionString() const;
     void
     open(soci::session& s) const;

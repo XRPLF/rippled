@@ -1,8 +1,23 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/core/PerfLog.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobTypeInfo.h>
+#include <xrpl/core/LoadEvent.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
+
+#include <algorithm>
+#include <chrono>
+#include <functional>
+#include <memory>
 #include <mutex>
+#include <set>
+#include <tuple>
+#include <utility>
 
 namespace xrpl {
 
@@ -164,9 +179,7 @@ JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
 bool
 JobQueue::isOverloaded()
 {
-    return std::any_of(m_jobData.begin(), m_jobData.end(), [](auto& entry) {
-        return entry.second.load().isOver();
-    });
+    return std::ranges::any_of(m_jobData, [](auto& entry) { return entry.second.load().isOver(); });
 }
 
 Json::Value

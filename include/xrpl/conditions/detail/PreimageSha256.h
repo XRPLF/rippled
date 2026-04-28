@@ -9,8 +9,7 @@
 
 #include <memory>
 
-namespace xrpl {
-namespace cryptoconditions {
+namespace xrpl::cryptoconditions {
 
 class PreimageSha256 final : public Fulfillment
 {
@@ -91,13 +90,13 @@ public:
     {
     }
 
-    Type
+    [[nodiscard]] Type
     type() const override
     {
         return Type::preimageSha256;
     }
 
-    Buffer
+    [[nodiscard]] Buffer
     fingerprint() const override
     {
         sha256_hasher h;
@@ -106,19 +105,19 @@ public:
         return {d.data(), d.size()};
     }
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     cost() const override
     {
         return static_cast<std::uint32_t>(payload_.size());
     }
 
-    Condition
+    [[nodiscard]] Condition
     condition() const override
     {
         return {type(), cost(), fingerprint()};
     }
 
-    bool
+    [[nodiscard]] bool
     validate(Slice) const override
     {
         // Perhaps counterintuitively, the message isn't
@@ -127,5 +126,4 @@ public:
     }
 };
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions

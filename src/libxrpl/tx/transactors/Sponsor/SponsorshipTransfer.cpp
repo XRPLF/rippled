@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
+
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/protocol/Asset.h>
@@ -8,7 +10,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/oracle/OracleSet.h>
-#include <xrpl/tx/transactors/sponsor/SponsorshipTransfer.h>
 
 namespace xrpl {
 
@@ -589,6 +590,25 @@ SponsorshipTransfer::doApply()
     }
 
     return tesSUCCESS;
+}
+
+void
+SponsorshipTransfer::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+SponsorshipTransfer::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

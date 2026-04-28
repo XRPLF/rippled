@@ -1,6 +1,5 @@
 #include <xrpl/protocol/Rules.h>
-// Do not remove. Forces Rules.h to stay first, to verify it can compile
-// without any hidden dependencies
+
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -68,13 +67,13 @@ public:
         set_.insert(amendments.begin(), amendments.end());
     }
 
-    std::unordered_set<uint256, beast::uhash<>> const&
+    [[nodiscard]] std::unordered_set<uint256, beast::uhash<>> const&
     presets() const
     {
         return presets_;
     }
 
-    bool
+    [[nodiscard]] bool
     enabled(uint256 const& feature) const
     {
         if (presets_.contains(feature))

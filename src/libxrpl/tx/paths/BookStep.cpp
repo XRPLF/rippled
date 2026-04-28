@@ -1,26 +1,53 @@
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rate.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/paths/AMMLiquidity.h>
 #include <xrpl/tx/paths/AMMOffer.h>
+#include <xrpl/tx/paths/BookTip.h>
 #include <xrpl/tx/paths/OfferStream.h>
+#include <xrpl/tx/paths/detail/EitherAmount.h>
 #include <xrpl/tx/paths/detail/FlatSets.h>
 #include <xrpl/tx/paths/detail/Steps.h>
-#include <xrpl/tx/transactors/token/MPTokenAuthorize.h>
 
 #include <boost/container/flat_set.hpp>
 
+#include <cstdint>
+#include <memory>
 #include <numeric>
+#include <optional>
 #include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -91,13 +118,13 @@ private:
     }
 
 public:
-    Book const&
+    [[nodiscard]] Book const&
     book() const
     {
         return book_;
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedIn() const override
     {
         if (!cache_)
@@ -105,7 +132,7 @@ public:
         return EitherAmount(cache_->in);
     }
 
-    std::optional<EitherAmount>
+    [[nodiscard]] std::optional<EitherAmount>
     cachedOut() const override
     {
         if (!cache_)
@@ -113,25 +140,25 @@ public:
         return EitherAmount(cache_->out);
     }
 
-    DebtDirection
+    [[nodiscard]] DebtDirection
     debtDirection(ReadView const& sb, StrandDirection dir) const override
     {
         return ownerPaysTransferFee_ ? DebtDirection::issues : DebtDirection::redeems;
     }
 
-    std::optional<Book>
+    [[nodiscard]] std::optional<Book>
     bookStepBook() const override
     {
         return book_;
     }
 
-    std::pair<std::optional<Quality>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<Quality>, DebtDirection>
     qualityUpperBound(ReadView const& v, DebtDirection prevStepDir) const override;
 
-    std::pair<std::optional<QualityFunction>, DebtDirection>
+    [[nodiscard]] std::pair<std::optional<QualityFunction>, DebtDirection>
     getQualityFunc(ReadView const& v, DebtDirection prevStepDir) const override;
 
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     offersUsed() const override;
 
     std::pair<TIn, TOut>
@@ -152,10 +179,10 @@ public:
     validFwd(PaymentSandbox& sb, ApplyView& afView, EitherAmount const& in) override;
 
     // Check for errors frozen constraints.
-    TER
+    [[nodiscard]] TER
     check(StrandContext const& ctx) const;
 
-    bool
+    [[nodiscard]] bool
     inactive() const override
     {
         return inactive_;
@@ -172,7 +199,7 @@ protected:
         return ostr.str();
     }
 
-    Rate
+    [[nodiscard]] Rate
     rate(ReadView const& view, Asset const& asset, AccountID const& dstAccount) const;
 
 private:
@@ -188,7 +215,7 @@ private:
         return !(lhs == rhs);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(Step const& rhs) const override;
 
     // Iterate through the offers at the best quality in a book.
@@ -231,12 +258,12 @@ private:
     tipOfferQuality(ReadView const& view) const;
     // If seated then it is either AMM or CLOB quality function,
     // whichever is a better quality.
-    std::optional<QualityFunction>
+    [[nodiscard]] std::optional<QualityFunction>
     tipOfferQualityF(ReadView const& view) const;
 
     // Check that takerPays/takerGets can be transferred/traded.
     // Applies to MPT assets.
-    bool
+    [[nodiscard]] bool
     checkMPTDEX(ReadView const& view, AccountID const& owner) const;
 
     friend TDerived;
@@ -280,7 +307,7 @@ public:
     }
 
     // A payment can look at offers of any quality
-    bool
+    [[nodiscard]] bool
     checkQualityThreshold(Quality const& quality) const
     {
         return true;
@@ -288,7 +315,7 @@ public:
 
     // A payment doesn't use quality threshold (limitQuality)
     // since the strand's quality doesn't directly relate to the step's quality.
-    std::optional<Quality>
+    [[nodiscard]] std::optional<Quality>
     qualityThreshold(Quality const& lobQuality) const
     {
         return lobQuality;
@@ -308,7 +335,7 @@ public:
         return trOut;
     }
 
-    Quality
+    [[nodiscard]] Quality
     adjustQualityWithFees(
         ReadView const& v,
         Quality const& ofrQ,
@@ -334,7 +361,7 @@ public:
         return composed_quality(q1, ofrQ);
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return this->logStringImpl("BookPaymentStep");
@@ -428,7 +455,7 @@ public:
 
     // Offer crossing can prune the offers it needs to look at with a
     // quality threshold.
-    bool
+    [[nodiscard]] bool
     checkQualityThreshold(Quality const& quality) const
     {
         return !defaultPath_ || quality >= qualityThreshold_;
@@ -444,7 +471,7 @@ public:
     // generates the maximum AMM offer in this case, which matches
     // the quality threshold. This only applies to single path scenario.
     // Multi-path AMM offers work the same as LOB offers.
-    std::optional<Quality>
+    [[nodiscard]] std::optional<Quality>
     qualityThreshold(Quality const& lobQuality) const
     {
         if (this->ammLiquidity_ && !this->ammLiquidity_->multiPath() &&
@@ -480,7 +507,7 @@ public:
             : trOut;  // then rate = QUALITY_ONE
     }
 
-    Quality
+    [[nodiscard]] Quality
     adjustQualityWithFees(
         ReadView const& v,
         Quality const& ofrQ,
@@ -518,7 +545,7 @@ public:
         return composed_quality(q1, ofrQ);
     }
 
-    std::string
+    [[nodiscard]] std::string
     logString() const override
     {
         return this->logStringImpl("BookOfferCrossingStep");
@@ -583,7 +610,13 @@ BookStep<TIn, TOut, TDerived>::getQualityFunc(ReadView const& v, DebtDirection p
 
     // CLOB
     Quality const q = static_cast<TDerived const*>(this)->adjustQualityWithFees(
-        v, *(res->quality()), prevStepDir, WaiveTransferFee::No, OfferType::CLOB, v.rules());
+        v,
+        *(res->quality()),  // NOLINT(bugprone-unchecked-optional-access) CLOB QualityFunction
+                            // always has quality set
+        prevStepDir,
+        WaiveTransferFee::No,
+        OfferType::CLOB,
+        v.rules());
     return {QualityFunction{q, QualityFunction::CLOBLikeTag{}}, dir};
 }
 
@@ -1259,6 +1292,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
         return {false, EitherAmount(TOut(beast::zero))};
     }
 
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) fwdImp sets cache_ on success
     if (!(checkNear(savCache.in, cache_->in) && checkNear(savCache.out, cache_->out)))
     {
         JLOG(j_.warn()) << "Strand re-execute check failed."
@@ -1269,6 +1303,7 @@ BookStep<TIn, TOut, TDerived>::validFwd(
         return {false, EitherAmount(cache_->out)};
     }
     return {true, EitherAmount(cache_->out)};
+    // NOLINTEND(bugprone-unchecked-optional-access)
 }
 
 template <class TIn, class TOut, class TDerived>
@@ -1428,18 +1463,22 @@ equalHelper(Step const& step, xrpl::Book const& book)
 bool
 bookStepEqual(Step const& step, xrpl::Book const& book)
 {
-    if (isXRP(book.in) && isXRP(book.out))
-    {
-        // LCOV_EXCL_START
-        UNREACHABLE("xrpl::test::bookStepEqual : no XRP to XRP book step");
-        return false;  // no such thing as xrp/xrp book step
-        // LCOV_EXCL_STOP
-    }
     return std::visit(
         [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
             using TIn_ = typename TIn::amount_type;
             using TOut_ = typename TOut::amount_type;
-            return equalHelper<TIn_, TOut_, BookPaymentStep<TIn_, TOut_>>(step, book);
+
+            if constexpr (ValidTaker<TIn_, TOut_>)
+            {
+                return equalHelper<TIn_, TOut_, BookPaymentStep<TIn_, TOut_>>(step, book);
+            }
+            else
+            {
+                // LCOV_EXCL_START
+                UNREACHABLE("xrpl::bookStepEqual : invalid book step");
+                return false;
+                // LCOV_EXCL_STOP
+            }
         },
         book.in.getAmountType(),
         book.out.getAmountType());

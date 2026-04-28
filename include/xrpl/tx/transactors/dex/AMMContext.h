@@ -39,7 +39,7 @@ public:
     AMMContext&
     operator=(AMMContext const&) = delete;
 
-    bool
+    [[nodiscard]] bool
     multiPath() const
     {
         return multiPath_;
@@ -65,19 +65,19 @@ public:
         ammUsed_ = false;
     }
 
-    bool
+    [[nodiscard]] bool
     maxItersReached() const
     {
         return ammIters_ >= MaxIterations;
     }
 
-    std::uint16_t
+    [[nodiscard]] std::uint16_t
     curIters() const
     {
         return ammIters_;
     }
 
-    AccountID
+    [[nodiscard]] AccountID
     account() const
     {
         return account_;

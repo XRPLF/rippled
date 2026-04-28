@@ -15,9 +15,7 @@ class Value;
 class WriterBase
 {
 public:
-    virtual ~WriterBase()
-    {
-    }
+    virtual ~WriterBase() = default;
     virtual std::string
     write(Value const& root) = 0;
 };
@@ -34,9 +32,7 @@ class FastWriter : public WriterBase
 {
 public:
     FastWriter() = default;
-    virtual ~FastWriter()
-    {
-    }
+    ~FastWriter() override = default;
 
 public:  // overridden from Writer
     std::string
@@ -71,9 +67,7 @@ class StyledWriter : public WriterBase
 {
 public:
     StyledWriter();
-    virtual ~StyledWriter()
-    {
-    }
+    ~StyledWriter() override = default;
 
 public:  // overridden from Writer
     /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
@@ -136,9 +130,7 @@ class StyledStreamWriter
 {
 public:
     StyledStreamWriter(std::string indentation = "\t");
-    ~StyledStreamWriter()
-    {
-    }
+    ~StyledStreamWriter() = default;
 
 public:
     /** \brief Serialize a Value in <a HREF="http://www.json.org">JSON</a>
