@@ -1,4 +1,5 @@
 #include <test/jtx/sponsor.h>
+
 #include <test/jtx/utility.h>
 
 #include <xrpl/protocol/Sign.h>
