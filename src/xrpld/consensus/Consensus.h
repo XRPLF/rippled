@@ -1,8 +1,8 @@
 #pragma once
 
-#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusProposal.h>
+#include <xrpld/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/consensus/DisputedTx.h>
 
@@ -1804,6 +1804,8 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         stateStr = "yes";
     else if (result_->state == ConsensusState::MovedOn)
         stateStr = "moved_on";
+    else if (result_->state == ConsensusState::Expired)
+        stateStr = "expired";
     span.setAttribute(cons_span::attr::result, stateStr);
 
     CLOG(clog) << "Consensus has been reached. ";

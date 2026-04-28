@@ -1,6 +1,5 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 
-#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -10,6 +9,7 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxSpanNames.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/Validations.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
