@@ -539,26 +539,6 @@ Ledger::rawTxInsert(
         LogicError("duplicate_tx: " + to_string(key));
 }
 
-uint256
-Ledger::rawTxInsertWithHash(
-    uint256 const& key,
-    std::shared_ptr<Serializer const> const& txn,
-    std::shared_ptr<Serializer const> const& metaData)
-{
-    XRPL_ASSERT(metaData, "xrpl::Ledger::rawTxInsertWithHash : non-null metadata input");
-
-    // low-level - just add to table
-    Serializer s(txn->getDataLength() + metaData->getDataLength() + 16);
-    s.addVL(txn->peekData());
-    s.addVL(metaData->peekData());
-    auto item = make_shamapitem(key, s.slice());
-    auto hash = sha512Half(HashPrefix::txNode, item->slice(), item->key());
-    if (!txMap_.addGiveItem(SHAMapNodeType::tnTRANSACTION_MD, std::move(item)))
-        Throw<std::logic_error>("duplicate_tx: " + to_string(key));
-
-    return hash;
-}
-
 bool
 Ledger::setup()
 {
