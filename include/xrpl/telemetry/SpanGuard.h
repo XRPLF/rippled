@@ -17,8 +17,8 @@
         | + span(cat, prefix, name)              [static] |
         | + childSpan(name) : SpanGuard                   |
         | + linkedSpan(name) : SpanGuard                  |
-        | + txSpan(prefix, name, hash)           [static] |
-        | + txSpan(prefix, name, hash, parent)   [static] |
+        | + hashSpan(cat, name, hash)            [static] |
+        | + hashSpan(cat, name, hash, parent)    [static] |
         | + captureContext() : SpanContext                 |
         | + setAttribute(key, value)                      |
         | + setOk() / setError(desc)                      |
@@ -239,30 +239,31 @@ public:
     [[nodiscard]] static SpanGuard
     linkedSpan(std::string_view name, SpanContext const& linkCtx);
 
-    // --- Transaction span with hash-derived trace ID -------------------
+    // --- Hash-derived span (category-gated) -----------------------------
 
-    /** Create a span whose trace_id is derived from a transaction hash.
-        trace_id = hashData[0:16], span_id = random. All nodes handling
-        the same transaction independently produce spans under the same
-        trace, enabling cross-node correlation without context propagation.
-        @param prefix    Span name prefix (e.g. "tx").
-        @param name      Span name suffix (e.g. "receive").
+    /** Create a span whose trace_id is derived from arbitrary hash data.
+        trace_id = hashData[0:16], span_id = random. Gated by the given
+        TraceCategory. All nodes using the same hash independently produce
+        spans under the same trace_id, enabling cross-node correlation
+        without context propagation.
+        @param cat       Trace subsystem category.
+        @param name      Full span name (e.g. "tx.receive").
         @param hashData  Pointer to at least 16 bytes of hash data.
         @param hashSize  Size of the hash buffer (must be >= 16).
     */
     static SpanGuard
-    txSpan(
-        std::string_view prefix,
+    hashSpan(
+        TraceCategory cat,
         std::string_view name,
         std::uint8_t const* hashData,
         std::size_t hashSize);
 
-    /** Create a span with hash-derived trace_id and a remote parent.
+    /** Create a hash-derived span with a remote parent.
         trace_id = hashData[0:16], parent span_id from protobuf context
         propagation. Produces a child span of the sender's span while
         sharing the deterministic trace_id.
-        @param prefix          Span name prefix.
-        @param name            Span name suffix.
+        @param cat             Trace subsystem category.
+        @param name            Full span name.
         @param hashData        Pointer to at least 16 bytes of hash data.
         @param hashSize        Size of the hash buffer (must be >= 16).
         @param parentSpanId    Pointer to 8 bytes of parent span ID.
@@ -270,8 +271,8 @@ public:
         @param traceFlags      Trace flags from remote context.
     */
     static SpanGuard
-    txSpan(
-        std::string_view prefix,
+    hashSpan(
+        TraceCategory cat,
         std::string_view name,
         std::uint8_t const* hashData,
         std::size_t hashSize,
@@ -393,13 +394,13 @@ public:
     }
 
     [[nodiscard]] static SpanGuard
-    txSpan(std::string_view, std::string_view, std::uint8_t const*, std::size_t)
+    hashSpan(TraceCategory, std::string_view, std::uint8_t const*, std::size_t)
     {
         return {};
     }
     [[nodiscard]] static SpanGuard
-    txSpan(
-        std::string_view,
+    hashSpan(
+        TraceCategory,
         std::string_view,
         std::uint8_t const*,
         std::size_t,
