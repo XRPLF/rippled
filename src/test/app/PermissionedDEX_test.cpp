@@ -1093,8 +1093,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         testcase("Hybrid invalid offer");
 
         // bob has a hybrid offer and then he is removed from domain.
-        // Domain payments are blocked once the credential is revoked, but
-        // the hybrid offer remains crossable in the open book.
+        // in this case, the hybrid offer will be considered as unfunded even in
+        // a regular payment
         Env env(*this, features);
         auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
             PermissionedDEX(env);
@@ -1107,9 +1107,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
         env(credentials::deleteCred(domainOwner, bob, domainOwner, credType));
         env.close();
 
-        // bob's hybrid offer cannot be consumed via a domain payment —
-        // the domain book evicts it, but since the payment fails the sandbox
-        // is discarded and the offer remains intact.
+        // bob's hybrid offer is unfunded and can not be consumed in a domain
+        // payment
         env(pay(alice, carol, USD(5)),
             path(~USD),
             sendmax(XRP(5)),
@@ -1120,7 +1119,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         if (features[fixCleanup3_2_0])
         {
-            // With the fix: hybrid offer CAN still be consumed via a regular
+            // post-fixCleanup3_2_0: hybrid offer CAN still be consumed via a regular
             // open-book payment even though the domain credential was revoked.
             auto const carolBalBefore = env.balance(carol, USD);
             env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
@@ -1152,7 +1151,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         }
         else
         {
-            // Without the fix (original behaviour): the open-book traversal
+            // pre-fixCleanup3_2_0 (original behaviour): the open-book traversal
             // also runs the offerInDomain eviction check, so the hybrid offer
             // is treated as unfunded and the regular payment fails.
             env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)), ter(tecPATH_PARTIAL));
@@ -1383,10 +1382,10 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         // A non-domain open-book payment partially crosses the offer while
         // devin's credential is still valid.
-        auto const carolBalBefore = env.balance(carol, USD);
+        auto carolBalance = env.balance(carol, USD);
         env(pay(alice, carol, USD(5)), path(~USD), sendmax(XRP(5)));
         env.close();
-        BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore == USD(5));
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalance == USD(5));
         BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(5), USD(5), lsfHybrid, true));
 
         // Advance time so that devin's credential expires.
@@ -1401,12 +1400,12 @@ class PermissionedDEX_test : public beast::unit_test::suite
 
         // A non-domain open-book payment must cross (not evict) the
         // remaining portion of devin's hybrid offer.
-        auto const carolBalBefore2 = env.balance(carol, USD);
+        carolBalance = env.balance(carol, USD);
         env(pay(alice, carol, USD(2)), path(~USD), sendmax(XRP(2)));
         env.close();
 
         // Carol received USD — the offer was crossed, not evicted.
-        BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore2 == USD(2));
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalance == USD(2));
         // Offer still exists with 3 USD / 3 XRP remaining.
         BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
 
@@ -1425,10 +1424,10 @@ class PermissionedDEX_test : public beast::unit_test::suite
         BEAST_EXPECT(checkOffer(env, devin, hybridOfferSeq, XRP(3), USD(3), lsfHybrid, true));
 
         // The open book can still fully consume the remaining portion.
-        auto const carolBalBefore3 = env.balance(carol, USD);
+        carolBalance = env.balance(carol, USD);
         env(pay(alice, carol, USD(3)), path(~USD), sendmax(XRP(3)));
         env.close();
-        BEAST_EXPECT(env.balance(carol, USD) - carolBalBefore3 == USD(3));
+        BEAST_EXPECT(env.balance(carol, USD) - carolBalance == USD(3));
         BEAST_EXPECT(!offerExists(env, devin, hybridOfferSeq));
     }
 
