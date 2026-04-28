@@ -14,7 +14,6 @@
         +-------------------------------------------+
         | - impl_ : unique_ptr<Impl>  (pimpl)       |
         +-------------------------------------------+
-        | + span(name) : SpanGuard          [static] |
         | + span(cat, prefix, name)         [static] |
         | + childSpan(name) : SpanGuard              |
         | + linkedSpan(name) : SpanGuard             |
@@ -194,12 +193,6 @@ public:
 
     // --- Static factory methods ----------------------------------------
 
-    /** Create an unconditional span (always created if telemetry is on).
-        @param name  Full span name (e.g. "app.startup").
-    */
-    static SpanGuard
-    span(std::string_view name);
-
     /** Create a span guarded by a TraceCategory flag.
         The span name is built as "prefix.name". Returns a null guard
         if the category is disabled in config.
@@ -329,11 +322,6 @@ public:
     SpanGuard&
     operator=(SpanGuard const&) = delete;
 
-    static SpanGuard
-    span(std::string_view)
-    {
-        return {};
-    }
     static SpanGuard
     span(TraceCategory, std::string_view, std::string_view)
     {

@@ -20,8 +20,9 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanGuard.h>
+
+#include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/context/runtime_context.h>
@@ -129,15 +130,6 @@ isCategoryEnabled(Telemetry const& tel, TraceCategory cat)
             return tel.shouldTraceLedger();
     }
     return false;  // unreachable, silences compiler warning
-}
-
-SpanGuard
-SpanGuard::span(std::string_view name)
-{
-    auto* tel = Telemetry::getInstance();
-    if (!tel || !tel->isEnabled())
-        return {};
-    return SpanGuard(std::make_unique<Impl>(tel->startSpan(name)));
 }
 
 SpanGuard
