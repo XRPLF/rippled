@@ -15,7 +15,9 @@ class ValidAMM
     std::optional<AccountID> ammAccount_;
     std::optional<STAmount> lptAMMBalanceAfter_;
     std::optional<STAmount> lptAMMBalanceBefore_;
+    std::optional<STAmount> lptAMMBalanceOnDelete_;
     bool ammPoolChanged_{false};
+    bool ammDeleted_{false};
 
 public:
     enum class ZeroAllowed : bool { No = false, Yes = true };
@@ -35,12 +37,17 @@ private:
     [[nodiscard]] bool
     finalizeCreate(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
     [[nodiscard]] bool
-    finalizeDelete(bool enforce, TER res, beast::Journal const&) const;
+    finalizeDelete(bool enforce, bool enforceNew, TER res, beast::Journal const&) const;
     [[nodiscard]] bool
     finalizeDeposit(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
     // Includes clawback
     [[nodiscard]] bool
-    finalizeWithdraw(STTx const&, ReadView const&, bool enforce, beast::Journal const&) const;
+    finalizeWithdraw(
+        STTx const&,
+        ReadView const&,
+        bool enforce,
+        bool enforceNew,
+        beast::Journal const&) const;
     [[nodiscard]] bool
     finalizeDEX(bool enforce, beast::Journal const&) const;
     [[nodiscard]] bool
