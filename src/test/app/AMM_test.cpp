@@ -1846,9 +1846,13 @@ private:
                 //   but invariant check catches the precision violation.
                 // With fixCleanup3_2_0: caught in the transaction layer before
                 //   the invariant checker runs.
-                auto const err = !env.enabled(fixAMMv1_3) ? ter(tecAMM_BALANCE)
-                    : env.enabled(fixCleanup3_2_0)        ? ter(tecPRECISION_LOSS)
-                                                          : ter(tecINVARIANT_FAILED);
+                auto const err = [&] {
+                    if (!env.enabled(fixAMMv1_3))
+                        return ter(tecAMM_BALANCE);
+                    if (env.enabled(fixCleanup3_2_0))
+                        return ter(tecPRECISION_LOSS);
+                    return ter(tecINVARIANT_FAILED);
+                }();
                 ammAlice.withdraw(
                     alice,
                     STAmount{USD, UINT64_C(9'999'999999999999), -12},
