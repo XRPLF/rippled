@@ -223,6 +223,15 @@ inline constexpr auto disputesCount = join(xrplConsensus, makeStr("disputes_coun
 inline constexpr auto trusted = join(xrplConsensus, makeStr("trusted"));
 }  // namespace attr
 
+// ===== Event names ===========================================================
+
+namespace event {
+/// "dispute.resolve"
+inline constexpr auto disputeResolve = join(makeStr("dispute"), makeStr("resolve"));
+/// "tx.included"
+inline constexpr auto txIncluded = join(makeStr("tx"), makeStr("included"));
+}  // namespace event
+
 // ===== Attribute values ======================================================
 
 namespace val {

@@ -597,7 +597,9 @@ RCLConsensus::Adaptor::doAccept(
             JLOG(j_.debug()) << "    Tx: " << item.key();
             ++txCount;
             auto const txHash = to_string(item.key());
-            doAcceptSpan.addEvent("tx.included", {{telemetry::cons_span::attr::txId, txHash}});
+            doAcceptSpan.addEvent(
+                telemetry::cons_span::event::txIncluded,
+                {{telemetry::cons_span::attr::txId, txHash}});
         }
         catch (std::exception const& ex)
         {
