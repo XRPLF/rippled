@@ -181,11 +181,12 @@ SHAMap tracing are not implemented.
 
 | Span Name                   | Location               | Attributes                                                                                                                                                                                                            |
 | --------------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `consensus.proposal.send`   | `RCLConsensus.cpp:177` | `xrpl.consensus.round`                                                                                                                                                                                                |
-| `consensus.ledger_close`    | `RCLConsensus.cpp:282` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                    |
-| `consensus.accept`          | `RCLConsensus.cpp:395` | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                                                                                                                                                            |
-| `consensus.accept.apply`    | `RCLConsensus.cpp:521` | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
-| `consensus.validation.send` | `RCLConsensus.cpp:753` | `xrpl.consensus.proposing`                                                                                                                                                                                            |
+| `consensus.phase.open`      | `Consensus.h:707`      | _(none)_                                                                                                                                                                                                              |
+| `consensus.proposal.send`   | `RCLConsensus.cpp:232` | `xrpl.consensus.round`                                                                                                                                                                                                |
+| `consensus.ledger_close`    | `RCLConsensus.cpp:341` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                    |
+| `consensus.accept`          | `RCLConsensus.cpp:492` | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`, `xrpl.consensus.quorum`                                                                                                                                   |
+| `consensus.accept.apply`    | `RCLConsensus.cpp:541` | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq`, `parent_close_time`, `close_time_self`, `close_time_vote_bins`, `resolution_direction` |
+| `consensus.validation.send` | `RCLConsensus.cpp:900` | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                                                                                                                                               |
 
 ### Exit Criteria
 
@@ -279,7 +280,7 @@ See [Phase4_taskList.md](./Phase4_taskList.md) for full task details.
 validations) to enable true distributed tracing between nodes.
 
 **Status**: Design documented, NOT implemented. Protobuf fields (field 1001)
-and `TraceContextPropagator` class exist. Wiring deferred until Phase 4a is
+and `TraceContextPropagator` free functions exist. Wiring deferred until Phase 4a is
 validated in a multi-node environment.
 
 **Prerequisites**: Phase 4a complete and validated.

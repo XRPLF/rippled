@@ -903,6 +903,6 @@ share the same trace_id. P2P propagation adds **span-level** linking:
 ## Prerequisites
 
 - Phase 4a (this task list) — establish phase tracing must be in place
-- `TraceContextPropagator` class (already exists in
+- `TraceContextPropagator` free functions (already exist in
   `include/xrpl/telemetry/TraceContextPropagator.h`)
 - Protobuf `TraceContext` message (already exists, field 1001)
