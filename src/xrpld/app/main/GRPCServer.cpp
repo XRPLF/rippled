@@ -1,7 +1,7 @@
 #include <xrpld/app/main/GRPCServer.h>
-#include <xrpld/app/main/GrpcSpanNames.h>
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/GrpcSpanNames.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
@@ -178,7 +178,7 @@ GRPCServerImpl::CallData<Request, Response>::process(std::shared_ptr<JobQueue::C
         bool const isUnlimited = clientIsUnlimited();
         if (!isUnlimited && usage.disconnect(app_.getJournal("gRPCServer")))
         {
-            span.setError("resource_exhausted");
+            span.setError(grpc_span::val::resourceExhausted);
             grpc::Status const status{
                 grpc::StatusCode::RESOURCE_EXHAUSTED, "usage balance exceeds threshold"};
             responder_.FinishWithError(status, this);

@@ -157,6 +157,7 @@ using telemetry::attr_val::error;
 using telemetry::attr_val::success;
 inline constexpr auto admin = makeStr("admin");
 inline constexpr auto user = makeStr("user");
+inline constexpr auto unknownCommand = makeStr("unknown");
 }  // namespace val
 
 }  // namespace rpc_span

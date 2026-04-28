@@ -216,7 +216,8 @@ doCommand(RPC::JsonContext& context, Json::Value& result)
             ? context.params[jss::command].asString()
             : context.params.isMember(jss::method) ? context.params[jss::method].asString()
                                                    : "unknown";
-        auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::command, cmdName);
+        auto span = SpanGuard::span(
+            TraceCategory::Rpc, rpc_span::prefix::command, rpc_span::val::unknownCommand);
         span.setAttribute(rpc_span::attr::command, cmdName.c_str());
         span.setError(get_error_info(error).token.c_str());
 
