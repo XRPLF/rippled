@@ -30,7 +30,7 @@ operator==(Endpoint const& a, Endpoint const& b)
     return (a.hops == b.hops && a.address == b.address);
 }
 
-class Livecache_test : public beast::unit_test::suite
+class Livecache_test : public beast::unit_test::Suite
 {
     TestStopwatch clock_;
     test::SuiteJournal journal_;
@@ -132,7 +132,7 @@ public:
         constexpr auto kNUM_EPS = 40;
         Livecache<> c(clock_, journal_);
         for (auto i = 0; i < kNUM_EPS; ++i)
-            add(beast::IP::randomEP(true), c, xrpl::rand_int<std::uint32_t>());
+            add(beast::IP::randomEP(true), c, xrpl::randInt<std::uint32_t>());
         auto h = c.hops.histogram();
         if (!BEAST_EXPECT(!h.empty()))
             return;
@@ -154,7 +154,7 @@ public:
         testcase("Shuffle");
         Livecache<> c(clock_, journal_);
         for (auto i = 0; i < 100; ++i)
-            add(beast::IP::randomEP(true), c, xrpl::rand_int(Tuning::kMAX_HOPS + 1));
+            add(beast::IP::randomEP(true), c, xrpl::randInt(Tuning::kMAX_HOPS + 1));
 
         using at_hop = std::vector<xrpl::PeerFinder::Endpoint>;
         using all_hops = std::array<at_hop, 1 + Tuning::kMAX_HOPS + 1>;

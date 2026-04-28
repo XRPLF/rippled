@@ -68,7 +68,7 @@ parsePreamble(Slice& s, std::error_code& ec)
 
     if (s.size() < 2)
     {
-        ec = error::short_preamble;
+        ec = Error::ShortPreamble;
         return p;
     }
 
@@ -79,7 +79,7 @@ parsePreamble(Slice& s, std::error_code& ec)
 
     if (p.tag == 0x1F)
     {  // Long tag form, which we do not support:
-        ec = error::long_tag;
+        ec = Error::LongTag;
         return p;
     }
 
@@ -92,19 +92,19 @@ parsePreamble(Slice& s, std::error_code& ec)
 
         if (cnt == 0)
         {
-            ec = error::malformed_encoding;
+            ec = Error::MalformedEncoding;
             return p;
         }
 
         if (cnt > sizeof(std::size_t))
         {
-            ec = error::large_size;
+            ec = Error::LargeSize;
             return p;
         }
 
         if (cnt > s.size())
         {
-            ec = error::short_preamble;
+            ec = Error::ShortPreamble;
             return p;
         }
 
@@ -117,7 +117,7 @@ parsePreamble(Slice& s, std::error_code& ec)
 
         if (p.length == 0)
         {
-            ec = error::malformed_encoding;
+            ec = Error::MalformedEncoding;
             return p;
         }
     }
@@ -130,13 +130,13 @@ parseOctetString(Slice& s, std::uint32_t count, std::error_code& ec)
 {
     if (count > s.size())
     {
-        ec = error::buffer_underfull;
+        ec = Error::BufferUnderfull;
         return {};
     }
 
     if (count > 65535)
     {
-        ec = error::large_size;
+        ec = Error::LargeSize;
         return {};
     }
 
@@ -154,13 +154,13 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
     if (s.empty())
     {
         // can never have zero sized integers
-        ec = error::malformed_encoding;
+        ec = Error::MalformedEncoding;
         return v;
     }
 
     if (count > s.size())
     {
-        ec = error::buffer_underfull;
+        ec = Error::BufferUnderfull;
         return v;
     }
 
@@ -169,14 +169,14 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
     size_t const maxLength = isSigned ? sizeof(Integer) : sizeof(Integer) + 1;
     if (count > maxLength)
     {
-        ec = error::large_size;
+        ec = Error::LargeSize;
         return v;
     }
 
     if (!isSigned && (s[0] & (1 << 7)))
     {
         // trying to decode a negative number into a positive value
-        ec = error::malformed_encoding;
+        ec = Error::MalformedEncoding;
         return v;
     }
 
@@ -184,7 +184,7 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
     {
         // since integers are coded as two's complement, the first byte may
         // be zero for unsigned reps
-        ec = error::malformed_encoding;
+        ec = Error::MalformedEncoding;
         return v;
     }
 

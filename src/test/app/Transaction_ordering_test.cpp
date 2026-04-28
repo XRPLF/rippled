@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-struct Transaction_ordering_test : public beast::unit_test::suite
+struct Transaction_ordering_test : public beast::unit_test::Suite
 {
     void
     testCorrectOrder()
@@ -30,19 +30,19 @@ struct Transaction_ordering_test : public beast::unit_test::suite
 
         Env env(*this);
         auto const alice = Account("alice");
-        env.fund(XRP(1000), noripple(alice));
+        env.fund(kXRP(1000), noripple(alice));
 
-        auto const aliceSequence = env.Seq(alice);
+        auto const aliceSequence = env.seq(alice);
 
         auto const tx1 = env.jt(noop(alice), Seq(aliceSequence));
         auto const tx2 = env.jt(noop(alice), Seq(aliceSequence + 1), LastLedgerSeq(7));
 
         env(tx1);
         env.close();
-        BEAST_EXPECT(env.Seq(alice) == aliceSequence + 1);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + 1);
         env(tx2);
         env.close();
-        BEAST_EXPECT(env.Seq(alice) == aliceSequence + 2);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + 2);
 
         env.close();
 
@@ -69,18 +69,18 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         }));
 
         auto const alice = Account("alice");
-        env.fund(XRP(1000), noripple(alice));
+        env.fund(kXRP(1000), noripple(alice));
 
-        auto const aliceSequence = env.Seq(alice);
+        auto const aliceSequence = env.seq(alice);
 
         auto const tx1 = env.jt(noop(alice), Seq(aliceSequence));
         auto const tx2 = env.jt(noop(alice), Seq(aliceSequence + 1), LastLedgerSeq(7));
 
         env(tx2, Ter(terPRE_SEQ));
-        BEAST_EXPECT(env.Seq(alice) == aliceSequence);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence);
         env(tx1);
         env.app().getJobQueue().rendezvous();
-        BEAST_EXPECT(env.Seq(alice) == aliceSequence + 2);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + 2);
 
         env.close();
 
@@ -107,9 +107,9 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         }));
 
         auto const alice = Account("alice");
-        env.fund(XRP(1000), noripple(alice));
+        env.fund(kXRP(1000), noripple(alice));
 
-        auto const aliceSequence = env.Seq(alice);
+        auto const aliceSequence = env.seq(alice);
         static constexpr auto kSIZE = 5;
 
         std::vector<JTx> tx;
@@ -122,12 +122,12 @@ struct Transaction_ordering_test : public beast::unit_test::suite
         for (auto i = 1; i < kSIZE; ++i)
         {
             env(tx[i], Ter(terPRE_SEQ));
-            BEAST_EXPECT(env.Seq(alice) == aliceSequence);
+            BEAST_EXPECT(env.seq(alice) == aliceSequence);
         }
 
         env(tx[0]);
         env.app().getJobQueue().rendezvous();
-        BEAST_EXPECT(env.Seq(alice) == aliceSequence + kSIZE);
+        BEAST_EXPECT(env.seq(alice) == aliceSequence + kSIZE);
 
         env.close();
 

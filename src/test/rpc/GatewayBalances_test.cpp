@@ -17,7 +17,7 @@
 
 namespace xrpl::test {
 
-class GatewayBalances_test : public beast::unit_test::suite
+class GatewayBalances_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -30,14 +30,14 @@ public:
         {
             // Gateway account and assets
             Account const alice{"alice"};
-            env.fund(XRP(10000), "alice");
+            env.fund(kXRP(10000), "alice");
             auto usd = alice["USD"];
             auto cny = alice["CNY"];
             auto jpy = alice["JPY"];
 
             // Create a hotwallet
             Account const hw{"hw"};
-            env.fund(XRP(10000), "hw");
+            env.fund(kXRP(10000), "hw");
             env.close();
             env(trust(hw, usd(10000)));
             env(trust(hw, jpy(10000)));
@@ -46,14 +46,14 @@ public:
 
             // Create some clients
             Account const bob{"bob"};
-            env.fund(XRP(10000), "bob");
+            env.fund(kXRP(10000), "bob");
             env.close();
             env(trust(bob, usd(100)));
             env(trust(bob, cny(100)));
             env(pay(alice, bob, usd(50)));
 
             Account const charley{"charley"};
-            env.fund(XRP(10000), "charley");
+            env.fund(kXRP(10000), "charley");
             env.close();
             env(trust(charley, cny(500)));
             env(trust(charley, jpy(500)));
@@ -61,7 +61,7 @@ public:
             env(pay(alice, charley, jpy(250)));
 
             Account const dave{"dave"};
-            env.fund(XRP(10000), "dave");
+            env.fund(kXRP(10000), "dave");
             env.close();
             env(trust(dave, cny(100)));
             env(pay(alice, dave, cny(30)));
@@ -154,9 +154,9 @@ public:
 
         // Gateway account and assets
         Account const alice{"alice"};
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         Account const hw{"hw"};
-        env.fund(XRP(10000), hw);
+        env.fund(kXRP(10000), hw);
         env.close();
 
         auto wsc = makeWSClient(env.app().config());
@@ -185,16 +185,16 @@ public:
 
         // Gateway account and assets
         Account const alice{"alice"};
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
         auto usd = alice["USD"];
 
         // The largest valid STAmount of USD:
-        STAmount const maxUSD(usd, STAmount::cMaxValue, STAmount::cMaxOffset);
+        STAmount const maxUSD(usd, STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET);
 
         // Create a hotwallet
         Account const hw{"hw"};
-        env.fund(XRP(10000), hw);
+        env.fund(kXRP(10000), hw);
         env.close();
         env(trust(hw, maxUSD));
         env.close();
@@ -202,14 +202,14 @@ public:
 
         // Create some clients
         Account const bob{"bob"};
-        env.fund(XRP(10000), bob);
+        env.fund(kXRP(10000), bob);
         env.close();
         env(trust(bob, maxUSD));
         env.close();
         env(pay(alice, bob, maxUSD));
 
         Account const charley{"charley"};
-        env.fund(XRP(10000), charley);
+        env.fund(kXRP(10000), charley);
         env.close();
         env(trust(charley, maxUSD));
         env.close();
@@ -246,7 +246,7 @@ public:
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(XRP(10000), alice, bob);
+        env.fund(kXRP(10000), alice, bob);
         env.close();
 
         // Create MPT issuance (Alice) with Escrow capability

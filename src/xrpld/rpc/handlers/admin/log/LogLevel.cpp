@@ -22,12 +22,12 @@ doLogLevel(RPC::JsonContext& context)
     if (!context.params.isMember(jss::severity))
     {
         // get log severities
-        Json::Value ret(Json::objectValue);
-        Json::Value lev(Json::objectValue);
+        Json::Value ret(Json::ObjectValue);
+        Json::Value lev(Json::ObjectValue);
 
-        lev[jss::base] = Logs::toString(Logs::fromSeverity(context.app.getLogs().threshold()));
+        lev[jss::base] = Logs::to_string(Logs::fromSeverity(context.app.getLogs().threshold()));
         std::vector<std::pair<std::string, std::string>> const logTable(
-            context.app.getLogs().partition_severities());
+            context.app.getLogs().partitionSeverities());
         for (auto const& [k, v] : logTable)
             lev[k] = v;
 
@@ -37,8 +37,8 @@ doLogLevel(RPC::JsonContext& context)
 
     LogSeverity const sv(Logs::fromString(context.params[jss::severity].asString()));
 
-    if (sv == lsINVALID)
-        return rpcError(rpcINVALID_PARAMS);
+    if (sv == LsInvalid)
+        return rpcError(RpcInvalidParams);
 
     auto severity = Logs::toSeverity(sv);
     // log_level severity
@@ -46,7 +46,7 @@ doLogLevel(RPC::JsonContext& context)
     {
         // set base log threshold
         context.app.getLogs().threshold(severity);
-        return Json::objectValue;
+        return Json::ObjectValue;
     }
 
     // log_level partition severity base?
@@ -64,10 +64,10 @@ doLogLevel(RPC::JsonContext& context)
             context.app.getLogs().get(partition).threshold(severity);
         }
 
-        return Json::objectValue;
+        return Json::ObjectValue;
     }
 
-    return rpcError(rpcINVALID_PARAMS);
+    return rpcError(RpcInvalidParams);
 }
 
 }  // namespace xrpl

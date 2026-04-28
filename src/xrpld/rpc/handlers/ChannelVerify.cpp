@@ -33,7 +33,7 @@ doChannelVerify(RPC::JsonContext& context)
     for (auto const& p : {jss::public_key, jss::channel_id, jss::amount, jss::signature})
     {
         if (!params.isMember(p))
-            return RPC::missing_field_error(p);
+            return RPC::missingFieldError(p);
     }
 
     std::optional<PublicKey> pk;
@@ -45,29 +45,29 @@ doChannelVerify(RPC::JsonContext& context)
         {
             auto pkHex = strUnHex(strPk);
             if (!pkHex)
-                return rpcError(rpcPUBLIC_MALFORMED);
+                return rpcError(RpcPublicMalformed);
             auto const pkType = publicKeyType(makeSlice(*pkHex));
             if (!pkType)
-                return rpcError(rpcPUBLIC_MALFORMED);
+                return rpcError(RpcPublicMalformed);
             pk.emplace(makeSlice(*pkHex));
         }
     }
 
     uint256 channelId;
     if (!channelId.parseHex(params[jss::channel_id].asString()))
-        return rpcError(rpcCHANNEL_MALFORMED);
+        return rpcError(RpcChannelMalformed);
 
     std::optional<std::uint64_t> const optDrops =
-        params[jss::amount].isString() ? to_uint64(params[jss::amount].asString()) : std::nullopt;
+        params[jss::amount].isString() ? toUint64(params[jss::amount].asString()) : std::nullopt;
 
     if (!optDrops)
-        return rpcError(rpcCHANNEL_AMT_MALFORMED);
+        return rpcError(RpcChannelAmtMalformed);
 
     std::uint64_t const drops = *optDrops;
 
     auto sig = strUnHex(params[jss::signature].asString());
     if (!sig || sig->empty())
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
 
     Serializer msg;
     serializePayChanAuthorization(msg, channelId, XRPAmount(drops));

@@ -69,7 +69,7 @@ public:
               ioContext,
               gHttpClientSslContext->context())  // NOLINT(bugprone-unchecked-optional-access)
         , resolver_(ioContext)
-        , header_(maxClientHeaderBytes)
+        , header_(kMAX_CLIENT_HEADER_BYTES)
         , port_(port)
         , maxResponseSize_(maxResponseSize)
         , deadline_(ioContext)
@@ -220,7 +220,7 @@ public:
             resolver_.cancel();
 
             // Stop the transaction.
-            socket_.async_shutdown(
+            socket_.asyncShutdown(
                 std::bind(
                     &HTTPClientImp::handleShutdown, shared_from_this(), std::placeholders::_1));
         }
@@ -246,7 +246,7 @@ public:
                 ? ecResult
                 // gHttpClientSslContext always initialized before use
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                : gHttpClientSslContext->preConnectVerify(socket_.SSLSocket(), deqSites_[0]);
+                : gHttpClientSslContext->preConnectVerify(socket_.sslSocket(), deqSites_[0]);
         }
 
         if (shutdown_)
@@ -260,7 +260,7 @@ public:
             JLOG(j_.trace()) << "Resolve complete.";
 
             boost::asio::async_connect(
-                socket_.lowest_layer(),
+                socket_.lowestLayer(),
                 result,
                 std::bind(
                     &HTTPClientImp::handleConnect, shared_from_this(), std::placeholders::_1));
@@ -284,7 +284,7 @@ public:
 
             // gHttpClientSslContext always initialized before use
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            shutdown_ = gHttpClientSslContext->postConnectVerify(socket_.SSLSocket(), deqSites_[0]);
+            shutdown_ = gHttpClientSslContext->postConnectVerify(socket_.sslSocket(), deqSites_[0]);
 
             if (shutdown_)
             {
@@ -299,7 +299,7 @@ public:
         }
         else if (ssl_)
         {
-            socket_.async_handshake(
+            socket_.asyncHandshake(
                 AutoSocket::ssl_socket::client,
                 std::bind(
                     &HTTPClientImp::handleRequest, shared_from_this(), std::placeholders::_1));
@@ -328,7 +328,7 @@ public:
 
             build_(request_, deqSites_[0]);
 
-            socket_.async_write(
+            socket_.asyncWrite(
                 request_,
                 std::bind(
                     &HTTPClientImp::handleWrite,
@@ -354,7 +354,7 @@ public:
         {
             JLOG(j_.trace()) << "Wrote.";
 
-            socket_.async_read_until(
+            socket_.asyncReadUntil(
                 header_,
                 "\r\n\r\n",
                 std::bind(
@@ -421,7 +421,7 @@ public:
         }
         else
         {
-            socket_.async_read(
+            socket_.asyncRead(
                 response_.prepare(responseSize - body_.size()),
                 boost::asio::transfer_all(),
                 std::bind(

@@ -35,7 +35,7 @@ operator<<(std::ostream& os, std::chrono::nanoseconds ns)
 // dissimilar to how xrpld will normally work.
 // TODO as https://github.com/XRPLF/rippled/issues/4765
 
-class Handler_test : public beast::unit_test::suite
+class Handler_test : public beast::unit_test::Suite
 {
     auto
     time(std::size_t n, auto f, auto prng) -> auto
@@ -97,7 +97,7 @@ class Handler_test : public beast::unit_test::suite
             1'000'000,
             [&](std::size_t i) {
                 auto const d = RPC::getHandler(1, false, names[i]);
-                dummy = dummy + i + (int)d->role_;
+                dummy = dummy + i + (int)d->role;
             },
             [&]() -> std::size_t { return distr(prng); });
 

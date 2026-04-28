@@ -70,7 +70,7 @@ public:
     insert(std::vector<uint256>::const_iterator pos, uint256 const& value);
 
     void
-    push_back(uint256 const& v);
+    pushBack(uint256 const& v);
 
     std::vector<uint256>::iterator
     begin();
@@ -182,7 +182,7 @@ STVector256::insert(std::vector<uint256>::const_iterator pos, uint256 const& val
 }
 
 inline void
-STVector256::push_back(uint256 const& v)
+STVector256::pushBack(uint256 const& v)
 {
     value_.push_back(v);
 }

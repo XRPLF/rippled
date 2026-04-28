@@ -353,7 +353,7 @@ EscrowFinish::doApply()
 
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
             ? xrpl::Rate(slep->getFieldU32(sfTransferRate))
-            : parityRate;
+            : kPARITY_RATE;
         auto const issuer = amount.getIssuer();
         bool const createAsset = destID == account_;
         if (auto const ret = std::visit(

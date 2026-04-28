@@ -17,7 +17,7 @@
 
 namespace xrpl::test {
 
-class BookChanges_test : public beast::unit_test::suite
+class BookChanges_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -93,13 +93,13 @@ public:
 
         auto wsc = makeWSClient(env.app().config());
 
-        env(offer(alice, XRP(10), USD(10)), domain(domainID));
+        env(offer(alice, kXRP(10), USD(10)), Domain(domainID));
         env.close();
 
-        env(pay(bob, carol, USD(10)), Path(~USD), sendmax(XRP(10)), domain(domainID));
+        env(pay(bob, carol, USD(10)), Path(~USD), Sendmax(kXRP(10)), Domain(domainID));
         env.close();
 
-        std::string const txHash{env.tx()->getJson(JsonOptions::kNONE)[jss::hash].asString()};
+        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
 
         Json::Value const txResult = env.rpc("tx", txHash)[jss::result];
         auto const ledgerIndex = txResult[jss::ledger_index].asInt();

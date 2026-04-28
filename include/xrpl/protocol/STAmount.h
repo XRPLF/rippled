@@ -42,31 +42,31 @@ private:
 public:
     using value_type = STAmount;
 
-    constexpr static int cMinOffset = -96;
-    constexpr static int cMaxOffset = 80;
+    constexpr static int kC_MIN_OFFSET = -96;
+    constexpr static int kC_MAX_OFFSET = 80;
 
     // Maximum native value supported by the code
-    constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
-    static_assert(isPowerOfTen(cMinValue));
-    constexpr static std::uint64_t cMaxValue = (cMinValue * 10) - 1;
-    static_assert(cMaxValue == 9'999'999'999'999'999ull);
-    constexpr static std::uint64_t cMaxNative = 9'000'000'000'000'000'000ull;
+    constexpr static std::uint64_t kC_MIN_VALUE = 1'000'000'000'000'000ull;
+    static_assert(isPowerOfTen(kC_MIN_VALUE));
+    constexpr static std::uint64_t kC_MAX_VALUE = (kC_MIN_VALUE * 10) - 1;
+    static_assert(kC_MAX_VALUE == 9'999'999'999'999'999ull);
+    constexpr static std::uint64_t kC_MAX_NATIVE = 9'000'000'000'000'000'000ull;
 
     // Max native value on network.
-    constexpr static std::uint64_t cMaxNativeN = 100'000'000'000'000'000ull;
-    constexpr static std::uint64_t cIssuedCurrency = 0x8'000'000'000'000'000ull;
-    constexpr static std::uint64_t cPositive = 0x4'000'000'000'000'000ull;
-    constexpr static std::uint64_t cMPToken = 0x2'000'000'000'000'000ull;
-    constexpr static std::uint64_t cValueMask = ~(cPositive | cMPToken);
+    constexpr static std::uint64_t kC_MAX_NATIVE_N = 100'000'000'000'000'000ull;
+    constexpr static std::uint64_t kC_ISSUED_CURRENCY = 0x8'000'000'000'000'000ull;
+    constexpr static std::uint64_t kC_POSITIVE = 0x4'000'000'000'000'000ull;
+    constexpr static std::uint64_t kC_MP_TOKEN = 0x2'000'000'000'000'000ull;
+    constexpr static std::uint64_t kC_VALUE_MASK = ~(kC_POSITIVE | kC_MP_TOKEN);
 
-    static std::uint64_t const uRateOne;
+    static std::uint64_t const kU_RATE_ONE;
 
     //--------------------------------------------------------------------------
     STAmount(SerialIter& sit, SField const& name);
 
-    struct unchecked
+    struct Unchecked
     {
-        explicit unchecked() = default;
+        explicit Unchecked() = default;
     };
 
     // Do not call canonicalize
@@ -77,7 +77,7 @@ public:
         mantissa_type mantissa,
         exponent_type exponent,
         bool negative,
-        unchecked);
+        Unchecked);
 
     template <AssetType A>
     STAmount(
@@ -85,7 +85,7 @@ public:
         mantissa_type mantissa,
         exponent_type exponent,
         bool negative,
-        unchecked);
+        Unchecked);
 
     // Call canonicalize
     template <AssetType A>
@@ -241,7 +241,7 @@ public:
     [[nodiscard]] std::string
     getText() const override;
 
-    [[nodiscard]] Json::Value getJson(JsonOptions = JsonOptions::kNONE) const override;
+    [[nodiscard]] Json::Value getJson(JsonOptions = JsonOptions::KNone) const override;
 
     void
     add(Serializer& s) const override;
@@ -293,7 +293,7 @@ STAmount::STAmount(
     mantissa_type mantissa,
     exponent_type exponent,
     bool negative,
-    unchecked)
+    Unchecked)
     : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
 }
@@ -304,7 +304,7 @@ STAmount::STAmount(
     mantissa_type mantissa,
     exponent_type exponent,
     bool negative,
-    unchecked)
+    Unchecked)
     : asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
 }
@@ -319,7 +319,7 @@ STAmount::STAmount(
     : STBase(name), asset_(asset), value_(mantissa), offset_(exponent), isNegative_(negative)
 {
     // value_ is uint64, but needs to fit in the range of int64
-    if (Number::getMantissaScale() == MantissaRange::small)
+    if (Number::getMantissaScale() == MantissaRange::Small)
     {
         XRPL_ASSERT(
             value_ <= std::numeric_limits<std::int64_t>::max(),
@@ -344,42 +344,42 @@ STAmount::STAmount(A const& asset, std::int64_t mantissa, int exponent)
 
 template <AssetType A>
 STAmount::STAmount(A const& asset, std::uint32_t mantissa, int exponent, bool negative)
-    : STAmount(asset, safe_cast<std::uint64_t>(mantissa), exponent, negative)
+    : STAmount(asset, safeCast<std::uint64_t>(mantissa), exponent, negative)
 {
 }
 
 template <AssetType A>
 STAmount::STAmount(A const& asset, int mantissa, int exponent)
-    : STAmount(asset, safe_cast<std::int64_t>(mantissa), exponent)
+    : STAmount(asset, safeCast<std::int64_t>(mantissa), exponent)
 {
 }
 
 // Legacy support for new-style amounts
 inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
-    : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::zero)
+    : asset_(issue), offset_(amount.exponent()), isNegative_(amount < beast::kZERO)
 {
     if (isNegative_)
     {
-        value_ = unsafe_cast<std::uint64_t>(-amount.mantissa());
+        value_ = unsafeCast<std::uint64_t>(-amount.mantissa());
     }
     else
     {
-        value_ = unsafe_cast<std::uint64_t>(amount.mantissa());
+        value_ = unsafeCast<std::uint64_t>(amount.mantissa());
     }
 
     canonicalize();
 }
 
 inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
-    : asset_(mptIssue), offset_(0), isNegative_(amount < beast::zero)
+    : asset_(mptIssue), offset_(0), isNegative_(amount < beast::kZERO)
 {
     if (isNegative_)
     {
-        value_ = unsafe_cast<std::uint64_t>(-amount.value());
+        value_ = unsafeCast<std::uint64_t>(-amount.value());
     }
     else
     {
-        value_ = unsafe_cast<std::uint64_t>(amount.value());
+        value_ = unsafeCast<std::uint64_t>(amount.value());
     }
 
     canonicalize();
@@ -498,7 +498,7 @@ STAmount::zeroed() const
 inline STAmount::
 operator bool() const noexcept
 {
-    return *this != beast::zero;
+    return *this != beast::kZERO;
 }
 
 inline STAmount::
@@ -540,7 +540,7 @@ STAmount::fromNumber(A const& a, Number const& number)
         return STAmount{asset, intValue, 0, negative};
     }
 
-    auto const [mantissa, exponent] = working.normalizeToRange(cMinValue, cMaxValue);
+    auto const [mantissa, exponent] = working.normalizeToRange(kC_MIN_VALUE, kC_MAX_VALUE);
 
     return STAmount{asset, mantissa, exponent, negative};
 }
@@ -548,7 +548,7 @@ STAmount::fromNumber(A const& a, Number const& number)
 inline void
 STAmount::negate()
 {
-    if (*this != beast::zero)
+    if (*this != beast::kZERO)
         isNegative_ = !isNegative_;
 }
 
@@ -578,7 +578,7 @@ STAmount::value() const noexcept
 inline bool
 isLegalNet(STAmount const& value)
 {
-    return !value.native() || (value.mantissa() <= STAmount::cMaxNativeN);
+    return !value.native() || (value.mantissa() <= STAmount::kC_MAX_NATIVE_N);
 }
 
 //------------------------------------------------------------------------------
@@ -674,7 +674,7 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
 roundToScale(
     STAmount const& value,
     std::int32_t scale,
-    Number::rounding_mode rounding = Number::getround());
+    Number::RoundingMode rounding = Number::getround());
 
 /** Round an arbitrary precision Number IN PLACE to the precision of a given
  * Asset.
@@ -709,7 +709,7 @@ roundToAsset(
     A const& asset,
     Number const& value,
     std::int32_t scale,
-    Number::rounding_mode rounding = Number::getround())
+    Number::RoundingMode rounding = Number::getround())
 {
     NumberRoundModeGuard const mg(rounding);
     STAmount const ret{asset, value};

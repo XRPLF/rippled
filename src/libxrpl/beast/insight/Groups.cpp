@@ -21,10 +21,10 @@ namespace detail {
 
 class GroupImp : public std::enable_shared_from_this<GroupImp>, public Group
 {
-public:
     std::string const name_;
     Collector::ptr collector_;
 
+public:
     GroupImp(std::string name, Collector::ptr collector)
         : name_(std::move(name)), collector_(std::move(collector))
     {
@@ -45,33 +45,33 @@ public:
     }
 
     Hook
-    make_hook(HookImpl::HandlerType const& handler) override
+    makeHook(HookImpl::HandlerType const& handler) override
     {
-        return collector_->make_hook(handler);
+        return collector_->makeHook(handler);
     }
 
     Counter
-    make_counter(std::string const& name) override
+    makeCounter(std::string const& name) override
     {
-        return collector_->make_counter(makeName(name));
+        return collector_->makeCounter(makeName(name));
     }
 
     Event
-    make_event(std::string const& name) override
+    makeEvent(std::string const& name) override
     {
-        return collector_->make_event(makeName(name));
+        return collector_->makeEvent(makeName(name));
     }
 
     Gauge
-    make_gauge(std::string const& name) override
+    makeGauge(std::string const& name) override
     {
-        return collector_->make_gauge(makeName(name));
+        return collector_->makeGauge(makeName(name));
     }
 
     Meter
-    make_meter(std::string const& name) override
+    makeMeter(std::string const& name) override
     {
-        return collector_->make_meter(makeName(name));
+        return collector_->makeMeter(makeName(name));
     }
 
     GroupImp&
@@ -83,7 +83,7 @@ public:
 class GroupsImp : public Groups
 {
 public:
-    using Items = std::unordered_map<std::string, std::shared_ptr<Group>, uhash<>>;
+    using Items = std::unordered_map<std::string, std::shared_ptr<Group>, Uhash<>>;
 
     Collector::ptr collector;
     Items items;

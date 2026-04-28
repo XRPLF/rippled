@@ -14,11 +14,11 @@ namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
-class ClosureCounter_test : public beast::unit_test::suite
+class ClosureCounter_test : public beast::unit_test::Suite
 {
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::severities::kDisabled};
+    test::jtx::Env env_{*this, jtx::envconfig(), nullptr, beast::severities::KDisabled};
     beast::Journal j_{env_.app().getJournal("ClosureCounter_test")};
 
     void

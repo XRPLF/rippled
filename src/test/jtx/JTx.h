@@ -24,7 +24,7 @@ struct JTx
     Json::Value jv;
     requires_t require;
     std::optional<TER> ter = TER{tesSUCCESS};
-    std::optional<std::pair<error_code_i, std::string>> rpcCode = std::nullopt;
+    std::optional<std::pair<ErrorCodeI, std::string>> rpcCode = std::nullopt;
     std::optional<std::pair<std::string, std::optional<std::string>>> rpcException = std::nullopt;
     bool fillFee = true;
     bool fillSeq = true;

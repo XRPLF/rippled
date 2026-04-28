@@ -63,8 +63,8 @@ buildLedgerImpl(
         // Write the final version of all modified SHAMap
         // nodes to the node store to preserve the new LCL
 
-        int const asf = built->stateMap().flushDirty(hotACCOUNT_NODE);
-        int const tmf = built->txMap().flushDirty(hotTRANSACTION_NODE);
+        int const asf = built->stateMap().flushDirty(HotAccountNode);
+        int const tmf = built->txMap().flushDirty(HotTransactionNode);
         JLOG(j.debug()) << "Flushed " << asf << " accounts and " << tmf << " transaction nodes";
     }
     built->unshare();
@@ -121,7 +121,7 @@ applyTransactions(
                     continue;
                 }
 
-                switch (applyTransaction(app, view, *it->second, certainRetry, tapNONE, j))
+                switch (applyTransaction(app, view, *it->second, certainRetry, TapNone, j))
                 {
                     case ApplyTransactionResult::Success:
                         it = txns.erase(it);
@@ -223,7 +223,7 @@ buildLedger(
     return buildLedgerImpl(
         replayData.parent(),
         replayLedger->header().closeTime,
-        ((replayLedger->header().closeFlags & sLCF_NoConsensusTime) == 0),
+        ((replayLedger->header().closeFlags & kS_LCF_NO_CONSENSUS_TIME) == 0),
         replayLedger->header().closeTimeResolution,
         app,
         j,

@@ -464,7 +464,7 @@ public:
         @param element The element to insert.
     */
     iterator
-    push_front(T& element) noexcept
+    pushFront(T& element) noexcept
     {
         return insert(begin(), element);
     }
@@ -474,7 +474,7 @@ public:
         @return A reference to the popped element.
     */
     T&
-    pop_front() noexcept
+    popFront() noexcept
     {
         T& element(front());
         erase(begin());
@@ -486,7 +486,7 @@ public:
         @param element The element to append.
     */
     iterator
-    push_back(T& element) noexcept
+    pushBack(T& element) noexcept
     {
         return insert(end(), element);
     }
@@ -496,7 +496,7 @@ public:
         @return A reference to the popped element.
     */
     T&
-    pop_back() noexcept
+    popBack() noexcept
     {
         T& element(back());
         erase(--end());
@@ -539,7 +539,7 @@ public:
         @return An iterator to the element.
     */
     iterator
-    iterator_to(T& element) const noexcept
+    iteratorTo(T& element) const noexcept
     {
         return iterator(static_cast<Node*>(&element));
     }
@@ -550,20 +550,20 @@ public:
         @return A const iterator to the element.
     */
     [[nodiscard]] const_iterator
-    const_iterator_to(T const& element) const noexcept
+    constIteratorTo(T const& element) const noexcept
     {
         return const_iterator(static_cast<Node const*>(&element));
     }
 
 private:
     reference
-    element_from(Node* node) noexcept
+    elementFrom(Node* node) noexcept
     {
         return *(static_cast<pointer>(node));
     }
 
     const_reference
-    element_from(Node const* node) const noexcept
+    elementFrom(Node const* node) const noexcept
     {
         return *(static_cast<const_pointer>(node));
     }

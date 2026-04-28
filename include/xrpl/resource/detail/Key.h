@@ -20,7 +20,7 @@ struct Key
     {
     }
 
-    struct hasher
+    struct Hasher
     {
         std::size_t
         operator()(Key const& v) const
@@ -29,12 +29,12 @@ struct Key
         }
 
     private:
-        beast::uhash<> addr_hash_;
+        beast::Uhash<> addr_hash_;
     };
 
-    struct key_equal
+    struct KeyEqual
     {
-        key_equal() = default;
+        KeyEqual() = default;
 
         bool
         operator()(Key const& lhs, Key const& rhs) const

@@ -144,7 +144,7 @@ private:
     private:
         beast::insight::Event event_;
         beast::Journal journal_;
-        beast::io_latency_probe<std::chrono::steady_clock> probe_;
+        beast::IoLatencyProbe<std::chrono::steady_clock> probe_;
         std::atomic<std::chrono::milliseconds> lastSample_;
 
     public:
@@ -195,7 +195,7 @@ private:
         void
         cancelAsync()
         {
-            probe_.cancel_async();
+            probe_.cancelAsync();
         }
     };
 
@@ -309,14 +309,13 @@ public:
         , config_(std::move(config))
         , logs_(std::move(logs))
         , timeKeeper_(std::move(timeKeeper))
-        , instanceCookie_(
-              1 + rand_int(crypto_prng(), std::numeric_limits<std::uint64_t>::max() - 1))
+        , instanceCookie_(1 + randInt(cryptoPrng(), std::numeric_limits<std::uint64_t>::max() - 1))
         , journal_(logs_->journal("Application"))
 
         // PerfLog must be started before any other threads are launched.
         , perfLog_(
-              perf::make_PerfLog(
-                  perf::setup_PerfLog(config_->section("perf"), config_->CONFIG_DIR),
+              perf::makePerfLog(
+                  perf::setupPerfLog(config_->section("perf"), config_->CONFIG_DIR),
                   *this,
                   logs_->journal("PerfLog"),
                   [this] { signalStop("PerfLog"); }))
@@ -390,7 +389,7 @@ public:
 
         , nodeFamily_(*this, *collectorManager_)
 
-        , orderBookDB_(make_OrderBookDB(
+        , orderBookDB_(makeOrderBookDb(
               *this,
               {.pathSearchMax = config_->PATH_SEARCH_MAX, .standalone = config_->standalone()}))
 
@@ -412,9 +411,9 @@ public:
         // VFALCO NOTE must come before NetworkOPs to prevent a crash due
         //             to dependencies in the destructor.
         //
-        , inboundLedgers_(make_InboundLedgers(*this, stopwatch(), collectorManager_->collector()))
+        , inboundLedgers_(makeInboundLedgers(*this, stopwatch(), collectorManager_->collector()))
 
-        , inboundTransactions_(make_InboundTransactions(
+        , inboundTransactions_(makeInboundTransactions(
               *this,
               collectorManager_->collector(),
               [this](std::shared_ptr<SHAMap> const& set, bool fromAcquire) {
@@ -464,7 +463,7 @@ public:
 
         , validatorSites_(std::make_unique<ValidatorSite>(*this))
 
-        , serverHandler_(make_ServerHandler(
+        , serverHandler_(makeServerHandler(
               *this,
               getIoContext(),
               *jobQueue_,
@@ -493,13 +492,13 @@ public:
         , resolver_(ResolverAsio::New(getIoContext(), logs_->journal("Resolver")))
 
         , io_latency_sampler_(
-              collectorManager_->collector()->make_event("ios_latency"),
+              collectorManager_->collector()->makeEvent("ios_latency"),
               logs_->journal("Application"),
               std::chrono::milliseconds(100),
               getIoContext())
         , grpcServer_(std::make_unique<GRPCServer>(*this))
     {
-        initAccountIdCache(config_->getValueFor(SizedItem::accountIdCacheSize));
+        initAccountIdCache(config_->getValueFor(SizedItem::AccountIdCacheSize));
 
         add(resourceManager_.get());
 
@@ -590,7 +589,7 @@ public:
         if (nodeIdentity_)
             return *nodeIdentity_;
 
-        LogicError("Accessing Application::nodeIdentity() before it is initialized.");
+        logicError("Accessing Application::nodeIdentity() before it is initialized.");
     }
 
     std::optional<PublicKey const>
@@ -876,7 +875,7 @@ public:
             relationalDatabase_.emplace(setupRelationalDatabase(*this, *config_, *jobQueue_));
 
             // wallet database
-            auto setup = setup_DatabaseCon(*config_, journal_);
+            auto setup = setupDatabaseCon(*config_, journal_);
             setup.useGlobalPragma = false;
 
             walletDB_ = makeWalletDB(setup, journal_);
@@ -899,7 +898,7 @@ public:
             NodeStore::DummyScheduler dummyScheduler;
             std::unique_ptr<NodeStore::Database> source =
                 NodeStore::Manager::instance().makeDatabase(
-                    megabytes(config_->getValueFor(SizedItem::burstSize, std::nullopt)),
+                    megabytes(config_->getValueFor(SizedItem::BurstSize, std::nullopt)),
                     dummyScheduler,
                     0,
                     config_->section(ConfigSection::importNodeDatabase()),
@@ -941,7 +940,7 @@ public:
                 waitHandlerCounter_.wrap([this](boost::system::error_code const& e) {
                     if (e.value() == boost::system::errc::success)
                     {
-                        jobQueue_->addJob(jtSWEEP, "sweep", [this]() { doSweep(); });
+                        jobQueue_->addJob(JtSweep, "sweep", [this]() { doSweep(); });
                     }
                     // Recover as best we can if an unexpected error occurs.
                     if (e.value() != boost::system::errc::success &&
@@ -957,7 +956,7 @@ public:
             using namespace std::chrono;
             sweepTimer_.expires_after(
                 seconds{config_->SWEEP_INTERVAL.value_or(
-                    config_->getValueFor(SizedItem::sweepInterval))});
+                    config_->getValueFor(SizedItem::SweepInterval))});
             sweepTimer_.async_wait(std::move(*optionalCountedHandler));
         }
     }
@@ -970,7 +969,7 @@ public:
                 waitHandlerCounter_.wrap([this](boost::system::error_code const& e) {
                     if (e.value() == boost::system::errc::success)
                     {
-                        crypto_prng().mix_entropy();
+                        cryptoPrng().mixEntropy();
                         setEntropyTimer();
                     }
                     // Recover as best we can if an unexpected error occurs.
@@ -1215,8 +1214,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             std::cerr << "Can't open log file " << debugLog << '\n';
 
         using namespace beast::severities;
-        if (logs_->threshold() > kDebug)
-            logs_->threshold(kDebug);
+        if (logs_->threshold() > KDebug)
+            logs_->threshold(KDebug);
     }
 
     JLOG(journal_.info()) << "Process starting: " << BuildInfo::getFullVersionString()
@@ -1262,7 +1261,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
         Section const& upVoted = config_->section(SECTION_AMENDMENTS);
 
-        amendmentTable_ = make_AmendmentTable(
+        amendmentTable_ = makeAmendmentTable(
             *this,
             config().AMENDMENT_MAJORITY_TIME,
             supported,
@@ -1415,7 +1414,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         try
         {
             auto logStream = beast::logstream{journal_.error()};
-            auto setup = setup_ServerHandler(*config_, logStream);
+            auto setup = setupServerHandler(*config_, logStream);
             setup.makeContexts();
             serverHandler_->setup(setup, journal_);
             fixConfigPorts(*config_, serverHandler_->endpoints());
@@ -1489,7 +1488,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(journal_.fatal()) << "Startup RPC: " << jvCommand << std::endl;
         }
 
-        Resource::Charge loadType = Resource::feeReferenceRPC;
+        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
         Resource::Consumer c;
         RPC::JsonContext context{
             {.j = getJournal("RPCHandler"),
@@ -1501,7 +1500,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
              .role = Role::ADMIN,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::apiMaximumSupportedVersion},
+             .apiVersion = RPC::kAPI_MAXIMUM_SUPPORTED_VERSION},
             jvCommand};
 
         Json::Value jvResult;
@@ -1702,7 +1701,7 @@ ApplicationImp::startGenesisLedger()
         : std::vector<uint256>{};
 
     std::shared_ptr<Ledger> const genesis = std::make_shared<Ledger>(
-        create_genesis,
+        kCREATE_GENESIS,
         Rules{config_->features},
         config_->FEES.toFees(),
         initialAmendments,
@@ -1882,7 +1881,7 @@ ApplicationImp::loadLedgerFromFile(std::string const& name)
             }
         }
 
-        loadLedger->stateMap().flushDirty(hotACCOUNT_NODE);
+        loadLedger->stateMap().flushDirty(HotAccountNode);
 
         XRPL_ASSERT(
             loadLedger->header().seq < XRP_LEDGER_EARLIEST_FEES || loadLedger->read(keylet::fees()),

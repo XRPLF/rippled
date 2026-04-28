@@ -190,7 +190,7 @@ private:
 
     struct ChargeWithContext
     {
-        Resource::Charge fee = Resource::feeTrivialPeer;
+        Resource::Charge fee = Resource::kFEE_TRIVIAL_PEER;
         std::string context{};  // NOLINT(readability-redundant-member-init)
 
         void
@@ -834,7 +834,7 @@ PeerImp::PeerImp(
     , creationTime_(clock_type::now())
     , squelch_(app_.getJournal("Squelch"))
     , usage_(usage)
-    , fee_{.fee = Resource::feeTrivialPeer}
+    , fee_{.fee = Resource::kFEE_TRIVIAL_PEER}
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)

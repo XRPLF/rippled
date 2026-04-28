@@ -110,13 +110,13 @@ Bootcache::insert(beast::IP::Endpoint const& endpoint)
 bool
 Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 {
-    auto result(map_.insert(value_type(endpoint, staticValence)));
+    auto result(map_.insert(value_type(endpoint, kSTATIC_VALENCE)));
 
-    if (!result.second && (result.first->right.valence() < staticValence))
+    if (!result.second && (result.first->right.valence() < kSTATIC_VALENCE))
     {
         // An existing entry has too low a valence, replace it
         map_.erase(result.first);
-        result = map_.insert(value_type(endpoint, staticValence));
+        result = map_.insert(value_type(endpoint, kSTATIC_VALENCE));
     }
 
     if (result.second)
@@ -129,7 +129,7 @@ Bootcache::insertStatic(beast::IP::Endpoint const& endpoint)
 }
 
 void
-Bootcache::on_success(beast::IP::Endpoint const& endpoint)
+Bootcache::onSuccess(beast::IP::Endpoint const& endpoint)
 {
     auto result(map_.insert(value_type(endpoint, 1)));
     if (result.second)
@@ -152,7 +152,7 @@ Bootcache::on_success(beast::IP::Endpoint const& endpoint)
 }
 
 void
-Bootcache::on_failure(beast::IP::Endpoint const& endpoint)
+Bootcache::onFailure(beast::IP::Endpoint const& endpoint)
 {
     auto result(map_.insert(value_type(endpoint, -1)));
     if (result.second)

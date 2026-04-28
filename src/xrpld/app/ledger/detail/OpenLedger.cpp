@@ -163,7 +163,7 @@ std::shared_ptr<OpenView>
 OpenLedger::create(Rules const& rules, std::shared_ptr<Ledger const> const& ledger)
 {
     return std::make_shared<OpenView>(
-        kOpenLedger, rules, std::make_shared<CachedLedger const>(ledger, cache_));
+        kOPEN_LEDGER, rules, std::make_shared<CachedLedger const>(ledger, cache_));
 }
 
 auto
@@ -176,7 +176,7 @@ OpenLedger::applyOne(
     beast::Journal j) -> Result
 {
     if (retry)
-        flags = flags | tapRETRY;
+        flags = flags | TapRetry;
     // If it's in anybody's proposed set, try to keep it in the ledger
     auto const result = xrpl::apply(app, view, *tx, flags, j);
     if (result.applied || result.ter == terQUEUED)

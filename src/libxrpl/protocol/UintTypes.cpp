@@ -35,7 +35,7 @@ constexpr std::size_t kISO_CODE_LENGTH = 3;
 std::string
 to_string(Currency const& currency)
 {
-    if (currency == beast::zero)
+    if (currency == beast::kZERO)
         return systemCurrencyCode();
 
     if (currency == noCurrency())
@@ -62,11 +62,11 @@ to_string(Currency const& currency)
 }
 
 bool
-to_currency(Currency& currency, std::string const& code)
+toCurrency(Currency& currency, std::string const& code)
 {
     if (code.empty() || (code.compare(systemCurrencyCode()) == 0))
     {
-        currency = beast::zero;
+        currency = beast::kZERO;
         return true;
     }
 
@@ -76,7 +76,7 @@ to_currency(Currency& currency, std::string const& code)
         if (code.find_first_not_of(detail::kISO_CHAR_SET) != std::string::npos)
             return false;
 
-        currency = beast::zero;
+        currency = beast::kZERO;
 
         std::ranges::copy(code, currency.begin() + detail::kISO_CODE_OFFSET);
 
@@ -87,10 +87,10 @@ to_currency(Currency& currency, std::string const& code)
 }
 
 Currency
-to_currency(std::string const& code)
+toCurrency(std::string const& code)
 {
     Currency currency;
-    if (!to_currency(currency, code))
+    if (!toCurrency(currency, code))
         currency = noCurrency();
     return currency;
 }
@@ -98,7 +98,7 @@ to_currency(std::string const& code)
 Currency const&
 xrpCurrency()
 {
-    static Currency const kCURRENCY(beast::zero);
+    static Currency const kCURRENCY(beast::kZERO);
     return kCURRENCY;
 }
 

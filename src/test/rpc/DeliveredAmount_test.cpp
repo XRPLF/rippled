@@ -187,7 +187,7 @@ public:
     }
 };
 
-class DeliveredAmount_test : public beast::unit_test::suite
+class DeliveredAmount_test : public beast::unit_test::Suite
 {
     void
     testAccountDeliveredAmountSubscribe()
@@ -208,7 +208,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
             auto cfg = envconfig();
             cfg->FEES.reference_fee = 10;
             Env env(*this, std::move(cfg));
-            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.fund(kXRP(10000), alice, bob, carol, gw);
             env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
             {
@@ -226,18 +226,18 @@ class DeliveredAmount_test : public beast::unit_test::suite
                 // normal payments
                 env(pay(gw, alice, usd(50)));
                 checkDeliveredAmount.adjCountersSuccess();
-                env(pay(gw, alice, XRP(50)));
+                env(pay(gw, alice, kXRP(50)));
                 checkDeliveredAmount.adjCountersSuccess();
 
                 // partial payment
-                env(pay(gw, bob, usd(9999999)), txflags(tfPartialPayment));
+                env(pay(gw, bob, usd(9999999)), Txflags(tfPartialPayment));
                 checkDeliveredAmount.adjCountersPartialPayment();
-                env.Require(Balance(bob, usd(1000)));
+                env.require(Balance(bob, usd(1000)));
 
                 // failed payment
                 env(pay(bob, carol, usd(9999999)), Ter(tecPATH_PARTIAL));
                 checkDeliveredAmount.adjCountersFail();
-                env.Require(Balance(carol, usd(0)));
+                env.require(Balance(carol, usd(0)));
             }
 
             auto wsc = makeWSClient(env.app().config());
@@ -245,9 +245,9 @@ class DeliveredAmount_test : public beast::unit_test::suite
             {
                 Json::Value stream;
                 // RPC subscribe to ledger stream
-                stream[jss::streams] = Json::arrayValue;
+                stream[jss::streams] = Json::ArrayValue;
                 stream[jss::streams].append("ledger");
-                stream[jss::accounts] = Json::arrayValue;
+                stream[jss::accounts] = Json::ArrayValue;
                 stream[jss::accounts].append(toBase58(alice.id()));
                 stream[jss::accounts].append(toBase58(bob.id()));
                 stream[jss::accounts].append(toBase58(carol.id()));
@@ -299,7 +299,7 @@ class DeliveredAmount_test : public beast::unit_test::suite
             auto cfg = envconfig();
             cfg->FEES.reference_fee = 10;
             Env env(*this, std::move(cfg));
-            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.fund(kXRP(10000), alice, bob, carol, gw);
             env.trust(usd(1000), alice, bob, carol);
             if (afterSwitchTime)
             {
@@ -314,18 +314,18 @@ class DeliveredAmount_test : public beast::unit_test::suite
             // normal payments
             env(pay(gw, alice, usd(50)));
             checkDeliveredAmount.adjCountersSuccess();
-            env(pay(gw, alice, XRP(50)));
+            env(pay(gw, alice, kXRP(50)));
             checkDeliveredAmount.adjCountersSuccess();
 
             // partial payment
-            env(pay(gw, bob, usd(9999999)), txflags(tfPartialPayment));
+            env(pay(gw, bob, usd(9999999)), Txflags(tfPartialPayment));
             checkDeliveredAmount.adjCountersPartialPayment();
-            env.Require(Balance(bob, usd(1000)));
+            env.require(Balance(bob, usd(1000)));
 
             // failed payment
             env(pay(gw, carol, usd(9999999)), Ter(tecPATH_PARTIAL));
             checkDeliveredAmount.adjCountersFail();
-            env.Require(Balance(carol, usd(0)));
+            env.require(Balance(carol, usd(0)));
 
             env.close();
             Json::Value jvParams;
@@ -364,19 +364,19 @@ class DeliveredAmount_test : public beast::unit_test::suite
         mptAlice.pay(alice, bob, 10000);
 
         // holder to holder
-        env(pay(bob, carol, mptAlice.mpt(1000)), txflags(tfPartialPayment));
+        env(pay(bob, carol, mptAlice.mpt(1000)), Txflags(tfPartialPayment));
         env.close();
 
         // Get the hash for the most recent transaction.
-        std::string txHash{env.tx()->getJson(JsonOptions::kNONE)[jss::hash].asString()};
+        std::string txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
         Json::Value meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         if (features[fixMPTDeliveredAmount])
         {
             BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(800)}.getJson(JsonOptions::kNONE));
+                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(800)}.getJson(JsonOptions::KNone));
             BEAST_EXPECT(
-                meta[jss::delivered_amount] == STAmount{mpt(800)}.getJson(JsonOptions::kNONE));
+                meta[jss::delivered_amount] == STAmount{mpt(800)}.getJson(JsonOptions::KNone));
         }
         else
         {
@@ -384,18 +384,18 @@ class DeliveredAmount_test : public beast::unit_test::suite
             BEAST_EXPECT(meta[jss::delivered_amount] = Json::Value("unavailable"));
         }
 
-        env(pay(bob, carol, mpt(1000)), sendmax(mpt(1200)), txflags(tfPartialPayment));
+        env(pay(bob, carol, mpt(1000)), Sendmax(mpt(1200)), Txflags(tfPartialPayment));
         env.close();
 
-        txHash = env.tx()->getJson(JsonOptions::kNONE)[jss::hash].asString();
+        txHash = env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString();
         meta = env.rpc("tx", txHash)[jss::result][jss::meta];
 
         if (features[fixMPTDeliveredAmount])
         {
             BEAST_EXPECT(
-                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(960)}.getJson(JsonOptions::kNONE));
+                meta[sfDeliveredAmount.jsonName] == STAmount{mpt(960)}.getJson(JsonOptions::KNone));
             BEAST_EXPECT(
-                meta[jss::delivered_amount] == STAmount{mpt(960)}.getJson(JsonOptions::kNONE));
+                meta[jss::delivered_amount] == STAmount{mpt(960)}.getJson(JsonOptions::KNone));
         }
         else
         {

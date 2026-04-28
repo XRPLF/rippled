@@ -37,7 +37,7 @@ Serializer::add32(HashPrefix p)
     // integral parts of the protocol and unlikely to ever change.
     static_assert(std::is_same_v<std::uint32_t, std::underlying_type_t<decltype(p)>>);
 
-    return add32(safe_cast<std::uint32_t>(p));
+    return add32(safeCast<std::uint32_t>(p));
 }
 
 template <>

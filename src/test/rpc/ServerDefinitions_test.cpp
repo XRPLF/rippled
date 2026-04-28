@@ -10,7 +10,7 @@
 
 namespace xrpl::test {
 
-class ServerDefinitions_test : public beast::unit_test::suite
+class ServerDefinitions_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -146,55 +146,55 @@ public:
                     Json::Value const& section = txnFormats["common"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "TransactionType");
-                    BEAST_EXPECT(section[0u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(section[1u][jss::name] == "Flags");
-                    BEAST_EXPECT(section[1u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[1u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[2u][jss::name] == "SourceTag");
-                    BEAST_EXPECT(section[2u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[2u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[3u][jss::name] == "Account");
-                    BEAST_EXPECT(section[3u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[3u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(section[4u][jss::name] == "Sequence");
-                    BEAST_EXPECT(section[4u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[4u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(section[5u][jss::name] == "PreviousTxnID");
-                    BEAST_EXPECT(section[5u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[5u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[6u][jss::name] == "LastLedgerSequence");
-                    BEAST_EXPECT(section[6u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[6u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[7u][jss::name] == "AccountTxnID");
-                    BEAST_EXPECT(section[7u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[7u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[8u][jss::name] == "Fee");
-                    BEAST_EXPECT(section[8u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[8u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(section[9u][jss::name] == "OperationLimit");
-                    BEAST_EXPECT(section[9u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[9u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[10u][jss::name] == "Memos");
-                    BEAST_EXPECT(section[10u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[10u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[11u][jss::name] == "SigningPubKey");
-                    BEAST_EXPECT(section[11u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[11u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(section[12u][jss::name] == "TicketSequence");
-                    BEAST_EXPECT(section[12u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[12u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[13u][jss::name] == "TxnSignature");
-                    BEAST_EXPECT(section[13u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[13u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[14u][jss::name] == "Signers");
-                    BEAST_EXPECT(section[14u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[14u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[15u][jss::name] == "NetworkID");
-                    BEAST_EXPECT(section[15u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[15u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[16u][jss::name] == "Delegate");
-                    BEAST_EXPECT(section[16u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[16u][jss::optionality] == SoeOptional);
                 }
 
                 // validate the contents of four arbitrarily selected transactions validate the
@@ -204,22 +204,22 @@ public:
                     Json::Value const& section = txnFormats["OracleSet"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "OracleDocumentID");
-                    BEAST_EXPECT(section[0u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(section[1u][jss::name] == "Provider");
-                    BEAST_EXPECT(section[1u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[1u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[2u][jss::name] == "URI");
-                    BEAST_EXPECT(section[2u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[2u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[3u][jss::name] == "AssetClass");
-                    BEAST_EXPECT(section[3u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[3u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[4u][jss::name] == "LastUpdateTime");
-                    BEAST_EXPECT(section[4u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[4u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(section[5u][jss::name] == "PriceDataSeries");
-                    BEAST_EXPECT(section[5u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[5u][jss::optionality] == SoeRequired);
                 }
 
                 // validate the format of the PermissionedDomainDelete transaction
@@ -228,7 +228,7 @@ public:
                     Json::Value const& section = txnFormats["PermissionedDomainDelete"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "DomainID");
-                    BEAST_EXPECT(section[0u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
                 }
 
                 // validate the format of the Clawback transaction
@@ -237,10 +237,10 @@ public:
                     Json::Value const& section = txnFormats["Clawback"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "Amount");
-                    BEAST_EXPECT(section[0u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(section[0u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(section[1u][jss::name] == "Holder");
-                    BEAST_EXPECT(section[1u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[1u][jss::optionality] == SoeOptional);
                 }
 
                 // validate the format of the SetFee transaction
@@ -249,28 +249,28 @@ public:
                     Json::Value const& section = txnFormats["SetFee"];
 
                     BEAST_EXPECT(section[0u][jss::name] == "LedgerSequence");
-                    BEAST_EXPECT(section[0u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[0u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[1u][jss::name] == "BaseFee");
-                    BEAST_EXPECT(section[1u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[1u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[2u][jss::name] == "ReferenceFeeUnits");
-                    BEAST_EXPECT(section[2u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[2u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[3u][jss::name] == "ReserveBase");
-                    BEAST_EXPECT(section[3u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[3u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[4u][jss::name] == "ReserveIncrement");
-                    BEAST_EXPECT(section[4u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[4u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[5u][jss::name] == "BaseFeeDrops");
-                    BEAST_EXPECT(section[5u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[5u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[6u][jss::name] == "ReserveBaseDrops");
-                    BEAST_EXPECT(section[6u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[6u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(section[7u][jss::name] == "ReserveIncrementDrops");
-                    BEAST_EXPECT(section[7u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(section[7u][jss::optionality] == SoeOptional);
                 }
             }
 
@@ -288,13 +288,13 @@ public:
                         result[jss::result][jss::LEDGER_ENTRY_FORMATS]["common"];
 
                     BEAST_EXPECT(observedCommonLedgerEntry[0u][jss::name] == "LedgerIndex");
-                    BEAST_EXPECT(observedCommonLedgerEntry[0u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedCommonLedgerEntry[0u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(observedCommonLedgerEntry[1u][jss::name] == "LedgerEntryType");
-                    BEAST_EXPECT(observedCommonLedgerEntry[1u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(observedCommonLedgerEntry[1u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(observedCommonLedgerEntry[2u][jss::name] == "Flags");
-                    BEAST_EXPECT(observedCommonLedgerEntry[2u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(observedCommonLedgerEntry[2u][jss::optionality] == SoeRequired);
                 }
 
                 // test the contents of an arbitrary ledger-entry (DID)
@@ -303,25 +303,25 @@ public:
                         result[jss::result][jss::LEDGER_ENTRY_FORMATS]["DID"];
 
                     BEAST_EXPECT(observedDIDLedgerEntry[0u][jss::name] == "Account");
-                    BEAST_EXPECT(observedDIDLedgerEntry[0u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(observedDIDLedgerEntry[0u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(observedDIDLedgerEntry[1u][jss::name] == "DIDDocument");
-                    BEAST_EXPECT(observedDIDLedgerEntry[1u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedDIDLedgerEntry[1u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(observedDIDLedgerEntry[2u][jss::name] == "URI");
-                    BEAST_EXPECT(observedDIDLedgerEntry[2u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedDIDLedgerEntry[2u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(observedDIDLedgerEntry[3u][jss::name] == "Data");
-                    BEAST_EXPECT(observedDIDLedgerEntry[3u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedDIDLedgerEntry[3u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(observedDIDLedgerEntry[4u][jss::name] == "OwnerNode");
-                    BEAST_EXPECT(observedDIDLedgerEntry[4u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(observedDIDLedgerEntry[4u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(observedDIDLedgerEntry[5u][jss::name] == "PreviousTxnID");
-                    BEAST_EXPECT(observedDIDLedgerEntry[5u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(observedDIDLedgerEntry[5u][jss::optionality] == SoeRequired);
 
                     BEAST_EXPECT(observedDIDLedgerEntry[6u][jss::name] == "PreviousTxnLgrSeq");
-                    BEAST_EXPECT(observedDIDLedgerEntry[6u][jss::optionality] == soeREQUIRED);
+                    BEAST_EXPECT(observedDIDLedgerEntry[6u][jss::optionality] == SoeRequired);
                 }
 
                 // test the contents of an arbitrary ledger-entry (NegativeUNL)
@@ -330,19 +330,19 @@ public:
                         result[jss::result][jss::LEDGER_ENTRY_FORMATS]["NegativeUNL"];
 
                     BEAST_EXPECT(observedNunlLedgerEntry[0u][jss::name] == "DisabledValidators");
-                    BEAST_EXPECT(observedNunlLedgerEntry[0u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedNunlLedgerEntry[0u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(observedNunlLedgerEntry[1u][jss::name] == "ValidatorToDisable");
-                    BEAST_EXPECT(observedNunlLedgerEntry[1u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedNunlLedgerEntry[1u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(observedNunlLedgerEntry[2u][jss::name] == "ValidatorToReEnable");
-                    BEAST_EXPECT(observedNunlLedgerEntry[2u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedNunlLedgerEntry[2u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(observedNunlLedgerEntry[3u][jss::name] == "PreviousTxnID");
-                    BEAST_EXPECT(observedNunlLedgerEntry[3u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedNunlLedgerEntry[3u][jss::optionality] == SoeOptional);
 
                     BEAST_EXPECT(observedNunlLedgerEntry[4u][jss::name] == "PreviousTxnLgrSeq");
-                    BEAST_EXPECT(observedNunlLedgerEntry[4u][jss::optionality] == soeOPTIONAL);
+                    BEAST_EXPECT(observedNunlLedgerEntry[4u][jss::optionality] == SoeOptional);
                 }
             }
 

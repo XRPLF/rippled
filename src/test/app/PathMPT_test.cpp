@@ -45,18 +45,18 @@ namespace detail {
 static Json::Value
 rpf(jtx::Account const& src,
     jtx::Account const& dst,
-    xrpl::test::jtx::MPT const& USD,
-    std::vector<MPTID> const& num_src)
+    xrpl::test::jtx::MPT const& usd,
+    std::vector<MPTID> const& numSrc)
 {
-    Json::Value jv = Json::objectValue;
+    Json::Value jv = Json::ObjectValue;
     jv[jss::command] = "ripple_path_find";
     jv[jss::source_account] = toBase58(src);
 
-    if (!num_src.empty())
+    if (!numSrc.empty())
     {
-        auto& sc = (jv[jss::source_currencies] = Json::arrayValue);
-        Json::Value j = Json::objectValue;
-        for (auto const& id : num_src)
+        auto& sc = (jv[jss::source_currencies] = Json::ArrayValue);
+        Json::Value j = Json::ObjectValue;
+        for (auto const& id : numSrc)
         {
             j[jss::mpt_issuance_id] = to_string(id);
             sc.append(j);
@@ -66,8 +66,8 @@ rpf(jtx::Account const& src,
     auto const d = toBase58(dst);
     jv[jss::destination_account] = d;
 
-    Json::Value& j = (jv[jss::destination_amount] = Json::objectValue);
-    j[jss::mpt_issuance_id] = to_string(USD.mpt());
+    Json::Value& j = (jv[jss::destination_amount] = Json::ObjectValue);
+    j[jss::mpt_issuance_id] = to_string(usd.mpt());
     j[jss::value] = "1";
 
     return jv;
@@ -77,7 +77,7 @@ rpf(jtx::Account const& src,
 
 //------------------------------------------------------------------------------
 
-class PathMPT_test : public beast::unit_test::suite
+class PathMPT_test : public beast::unit_test::Suite
 {
     jtx::Env
     pathTestEnv()
@@ -96,7 +96,7 @@ class PathMPT_test : public beast::unit_test::suite
 
 public:
     void
-    source_currencies_limit()
+    sourceCurrenciesLimit()
     {
         testcase("source currency limits");
         using namespace std::chrono_literals;
@@ -106,13 +106,13 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        env.fund(XRP(10'000), "alice", "bob", gw);
+        env.fund(kXRP(10'000), "alice", "bob", gw);
 
-        MPT const USD =
+        MPT const usd =
             MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}, .maxAmt = 100});
 
         auto& app = env.app();
-        Resource::Charge loadType = Resource::feeReferenceRPC;
+        Resource::Charge loadType = Resource::kFEE_REFERENCE_RPC;
         Resource::Consumer c;
 
         RPC::JsonContext context{
@@ -125,123 +125,123 @@ public:
              .role = Role::USER,
              .coro = {},
              .infoSub = {},
-             .apiVersion = RPC::apiVersionIfUnspecified},
+             .apiVersion = RPC::kAPI_VERSION_IF_UNSPECIFIED},
             {},
             {}};
         Json::Value result;
-        gate g;
+        Gate g;
         // Test RPC::Tuning::max_src_cur source currencies.
-        std::vector<MPTID> num_src;
-        num_src.reserve(RPC::Tuning::max_src_cur);
-        for (std::uint8_t i = 0; i < RPC::Tuning::max_src_cur; ++i)
-            num_src.push_back(makeMptID(i, bob));
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
-            context.params = xrpl::test::detail::rpf(alice, bob, USD, num_src);
+        std::vector<MPTID> numSrc;
+        numSrc.reserve(RPC::Tuning::kMAX_SRC_CUR);
+        for (std::uint8_t i = 0; i < RPC::Tuning::kMAX_SRC_CUR; ++i)
+            numSrc.push_back(makeMptID(i, bob));
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
             context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_src_cur source currencies.
-        num_src.push_back(makeMptID(RPC::Tuning::max_src_cur, bob));
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
-            context.params = xrpl::test::detail::rpf(alice, bob, USD, num_src);
+        numSrc.push_back(makeMptID(RPC::Tuning::kMAX_SRC_CUR, bob));
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.params = xrpl::test::detail::rpf(alice, bob, usd, numSrc);
             context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
 
         // Test RPC::Tuning::max_auto_src_cur source currencies.
-        num_src.clear();
-        for (auto i = 0; i < (RPC::Tuning::max_auto_src_cur - 1); ++i)
+        numSrc.clear();
+        for (auto i = 0; i < (RPC::Tuning::kMAX_AUTO_SRC_CUR - 1); ++i)
         {
-            auto CURM = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
-            num_src.push_back(CURM.issuanceID());
+            auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+            numSrc.push_back(curm.issuanceID());
         }
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
-            context.params = xrpl::test::detail::rpf(alice, bob, USD, {});
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(!result.isMember(jss::error));
 
         // Test more than RPC::Tuning::max_auto_src_cur source currencies.
-        auto CURM = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
-        app.getJobQueue().postCoro(jtCLIENT, "RPC-Client", [&](auto const& coro) {
-            context.params = xrpl::test::detail::rpf(alice, bob, USD, {});
+        auto curm = MPTTester({.env = env, .issuer = alice, .holders = {bob}});
+        app.getJobQueue().postCoro(JtClient, "RPC-Client", [&](auto const& coro) {
+            context.params = xrpl::test::detail::rpf(alice, bob, usd, {});
             context.coro = coro;
             RPC::doCommand(context, result);
             g.signal();
         });
-        BEAST_EXPECT(g.wait_for(5s));
+        BEAST_EXPECT(g.waitFor(5s));
         BEAST_EXPECT(result.isMember(jss::error));
     }
 
     void
-    no_direct_path_no_intermediary_no_alternatives()
+    noDirectPathNoIntermediaryNoAlternatives()
     {
         testcase("no direct path no intermediary no alternatives");
         using namespace jtx;
 
         Env env = pathTestEnv();
 
-        env.fund(XRP(10'000), "alice", "bob");
+        env.fund(kXRP(10'000), "alice", "bob");
 
-        auto USDM = MPTTester({.env = env, .issuer = "bob"});
+        auto usdm = MPTTester({.env = env, .issuer = "bob"});
 
-        auto const result = findPaths(env, "alice", "bob", USDM(5));
+        auto const result = findPaths(env, "alice", "bob", usdm(5));
         BEAST_EXPECT(std::get<0>(result).empty());
     }
 
     void
-    direct_path_no_intermediary()
+    directPathNoIntermediary()
     {
         testcase("direct path no intermediary");
         using namespace jtx;
         Env env = pathTestEnv();
-        env.fund(XRP(10'000), "alice", "bob");
+        env.fund(kXRP(10'000), "alice", "bob");
 
-        MPT const USD = MPTTester({.env = env, .issuer = "alice", .holders = {"bob"}});
+        MPT const usd = MPTTester({.env = env, .issuer = "alice", .holders = {"bob"}});
 
         STPathSet st;
         STAmount sa;
-        std::tie(st, sa, std::ignore) = findPaths(env, "alice", "bob", USD(5));
+        std::tie(st, sa, std::ignore) = findPaths(env, "alice", "bob", usd(5));
         BEAST_EXPECT(st.empty());
-        BEAST_EXPECT(equal(sa, USD(5)));
+        BEAST_EXPECT(equal(sa, usd(5)));
     }
 
     void
-    payment_auto_path_find()
+    paymentAutoPathFind()
     {
         testcase("payment auto path find");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        env.fund(XRP(10'000), "alice", "bob", gw);
-        MPT const USD = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
-        env(pay(gw, "alice", USD(70)));
-        env(pay("alice", "bob", USD(24)));
-        env.Require(Balance("alice", USD(46)));
-        env.Require(Balance("bob", USD(24)));
+        env.fund(kXRP(10'000), "alice", "bob", gw);
+        MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
+        env(pay(gw, "alice", usd(70)));
+        env(pay("alice", "bob", usd(24)));
+        env.require(Balance("alice", usd(46)));
+        env.require(Balance("bob", usd(24)));
     }
 
     void
-    path_find(bool const domainEnabled)
+    pathFind(bool const domainEnabled)
     {
         testcase(std::string("path find") + (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
-        env.fund(XRP(10'000), "alice", "bob", gw);
-        MPT const USD = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
-        env(pay(gw, "alice", USD(70)));
-        env(pay(gw, "bob", USD(50)));
+        env.fund(kXRP(10'000), "alice", "bob", gw);
+        MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
+        env(pay(gw, "alice", usd(70)));
+        env(pay(gw, "bob", usd(50)));
 
         std::optional<uint256> domainID;
         if (domainEnabled)
@@ -251,16 +251,16 @@ public:
         STAmount sa;
         STAmount da;
         std::tie(st, sa, da) = findPaths(
-            env, "alice", "bob", USD(5), std::nullopt, std::nullopt, std::nullopt, domainID);
+            env, "alice", "bob", usd(5), std::nullopt, std::nullopt, std::nullopt, domainID);
         // Note, a direct IOU payment will have "gateway" as alternative path
         // since IOU supports rippling
         BEAST_EXPECT(st.empty());
-        BEAST_EXPECT(equal(sa, USD(5)));
-        BEAST_EXPECT(equal(da, USD(5)));
+        BEAST_EXPECT(equal(sa, usd(5)));
+        BEAST_EXPECT(equal(da, usd(5)));
     }
 
     void
-    path_find_consume_all(bool const domainEnabled)
+    pathFindConsumeAll(bool const domainEnabled)
     {
         testcase(
             std::string("path find consume all") + (domainEnabled ? " w/ " : " w/o ") + "domain");
@@ -269,19 +269,19 @@ public:
         {
             Env env = pathTestEnv();
             auto const gw = Account("gateway");
-            env.fund(XRP(10'000), "alice", "bob", "carol", gw);
-            MPT const USD = MPTTester({.env = env, .issuer = gw, .holders = {"bob", "carol"}});
-            MPT const AUD(makeMptID(0, gw));
-            env(pay(gw, "carol", USD(100)));
+            env.fund(kXRP(10'000), "alice", "bob", "carol", gw);
+            MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"bob", "carol"}});
+            MPT const aud(makeMptID(0, gw));
+            env(pay(gw, "carol", usd(100)));
             std::optional<uint256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {"alice", "bob", "carol", "gateway"});
-                env(offer("carol", XRP(100), USD(100)), domain(*domainID));
+                env(offer("carol", kXRP(100), usd(100)), Domain(*domainID));
             }
             else
             {
-                env(offer("carol", XRP(100), USD(100)));
+                env(offer("carol", kXRP(100), usd(100)));
             }
             env.close();
 
@@ -292,8 +292,8 @@ public:
                 env,
                 "alice",
                 "bob",
-                AUD(-1),
-                std::optional<STAmount>(XRP(100'000'000)),
+                aud(-1),
+                std::optional<STAmount>(kXRP(100'000'000)),
                 std::nullopt,
                 std::nullopt,
                 domainID);
@@ -302,8 +302,8 @@ public:
                 env,
                 "alice",
                 "bob",
-                USD(-1),
-                std::optional<STAmount>(XRP(100'000'000)),
+                usd(-1),
+                std::optional<STAmount>(kXRP(100'000'000)),
                 std::nullopt,
                 std::nullopt,
                 domainID);
@@ -312,10 +312,10 @@ public:
                 auto const& pathElem = st[0][0];
                 BEAST_EXPECT(
                     pathElem.isOffer() && pathElem.getIssuerID() == gw.id() &&
-                    pathElem.getMPTID() == USD.issuanceID);
+                    pathElem.getMPTID() == usd.issuanceID);
             }
-            BEAST_EXPECT(sa == XRP(100));
-            BEAST_EXPECT(equal(da, USD(100)));
+            BEAST_EXPECT(sa == kXRP(100));
+            BEAST_EXPECT(equal(da, usd(100)));
 
             // if domain is used, finding path in the open offerbook will return
             // empty result
@@ -326,7 +326,7 @@ public:
                     "alice",
                     "bob",
                     Account("bob")["USD"](-1),
-                    std::optional<STAmount>(XRP(1000000)),
+                    std::optional<STAmount>(kXRP(1000000)),
                     std::nullopt,
                     std::nullopt);  // not specifying a domain
                 BEAST_EXPECT(st.empty());
@@ -335,7 +335,7 @@ public:
     }
 
     void
-    alternative_paths_consume_best_transfer(bool const domainEnabled)
+    alternativePathsConsumeBestTransfer(bool const domainEnabled)
     {
         testcase(
             std::string("alternative path consume best transfer") +
@@ -344,32 +344,32 @@ public:
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
         auto const gw2 = Account("gateway2");
-        env.fund(XRP(10'000), "alice", "bob", gw, gw2);
-        MPT const USD = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
-        MPT const gw2_USD = MPTTester(
+        env.fund(kXRP(10'000), "alice", "bob", gw, gw2);
+        MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {"alice", "bob"}});
+        MPT const gw2Usd = MPTTester(
             {.env = env, .issuer = gw2, .holders = {"alice", "bob"}, .transferFee = 1'000});
         std::optional<uint256> domainID;
         if (domainEnabled)
         {
             domainID = setupDomain(env, {"alice", "bob", "gateway", "gateway2"});
-            env(pay(gw, "alice", USD(70)), domain(*domainID));
-            env(pay(gw2, "alice", gw2_USD(70)), domain(*domainID));
-            env(pay("alice", "bob", USD(70)), domain(*domainID));
+            env(pay(gw, "alice", usd(70)), Domain(*domainID));
+            env(pay(gw2, "alice", gw2Usd(70)), Domain(*domainID));
+            env(pay("alice", "bob", usd(70)), Domain(*domainID));
         }
         else
         {
-            env(pay(gw, "alice", USD(70)));
-            env(pay(gw2, "alice", gw2_USD(70)));
-            env(pay("alice", "bob", USD(70)));
+            env(pay(gw, "alice", usd(70)));
+            env(pay(gw2, "alice", gw2Usd(70)));
+            env(pay("alice", "bob", usd(70)));
         }
-        env.Require(Balance("alice", USD(0)));
-        env.Require(Balance("alice", gw2_USD(70)));
-        env.Require(Balance("bob", USD(70)));
-        env.Require(Balance("bob", gw2_USD(0)));
+        env.require(Balance("alice", usd(0)));
+        env.require(Balance("alice", gw2Usd(70)));
+        env.require(Balance("bob", usd(70)));
+        env.require(Balance("bob", gw2Usd(0)));
     }
 
     void
-    receive_max(bool const domainEnabled)
+    receiveMax(bool const domainEnabled)
     {
         testcase(std::string("Receive max") + (domainEnabled ? " w/ " : " w/o ") + "domain");
         using namespace jtx;
@@ -380,57 +380,57 @@ public:
         {
             // XRP -> MPT receive max
             Env env = pathTestEnv();
-            env.fund(XRP(10'000), alice, bob, charlie, gw);
+            env.fund(kXRP(10'000), alice, bob, charlie, gw);
             env.close();
-            MPT const USD = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
-            env(pay(gw, charlie, USD(10)));
+            MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
+            env(pay(gw, charlie, usd(10)));
             env.close();
             std::optional<uint256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
-                env(offer(charlie, XRP(10), USD(10)), domain(*domainID));
+                env(offer(charlie, kXRP(10), usd(10)), Domain(*domainID));
             }
             else
             {
-                env(offer(charlie, XRP(10), USD(10)));
+                env(offer(charlie, kXRP(10), usd(10)));
             }
             env.close();
             auto [st, sa, da] = findPaths(
-                env, alice, bob, USD(-1), XRP(100).value(), std::nullopt, std::nullopt, domainID);
-            BEAST_EXPECT(sa == XRP(10));
-            BEAST_EXPECT(equal(da, USD(10)));
+                env, alice, bob, usd(-1), kXRP(100).value(), std::nullopt, std::nullopt, domainID);
+            BEAST_EXPECT(sa == kXRP(10));
+            BEAST_EXPECT(equal(da, usd(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
                 auto const& pathElem = st[0][0];
                 BEAST_EXPECT(
                     pathElem.isOffer() && pathElem.getIssuerID() == gw.id() &&
-                    pathElem.getMPTID() == USD.mpt());
+                    pathElem.getMPTID() == usd.mpt());
             }
         }
         {
             // MPT -> XRP receive max
             Env env = pathTestEnv();
-            env.fund(XRP(10'000), alice, bob, charlie, gw);
+            env.fund(kXRP(10'000), alice, bob, charlie, gw);
             env.close();
-            MPT const USD = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
-            env(pay(gw, alice, USD(10)));
+            MPT const usd = MPTTester({.env = env, .issuer = gw, .holders = {alice, bob, charlie}});
+            env(pay(gw, alice, usd(10)));
             env.close();
             std::optional<uint256> domainID;
             if (domainEnabled)
             {
                 domainID = setupDomain(env, {alice, bob, charlie, gw});
-                env(offer(charlie, USD(10), XRP(10)), domain(*domainID));
+                env(offer(charlie, usd(10), kXRP(10)), Domain(*domainID));
             }
             else
             {
-                env(offer(charlie, USD(10), XRP(10)));
+                env(offer(charlie, usd(10), kXRP(10)));
             }
             env.close();
             auto [st, sa, da] = findPaths(
-                env, alice, bob, drops(-1), USD(100).value(), std::nullopt, std::nullopt, domainID);
-            BEAST_EXPECT(sa == USD(10));
-            BEAST_EXPECT(equal(da, XRP(10)));
+                env, alice, bob, drops(-1), usd(100).value(), std::nullopt, std::nullopt, domainID);
+            BEAST_EXPECT(sa == usd(10));
+            BEAST_EXPECT(equal(da, kXRP(10)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
                 auto const& pathElem = st[0][0];
@@ -444,16 +444,16 @@ public:
     void
     run() override
     {
-        source_currencies_limit();
-        no_direct_path_no_intermediary_no_alternatives();
-        direct_path_no_intermediary();
-        payment_auto_path_find();
+        sourceCurrenciesLimit();
+        noDirectPathNoIntermediaryNoAlternatives();
+        directPathNoIntermediary();
+        paymentAutoPathFind();
         for (auto const domainEnabled : {false, true})
         {
-            path_find(domainEnabled);
-            path_find_consume_all(domainEnabled);
-            alternative_paths_consume_best_transfer(domainEnabled);
-            receive_max(domainEnabled);
+            pathFind(domainEnabled);
+            pathFindConsumeAll(domainEnabled);
+            alternativePathsConsumeBestTransfer(domainEnabled);
+            receiveMax(domainEnabled);
         }
     }
 };

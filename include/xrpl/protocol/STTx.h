@@ -16,12 +16,12 @@
 namespace xrpl {
 
 enum class TxnSql : char {
-    txnSqlNew = 'N',
-    txnSqlConflict = 'C',
-    txnSqlHeld = 'H',
-    txnSqlValidated = 'V',
-    txnSqlIncluded = 'I',
-    txnSqlUnknown = 'U'
+    TxnSqlNew = 'N',
+    TxnSqlConflict = 'C',
+    TxnSqlHeld = 'H',
+    TxnSqlValidated = 'V',
+    TxnSqlIncluded = 'I',
+    TxnSqlUnknown = 'U'
 };
 
 class STTx final : public STObject, public CountedObject<STTx>
@@ -30,8 +30,8 @@ class STTx final : public STObject, public CountedObject<STTx>
     TxType tx_type_;
 
 public:
-    static constexpr std::size_t minMultiSigners = 1;
-    static constexpr std::size_t maxMultiSigners = 32;
+    static constexpr std::size_t kMIN_MULTI_SIGNERS = 1;
+    static constexpr std::size_t kMAX_MULTI_SIGNERS = 32;
 
     STTx() = delete;
     STTx(STTx const& other) = default;

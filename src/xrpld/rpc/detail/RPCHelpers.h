@@ -152,11 +152,11 @@ std::optional<std::pair<PublicKey, SecretKey>>
 keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
-    unsigned int apiVersion = apiVersionIfUnspecified);
+    unsigned int apiVersion = kAPI_VERSION_IF_UNSPECIFIED);
 
 /** Parse subscribe/unsubscribe parameters
  */
-error_code_i
+ErrorCodeI
 parseSubUnsubJson(
     Asset& asset,
     Json::Value const& jv,

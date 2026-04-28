@@ -59,7 +59,7 @@
 
 namespace xrpl::test {
 
-class LoanBroker_test : public beast::unit_test::suite
+class LoanBroker_test : public beast::unit_test::Suite
 {
     // Ensure that all the features needed for Lending Protocol are included,
     // even if they are set to unsupported.
@@ -80,7 +80,7 @@ class LoanBroker_test : public beast::unit_test::suite
             Env env(*this, features);
 
             Account const alice{"alice"};
-            env.fund(XRP(10000), alice);
+            env.fund(kXRP(10000), alice);
 
             // Try to create a vault
             PrettyAsset const asset{xrpIssue(), 1'000'000};
@@ -93,7 +93,7 @@ class LoanBroker_test : public beast::unit_test::suite
             using namespace loanBroker;
             // Can't create a loan broker regardless of whether the vault exists
             env(set(alice, keylet.key), Ter(temDISABLED));
-            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.Seq(alice));
+            auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
             // Other LoanBroker transactions are disabled, too.
             // 1. LoanBrokerCoverDeposit
             env(coverDeposit(alice, brokerKeylet.key, asset(1000)), Ter(temDISABLED));
@@ -179,7 +179,7 @@ class LoanBroker_test : public beast::unit_test::suite
         static PrettyAsset const kGHOST_IOU_ASSET = kNON_EXISTENT["GST"];
         PrettyAsset const vaultPseudoIouAsset = vault.pseudoAccount["PSD"];
 
-        auto const badKeylet = keylet::loanbroker(alice.id(), env.Seq(alice));
+        auto const badKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
         env(set(alice, badVault.vaultID));
         env.close();
         auto const badBrokerPseudo = [&]() {
@@ -192,7 +192,7 @@ class LoanBroker_test : public beast::unit_test::suite
         }();
         PrettyAsset const badBrokerPseudoIouAsset = badBrokerPseudo["WAT"];
 
-        auto const keylet = keylet::loanbroker(alice.id(), env.Seq(alice));
+        auto const keylet = keylet::loanbroker(alice.id(), env.seq(alice));
         {
             // Start with default values
             auto jtx = env.jt(set(alice, vault.vaultID));
@@ -212,7 +212,7 @@ class LoanBroker_test : public beast::unit_test::suite
             BEAST_EXPECT(broker->at(sfAccount) != alice.id());
             BEAST_EXPECT(broker->at(sfOwner) == alice.id());
             BEAST_EXPECT(broker->at(sfFlags) == 0);
-            BEAST_EXPECT(broker->at(sfSequence) == env.Seq(alice) - 1);
+            BEAST_EXPECT(broker->at(sfSequence) == env.seq(alice) - 1);
             BEAST_EXPECT(broker->at(sfOwnerCount) == 0);
             BEAST_EXPECT(broker->at(sfLoanSequence) == 1);
             BEAST_EXPECT(broker->at(sfDebtTotal) == 0);
@@ -237,7 +237,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 BEAST_EXPECT(
                     pseudo->at(sfFlags) == (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth));
                 BEAST_EXPECT(pseudo->at(sfSequence) == 0);
-                BEAST_EXPECT(pseudo->at(sfBalance) == beast::zero);
+                BEAST_EXPECT(pseudo->at(sfBalance) == beast::kZERO);
                 BEAST_EXPECT(pseudo->at(sfOwnerCount) == (vault.asset.raw().native() ? 0 : 1));
                 BEAST_EXPECT(!pseudo->isFieldPresent(sfAccountTxnID));
                 BEAST_EXPECT(!pseudo->isFieldPresent(sfRegularKey));
@@ -286,7 +286,7 @@ class LoanBroker_test : public beast::unit_test::suite
                     {
                         auto const amount = vault.asset(n);
                         BEAST_EXPECT(broker->at(sfCoverAvailable) == amount.number());
-                        env.Require(Balance(pseudoAccount, amount));
+                        env.require(Balance(pseudoAccount, amount));
                     }
                 };
 
@@ -303,7 +303,7 @@ class LoanBroker_test : public beast::unit_test::suite
             // Need one of brokerID or amount
             env(coverClawback(alice), Ter(temINVALID));
             env(coverClawback(alice), kLOAN_BROKER_ID(uint256(0)), Ter(temINVALID));
-            env(coverClawback(alice), kAMOUNT(XRP(1000)), Ter(temBAD_AMOUNT));
+            env(coverClawback(alice), kAMOUNT(kXRP(1000)), Ter(temBAD_AMOUNT));
             env(coverClawback(alice), kAMOUNT(vault.asset(-10)), Ter(temBAD_AMOUNT));
             // Clawbacks with an MPT need to specify the broker ID
             env(coverClawback(alice), kAMOUNT(kBAD_MPT_ASSET(1)), Ter(temINVALID));
@@ -400,7 +400,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             // Withdraw some more. Send it to Evan. Very generous, considering
             // how much trouble he's been.
-            env(coverWithdraw(alice, keylet.key, vault.asset(1)), kDESTINATION(evan), dtag(3));
+            env(coverWithdraw(alice, keylet.key, vault.asset(1)), kDESTINATION(evan), Dtag(3));
             env.close();
             verifyCoverAmount(6);
 
@@ -503,10 +503,10 @@ class LoanBroker_test : public beast::unit_test::suite
 
             // Note alice's balance of the asset and the broker account's cover
             // funds
-            auto const aliceBalance = env.Balance(alice, vault.asset);
-            auto const coverFunds = env.Balance(pseudoAccount, vault.asset);
+            auto const aliceBalance = env.balance(alice, vault.asset);
+            auto const coverFunds = env.balance(pseudoAccount, vault.asset);
             BEAST_EXPECT(coverFunds.number() == broker->at(sfCoverAvailable));
-            BEAST_EXPECT(coverFunds != beast::zero);
+            BEAST_EXPECT(coverFunds != beast::kZERO);
             verifyCoverAmount(6);
 
             // delete the broker
@@ -531,8 +531,8 @@ class LoanBroker_test : public beast::unit_test::suite
             auto const expectedBalance = aliceBalance + coverFunds -
                 (aliceBalance.value().native() ? STAmount(env.current()->fees().base.value())
                                                : vault.asset(0));
-            env.Require(Balance(alice, expectedBalance));
-            env.Require(Balance(pseudoAccount, vault.asset(kNONE)));
+            env.require(Balance(alice, expectedBalance));
+            env.require(Balance(pseudoAccount, vault.asset(kNONE)));
         }
     }
 
@@ -558,7 +558,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Fund the accounts and trust lines with the same amount so that tests
         // can use the same values regardless of the asset.
-        env.fund(XRP(100'000), issuer, noripple(alice, evan, bystander));
+        env.fund(kXRP(100'000), issuer, noripple(alice, evan, bystander));
         env.close();
 
         env(fset(issuer, asfAllowTrustLineClawback));
@@ -644,7 +644,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             TenthBips32 const tenthBipsZero{0};
 
-            auto badKeylet = keylet::vault(alice.id(), env.Seq(alice));
+            auto badKeylet = keylet::vault(alice.id(), env.seq(alice));
             // Try some failure cases
             // not the vault owner
             env(set(evan, vault.vaultID), Ter(tecNO_PERMISSION));
@@ -655,48 +655,50 @@ class LoanBroker_test : public beast::unit_test::suite
             // field length validation
             // sfData: good length, bad account
             env(set(evan, vault.vaultID),
-                kDATA(std::string(maxDataPayloadLength, 'X')),
+                kDATA(std::string(kMAX_DATA_PAYLOAD_LENGTH, 'X')),
                 Ter(tecNO_PERMISSION));
             // sfData: too long
             env(set(evan, vault.vaultID),
-                kDATA(std::string(maxDataPayloadLength + 1, 'Y')),
+                kDATA(std::string(kMAX_DATA_PAYLOAD_LENGTH + 1, 'Y')),
                 Ter(temINVALID));
             // sfManagementFeeRate: good value, bad account
             env(set(evan, vault.vaultID),
-                kMANAGEMENT_FEE_RATE(maxManagementFeeRate),
+                kMANAGEMENT_FEE_RATE(kMAX_MANAGEMENT_FEE_RATE),
                 Ter(tecNO_PERMISSION));
             // sfManagementFeeRate: too big
             env(set(evan, vault.vaultID),
-                kMANAGEMENT_FEE_RATE(maxManagementFeeRate + TenthBips16(10)),
+                kMANAGEMENT_FEE_RATE(kMAX_MANAGEMENT_FEE_RATE + TenthBips16(10)),
                 Ter(temINVALID));
             // sfCoverRateMinimum and sfCoverRateLiquidation are linked
             // Cover: good value, bad account
             env(set(evan, vault.vaultID),
-                kCOVER_RATE_MINIMUM(maxCoverRate),
-                kCOVER_RATE_LIQUIDATION(maxCoverRate),
+                kCOVER_RATE_MINIMUM(kMAX_COVER_RATE),
+                kCOVER_RATE_LIQUIDATION(kMAX_COVER_RATE),
                 Ter(tecNO_PERMISSION));
             // CoverMinimum: too big
             env(set(evan, vault.vaultID),
-                kCOVER_RATE_MINIMUM(maxCoverRate + 1),
-                kCOVER_RATE_LIQUIDATION(maxCoverRate + 1),
+                kCOVER_RATE_MINIMUM(kMAX_COVER_RATE + 1),
+                kCOVER_RATE_LIQUIDATION(kMAX_COVER_RATE + 1),
                 Ter(temINVALID));
             // CoverLiquidation: too big
             env(set(evan, vault.vaultID),
-                kCOVER_RATE_MINIMUM(maxCoverRate / 2),
-                kCOVER_RATE_LIQUIDATION(maxCoverRate + 1),
+                kCOVER_RATE_MINIMUM(kMAX_COVER_RATE / 2),
+                kCOVER_RATE_LIQUIDATION(kMAX_COVER_RATE + 1),
                 Ter(temINVALID));
             // Cover: zero min, non-zero liquidation - implicit and
             // explicit zero values.
-            env(set(evan, vault.vaultID), kCOVER_RATE_LIQUIDATION(maxCoverRate), Ter(temINVALID));
+            env(set(evan, vault.vaultID),
+                kCOVER_RATE_LIQUIDATION(kMAX_COVER_RATE),
+                Ter(temINVALID));
             env(set(evan, vault.vaultID),
                 kCOVER_RATE_MINIMUM(tenthBipsZero),
-                kCOVER_RATE_LIQUIDATION(maxCoverRate),
+                kCOVER_RATE_LIQUIDATION(kMAX_COVER_RATE),
                 Ter(temINVALID));
             // Cover: non-zero min, zero liquidation - implicit and
             // explicit zero values.
-            env(set(evan, vault.vaultID), kCOVER_RATE_MINIMUM(maxCoverRate), Ter(temINVALID));
+            env(set(evan, vault.vaultID), kCOVER_RATE_MINIMUM(kMAX_COVER_RATE), Ter(temINVALID));
             env(set(evan, vault.vaultID),
-                kCOVER_RATE_MINIMUM(maxCoverRate),
+                kCOVER_RATE_MINIMUM(kMAX_COVER_RATE),
                 kCOVER_RATE_LIQUIDATION(tenthBipsZero),
                 Ter(temINVALID));
             // sfDebtMaximum: good value, bad account
@@ -735,7 +737,7 @@ class LoanBroker_test : public beast::unit_test::suite
                     // Modifications
 
                     // Update the fields
-                    auto const nextKeylet = keylet::loanbroker(alice.id(), env.Seq(alice));
+                    auto const nextKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
 
                     // fields that can't be changed
                     // LoanBrokerID
@@ -753,17 +755,17 @@ class LoanBroker_test : public beast::unit_test::suite
                     // ManagementFeeRate
                     env(set(alice, vault.vaultID),
                         kLOAN_BROKER_ID(broker->key()),
-                        kMANAGEMENT_FEE_RATE(maxManagementFeeRate),
+                        kMANAGEMENT_FEE_RATE(kMAX_MANAGEMENT_FEE_RATE),
                         Ter(temINVALID));
                     // CoverRateMinimum
                     env(set(alice, vault.vaultID),
                         kLOAN_BROKER_ID(broker->key()),
-                        kCOVER_RATE_MINIMUM(maxManagementFeeRate),
+                        kCOVER_RATE_MINIMUM(kMAX_MANAGEMENT_FEE_RATE),
                         Ter(temINVALID));
                     // CoverRateLiquidation
                     env(set(alice, vault.vaultID),
                         kLOAN_BROKER_ID(broker->key()),
-                        kCOVER_RATE_LIQUIDATION(maxManagementFeeRate),
+                        kCOVER_RATE_LIQUIDATION(kMAX_MANAGEMENT_FEE_RATE),
                         Ter(temINVALID));
 
                     // fields that can be changed
@@ -771,7 +773,7 @@ class LoanBroker_test : public beast::unit_test::suite
                     // Bad data: too long
                     env(set(alice, vault.vaultID),
                         kLOAN_BROKER_ID(broker->key()),
-                        kDATA(std::string(maxDataPayloadLength + 1, 'W')),
+                        kDATA(std::string(kMAX_DATA_PAYLOAD_LENGTH + 1, 'W')),
                         Ter(temINVALID));
 
                     // Bad debt maximum
@@ -866,7 +868,7 @@ class LoanBroker_test : public beast::unit_test::suite
         Env env(*this);
         Vault const vault{env};
 
-        env.fund(XRP(100'000), issuer, alice);
+        env.fund(kXRP(100'000), issuer, alice);
         env.close();
 
         PrettyAsset const asset = [&]() {
@@ -895,7 +897,7 @@ class LoanBroker_test : public beast::unit_test::suite
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.Seq(alice));
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
         env(set(alice, vaultInfo.vaultID));
         env.close();
 
@@ -912,7 +914,7 @@ class LoanBroker_test : public beast::unit_test::suite
             jv[sfLoanBrokerID] = to_string(uint256{});
             // needs a flag to distinguish the parsed STTx from the prior
             // test
-            env(jv, txflags(tfFullyCanonicalSig), Ter(temINVALID));
+            env(jv, Txflags(tfFullyCanonicalSig), Ter(temINVALID));
         };
         auto testZeroVaultID = [&](auto&& getTxJv) {
             auto jv = getTxJv();
@@ -923,7 +925,7 @@ class LoanBroker_test : public beast::unit_test::suite
             jv[sfVaultID] = to_string(uint256{});
             // needs a flag to distinguish the parsed STTx from the prior
             // test
-            env(jv, txflags(tfFullyCanonicalSig), Ter(temINVALID));
+            env(jv, Txflags(tfFullyCanonicalSig), Ter(temINVALID));
         };
 
         if (brokerTest == CoverDeposit)
@@ -968,7 +970,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             // preclaim: tecDST_TAG_NEEDED
             Account const dest{"dest"};
-            env.fund(XRP(1'000), dest);
+            env.fund(kXRP(1'000), dest);
             env(fset(dest, asfRequireDest));
             env.close();
             env(coverWithdraw(alice, brokerKeylet.key, asset(10)),
@@ -1045,7 +1047,7 @@ class LoanBroker_test : public beast::unit_test::suite
         if (brokerTest == Delete)
         {
             Account const borrower{"borrower"};
-            env.fund(XRP(1'000), borrower);
+            env.fund(kXRP(1'000), borrower);
             env(loan::set(borrower, brokerKeylet.key, asset(50).value()),
                 Sig(sfCounterpartySignature, alice),
                 Fee(env.current()->fees().base * 2));
@@ -1097,7 +1099,7 @@ class LoanBroker_test : public beast::unit_test::suite
             }
 
             auto const amt =
-                env.Balance(alice) - env.current()->fees().accountReserve(env.ownerCount(alice));
+                env.balance(alice) - env.current()->fees().accountReserve(env.ownerCount(alice));
             env(pay(alice, issuer, amt));
 
             // preclaim:: tecINSUFFICIENT_RESERVE
@@ -1118,7 +1120,7 @@ class LoanBroker_test : public beast::unit_test::suite
             Account const issuer{"issuer"};
             auto const usd = alice["USD"];
             Env env(*this);
-            env.fund(XRP(100'000), alice);
+            env.fund(kXRP(100'000), alice);
             env.close();
 
             auto jtx = env.jt(coverClawback(alice), kAMOUNT(usd(100)));
@@ -1127,7 +1129,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(jtx, Ter(temINVALID));
 
             // holder == beast::zero
-            STAmount const bad(Issue{usd.currency, beast::zero}, 100);
+            STAmount const bad(Issue{usd.currency, beast::kZERO}, 100);
             jtx.jv[sfAmount] = bad.getJson();
             jtx.stx = env.ust(jtx);
             Serializer s;
@@ -1223,7 +1225,7 @@ class LoanBroker_test : public beast::unit_test::suite
         Env env(*this);
 
         Account const alice{"alice"};
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
 
         // Create a Vault owned by alice with an XRP asset
@@ -1234,7 +1236,7 @@ class LoanBroker_test : public beast::unit_test::suite
         env.close();
 
         // Predict LoanBroker key using alice's current sequence BEFORE submit
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.Seq(alice));
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
 
         // Create LoanBroker pointing to the vault
         env(loanBroker::set(alice, vaultKeylet.key));
@@ -1249,9 +1251,9 @@ class LoanBroker_test : public beast::unit_test::suite
         // Create a writable view cloned from the current ledger and remove the
         // vault SLE
         OpenView ov{*env.current()};
-        test::StreamSink sink{beast::severities::kWarning};
+        test::StreamSink sink{beast::severities::KWarning};
         beast::Journal const jlog{sink};
-        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, jlog};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 
         if (auto sleBroker = ac.view().peek(keylet::loanbroker(brokerKeylet.key)))
         {
@@ -1264,7 +1266,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         // Invoke preclaim against the mutated (ApplyView) view; triggers
         // nullptr deref
-        PreclaimContext const pctx{env.app(), ac.view(), tesSUCCESS, tx, tapNONE, jlog};
+        PreclaimContext const pctx{env.app(), ac.view(), tesSUCCESS, tx, TapNone, jlog};
         (void)LoanBrokerCoverDeposit::preclaim(pctx);
     }
 
@@ -1280,7 +1282,7 @@ class LoanBroker_test : public beast::unit_test::suite
         Env env(*this);
         Vault vault{env};
 
-        env.fund(XRP(100'000), issuer, alice);
+        env.fund(kXRP(100'000), issuer, alice);
         env.close();
 
         auto asset = MPTTester({
@@ -1340,7 +1342,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 err);
         });
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.Seq(alice));
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
         // Can create LoanBroker if the vault owner is not authorized
         forUnauthAuth([&](auto) { env(set(alice, vaultInfo.vaultID)); });
 
@@ -1387,7 +1389,7 @@ class LoanBroker_test : public beast::unit_test::suite
         Env env(*this);
         Vault const vault{env};
 
-        env.fund(XRP(100'000), issuer, alice);
+        env.fund(kXRP(100'000), issuer, alice);
         env.close();
 
         PrettyAsset const asset = [&]() {
@@ -1418,12 +1420,12 @@ class LoanBroker_test : public beast::unit_test::suite
         env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50)}));
         env.close();
 
-        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.Seq(alice));
+        auto const brokerKeylet = keylet::loanbroker(alice.id(), env.seq(alice));
         env(set(alice, vaultInfo.vaultID));
         env.close();
 
         Account const borrower{"borrower"};
-        env.fund(XRP(1'000), borrower);
+        env.fund(kXRP(1'000), borrower);
         env(loan::set(borrower, brokerKeylet.key, asset(50).value()),
             Sig(sfCounterpartySignature, alice),
             Fee(env.current()->fees().base * 2));
@@ -1445,33 +1447,33 @@ class LoanBroker_test : public beast::unit_test::suite
         tx2[sfDebtMaximum] = 0;
         env(tx2, Ter(tesSUCCESS));
 
-        tx2[sfDebtMaximum] = Json::Value::maxInt;
+        tx2[sfDebtMaximum] = Json::Value::kMAX_INT;
         env(tx2, Ter(tesSUCCESS));
 
         {
             auto const dm = power(2, 64) - 1;
-            BEAST_EXPECT(dm > maxMPTokenAmount);
+            BEAST_EXPECT(dm > kMAX_MP_TOKEN_AMOUNT);
             tx2[sfDebtMaximum] = dm;
             env(tx2, Ter(temINVALID));
         }
 
         {
             auto const dm = power(2, 63) - 1;
-            BEAST_EXPECTS(dm > maxMPTokenAmount, to_string(dm));
+            BEAST_EXPECTS(dm > kMAX_MP_TOKEN_AMOUNT, to_string(dm));
             tx2[sfDebtMaximum] = dm;
             env(tx2, Ter(temINVALID));
         }
 
         {
             auto const dm = power(2, 63) - 3;
-            BEAST_EXPECTS(dm == maxMPTokenAmount, to_string(dm));
+            BEAST_EXPECTS(dm == kMAX_MP_TOKEN_AMOUNT, to_string(dm));
             tx2[sfDebtMaximum] = dm;
             env(tx2, Ter(tesSUCCESS));
         }
 
         {
             auto const dm = 2 * (power(2, 62) - 1) + 1;
-            BEAST_EXPECTS(dm == maxMPTokenAmount, to_string(dm));
+            BEAST_EXPECTS(dm == kMAX_MP_TOKEN_AMOUNT, to_string(dm));
             tx2[sfDebtMaximum] = dm;
             env(tx2, Ter(tesSUCCESS));
         }
@@ -1492,7 +1494,7 @@ class LoanBroker_test : public beast::unit_test::suite
         auto test = [&](auto&& getToken) {
             Env env(*this);
 
-            env.fund(XRP(1'000), issuer, holder);
+            env.fund(kXRP(1'000), issuer, holder);
             env.close();
 
             auto const [token, deposit, err] = getToken(env);
@@ -1506,7 +1508,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 Ter(err));
             env.close();
 
-            auto const brokerKeylet = keylet::loanbroker(broker, env.Seq(broker));
+            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();
@@ -1533,14 +1535,14 @@ class LoanBroker_test : public beast::unit_test::suite
                 {2'000, 2'500, 250, tesSUCCESS},
                 // issuer can issue 500 tokens (250 VaultDeposit +
                 // 250 LoanBrokerCoverDeposit). MaximumAmount is default.
-                {maxMPTokenAmount - 500, std::nullopt, 250, tesSUCCESS},
+                {kMAX_MP_TOKEN_AMOUNT - 500, std::nullopt, 250, tesSUCCESS},
                 // issuer can issue 500, and fails on depositing 1'000
                 {2'000, 2'500, 1'000, tecINSUFFICIENT_FUNDS},
                 // issuer has already issued MaximumAmount
                 {2'000, 2'000, 1'000, tecINSUFFICIENT_FUNDS},
                 // issuer has already issued MaximumAmount. MaximumAmount is
                 // default.
-                {maxMPTokenAmount, std::nullopt, 250, tecINSUFFICIENT_FUNDS},
+                {kMAX_MP_TOKEN_AMOUNT, std::nullopt, 250, tecINSUFFICIENT_FUNDS},
             };
         for (auto const& [pay, max, deposit, err] : mptTests)
         {
@@ -1565,7 +1567,7 @@ class LoanBroker_test : public beast::unit_test::suite
         Env env(*this);
 
         Account const issuer{"issuer"}, lender{"lender"}, borrower{"borrower"};
-        env.fund(XRP(20'000), issuer, lender, borrower);
+        env.fund(kXRP(20'000), issuer, lender, borrower);
         auto const iou = issuer["IOU"];
 
         Vault const vault{env};
@@ -1639,7 +1641,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 env.close();
             };
 
-            env.fund(XRP(1'000), issuer, broker, dest);
+            env.fund(kXRP(1'000), issuer, broker, dest);
             env.close();
 
             if (trustState == RequireAuth)
@@ -1668,13 +1670,13 @@ class LoanBroker_test : public beast::unit_test::suite
             env(vault.withdraw({.depositor = broker, .id = keylet.key, .amount = token(1'000)}),
                 loanBroker::kDESTINATION(dest),
                 Ter(std::ignore));
-            BEAST_EXPECT(env.Ter() == tecNO_LINE);
+            BEAST_EXPECT(env.ter() == tecNO_LINE);
             env.close();
 
             env(vault.withdraw({.depositor = broker, .id = keylet.key, .amount = token(1'000)}));
 
             // Test LoanBroker withdraw
-            auto const brokerKeylet = keylet::loanbroker(broker, env.Seq(broker));
+            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();
@@ -1685,7 +1687,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(loanBroker::coverWithdraw(broker, brokerKeylet.key, token(100)),
                 loanBroker::kDESTINATION(dest),
                 Ter(std::ignore));
-            BEAST_EXPECT(env.Ter() == tecNO_LINE);
+            BEAST_EXPECT(env.ter() == tecNO_LINE);
             env.close();
 
             // Clearing RequireAuth shouldn't change the result
@@ -1697,7 +1699,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 env(loanBroker::coverWithdraw(broker, brokerKeylet.key, token(100)),
                     loanBroker::kDESTINATION(dest),
                     Ter(std::ignore));
-                BEAST_EXPECT(env.Ter() == tecNO_LINE);
+                BEAST_EXPECT(env.ter() == tecNO_LINE);
                 env.close();
             }
         };
@@ -1728,7 +1730,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             testcase << "RIPD-4274 MPT with state: " << static_cast<int>(mptState);
 
-            env.fund(XRP(1'000), issuer, broker, dest);
+            env.fund(kXRP(1'000), issuer, broker, dest);
             env.close();
 
             auto const maybeToken = [&]() -> std::optional<MPT> {
@@ -1756,7 +1758,7 @@ class LoanBroker_test : public beast::unit_test::suite
                              .pay = 2'000,
                              .flags = kMPT_DEX_FLAGS,
                              .maxAmt = 4'000});
-                        BEAST_EXPECT(env.Balance(issuer, tester) == tester(-4'000));
+                        BEAST_EXPECT(env.balance(issuer, tester) == tester(-4'000));
                         return tester;
                     }
                     case NoMPT: {
@@ -1792,7 +1794,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             // Shouldn't fail if at MaximumAmount since no new tokens are issued
             TER const err = mptState == ReachedMAX ? TER(tesSUCCESS) : tecNO_AUTH;
-            BEAST_EXPECT(env.Ter() == err);
+            BEAST_EXPECT(env.ter() == err);
             env.close();
 
             if (!isTesSuccess(err))
@@ -1802,7 +1804,7 @@ class LoanBroker_test : public beast::unit_test::suite
             }
 
             // Test LoanBroker withdraw
-            auto const brokerKeylet = keylet::loanbroker(broker, env.Seq(broker));
+            auto const brokerKeylet = keylet::loanbroker(broker, env.seq(broker));
 
             env(loanBroker::set(broker, keylet.key));
             env.close();
@@ -1813,7 +1815,7 @@ class LoanBroker_test : public beast::unit_test::suite
             env(loanBroker::coverWithdraw(broker, brokerKeylet.key, token(100)),
                 loanBroker::kDESTINATION(dest),
                 Ter(std::ignore));
-            BEAST_EXPECT(env.Ter() == err);
+            BEAST_EXPECT(env.ter() == err);
             env.close();
         };
 

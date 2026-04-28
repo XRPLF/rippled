@@ -73,19 +73,19 @@ Transaction::setStatus(
 TransStatus
 Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
-    auto const c = (status) ? safe_cast<TxnSql>((*status)[0]) : TxnSql::txnSqlUnknown;
+    auto const c = (status) ? safeCast<TxnSql>((*status)[0]) : TxnSql::TxnSqlUnknown;
 
     switch (static_cast<TxnSql>(c))
     {
-        case TxnSql::txnSqlNew:
+        case TxnSql::TxnSqlNew:
             return NEW;
-        case TxnSql::txnSqlConflict:
+        case TxnSql::TxnSqlConflict:
             return CONFLICTED;
-        case TxnSql::txnSqlHeld:
+        case TxnSql::TxnSqlHeld:
             return HELD;
-        case TxnSql::txnSqlValidated:
+        case TxnSql::TxnSqlValidated:
             return COMMITTED;
-        case TxnSql::txnSqlIncluded:
+        case TxnSql::TxnSqlIncluded:
             return INCLUDED;
         default:
             XRPL_ASSERT(
@@ -116,7 +116,7 @@ Transaction::transactionFromSQL(
 }
 
 std::variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-Transaction::load(uint256 const& id, Application& app, error_code_i& ec)
+Transaction::load(uint256 const& id, Application& app, ErrorCodeI& ec)
 {
     return load(id, app, std::nullopt, ec);
 }
@@ -126,7 +126,7 @@ Transaction::load(
     uint256 const& id,
     Application& app,
     ClosedInterval<uint32_t> const& range,
-    error_code_i& ec)
+    ErrorCodeI& ec)
 {
     using op = std::optional<ClosedInterval<uint32_t>>;
 
@@ -138,7 +138,7 @@ Transaction::load(
     uint256 const& id,
     Application& app,
     std::optional<ClosedInterval<uint32_t>> const& range,
-    error_code_i& ec)
+    ErrorCodeI& ec)
 {
     auto& db = app.getRelationalDatabase();
 
@@ -150,12 +150,12 @@ Json::Value
 Transaction::getJson(JsonOptions options, bool binary) const
 {
     // Note, we explicitly suppress `include_date` option here
-    Json::Value ret(transaction_->getJson(options & ~JsonOptions::kINCLUDE_DATE, binary));
+    Json::Value ret(transaction_->getJson(options & ~JsonOptions::KIncludeDate, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
     if (ret.isObject() && (ledgerIndex_ != 0u))
     {
-        if (!(options & JsonOptions::kDISABLE_API_PRIOR_V2))
+        if (!(options & JsonOptions::KDisableApiPriorV2))
         {
             // Behaviour before API version 2
             ret[jss::inLedger] = ledgerIndex_;
@@ -165,7 +165,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
         // `ledger_index` elements (taking precedence over include_date)
         ret[jss::ledger_index] = ledgerIndex_;
 
-        if (options & JsonOptions::kINCLUDE_DATE)
+        if (options & JsonOptions::KIncludeDate)
         {
             auto ct = app_.getLedgerMaster().getCloseTimeBySeq(ledgerIndex_);
             if (ct)

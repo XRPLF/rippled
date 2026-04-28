@@ -97,6 +97,6 @@ struct ParsedPort
 };
 
 void
-parse_Port(ParsedPort& port, Section const& section, std::ostream& log);
+parsePort(ParsedPort& port, Section const& section, std::ostream& log);
 
 }  // namespace xrpl

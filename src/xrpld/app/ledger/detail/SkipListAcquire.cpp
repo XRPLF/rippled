@@ -36,7 +36,7 @@ SkipListAcquire::SkipListAcquire(
           app,
           ledgerHash,
           LedgerReplayParameters::kSUB_TASK_TIMEOUT,
-          {.jobType = jtREPLAY_TASK,
+          {.jobType = JtReplayTask,
            .jobName = "SkipListAcq",
            .jobLimit = LedgerReplayParameters::kMAX_QUEUED_TASKS},
           app.getJournal("LedgerReplaySkipList"))

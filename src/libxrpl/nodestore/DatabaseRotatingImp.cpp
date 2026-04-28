@@ -121,7 +121,7 @@ DatabaseRotatingImp::fetchNodeObject(
     bool duplicate)
 {
     auto fetch = [&](std::shared_ptr<Backend> const& backend) {
-        Status status = ok;
+        Status status = Ok;
         std::shared_ptr<NodeObject> nodeObject;
         try
         {
@@ -130,15 +130,15 @@ DatabaseRotatingImp::fetchNodeObject(
         catch (std::exception const& e)
         {
             JLOG(j_.fatal()) << "Exception, " << e.what();
-            Rethrow();
+            rethrow();
         }
 
         switch (status)
         {
-            case ok:
-            case notFound:
+            case Ok:
+            case NotFound:
                 break;
-            case dataCorrupt:
+            case DataCorrupt:
                 JLOG(j_.fatal()) << "Corrupt NodeObject #" << hash;
                 break;
             default:

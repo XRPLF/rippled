@@ -165,7 +165,7 @@ getLineIfUsable(
         return nullptr;
     }
 
-    if (zeroIfFrozen == fhZERO_IF_FROZEN)
+    if (zeroIfFrozen == FhZeroIfFrozen)
     {
         if (isFrozen(view, account, currency, issuer) ||
             isDeepFrozen(view, account, currency, issuer))
@@ -252,12 +252,12 @@ accountHolds(
         return {xrpLiquid(view, account, 0, j)};
     }
 
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    bool const returnSpendable = (includeFullBalance == ShFullBalance);
     if (returnSpendable && account == issuer)
     {
         // If the account is the issuer, then their limit is effectively
         // infinite
-        return STAmount{Issue{currency, issuer}, STAmount::cMaxValue, STAmount::cMaxOffset};
+        return STAmount{Issue{currency, issuer}, STAmount::kC_MAX_VALUE, STAmount::kC_MAX_OFFSET};
     }
 
     // IOU: Return balance on trust line modulo freeze
@@ -290,7 +290,7 @@ accountHolds(
     beast::Journal j,
     SpendableHandling includeFullBalance)
 {
-    bool const returnSpendable = (includeFullBalance == shFULL_BALANCE);
+    bool const returnSpendable = (includeFullBalance == ShFullBalance);
     STAmount amount{mptIssue};
     auto const& issuer = mptIssue.getIssuer();
     bool const mptokensV2 = view.rules().enabled(featureMPTokensV2);
@@ -317,7 +317,7 @@ accountHolds(
     {
         amount.clear(mptIssue);
     }
-    else if (zeroIfFrozen == fhZERO_IF_FROZEN && isFrozen(view, account, mptIssue))
+    else if (zeroIfFrozen == FhZeroIfFrozen && isFrozen(view, account, mptIssue))
     {
         amount.clear(mptIssue);
     }
@@ -327,14 +327,14 @@ accountHolds(
 
         // Only if auth check is needed, as it needs to do an additional read
         // operation. Note featureSingleAssetVault will affect error codes.
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
+        if (zeroIfUnauthorized == AhZeroIfUnauthorized &&
             view.rules().enabled(featureSingleAssetVault))
         {
             if (auto const err = requireAuth(view, mptIssue, account, AuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
-        else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        else if (zeroIfUnauthorized == AhZeroIfUnauthorized)
         {
             auto const sleIssuance = view.read(keylet::mptIssuance(mptIssue.getMptID()));
 
@@ -401,7 +401,7 @@ accountFunds(
         [&](Issue const&) { return accountFunds(view, id, saDefault, freezeHandling, j); },
         [&](MPTIssue const&) {
             return accountHolds(
-                view, id, saDefault.asset(), freezeHandling, authHandling, j, shFULL_BALANCE);
+                view, id, saDefault.asset(), freezeHandling, authHandling, j, ShFullBalance);
         });
 }
 
@@ -568,9 +568,9 @@ directSendNoFeeIOU(
 
         // FIXME This NEEDS to be cleaned up and simplified. It's impossible
         //       for anyone to understand.
-        if (saBefore > beast::zero
+        if (saBefore > beast::kZERO
             // Sender balance was positive.
-            && saBalance <= beast::zero
+            && saBalance <= beast::kZERO
             // Sender is zero or negative.
             && ((uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve)) != 0u)
             // Sender reserve is set.
@@ -789,7 +789,7 @@ accountSendIOU(
 {
     if (view.rules().enabled(fixAMMv1_1))
     {
-        if (saAmount < beast::zero || saAmount.holds<MPTIssue>())
+        if (saAmount < beast::kZERO || saAmount.holds<MPTIssue>())
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -827,9 +827,9 @@ accountSendIOU(
     TER terResult(tesSUCCESS);
 
     SLE::pointer const sender =
-        uSenderID != beast::zero ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
+        uSenderID != beast::kZERO ? view.peek(keylet::account(uSenderID)) : SLE::pointer();
     SLE::pointer const receiver =
-        uReceiverID != beast::zero ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
+        uReceiverID != beast::kZERO ? view.peek(keylet::account(uReceiverID)) : SLE::pointer();
 
     if (auto stream = j.trace())
     {
@@ -923,7 +923,7 @@ accountSendMultiIOU(
      */
 
     SLE::pointer const sender =
-        senderID != beast::zero ? view.peek(keylet::account(senderID)) : SLE::pointer();
+        senderID != beast::kZERO ? view.peek(keylet::account(senderID)) : SLE::pointer();
 
     if (auto stream = j.trace())
     {
@@ -943,7 +943,7 @@ accountSendMultiIOU(
         auto const& receiverID = r.first;
         STAmount const amount{issue, r.second};
 
-        if (amount < beast::zero)
+        if (amount < beast::kZERO)
         {
             return tecINTERNAL;  // LCOV_EXCL_LINE
         }
@@ -955,7 +955,7 @@ accountSendMultiIOU(
             continue;
 
         SLE::pointer const receiver =
-            receiverID != beast::zero ? view.peek(keylet::account(receiverID)) : SLE::pointer();
+            receiverID != beast::kZERO ? view.peek(keylet::account(receiverID)) : SLE::pointer();
 
         if (auto stream = j.trace())
         {
@@ -1185,7 +1185,7 @@ directSendNoLimitMultiMPT(
     // small-scale mantissa (~16 digits) can lose precision for values near
     // maxMPTokenAmount (19 digits).
     std::uint64_t totalSendAmount{0};
-    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
+    std::uint64_t const maximumAmount = sle->at(~sfMaximumAmount).value_or(kMAX_MP_TOKEN_AMOUNT);
     std::uint64_t const outstandingAmount = sle->getFieldU64(sfOutstandingAmount);
 
     // actual accumulates the total cost to the sender (includes transfer
@@ -1199,7 +1199,7 @@ directSendNoLimitMultiMPT(
     {
         STAmount const amount{mptIssue, amt};
 
-        if (amount < beast::zero)
+        if (amount < beast::kZERO)
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (!amount || senderID == receiverID)

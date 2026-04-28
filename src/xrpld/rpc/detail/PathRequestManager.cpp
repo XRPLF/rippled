@@ -59,7 +59,7 @@ PathRequestManager::getAssetCache(std::shared_ptr<ReadView const> const& ledger,
 void
 PathRequestManager::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 {
-    auto event = app_.getJobQueue().makeLoadEvent(jtPATH_FIND, "PathRequest::updateAll");
+    auto event = app_.getJobQueue().makeLoadEvent(JtPathFind, "PathRequest::updateAll");
 
     std::vector<PathRequest::wptr> requests;
     std::shared_ptr<AssetCache> cache;
@@ -273,7 +273,7 @@ PathRequestManager::makeLegacyPathRequest(
         if (!app_.getLedgerMaster().newPathRequest())
         {
             // The newPathRequest failed.  Tell the caller.
-            jvRes = rpcError(rpcTOO_BUSY);
+            jvRes = rpcError(RpcTooBusy);
             req.reset();
         }
     }

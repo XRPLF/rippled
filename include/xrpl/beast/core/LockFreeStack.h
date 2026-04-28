@@ -181,16 +181,16 @@ public:
     */
     // VFALCO NOTE Fix this, shouldn't it be a reference like intrusive list?
     bool
-    push_front(Node* node)
+    pushFront(Node* node)
     {
         bool first = false;
-        Node* old_head = head_.load(std::memory_order_relaxed);
+        Node* oldHead = head_.load(std::memory_order_relaxed);
         do
         {
-            first = (old_head == &end_);
-            node->next_ = old_head;
+            first = (oldHead == &end_);
+            node->next_ = oldHead;
         } while (!head_.compare_exchange_strong(
-            old_head, node, std::memory_order_release, std::memory_order_relaxed));
+            oldHead, node, std::memory_order_release, std::memory_order_relaxed));
         return first;
     }
 
@@ -204,17 +204,17 @@ public:
                 was empty.
     */
     Element*
-    pop_front()
+    popFront()
     {
         Node* node = head_.load();
-        Node* new_head = nullptr;
+        Node* newHead = nullptr;
         do
         {
             if (node == &end_)
                 return nullptr;
-            new_head = node->next_.load();
+            newHead = node->next_.load();
         } while (!head_.compare_exchange_strong(
-            node, new_head, std::memory_order_release, std::memory_order_relaxed));
+            node, newHead, std::memory_order_release, std::memory_order_relaxed));
         return static_cast<Element*>(node);
     }
 

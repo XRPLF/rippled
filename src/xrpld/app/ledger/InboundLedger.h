@@ -98,7 +98,7 @@ public:
     }
 
 private:
-    enum class TriggerReason { added, reply, timeout };
+    enum class TriggerReason { Added, Reply, Timeout };
 
     void
     filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);

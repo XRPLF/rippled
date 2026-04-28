@@ -36,7 +36,7 @@
 
 namespace xrpl {
 
-class NFTokenDir_test : public beast::unit_test::suite
+class NFTokenDir_test : public beast::unit_test::Suite
 {
     // printNFTPages is a helper function that may be used for debugging.
     //
@@ -121,7 +121,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         Account const issuer{"issuer"};
         Account const buyer{"buyer"};
-        env.fund(XRP(10000), buyer, issuer);
+        env.fund(kXRP(10000), buyer, issuer);
         env.close();
 
         // Mint 100 sequential NFTs.  Tweak the taxon so zero is always stored.
@@ -133,7 +133,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         {
             std::uint32_t const taxon = toUInt32(nft::cipheredTaxon(i, nft::toTaxon(0)));
             nftIDs.emplace_back(token::getNextID(env, issuer, taxon, tfTransferable));
-            env(token::mint(issuer, taxon), txflags(tfTransferable));
+            env(token::mint(issuer, taxon), Txflags(tfTransferable));
             env.close();
         }
 
@@ -142,8 +142,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         std::vector<uint256> offers;
         for (uint256 const& nftID : nftIDs)
         {
-            offers.emplace_back(keylet::nftoffer(issuer, env.Seq(issuer)).key);
-            env(token::createOffer(issuer, nftID, XRP(0)), txflags((tfSellNFToken)));
+            offers.emplace_back(keylet::nftoffer(issuer, env.seq(issuer)).key);
+            env(token::createOffer(issuer, nftID, kXRP(0)), Txflags((tfSellNFToken)));
             env.close();
         }
 
@@ -181,7 +181,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
             // Eventually all of the NFTokens will be owned by buyer.
             Account const buyer{"buyer"};
-            env.fund(XRP(10000), buyer);
+            env.fund(kXRP(10000), buyer);
             env.close();
 
             // Create accounts for all of the seeds and fund those accounts.
@@ -191,7 +191,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             {
                 Account const& account =
                     accounts.emplace_back(Account::Base58Seed, std::string(seed));
-                env.fund(XRP(10000), account);
+                env.fund(kXRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
                 // initialized at different ledgers, they will have
@@ -210,14 +210,14 @@ class NFTokenDir_test : public beast::unit_test::suite
                 // Mint the NFT.
                 uint256 const& nftID =
                     nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
-                env(token::mint(account, 0), txflags(tfTransferable));
+                env(token::mint(account, 0), Txflags(tfTransferable));
                 env.close();
 
                 // Create an offer to give the NFT to buyer for free.
-                offers.emplace_back(keylet::nftoffer(account, env.Seq(account)).key);
-                env(token::createOffer(account, nftID, XRP(0)),
-                    token::destination(buyer),
-                    txflags((tfSellNFToken)));
+                offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
+                env(token::createOffer(account, nftID, kXRP(0)),
+                    token::Destination(buyer),
+                    Txflags((tfSellNFToken)));
             }
             env.close();
 
@@ -237,8 +237,8 @@ class NFTokenDir_test : public beast::unit_test::suite
             // generates a non-tesSUCCESS error code.
             for (uint256 const& nftID : nftIDs)
             {
-                uint256 const offerID = keylet::nftoffer(buyer, env.Seq(buyer)).key;
-                env(token::createOffer(buyer, nftID, XRP(100)), txflags(tfSellNFToken));
+                uint256 const offerID = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                env(token::createOffer(buyer, nftID, kXRP(100)), Txflags(tfSellNFToken));
                 env.close();
 
                 env(token::cancelOffer(buyer, {offerID}));
@@ -381,11 +381,11 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Lambda that exercises the split.
         auto exercise = [this, &features](std::initializer_list<std::string_view const> seeds) {
-            Env env{*this, envconfig(), features, nullptr, beast::severities::kDisabled};
+            Env env{*this, envconfig(), features, nullptr, beast::severities::KDisabled};
 
             // Eventually all of the NFTokens will be owned by buyer.
             Account const buyer{"buyer"};
-            env.fund(XRP(10000), buyer);
+            env.fund(kXRP(10000), buyer);
             env.close();
 
             // Create accounts for all of the seeds and fund those accounts.
@@ -395,7 +395,7 @@ class NFTokenDir_test : public beast::unit_test::suite
             {
                 Account const& account =
                     accounts.emplace_back(Account::Base58Seed, std::string(seed));
-                env.fund(XRP(10000), account);
+                env.fund(kXRP(10000), account);
 
                 // Do not close the ledger inside the loop.  If accounts are
                 // initialized at different ledgers, they will have
@@ -414,14 +414,14 @@ class NFTokenDir_test : public beast::unit_test::suite
                 // Mint the NFT.
                 uint256 const& nftID =
                     nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
-                env(token::mint(account, 0), txflags(tfTransferable));
+                env(token::mint(account, 0), Txflags(tfTransferable));
                 env.close();
 
                 // Create an offer to give the NFT to buyer for free.
-                offers.emplace_back(keylet::nftoffer(account, env.Seq(account)).key);
-                env(token::createOffer(account, nftID, XRP(0)),
-                    token::destination(buyer),
-                    txflags((tfSellNFToken)));
+                offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
+                env(token::createOffer(account, nftID, kXRP(0)),
+                    token::Destination(buyer),
+                    Txflags((tfSellNFToken)));
             }
             env.close();
 
@@ -445,8 +445,8 @@ class NFTokenDir_test : public beast::unit_test::suite
             // generates a non-tesSUCCESS error code.
             for (uint256 const& nftID : nftIDs)
             {
-                uint256 const offerID = keylet::nftoffer(buyer, env.Seq(buyer)).key;
-                env(token::createOffer(buyer, nftID, XRP(100)), txflags(tfSellNFToken));
+                uint256 const offerID = keylet::nftoffer(buyer, env.seq(buyer)).key;
+                env(token::createOffer(buyer, nftID, kXRP(100)), Txflags(tfSellNFToken));
                 env.close();
 
                 env(token::cancelOffer(buyer, {offerID}));
@@ -578,7 +578,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Eventually all of the NFTokens will be owned by buyer.
         Account const buyer{"buyer"};
-        env.fund(XRP(10000), buyer);
+        env.fund(kXRP(10000), buyer);
         env.close();
 
         // Here are 33 seeds that produce identical low 32-bits in their
@@ -625,7 +625,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         for (std::string_view const seed : kSEEDS)
         {
             Account const& account = accounts.emplace_back(Account::Base58Seed, std::string(seed));
-            env.fund(XRP(10000), account);
+            env.fund(kXRP(10000), account);
 
             // Do not close the ledger inside the loop.  If accounts are
             // initialized at different ledgers, they will have different
@@ -643,22 +643,22 @@ class NFTokenDir_test : public beast::unit_test::suite
             // Mint the NFT.
             uint256 const& nftID =
                 nftIDs.emplace_back(token::getNextID(env, account, 0, tfTransferable));
-            env(token::mint(account, 0), txflags(tfTransferable));
+            env(token::mint(account, 0), Txflags(tfTransferable));
             env.close();
 
             // Create an offer to give the NFT to buyer for free.
-            offers.emplace_back(keylet::nftoffer(account, env.Seq(account)).key);
-            env(token::createOffer(account, nftID, XRP(0)),
-                token::destination(buyer),
-                txflags((tfSellNFToken)));
+            offers.emplace_back(keylet::nftoffer(account, env.seq(account)).key);
+            env(token::createOffer(account, nftID, kXRP(0)),
+                token::Destination(buyer),
+                Txflags((tfSellNFToken)));
         }
         env.close();
 
         // Verify that the low 96 bits of all generated NFTs is identical.
-        uint256 const expectLowBits = nftIDs.front() & nft::pageMask;
+        uint256 const expectLowBits = nftIDs.front() & nft::kPAGE_MASK;
         for (uint256 const& nftID : nftIDs)
         {
-            BEAST_EXPECT(expectLowBits == (nftID & nft::pageMask));
+            BEAST_EXPECT(expectLowBits == (nftID & nft::kPAGE_MASK));
         }
 
         // Remove one NFT and offer from the vectors.  This offer is the one
@@ -683,8 +683,8 @@ class NFTokenDir_test : public beast::unit_test::suite
         // a non-tesSUCCESS error code.
         for (uint256 const& nftID : nftIDs)
         {
-            uint256 const offerID = keylet::nftoffer(buyer, env.Seq(buyer)).key;
-            env(token::createOffer(buyer, nftID, XRP(100)), txflags(tfSellNFToken));
+            uint256 const offerID = keylet::nftoffer(buyer, env.seq(buyer)).key;
+            env(token::createOffer(buyer, nftID, kXRP(100)), Txflags(tfSellNFToken));
             env.close();
 
             env(token::cancelOffer(buyer, {offerID}));
@@ -715,7 +715,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         BEAST_EXPECT(nftIDs.empty());
 
         TER const expect = tesSUCCESS;
-        env(token::mint(buyer, 0), txflags(tfTransferable), Ter(expect));
+        env(token::mint(buyer, 0), Txflags(tfTransferable), Ter(expect));
         env.close();
     }
 
@@ -741,7 +741,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Eventually all of the NFTokens will be owned by buyer.
         Account const buyer{"buyer"};
-        env.fund(XRP(10000), buyer);
+        env.fund(kXRP(10000), buyer);
         env.close();
 
         // Here are 33 seeds that produce identical low 32-bits in their
@@ -788,7 +788,7 @@ class NFTokenDir_test : public beast::unit_test::suite
         for (std::string_view const seed : kSEEDS)
         {
             Account const& account = accounts.emplace_back(Account::Base58Seed, std::string(seed));
-            env.fund(XRP(10000), account);
+            env.fund(kXRP(10000), account);
 
             // Do not close the ledger inside the loop.  If accounts are
             // initialized at different ledgers, they will have different
@@ -814,14 +814,14 @@ class NFTokenDir_test : public beast::unit_test::suite
 
                 uint256 const& nftID = nftIDsByPage[i].emplace_back(
                     token::getNextID(env, account, taxon, tfTransferable));
-                env(token::mint(account, taxon), txflags(tfTransferable));
+                env(token::mint(account, taxon), Txflags(tfTransferable));
                 env.close();
 
                 // Create an offer to give the NFT to buyer for free.
-                offers[i].emplace_back(keylet::nftoffer(account, env.Seq(account)).key);
-                env(token::createOffer(account, nftID, XRP(0)),
-                    token::destination(buyer),
-                    txflags((tfSellNFToken)));
+                offers[i].emplace_back(keylet::nftoffer(account, env.seq(account)).key);
+                env(token::createOffer(account, nftID, kXRP(0)),
+                    token::Destination(buyer),
+                    Txflags((tfSellNFToken)));
             }
         }
         env.close();
@@ -830,10 +830,10 @@ class NFTokenDir_test : public beast::unit_test::suite
         // sequence is identical.
         for (auto const& vec : nftIDsByPage)
         {
-            uint256 const expectLowBits = vec.front() & nft::pageMask;
+            uint256 const expectLowBits = vec.front() & nft::kPAGE_MASK;
             for (uint256 const& nftID : vec)
             {
-                BEAST_EXPECT(expectLowBits == (nftID & nft::pageMask));
+                BEAST_EXPECT(expectLowBits == (nftID & nft::kPAGE_MASK));
             }
         }
 
@@ -883,14 +883,14 @@ class NFTokenDir_test : public beast::unit_test::suite
         {
             for (uint256 const& nftID : vec)
             {
-                env(token::createOffer(buyer, nftID, XRP(100)), txflags(tfSellNFToken));
+                env(token::createOffer(buyer, nftID, kXRP(100)), Txflags(tfSellNFToken));
                 env.close();
             }
         }
 
         // See what the account_objects command does with "nft_offer".
         {
-            Json::Value ownedNftOffers(Json::arrayValue);
+            Json::Value ownedNftOffers(Json::ArrayValue);
             std::string marker;
             do
             {
@@ -963,7 +963,7 @@ class NFTokenDir_test : public beast::unit_test::suite
 
         // Verify that the ledger reports all of the NFTs owned by buyer.
         // Use the account_nfts rpc call to get the values.
-        Json::Value ownedNFTs(Json::arrayValue);
+        Json::Value ownedNFTs(Json::ArrayValue);
         std::string marker;
         do
         {

@@ -34,7 +34,7 @@
 namespace xrpl {
 
 template <class Mutex, class CondVar>
-class basic_semaphore
+class BasicSemaphore
 {
 private:
     Mutex mutex_;
@@ -47,7 +47,7 @@ public:
     /** Create the semaphore, with an optional initial count.
         If unspecified, the initial count is zero.
     */
-    explicit basic_semaphore(size_type count = 0) : count_(count)
+    explicit BasicSemaphore(size_type count = 0) : count_(count)
     {
     }
 
@@ -74,7 +74,7 @@ public:
         @return `true` If the wait would be satisfied.
     */
     bool
-    try_wait()
+    tryWait()
     {
         std::lock_guard lock{mutex_};
         if (count_ == 0)
@@ -84,6 +84,6 @@ public:
     }
 };
 
-using semaphore = basic_semaphore<std::mutex, std::condition_variable>;
+using semaphore = BasicSemaphore<std::mutex, std::condition_variable>;
 
 }  // namespace xrpl

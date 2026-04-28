@@ -10,17 +10,17 @@ namespace beast {
 namespace severities {
 /** Severity level / threshold of a Journal message. */
 enum Severity {
-    kAll = 0,
+    KAll = 0,
 
-    kTrace = kAll,
-    kDebug = 1,
-    kInfo = 2,
-    kWarning = 3,
-    kError = 4,
-    kFatal = 5,
+    KTrace = KAll,
+    KDebug = 1,
+    KInfo = 2,
+    KWarning = 3,
+    KError = 4,
+    KFatal = 5,
 
-    kDisabled = 6,
-    kNone = kDisabled
+    KDisabled = 6,
+    KNone = KDisabled
 };
 }  // namespace severities
 
@@ -181,7 +181,7 @@ public:
     {
     public:
         /** Create a stream which produces no output. */
-        explicit Stream() : sink_(getNullSink()), level_(severities::kDisabled)
+        explicit Stream() : sink_(getNullSink()), level_(severities::KDisabled)
         {
         }
 
@@ -295,37 +295,37 @@ public:
     [[nodiscard]] Stream
     trace() const
     {
-        return {*sink_, severities::kTrace};
+        return {*sink_, severities::KTrace};
     }
 
     [[nodiscard]] Stream
     debug() const
     {
-        return {*sink_, severities::kDebug};
+        return {*sink_, severities::KDebug};
     }
 
     [[nodiscard]] Stream
     info() const
     {
-        return {*sink_, severities::kInfo};
+        return {*sink_, severities::KInfo};
     }
 
     [[nodiscard]] Stream
     warn() const
     {
-        return {*sink_, severities::kWarning};
+        return {*sink_, severities::KWarning};
     }
 
     [[nodiscard]] Stream
     error() const
     {
-        return {*sink_, severities::kError};
+        return {*sink_, severities::KError};
     }
 
     [[nodiscard]] Stream
     fatal() const
     {
-        return {*sink_, severities::kFatal};
+        return {*sink_, severities::KFatal};
     }
     /** @} */
 };
@@ -368,7 +368,7 @@ Journal::Stream::operator<<(T const& t) const
 namespace detail {
 
 template <class CharT, class Traits = std::char_traits<CharT>>
-class log_stream_buf : public std::basic_stringbuf<CharT, Traits>
+class LogStreamBuf : public std::basic_stringbuf<CharT, Traits>
 {
     beast::Journal::Stream strm_;
 
@@ -387,11 +387,11 @@ class log_stream_buf : public std::basic_stringbuf<CharT, Traits>
     }
 
 public:
-    explicit log_stream_buf(beast::Journal::Stream const& strm) : strm_(strm)
+    explicit LogStreamBuf(beast::Journal::Stream const& strm) : strm_(strm)
     {
     }
 
-    ~log_stream_buf() override
+    ~LogStreamBuf() override
     {
         sync();
     }
@@ -412,7 +412,7 @@ public:
 }  // namespace detail
 
 template <class CharT, class Traits = std::char_traits<CharT>>
-class basic_logstream : public std::basic_ostream<CharT, Traits>
+class BasicLogstream : public std::basic_ostream<CharT, Traits>
 {
     using char_type = CharT;
     using traits_type = Traits;
@@ -420,16 +420,16 @@ class basic_logstream : public std::basic_ostream<CharT, Traits>
     using pos_type = typename traits_type::pos_type;
     using off_type = typename traits_type::off_type;
 
-    detail::log_stream_buf<CharT, Traits> buf_;
+    detail::LogStreamBuf<CharT, Traits> buf_;
 
 public:
-    explicit basic_logstream(beast::Journal::Stream const& strm)
+    explicit BasicLogstream(beast::Journal::Stream const& strm)
         : std::basic_ostream<CharT, Traits>(&buf_), buf_(strm)
     {
     }
 };
 
-using logstream = basic_logstream<char>;
-using logwstream = basic_logstream<wchar_t>;
+using logstream = BasicLogstream<char>;
+using logwstream = BasicLogstream<wchar_t>;
 
 }  // namespace beast

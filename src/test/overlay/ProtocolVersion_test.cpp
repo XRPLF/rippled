@@ -7,7 +7,7 @@
 
 namespace xrpl {
 
-class ProtocolVersion_test : public beast::unit_test::suite
+class ProtocolVersion_test : public beast::unit_test::Suite
 {
 private:
     void
@@ -17,10 +17,10 @@ private:
             std::string result;
             if (first != last)
             {
-                result = toString(*first++);
+                result = to_string(*first++);
 
                 while (first != last)
-                    result += "," + toString(*first++);
+                    result += "," + to_string(*first++);
             }
             return result;
         };
@@ -34,10 +34,10 @@ public:
     run() override
     {
         testcase("Convert protocol version to string");
-        BEAST_EXPECT(toString(makeProtocol(1, 3)) == "XRPL/1.3");
-        BEAST_EXPECT(toString(makeProtocol(2, 0)) == "XRPL/2.0");
-        BEAST_EXPECT(toString(makeProtocol(2, 1)) == "XRPL/2.1");
-        BEAST_EXPECT(toString(makeProtocol(10, 10)) == "XRPL/10.10");
+        BEAST_EXPECT(to_string(makeProtocol(1, 3)) == "XRPL/1.3");
+        BEAST_EXPECT(to_string(makeProtocol(2, 0)) == "XRPL/2.0");
+        BEAST_EXPECT(to_string(makeProtocol(2, 1)) == "XRPL/2.1");
+        BEAST_EXPECT(to_string(makeProtocol(10, 10)) == "XRPL/10.10");
 
         {
             testcase("Convert strings to protocol versions");

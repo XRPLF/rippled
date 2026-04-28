@@ -19,19 +19,19 @@ doPeerReservationsDel(RPC::JsonContext& context)
 
     // We repeat much of the parameter parsing from `doPeerReservationsAdd`.
     if (!params.isMember(jss::public_key))
-        return RPC::missing_field_error(jss::public_key);
+        return RPC::missingFieldError(jss::public_key);
     if (!params[jss::public_key].isString())
-        return RPC::expected_field_error(jss::public_key, "a string");
+        return RPC::expectedFieldError(jss::public_key, "a string");
 
     std::optional<PublicKey> optPk =
         parseBase58<PublicKey>(TokenType::NodePublic, params[jss::public_key].asString());
     if (!optPk)
-        return rpcError(rpcPUBLIC_MALFORMED);
+        return rpcError(RpcPublicMalformed);
     PublicKey const& nodeId = *optPk;
 
     auto const previous = context.app.getPeerReservations().erase(nodeId);
 
-    Json::Value result{Json::objectValue};
+    Json::Value result{Json::ObjectValue};
     if (previous)
     {
         result[jss::previous] = previous->toJson();

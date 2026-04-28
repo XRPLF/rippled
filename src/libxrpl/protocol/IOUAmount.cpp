@@ -43,11 +43,11 @@ setSTNumberSwitchover(bool v)
 /* The range for the mantissa when normalized */
 // log(2^63,10) ~ 18.96
 //
-static std::int64_t constexpr kMIN_MANTISSA = STAmount::cMinValue;
-static std::int64_t constexpr kMAX_MANTISSA = STAmount::cMaxValue;
+static std::int64_t constexpr kMIN_MANTISSA = STAmount::kC_MIN_VALUE;
+static std::int64_t constexpr kMAX_MANTISSA = STAmount::kC_MAX_VALUE;
 /* The range for the exponent when normalized */
-static int constexpr kMIN_EXPONENT = STAmount::cMinOffset;
-static int constexpr kMAX_EXPONENT = STAmount::cMaxOffset;
+static int constexpr kMIN_EXPONENT = STAmount::kC_MIN_OFFSET;
+static int constexpr kMAX_EXPONENT = STAmount::kC_MAX_OFFSET;
 
 IOUAmount
 IOUAmount::fromNumber(Number const& number)
@@ -71,7 +71,7 @@ IOUAmount::normalize()
 {
     if (mantissa_ == 0)
     {
-        *this = beast::zero;
+        *this = beast::kZERO;
         return;
     }
 
@@ -82,7 +82,7 @@ IOUAmount::normalize()
         if (exponent_ > kMAX_EXPONENT)
             Throw<std::overflow_error>("value overflow");
         if (exponent_ < kMIN_EXPONENT)
-            *this = beast::zero;
+            *this = beast::kZERO;
         return;
     }
 
@@ -108,7 +108,7 @@ IOUAmount::normalize()
 
     if ((exponent_ < kMIN_EXPONENT) || (mantissa_ < kMIN_MANTISSA))
     {
-        *this = beast::zero;
+        *this = beast::kZERO;
         return;
     }
 
@@ -124,16 +124,16 @@ IOUAmount::IOUAmount(Number const& other) : IOUAmount(fromNumber(other))
     if (exponent_ > kMAX_EXPONENT)
         Throw<std::overflow_error>("value overflow");
     if (exponent_ < kMIN_EXPONENT)
-        *this = beast::zero;
+        *this = beast::kZERO;
 }
 
 IOUAmount&
 IOUAmount::operator+=(IOUAmount const& other)
 {
-    if (other == beast::zero)
+    if (other == beast::kZERO)
         return *this;
 
-    if (*this == beast::zero)
+    if (*this == beast::kZERO)
     {
         *this = other;
         return *this;
@@ -165,7 +165,7 @@ IOUAmount::operator+=(IOUAmount const& other)
 
     if (mantissa_ >= -10 && mantissa_ <= 10)
     {
-        *this = beast::zero;
+        *this = beast::kZERO;
         return *this;
     }
 

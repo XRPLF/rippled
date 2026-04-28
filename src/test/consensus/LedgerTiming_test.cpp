@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-class LedgerTiming_test : public beast::unit_test::suite
+class LedgerTiming_test : public beast::unit_test::Suite
 {
     void
     testGetNextLedgerTimeResolution()

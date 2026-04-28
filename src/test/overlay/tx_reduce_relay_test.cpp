@@ -45,7 +45,7 @@
 
 namespace xrpl::test {
 
-class tx_reduce_relay_test : public beast::unit_test::suite
+class tx_reduce_relay_test : public beast::unit_test::Suite
 {
 public:
     using socket_type = boost::asio::ip::tcp::socket;
@@ -176,7 +176,7 @@ private:
     boost::beast::multi_buffer read_buf_;
 
 public:
-    tx_reduce_relay_test() : context_(make_SSLContext("")), protocolVersion_{1, 7}
+    tx_reduce_relay_test() : context_(makeSslContext("")), protocolVersion_{1, 7}
     {
     }
 
@@ -196,9 +196,9 @@ private:
             boost::asio::ip::make_address("172.1.1." + std::to_string(lid_)));
         beast::IP::Endpoint const remote(
             boost::asio::ip::make_address("172.1.1." + std::to_string(rid_)));
-        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
-        auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
+        auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
         auto const peer = std::make_shared<PeerTest>(
             env.app(),
             slot,
@@ -209,7 +209,7 @@ private:
             std::move(streamPtr),
             overlay);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == std::shared_ptr<PeerImp>{});
-        overlay.add_active(peer);
+        overlay.addActive(peer);
         BEAST_EXPECT(overlay.findPeerByPublicKey(key) == peer);
         peers.emplace_back(peer);  // overlay stores week ptr to PeerImp
         lid_ += 2;

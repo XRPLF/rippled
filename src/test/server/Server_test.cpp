@@ -42,7 +42,7 @@ namespace xrpl::test {
 using socket_type = boost::beast::tcp_stream;
 using stream_type = boost::beast::ssl_stream<socket_type>;
 
-class Server_test : public beast::unit_test::suite
+class Server_test : public beast::unit_test::Suite
 {
 public:
     class TestThread
@@ -77,11 +77,11 @@ public:
 
     class TestSink : public beast::Journal::Sink
     {
-        beast::unit_test::suite& suite_;
+        beast::unit_test::Suite& suite_;
 
     public:
-        explicit TestSink(beast::unit_test::suite& suite)
-            : Sink(beast::severities::kWarning, false), suite_(suite)
+        explicit TestSink(beast::unit_test::Suite& suite)
+            : Sink(beast::severities::KWarning, false), suite_(suite)
         {
         }
 
@@ -134,7 +134,7 @@ public:
         onRequest(Session& session)
         {
             session.write(std::string("Hello, world!\n"));
-            if (beast::rfc2616::is_keep_alive(session.request()))
+            if (beast::rfc2616::isKeepAlive(session.request()))
             {
                 session.complete();
             }
@@ -295,10 +295,10 @@ public:
         testcase("Basic client/server");
         TestSink sink{*this};
         TestThread thread;
-        sink.threshold(beast::severities::Severity::kAll);
+        sink.threshold(beast::severities::Severity::KAll);
         beast::Journal const journal{sink};
         TestHandler handler;
-        auto s = make_Server(handler, thread.getIoContext(), journal);
+        auto s = makeServer(handler, thread.getIoContext(), journal);
         std::vector<Port> serverPort(1);
         serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
         serverPort.back().port = 0;
@@ -372,7 +372,7 @@ public:
         for (int i = 0; i < 1000; ++i)
         {
             TestThread thread;
-            auto s = make_Server(h, thread.getIoContext(), journal);
+            auto s = makeServer(h, thread.getIoContext(), journal);
             std::vector<Port> serverPort(1);
             serverPort.back().ip = boost::asio::ip::make_address(getEnvLocalhostAddr()),
             serverPort.back().port = 0;

@@ -15,7 +15,7 @@
 namespace xrpl::test {
 
 // Make sure "plump" order books don't have problems
-class PlumpBook_test : public beast::unit_test::suite
+class PlumpBook_test : public beast::unit_test::Suite
 {
 public:
     static void
@@ -24,7 +24,7 @@ public:
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
         {
-            env(offer("alice", XRP(i), iou(1)));
+            env(offer("alice", kXRP(i), iou(1)));
             env.close();
         }
     }
@@ -38,7 +38,7 @@ public:
         env.disableSigs();
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
-        env.fund(XRP(billion), gw, "alice");
+        env.fund(kXRP(billion), gw, "alice");
         env.trust(usd(billion), "alice");
         env(pay(gw, "alice", usd(billion)));
         createOffers(env, usd, n);
@@ -70,7 +70,7 @@ BEAST_DEFINE_TESTSUITE(ThinBook, app, xrpl);
 
 //------------------------------------------------------------------------------
 
-class OversizeMeta_test : public beast::unit_test::suite
+class OversizeMeta_test : public beast::unit_test::Suite
 {
 public:
     static void
@@ -79,7 +79,7 @@ public:
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
         {
-            env(offer("alice", XRP(1), iou(1)));
+            env(offer("alice", kXRP(1), iou(1)));
             env.close();
         }
     }
@@ -94,12 +94,12 @@ public:
         env.disableSigs();
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
-        env.fund(XRP(billion), gw, "alice");
+        env.fund(kXRP(billion), gw, "alice");
         env.trust(usd(billion), "alice");
         env(pay(gw, "alice", usd(billion)));
         createOffers(env, usd, n);
         env(pay("alice", gw, usd(billion)));
-        env(offer("alice", usd(1), XRP(1)));
+        env(offer("alice", usd(1), kXRP(1)));
     }
 
     void
@@ -113,7 +113,7 @@ BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(OversizeMeta, app, xrpl, 3);
 
 //------------------------------------------------------------------------------
 
-class FindOversizeCross_test : public beast::unit_test::suite
+class FindOversizeCross_test : public beast::unit_test::Suite
 {
 public:
     // Return lowest x in [lo, hi] for which f(x)==true
@@ -145,7 +145,7 @@ public:
         using namespace jtx;
         for (std::size_t i = 1; i <= n; ++i)
         {
-            env(offer("alice", XRP(i), iou(1)));
+            env(offer("alice", kXRP(i), iou(1)));
             env.close();
         }
     }
@@ -159,13 +159,13 @@ public:
         env.disableSigs();
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
-        env.fund(XRP(billion), gw, "alice");
+        env.fund(kXRP(billion), gw, "alice");
         env.trust(usd(billion), "alice");
         env(pay(gw, "alice", usd(billion)));
         createOffers(env, usd, n);
         env(pay("alice", gw, usd(billion)));
-        env(offer("alice", usd(1), XRP(1)), Ter(std::ignore));
-        return env.Ter() == tecOVERSIZE;
+        env(offer("alice", usd(1), kXRP(1)), Ter(std::ignore));
+        return env.ter() == tecOVERSIZE;
     }
 
     void

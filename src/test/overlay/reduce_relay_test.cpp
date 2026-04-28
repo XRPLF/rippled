@@ -70,7 +70,7 @@ static constexpr std::uint32_t kMAX_MESSAGES = 200000;
 class PeerPartial : public Peer
 {
 public:
-    PeerPartial() : nodePublicKey(derivePublicKey(KeyType::ed25519, randomSecretKey()))
+    PeerPartial() : nodePublicKey(derivePublicKey(KeyType::Ed25519, randomSecretKey()))
     {
     }
 
@@ -229,7 +229,7 @@ public:
     static duration
     randDuration(milliseconds min, milliseconds max)
     {
-        return duration(milliseconds(rand_int(min.count(), max.count())));
+        return duration(milliseconds(randInt(min.count(), max.count())));
     }
 
     explicit ManualClock() = default;
@@ -323,7 +323,7 @@ class Validator
     using Links = std::unordered_map<Peer::id_t, LinkSPtr>;
 
 public:
-    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::ed25519)))
+    Validator() : pkey_(std::get<0>(randomKeyPair(KeyType::Ed25519)))
     {
         protocol::TMValidation v;
         v.set_validation("validation");
@@ -877,7 +877,7 @@ private:
     std::vector<Validator> validators_;
 };
 
-class reduce_relay_test : public beast::unit_test::suite
+class reduce_relay_test : public beast::unit_test::Suite
 {
     using Slot = reduce_relay::Slot<ManualClock>;
     using id_t = Peer::id_t;
@@ -998,7 +998,7 @@ protected:
                         events[event].isSelected = network_.isSelected(link.peerId());
                     }
                 };
-                auto r = rand_int(0, 1000);
+                auto r = randInt(0, 1000);
                 if (r == (int)EventType::LinkDown || r == (int)EventType::PeerDisconnected)
                 {
                     update(static_cast<EventType>(r));
@@ -1497,7 +1497,7 @@ vp_base_squelch_max_selected_peers=2
     testRandomSquelch(bool l)
     {
         doTest("Random Squelch", l, [&](bool l) {
-            PublicKey validator = std::get<0>(randomKeyPair(KeyType::ed25519));
+            PublicKey validator = std::get<0>(randomKeyPair(KeyType::Ed25519));
             Handler handler;
 
             auto run = [&](int npeers) {
@@ -1547,7 +1547,7 @@ vp_base_squelch_max_selected_peers=2
             using namespace beast::unit_test::detail;
             if (handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_DEFAULT.count())
             {
-                log << make_reason("warning: squelch duration is low", __FILE__, __LINE__)
+                log << makeReason("warning: squelch duration is low", __FILE__, __LINE__)
                     << std::endl
                     << std::flush;
             }
@@ -1558,7 +1558,7 @@ vp_base_squelch_max_selected_peers=2
                 handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_PEERS.count());
             if (handler.maxDuration <= kMAX_UNSQUELCH_EXPIRE_DEFAULT.count())
             {
-                log << make_reason("warning: squelch duration is low", __FILE__, __LINE__)
+                log << makeReason("warning: squelch duration is low", __FILE__, __LINE__)
                     << std::endl
                     << std::flush;
             }

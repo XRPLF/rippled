@@ -64,8 +64,8 @@ private:
 
     struct Timer : Child, std::enable_shared_from_this<Timer>
     {
-        boost::asio::basic_waitable_timer<clock_type> timer_;
-        bool stopping_{false};
+        boost::asio::basic_waitable_timer<clock_type> timer;
+        bool stopping{false};
 
         explicit Timer(OverlayImpl& overlay);
 
@@ -73,10 +73,10 @@ private:
         stop() override;
 
         void
-        async_wait();
+        asyncWait();
 
         void
-        on_timer(error_code ec);
+        onTimer(error_code ec);
     };
 
     Application& app_;
@@ -123,7 +123,7 @@ public:
         ServerHandler& serverHandler,
         Resource::Manager& resourceManager,
         Resolver& resolver,
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         BasicConfig const& config,
         beast::insight::Collector::ptr const& collector);
 
@@ -159,10 +159,10 @@ public:
     onHandoff(
         std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
-        endpoint_type remote_endpoint) override;
+        endpoint_type remoteEndpoint) override;
 
     void
-    connect(beast::IP::Endpoint const& remote_endpoint) override;
+    connect(beast::IP::Endpoint const& remoteEndpoint) override;
 
     int
     limit() override;
@@ -228,7 +228,7 @@ public:
     //
 
     void
-    add_active(std::shared_ptr<PeerImp> const& peer);
+    addActive(std::shared_ptr<PeerImp> const& peer);
 
     void
     remove(std::shared_ptr<PeerFinder::Slot> const& slot);
@@ -284,14 +284,14 @@ public:
     static bool
     isPeerUpgrade(boost::beast::http::response<Body> const& response)
     {
-        if (!is_upgrade(response))
+        if (!isUpgrade(response))
             return false;
         return response.result() == boost::beast::http::status::switching_protocols;
     }
 
     template <class Fields>
     static bool
-    is_upgrade(boost::beast::http::header<true, Fields> const& req)
+    isUpgrade(boost::beast::http::header<true, Fields> const& req)
     {
         if (req.version() < 11)
             return false;
@@ -304,7 +304,7 @@ public:
 
     template <class Fields>
     static bool
-    is_upgrade(boost::beast::http::header<false, Fields> const& req)
+    isUpgrade(boost::beast::http::header<false, Fields> const& req)
     {
         if (req.version() < 11)
             return false;
@@ -317,10 +317,10 @@ public:
     makePrefix(std::uint32_t id);
 
     void
-    reportInboundTraffic(TrafficCount::category cat, int bytes);
+    reportInboundTraffic(TrafficCount::Category cat, int bytes);
 
     void
-    reportOutboundTraffic(TrafficCount::category cat, int bytes);
+    reportOutboundTraffic(TrafficCount::Category cat, int bytes);
 
     void
     incJqTransOverflow() override
@@ -426,13 +426,13 @@ private:
     makeRedirectResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
-        address_type remote_address);
+        address_type remoteAddress);
 
     static std::shared_ptr<Writer>
     makeErrorResponse(
         std::shared_ptr<PeerFinder::Slot> const& slot,
         http_request_type const& request,
-        address_type remote_address,
+        address_type remoteAddress,
         std::string msg);
 
     /** Handles crawl requests. Crawl returns information about the
@@ -533,10 +533,10 @@ private:
     {
         TrafficGauges(std::string const& name, beast::insight::Collector::ptr const& collector)
             : name(name)
-            , bytesIn(collector->make_gauge(name, "Bytes_In"))
-            , bytesOut(collector->make_gauge(name, "Bytes_Out"))
-            , messagesIn(collector->make_gauge(name, "Messages_In"))
-            , messagesOut(collector->make_gauge(name, "Messages_Out"))
+            , bytesIn(collector->makeGauge(name, "Bytes_In"))
+            , bytesOut(collector->makeGauge(name, "Bytes_Out"))
+            , messagesIn(collector->makeGauge(name, "Messages_In"))
+            , messagesOut(collector->makeGauge(name, "Messages_Out"))
         {
         }
         std::string const name;
@@ -552,15 +552,15 @@ private:
         Stats(
             Handler const& handler,
             beast::insight::Collector::ptr const& collector,
-            std::unordered_map<TrafficCount::category, TrafficGauges>&& trafficGauges_)
-            : peerDisconnects(collector->make_gauge("Overlay", "Peer_Disconnects"))
-            , trafficGauges(std::move(trafficGauges_))
-            , hook(collector->make_hook(handler))
+            std::unordered_map<TrafficCount::Category, TrafficGauges>&& trafficGauges)
+            : peerDisconnects(collector->makeGauge("Overlay", "Peer_Disconnects"))
+            , trafficGauges(std::move(trafficGauges))
+            , hook(collector->makeHook(handler))
         {
         }
 
         beast::insight::Gauge peerDisconnects;
-        std::unordered_map<TrafficCount::category, TrafficGauges> trafficGauges;
+        std::unordered_map<TrafficCount::Category, TrafficGauges> trafficGauges;
         beast::insight::Hook hook;
     };
 
@@ -569,7 +569,7 @@ private:
 
 private:
     void
-    collect_metrics()
+    collectMetrics()
     {
         auto counts = traffic_.getCounts();
         std::lock_guard const lock(statsMutex_);

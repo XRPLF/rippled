@@ -26,7 +26,7 @@ doRandom(RPC::JsonContext& context)
     try
     {
         uint256 rand;
-        beast::rngfill(rand.begin(), rand.size(), crypto_prng());
+        beast::rngfill(rand.begin(), rand.size(), cryptoPrng());
 
         Json::Value jvResult;
         jvResult[jss::random] = to_string(rand);
@@ -34,7 +34,7 @@ doRandom(RPC::JsonContext& context)
     }
     catch (std::exception const&)
     {
-        return rpcError(rpcINTERNAL);  // LCOV_EXCL_LINE
+        return rpcError(RpcInternal);  // LCOV_EXCL_LINE
     }
 }
 

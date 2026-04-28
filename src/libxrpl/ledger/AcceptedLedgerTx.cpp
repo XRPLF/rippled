@@ -35,17 +35,17 @@ AcceptedLedgerTx::AcceptedLedgerTx(
     met->add(s);
     rawMeta_ = std::move(s.modData());
 
-    json_ = Json::objectValue;
-    json_[jss::transaction] = txn_->getJson(JsonOptions::kNONE);
+    json_ = Json::ObjectValue;
+    json_[jss::transaction] = txn_->getJson(JsonOptions::KNone);
 
-    json_[jss::meta] = meta_.getJson(JsonOptions::kNONE);
+    json_[jss::meta] = meta_.getJson(JsonOptions::KNone);
     json_[jss::raw_meta] = strHex(rawMeta_);
 
     json_[jss::result] = transHuman(meta_.getResultTER());
 
     if (!affected_.empty())
     {
-        Json::Value& affected = (json_[jss::affected] = Json::arrayValue);
+        Json::Value& affected = (json_[jss::affected] = Json::ArrayValue);
         for (auto const& account : affected_)
             affected.append(toBase58(account));
     }
@@ -62,8 +62,8 @@ AcceptedLedgerTx::AcceptedLedgerTx(
                 *ledger,
                 account,
                 amount,
-                fhIGNORE_FREEZE,
-                ahIGNORE_AUTH,
+                FhIgnoreFreeze,
+                AhIgnoreAuth,
                 beast::Journal{beast::Journal::getNullSink()});
             json_[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }

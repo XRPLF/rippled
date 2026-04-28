@@ -46,7 +46,7 @@
 
 namespace xrpl::test {
 
-struct Directory_test : public beast::unit_test::suite
+struct Directory_test : public beast::unit_test::Suite
 {
     // Map [0-15576] into a unique 3 letter currency code
     std::string
@@ -112,11 +112,11 @@ struct Directory_test : public beast::unit_test::suite
         testcase("Directory Ordering (with 'SortedDirectories' amendment)");
 
         Env env(*this);
-        env.fund(XRP(10000000), alice, gw);
+        env.fund(kXRP(10000000), alice, gw);
 
-        std::uint32_t const firstOfferSeq{env.Seq(alice)};
+        std::uint32_t const firstOfferSeq{env.seq(alice)};
         for (std::size_t i = 1; i <= 400; ++i)
-            env(offer(alice, usd(i), XRP(i)));
+            env(offer(alice, usd(i), kXRP(i)));
         env.close();
 
         // Check Alice's directory: it should contain one
@@ -137,8 +137,8 @@ struct Directory_test : public beast::unit_test::suite
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
-                std::uint32_t const minSeq = firstOfferSeq + (page * dirNodeMaxEntries);
-                std::uint32_t const maxSeq = minSeq + dirNodeMaxEntries;
+                std::uint32_t const minSeq = firstOfferSeq + (page * kDIR_NODE_MAX_ENTRIES);
+                std::uint32_t const maxSeq = minSeq + kDIR_NODE_MAX_ENTRIES;
 
                 for (auto const& e : v)
                 {
@@ -161,7 +161,7 @@ struct Directory_test : public beast::unit_test::suite
         {
             count++;
             BEAST_EXPECT(offer->getFieldAmount(sfTakerPays) == usd(count));
-            BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == XRP(count));
+            BEAST_EXPECT(offer->getFieldAmount(sfTakerGets) == kXRP(count));
         }
     }
 
@@ -178,7 +178,7 @@ struct Directory_test : public beast::unit_test::suite
 
         Env env(*this);
 
-        env.fund(XRP(1000000), alice, charlie, gw);
+        env.fund(kXRP(1000000), alice, charlie, gw);
         env.close();
 
         // alice should have an empty directory.
@@ -196,7 +196,7 @@ struct Directory_test : public beast::unit_test::suite
         std::vector<IOU> const currencies = [this, &gw]() {
             std::vector<IOU> c;
 
-            c.reserve((2 * dirNodeMaxEntries) + 3);
+            c.reserve((2 * kDIR_NODE_MAX_ENTRIES) + 3);
 
             while (c.size() != c.capacity())
                 c.push_back(gw[currcode(c.size())]);
@@ -217,7 +217,7 @@ struct Directory_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::shuffle(cl.begin(), cl.end(), defaultPrng());
 
             for (auto const& c : cl)
             {
@@ -241,7 +241,7 @@ struct Directory_test : public beast::unit_test::suite
                 env.close();
                 env(pay(gw, charlie, c(50)));
                 env.close();
-                env(offer(alice, c(50), XRP(50)));
+                env(offer(alice, c(50), kXRP(50)));
                 env.close();
             }
 
@@ -250,18 +250,18 @@ struct Directory_test : public beast::unit_test::suite
             // Now fill the offers in a random order. Offer
             // entries will drop, and be replaced by trust
             // lines that are implicitly created.
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::shuffle(cl.begin(), cl.end(), defaultPrng());
 
             for (auto const& c : cl)
             {
-                env(offer(charlie, XRP(50), c(50)));
+                env(offer(charlie, kXRP(50), c(50)));
                 env.close();
             }
             BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
             // Finally, Alice now sends the funds back to
             // Charlie. The implicitly created trust lines
             // should drop away:
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::shuffle(cl.begin(), cl.end(), defaultPrng());
 
             for (auto const& c : cl)
             {
@@ -285,27 +285,27 @@ struct Directory_test : public beast::unit_test::suite
         auto const alice = Account{"alice"};
         auto const usd = gw["USD"];
 
-        env.fund(XRP(10000), alice, gw);
+        env.fund(kXRP(10000), alice, gw);
         env.close();
         env.trust(usd(1000), alice);
         env(pay(gw, alice, usd(1000)));
 
-        auto const firstOfferSeq = env.Seq(alice);
+        auto const firstOfferSeq = env.seq(alice);
 
         // Fill up three pages of offers
         for (int i = 0; i < 3; ++i)
         {
-            for (int j = 0; j < dirNodeMaxEntries; ++j)
-                env(offer(alice, XRP(1), usd(1)));
+            for (int j = 0; j < kDIR_NODE_MAX_ENTRIES; ++j)
+                env(offer(alice, kXRP(1), usd(1)));
         }
         env.close();
 
         // remove all the offers. Remove the middle page last
         for (auto page : {0, 2, 1})
         {
-            for (int i = 0; i < dirNodeMaxEntries; ++i)
+            for (int i = 0; i < kDIR_NODE_MAX_ENTRIES; ++i)
             {
-                env(offerCancel(alice, firstOfferSeq + (page * dirNodeMaxEntries) + i));
+                env(offerCancel(alice, firstOfferSeq + (page * kDIR_NODE_MAX_ENTRIES) + i));
                 env.close();
             }
         }
@@ -313,7 +313,7 @@ struct Directory_test : public beast::unit_test::suite
         // All the offers have been cancelled, so the book
         // should have no entries and be empty:
         {
-            Sandbox const sb(env.closed().get(), tapNONE);
+            Sandbox const sb(env.closed().get(), TapNone);
             uint256 const bookBase = getBookBase({xrpIssue(), usd, std::nullopt});
 
             BEAST_EXPECT(dirIsEmpty(sb, keylet::page(bookBase)));
@@ -343,7 +343,7 @@ struct Directory_test : public beast::unit_test::suite
         auto const alice = Account{"alice"};
         auto const usd = gw["USD"];
 
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
 
         constexpr uint256 kBASE("fb71c9aa3310141da4b01d6c744a98286af2d72ab5448d5adc0910ca0c910880");
@@ -352,7 +352,7 @@ struct Directory_test : public beast::unit_test::suite
 
         {
             // Create a chain of three pages:
-            Sandbox sb(env.closed().get(), tapNONE);
+            Sandbox sb(env.closed().get(), TapNone);
             makePages(sb, kBASE, 3);
 
             // Insert an item in the middle page:
@@ -361,7 +361,7 @@ struct Directory_test : public beast::unit_test::suite
                 BEAST_EXPECT(p);
 
                 STVector256 v;
-                v.push_back(kITEM);
+                v.pushBack(kITEM);
                 p->setFieldV256(sfIndexes, v);
                 sb.update(p);
             }
@@ -376,7 +376,7 @@ struct Directory_test : public beast::unit_test::suite
 
         {
             // Create a chain of four pages:
-            Sandbox sb(env.closed().get(), tapNONE);
+            Sandbox sb(env.closed().get(), TapNone);
             makePages(sb, kBASE, 4);
 
             // Now add items on pages 1 and 2:
@@ -385,7 +385,7 @@ struct Directory_test : public beast::unit_test::suite
                 BEAST_EXPECT(p1);
 
                 STVector256 v1;
-                v1.push_back(~kITEM);
+                v1.pushBack(~kITEM);
                 p1->setFieldV256(sfIndexes, v1);
                 sb.update(p1);
 
@@ -393,7 +393,7 @@ struct Directory_test : public beast::unit_test::suite
                 BEAST_EXPECT(p2);
 
                 STVector256 v2;
-                v2.push_back(kITEM);
+                v2.pushBack(kITEM);
                 p2->setFieldV256(sfIndexes, v2);
                 sb.update(p2);
             }
@@ -438,7 +438,7 @@ struct Directory_test : public beast::unit_test::suite
 
         // fixPreviousTxnID is disabled.
         Env env(*this, testableAmendments() - fixPreviousTxnID);
-        env.fund(XRP(10000), alice, gw);
+        env.fund(kXRP(10000), alice, gw);
         env.close();
         env.trust(usd(1000), alice);
         env(pay(gw, alice, usd(1000)));
@@ -464,7 +464,7 @@ struct Directory_test : public beast::unit_test::suite
 
         // Make sure the `PreviousTxnID` and `PreviousTxnLgrSeq` fields now
         // exist
-        env(offer(alice, XRP(1), usd(1)));
+        env(offer(alice, kXRP(1), usd(1)));
         auto const txID = to_string(env.tx()->getTransactionID());
         auto const ledgerSeq = env.current()->header().seq;
         env.close();
@@ -512,7 +512,7 @@ struct Directory_test : public beast::unit_test::suite
             using namespace test::jtx;
 
             Env env(*this, features);
-            env.fund(XRP(20000), alice);
+            env.fund(kXRP(20000), alice);
             env.close();
 
             auto const [lastPage, full] = setup(env);
@@ -569,13 +569,13 @@ struct Directory_test : public beast::unit_test::suite
             testableAmendments() - fixDirectoryLimit,
             [this](Env&) -> std::tuple<std::uint64_t, bool> {
                 testcase("directory full without fixDirectoryLimit");
-                return {dirNodeMaxPages - 1, true};
+                return {kDIR_NODE_MAX_PAGES - 1, true};
             });
         testCase(
             testableAmendments(),  //
             [this](Env&) -> std::tuple<std::uint64_t, bool> {
                 testcase("directory not full with fixDirectoryLimit");
-                return {dirNodeMaxPages - 1, false};
+                return {kDIR_NODE_MAX_PAGES - 1, false};
             });
         testCase(
             testableAmendments(),  //

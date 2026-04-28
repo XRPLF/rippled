@@ -13,7 +13,7 @@
 
 namespace xrpl::test {
 
-struct join_test : beast::unit_test::suite
+struct join_test : beast::unit_test::Suite
 {
     void
     run() override

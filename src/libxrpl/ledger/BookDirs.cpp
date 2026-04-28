@@ -16,10 +16,10 @@ BookDirs::BookDirs(ReadView const& view, Book const& book)
     : view_(&view)
     , root_(keylet::page(getBookBase(book)).key)
     , next_quality_(getQualityNext(root_))
-    , key_(view_->succ(root_, next_quality_).value_or(beast::zero))
+    , key_(view_->succ(root_, next_quality_).value_or(beast::kZERO))
 {
     XRPL_ASSERT(root_ != beast::zero, "xrpl::BookDirs::BookDirs : nonzero root");
-    if (key_ != beast::zero)
+    if (key_ != beast::kZERO)
     {
         if (!cdirFirst(*view_, key_, sle_, entry_, index_))
         {
@@ -34,7 +34,7 @@ auto
 BookDirs::begin() const -> BookDirs::const_iterator
 {
     auto it = BookDirs::const_iterator(*view_, root_, key_);
-    if (key_ != beast::zero)
+    if (key_ != beast::kZERO)
     {
         it.next_quality_ = next_quality_;
         it.sle_ = sle_;
@@ -50,7 +50,7 @@ BookDirs::end() const -> BookDirs::const_iterator
     return BookDirs::const_iterator(*view_, root_, key_);
 }
 
-beast::Journal BookDirs::const_iterator::j_ = beast::Journal{beast::Journal::getNullSink()};
+beast::Journal BookDirs::const_iterator::j = beast::Journal{beast::Journal::getNullSink()};
 
 bool
 BookDirs::const_iterator::operator==(BookDirs::const_iterator const& other) const
@@ -77,19 +77,19 @@ BookDirs::const_iterator::operator*() const
 BookDirs::const_iterator&
 BookDirs::const_iterator::operator++()
 {
-    using beast::zero;
+    using beast::kZERO;
 
     XRPL_ASSERT(index_ != zero, "xrpl::BookDirs::const_iterator::operator++ : nonzero index");
     if (!cdirNext(*view_, cur_key_, sle_, entry_, index_))
     {
         if (index_ == 0)
-            cur_key_ = view_->succ(++cur_key_, next_quality_).value_or(zero);
+            cur_key_ = view_->succ(++cur_key_, next_quality_).value_or(kZERO);
 
-        if (index_ != 0 || cur_key_ == zero)
+        if (index_ != 0 || cur_key_ == kZERO)
         {
             cur_key_ = key_;
             entry_ = 0;
-            index_ = zero;
+            index_ = kZERO;
         }
         else if (!cdirFirst(*view_, cur_key_, sle_, entry_, index_))
         {

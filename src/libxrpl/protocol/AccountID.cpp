@@ -35,7 +35,7 @@ private:
     std::vector<CachedAccountID> cache_;
 
     // We use a hash function designed to resist algorithmic complexity attacks
-    hardened_hash<> hasher_;
+    HardenedHash<> hasher_;
 
     // 64 spinlocks, packed into a single 64-bit value
     std::atomic<std::uint64_t> locks_ = 0;
@@ -103,7 +103,7 @@ std::optional<AccountID>
 parseBase58(std::string const& s)
 {
     auto const result = decodeBase58Token(s, TokenType::AccountID);
-    if (result.size() != AccountID::bytes)
+    if (result.size() != AccountID::kBYTES)
         return std::nullopt;
     return AccountID{result};
 }
@@ -146,17 +146,17 @@ parseBase58(std::string const& s)
 AccountID
 calcAccountID(PublicKey const& pk)
 {
-    static_assert(AccountID::bytes == sizeof(ripesha_hasher::result_type));
+    static_assert(AccountID::kBYTES == sizeof(RipeshaHasher::result_type));
 
-    ripesha_hasher rsh;
+    RipeshaHasher rsh;
     rsh(pk.data(), pk.size());
-    return AccountID{static_cast<ripesha_hasher::result_type>(rsh)};
+    return AccountID{static_cast<RipeshaHasher::result_type>(rsh)};
 }
 
 AccountID const&
 xrpAccount()
 {
-    static AccountID const kACCOUNT(beast::zero);
+    static AccountID const kACCOUNT(beast::kZERO);
     return kACCOUNT;
 }
 
@@ -168,7 +168,7 @@ noAccount()
 }
 
 bool
-to_issuer(AccountID& issuer, std::string const& s)
+toIssuer(AccountID& issuer, std::string const& s)
 {
     if (issuer.parseHex(s))
         return true;

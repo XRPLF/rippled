@@ -47,9 +47,9 @@ struct Nonhash
     }
 };
 
-struct base_uint_test : beast::unit_test::suite
+struct base_uint_test : beast::unit_test::Suite
 {
-    using test96 = base_uint<96>;
+    using test96 = BaseUint<96>;
     static_assert(std::is_copy_constructible_v<test96>);
     static_assert(std::is_copy_assignable_v<test96>);
 
@@ -68,7 +68,7 @@ struct base_uint_test : beast::unit_test::suite
 
             for (auto const& arg : kTEST_ARGS)
             {
-                xrpl::base_uint<64> const u{arg.first}, v{arg.second};
+                xrpl::BaseUint<64> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -99,7 +99,7 @@ struct base_uint_test : beast::unit_test::suite
 
             for (auto const& arg : kTEST_ARGS)
             {
-                xrpl::base_uint<96> const u{arg.first}, v{arg.second};
+                xrpl::BaseUint<96> const u{arg.first}, v{arg.second};
                 BEAST_EXPECT(u < v);
                 BEAST_EXPECT(u <= v);
                 BEAST_EXPECT(u != v);
@@ -129,16 +129,16 @@ struct base_uint_test : beast::unit_test::suite
         testComparisons();
 
         // used to verify set insertion (hashing required)
-        std::unordered_set<test96, hardened_hash<>> uset;
+        std::unordered_set<test96, HardenedHash<>> uset;
 
         Blob const raw{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12};
-        BEAST_EXPECT(test96::bytes == raw.size());
+        BEAST_EXPECT(test96::kBYTES == raw.size());
 
         test96 u{raw};
         uset.insert(u);
         BEAST_EXPECT(raw.size() == u.size());
         BEAST_EXPECT(to_string(u) == "0102030405060708090A0B0C");
-        BEAST_EXPECT(to_short_string(u) == "01020304...");
+        BEAST_EXPECT(toShortString(u) == "01020304...");
         BEAST_EXPECT(*u.data() == 1);
         BEAST_EXPECT(u.signum() == 1);
         BEAST_EXPECT(!!u);
@@ -161,7 +161,7 @@ struct base_uint_test : beast::unit_test::suite
         test96 v{~u};
         uset.insert(v);
         BEAST_EXPECT(to_string(v) == "FEFDFCFBFAF9F8F7F6F5F4F3");
-        BEAST_EXPECT(to_short_string(v) == "FEFDFCFB...");
+        BEAST_EXPECT(toShortString(v) == "FEFDFCFB...");
         BEAST_EXPECT(*v.data() == 0xfe);
         BEAST_EXPECT(v.signum() == 1);
         BEAST_EXPECT(!!v);
@@ -179,10 +179,10 @@ struct base_uint_test : beast::unit_test::suite
         v = u;
         BEAST_EXPECT(v == u);
 
-        test96 z{beast::zero};
+        test96 z{beast::kZERO};
         uset.insert(z);
         BEAST_EXPECT(to_string(z) == "000000000000000000000000");
-        BEAST_EXPECT(to_short_string(z) == "00000000...");
+        BEAST_EXPECT(toShortString(z) == "00000000...");
         BEAST_EXPECT(*z.data() == 0);
         BEAST_EXPECT(*z.begin() == 0);
         BEAST_EXPECT(*std::prev(z.end(), 1) == 0);
@@ -199,12 +199,12 @@ struct base_uint_test : beast::unit_test::suite
         n++;
         BEAST_EXPECT(n == test96(1));
         n--;
-        BEAST_EXPECT(n == beast::zero);
+        BEAST_EXPECT(n == beast::kZERO);
         BEAST_EXPECT(n == z);
         n--;
         BEAST_EXPECT(to_string(n) == "FFFFFFFFFFFFFFFFFFFFFFFF");
-        BEAST_EXPECT(to_short_string(n) == "FFFFFFFF...");
-        n = beast::zero;
+        BEAST_EXPECT(toShortString(n) == "FFFFFFFF...");
+        n = beast::kZERO;
         BEAST_EXPECT(n == z);
 
         test96 zp1{z};
@@ -214,7 +214,7 @@ struct base_uint_test : beast::unit_test::suite
         test96 const x{zm1 ^ zp1};
         uset.insert(x);
         BEAST_EXPECTS(to_string(x) == "FFFFFFFFFFFFFFFFFFFFFFFE", to_string(x));
-        BEAST_EXPECTS(to_short_string(x) == "FFFFFFFF...", to_short_string(x));
+        BEAST_EXPECTS(toShortString(x) == "FFFFFFFF...", toShortString(x));
 
         BEAST_EXPECT(uset.size() == 4);
 

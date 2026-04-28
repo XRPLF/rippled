@@ -18,7 +18,7 @@ trustline that has rippling enabled on the account's side.
 disabled on the account's side. Any trust lines for an incoming account that
 have rippling disabled are unusable in paths.
 */
-enum class LineDirection : bool { incoming = false, outgoing = true };
+enum class LineDirection : bool { Incoming = false, Outgoing = true };
 
 /** Wraps a trust line SLE for convenience.
     The complication of trust lines is that there is a
@@ -95,13 +95,13 @@ public:
     [[nodiscard]] LineDirection
     getDirection() const
     {
-        return getNoRipple() ? LineDirection::incoming : LineDirection::outgoing;
+        return getNoRipple() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
     [[nodiscard]] LineDirection
     getDirectionPeer() const
     {
-        return getNoRipplePeer() ? LineDirection::incoming : LineDirection::outgoing;
+        return getNoRipplePeer() ? LineDirection::Incoming : LineDirection::Outgoing;
     }
 
     /** Have we set the freeze flag on our peer */

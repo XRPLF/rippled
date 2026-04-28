@@ -107,7 +107,7 @@ namespace Json {
 class Writer
 {
 public:
-    enum CollectionType { array, object };
+    enum CollectionType { Array, Object };
 
     explicit Writer(Output const& output);
     Writer(Writer&&) noexcept;
@@ -218,7 +218,7 @@ public:
     void
     output(Json::StaticString const& t)
     {
-        output(t.c_str());
+        output(t.cStr());
     }
 
 private:

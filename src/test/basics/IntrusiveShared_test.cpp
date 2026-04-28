@@ -187,7 +187,7 @@ std::function<void(TrackedState, std::optional<TrackedState>)> TIBase::tracingCa
 
 }  // namespace
 
-class IntrusiveShared_test : public beast::unit_test::suite
+class IntrusiveShared_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -203,13 +203,13 @@ public:
             b.addWeakRef();
             BEAST_EXPECT(b.useCount() == 1);
             auto s = b.releaseStrongRef();
-            BEAST_EXPECT(s == ReleaseStrongRefAction::partialDestroy);
+            BEAST_EXPECT(s == ReleaseStrongRefAction::PartialDestroy);
             BEAST_EXPECT(b.useCount() == 0);
             TIBase const* pb = &b;
             partialDestructorFinished(&pb);
             BEAST_EXPECT(!pb);
             auto w = b.releaseWeakRef();
-            BEAST_EXPECT(w == ReleaseWeakRefAction::destroy);
+            BEAST_EXPECT(w == ReleaseWeakRefAction::Destroy);
         }
 
         std::vector<SharedIntrusive<TIBase>> strong;
@@ -218,7 +218,7 @@ public:
             TIBase::ResetStatesGuard const rsg{true};
 
             using enum TrackedState;
-            auto b = make_SharedIntrusive<TIBase>();
+            auto b = makeSharedIntrusive<TIBase>();
             auto id = b->id;
             BEAST_EXPECT(TIBase::getState(id) == Alive);
             BEAST_EXPECT(b->useCount() == 1);
@@ -233,13 +233,13 @@ public:
             strong.clear();
             BEAST_EXPECT(TIBase::getState(id) == Deleted);
 
-            b = make_SharedIntrusive<TIBase>();
+            b = makeSharedIntrusive<TIBase>();
             id = b->id;
             BEAST_EXPECT(TIBase::getState(id) == Alive);
             BEAST_EXPECT(b->useCount() == 1);
             for (int i = 0; i < 10; ++i)
             {
-                weak.push_back(b);
+                weak.emplace_back(b);
                 BEAST_EXPECT(b->useCount() == 1);
             }
             BEAST_EXPECT(TIBase::getState(id) == Alive);
@@ -259,7 +259,7 @@ public:
             TIBase::ResetStatesGuard const rsg{true};
 
             using enum TrackedState;
-            auto b = make_SharedIntrusive<TIBase>();
+            auto b = makeSharedIntrusive<TIBase>();
             auto id = b->id;
             BEAST_EXPECT(TIBase::getState(id) == Alive);
             WeakIntrusive<TIBase> w{b};
@@ -284,7 +284,7 @@ public:
 
             using enum TrackedState;
             using swu = SharedWeakUnion<TIBase>;
-            swu b = make_SharedIntrusive<TIBase>();
+            swu b = makeSharedIntrusive<TIBase>();
             BEAST_EXPECT(b.isStrong() && b.useCount() == 1);
             auto id = b.get()->id;
             BEAST_EXPECT(TIBase::getState(id) == Alive);
@@ -316,8 +316,8 @@ public:
 
             TIBase::ResetStatesGuard const rsg{true};
 
-            auto strong1 = make_SharedIntrusive<TIBase>();
-            auto strong2 = make_SharedIntrusive<TIBase>();
+            auto strong1 = makeSharedIntrusive<TIBase>();
+            auto strong2 = makeSharedIntrusive<TIBase>();
 
             auto id1 = strong1->id;
             auto id2 = strong2->id;
@@ -381,7 +381,7 @@ public:
 
         TIBase::ResetStatesGuard const rsg{true};
 
-        auto strong = make_SharedIntrusive<TIBase>();
+        auto strong = makeSharedIntrusive<TIBase>();
         WeakIntrusive<TIBase> weak{strong};
         bool destructorRan = false;
         bool partialDeleteRan = false;
@@ -448,7 +448,7 @@ public:
 
         TIBase::ResetStatesGuard const rsg{true};
 
-        auto strong = make_SharedIntrusive<TIBase>();
+        auto strong = makeSharedIntrusive<TIBase>();
         WeakIntrusive<TIBase> weak{strong};
         bool destructorRan = false;
         bool partialDeleteRan = false;
@@ -579,7 +579,7 @@ public:
 
                     toClone.clear();
                     toClone.resize(kNUM_THREADS);
-                    auto strong = make_SharedIntrusive<TIBase>();
+                    auto strong = makeSharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
                     std::ranges::fill(toClone, strong);
                 }
@@ -706,7 +706,7 @@ public:
 
                     toClone.clear();
                     toClone.resize(kNUM_THREADS);
-                    auto strong = make_SharedIntrusive<TIBase>();
+                    auto strong = makeSharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
                     std::ranges::fill(toClone, strong);
                 }
@@ -827,7 +827,7 @@ public:
 
                     toLock.clear();
                     toLock.resize(kNUM_THREADS);
-                    auto strong = make_SharedIntrusive<TIBase>();
+                    auto strong = makeSharedIntrusive<TIBase>();
                     strong->tracingCallback = tracingCallback;
                     std::ranges::fill(toLock, strong);
                 }

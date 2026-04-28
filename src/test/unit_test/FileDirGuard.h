@@ -23,7 +23,7 @@ private:
     bool rmSubDir_{false};
 
 protected:
-    beast::unit_test::suite& test_;
+    beast::unit_test::Suite& test_;
 
     auto
     rmDir(path const& toRm)
@@ -40,7 +40,7 @@ protected:
     }
 
 public:
-    DirGuard(beast::unit_test::suite& test, path subDir, bool useCounter = true)
+    DirGuard(beast::unit_test::Suite& test, path subDir, bool useCounter = true)
         : subDir_(std::move(subDir)), test_(test)
     {
         using namespace boost::filesystem;
@@ -99,7 +99,7 @@ protected:
 
 public:
     FileDirGuard(
-        beast::unit_test::suite& test,
+        beast::unit_test::Suite& test,
         path subDir,
         path file,
         std::string const& contents,

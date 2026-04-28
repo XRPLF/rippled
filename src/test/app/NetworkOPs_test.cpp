@@ -17,7 +17,7 @@
 
 namespace xrpl::test {
 
-class NetworkOPs_test : public beast::unit_test::suite
+class NetworkOPs_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -39,7 +39,7 @@ public:
             using namespace jtx;
             auto const alice = Account{"alice"};
             Env env{
-                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::severities::kAll};
+                *this, envconfig(), std::make_unique<CaptureLogs>(&logs), beast::severities::KAll};
             env.memoize(env.master);
             env.memoize(alice);
 

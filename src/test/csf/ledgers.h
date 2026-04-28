@@ -43,10 +43,10 @@ class Ledger
 
 public:
     struct SeqTag;
-    using Seq = tagged_integer<std::uint32_t, SeqTag>;
+    using Seq = TaggedInteger<std::uint32_t, SeqTag>;
 
     struct IdTag;
-    using ID = tagged_integer<std::uint32_t, IdTag>;
+    using ID = TaggedInteger<std::uint32_t, IdTag>;
 
     struct MakeGenesis
     {

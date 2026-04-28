@@ -94,7 +94,7 @@ private:
     hash_append(Hasher& h) const  // NOLINT(readability-identifier-naming)
     {
         using beast::hash_append;
-        hash_append(h, HashPrefix::proposal);
+        hash_append(h, HashPrefix::Proposal);
         hash_append(h, proposal().proposeSeq());
         hash_append(h, proposal().closeTime());
         hash_append(h, proposal().prevLedger());

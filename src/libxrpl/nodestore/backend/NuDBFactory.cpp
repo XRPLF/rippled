@@ -207,26 +207,26 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
-        Status status = ok;
+        Status status = Ok;
         pno->reset();
         nudb::error_code ec;
         db.fetch(
             hash.data(),
             [&hash, pno, &status](void const* data, std::size_t size) {
                 nudb::detail::buffer bf;
-                auto const result = nodeobject_decompress(data, size, bf);
+                auto const result = nodeobjectDecompress(data, size, bf);
                 DecodedBlob decoded(hash.data(), result.first, result.second);
                 if (!decoded.wasOk())
                 {
-                    status = dataCorrupt;
+                    status = DataCorrupt;
                     return;
                 }
                 *pno = decoded.createObject();
-                status = ok;
+                status = Ok;
             },
             ec);
         if (ec == nudb::error::key_not_found)
-            return notFound;
+            return NotFound;
         if (ec)
             Throw<nudb::system_error>(ec);
         return status;
@@ -241,7 +241,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != ok)
+            if (status != Ok)
             {
                 results.push_back({});
             }
@@ -251,7 +251,7 @@ public:
             }
         }
 
-        return {results, ok};
+        return {results, Ok};
     }
 
     void
@@ -260,7 +260,7 @@ public:
         EncodedBlob const e(no);
         nudb::error_code ec;
         nudb::detail::buffer bf;
-        auto const result = nodeobject_compress(e.getData(), e.getSize(), bf);
+        auto const result = nodeobjectCompress(e.getData(), e.getSize(), bf);
         db.insert(e.getKey(), result.first, result.second, ec);
         if (ec && ec != nudb::error::key_exists)
             Throw<nudb::system_error>(ec);
@@ -315,7 +315,7 @@ public:
                 std::size_t size,
                 nudb::error_code&) {
                 nudb::detail::buffer bf;
-                auto const result = nodeobject_decompress(data, size, bf);
+                auto const result = nodeobjectDecompress(data, size, bf);
                 DecodedBlob decoded(key, result.first, result.second);
                 if (!decoded.wasOk())
                 {
@@ -382,7 +382,7 @@ private:
         std::size_t const blockSize = defaultSize;
         std::string blockSizeStr;
 
-        if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
+        if (!getIfExists(keyValues, "nudb_block_size", blockSizeStr))
         {
             return blockSize;  // Early return with default
         }

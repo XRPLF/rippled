@@ -34,7 +34,7 @@
 
 namespace xrpl::test {
 
-struct Credentials_test : public beast::unit_test::suite
+struct Credentials_test : public beast::unit_test::Suite
 {
     void
     testSuccessful(FeatureBitset features)
@@ -55,11 +55,11 @@ struct Credentials_test : public beast::unit_test::suite
 
             auto const credKey = credentials::keylet(subject, issuer, credType);
 
-            env.fund(XRP(5000), subject, issuer, other);
+            env.fund(kXRP(5000), subject, issuer, other);
             env.close();
 
             // Test Create credentials
-            env(credentials::create(subject, issuer, credType), credentials::uri(uri));
+            env(credentials::create(subject, issuer, credType), credentials::Uri(uri));
             env.close();
             {
                 auto const sleCred = env.le(credKey);
@@ -127,7 +127,7 @@ struct Credentials_test : public beast::unit_test::suite
 
             auto const credKey = credentials::keylet(issuer, issuer, credType);
 
-            env(credentials::create(issuer, issuer, credType), credentials::uri(uri));
+            env(credentials::create(issuer, issuer, credType), credentials::Uri(uri));
             env.close();
             {
                 auto const sleCred = env.le(credKey);
@@ -186,7 +186,7 @@ struct Credentials_test : public beast::unit_test::suite
         Env env{*this, features};
 
         // fund subject and issuer
-        env.fund(XRP(5000), issuer, subject, other);
+        env.fund(kXRP(5000), issuer, subject, other);
         env.close();
 
         {
@@ -198,7 +198,7 @@ struct Credentials_test : public beast::unit_test::suite
 
             // delete issuer
             {
-                int const delta = env.Seq(issuer) + 255;
+                int const delta = env.seq(issuer) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
                 auto const acctDelFee{drops(env.current()->fees().increment)};
@@ -220,7 +220,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             // resurrection
-            env.fund(XRP(5000), issuer);
+            env.fund(kXRP(5000), issuer);
             env.close();
         }
 
@@ -235,7 +235,7 @@ struct Credentials_test : public beast::unit_test::suite
 
             // delete issuer
             {
-                int const delta = env.Seq(issuer) + 255;
+                int const delta = env.seq(issuer) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
                 auto const acctDelFee{drops(env.current()->fees().increment)};
@@ -257,7 +257,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             // resurrection
-            env.fund(XRP(5000), issuer);
+            env.fund(kXRP(5000), issuer);
             env.close();
         }
 
@@ -270,7 +270,7 @@ struct Credentials_test : public beast::unit_test::suite
 
             // delete subject
             {
-                int const delta = env.Seq(subject) + 255;
+                int const delta = env.seq(subject) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
                 auto const acctDelFee{drops(env.current()->fees().increment)};
@@ -292,7 +292,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             // resurrection
-            env.fund(XRP(5000), subject);
+            env.fund(kXRP(5000), subject);
             env.close();
         }
 
@@ -307,7 +307,7 @@ struct Credentials_test : public beast::unit_test::suite
 
             // delete subject
             {
-                int const delta = env.Seq(subject) + 255;
+                int const delta = env.seq(subject) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
                 auto const acctDelFee{drops(env.current()->fees().increment)};
@@ -329,7 +329,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             // resurrection
-            env.fund(XRP(5000), subject);
+            env.fund(kXRP(5000), subject);
             env.close();
         }
 
@@ -423,7 +423,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(XRP(5000), subject, issuer);
+            env.fund(kXRP(5000), subject, issuer);
             env.close();
 
             {
@@ -459,7 +459,7 @@ struct Credentials_test : public beast::unit_test::suite
                 constexpr std::string_view kLONG_CRED_TYPE =
                     "abcdefghijklmnopqrstuvwxyz01234567890qwertyuiop[]"
                     "asdfghjkl;'zxcvbnm8237tr28weufwldebvfv8734t07p";
-                static_assert(kLONG_CRED_TYPE.size() > maxCredentialTypeLength);
+                static_assert(kLONG_CRED_TYPE.size() > kMAX_CREDENTIAL_TYPE_LENGTH);
                 auto jv = credentials::create(subject, issuer, kLONG_CRED_TYPE);
                 env(jv, Ter(temMALFORMED));
             }
@@ -475,16 +475,16 @@ struct Credentials_test : public beast::unit_test::suite
                     "vujhgWQIE7F6WEUYFGWUKEYFVQW87FGWOEFWEFUYWVEF8723GFWEFB"
                     "WULE"
                     "fv28o37gfwEFB3872TFO8GSDSDVD";
-                static_assert(kLONG_URI.size() > maxCredentialURILength);
+                static_assert(kLONG_URI.size() > kMAX_CREDENTIAL_URI_LENGTH);
                 env(credentials::create(subject, issuer, credType),
-                    credentials::uri(kLONG_URI),
+                    credentials::Uri(kLONG_URI),
                     Ter(temMALFORMED));
             }
 
             {
                 testcase("Credentials fail, URI empty.");
                 env(credentials::create(subject, issuer, credType),
-                    credentials::uri(""),
+                    credentials::Uri(""),
                     Ter(temMALFORMED));
             }
 
@@ -530,7 +530,7 @@ struct Credentials_test : public beast::unit_test::suite
 
             {
                 testcase("Credentials fail, directory full");
-                std::uint32_t const issuerSeq{env.Seq(issuer) + 1};
+                std::uint32_t const issuerSeq{env.seq(issuer) + 1};
                 env(ticket::create(issuer, 63));
                 env.close();
 
@@ -546,7 +546,7 @@ struct Credentials_test : public beast::unit_test::suite
                 auto const jv = credentials::create(issuer, subject, credType);
                 env(jv, Ter(tecDIR_FULL));
                 // Free one directory entry by using a ticket
-                env(noop(issuer), ticket::use(issuerSeq + 40));
+                env(noop(issuer), ticket::Use(issuerSeq + 40));
 
                 // Fill subject directory
                 env(ticket::create(subject, 63));
@@ -567,7 +567,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(XRP(5000), issuer);
+            env.fund(kXRP(5000), issuer);
             env.close();
 
             {
@@ -607,7 +607,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            env.fund(XRP(5000), subject, issuer);
+            env.fund(kXRP(5000), subject, issuer);
 
             {
                 testcase("CredentialsAccept fail, Credential doesn't exist.");
@@ -664,7 +664,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(XRP(5000), subject, issuer);
+            env.fund(kXRP(5000), subject, issuer);
             env.close();
 
             {
@@ -727,7 +727,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(XRP(5000), issuer, subject, other);
+            env.fund(kXRP(5000), issuer, subject, other);
             env.close();
 
             {
@@ -737,7 +737,7 @@ struct Credentials_test : public beast::unit_test::suite
                 env.close();
 
                 // delete issuer
-                int const delta = env.Seq(issuer) + 255;
+                int const delta = env.seq(issuer) + 255;
                 for (int i = 0; i < delta; ++i)
                     env.close();
                 auto const acctDelFee{drops(env.current()->fees().increment)};
@@ -772,7 +772,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(XRP(5000), subject, issuer, other);
+            env.fund(kXRP(5000), subject, issuer, other);
             env.close();
 
             {
@@ -880,7 +880,7 @@ struct Credentials_test : public beast::unit_test::suite
             {
                 testcase("deleteSLE fail, bad SLE.");
                 auto view =
-                    std::make_shared<ApplyViewImpl>(env.current().get(), ApplyFlags::tapNONE);
+                    std::make_shared<ApplyViewImpl>(env.current().get(), ApplyFlags::TapNone);
                 auto ter = xrpl::credentials::deleteSLE(*view, {}, env.journal);
                 BEAST_EXPECT(ter == tecNO_ENTRY);
             }
@@ -900,7 +900,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(XRP(5000), subject, issuer);
+            env.fund(kXRP(5000), subject, issuer);
             env.close();
 
             {
@@ -925,7 +925,7 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this};
 
-            env.fund(XRP(5000), subject, issuer);
+            env.fund(kXRP(5000), subject, issuer);
             env.close();
 
             env(credentials::create(subject, issuer, credType));
@@ -1010,19 +1010,19 @@ struct Credentials_test : public beast::unit_test::suite
             using namespace jtx;
             Env env{*this, features};
 
-            env.fund(XRP(5000), subject, issuer);
+            env.fund(kXRP(5000), subject, issuer);
             env.close();
 
             {
                 Ter const expected(enabled ? TER(temINVALID_FLAG) : TER(tesSUCCESS));
                 env(credentials::create(subject, issuer, credType),
-                    txflags(tfTransferable),
+                    Txflags(tfTransferable),
                     expected);
                 env(credentials::accept(subject, issuer, credType),
-                    txflags(tfSellNFToken),
+                    Txflags(tfSellNFToken),
                     expected);
                 env(credentials::deleteCred(subject, subject, issuer, credType),
-                    txflags(tfPassive),
+                    Txflags(tfPassive),
                     expected);
             }
         }

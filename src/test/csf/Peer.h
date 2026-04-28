@@ -648,7 +648,7 @@ struct Peer
         v.setSeen(now());
         ValStatus const res = validations.add(v.nodeID(), v);
 
-        if (res == ValStatus::stale)
+        if (res == ValStatus::Stale)
             return false;
 
         // Acquire will try to get from network if not already local

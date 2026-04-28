@@ -119,7 +119,7 @@ STObject::isDefault() const
 void
 STObject::add(Serializer& s) const
 {
-    add(s, withAllFields);  // just inner elements
+    add(s, WithAllFields);  // just inner elements
 }
 
 STObject&
@@ -140,13 +140,13 @@ STObject::set(SOTemplate const& type)
 
     for (auto const& elem : type)
     {
-        if (elem.style() != soeREQUIRED)
+        if (elem.style() != SoeRequired)
         {
-            v_.emplace_back(detail::nonPresentObject, elem.sField());
+            v_.emplace_back(detail::gNonPresentObject, elem.sField());
         }
         else
         {
-            v_.emplace_back(detail::defaultObject, elem.sField());
+            v_.emplace_back(detail::gDefaultObject, elem.sField());
         }
     }
 }
@@ -171,7 +171,7 @@ STObject::applyTemplate(SOTemplate const& type)
             v_, [&](detail::STVar const& b) { return b.get().getFName() == e.sField(); });
         if (iter != v_.end())
         {
-            if ((e.style() == soeDEFAULT) && iter->get().isDefault())
+            if ((e.style() == SoeDefault) && iter->get().isDefault())
             {
                 throwFieldErr(e.sField().fieldName, "may not be explicitly set to default.");
             }
@@ -180,11 +180,11 @@ STObject::applyTemplate(SOTemplate const& type)
         }
         else
         {
-            if (e.style() == soeREQUIRED)
+            if (e.style() == SoeRequired)
             {
                 throwFieldErr(e.sField().fieldName, "is required but missing.");
             }
-            v.emplace_back(detail::nonPresentObject, e.sField());
+            v.emplace_back(detail::gNonPresentObject, e.sField());
         }
     }
     for (auto const& e : v_)
@@ -258,7 +258,7 @@ STObject::set(SerialIter& sit, int depth)
 
     // We want to ensure that the deserialized object does not contain any
     // duplicate fields. This is a key invariant:
-    auto const sf = getSortedFields(*this, withAllFields);
+    auto const sf = getSortedFields(*this, WithAllFields);
 
     auto const dup = std::ranges::adjacent_find(sf, [](STBase const* lhs, STBase const* rhs) {
         return lhs->getFName() == rhs->getFName();
@@ -353,8 +353,8 @@ STObject::isEquivalent(STBase const& t) const
             });
     }
 
-    auto const sf1 = getSortedFields(*this, withAllFields);
-    auto const sf2 = getSortedFields(*v, withAllFields);
+    auto const sf1 = getSortedFields(*this, WithAllFields);
+    auto const sf2 = getSortedFields(*v, WithAllFields);
 
     return std::ranges::equal(sf1, sf2, [](STBase const* st1, STBase const* st2) {
         return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
@@ -366,7 +366,7 @@ STObject::getHash(HashPrefix prefix) const
 {
     Serializer s;
     s.add32(prefix);
-    add(s, withAllFields);
+    add(s, WithAllFields);
     return s.getSHA512Half();
 }
 
@@ -375,7 +375,7 @@ STObject::getSigningHash(HashPrefix prefix) const
 {
     Serializer s;
     s.add32(prefix);
-    add(s, omitSigningFields);
+    add(s, OmitSigningFields);
     return s.getSHA512Half();
 }
 
@@ -442,7 +442,7 @@ STObject::getPField(SField const& field, bool createOkay)
     if (index == -1)
     {
         if (createOkay && isFree())
-            return getPIndex(emplace_back(detail::defaultObject, field));
+            return getPIndex(emplaceBack(detail::gDefaultObject, field));
 
         return nullptr;
     }
@@ -524,7 +524,7 @@ STObject::makeFieldPresent(SField const& field)
         if (!isFree())
             throwFieldNotFound(field);
 
-        return getPIndex(emplace_back(detail::nonPresentObject, field));
+        return getPIndex(emplaceBack(detail::gNonPresentObject, field));
     }
 
     STBase* f = getPIndex(index);  // NOLINT(misc-const-correctness)
@@ -532,7 +532,7 @@ STObject::makeFieldPresent(SField const& field)
     if (f->getSType() != STI_NOTPRESENT)
         return f;
 
-    v_[index] = detail::STVar(detail::defaultObject, f->getFName());
+    v_[index] = detail::STVar(detail::gDefaultObject, f->getFName());
     return getPIndex(index);
 }
 
@@ -548,7 +548,7 @@ STObject::makeFieldAbsent(SField const& field)
 
     if (f.getSType() == STI_NOTPRESENT)
         return;
-    v_[index] = detail::STVar(detail::nonPresentObject, f.getFName());
+    v_[index] = detail::STVar(detail::gNonPresentObject, f.getFName());
 }
 
 bool
@@ -572,7 +572,7 @@ STObject::delField(int index)
 SOEStyle
 STObject::getStyle(SField const& field) const
 {
-    return (type_ != nullptr) ? type_->style(field) : soeINVALID;
+    return (type_ != nullptr) ? type_->style(field) : SoeInvalid;
 }
 
 unsigned char
@@ -834,7 +834,7 @@ STObject::setFieldObject(SField const& field, STObject const& v)
 Json::Value
 STObject::getJson(JsonOptions options) const
 {
-    Json::Value ret(Json::objectValue);
+    Json::Value ret(Json::ObjectValue);
 
     for (auto const& elem : v_)
     {
@@ -927,7 +927,7 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
 
     // Sort the fields by fieldCode.
     std::ranges::sort(sf, [](STBase const* lhs, STBase const* rhs) {
-        return lhs->getFName().fieldCode < rhs->getFName().fieldCode;
+        return lhs->getFName().fieldCodeMem < rhs->getFName().fieldCodeMem;
     });
 
     return sf;

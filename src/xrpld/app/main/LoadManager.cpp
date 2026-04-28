@@ -146,7 +146,7 @@ LoadManager::run()
                 JLOG(journal_.fatal()) << "LogicError: Fatal server stall detected. Stalled time: "
                                        << timeSpentStalled.count() << "s";
                 JLOG(journal_.fatal()) << "JobQueue: " << app_.getJobQueue().getJson(0);
-                LogicError("Fatal server stall detected");
+                logicError("Fatal server stall detected");
             }
         }
     }

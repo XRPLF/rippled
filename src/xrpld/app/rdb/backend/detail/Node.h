@@ -389,7 +389,7 @@ getTransaction(
     Application& app,
     uint256 const& id,
     std::optional<ClosedInterval<uint32_t>> const& range,
-    error_code_i& ec);
+    ErrorCodeI& ec);
 
 /**
  * @brief dbHasSpace Checks if given database has available space.

@@ -15,7 +15,7 @@
 
 namespace xrpl::test {
 
-class LendingHelpers_test : public beast::unit_test::suite
+class LendingHelpers_test : public beast::unit_test::Suite
 {
     void
     testComputeRaisedRate()

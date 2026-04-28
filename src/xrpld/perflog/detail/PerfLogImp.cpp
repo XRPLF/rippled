@@ -72,7 +72,7 @@ PerfLogImp::Counters::Counters(std::set<char const*> const& labels, JobTypes con
 Json::Value
 PerfLogImp::Counters::countersJson() const
 {
-    Json::Value rpcobj(Json::objectValue);
+    Json::Value rpcobj(Json::ObjectValue);
     // totalRpc represents all rpc methods. All that started, finished, etc.
     Rpc totalRpc;
     for (auto const& proc : rpc)
@@ -88,7 +88,7 @@ PerfLogImp::Counters::countersJson() const
             value = proc.second.value;
         }
 
-        Json::Value p(Json::objectValue);
+        Json::Value p(Json::ObjectValue);
         p[jss::started] = std::to_string(value.started);
         totalRpc.started += value.started;
         p[jss::finished] = std::to_string(value.finished);
@@ -102,7 +102,7 @@ PerfLogImp::Counters::countersJson() const
 
     if (totalRpc.started != 0u)
     {
-        Json::Value totalRpcJson(Json::objectValue);
+        Json::Value totalRpcJson(Json::ObjectValue);
         totalRpcJson[jss::started] = std::to_string(totalRpc.started);
         totalRpcJson[jss::finished] = std::to_string(totalRpc.finished);
         totalRpcJson[jss::errored] = std::to_string(totalRpc.errored);
@@ -110,7 +110,7 @@ PerfLogImp::Counters::countersJson() const
         rpcobj[jss::total] = totalRpcJson;
     }
 
-    Json::Value jobQueueObj(Json::objectValue);
+    Json::Value jobQueueObj(Json::ObjectValue);
     // totalJq represents all jobs. All enqueued, started, finished, etc.
     Jq totalJq;
     for (auto const& proc : jq)
@@ -126,7 +126,7 @@ PerfLogImp::Counters::countersJson() const
             value = proc.second.value;
         }
 
-        Json::Value j(Json::objectValue);
+        Json::Value j(Json::ObjectValue);
         j[jss::queued] = std::to_string(value.queued);
         totalJq.queued += value.queued;
         j[jss::started] = std::to_string(value.started);
@@ -142,7 +142,7 @@ PerfLogImp::Counters::countersJson() const
 
     if (totalJq.queued != 0u)
     {
-        Json::Value totalJqJson(Json::objectValue);
+        Json::Value totalJqJson(Json::ObjectValue);
         totalJqJson[jss::queued] = std::to_string(totalJq.queued);
         totalJqJson[jss::started] = std::to_string(totalJq.started);
         totalJqJson[jss::finished] = std::to_string(totalJq.finished);
@@ -151,7 +151,7 @@ PerfLogImp::Counters::countersJson() const
         jobQueueObj[jss::total] = totalJqJson;
     }
 
-    Json::Value counters(Json::objectValue);
+    Json::Value counters(Json::ObjectValue);
     // Be kind to reporting tools and let them expect rpc and jq objects
     // even if empty.
     counters[jss::rpc] = rpcobj;
@@ -164,7 +164,7 @@ PerfLogImp::Counters::currentJson() const
 {
     auto const present = steady_clock::now();
 
-    Json::Value jobsArray(Json::arrayValue);
+    Json::Value jobsArray(Json::ArrayValue);
     auto const jobs = [this] {
         std::lock_guard const lock(jobsMutex);
         return this->jobs;
@@ -172,16 +172,16 @@ PerfLogImp::Counters::currentJson() const
 
     for (auto const& j : jobs)
     {
-        if (j.first == jtINVALID)
+        if (j.first == JtInvalid)
             continue;
-        Json::Value jobj(Json::objectValue);
+        Json::Value jobj(Json::ObjectValue);
         jobj[jss::job] = JobTypes::name(j.first);
         jobj[jss::duration_us] =
             std::to_string(std::chrono::duration_cast<microseconds>(present - j.second).count());
         jobsArray.append(jobj);
     }
 
-    Json::Value methodsArray(Json::arrayValue);
+    Json::Value methodsArray(Json::ArrayValue);
     std::vector<MethodStart> methods;
     {
         std::lock_guard const lock(methodsMutex);
@@ -191,14 +191,14 @@ PerfLogImp::Counters::currentJson() const
     }
     for (auto m : methods)
     {
-        Json::Value methodobj(Json::objectValue);
+        Json::Value methodobj(Json::ObjectValue);
         methodobj[jss::method] = m.first;
         methodobj[jss::duration_us] =
             std::to_string(std::chrono::duration_cast<microseconds>(present - m.second).count());
         methodsArray.append(methodobj);
     }
 
-    Json::Value current(Json::objectValue);
+    Json::Value current(Json::ObjectValue);
     current[jss::jobs] = jobsArray;
     current[jss::methods] = methodsArray;
     return current;
@@ -277,7 +277,7 @@ PerfLogImp::report()
         return;
     lastLog_ = present;
 
-    Json::Value report(Json::objectValue);
+    Json::Value report(Json::ObjectValue);
     report[jss::time] = to_string(std::chrono::floor<microseconds>(present));
     {
         std::lock_guard const lock{counters_.jobsMutex};
@@ -285,7 +285,7 @@ PerfLogImp::report()
     }
     report[jss::hostid] = hostname_;
     report[jss::counters] = counters_.countersJson();
-    report[jss::nodestore] = Json::objectValue;
+    report[jss::nodestore] = Json::ObjectValue;
     app_.getNodeStore().getCountsJson(report[jss::nodestore]);
     report[jss::current_activities] = counters_.currentJson();
     app_.getOPs().stateAccounting(report);
@@ -428,7 +428,7 @@ PerfLogImp::jobFinish(JobType const type, microseconds dur, int instance)
     }
     std::lock_guard const lock(counters_.jobsMutex);
     if (instance >= 0 && instance < counters_.jobs.size())
-        counters_.jobs[instance] = {jtINVALID, steady_time_point()};
+        counters_.jobs[instance] = {JtInvalid, steady_time_point()};
 }
 
 void
@@ -436,7 +436,7 @@ PerfLogImp::resizeJobs(int const resize)
 {
     std::lock_guard const lock(counters_.jobsMutex);
     if (resize > counters_.jobs.size())
-        counters_.jobs.resize(resize, {jtINVALID, steady_time_point()});
+        counters_.jobs.resize(resize, {JtInvalid, steady_time_point()});
 }
 
 void
@@ -474,7 +474,7 @@ PerfLogImp::stop()
 //-----------------------------------------------------------------------------
 
 PerfLog::Setup
-setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
+setupPerfLog(Section const& section, boost::filesystem::path const& configDir)
 {
     PerfLog::Setup setup;
     std::string perfLog;
@@ -489,13 +489,13 @@ setup_PerfLog(Section const& section, boost::filesystem::path const& configDir)
     }
 
     std::uint64_t logInterval = 0;
-    if (get_if_exists(section, "log_interval", logInterval))
+    if (getIfExists(section, "log_interval", logInterval))
         setup.logInterval = std::chrono::seconds(logInterval);
     return setup;
 }
 
 std::unique_ptr<PerfLog>
-make_PerfLog(
+makePerfLog(
     PerfLog::Setup const& setup,
     Application& app,
     beast::Journal journal,

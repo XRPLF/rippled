@@ -126,8 +126,8 @@ updatePeerFinderDB(soci::session& session, int currentSchemaVersion, beast::Jour
             while (st.fetch())
             {
                 PeerFinder::Store::Entry entry;
-                entry.endpoint = beast::IP::Endpoint::from_string(s);
-                if (!is_unspecified(entry.endpoint))
+                entry.endpoint = beast::IP::Endpoint::fromString(s);
+                if (!isUnspecified(entry.endpoint))
                 {
                     entry.valence = valence;
                     list.push_back(entry);

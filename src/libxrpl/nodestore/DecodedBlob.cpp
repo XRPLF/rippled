@@ -25,7 +25,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 
     success_ = false;
     key_ = key;
-    objectType_ = hotUNKNOWN;
+    objectType_ = HotUnknown;
     objectData_ = nullptr;
     dataBytes_ = std::max(0, valueBytes - 9);
 
@@ -34,7 +34,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
     if (valueBytes > 8)
     {
         unsigned char const* byte = static_cast<unsigned char const*>(value);
-        objectType_ = safe_cast<NodeObjectType>(byte[8]);
+        objectType_ = safeCast<NodeObjectType>(byte[8]);
     }
 
     if (valueBytes > 9)
@@ -46,10 +46,10 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
             default:
                 break;
 
-            case hotUNKNOWN:
-            case hotLEDGER:
-            case hotACCOUNT_NODE:
-            case hotTRANSACTION_NODE:
+            case HotUnknown:
+            case HotLedger:
+            case HotAccountNode:
+            case HotTransactionNode:
                 success_ = true;
                 break;
         }

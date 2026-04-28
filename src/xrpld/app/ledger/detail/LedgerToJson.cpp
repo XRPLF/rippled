@@ -87,7 +87,7 @@ fillJson(Json::Value& json, bool closed, LedgerHeader const& info, bool bFull, u
         json[jss::close_time_human] = to_string(info.closeTime);
         if (!getCloseAgree(info))
             json[jss::close_time_estimated] = true;
-        json[jss::close_time_iso] = to_string_iso(info.closeTime);
+        json[jss::close_time_iso] = toStringIso(info.closeTime);
     }
 }
 
@@ -119,7 +119,7 @@ fillJsonTx(
     if (!bExpanded)
         return to_string(txn->getTransactionID());
 
-    Json::Value txJson{Json::objectValue};
+    Json::Value txJson{Json::ObjectValue};
     auto const txnType = txn->getTxnType();
     if (bBinary)
     {
@@ -133,13 +133,13 @@ fillJsonTx(
     }
     else if (fill.context->apiVersion > 1)
     {
-        copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::kDISABLE_API_PRIOR_V2, false));
+        copyFrom(txJson[jss::tx_json], txn->getJson(JsonOptions::KDisableApiPriorV2, false));
         txJson[jss::hash] = to_string(txn->getTransactionID());
         RPC::insertDeliverMax(txJson[jss::tx_json], txnType, fill.context->apiVersion);
 
         if (stMeta)
         {
-            txJson[jss::meta] = stMeta->getJson(JsonOptions::kNONE);
+            txJson[jss::meta] = stMeta->getJson(JsonOptions::KNone);
 
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
@@ -166,16 +166,16 @@ fillJsonTx(
             auto const seq = fill.ledger.seq();
             txJson[jss::ledger_index] = seq;
             if (fill.closeTime)
-                txJson[jss::close_time_iso] = to_string_iso(*fill.closeTime);
+                txJson[jss::close_time_iso] = toStringIso(*fill.closeTime);
         }
     }
     else
     {
-        copyFrom(txJson, txn->getJson(JsonOptions::kNONE));
+        copyFrom(txJson, txn->getJson(JsonOptions::KNone));
         RPC::insertDeliverMax(txJson, txnType, fill.context->apiVersion);
         if (stMeta)
         {
-            txJson[jss::metaData] = stMeta->getJson(JsonOptions::kNONE);
+            txJson[jss::metaData] = stMeta->getJson(JsonOptions::KNone);
 
             // If applicable, insert delivered amount
             if (txnType == ttPAYMENT || txnType == ttCHECK_CASH)
@@ -206,7 +206,7 @@ fillJsonTx(
                 fill.ledger,
                 account,
                 amount,
-                fhIGNORE_FREEZE,
+                FhIgnoreFreeze,
                 beast::Journal{beast::Journal::getNullSink()});
             txJson[jss::owner_funds] = ownerFunds.getText();
         }
@@ -218,7 +218,7 @@ fillJsonTx(
 void
 fillJsonTx(Json::Value& json, LedgerFill const& fill)
 {
-    auto& txns = json[jss::transactions] = Json::arrayValue;
+    auto& txns = json[jss::transactions] = Json::ArrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
@@ -247,7 +247,7 @@ void
 fillJsonState(Json::Value& json, LedgerFill const& fill)
 {
     auto& ledger = fill.ledger;
-    auto& array = json[jss::accountState] = Json::arrayValue;
+    auto& array = json[jss::accountState] = Json::ArrayValue;
     auto expanded = isExpanded(fill);
     auto binary = isBinary(fill);
 
@@ -255,13 +255,13 @@ fillJsonState(Json::Value& json, LedgerFill const& fill)
     {
         if (binary)
         {
-            auto& obj = array.append(Json::objectValue);
+            auto& obj = array.append(Json::ObjectValue);
             obj[jss::hash] = to_string(sle->key());
             obj[jss::tx_blob] = serializeHex(*sle);
         }
         else if (expanded)
         {
-            array.append(sle->getJson(JsonOptions::kNONE));
+            array.append(sle->getJson(JsonOptions::KNone));
         }
         else
         {
@@ -273,13 +273,13 @@ fillJsonState(Json::Value& json, LedgerFill const& fill)
 void
 fillJsonQueue(Json::Value& json, LedgerFill const& fill)
 {
-    auto& queueData = json[jss::queue_data] = Json::arrayValue;
+    auto& queueData = json[jss::queue_data] = Json::ArrayValue;
     auto bBinary = isBinary(fill);
     auto bExpanded = isExpanded(fill);
 
     for (auto const& tx : fill.txQueue)
     {
-        auto& txJson = queueData.append(Json::objectValue);
+        auto& txJson = queueData.append(Json::ObjectValue);
         txJson[jss::fee_level] = to_string(tx.feeLevel);
         if (tx.lastValid)
             txJson[jss::LastLedgerSequence] = *tx.lastValid;
@@ -325,7 +325,7 @@ fillJson(Json::Value& json, LedgerFill const& fill)
             fill.ledger.header(),
             bFull,
             ((fill.context != nullptr) ? fill.context->apiVersion
-                                       : RPC::apiMaximumSupportedVersion));
+                                       : RPC::kAPI_MAXIMUM_SUPPORTED_VERSION));
     }
 
     if (bFull || ((fill.options & LedgerFill::DumpTxrp) != 0))
@@ -340,7 +340,7 @@ fillJson(Json::Value& json, LedgerFill const& fill)
 void
 addJson(Json::Value& json, LedgerFill const& fill)
 {
-    auto& object = json[jss::ledger] = Json::objectValue;
+    auto& object = json[jss::ledger] = Json::ObjectValue;
     fillJson(object, fill);
 
     if (((fill.options & LedgerFill::DumpQueue) != 0) && !fill.txQueue.empty())

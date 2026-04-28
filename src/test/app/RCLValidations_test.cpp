@@ -21,13 +21,13 @@
 
 namespace xrpl::test {
 
-class RCLValidations_test : public beast::unit_test::suite
+class RCLValidations_test : public beast::unit_test::Suite
 {
     void
     testChangeTrusted()
     {
         testcase("Change validation trusted status");
-        auto keys = randomKeyPair(KeyType::secp256k1);
+        auto keys = randomKeyPair(KeyType::Secp256k1);
         auto v = std::make_shared<STValidation>(
             xrpl::NetClock::time_point{},
             keys.first,
@@ -69,7 +69,7 @@ class RCLValidations_test : public beast::unit_test::suite
         jtx::Env env(*this);
         Config const config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis,
+            kCREATE_GENESIS,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},
@@ -235,7 +235,7 @@ class RCLValidations_test : public beast::unit_test::suite
         auto& j = env.journal;
         Config const config;
         auto prev = std::make_shared<Ledger const>(
-            create_genesis,
+            kCREATE_GENESIS,
             Rules{config.features},
             config.FEES.toFees(),
             std::vector<uint256>{},

@@ -65,7 +65,7 @@ Section::append(std::vector<std::string> const& lines)
                 {
                     // this must be a real comment. Extract the value
                     // as a substring and stop looking.
-                    val = trim_whitespace(val.substr(0, comment));
+                    val = trimWhitespace(val.substr(0, comment));
                     removedTrailing = true;
                     break;
                 }
@@ -76,7 +76,7 @@ Section::append(std::vector<std::string> const& lines)
         };
 
         if (removeComment(line) && !line.empty())
-            had_trailing_comments_ = true;
+            hadTrailingComments_ = true;
 
         if (line.empty())
             continue;

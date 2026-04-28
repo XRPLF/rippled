@@ -9,6 +9,6 @@ namespace xrpl {
 bool
 isRpcError(Json::Value jvResult);
 Json::Value
-rpcError(error_code_i iError);
+rpcError(ErrorCodeI iError);
 
 }  // namespace xrpl

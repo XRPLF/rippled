@@ -31,14 +31,14 @@ Seed::~Seed()
 Seed::Seed(Slice const& slice)
 {
     if (slice.size() != buf_.size())
-        LogicError("Seed::Seed: invalid size");
+        logicError("Seed::Seed: invalid size");
     std::memcpy(buf_.data(), slice.data(), buf_.size());
 }
 
 Seed::Seed(uint128 const& seed)
 {
     if (seed.size() != buf_.size())
-        LogicError("Seed::Seed: invalid size");
+        logicError("Seed::Seed: invalid size");
     std::memcpy(buf_.data(), seed.data(), buf_.size());
 }
 
@@ -48,7 +48,7 @@ Seed
 randomSeed()
 {
     std::array<std::uint8_t, 16> buffer{};
-    beast::rngfill(buffer.data(), buffer.size(), crypto_prng());
+    beast::rngfill(buffer.data(), buffer.size(), cryptoPrng());
     Seed const seed(makeSlice(buffer));
     secureErase(buffer.data(), buffer.size());
     return seed;

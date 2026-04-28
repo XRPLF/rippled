@@ -20,7 +20,7 @@ Ledger::Instance const Ledger::kGENESIS;
 Json::Value
 Ledger::getJson() const
 {
-    Json::Value res(Json::objectValue);
+    Json::Value res(Json::ObjectValue);
     res["id"] = static_cast<ID::value_type>(id());
     res["seq"] = static_cast<Seq::value_type>(seq());
     return res;

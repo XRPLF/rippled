@@ -26,7 +26,7 @@
 
 namespace xrpl::test {
 
-class TrustSet_test : public beast::unit_test::suite
+class TrustSet_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -40,7 +40,7 @@ public:
         Account const alice = Account{"alice"};
         Account const becky = Account{"becky"};
 
-        env.fund(XRP(10000), becky, alice);
+        env.fund(kXRP(10000), becky, alice);
         env.close();
 
         // becky wants to hold at most 50 tokens of alice["USD"]
@@ -53,8 +53,8 @@ public:
         // alice and becky, both of them will be charged an owner reserve
         // Irrespective of whether the issuer or the customer initiated
         // the trust-line creation, both will be charged
-        env.Require(lines(alice, 1));
-        env.Require(lines(becky, 1));
+        env.require(lines(alice, 1));
+        env.require(lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
         Json::Value jv;
@@ -74,8 +74,8 @@ public:
         // the reset of the trust line limits deletes the trust-line
         // this occurs despite the authorization of the trust-line by the
         // issuer(alice, in this unit test)
-        env.Require(lines(becky, 0));
-        env.Require(lines(alice, 0));
+        env.require(lines(becky, 0));
+        env.require(lines(alice, 0));
 
         // second verification check via RPC calls
         jv["account"] = becky.human();
@@ -110,7 +110,7 @@ public:
         Account const alice = Account{"alice"};
         Account const becky = Account{"becky"};
 
-        env.fund(XRP(10000), becky, alice);
+        env.fund(kXRP(10000), becky, alice);
         env.close();
 
         // alice wants to ensure that all holders of her tokens are authorised
@@ -131,8 +131,8 @@ public:
         // alice and becky, both of them will be charged an owner reserve
         // Irrespective of whether the issuer or the customer initiated
         // the trust-line creation, both will be charged
-        env.Require(lines(alice, 1));
-        env.Require(lines(becky, 1));
+        env.require(lines(alice, 1));
+        env.require(lines(becky, 1));
 
         // Fetch the trust-lines via RPC for verification
         Json::Value jv;
@@ -152,8 +152,8 @@ public:
         // the reset of the trust line limits deletes the trust-line
         // this occurs despite the authorization of the trust-line by the
         // issuer(alice, in this unit test)
-        env.Require(lines(becky, 0));
-        env.Require(lines(alice, 0));
+        env.require(lines(becky, 0));
+        env.require(lines(alice, 0));
 
         // second verification check via RPC calls
         jv["account"] = becky.human();
@@ -193,7 +193,7 @@ public:
         auto const baseReserve = env.current()->fees().reserve;
         auto const threelineReserve = env.current()->fees().accountReserve(3);
 
-        env.fund(XRP(10000), gwA, gwB, assistor);
+        env.fund(kXRP(10000), gwA, gwB, assistor);
 
         // Fund creator with ...
         env.fund(
@@ -258,7 +258,7 @@ public:
         auto const alice = Account{"alice"};
         auto const usd = gw["USD"];
 
-        env.fund(XRP(10000), gw, alice);
+        env.fund(kXRP(10000), gw, alice);
         env.close();
 
         // Cannot pay alice without a trustline.
@@ -266,12 +266,12 @@ public:
         env.close();
 
         // Create a ticket.
-        std::uint32_t const ticketSeq{env.Seq(alice) + 1};
+        std::uint32_t const ticketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 1));
         env.close();
 
         // Use that ticket to create a trust line.
-        env(trust(alice, usd(1000)), ticket::use(ticketSeq));
+        env(trust(alice, usd(1000)), ticket::Use(ticketSeq));
         env.close();
 
         // Now the payment succeeds.
@@ -284,7 +284,7 @@ public:
     {
         Json::Value jv;
         jv[jss::Account] = a.human();
-        jv[jss::LimitAmount] = amt.getJson(JsonOptions::kNONE);
+        jv[jss::LimitAmount] = amt.getJson(JsonOptions::KNone);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = 0;
         return jv;
@@ -300,7 +300,7 @@ public:
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        env.fund(XRP(10000), gw, alice);
+        env.fund(kXRP(10000), gw, alice);
 
         // Require valid tf flags
         for (std::uint64_t badFlag = 1u; badFlag <= std::numeric_limits<std::uint32_t>::max();
@@ -323,7 +323,7 @@ public:
         env(trust(alice, gw["USD"](-1000)), Ter(temBAD_LIMIT));
 
         // trust amount can't be from invalid issuer
-        env(trustExplicitAmt(alice, STAmount{Issue{to_currency("USD"), noAccount()}, 100}),
+        env(trustExplicitAmt(alice, STAmount{Issue{toCurrency("USD"), noAccount()}, 100}),
             Ter(temDST_NEEDED));
 
         // trust cannot be to self
@@ -345,7 +345,7 @@ public:
 
         auto const gw = Account{"gateway"};
         auto const alice = Account{"alice"};
-        env.fund(XRP(10000), gw, alice);
+        env.fund(kXRP(10000), gw, alice);
 
         // alice wants to hold at most 100 of gw's USD tokens
         env(trust(alice, gw["USD"](100)));
@@ -372,7 +372,7 @@ public:
 
         auto const bob = Account{"bob"};
         auto const alice = Account{"alice"};
-        env.fund(XRP(10000), bob, alice);
+        env.fund(kXRP(10000), bob, alice);
 
         // alice wants to ensure that all holders of her tokens are authorised
         env(fset(alice, asfRequireAuth));
@@ -401,7 +401,7 @@ public:
 
         auto const bob = Account{"bob"};
         auto const alice = Account{"alice"};
-        env.fund(XRP(10000), bob, alice);
+        env.fund(kXRP(10000), bob, alice);
 
         // create a trust line from bob to alice. bob wants to hold at most
         // 100 of alice's USD tokens.
@@ -443,7 +443,7 @@ public:
         auto const& fromAcct = createOnHighAcct ? alice : bob;
         auto const& toAcct = createOnHighAcct ? bob : alice;
 
-        env.fund(XRP(10000), fromAcct, toAcct);
+        env.fund(kXRP(10000), fromAcct, toAcct);
 
         auto txWithoutQuality = trust(toAcct, fromAcct["USD"](100));
         txWithoutQuality["QualityIn"] = "0";
@@ -493,7 +493,7 @@ public:
                 auto const usd = gw["USD"];
                 auto const distUSD = dist["USD"];
 
-                env.fund(XRP(1000), gw, dist);
+                env.fund(kXRP(1000), gw, dist);
                 env.close();
 
                 env(fset(gw, asfRequireAuth));
@@ -508,7 +508,7 @@ public:
                 // withFix: can set trustline
                 // withOutFix: cannot set trustline
                 auto const trustResult = withFix ? Ter(tesSUCCESS) : Ter(tecNO_PERMISSION);
-                env(trust(gw, distUSD(10000)), txflags(tfSetfAuth), trustResult);
+                env(trust(gw, distUSD(10000)), Txflags(tfSetfAuth), trustResult);
                 env.close();
 
                 auto const txResult = withFix ? Ter(tesSUCCESS) : Ter(tecPATH_DRY);
@@ -524,7 +524,7 @@ public:
         auto const bob = Account{"bob"};
         auto const usd = gw["USD"];
 
-        env.fund(XRP(10000), gw, alice, bob);
+        env.fund(kXRP(10000), gw, alice, bob);
         env.close();
 
         // Set flag on gateway

@@ -322,7 +322,7 @@ Slot<ClockType>::update(
         auto const consideredPoolSize = considered_.size();
         while (selected.size() != maxSelectedPeers_ && !considered_.empty())
         {
-            auto i = considered_.size() == 1 ? 0 : rand_int(considered_.size() - 1);
+            auto i = considered_.size() == 1 ? 0 : randInt(considered_.size() - 1);
             auto it = std::next(considered_.begin(), i);
             auto id = *it;
             considered_.erase(it);
@@ -395,7 +395,7 @@ Slot<ClockType>::getSquelchDuration(std::size_t npeers)
         m = kMAX_UNSQUELCH_EXPIRE_PEERS;
         JLOG(journal_.warn()) << "getSquelchDuration: unexpected squelch duration " << npeers;
     }
-    return seconds{xrpl::rand_int(kMIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
+    return seconds{xrpl::randInt(kMIN_UNSQUELCH_EXPIRE / 1s, m / 1s)};
 }
 
 template <typename ClockType>
@@ -532,7 +532,7 @@ class Slots final
         uint256,
         std::unordered_set<Peer::id_t>,
         ClockType,
-        hardened_hash<strong_hash>>;
+        HardenedHash<strong_hash>>;
 
 public:
     /**
@@ -704,9 +704,9 @@ private:
     inline static messages peersWithMessage{beast::getAbstractClock<ClockType>()};
 };
 
-template <typename clock_type>
+template <typename ClockType>
 bool
-Slots<clock_type>::addPeerMessage(uint256 const& key, id_t id)
+Slots<ClockType>::addPeerMessage(uint256 const& key, id_t id)
 {
     beast::expire(peersWithMessage, reduce_relay::kIDLED);
 
@@ -735,14 +735,14 @@ Slots<clock_type>::addPeerMessage(uint256 const& key, id_t id)
     return true;
 }
 
-template <typename clock_type>
+template <typename ClockType>
 void
-Slots<clock_type>::updateSlotAndSquelch(
+Slots<ClockType>::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     id_t id,
     protocol::MessageType type,
-    typename Slot<clock_type>::ignored_squelch_callback callback)
+    typename Slot<ClockType>::ignored_squelch_callback callback)
 {
     if (!addPeerMessage(key, id))
         return;
@@ -755,7 +755,7 @@ Slots<clock_type>::updateSlotAndSquelch(
                       .emplace(
                           std::make_pair(
                               validator,
-                              Slot<clock_type>(handler_, logs_.journal("Slot"), maxSelectedPeers_)))
+                              Slot<ClockType>(handler_, logs_.journal("Slot"), maxSelectedPeers_)))
                       .first;
         it->second.update(validator, id, type, callback);
     }
@@ -765,19 +765,19 @@ Slots<clock_type>::updateSlotAndSquelch(
     }
 }
 
-template <typename clock_type>
+template <typename ClockType>
 void
-Slots<clock_type>::deletePeer(id_t id, bool erase)
+Slots<ClockType>::deletePeer(id_t id, bool erase)
 {
     for (auto& [validator, slot] : slots_)
         slot.deletePeer(validator, id, erase);
 }
 
-template <typename clock_type>
+template <typename ClockType>
 void
-Slots<clock_type>::deleteIdlePeers()
+Slots<ClockType>::deleteIdlePeers()
 {
-    auto now = clock_type::now();
+    auto now = ClockType::now();
 
     for (auto it = slots_.begin(); it != slots_.end();)
     {

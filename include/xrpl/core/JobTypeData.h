@@ -34,18 +34,18 @@ public:
     beast::insight::Event execute;
 
     JobTypeData(
-        JobTypeInfo const& info_,
+        JobTypeInfo const& info,
         beast::insight::Collector::ptr collector,
         Logs& logs) noexcept
-        : load_(logs.journal("LoadMonitor")), collector_(std::move(collector)), info(info_)
+        : load_(logs.journal("LoadMonitor")), collector_(std::move(collector)), info(info)
 
     {
         load_.setTargetLatency(info.getAverageLatency(), info.getPeakLatency());
 
         if (!info.special())
         {
-            dequeue = collector_->make_event(info.name() + "_q");
-            execute = collector_->make_event(info.name());
+            dequeue = collector_->makeEvent(info.name() + "_q");
+            execute = collector_->makeEvent(info.name());
         }
     }
 

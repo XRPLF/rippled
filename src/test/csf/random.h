@@ -16,7 +16,7 @@ namespace xrpl::test::csf {
 */
 template <class T, class G>
 std::vector<T>
-random_weighted_shuffle_(std::vector<T> v, std::vector<double> w, G& g)
+randomWeightedShuffle(std::vector<T> v, std::vector<double> w, G& g)
 {
     using std::swap;
 

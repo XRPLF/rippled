@@ -51,7 +51,7 @@
 
 namespace xrpl::test {
 
-class ValidatorList_test : public beast::unit_test::suite
+class ValidatorList_test : public beast::unit_test::Suite
 {
 private:
     struct Validator
@@ -64,13 +64,13 @@ private:
     static PublicKey
     randomNode()
     {
-        return derivePublicKey(KeyType::secp256k1, randomSecretKey());
+        return derivePublicKey(KeyType::Secp256k1, randomSecretKey());
     }
 
     static PublicKey
     randomMasterKey()
     {
-        return derivePublicKey(KeyType::ed25519, randomSecretKey());
+        return derivePublicKey(KeyType::Ed25519, randomSecretKey());
     }
 
     static std::string
@@ -81,7 +81,7 @@ private:
         SecretKey const& ssk,
         int seq)
     {
-        STObject st(sfGeneric);
+        STObject st(kSF_GENERIC);
         st[sfSequence] = seq;
         st[sfPublicKey] = pk;
 
@@ -89,11 +89,11 @@ private:
         {
             st[sfSigningPubKey] = spk;
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            sign(st, HashPrefix::manifest, *publicKeyType(spk), ssk);
+            sign(st, HashPrefix::Manifest, *publicKeyType(spk), ssk);
         }
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
+        sign(st, HashPrefix::Manifest, *publicKeyType(pk), sk, sfMasterSignature);
 
         Serializer s;
         st.add(s);
@@ -104,12 +104,12 @@ private:
     static std::string
     makeRevocationString(PublicKey const& pk, SecretKey const& sk)
     {
-        STObject st(sfGeneric);
+        STObject st(kSF_GENERIC);
         st[sfSequence] = std::numeric_limits<std::uint32_t>::max();
         st[sfPublicKey] = pk;
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-        sign(st, HashPrefix::manifest, *publicKeyType(pk), sk, sfMasterSignature);
+        sign(st, HashPrefix::Manifest, *publicKeyType(pk), sk, sfMasterSignature);
 
         Serializer s;
         st.add(s);
@@ -121,12 +121,12 @@ private:
     randomValidator()
     {
         auto const secret = randomSecretKey();
-        auto const masterPublic = derivePublicKey(KeyType::ed25519, secret);
-        auto const signingKeys = randomKeyPair(KeyType::secp256k1);
+        auto const masterPublic = derivePublicKey(KeyType::Ed25519, secret);
+        auto const signingKeys = randomKeyPair(KeyType::Secp256k1);
         return {
             .masterPublic = masterPublic,
             .signingPublic = signingKeys.first,
-            .manifest = base64_encode(makeManifestString(
+            .manifest = base64Encode(makeManifestString(
                 masterPublic, secret, signingKeys.first, signingKeys.second, 1))};
     }
 
@@ -151,13 +151,13 @@ private:
 
         data.pop_back();
         data += "]}";
-        return base64_encode(data);
+        return base64Encode(data);
     }
 
     static std::string
     signList(std::string const& blob, std::pair<PublicKey, SecretKey> const& keys)
     {
-        auto const data = base64_decode(blob);
+        auto const data = base64Decode(blob);
         return strHex(sign(keys.first, keys.second, makeSlice(data)));
     }
 
@@ -220,16 +220,16 @@ private:
     {
         testcase("Config Load");
 
-        jtx::Env env(*this, jtx::envconfig(), nullptr, beast::severities::kDisabled);
+        jtx::Env env(*this, jtx::envconfig(), nullptr, beast::severities::KDisabled);
         auto& app = env.app();
         std::vector<std::string> const emptyCfgKeys;
         std::vector<std::string> const emptyCfgPublishers;
 
-        auto const localSigningKeys = randomKeyPair(KeyType::secp256k1);
+        auto const localSigningKeys = randomKeyPair(KeyType::Secp256k1);
         auto const localSigningPublicOuter = localSigningKeys.first;
         auto const localSigningSecret = localSigningKeys.second;
         auto const localMasterSecret = randomSecretKey();
-        auto const localMasterPublic = derivePublicKey(KeyType::ed25519, localMasterSecret);
+        auto const localMasterPublic = derivePublicKey(KeyType::Ed25519, localMasterSecret);
 
         std::string const cfgManifest(makeManifestString(
             localMasterPublic, localMasterSecret, localSigningPublicOuter, localSigningSecret, 1));
@@ -450,8 +450,8 @@ private:
                 env.journal);
 
             auto const pubRevokedSecret = randomSecretKey();
-            auto const pubRevokedPublic = derivePublicKey(KeyType::ed25519, pubRevokedSecret);
-            auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
+            auto const pubRevokedPublic = derivePublicKey(KeyType::Ed25519, pubRevokedSecret);
+            auto const pubRevokedSigning = randomKeyPair(KeyType::Secp256k1);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -489,8 +489,8 @@ private:
                 env.journal);
 
             auto const pubRevokedSecret = randomSecretKey();
-            auto const pubRevokedPublic = derivePublicKey(KeyType::ed25519, pubRevokedSecret);
-            auto const pubRevokedSigning = randomKeyPair(KeyType::secp256k1);
+            auto const pubRevokedPublic = derivePublicKey(KeyType::Ed25519, pubRevokedSecret);
+            auto const pubRevokedSigning = randomKeyPair(KeyType::Secp256k1);
             // make this manifest revoked (seq num = max)
             //  -- thus should not be loaded
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
@@ -591,10 +591,10 @@ private:
         };
 
         auto const publisherSecret = randomSecretKey();
-        auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
+        auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
         auto const hexPublic = strHex(publisherPublic.begin(), publisherPublic.end());
-        auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
-        auto const manifest1 = base64_encode(makeManifestString(
+        auto const pubSigningKeys1 = randomKeyPair(KeyType::Secp256k1);
+        auto const manifest1 = base64Encode(makeManifestString(
             publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         std::vector<std::string> const cfgPublisherKeys({strHex(publisherPublic)});
@@ -727,7 +727,7 @@ private:
 
         checkResult(
             trustedKeys->applyLists(
-                base64_encode("not a manifest"),
+                base64Encode("not a manifest"),
                 version,
                 {{blob7, sig7, {}}, {blob6, sig6, {}}},
                 siteUri),
@@ -736,7 +736,7 @@ private:
             ListDisposition::Invalid);
 
         // do not use list from untrusted publisher
-        auto const untrustedManifest = base64_encode(makeManifestString(
+        auto const untrustedManifest = base64Encode(makeManifestString(
             randomMasterKey(), publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         checkResult(
@@ -787,8 +787,8 @@ private:
 
         // apply list with new publisher key updated by manifest. Also send some
         // old lists along with the old manifest
-        auto const pubSigningKeys2 = randomKeyPair(KeyType::secp256k1);
-        auto manifest2 = base64_encode(makeManifestString(
+        auto const pubSigningKeys2 = randomKeyPair(KeyType::Secp256k1);
+        auto manifest2 = base64Encode(makeManifestString(
             publisherPublic, publisherSecret, pubSigningKeys2.first, pubSigningKeys2.second, 2));
 
         auto const sequence4 = 4;
@@ -895,8 +895,8 @@ private:
 
         // do not apply list with revoked publisher key
         // applied list is removed due to revoked publisher key
-        auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
-        auto maxManifest = base64_encode(makeRevocationString(publisherPublic, publisherSecret));
+        auto const signingKeysMax = randomKeyPair(KeyType::Secp256k1);
+        auto maxManifest = base64Encode(makeRevocationString(publisherPublic, publisherSecret));
 
         auto const sequence9 = 9;
         auto const blob9 = makeList(lists.at(9), sequence9, validUntil.time_since_epoch().count());
@@ -937,10 +937,10 @@ private:
             env.journal);
 
         auto const publisherSecret = randomSecretKey();
-        auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
+        auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
         auto const hexPublic = strHex(publisherPublic.begin(), publisherPublic.end());
-        auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
-        auto const manifest = base64_encode(makeManifestString(
+        auto const pubSigningKeys1 = randomKeyPair(KeyType::Secp256k1);
+        auto const manifest = base64Encode(makeManifestString(
             publisherPublic, publisherSecret, pubSigningKeys1.first, pubSigningKeys1.second, 1));
 
         std::vector<std::string> const cfgPublisherKeys({strHex(publisherPublic)});
@@ -982,7 +982,7 @@ private:
         {
             // unknown public key
             auto const badSecret = randomSecretKey();
-            auto const badPublic = derivePublicKey(KeyType::ed25519, badSecret);
+            auto const badPublic = derivePublicKey(KeyType::Ed25519, badSecret);
             auto const hexBad = strHex(badPublic.begin(), badPublic.end());
 
             auto const available = trustedKeys->getAvailable(hexBad, 1);
@@ -1133,13 +1133,13 @@ private:
         {
             // update with manifests
             auto const masterPrivate = randomSecretKey();
-            auto const masterPublic = derivePublicKey(KeyType::ed25519, masterPrivate);
+            auto const masterPublic = derivePublicKey(KeyType::Ed25519, masterPrivate);
 
             std::vector<std::string> const cfgKeys({toBase58(TokenType::NodePublic, masterPublic)});
 
             BEAST_EXPECT(trustedKeysOuter->load({}, cfgKeys, cfgPublishersOuter));
 
-            auto const signingKeys1 = randomKeyPair(KeyType::secp256k1);
+            auto const signingKeys1 = randomKeyPair(KeyType::Secp256k1);
             auto const signingPublic1 = signingKeys1.first;
             activeValidatorsOuter.emplace(calcNodeID(masterPublic));
 
@@ -1164,7 +1164,7 @@ private:
 
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                manifestsOuter.applyManifest(std::move(*m1)) == ManifestDisposition::accepted);
+                manifestsOuter.applyManifest(std::move(*m1)) == ManifestDisposition::Accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->listed(signingPublic1));
@@ -1172,13 +1172,13 @@ private:
 
             // Should only trust the ephemeral signing key
             // from the newest applied manifest
-            auto const signingKeys2 = randomKeyPair(KeyType::secp256k1);
+            auto const signingKeys2 = randomKeyPair(KeyType::Secp256k1);
             auto const signingPublic2 = signingKeys2.first;
             auto m2 = deserializeManifest(makeManifestString(
                 masterPublic, masterPrivate, signingPublic2, signingKeys2.second, 2));
             BEAST_EXPECT(
                 // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-                manifestsOuter.applyManifest(std::move(*m2)) == ManifestDisposition::accepted);
+                manifestsOuter.applyManifest(std::move(*m2)) == ManifestDisposition::Accepted);
             BEAST_EXPECT(trustedKeysOuter->listed(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->trusted(masterPublic));
             BEAST_EXPECT(trustedKeysOuter->listed(signingPublic2));
@@ -1187,7 +1187,7 @@ private:
             BEAST_EXPECT(!trustedKeysOuter->trusted(signingPublic1));
 
             // Should not trust keys from revoked master public key
-            auto const signingKeysMax = randomKeyPair(KeyType::secp256k1);
+            auto const signingKeysMax = randomKeyPair(KeyType::Secp256k1);
             auto const signingPublicMax = signingKeysMax.first;
             activeValidatorsOuter.emplace(calcNodeID(signingPublicMax));
             auto max = deserializeManifest(makeRevocationString(masterPublic, masterPrivate));
@@ -1195,7 +1195,7 @@ private:
             // NOLINTBEGIN(bugprone-unchecked-optional-access)
             BEAST_EXPECT(max->revoked());
             BEAST_EXPECT(
-                manifestsOuter.applyManifest(std::move(*max)) == ManifestDisposition::accepted);
+                manifestsOuter.applyManifest(std::move(*max)) == ManifestDisposition::Accepted);
             // NOLINTEND(bugprone-unchecked-optional-access)
 
             BEAST_EXPECT(manifestsOuter.getSigningKey(masterPublic) == masterPublic);
@@ -1233,7 +1233,7 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
             auto const publisherSecret = randomSecretKey();
-            auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
+            auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
 
             std::vector<std::string> const cfgPublishers({strHex(publisherPublic)});
             std::vector<std::string> const emptyCfgKeys;
@@ -1260,13 +1260,13 @@ private:
                 app.config().legacy("database_path"),
                 env.journal);
             auto const masterPrivate = randomSecretKey();
-            auto const masterPublic = derivePublicKey(KeyType::ed25519, masterPrivate);
+            auto const masterPublic = derivePublicKey(KeyType::Ed25519, masterPrivate);
             std::vector<std::string> const cfgKeys({toBase58(TokenType::NodePublic, masterPublic)});
 
             auto const publisher1Secret = randomSecretKey();
-            auto const publisher1Public = derivePublicKey(KeyType::ed25519, publisher1Secret);
+            auto const publisher1Public = derivePublicKey(KeyType::Ed25519, publisher1Secret);
             auto const publisher2Secret = randomSecretKey();
-            auto const publisher2Public = derivePublicKey(KeyType::ed25519, publisher2Secret);
+            auto const publisher2Public = derivePublicKey(KeyType::Ed25519, publisher2Secret);
             std::vector<std::string> const cfgPublishers(
                 {strHex(publisher1Public), strHex(publisher2Public)});
 
@@ -1351,9 +1351,9 @@ private:
                 env.journal);
 
             std::vector<std::string> const emptyCfgKeys;
-            auto const publisherKeys = randomKeyPair(KeyType::secp256k1);
-            auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
-            auto const manifest = base64_encode(makeManifestString(
+            auto const publisherKeys = randomKeyPair(KeyType::Secp256k1);
+            auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
+            auto const manifest = base64Encode(makeManifestString(
                 publisherKeys.first,
                 publisherKeys.second,
                 pubSigningKeys.first,
@@ -1557,9 +1557,9 @@ private:
 
             auto addPublishedList = [&, this](int i) {
                 auto const publisherSecret = randomSecretKey();
-                auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
-                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
-                auto const manifest = base64_encode(makeManifestString(
+                auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
+                auto const manifest = base64Encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
                     pubSigningKeys.first,
@@ -1649,9 +1649,9 @@ private:
                 [&, this](
                     int i, NetClock::time_point& validUntil1, NetClock::time_point& validUntil2) {
                     auto const publisherSecret = randomSecretKey();
-                    auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
-                    auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
-                    auto const manifest = base64_encode(makeManifestString(
+                    auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
+                    auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
+                    auto const manifest = base64Encode(makeManifestString(
                         publisherPublic,
                         publisherSecret,
                         pubSigningKeys.first,
@@ -1866,9 +1866,9 @@ private:
             using namespace std::chrono_literals;
             auto addPublishedList = [this, &env, &trustedKeys, &validators]() {
                 auto const publisherSecret = randomSecretKey();
-                auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
-                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
-                auto const manifest = base64_encode(makeManifestString(
+                auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
+                auto const manifest = base64Encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
                     pubSigningKeys.first,
@@ -2588,12 +2588,12 @@ private:
             for (std::size_t i = 0; i < countTotal; ++i)
             {
                 auto const publisherSecret = randomSecretKey();
-                auto const publisherPublic = derivePublicKey(KeyType::ed25519, publisherSecret);
-                auto const pubSigningKeys = randomKeyPair(KeyType::secp256k1);
+                auto const publisherPublic = derivePublicKey(KeyType::Ed25519, publisherSecret);
+                auto const pubSigningKeys = randomKeyPair(KeyType::Secp256k1);
                 cfgPublishers.push_back(strHex(publisherPublic));
 
                 constexpr auto kREVOKED = std::numeric_limits<std::uint32_t>::max();
-                auto const manifest = base64_encode(makeManifestString(
+                auto const manifest = base64Encode(makeManifestString(
                     publisherPublic,
                     publisherSecret,
                     pubSigningKeys.first,
@@ -2612,7 +2612,7 @@ private:
             auto threshold = listThreshold > 0 ? std::optional(listThreshold) : std::nullopt;
             if (self)
             {
-                valManifests.applyManifest(*deserializeManifest(base64_decode(self->manifest)));
+                valManifests.applyManifest(*deserializeManifest(base64Decode(self->manifest)));
                 BEAST_EXPECT(
                     result->load(self->signingPublic, emptyCfgKeys, cfgPublishers, threshold));
             }

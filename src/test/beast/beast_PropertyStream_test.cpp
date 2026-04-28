@@ -5,7 +5,7 @@
 
 namespace beast {
 
-class PropertyStream_test : public unit_test::suite
+class PropertyStream_test : public unit_test::Suite
 {
 public:
     using Source = PropertyStream::Source;
@@ -15,7 +15,7 @@ public:
     {
         try
         {
-            std::string const peeledName = Source::peel_name(&s);
+            std::string const peeledName = Source::peelName(&s);
             BEAST_EXPECT(peeledName == expected);
             BEAST_EXPECT(s == expectedRemainder);
         }

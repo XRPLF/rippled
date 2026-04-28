@@ -8,13 +8,13 @@
 
 namespace xrpl {
 
-struct SeqProxy_test : public beast::unit_test::suite
+struct SeqProxy_test : public beast::unit_test::Suite
 {
     // Exercise value(), isSeq(), and isTicket().
     static constexpr bool
     expectValues(SeqProxy seqProx, std::uint32_t value, SeqProxy::Type type)
     {
-        bool const expectSeq{type == SeqProxy::seq};
+        bool const expectSeq{type == SeqProxy::Seq};
         return (seqProx.value() == value) && (seqProx.isSeq() == expectSeq) &&
             (seqProx.isTicket() == !expectSeq);
     }
@@ -65,8 +65,8 @@ struct SeqProxy_test : public beast::unit_test::suite
         // expected in the wild.  Nevertheless they are tested here.
         // But so are values of 1, which are expected to occur in the wild.
         static constexpr std::uint32_t kUINT_MAX{std::numeric_limits<std::uint32_t>::max()};
-        static constexpr SeqProxy::Type kSEQ{SeqProxy::seq};
-        static constexpr SeqProxy::Type kTICKET{SeqProxy::ticket};
+        static constexpr SeqProxy::Type kSEQ{SeqProxy::Seq};
+        static constexpr SeqProxy::Type kTICKET{SeqProxy::Ticket};
 
         static constexpr SeqProxy kSEQ_ZERO{kSEQ, 0};
         static constexpr SeqProxy kSEQ_SMALL{kSEQ, 1};

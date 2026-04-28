@@ -7,7 +7,7 @@
 
 namespace xrpl {
 
-class LedgerHeader_test : public beast::unit_test::suite
+class LedgerHeader_test : public beast::unit_test::Suite
 {
     void
     testSimpleCurrent()
@@ -16,7 +16,7 @@ class LedgerHeader_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, envconfig(noAdmin)};
 
-        Json::Value params{Json::objectValue};
+        Json::Value params{Json::ObjectValue};
         params[jss::api_version] = 1;
         params[jss::ledger_index] = "current";
         auto const result = env.client().invoke("ledger_header", params)[jss::result];
@@ -33,7 +33,7 @@ class LedgerHeader_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, envconfig(noAdmin)};
 
-        Json::Value params{Json::objectValue};
+        Json::Value params{Json::ObjectValue};
         params[jss::api_version] = 1;
         params[jss::ledger_index] = "validated";
         auto const result = env.client().invoke("ledger_header", params)[jss::result];
@@ -50,7 +50,7 @@ class LedgerHeader_test : public beast::unit_test::suite
         using namespace test::jtx;
         Env env{*this, envconfig(noAdmin)};
 
-        Json::Value params{Json::objectValue};
+        Json::Value params{Json::ObjectValue};
         params[jss::api_version] = 2;
         auto const result = env.client().invoke("ledger_header", params)[jss::result];
         BEAST_EXPECT(result[jss::error] == "unknownCmd");

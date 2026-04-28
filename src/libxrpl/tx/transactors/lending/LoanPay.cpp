@@ -48,10 +48,10 @@ LoanPay::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 LoanPay::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::zero)
+    if (ctx.tx[sfLoanID] == beast::kZERO)
         return temINVALID;
 
-    if (ctx.tx[sfAmount] <= beast::zero)
+    if (ctx.tx[sfAmount] <= beast::kZERO)
         return temBAD_AMOUNT;
 
     // The loan payment flags are all mutually exclusive. If more than one is
@@ -96,7 +96,7 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
         return normalCost;
     }
 
-    if (loanSle->at(sfPaymentRemaining) <= loanPaymentsPerFeeIncrement)
+    if (loanSle->at(sfPaymentRemaining) <= kLOAN_PAYMENTS_PER_FEE_INCREMENT)
     {
         // If there are fewer than loanPaymentsPerFeeIncrement payments left to
         // pay, we can skip the computations.
@@ -138,15 +138,15 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
-    NumberRoundModeGuard const mg(tx.isFlag(tfLoanOverpayment) ? Number::upward : Number::downward);
+    NumberRoundModeGuard const mg(tx.isFlag(tfLoanOverpayment) ? Number::Upward : Number::Downward);
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
     // Charge one base fee per paymentsPerFeeIncrement payments, rounding up.
-    Number::setround(Number::upward);
+    Number::setround(Number::Upward);
     auto const feeIncrements = std::max(
         std::int64_t(1),
-        static_cast<std::int64_t>(numPaymentEstimate / loanPaymentsPerFeeIncrement));
+        static_cast<std::int64_t>(numPaymentEstimate / kLOAN_PAYMENTS_PER_FEE_INCREMENT));
 
     return feeIncrements * normalCost;
 }
@@ -240,10 +240,10 @@ LoanPay::preclaim(PreclaimContext const& ctx)
             ctx.view,
             account,
             asset,
-            fhZERO_IF_FROZEN,
-            ahZERO_IF_UNAUTHORIZED,
+            FhZeroIfFrozen,
+            AhZeroIfUnauthorized,
             ctx.j,
-            SpendableHandling::shFULL_BALANCE);
+            SpendableHandling::ShFullBalance);
         balance < amount)
     {
         JLOG(ctx.j.warn()) << "Payment amount too large. Amount: " << to_string(amount.getJson())
@@ -298,7 +298,7 @@ LoanPay::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::upward);
+        NumberRoundModeGuard const mg(Number::Upward);
         return coverAvailableProxy >=
             roundToAsset(
                    asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
@@ -338,12 +338,12 @@ LoanPay::doApply()
     LoanPaymentType const paymentType = [&tx]() {
         // preflight already checked that at most one flag is set.
         if (tx.isFlag(tfLoanLatePayment))
-            return LoanPaymentType::late;
+            return LoanPaymentType::Late;
         if (tx.isFlag(tfLoanFullPayment))
-            return LoanPaymentType::full;
+            return LoanPaymentType::Full;
         if (tx.isFlag(tfLoanOverpayment))
-            return LoanPaymentType::overpayment;
-        return LoanPaymentType::regular;
+            return LoanPaymentType::Overpayment;
+        return LoanPaymentType::Regular;
     }();
 
     Expected<LoanPaymentParts, TER> const paymentParts =
@@ -404,7 +404,7 @@ LoanPay::doApply()
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::downward);
+        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::Downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",
@@ -537,13 +537,13 @@ LoanPay::doApply()
               SpendableHandling::shFULL_BALANCE);
 #endif
 
-    if (totalPaidToVaultRounded != beast::zero)
+    if (totalPaidToVaultRounded != beast::kZERO)
     {
         if (auto const ter = requireAuth(view, asset, vaultPseudoAccount, AuthType::StrongAuth))
             return ter;
     }
 
-    if (totalPaidToBroker != beast::zero)
+    if (totalPaidToBroker != beast::kZERO)
     {
         if (brokerPayee == account_)
         {

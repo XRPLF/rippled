@@ -41,7 +41,7 @@ namespace xrpl::test {
  *      find out AMM offer, which changes AMM's SP quality to
  *      the Offer's quality.
  */
-class AMMCalc_test : public beast::unit_test::suite
+class AMMCalc_test : public beast::unit_test::Suite
 {
     using token_iter = boost::sregex_token_iterator;
     using steps = std::vector<std::pair<Amounts, bool>>;
@@ -67,7 +67,7 @@ class AMMCalc_test : public beast::unit_test::suite
                 *delimited = (match[3] != "");
             if (match[1] == "XRP")
             {
-                return XRP(std::stoll(match[2]));
+                return kXRP(std::stoll(match[2]));
                 // drops
             }
             if (match[1] == "XRPA")
@@ -185,9 +185,10 @@ class AMMCalc_test : public beast::unit_test::suite
     }
 
     static std::string
-    toString(STAmount const& a)
+    to_string(STAmount const& a)
     {
-        return (boost::format("%s/%s") % a.getText() % to_string(a.get<Issue>().currency)).str();
+        return (boost::format("%s/%s") % a.getText() % ::xrpl::to_string(a.get<Issue>().currency))
+            .str();
     }
 
     static STAmount
@@ -213,7 +214,7 @@ class AMMCalc_test : public beast::unit_test::suite
         int limitingStep = vp.size();
         STAmount limitStepOut{};
         auto transferRate = [&](STAmount const& amt) {
-            auto const currency = to_string(amt.get<Issue>().currency);
+            auto const currency = ::xrpl::to_string(amt.get<Issue>().currency);
             return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
         };
         // swap out reverse
@@ -229,7 +230,7 @@ class AMMCalc_test : public beast::unit_test::suite
             }
             else if (sout <= amts.out)
             {
-                sin = Quality{amts}.ceil_out(amts, sout).in;
+                sin = Quality{amts}.ceilOut(amts, sout).in;
             }
             // limiting step
             else
@@ -255,12 +256,12 @@ class AMMCalc_test : public beast::unit_test::suite
             // assume there is no limiting step in fwd
             else
             {
-                sout = Quality{amts}.ceil_in(amts, sin).out;
+                sout = Quality{amts}.ceilIn(amts, sin).out;
             }
             sin = sout;
             resultOut = sout;
         }
-        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
+        std::cout << "in: " << to_string(resultIn) << " out: " << to_string(resultOut) << std::endl;
     }
 
     static void
@@ -276,7 +277,7 @@ class AMMCalc_test : public beast::unit_test::suite
         int limitingStep = 0;
         STAmount limitStepIn{};
         auto transferRate = [&](STAmount const& amt) {
-            auto const currency = to_string(amt.get<Issue>().currency);
+            auto const currency = ::xrpl::to_string(amt.get<Issue>().currency);
             return rates.contains(currency) ? rates.at(currency) : QUALITY_ONE;
         };
         // Swap in forward
@@ -292,7 +293,7 @@ class AMMCalc_test : public beast::unit_test::suite
             }
             else if (sin <= amts.in)
             {
-                sout = Quality{amts}.ceil_in(amts, sin).out;
+                sout = Quality{amts}.ceilIn(amts, sin).out;
             }
             // limiting step, requested in is greater than the offer
             // pay exactly amts.in, which gets amts.out
@@ -318,12 +319,12 @@ class AMMCalc_test : public beast::unit_test::suite
             // assume there is no limiting step
             else
             {
-                sin = Quality{amts}.ceil_out(amts, sout).in;
+                sin = Quality{amts}.ceilOut(amts, sout).in;
             }
             resultIn = sin;
         }
         resultOut = mulratio(resultOut, QUALITY_ONE, transferRate(resultOut), true);
-        std::cout << "in: " << toString(resultIn) << " out: " << toString(resultOut) << std::endl;
+        std::cout << "in: " << to_string(resultIn) << " out: " << to_string(resultOut) << std::endl;
     }
 
     void
@@ -397,7 +398,8 @@ class AMMCalc_test : public beast::unit_test::suite
                 {
                     Account const amm("amm");
                     auto const lpt = amm["LPT"];
-                    std::cout << to_string(ammLPTokens(pool->first.in, pool->first.out, lpt).iou())
+                    std::cout << ::xrpl::to_string(
+                                     ammLPTokens(pool->first.in, pool->first.out, lpt).iou())
                               << std::endl;
                     return true;
                 }
@@ -426,10 +428,10 @@ class AMMCalc_test : public beast::unit_test::suite
                                 beast::Journal(beast::Journal::getNullSink()));
                             ammOffer)
                         {
-                            std::cout << "amm offer: " << toString(ammOffer->in) << " "
-                                      << toString(ammOffer->out)
-                                      << "\nnew pool: " << toString(pool->first.in + ammOffer->in)
-                                      << " " << toString(pool->first.out - ammOffer->out)
+                            std::cout << "amm offer: " << to_string(ammOffer->in) << " "
+                                      << to_string(ammOffer->out)
+                                      << "\nnew pool: " << to_string(pool->first.in + ammOffer->in)
+                                      << " " << to_string(pool->first.out - ammOffer->out)
                                       << std::endl;
                         }
                         else

@@ -24,9 +24,9 @@ class PerfLog;
 }  // namespace perf
 
 class Logs;
-struct Coro_create_t
+struct CoroCreateT
 {
-    explicit Coro_create_t() = default;
+    explicit CoroCreateT() = default;
 };
 
 /** A pool of threads to perform work.
@@ -63,7 +63,7 @@ public:
     public:
         // Private: Used in the implementation
         template <class F>
-        Coro(Coro_create_t, JobQueue&, JobType, std::string const&, F&&);
+        Coro(CoroCreateT, JobQueue&, JobType, std::string const&, F&&);
 
         // Not copy-constructible or assignable
         Coro(Coro const&) = delete;
@@ -247,8 +247,8 @@ private:
     // Statistics tracking
     perf::PerfLog& perfLog_;
     beast::insight::Collector::ptr collector_;
-    beast::insight::Gauge job_count;
-    beast::insight::Hook hook;
+    beast::insight::Gauge job_count_;
+    beast::insight::Hook hook_;
 
     std::condition_variable cv_;
 
@@ -397,7 +397,7 @@ JobQueue::postCoro(JobType t, std::string const& name, F&& f)
         Last param is the function the coroutine runs. Signature of
         void(std::shared_ptr<Coro>).
     */
-    auto coro = std::make_shared<Coro>(Coro_create_t{}, *this, t, name, std::forward<F>(f));
+    auto coro = std::make_shared<Coro>(CoroCreateT{}, *this, t, name, std::forward<F>(f));
     if (!coro->post())
     {
         // The Coro was not successfully posted.  Disable it so it's destructor

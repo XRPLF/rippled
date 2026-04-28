@@ -72,7 +72,7 @@ getVersionString()
 
         beast::SemanticVersion v;
         if (!v.parse(s) || v.print() != s)
-            LogicError(s + ": Bad server version string");
+            logicError(s + ": Bad server version string");
         return s;
     }();
     return kVALUE;

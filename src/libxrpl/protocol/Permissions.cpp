@@ -182,7 +182,7 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
     if (txFeaturesIt->second != uint256{} && !rules.enabled(txFeaturesIt->second))
         return false;
 
-    if (it->second == Delegation::notDelegable)
+    if (it->second == Delegation::NotDelegable)
         return false;
 
     return true;

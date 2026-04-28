@@ -15,10 +15,10 @@ namespace xrpl {
 Json::Value
 doLedgerRequest(RPC::JsonContext& context)
 {
-    context.loadType = Resource::feeHeavyBurdenRPC;
+    context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
     auto res = RPC::getOrAcquireLedger(context);
 
-    if (!res.has_value())
+    if (!res.hasValue())
         return res.error();
 
     auto const& ledger = res.value();

@@ -80,8 +80,8 @@ makeName(std::string const& object, std::string const& field)
 static inline Json::Value
 notAnObject(std::string const& object, std::string const& field)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' is not a JSON object.");
+    return RPC::makeError(
+        RpcInvalidParams, "Field '" + makeName(object, field) + "' is not a JSON object.");
 }
 
 static inline Json::Value
@@ -93,35 +93,34 @@ notAnObject(std::string const& object)
 static inline Json::Value
 notAnArray(std::string const& object)
 {
-    return RPC::make_error(rpcINVALID_PARAMS, "Field '" + object + "' is not a JSON array.");
+    return RPC::makeError(RpcInvalidParams, "Field '" + object + "' is not a JSON array.");
 }
 
 static inline Json::Value
 unknownField(std::string const& object, std::string const& field)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' is unknown.");
+    return RPC::makeError(RpcInvalidParams, "Field '" + makeName(object, field) + "' is unknown.");
 }
 
 static inline Json::Value
 outOfRange(std::string const& object, std::string const& field)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' is out of range.");
+    return RPC::makeError(
+        RpcInvalidParams, "Field '" + makeName(object, field) + "' is out of range.");
 }
 
 static inline Json::Value
 badType(std::string const& object, std::string const& field)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' has bad type.");
+    return RPC::makeError(
+        RpcInvalidParams, "Field '" + makeName(object, field) + "' has bad type.");
 }
 
 static inline Json::Value
 invalidData(std::string const& object, std::string const& field)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' has invalid data.");
+    return RPC::makeError(
+        RpcInvalidParams, "Field '" + makeName(object, field) + "' has invalid data.");
 }
 
 static inline Json::Value
@@ -133,29 +132,28 @@ invalidData(std::string const& object)
 static inline Json::Value
 arrayExpected(std::string const& object, std::string const& field)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' must be a JSON array.");
+    return RPC::makeError(
+        RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a JSON array.");
 }
 
 static inline Json::Value
 stringExpected(std::string const& object, std::string const& field)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + makeName(object, field) + "' must be a string.");
+    return RPC::makeError(
+        RpcInvalidParams, "Field '" + makeName(object, field) + "' must be a string.");
 }
 
 static inline Json::Value
 tooDeep(std::string const& object)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS, "Field '" + object + "' exceeds nesting depth limit.");
+    return RPC::makeError(RpcInvalidParams, "Field '" + object + "' exceeds nesting depth limit.");
 }
 
 static inline Json::Value
 singletonExpected(std::string const& object, unsigned int index)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS,
+    return RPC::makeError(
+        RpcInvalidParams,
         "Field '" + object + "[" + std::to_string(index) +
             "]' must be an object with a single key/object value.");
 }
@@ -163,16 +161,16 @@ singletonExpected(std::string const& object, unsigned int index)
 static inline Json::Value
 templateMismatch(SField const& sField)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS,
+    return RPC::makeError(
+        RpcInvalidParams,
         "Object '" + sField.getName() + "' contents did not meet requirements for that type.");
 }
 
 static inline Json::Value
 nonObjectInArray(std::string const& item, Json::UInt index)
 {
-    return RPC::make_error(
-        rpcINVALID_PARAMS,
+    return RPC::makeError(
+        RpcInvalidParams,
         "Item '" + item + "' at index " + std::to_string(index) +
             " is not an object.  Arrays may only contain objects.");
 }
@@ -194,19 +192,19 @@ parseUnsigned(
     {
         if (value.isString())
         {
-            ret = detail::make_stvar<STResult>(
+            ret = detail::makeStvar<STResult>(
                 field,
-                safe_cast<typename STResult::value_type>(
+                safeCast<typename STResult::value_type>(
                     beast::lexicalCastThrow<Integer>(value.asString())));
         }
         else if (value.isInt())
         {
-            ret = detail::make_stvar<STResult>(
+            ret = detail::makeStvar<STResult>(
                 field, toUnsigned<typename STResult::value_type>(value.asInt()));
         }
         else if (value.isUInt())
         {
-            ret = detail::make_stvar<STResult>(
+            ret = detail::makeStvar<STResult>(
                 field, toUnsigned<typename STResult::value_type>(value.asUInt()));
         }
         else
@@ -246,22 +244,22 @@ parseUint16(
             {
                 if (field == sfTransactionType)
                 {
-                    ret = detail::make_stvar<STResult>(
+                    ret = detail::makeStvar<STResult>(
                         field,
-                        safe_cast<typename STResult::value_type>(static_cast<Integer>(
+                        safeCast<typename STResult::value_type>(static_cast<Integer>(
                             TxFormats::getInstance().findTypeByName(strValue))));
 
-                    if (*name == sfGeneric)
+                    if (*name == kSF_GENERIC)
                         name = &sfTransaction;
                 }
                 else if (field == sfLedgerEntryType)
                 {
-                    ret = detail::make_stvar<STResult>(
+                    ret = detail::makeStvar<STResult>(
                         field,
-                        safe_cast<typename STResult::value_type>(static_cast<Integer>(
+                        safeCast<typename STResult::value_type>(static_cast<Integer>(
                             LedgerFormats::getInstance().findTypeByName(strValue))));
 
-                    if (*name == sfGeneric)
+                    if (*name == kSF_GENERIC)
                         name = &sfLedgerEntry;
                 }
                 else
@@ -308,20 +306,20 @@ parseUint32(
                     Permission::getInstance().getGranularValue(strValue);
                 if (granularPermission)
                 {
-                    ret = detail::make_stvar<STResult>(field, *granularPermission);
+                    ret = detail::makeStvar<STResult>(field, *granularPermission);
                 }
                 else
                 {
                     auto const& txType = TxFormats::getInstance().findTypeByName(strValue);
-                    ret = detail::make_stvar<STResult>(
+                    ret = detail::makeStvar<STResult>(
                         field, Permission::getInstance().txToPermissionType(txType));
                 }
             }
             else
             {
-                ret = detail::make_stvar<STResult>(
+                ret = detail::makeStvar<STResult>(
                     field,
-                    safe_cast<typename STResult::value_type>(
+                    safeCast<typename STResult::value_type>(
                         beast::lexicalCastThrow<Integer>(value.asString())));
             }
         }
@@ -354,7 +352,7 @@ parseLeaf(
     auto const& field = SField::getField(fieldName);
 
     // checked in parseObject
-    if (field == sfInvalid)
+    if (field == kSF_INVALID)
     {
         // LCOV_EXCL_START
         error = unknownField(jsonName, fieldName);
@@ -385,7 +383,7 @@ parseLeaf(
                                 return ret;
                             }
 
-                            ret = detail::make_stvar<STUInt8>(
+                            ret = detail::makeStvar<STUInt8>(
                                 field, static_cast<std::uint8_t>(TERtoInt(*ter)));
                         }
                         else
@@ -396,7 +394,7 @@ parseLeaf(
                     }
                     else
                     {
-                        ret = detail::make_stvar<STUInt8>(
+                        ret = detail::makeStvar<STUInt8>(
                             field, beast::lexicalCastThrow<std::uint8_t>(strValue));
                     }
                 }
@@ -408,8 +406,8 @@ parseLeaf(
                         return ret;
                     }
 
-                    ret = detail::make_stvar<STUInt8>(
-                        field, static_cast<std::uint8_t>(value.asInt()));
+                    ret =
+                        detail::makeStvar<STUInt8>(field, static_cast<std::uint8_t>(value.asInt()));
                 }
                 else if (value.isUInt())
                 {
@@ -419,7 +417,7 @@ parseLeaf(
                         return ret;
                     }
 
-                    ret = detail::make_stvar<STUInt8>(
+                    ret = detail::makeStvar<STUInt8>(
                         field, static_cast<std::uint8_t>(value.asUInt()));
                 }
                 else
@@ -458,7 +456,7 @@ parseLeaf(
 
                     std::uint64_t val = 0;
 
-                    bool const useBase10 = field.shouldMeta(SField::sMD_BaseTen);
+                    bool const useBase10 = field.shouldMeta(SField::SMdBaseTen);
 
                     // if the field is amount, serialize as base 10
                     auto [p, ec] = std::from_chars(
@@ -467,17 +465,17 @@ parseLeaf(
                     if (ec != std::errc() || (p != str.data() + str.size()))
                         Throw<std::invalid_argument>("invalid data");
 
-                    ret = detail::make_stvar<STUInt64>(field, val);
+                    ret = detail::makeStvar<STUInt64>(field, val);
                 }
                 else if (value.isInt())
                 {
-                    ret = detail::make_stvar<STUInt64>(
+                    ret = detail::makeStvar<STUInt64>(
                         field, toUnsigned<std::uint64_t>(value.asInt()));
                 }
                 else if (value.isUInt())
                 {
-                    ret = detail::make_stvar<STUInt64>(
-                        field, safe_cast<std::uint64_t>(value.asUInt()));
+                    ret =
+                        detail::makeStvar<STUInt64>(field, safeCast<std::uint64_t>(value.asUInt()));
                 }
                 else
                 {
@@ -513,7 +511,7 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STUInt128>(field, num);
+            ret = detail::makeStvar<STUInt128>(field, num);
             break;
         }
 
@@ -537,7 +535,7 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STUInt160>(field, num);
+            ret = detail::makeStvar<STUInt160>(field, num);
             break;
         }
 
@@ -561,7 +559,7 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STUInt192>(field, num);
+            ret = detail::makeStvar<STUInt192>(field, num);
             break;
         }
 
@@ -585,7 +583,7 @@ parseLeaf(
                 num.zero();
             }
 
-            ret = detail::make_stvar<STUInt256>(field, num);
+            ret = detail::makeStvar<STUInt256>(field, num);
             break;
         }
 
@@ -594,7 +592,7 @@ parseLeaf(
             {
                 if (value.isString())
                 {
-                    ret = detail::make_stvar<STInt32>(
+                    ret = detail::makeStvar<STInt32>(
                         field, beast::lexicalCastThrow<std::int32_t>(value.asString()));
                 }
                 else if (value.isInt())
@@ -603,7 +601,7 @@ parseLeaf(
                     // library ever supports larger ints
                     // In such case, we will need additional bounds checks here
                     static_assert(std::is_same_v<decltype(value.asInt()), std::int32_t>);
-                    ret = detail::make_stvar<STInt32>(field, value.asInt());
+                    ret = detail::makeStvar<STInt32>(field, value.asInt());
                 }
                 else if (value.isUInt())
                 {
@@ -614,7 +612,7 @@ parseLeaf(
                         error = outOfRange(jsonName, fieldName);
                         return ret;
                     }
-                    ret = detail::make_stvar<STInt32>(field, static_cast<std::int32_t>(uintValue));
+                    ret = detail::makeStvar<STInt32>(field, static_cast<std::int32_t>(uintValue));
                 }
                 else
                 {
@@ -641,7 +639,7 @@ parseLeaf(
             {
                 if (auto vBlob = strUnHex(value.asString()))
                 {
-                    ret = detail::make_stvar<STBlob>(field, vBlob->data(), vBlob->size());
+                    ret = detail::makeStvar<STBlob>(field, vBlob->data(), vBlob->size());
                 }
                 else
                 {
@@ -659,7 +657,7 @@ parseLeaf(
         case STI_AMOUNT:
             try
             {
-                ret = detail::make_stvar<STAmount>(amountFromJson(field, value));
+                ret = detail::makeStvar<STAmount>(amountFromJson(field, value));
             }
             catch (std::exception const&)
             {
@@ -672,7 +670,7 @@ parseLeaf(
         case STI_NUMBER:
             try
             {
-                ret = detail::make_stvar<STNumber>(numberFromJson(field, value));
+                ret = detail::makeStvar<STNumber>(numberFromJson(field, value));
             }
             catch (std::exception const&)
             {
@@ -697,9 +695,9 @@ parseLeaf(
                     uint256 s;
                     if (!s.parseHex(value[i].asString()))
                         Throw<std::invalid_argument>("invalid data");
-                    tail.push_back(s);
+                    tail.pushBack(s);
                 }
-                ret = detail::make_stvar<STVector256>(std::move(tail));
+                ret = detail::makeStvar<STVector256>(std::move(tail));
             }
             catch (std::exception const&)
             {
@@ -751,7 +749,7 @@ parseLeaf(
 
                         if (pathEl.isMember(jss::currency) && pathEl.isMember(jss::mpt_issuance_id))
                         {
-                            error = RPC::make_error(rpcINVALID_PARAMS, "Invalid Asset.");
+                            error = RPC::makeError(RpcInvalidParams, "Invalid Asset.");
                             return ret;
                         }
 
@@ -775,7 +773,7 @@ parseLeaf(
                             // human account id
                             if (!account.isString())
                             {
-                                error = stringExpected(elementName, jss::account.c_str());
+                                error = stringExpected(elementName, jss::account.cStr());
                                 return ret;
                             }
 
@@ -786,7 +784,7 @@ parseLeaf(
                                 auto const a = parseBase58<AccountID>(account.asString());
                                 if (!a)
                                 {
-                                    error = invalidData(elementName, jss::account.c_str());
+                                    error = invalidData(elementName, jss::account.cStr());
                                     return ret;
                                 }
                                 uAccount = *a;
@@ -798,7 +796,7 @@ parseLeaf(
                             // human asset
                             if (!asset.isString())
                             {
-                                error = stringExpected(elementName, assetName.c_str());
+                                error = stringExpected(elementName, assetName.cStr());
                                 return ret;
                             }
 
@@ -809,12 +807,12 @@ parseLeaf(
                                 MPTID u;
                                 if (!u.parseHex(asset.asString()))
                                 {
-                                    error = invalidData(elementName, assetName.c_str());
+                                    error = invalidData(elementName, assetName.cStr());
                                     return ret;
                                 }
-                                if (getMPTIssuer(u) == beast::zero)
+                                if (getMPTIssuer(u) == beast::kZERO)
                                 {
-                                    error = invalidData(elementName, jss::account.c_str());
+                                    error = invalidData(elementName, jss::account.cStr());
                                     return ret;
                                 }
                                 uAsset = u;
@@ -824,9 +822,9 @@ parseLeaf(
                                 Currency currency;
                                 if (!currency.parseHex(asset.asString()))
                                 {
-                                    if (!to_currency(currency, asset.asString()))
+                                    if (!toCurrency(currency, asset.asString()))
                                     {
-                                        error = invalidData(elementName, assetName.c_str());
+                                        error = invalidData(elementName, assetName.cStr());
                                         return ret;
                                     }
                                 }
@@ -839,7 +837,7 @@ parseLeaf(
                             // human account id
                             if (!issuer.isString())
                             {
-                                error = stringExpected(elementName, jss::issuer.c_str());
+                                error = stringExpected(elementName, jss::issuer.cStr());
                                 return ret;
                             }
 
@@ -848,7 +846,7 @@ parseLeaf(
                                 auto const a = parseBase58<AccountID>(issuer.asString());
                                 if (!a)
                                 {
-                                    error = invalidData(elementName, jss::issuer.c_str());
+                                    error = invalidData(elementName, jss::issuer.cStr());
                                     return ret;
                                 }
                                 uIssuer = *a;
@@ -856,17 +854,17 @@ parseLeaf(
 
                             if (isMPT && uIssuer != getMPTIssuer(uAsset.get<MPTID>()))
                             {
-                                error = invalidData(elementName, jss::issuer.c_str());
+                                error = invalidData(elementName, jss::issuer.cStr());
                                 return ret;
                             }
                         }
 
-                        p.emplace_back(uAccount, uAsset, uIssuer, hasAsset);
+                        p.emplaceBack(uAccount, uAsset, uIssuer, hasAsset);
                     }
 
-                    tail.push_back(p);
+                    tail.pushBack(p);
                 }
-                ret = detail::make_stvar<STPathSet>(std::move(tail));
+                ret = detail::makeStvar<STPathSet>(std::move(tail));
             }
             catch (std::exception const&)
             {
@@ -888,10 +886,10 @@ parseLeaf(
             try
             {
                 if (AccountID account; account.parseHex(strValue))
-                    return detail::make_stvar<STAccount>(field, account);
+                    return detail::makeStvar<STAccount>(field, account);
 
                 if (auto result = parseBase58<AccountID>(strValue))
-                    return detail::make_stvar<STAccount>(field, *result);
+                    return detail::makeStvar<STAccount>(field, *result);
 
                 error = invalidData(jsonName, fieldName);
                 return ret;
@@ -907,7 +905,7 @@ parseLeaf(
         case STI_ISSUE:
             try
             {
-                ret = detail::make_stvar<STIssue>(issueFromJson(field, value));
+                ret = detail::makeStvar<STIssue>(issueFromJson(field, value));
             }
             catch (std::exception const&)
             {
@@ -919,7 +917,7 @@ parseLeaf(
         case STI_XCHAIN_BRIDGE:
             try
             {
-                ret = detail::make_stvar<STXChainBridge>(STXChainBridge(field, value));
+                ret = detail::makeStvar<STXChainBridge>(STXChainBridge(field, value));
             }
             catch (std::exception const&)
             {
@@ -931,7 +929,7 @@ parseLeaf(
         case STI_CURRENCY:
             try
             {
-                ret = detail::make_stvar<STCurrency>(currencyFromJson(field, value));
+                ret = detail::makeStvar<STCurrency>(currencyFromJson(field, value));
             }
             catch (std::exception const&)
             {
@@ -989,7 +987,7 @@ parseObject(
 
             auto const& field = SField::getField(fieldName);
 
-            if (field == sfInvalid)
+            if (field == kSF_INVALID)
             {
                 error = unknownField(jsonName, fieldName);
                 return std::nullopt;
@@ -1014,7 +1012,7 @@ parseObject(
                             parseObject(jsonName + "." + fieldName, value, field, depth + 1, error);
                         if (!ret)
                             return std::nullopt;
-                        data.emplace_back(std::move(*ret));
+                        data.emplaceBack(std::move(*ret));
                     }
                     catch (std::exception const&)
                     {
@@ -1032,7 +1030,7 @@ parseObject(
                             parseArray(jsonName + "." + fieldName, value, field, depth + 1, error);
                         if (!array.has_value())
                             return std::nullopt;
-                        data.emplace_back(std::move(*array));
+                        data.emplaceBack(std::move(*array));
                     }
                     catch (std::exception const&)
                     {
@@ -1049,7 +1047,7 @@ parseObject(
                     if (!leaf)
                         return std::nullopt;
 
-                    data.emplace_back(std::move(*leaf));
+                    data.emplaceBack(std::move(*leaf));
                 }
 
                 break;
@@ -1116,7 +1114,7 @@ parseArray(
             ;
             auto const& nameField(SField::getField(memberName));
 
-            if (nameField == sfInvalid)
+            if (nameField == kSF_INVALID)
             {
                 error = unknownField(jsonName, memberName);
                 return std::nullopt;
@@ -1145,7 +1143,7 @@ parseArray(
             tail.push_back(std::move(*ret));
         }
 
-        return detail::make_stvar<STArray>(std::move(tail));
+        return detail::makeStvar<STArray>(std::move(tail));
     }
     catch (std::exception const&)
     {
@@ -1161,7 +1159,7 @@ parseArray(
 STParsedJSONObject::STParsedJSONObject(std::string const& name, Json::Value const& json)
 {
     using namespace STParsedJSONDetail;
-    object = parseObject(name, json, sfGeneric, 0, error);
+    object = parseObject(name, json, kSF_GENERIC, 0, error);
 }
 
 }  // namespace xrpl

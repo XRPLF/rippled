@@ -14,8 +14,8 @@
 namespace xrpl::PeerFinder {
 
 SlotImp::SlotImp(
-    beast::IP::Endpoint const& local_endpoint,
-    beast::IP::Endpoint remote_endpoint,
+    beast::IP::Endpoint const& localEndpoint,
+    beast::IP::Endpoint remoteEndpoint,
     bool fixed,
     clock_type& clock)
     : recent(clock)
@@ -23,23 +23,23 @@ SlotImp::SlotImp(
     , fixed_(fixed)
     , reserved_(false)
     , state_(Accept)
-    , remote_endpoint_(std::move(remote_endpoint))
-    , local_endpoint_(local_endpoint)
-    , listening_port_(unknownPort)
+    , remote_endpoint_(std::move(remoteEndpoint))
+    , local_endpoint_(localEndpoint)
+    , listening_port_(kUNKNOWN_PORT)
     , checked(false)
     , canAccept(false)
     , connectivityCheckInProgress(false)
 {
 }
 
-SlotImp::SlotImp(beast::IP::Endpoint remote_endpoint, bool fixed, clock_type& clock)
+SlotImp::SlotImp(beast::IP::Endpoint remoteEndpoint, bool fixed, clock_type& clock)
     : recent(clock)
     , inbound_(false)
     , fixed_(fixed)
     , reserved_(false)
     , state_(Connect)
-    , remote_endpoint_(std::move(remote_endpoint))
-    , listening_port_(unknownPort)
+    , remote_endpoint_(std::move(remoteEndpoint))
+    , listening_port_(kUNKNOWN_PORT)
     , checked(true)
     , canAccept(true)
     , connectivityCheckInProgress(false)
@@ -96,30 +96,30 @@ Slot::~Slot() = default;
 
 //------------------------------------------------------------------------------
 
-SlotImp::recent_t::recent_t(clock_type& clock) : cache(clock)
+SlotImp::RecentT::RecentT(clock_type& clock) : cache_(clock)
 {
 }
 
 void
-SlotImp::recent_t::insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
+SlotImp::RecentT::insert(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
-    auto const result(cache.emplace(ep, hops));
+    auto const result(cache_.emplace(ep, hops));
     if (!result.second)
     {
         // NOTE Other logic depends on this <= inequality.
         if (hops <= result.first->second)
         {
             result.first->second = hops;
-            cache.touch(result.first);
+            cache_.touch(result.first);
         }
     }
 }
 
 bool
-SlotImp::recent_t::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
+SlotImp::RecentT::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 {
-    auto const iter(cache.find(ep));
-    if (iter == cache.end())
+    auto const iter(cache_.find(ep));
+    if (iter == cache_.end())
         return false;
     // We avoid sending an endpoint if we heard it
     // from them recently at the same or lower hop count.
@@ -128,9 +128,9 @@ SlotImp::recent_t::filter(beast::IP::Endpoint const& ep, std::uint32_t hops)
 }
 
 void
-SlotImp::recent_t::expire()
+SlotImp::RecentT::expire()
 {
-    beast::expire(cache, Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
+    beast::expire(cache_, Tuning::kLIVE_CACHE_SECONDS_TO_LIVE);
 }
 
 }  // namespace xrpl::PeerFinder

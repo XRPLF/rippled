@@ -22,7 +22,7 @@
 
 namespace xrpl::test {
 
-class ValidatorKeys_test : public beast::unit_test::suite
+class ValidatorKeys_test : public beast::unit_test::Suite
 {
     // Used with [validation_seed]
     std::string const seed_ = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
@@ -66,14 +66,14 @@ public:
     {
         // We're only using Env for its Journal.  That Journal gives better
         // coverage in unit tests.
-        test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
+        test::jtx::Env env{*this, test::jtx::envconfig(), nullptr, beast::severities::KDisabled};
         beast::Journal const journal{env.app().getJournal("ValidatorKeys_test")};
 
         // Keys/ID when using [validation_seed]
         SecretKey const seedSecretKey =
             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
-            generateSecretKey(KeyType::secp256k1, *parseBase58<Seed>(seed_));
-        PublicKey const seedPublicKey = derivePublicKey(KeyType::secp256k1, seedSecretKey);
+            generateSecretKey(KeyType::Secp256k1, *parseBase58<Seed>(seed_));
+        PublicKey const seedPublicKey = derivePublicKey(KeyType::Secp256k1, seedSecretKey);
         NodeID const seedNodeID = calcNodeID(seedPublicKey);
 
         // Keys when using [validation_token]
@@ -81,9 +81,9 @@ public:
         auto const tokenSecretKey =
             *parseBase58<SecretKey>(TokenType::NodePrivate, tokenSecretStr_);
 
-        auto const tokenPublicKey = derivePublicKey(KeyType::secp256k1, tokenSecretKey);
+        auto const tokenPublicKey = derivePublicKey(KeyType::Secp256k1, tokenSecretKey);
 
-        auto const m = deserializeManifest(base64_decode(tokenManifest_));
+        auto const m = deserializeManifest(base64Decode(tokenManifest_));
         BEAST_EXPECT(m);
 
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access)

@@ -16,7 +16,7 @@ namespace beast::unit_test {
 class Thread
 {
 private:
-    suite* s_ = nullptr;
+    Suite* s_ = nullptr;
     std::thread t_;
 
 public:
@@ -41,7 +41,7 @@ public:
     }
 
     template <class F, class... Args>
-    explicit Thread(suite& s, F&& f, Args&&... args) : s_(&s)
+    explicit Thread(Suite& s, F&& f, Args&&... args) : s_(&s)
     {
         std::function<void(void)> b = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
         t_ = std::thread(&Thread::run, this, std::move(b));
@@ -93,7 +93,7 @@ private:
         {
             f();
         }
-        catch (suite::AbortException const&)
+        catch (Suite::AbortException const&)
         {
         }
         catch (std::exception const& e)

@@ -25,8 +25,8 @@ getCurrentNetworkFee(
     TxQ const& txQ,
     Application const& app,
     Json::Value const& tx,
-    int mult = Tuning::defaultAutoFillFeeMultiplier,
-    int div = Tuning::defaultAutoFillFeeDivisor);
+    int mult = Tuning::kDEFAULT_AUTO_FILL_FEE_MULTIPLIER,
+    int div = Tuning::kDEFAULT_AUTO_FILL_FEE_DIVISOR);
 
 /** Fill in the fee on behalf of the client.
     This is called when the client does not explicitly specify the fee.

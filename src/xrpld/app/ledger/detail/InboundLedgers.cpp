@@ -65,7 +65,7 @@ public:
         , j_(app.getJournal("InboundLedger"))
         , clock_(clock)
         , recentFailures_(clock)
-        , counter_(collector->make_counter("ledger_fetches"))
+        , counter_(collector->makeCounter("ledger_fetches"))
         , peerSetBuilder_(std::move(peerSetBuilder))
     {
     }
@@ -135,7 +135,7 @@ public:
             if (pendingAcquires_.contains(hash))
                 return;
             pendingAcquires_.insert(hash);
-            scope_unlock const unlock(lock);
+            ScopeUnlock const unlock(lock);
             acquire(hash, seq, reason);
         }
         catch (std::exception const& e)
@@ -200,7 +200,7 @@ public:
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
             {
                 app_.getJobQueue().addJob(
-                    jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
+                    JtLedgerData, "ProcessLData", [ledger]() { ledger->runData(); });
             }
 
             return true;
@@ -213,7 +213,7 @@ public:
         if (packet->type() == protocol::liAS_NODE)
         {
             app_.getJobQueue().addJob(
-                jtLEDGER_DATA, "GotStaleData", [this, packet]() { gotStaleData(packet); });
+                JtLedgerData, "GotStaleData", [this, packet]() { gotStaleData(packet); });
         }
 
         return false;
@@ -264,7 +264,7 @@ public:
                 newNode->serializeWithPrefix(s);
 
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getHash().as_uint256(), std::make_shared<Blob>(s.begin(), s.end()));
+                    newNode->getHash().asUint256(), std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
         catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
@@ -300,7 +300,7 @@ public:
     Json::Value
     getInfo() override
     {
-        Json::Value ret(Json::objectValue);
+        Json::Value ret(Json::ObjectValue);
 
         std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
 
@@ -454,7 +454,7 @@ private:
 //------------------------------------------------------------------------------
 
 std::unique_ptr<InboundLedgers>
-make_InboundLedgers(
+makeInboundLedgers(
     Application& app,
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector)

@@ -195,7 +195,7 @@ public:
     {
         using std::to_string;
 
-        Json::Value ret = Json::objectValue;
+        Json::Value ret = Json::ObjectValue;
         ret[jss::previous_ledger] = to_string(prevLedger());
 
         if (!isBowOut())
@@ -216,7 +216,7 @@ public:
         if (!signingHash_)
         {
             signingHash_ = sha512Half(
-                HashPrefix::proposal,
+                HashPrefix::Proposal,
                 std::uint32_t(proposeSeq()),
                 closeTime().time_since_epoch().count(),
                 prevLedger(),

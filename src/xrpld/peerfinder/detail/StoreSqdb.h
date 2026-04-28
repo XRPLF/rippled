@@ -17,7 +17,7 @@ private:
 public:
     enum {
         // This determines the on-database format of the data
-        currentSchemaVersion = 4
+        CurrentSchemaVersion = 4
     };
 
     explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
@@ -42,9 +42,9 @@ public:
         std::size_t n(0);
 
         readPeerFinderDB(sqlDb_, [&](std::string const& s, int valence) {
-            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::from_string(s));
+            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::fromString(s));
 
-            if (!is_unspecified(endpoint))
+            if (!isUnspecified(endpoint))
             {
                 cb(endpoint, valence);
                 ++n;
@@ -71,7 +71,7 @@ public:
     void
     update()
     {
-        updatePeerFinderDB(sqlDb_, currentSchemaVersion, journal_);
+        updatePeerFinderDB(sqlDb_, CurrentSchemaVersion, journal_);
     }
 
 private:

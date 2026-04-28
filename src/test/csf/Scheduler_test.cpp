@@ -6,7 +6,7 @@
 
 namespace xrpl::test {
 
-class Scheduler_test : public beast::unit_test::suite
+class Scheduler_test : public beast::unit_test::Suite
 {
 public:
     void

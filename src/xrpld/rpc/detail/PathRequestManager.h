@@ -21,8 +21,8 @@ public:
         beast::insight::Collector::ptr const& collector)
         : app_(app), journal_(journal), lastIdentifier_(0)
     {
-        fast_ = collector->make_event("pathfind_fast");
-        full_ = collector->make_event("pathfind_full");
+        fast_ = collector->makeEvent("pathfind_fast");
+        full_ = collector->makeEvent("pathfind_full");
     }
 
     /** Update all of the contained PathRequest instances.

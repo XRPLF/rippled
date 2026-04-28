@@ -19,11 +19,11 @@ namespace xrpl::test::jtx {
 std::tuple<Json::Value, Keylet>
 Vault::create(CreateArgs const& args) const
 {
-    auto keylet = keylet::vault(args.owner.id(), env.Seq(args.owner));
+    auto keylet = keylet::vault(args.owner.id(), env.seq(args.owner));
     Json::Value jv;
     jv[jss::TransactionType] = jss::VaultCreate;
     jv[jss::Account] = args.owner.human();
-    jv[jss::Asset] = to_json(args.asset);
+    jv[jss::Asset] = toJson(args.asset);
     if (args.flags)
         jv[jss::Flags] = *args.flags;
     return {jv, keylet};
@@ -56,7 +56,7 @@ Vault::deposit(DepositArgs const& args)
     jv[jss::TransactionType] = jss::VaultDeposit;
     jv[jss::Account] = args.depositor.human();
     jv[sfVaultID] = to_string(args.id);
-    jv[jss::Amount] = to_json(args.amount);
+    jv[jss::Amount] = toJson(args.amount);
     return jv;
 }
 
@@ -67,7 +67,7 @@ Vault::withdraw(WithdrawArgs const& args)
     jv[jss::TransactionType] = jss::VaultWithdraw;
     jv[jss::Account] = args.depositor.human();
     jv[sfVaultID] = to_string(args.id);
-    jv[jss::Amount] = to_json(args.amount);
+    jv[jss::Amount] = toJson(args.amount);
     return jv;
 }
 
@@ -80,7 +80,7 @@ Vault::clawback(ClawbackArgs const& args)
     jv[sfVaultID] = to_string(args.id);
     jv[jss::Holder] = args.holder.human();
     if (args.amount)
-        jv[jss::Amount] = to_json(*args.amount);
+        jv[jss::Amount] = toJson(*args.amount);
     return jv;
 }
 

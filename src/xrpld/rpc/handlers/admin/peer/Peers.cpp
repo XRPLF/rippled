@@ -19,7 +19,7 @@ namespace xrpl {
 Json::Value
 doPeers(RPC::JsonContext& context)
 {
-    Json::Value jvResult(Json::objectValue);
+    Json::Value jvResult(Json::ObjectValue);
 
     jvResult[jss::peers] = context.app.getOverlay().json();
 
@@ -47,7 +47,7 @@ doPeers(RPC::JsonContext& context)
     auto const now = context.app.getTimeKeeper().now();
     auto const self = context.app.nodeIdentity().first;
 
-    Json::Value& cluster = (jvResult[jss::cluster] = Json::objectValue);
+    Json::Value& cluster = (jvResult[jss::cluster] = Json::ObjectValue);
     std::uint32_t const ref = context.app.getFeeTrack().getLoadBase();
 
     context.app.getCluster().forEach([&cluster, now, ref, &self](ClusterNode const& node) {

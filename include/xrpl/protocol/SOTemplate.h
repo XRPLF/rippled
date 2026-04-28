@@ -12,16 +12,16 @@ namespace xrpl {
 
 /** Kind of element in each entry of an SOTemplate. */
 enum SOEStyle {
-    soeINVALID = -1,
-    soeREQUIRED = 0,  // required
-    soeOPTIONAL = 1,  // optional, may be present with default value
-    soeDEFAULT = 2,   // optional, if present, must not have default value
+    SoeInvalid = -1,
+    SoeRequired = 0,  // required
+    SoeOptional = 1,  // optional, may be present with default value
+    SoeDefault = 2,   // optional, if present, must not have default value
                       // inner object with the default fields has to be
                       // constructed with STObject::makeInnerObject()
 };
 
 /** Amount fields that can support MPT */
-enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+enum SOETxMPTIssue { SoeMptNone, SoeMptSupported, SoeMptNotSupported };
 
 //------------------------------------------------------------------------------
 
@@ -31,7 +31,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOETxMPTIssue supportMpt_ = soeMPTNone;
+    SOETxMPTIssue supportMpt_ = SoeMptNone;
 
 private:
     void
@@ -57,7 +57,7 @@ public:
     SOElement(
         TypedField<T> const& fieldName,
         SOEStyle style,
-        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = SoeMptNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);

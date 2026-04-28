@@ -14,7 +14,7 @@
 
 namespace xrpl::RPC {
 
-class codeString_test : public beast::unit_test::suite
+class codeString_test : public beast::unit_test::Suite
 {
 private:
     template <typename Type>
@@ -34,7 +34,7 @@ private:
         }
 
         {
-            auto s = codeString(Status::OK);
+            auto s = codeString(Status::kOK);
             expect(s.empty(), "String for OK status");
         }
 
@@ -49,7 +49,7 @@ private:
         }
 
         {
-            auto s = codeString(rpcSUCCESS);
+            auto s = codeString(RpcSuccess);
             expect(s.empty(), "String for rpcSUCCESS");
         }
     }
@@ -69,7 +69,7 @@ private:
         }
 
         {
-            auto s = codeString(rpcBAD_SYNTAX);
+            auto s = codeString(RpcBadSyntax);
             expect(s == "badSyntax: Syntax error.", s);
         }
     }
@@ -85,7 +85,7 @@ public:
 
 BEAST_DEFINE_TESTSUITE(codeString, rpc, RPC);
 
-class fillJson_test : public beast::unit_test::suite
+class fillJson_test : public beast::unit_test::Suite
 {
 private:
     Json::Value value_;
@@ -108,13 +108,13 @@ private:
         fillJson(0);
         expect(!value_, "Value for 0 status");
 
-        fillJson(Status::OK);
+        fillJson(Status::kOK);
         expect(!value_, "Value for OK status");
 
         fillJson(tesSUCCESS);
         expect(!value_, "Value for tesSUCCESS");
 
-        fillJson(rpcSUCCESS);
+        fillJson(RpcSuccess);
         expect(!value_, "Value for rpcSUCCESS");
     }
 
@@ -164,7 +164,7 @@ private:
 
         expectFill(
             "rpcBAD_SYNTAX",
-            rpcBAD_SYNTAX,
+            RpcBadSyntax,
             {"An error.", "Another error."},
             "badSyntax: Syntax error.");
 

@@ -30,7 +30,7 @@ struct TestAMMArg
 // A distinct MPT is created if both AMM assets
 // are MPT. The actual MPT asset can be accessed
 // via AMM::operator[](0|1).
-inline static auto AMMMPT = MPT("AMM");
+inline static auto gAmmmpt = MPT("AMM");
 
 [[maybe_unused]] std::vector<STAmount>
 fund(
@@ -66,7 +66,7 @@ struct TestAMMArgs
     std::vector<FeatureBitset> const& features = {testableAmendments()};
 };
 
-class AMMTestBase : public beast::unit_test::suite
+class AMMTestBase : public beast::unit_test::Suite
 {
 protected:
     jtx::Account const gw_;
@@ -129,10 +129,10 @@ protected:
         // Returns `true` if signaled.
         template <class Rep, class Period>
         bool
-        waitFor(std::chrono::duration<Rep, Period> const& rel_time)
+        waitFor(std::chrono::duration<Rep, Period> const& relTime)
         {
             std::unique_lock<std::mutex> lk(mutex_);
-            auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+            auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
             signaled_ = false;
             return b;
         }

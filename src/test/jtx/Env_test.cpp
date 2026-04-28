@@ -65,12 +65,12 @@
 
 namespace xrpl::test {
 
-class Env_test : public beast::unit_test::suite
+class Env_test : public beast::unit_test::Suite
 {
 public:
     template <class T>
     static std::string
-    toString(T const& t)
+    to_string(T const& t)
     {
         return boost::lexical_cast<std::string>(t);
     }
@@ -88,14 +88,14 @@ public:
             Account const c(std::move(a));
         }
         Account("alice");                      // NOLINT(bugprone-unused-raii)
-        Account("alice", KeyType::secp256k1);  // NOLINT(bugprone-unused-raii)
-        Account("alice", KeyType::ed25519);    // NOLINT(bugprone-unused-raii)
+        Account("alice", KeyType::Secp256k1);  // NOLINT(bugprone-unused-raii)
+        Account("alice", KeyType::Ed25519);    // NOLINT(bugprone-unused-raii)
         auto const gw = Account("gw");
         [](AccountID) {}(gw);
         auto const usd = gw["USD"];
         void(Account("alice") < gw);
         std::set<Account>().emplace(gw);
-        std::unordered_set<Account, beast::uhash<>>().emplace("alice");
+        std::unordered_set<Account, beast::Uhash<>>().emplace("alice");
     }
 
     // Declarations in amount.h
@@ -116,17 +116,17 @@ public:
 
         try
         {
-            XRP(0.0000001);
+            kXRP(0.0000001);
             fail("missing exception");
         }
         catch (std::domain_error const&)
         {
             pass();
         }
-        XRP(-0.000001);
+        kXRP(-0.000001);
         try
         {
-            XRP(-0.0000009);
+            kXRP(-0.0000009);
             fail("missing exception");
         }
         catch (std::domain_error const&)
@@ -134,29 +134,29 @@ public:
             pass();
         }
 
-        BEAST_EXPECT(toString(XRP(5)) == "5 XRP");
-        BEAST_EXPECT(toString(XRP(.80)) == "0.8 XRP");
-        BEAST_EXPECT(toString(XRP(.005)) == "5000 drops");
-        BEAST_EXPECT(toString(XRP(0.1)) == "0.1 XRP");
-        BEAST_EXPECT(toString(XRP(10000)) == "10000 XRP");
-        BEAST_EXPECT(toString(drops(10)) == "10 drops");
-        BEAST_EXPECT(toString(drops(123400000)) == "123.4 XRP");
-        BEAST_EXPECT(toString(XRP(-5)) == "-5 XRP");
-        BEAST_EXPECT(toString(XRP(-.99)) == "-0.99 XRP");
-        BEAST_EXPECT(toString(XRP(-.005)) == "-5000 drops");
-        BEAST_EXPECT(toString(XRP(-0.1)) == "-0.1 XRP");
-        BEAST_EXPECT(toString(drops(-10)) == "-10 drops");
-        BEAST_EXPECT(toString(drops(-123400000)) == "-123.4 XRP");
+        BEAST_EXPECT(to_string(kXRP(5)) == "5 XRP");
+        BEAST_EXPECT(to_string(kXRP(.80)) == "0.8 XRP");
+        BEAST_EXPECT(to_string(kXRP(.005)) == "5000 drops");
+        BEAST_EXPECT(to_string(kXRP(0.1)) == "0.1 XRP");
+        BEAST_EXPECT(to_string(kXRP(10000)) == "10000 XRP");
+        BEAST_EXPECT(to_string(drops(10)) == "10 drops");
+        BEAST_EXPECT(to_string(drops(123400000)) == "123.4 XRP");
+        BEAST_EXPECT(to_string(kXRP(-5)) == "-5 XRP");
+        BEAST_EXPECT(to_string(kXRP(-.99)) == "-0.99 XRP");
+        BEAST_EXPECT(to_string(kXRP(-.005)) == "-5000 drops");
+        BEAST_EXPECT(to_string(kXRP(-0.1)) == "-0.1 XRP");
+        BEAST_EXPECT(to_string(drops(-10)) == "-10 drops");
+        BEAST_EXPECT(to_string(drops(-123400000)) == "-123.4 XRP");
 
-        BEAST_EXPECT(XRP(1) == drops(1000000));
-        BEAST_EXPECT(XRP(1) == STAmount(1000000));
-        BEAST_EXPECT(STAmount(1000000) == XRP(1));
+        BEAST_EXPECT(kXRP(1) == drops(1000000));
+        BEAST_EXPECT(kXRP(1) == STAmount(1000000));
+        BEAST_EXPECT(STAmount(1000000) == kXRP(1));
 
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
-        BEAST_EXPECT(toString(usd(0)) == "0/USD(gw)");
-        BEAST_EXPECT(toString(usd(10)) == "10/USD(gw)");
-        BEAST_EXPECT(toString(usd(-10)) == "-10/USD(gw)");
+        BEAST_EXPECT(to_string(usd(0)) == "0/USD(gw)");
+        BEAST_EXPECT(to_string(usd(10)) == "10/USD(gw)");
+        BEAST_EXPECT(to_string(usd(-10)) == "-10/USD(gw)");
         BEAST_EXPECT(usd(0) == STAmount(usd, 0));
         BEAST_EXPECT(usd(1) == STAmount(usd, 1));
         BEAST_EXPECT(usd(-1) == STAmount(usd, -1));
@@ -171,7 +171,7 @@ public:
     testEnv()
     {
         using namespace jtx;
-        auto const n = XRP(10000);
+        auto const n = kXRP(10000);
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
         auto const alice = Account("alice");
@@ -179,7 +179,7 @@ public:
         // unfunded
         {
             Env env(*this);
-            env(pay("alice", "bob", XRP(1000)), Seq(1), Fee(10), Sig("alice"), Ter(terNO_ACCOUNT));
+            env(pay("alice", "bob", kXRP(1000)), Seq(1), Fee(10), Sig("alice"), Ter(terNO_ACCOUNT));
         }
 
         // fund
@@ -197,9 +197,9 @@ public:
 
             // flags
             env.fund(n, noripple("xavier"));
-            env.Require(Nflags("xavier", asfDefaultRipple));
+            env.require(Nflags("xavier", asfDefaultRipple));
             env.fund(n, "zachary");
-            env.Require(Flags("zachary", asfDefaultRipple));
+            env.require(Flags("zachary", asfDefaultRipple));
         }
 
         // trust
@@ -213,32 +213,32 @@ public:
         // balance
         {
             Env env(*this);
-            BEAST_EXPECT(env.Balance(alice) == 0);
-            BEAST_EXPECT(env.Balance(alice, usd) != 0);
-            BEAST_EXPECT(env.Balance(alice, usd) == usd(0));
+            BEAST_EXPECT(env.balance(alice) == 0);
+            BEAST_EXPECT(env.balance(alice, usd) != 0);
+            BEAST_EXPECT(env.balance(alice, usd) == usd(0));
             env.fund(n, alice, gw);
             env.close();
-            BEAST_EXPECT(env.Balance(alice) == n);
-            BEAST_EXPECT(env.Balance(gw) == n);
+            BEAST_EXPECT(env.balance(alice) == n);
+            BEAST_EXPECT(env.balance(gw) == n);
             env.trust(usd(1000), alice);
             env(pay(gw, alice, usd(10)));
-            BEAST_EXPECT(toString(env.Balance("alice", usd)) == "10/USD(gw)");
-            BEAST_EXPECT(toString(env.Balance(gw, alice["USD"])) == "-10/USD(alice)");
+            BEAST_EXPECT(to_string(env.balance("alice", usd)) == "10/USD(gw)");
+            BEAST_EXPECT(to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
         }
 
         // seq
         {
             Env env(*this);
             env.fund(n, noripple("alice", gw));
-            BEAST_EXPECT(env.Seq("alice") == 3);
-            BEAST_EXPECT(env.Seq(gw) == 3);
+            BEAST_EXPECT(env.seq("alice") == 3);
+            BEAST_EXPECT(env.seq(gw) == 3);
         }
 
         // autofill
         {
             Env env(*this);
             env.fund(n, "alice");
-            env.Require(Balance("alice", n));
+            env.require(Balance("alice", n));
             env(noop("alice"), Fee(1), Ter(telINSUF_FEE_P));
             env(noop("alice"), Seq(kNONE), Ter(temMALFORMED));
             env(noop("alice"), Seq(kNONE), Fee(10), Ter(temMALFORMED));
@@ -258,17 +258,17 @@ public:
         Env env(*this);
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
-        env.Require(Balance("alice", kNONE));
-        env.Require(Balance("alice", XRP(kNONE)));
-        env.fund(XRP(10000), "alice", gw);
+        env.require(Balance("alice", kNONE));
+        env.require(Balance("alice", kXRP(kNONE)));
+        env.fund(kXRP(10000), "alice", gw);
         env.close();
-        env.Require(Balance("alice", usd(kNONE)));
+        env.require(Balance("alice", usd(kNONE)));
         env.trust(usd(100), "alice");
-        env.Require(Balance("alice", XRP(10000)));  // fee refunded
-        env.Require(Balance("alice", usd(0)));
+        env.require(Balance("alice", kXRP(10000)));  // fee refunded
+        env.require(Balance("alice", usd(0)));
         env(pay(gw, "alice", usd(10)), Require(Balance("alice", usd(10))));
 
-        env.Require(Nflags("alice", asfRequireDest));
+        env.require(Nflags("alice", asfRequireDest));
         env(fset("alice", asfRequireDest), Require(Flags("alice", asfRequireDest)));
         env(fclear("alice", asfRequireDest), Require(Nflags("alice", asfRequireDest)));
     }
@@ -280,17 +280,17 @@ public:
         using namespace jtx;
 
         Env env{*this, testableAmendments()};
-        Account const alice("alice", KeyType::ed25519);
-        Account const bob("bob", KeyType::secp256k1);
+        Account const alice("alice", KeyType::Ed25519);
+        Account const bob("bob", KeyType::Secp256k1);
         Account const carol("carol");
-        env.fund(XRP(10000), alice, bob);
+        env.fund(kXRP(10000), alice, bob);
 
         // Master key only
         env(noop(alice));
         env(noop(bob));
         env(noop(alice), Sig("alice"), Ter(tefBAD_AUTH));
-        env(noop(alice), Sig(Account("alice", KeyType::secp256k1)), Ter(tefBAD_AUTH));
-        env(noop(bob), Sig(Account("bob", KeyType::ed25519)), Ter(tefBAD_AUTH));
+        env(noop(alice), Sig(Account("alice", KeyType::Secp256k1)), Ter(tefBAD_AUTH));
+        env(noop(bob), Sig(Account("bob", KeyType::Ed25519)), Ter(tefBAD_AUTH));
         env(noop(alice), Sig(carol), Ter(tefBAD_AUTH));
 
         // Master and Regular key
@@ -318,35 +318,38 @@ public:
         auto const gw = Account("gateway");
         auto const usd = gw["USD"];
 
-        env.fund(XRP(10000), "alice", "bob", "carol", gw);
-        env.Require(Balance("alice", XRP(10000)));
-        env.Require(Balance("bob", XRP(10000)));
-        env.Require(Balance("carol", XRP(10000)));
-        env.Require(Balance(gw, XRP(10000)));
+        env.fund(kXRP(10000), "alice", "bob", "carol", gw);
+        env.require(Balance("alice", kXRP(10000)));
+        env.require(Balance("bob", kXRP(10000)));
+        env.require(Balance("carol", kXRP(10000)));
+        env.require(Balance(gw, kXRP(10000)));
 
-        env(pay(env.master, "alice", XRP(1000)), Fee(kNONE), Ter(temMALFORMED));
-        env(pay(env.master, "alice", XRP(1000)), Fee(1), Ter(telINSUF_FEE_P));
-        env(pay(env.master, "alice", XRP(1000)), Seq(kNONE), Ter(temMALFORMED));
-        env(pay(env.master, "alice", XRP(1000)), Seq(20), Ter(terPRE_SEQ));
-        env(pay(env.master, "alice", XRP(1000)), Sig(kNONE), Ter(temMALFORMED));
-        env(pay(env.master, "alice", XRP(1000)), Sig("bob"), Ter(tefBAD_AUTH));
+        env(pay(env.master, "alice", kXRP(1000)), Fee(kNONE), Ter(temMALFORMED));
+        env(pay(env.master, "alice", kXRP(1000)), Fee(1), Ter(telINSUF_FEE_P));
+        env(pay(env.master, "alice", kXRP(1000)), Seq(kNONE), Ter(temMALFORMED));
+        env(pay(env.master, "alice", kXRP(1000)), Seq(20), Ter(terPRE_SEQ));
+        env(pay(env.master, "alice", kXRP(1000)), Sig(kNONE), Ter(temMALFORMED));
+        env(pay(env.master, "alice", kXRP(1000)), Sig("bob"), Ter(tefBAD_AUTH));
 
-        env(pay(env.master, "dilbert", XRP(1000)), Sig(env.master));
+        env(pay(env.master, "dilbert", kXRP(1000)), Sig(env.master));
 
         env.trust(usd(100), "alice", "bob", "carol");
-        env.Require(Owners("alice", 1), lines("alice", 1));
+        env.require(Owners("alice", 1), lines("alice", 1));
         env(rate(gw, 1.05));
 
         env(pay(gw, "carol", usd(50)));
-        env.Require(Balance("carol", usd(50)));
-        env.Require(Balance(gw, Account("carol")["USD"](-50)));
+        env.require(Balance("carol", usd(50)));
+        env.require(Balance(gw, Account("carol")["USD"](-50)));
 
-        env(offer("carol", XRP(50), usd(50)), Require(Owners("carol", 2)));
+        env(offer("carol", kXRP(50), usd(50)), Require(Owners("carol", 2)));
         env(pay("alice", "bob", kANY(usd(10))), Ter(tecPATH_DRY));
-        env(pay("alice", "bob", kANY(usd(10))), Paths(XRP), sendmax(XRP(10)), Ter(tecPATH_PARTIAL));
-        env(pay("alice", "bob", kANY(usd(10))), Paths(XRP), sendmax(XRP(20)));
-        env.Require(Balance("bob", usd(10)));
-        env.Require(Balance("carol", usd(39.5)));
+        env(pay("alice", "bob", kANY(usd(10))),
+            Paths(kXRP),
+            Sendmax(kXRP(10)),
+            Ter(tecPATH_PARTIAL));
+        env(pay("alice", "bob", kANY(usd(10))), Paths(kXRP), Sendmax(kXRP(20)));
+        env.require(Balance("bob", usd(10)));
+        env.require(Balance("carol", usd(39.5)));
 
         env.memoize("eric");
         env(regkey("alice", "eric"));
@@ -356,9 +359,9 @@ public:
         env(noop("alice"), Sig("bob"), Ter(tefBAD_AUTH));
         env(fset("alice", asfDisableMaster), Ter(tecNEED_MASTER_KEY));
         env(fset("alice", asfDisableMaster), Sig("eric"), Ter(tecNEED_MASTER_KEY));
-        env.Require(Nflags("alice", asfDisableMaster));
+        env.require(Nflags("alice", asfDisableMaster));
         env(fset("alice", asfDisableMaster), Sig("alice"));
-        env.Require(Flags("alice", asfDisableMaster));
+        env.require(Flags("alice", asfDisableMaster));
         env(regkey("alice", kDISABLED), Ter(tecNO_ALTERNATIVE_KEY));
         env(noop("alice"));
         env(noop("alice"), Sig("alice"), Ter(tefMASTER_DISABLED));
@@ -367,7 +370,7 @@ public:
         env(fclear("alice", asfDisableMaster), Sig("bob"), Ter(tefBAD_AUTH));
         env(fclear("alice", asfDisableMaster), Sig("alice"), Ter(tefMASTER_DISABLED));
         env(fclear("alice", asfDisableMaster));
-        env.Require(Nflags("alice", asfDisableMaster));
+        env.require(Nflags("alice", asfDisableMaster));
         env(regkey("alice", kDISABLED));
         env(noop("alice"), Sig("eric"), Ter(tefBAD_AUTH));
         env(noop("alice"));
@@ -385,7 +388,7 @@ public:
         auto const usd = gw["USD"];
 
         auto const alice = Account{"alice"};
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
 
         auto const localTxCnt = env.app().getOPs().getLocalTxCount();
         auto const queueTxCount = env.app().getTxQ().getMetrics(*env.current()).txCount;
@@ -397,7 +400,7 @@ public:
             Serializer s;
             jt.stx->add(s);
 
-            Json::Value args{Json::objectValue};
+            Json::Value args{Json::ObjectValue};
 
             args[jss::tx_blob] = strHex(s.slice());
             args[jss::fail_hard] = true;
@@ -426,7 +429,7 @@ public:
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
-        jr = applyTxn(offer(alice, XRP(1000), usd(1000)));
+        jr = applyTxn(offer(alice, kXRP(1000), usd(1000)));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
         BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
@@ -454,7 +457,7 @@ public:
         using namespace jtx;
 
         Env env(*this);
-        env.fund(XRP(10000), "alice");
+        env.fund(kXRP(10000), "alice");
         env(signers("alice", 1, {{"alice", 1}, {"bob", 2}}), Ter(temBAD_SIGNER));
         env(signers("alice", 1, {{"bob", 1}, {"carol", 2}}));
         env(noop("alice"));
@@ -480,7 +483,7 @@ public:
 
         {
             Env env(*this);
-            env.fund(XRP(10000), "alice");
+            env.fund(kXRP(10000), "alice");
             env(noop("alice"), Require(Owners("alice", 0), tickets("alice", 0)));
             env(ticket::create("alice", 1), Require(Owners("alice", 1), tickets("alice", 1)));
         }
@@ -532,13 +535,13 @@ public:
     {
         using namespace jtx;
         Env env(*this);
-        env.fund(XRP(100000), "alice");
+        env.fund(kXRP(100000), "alice");
         auto jt1 = env.jt(noop("alice"));
         BEAST_EXPECT(!jt1.get<std::uint16_t>());
-        auto jt2 = env.jt(noop("alice"), prop<std::uint16_t>(-1));
+        auto jt2 = env.jt(noop("alice"), Prop<std::uint16_t>(-1));
         BEAST_EXPECT(jt2.get<std::uint16_t>());
         BEAST_EXPECT(*jt2.get<std::uint16_t>() == 65535);
-        auto jt3 = env.jt(noop("alice"), prop<std::string>("Hello, world!"), prop<bool>(false));
+        auto jt3 = env.jt(noop("alice"), Prop<std::string>("Hello, world!"), Prop<bool>(false));
         BEAST_EXPECT(jt3.get<std::string>());
         BEAST_EXPECT(*jt3.get<std::string>() == "Hello, world!");
         BEAST_EXPECT(jt3.get<bool>());
@@ -599,7 +602,7 @@ public:
     {
         using namespace jtx;
         Env env(*this);
-        env.fund(XRP(10000), "alice");
+        env.fund(kXRP(10000), "alice");
         env(noop("alice"), MemoData("data"));
         env(noop("alice"), MemoFormat("format"));
         env(noop("alice"), MemoType("type"));
@@ -643,9 +646,9 @@ public:
         Env env(*this);
         env.close();
         env.close();
-        env.fund(XRP(100000), "alice", "bob");
+        env.fund(kXRP(100000), "alice", "bob");
         env.close();
-        env(pay("alice", "bob", XRP(100)));
+        env(pay("alice", "bob", kXRP(100)));
         env.close();
         env(noop("alice"));
         env.close();
@@ -659,16 +662,16 @@ public:
         Env env(*this);
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
-        env.fund(XRP(10000), "alice", "bob");
+        env.fund(kXRP(10000), "alice", "bob");
         env.close();
         env.json(
             pay("alice", "bob", usd(10)),
             Path(Account("alice")),
             Path("bob"),
             Path(usd),
-            Path(~XRP),
+            Path(~kXRP),
             Path(~usd),
-            Path("bob", usd, ~XRP, ~usd));
+            Path("bob", usd, ~kXRP, ~usd));
     }
 
     // Test that jtx can re-sign a transaction that's already been signed.
@@ -678,9 +681,9 @@ public:
         using namespace jtx;
         Env env(*this);
 
-        env.fund(XRP(10000), "alice");
+        env.fund(kXRP(10000), "alice");
         auto const baseFee = env.current()->fees().base;
-        std::uint32_t const aliceSeq = env.Seq("alice");
+        std::uint32_t const aliceSeq = env.seq("alice");
 
         // Sign jsonNoop.
         Json::Value const jsonNoop =
@@ -695,12 +698,12 @@ public:
     {
         using namespace jtx;
         Env env(*this);
-        Env_ss envs(env);
+        EnvSs envs(env);
 
         auto const baseFee = env.current()->fees().base;
 
         auto const alice = Account("alice");
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
 
         {
             envs(noop(alice), Fee(kNONE), Seq(kNONE))();
@@ -715,7 +718,7 @@ public:
         }
 
         {
-            auto params = Json::Value(Json::nullValue);
+            auto params = Json::Value(Json::NullValue);
             envs(noop(alice), Fee(kNONE), Seq(kNONE))(params);
 
             // Make sure we get the right account back.
@@ -728,15 +731,14 @@ public:
         }
 
         {
-            auto params = Json::Value(Json::objectValue);
+            auto params = Json::Value(Json::ObjectValue);
             // Force the factor low enough to fail
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
 
             auto const expectedErrorString = "Fee of " + std::to_string(baseFee.drops()) +
                 " exceeds the requested tx limit of " + std::to_string(baseFee.drops() / 2);
-            envs(
-                noop(alice), Fee(kNONE), Seq(kNONE), rpc(rpcHIGH_FEE, expectedErrorString))(params);
+            envs(noop(alice), Fee(kNONE), Seq(kNONE), Rpc(RpcHighFee, expectedErrorString))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);
@@ -868,7 +870,7 @@ public:
                     return cfg;
                 }),
                 nullptr,
-                beast::severities::kDisabled};
+                beast::severities::KDisabled};
         });
         pass();
     }

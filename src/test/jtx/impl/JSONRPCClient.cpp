@@ -40,13 +40,13 @@ class JSONRPCClient : public AbstractClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parse_Port(common, cfg["server"], log);
+        parsePort(common, cfg["server"], log);
         for (auto const& name : cfg.section("server").values())
         {
             if (!cfg.exists(name))
                 continue;
             ParsedPort pp;
-            parse_Port(pp, cfg[name], log);
+            parsePort(pp, cfg[name], log);
             if (not pp.protocol.contains("http"))
                 continue;
             using namespace boost::asio::ip;
@@ -124,7 +124,7 @@ public:
             }
             if (params)
             {
-                Json::Value& ja = jr[jss::params] = Json::arrayValue;
+                Json::Value& ja = jr[jss::params] = Json::ArrayValue;
                 ja.append(params);
             }
             req.body() = to_string(jr);

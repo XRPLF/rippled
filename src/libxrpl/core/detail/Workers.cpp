@@ -61,7 +61,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
         for (int i = 0; i < amount; ++i)
         {
             // See if we can reuse a paused worker
-            Worker* worker = paused_.pop_front();
+            Worker* worker = paused_.popFront();
 
             if (worker != nullptr)
             {
@@ -73,7 +73,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
             else
             {
                 worker = new Worker(*this, threadNames_, kINSTANCE++);
-                everyone_.push_front(worker);
+                everyone_.pushFront(worker);
             }
         }
     }
@@ -125,7 +125,7 @@ Workers::deleteWorkers(beast::LockFreeStack<Worker>& stack)
 {
     for (;;)
     {
-        Worker const* const worker = stack.pop_front();
+        Worker const* const worker = stack.popFront();
 
         if (worker != nullptr)
         {
@@ -235,7 +235,7 @@ Workers::Worker::run()
         // guarantee that it will eventually block on its
         // event object.
         //
-        workers_.paused_.push_front(this);
+        workers_.paused_.pushFront(this);
 
         // Decrement the count of active workers, and if we
         // are the last one then signal the "all paused" event.

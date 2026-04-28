@@ -42,7 +42,7 @@ isSame(std::shared_ptr<NodeObject> const& lhs, std::shared_ptr<NodeObject> const
 
 // Some common code for the unit tests
 //
-class TestBase : public beast::unit_test::suite
+class TestBase : public beast::unit_test::Suite
 {
 public:
     // Tunable parameters
@@ -64,26 +64,26 @@ public:
         for (int i = 0; i < numObjects; ++i)
         {
             NodeObjectType const type = [&] {
-                switch (rand_int(rng, 3))
+                switch (randInt(rng, 3))
                 {
                     case 0:
-                        return hotLEDGER;
+                        return HotLedger;
                     case 1:
-                        return hotACCOUNT_NODE;
+                        return HotAccountNode;
                     case 2:
-                        return hotTRANSACTION_NODE;
+                        return HotTransactionNode;
                     case 3:
-                        return hotUNKNOWN;
+                        return HotUnknown;
                     default:
                         // will never happen, but make static analysis tool happy.
-                        return hotUNKNOWN;
+                        return HotUnknown;
                 }
             }();
 
             uint256 hash;
             beast::rngfill(hash.begin(), hash.size(), rng);
 
-            Blob blob(rand_int(rng, kMIN_PAYLOAD_BYTES, kMAX_PAYLOAD_BYTES));
+            Blob blob(randInt(rng, kMIN_PAYLOAD_BYTES, kMAX_PAYLOAD_BYTES));
             beast::rngfill(blob.data(), blob.size(), rng);
 
             batch.push_back(NodeObject::createObject(type, std::move(blob), hash));
@@ -140,9 +140,9 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == ok);
+            BEAST_EXPECT(status == Ok);
 
-            if (status == ok)
+            if (status == Ok)
             {
                 BEAST_EXPECT(object != nullptr);
 
@@ -160,7 +160,7 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == notFound);
+            BEAST_EXPECT(status == NotFound);
         }
     }
 

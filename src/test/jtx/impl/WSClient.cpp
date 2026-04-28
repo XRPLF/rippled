@@ -62,14 +62,14 @@ class WSClientImpl : public WSClient
     {
         auto& log = std::cerr;
         ParsedPort common;
-        parse_Port(common, cfg["server"], log);
+        parsePort(common, cfg["server"], log);
         auto const ps = v2 ? "ws2" : "ws";
         for (auto const& name : cfg.section("server").values())
         {
             if (!cfg.exists(name))
                 continue;
             ParsedPort pp;
-            parse_Port(pp, cfg[name], log);
+            parsePort(pp, cfg[name], log);
             if (pp.protocol.count(ps) == 0)
                 continue;
             using namespace boost::asio::ip;
@@ -178,7 +178,7 @@ public:
         catch (std::exception&)
         {
             cleanup();
-            Rethrow();
+            rethrow();
         }
     }
 

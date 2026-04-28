@@ -95,8 +95,8 @@ decodeCTID(T const ctid) noexcept
 
     // Validate CTID prefix.
     constexpr uint64_t kCTID_PREFIX_MASK = 0xF000'0000'0000'0000ULL;
-    constexpr uint64_t ctidPrefix = 0xC000'0000'0000'0000ULL;
-    if ((ctidValue & kCTID_PREFIX_MASK) != ctidPrefix)
+    constexpr uint64_t kCTID_PREFIX = 0xC000'0000'0000'0000ULL;
+    if ((ctidValue & kCTID_PREFIX_MASK) != kCTID_PREFIX)
         return std::nullopt;
 
     uint32_t const ledgerSeq = static_cast<uint32_t>((ctidValue >> 32) & 0x0FFF'FFFF);

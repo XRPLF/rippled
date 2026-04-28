@@ -73,7 +73,7 @@ namespace xrpl::detail {
  * @return Name of the table.
  */
 static std::string
-toString(TableType type)
+to_string(TableType type)
 {
     static_assert(kTABLE_TYPE_COUNT == 3, "Need to modify switch statement if enum is modified");
 
@@ -105,7 +105,7 @@ makeLedgerDBs(
         setup, kLGR_DB_NAME, setup.lgrPragma, kLGR_DB_INIT, checkpointerSetup, j)};
     lgr->getSession() << boost::str(
         boost::format("PRAGMA cache_size=-%d;") %
-        kilobytes(config.getValueFor(SizedItem::lgrDBCache)));
+        kilobytes(config.getValueFor(SizedItem::LgrDbCache)));
 
     if (config.useTxTables())
     {
@@ -114,7 +114,7 @@ makeLedgerDBs(
             setup, kTX_DB_NAME, setup.txPragma, kTX_DB_INIT, checkpointerSetup, j)};
         tx->getSession() << boost::str(
             boost::format("PRAGMA cache_size=-%d;") %
-            kilobytes(config.getValueFor(SizedItem::txnDBCache)));
+            kilobytes(config.getValueFor(SizedItem::TxnDbCache)));
 
         if (!setup.standAlone || setup.startUp == StartUpType::Load ||
             setup.startUp == StartUpType::LoadFile || setup.startUp == StartUpType::Replay)
@@ -152,7 +152,7 @@ makeLedgerDBs(
 std::optional<LedgerIndex>
 getMinLedgerSeq(soci::session& session, TableType type)
 {
-    std::string const query = "SELECT MIN(LedgerSeq) FROM " + toString(type) + ";";
+    std::string const query = "SELECT MIN(LedgerSeq) FROM " + to_string(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -162,7 +162,7 @@ getMinLedgerSeq(soci::session& session, TableType type)
 std::optional<LedgerIndex>
 getMaxLedgerSeq(soci::session& session, TableType type)
 {
-    std::string const query = "SELECT MAX(LedgerSeq) FROM " + toString(type) + ";";
+    std::string const query = "SELECT MAX(LedgerSeq) FROM " + to_string(type) + ";";
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<LedgerIndex> m;
     session << query, soci::into(m);
@@ -172,13 +172,13 @@ getMaxLedgerSeq(soci::session& session, TableType type)
 void
 deleteByLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
-    session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq == " << ledgerSeq << ";";
+    session << "DELETE FROM " << to_string(type) << " WHERE LedgerSeq == " << ledgerSeq << ";";
 }
 
 void
 deleteBeforeLedgerSeq(soci::session& session, TableType type, LedgerIndex ledgerSeq)
 {
-    session << "DELETE FROM " << toString(type) << " WHERE LedgerSeq < " << ledgerSeq << ";";
+    session << "DELETE FROM " << to_string(type) << " WHERE LedgerSeq < " << ledgerSeq << ";";
 }
 
 std::size_t
@@ -187,7 +187,7 @@ getRows(soci::session& session, TableType type)
     std::size_t rows = 0;
     session << "SELECT COUNT(*) AS rows "
                "FROM "
-            << toString(type) << ";",
+            << to_string(type) << ";",
         soci::into(rows);
 
     return rows;
@@ -201,7 +201,7 @@ getRowsMinMax(soci::session& session, TableType type)
                "MIN(LedgerSeq) AS first, "
                "MAX(LedgerSeq) AS last "
                "FROM "
-            << toString(type) << ";",
+            << to_string(type) << ";",
         soci::into(res.numberOfRows), soci::into(res.minLedgerSequence),
         soci::into(res.maxLedgerSequence);
 
@@ -230,7 +230,7 @@ saveValidatedLedger(
         // LCOV_EXCL_STOP
     }
 
-    if (ledger->header().accountHash != ledger->stateMap().getHash().as_uint256())
+    if (ledger->header().accountHash != ledger->stateMap().getHash().asUint256())
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "sAL: " << ledger->header().accountHash
@@ -247,9 +247,9 @@ saveValidatedLedger(
     // Save the ledger header in the hashed object store
     {
         Serializer s(128);
-        s.add32(HashPrefix::ledgerMaster);
+        s.add32(HashPrefix::LedgerMaster);
         addRaw(ledger->header(), s);
-        app.getNodeStore().store(hotLEDGER, std::move(s.modData()), ledger->header().hash, seq);
+        app.getNodeStore().store(HotLedger, std::move(s.modData()), ledger->header().hash, seq);
     }
 
     std::shared_ptr<AcceptedLedger> aLedger;
@@ -259,8 +259,7 @@ saveValidatedLedger(
         if (!aLedger)
         {
             aLedger = std::make_shared<AcceptedLedger>(ledger);
-            app.getAcceptedLedgerCache().canonicalize_replace_client(
-                ledger->header().hash, aLedger);
+            app.getAcceptedLedgerCache().canonicalizeReplaceClient(ledger->header().hash, aLedger);
         }
     }
     catch (std::exception const&)
@@ -358,7 +357,7 @@ saveValidatedLedger(
                     // It's okay for pseudo transactions to not affect any
                     // accounts.  But otherwise...
                     JLOG(j.warn()) << "Transaction in ledger " << seq << " affects no accounts";
-                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::kNONE);
+                    JLOG(j.warn()) << sleTxn->getJson(JsonOptions::KNone);
                 }
 
                 *db
@@ -1218,7 +1217,7 @@ getTransaction(
     Application& app,
     uint256 const& id,
     std::optional<ClosedInterval<uint32_t>> const& range,
-    error_code_i& ec)
+    ErrorCodeI& ec)
 {
     std::string sql =
         "SELECT LedgerSeq,Status,RawTxn,TxnMeta "
@@ -1282,7 +1281,7 @@ getTransaction(
         JLOG(app.getJournal("Ledger").warn())
             << "Unable to deserialize transaction from raw SQL value. Error: " << e.what();
 
-        ec = rpcDB_DESERIALIZATION;
+        ec = RpcDbDeserialization;
     }
 
     return TxSearched::Unknown;
@@ -1302,7 +1301,7 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
 
     if (config.useTxTables())
     {
-        DatabaseCon::Setup const dbSetup = setup_DatabaseCon(config);
+        DatabaseCon::Setup const dbSetup = setupDatabaseCon(config);
         boost::filesystem::path const dbPath = dbSetup.dataDir / kTX_DB_NAME;
         boost::system::error_code ec;
         std::optional<std::uint64_t> dbSize = boost::filesystem::file_size(dbPath, ec);
@@ -1325,7 +1324,7 @@ dbHasSpace(soci::session& session, Config const& config, beast::Journal j)
         std::uint32_t pageCount = 0;
         session << "PRAGMA page_count;", soci::into(pageCount);
         std::uint32_t const freePages = kMAX_PAGES - pageCount;
-        std::uint64_t const freeSpace = safe_cast<std::uint64_t>(freePages) * kPAGE_SIZE;
+        std::uint64_t const freeSpace = safeCast<std::uint64_t>(freePages) * kPAGE_SIZE;
         JLOG(j.info()) << "Transaction DB pathname: " << dbPath.string()
                        << "; file size: " << dbSize.value_or(-1) << " bytes"
                        << "; SQLite page size: " << kPAGE_SIZE << " bytes"

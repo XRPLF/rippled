@@ -26,7 +26,7 @@ struct OrderBookDBConfig
     @return A new OrderBookDB instance
 */
 std::unique_ptr<OrderBookDB>
-make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config);
+makeOrderBookDb(ServiceRegistry& registry, OrderBookDBConfig const& config);
 
 class OrderBookDBImpl final : public OrderBookDB
 {

@@ -19,8 +19,8 @@ struct Signer
     Account account;
     std::optional<uint256> tag;
 
-    Signer(Account account_, std::uint32_t weight_ = 1, std::optional<uint256> tag_ = std::nullopt)
-        : weight(weight_), account(std::move(account_)), tag(tag_)
+    Signer(Account account, std::uint32_t weight = 1, std::optional<uint256> tag = std::nullopt)
+        : weight(weight), account(std::move(account)), tag(tag)
     {
     }
 };
@@ -48,34 +48,34 @@ public:
     /// a subfield.
     static constexpr SField* const kTOP_LEVEL = nullptr;
 
-    Msig(SField const* subField_, std::vector<Reg> signers_)
-        : signers(std::move(signers_)), subField(subField_)
+    Msig(SField const* subField, std::vector<Reg> signers)
+        : signers(std::move(signers)), subField(subField)
     {
-        sortSigners(signers);
+        sortSigners(this->signers);
     }
 
-    Msig(SField const& subField_, std::vector<Reg> signers_) : Msig{&subField_, signers_}
+    Msig(SField const& subField, std::vector<Reg> signers) : Msig{&subField, signers}
     {
     }
 
-    Msig(std::vector<Reg> signers_) : Msig(kTOP_LEVEL, signers_)
+    Msig(std::vector<Reg> signers) : Msig(kTOP_LEVEL, signers)
     {
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit Msig(SField const* subField_, AccountType&& a0, Accounts&&... aN)
+    explicit Msig(SField const* subField, AccountType&& a0, Accounts&&... aN)
         : Msig{
-              subField_,
+              subField,
               std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
-    explicit Msig(SField const& subField_, AccountType&& a0, Accounts&&... aN)
+    explicit Msig(SField const& subField, AccountType&& a0, Accounts&&... aN)
         : Msig{
-              &subField_,
+              &subField,
               std::vector<Reg>{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}}
     {
     }

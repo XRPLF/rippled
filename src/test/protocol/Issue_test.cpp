@@ -20,7 +20,7 @@
 
 namespace xrpl {
 
-class Issue_test : public beast::unit_test::suite
+class Issue_test : public beast::unit_test::Suite
 {
 public:
     using Domain = uint256;

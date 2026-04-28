@@ -28,7 +28,7 @@
 
 namespace xrpl {
 
-class LedgerData_test : public beast::unit_test::suite
+class LedgerData_test : public beast::unit_test::Suite
 {
 public:
     // test helper
@@ -46,7 +46,7 @@ public:
         Env env{*this, asAdmin ? envconfig() : envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(XRP(100000), gw);
+        env.fund(kXRP(100000), gw);
 
         int const maxLimit = 256;  // would be 2048 for binary requests, no
                                    // need to test that here
@@ -54,7 +54,7 @@ public:
         for (auto i = 0; i < maxLimit + 10; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
-            env.fund(XRP(1000), bob);
+            env.fund(kXRP(1000), bob);
         }
         // Note that calls to env.close() fail without admin permission.
         if (asAdmin)
@@ -91,14 +91,14 @@ public:
         Env env{*this, envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(XRP(100000), gw);
+        env.fund(kXRP(100000), gw);
 
         int const numAccounts = 10;
 
         for (auto i = 0; i < numAccounts; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
-            env.fund(XRP(1000), bob);
+            env.fund(kXRP(1000), bob);
         }
 
         // with no limit specified, we should get all of our fund entries
@@ -123,7 +123,7 @@ public:
         auto const usd = gw["USD"];
         Account const bob{"bob"};
 
-        env.fund(XRP(10000), gw, bob);
+        env.fund(kXRP(10000), gw, bob);
         env.trust(usd(1000), bob);
 
         {
@@ -174,14 +174,14 @@ public:
         Env env{*this, envconfig(noAdmin)};
         Account const gw{"gateway"};
         auto const usd = gw["USD"];
-        env.fund(XRP(100000), gw);
+        env.fund(kXRP(100000), gw);
 
         int const numAccounts = 20;
 
         for (auto i = 0; i < numAccounts; i++)
         {
             Account const bob{std::string("bob") + std::to_string(i)};
-            env.fund(XRP(1000), bob);
+            env.fund(kXRP(1000), bob);
         }
 
         // with no limit specified, we should get all of our fund entries
@@ -211,7 +211,7 @@ public:
     {
         using namespace test::jtx;
         Env env{*this};
-        env.fund(XRP(100000), "alice");
+        env.fund(kXRP(100000), "alice");
         env.close();
 
         // Ledger header should be present in the first query
@@ -270,7 +270,7 @@ public:
 
             Account const gw{"gateway"};
             auto const usd = gw["USD"];
-            env.fund(XRP(100000), gw);
+            env.fund(kXRP(100000), gw);
 
             auto makeRequest = [&env](Json::StaticString const& type) {
                 Json::Value jvParams;
@@ -301,9 +301,9 @@ public:
             for (auto i = 0; i < numAccounts; i++)
             {
                 Account const bob{std::string("bob") + std::to_string(i)};
-                env.fund(XRP(1000), bob);
+                env.fund(kXRP(1000), bob);
             }
-            env(offer(Account{"bob0"}, usd(100), XRP(100)));
+            env(offer(Account{"bob0"}, usd(100), kXRP(100)));
             env.trust(Account{"bob2"}["USD"](100), Account{"bob3"});
 
             auto majorities = getMajorityAmendments(*env.closed());
@@ -323,7 +323,7 @@ public:
                 jv[jss::TransactionType] = jss::EscrowCreate;
                 jv[jss::Account] = Account{"bob5"}.human();
                 jv[jss::Destination] = Account{"bob6"}.human();
-                jv[jss::Amount] = XRP(50).value().getJson(JsonOptions::kNONE);
+                jv[jss::Amount] = kXRP(50).value().getJson(JsonOptions::KNone);
                 jv[sfFinishAfter.fieldName] =
                     NetClock::time_point{env.now() + 10s}.time_since_epoch().count();
                 env(jv);
@@ -334,7 +334,7 @@ public:
                 jv[jss::TransactionType] = jss::PaymentChannelCreate;
                 jv[jss::Account] = Account{"bob6"}.human();
                 jv[jss::Destination] = Account{"bob7"}.human();
-                jv[jss::Amount] = XRP(100).value().getJson(JsonOptions::kNONE);
+                jv[jss::Amount] = kXRP(100).value().getJson(JsonOptions::KNone);
                 jv[jss::SettleDelay] = NetClock::duration{10s}.count();
                 jv[sfPublicKey.fieldName] = strHex(Account{"bob6"}.pk().slice());
                 jv[sfCancelAfter.fieldName] =
@@ -342,7 +342,7 @@ public:
                 env(jv);
             }
 
-            env(check::create("bob6", "bob7", XRP(100)));
+            env(check::create("bob6", "bob7", kXRP(100)));
 
             // bob9 DepositPreauths bob4 and bob8.
             env(deposit::auth(Account{"bob9"}, Account{"bob4"}));

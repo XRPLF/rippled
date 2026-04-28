@@ -13,7 +13,7 @@
 
 namespace xrpl {
 
-class GetCounts_test : public beast::unit_test::suite
+class GetCounts_test : public beast::unit_test::Suite
 {
     void
     testGetCounts()
@@ -40,7 +40,7 @@ class GetCounts_test : public beast::unit_test::suite
         env.close();
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, bob);
+        env.fund(kXRP(10000), alice, bob);
         env.trust(alice["USD"](1000), bob);
         for (auto i = 0; i < 20; ++i)
         {

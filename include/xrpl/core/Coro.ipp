@@ -3,7 +3,7 @@
 namespace xrpl {
 
 template <class F>
-JobQueue::Coro::Coro(Coro_create_t, JobQueue& jq, JobType type, std::string const& name, F&& f)
+JobQueue::Coro::Coro(CoroCreateT, JobQueue& jq, JobType type, std::string const& name, F&& f)
     : jq_(jq)
     , type_(type)
     , name_(name)

@@ -24,7 +24,7 @@
 
 namespace xrpl {
 
-class TransactionEntry_test : public beast::unit_test::suite
+class TransactionEntry_test : public beast::unit_test::Suite
 {
     void
     testBadInput()
@@ -44,7 +44,7 @@ class TransactionEntry_test : public beast::unit_test::suite
         }
 
         {
-            Json::Value params{Json::objectValue};
+            Json::Value params{Json::ObjectValue};
             params[jss::ledger] = 20;
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "lgrNotFound");
@@ -52,7 +52,7 @@ class TransactionEntry_test : public beast::unit_test::suite
         }
 
         {
-            Json::Value params{Json::objectValue};
+            Json::Value params{Json::ObjectValue};
             params[jss::ledger] = "current";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
@@ -61,7 +61,7 @@ class TransactionEntry_test : public beast::unit_test::suite
         }
 
         {
-            Json::Value params{Json::objectValue};
+            Json::Value params{Json::ObjectValue};
             params[jss::ledger] = "closed";
             params[jss::tx_hash] = "DEADBEEF";
             auto const result = env.client().invoke("transaction_entry", params)[jss::result];
@@ -151,7 +151,7 @@ class TransactionEntry_test : public beast::unit_test::suite
                            std::string const closeTimeIso = "") {
             // first request using ledger_index to lookup
             Json::Value const resIndex{[&env, index, &txhash, apiVersion]() {
-                Json::Value params{Json::objectValue};
+                Json::Value params{Json::ObjectValue};
                 params[jss::ledger_index] = index;
                 params[jss::tx_hash] = txhash;
                 params[jss::api_version] = apiVersion;
@@ -184,7 +184,7 @@ class TransactionEntry_test : public beast::unit_test::suite
             {
                 Json::Value expected;
                 Json::Reader().parse(expectedJson, expected);
-                if (RPC::contains_error(expected))
+                if (RPC::containsError(expected))
                     Throw<std::runtime_error>("Internal JSONRPC_test error.  Bad test JSON.");
 
                 for (auto memberIt = expected.begin(); memberIt != expected.end(); memberIt++)
@@ -206,7 +206,7 @@ class TransactionEntry_test : public beast::unit_test::suite
             // second request using ledger_hash to lookup and verify
             // both responses match
             {
-                Json::Value params{Json::objectValue};
+                Json::Value params{Json::ObjectValue};
                 params[jss::ledger_hash] = resIndex[jss::ledger_hash];
                 params[jss::tx_hash] = txhash;
                 params[jss::api_version] = apiVersion;
@@ -229,11 +229,11 @@ class TransactionEntry_test : public beast::unit_test::suite
         Account const a1{"A1"};
         Account const a2{"A2"};
 
-        env.fund(XRP(10000), a1);
+        env.fund(kXRP(10000), a1);
         auto fund1Tx = to_string(env.tx()->getTransactionID());
         BEAST_EXPECT(fund1Tx == "F4E9DF90D829A9E8B423FF68C34413E240D8D8BB0EFD080DF08114ED398E2506");
 
-        env.fund(XRP(10000), a2);
+        env.fund(kXRP(10000), a2);
         auto fund2Tx = to_string(env.tx()->getTransactionID());
         BEAST_EXPECT(fund2Tx == "6853CD8226A05068C951CB1F54889FF4E40C5B440DC1C5BA38F114C4E0B1E705");
 
@@ -321,7 +321,7 @@ class TransactionEntry_test : public beast::unit_test::suite
             "3A6E375BFDFF029A571AFBB3BC46C4F52963FAF043B406D0E59A7194C1A8F98E",
             "2000-01-01T00:00:20Z");
 
-        env(offer(a2, XRP(100), a2["USD"](1)));
+        env(offer(a2, kXRP(100), a2["USD"](1)));
         auto offerTx = to_string(env.tx()->getTransactionID());
         BEAST_EXPECT(offerTx == "5FCC1A27A7664F82A0CC4BE5766FBBB7C560D52B93AA7B550CD33B27AEC7EFFB");
 

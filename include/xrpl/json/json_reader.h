@@ -67,25 +67,25 @@ public:
     [[nodiscard]] std::string
     getFormattedErrorMessages() const;
 
-    static constexpr unsigned nest_limit{25};
+    static constexpr unsigned kNEST_LIMIT{25};
 
 private:
     enum TokenType {
-        tokenEndOfStream = 0,
-        tokenObjectBegin,
-        tokenObjectEnd,
-        tokenArrayBegin,
-        tokenArrayEnd,
-        tokenString,
-        tokenInteger,
-        tokenDouble,
-        tokenTrue,
-        tokenFalse,
-        tokenNull,
-        tokenArraySeparator,
-        tokenMemberSeparator,
-        tokenComment,
-        tokenError
+        TokenEndOfStream = 0,
+        TokenObjectBegin,
+        TokenObjectEnd,
+        TokenArrayBegin,
+        TokenArrayEnd,
+        TokenString,
+        TokenInteger,
+        TokenDouble,
+        TokenTrue,
+        TokenFalse,
+        TokenNull,
+        TokenArraySeparator,
+        TokenMemberSeparator,
+        TokenComment,
+        TokenError
     };
 
     class Token
@@ -93,9 +93,9 @@ private:
     public:
         explicit Token() = default;
 
-        TokenType type_;
-        Location start_;
-        Location end_;
+        TokenType type;
+        Location start;
+        Location end;
     };
 
     class ErrorInfo
@@ -103,9 +103,9 @@ private:
     public:
         explicit ErrorInfo() = default;
 
-        Token token_{};
-        std::string message_;
-        Location extra_{};
+        Token token{};
+        std::string message;
+        Location extra{};
     };
 
     using Errors = std::deque<ErrorInfo>;

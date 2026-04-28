@@ -119,7 +119,7 @@ class FeatureCollections
     getByIndex(size_t i) const
     {
         if (i >= features_.size())
-            LogicError("Invalid FeatureBitset index");
+            logicError("Invalid FeatureBitset index");
         auto const& sequence = features_.get<Feature::ByIndex>();
         return sequence[i];
     }
@@ -202,7 +202,7 @@ public:
 
 FeatureCollections::FeatureCollections()
 {
-    features_.reserve(xrpl::detail::numFeatures);
+    features_.reserve(xrpl::detail::kNUM_FEATURES);
 }
 
 std::optional<uint256>
@@ -220,7 +220,7 @@ void
 check(bool condition, char const* logicErrorMessage)
 {
     if (!condition)
-        LogicError(logicErrorMessage);
+        logicError(logicErrorMessage);
 }
 
 uint256
@@ -233,7 +233,7 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
     Feature const* i = getByName(name);
     if (i == nullptr)
     {
-        check(features_.size() < detail::numFeatures, "More features defined than allocated.");
+        check(features_.size() < detail::kNUM_FEATURES, "More features defined than allocated.");
 
         auto const f = sha512Half(Slice(name.data(), name.size()));
 
@@ -268,7 +268,7 @@ FeatureCollections::registerFeature(std::string const& name, Supported support, 
     }
 
     // Each feature should only be registered once
-    LogicError("Duplicate feature registration");
+    logicError("Duplicate feature registration");
 }
 
 /** Tell FeatureCollections when registration is complete. */
@@ -287,7 +287,7 @@ FeatureCollections::featureToBitsetIndex(uint256 const& f) const
 
     Feature const* feature = getByFeature(f);
     if (feature == nullptr)
-        LogicError("Invalid Feature ID");
+        logicError("Invalid Feature ID");
 
     return getIndex(*feature);
 }

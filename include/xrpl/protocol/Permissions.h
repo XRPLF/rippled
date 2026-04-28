@@ -28,7 +28,7 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("PERMISSION")
 };
 
-enum Delegation { delegable, notDelegable };
+enum Delegation { Delegable, NotDelegable };
 
 class Permission
 {

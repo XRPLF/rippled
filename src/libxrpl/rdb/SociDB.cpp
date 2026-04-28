@@ -246,7 +246,7 @@ public:
 
         // If the Job is not added to the JobQueue then we're not running_.
         if (!jobQueue_.addJob(
-                jtWAL,
+                JtWal,
                 "WAL",
                 // If the owning DatabaseCon is destroyed, no need to checkpoint
                 // or keep the checkpointer alive so use a weak_ptr to this.

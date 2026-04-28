@@ -35,10 +35,10 @@ setTx(AccountID const& account, Credentials const& credentials, std::optional<ui
     if (domain)
         jv[sfDomainID] = to_string(*domain);
 
-    Json::Value acceptedCredentials(Json::arrayValue);
+    Json::Value acceptedCredentials(Json::ArrayValue);
     for (auto const& credential : credentials)
     {
-        Json::Value object(Json::objectValue);
+        Json::Value object(Json::ObjectValue);
         object[sfCredential] = credential.toJson();
         acceptedCredentials.append(std::move(object));
     }
@@ -51,7 +51,7 @@ setTx(AccountID const& account, Credentials const& credentials, std::optional<ui
 Json::Value
 deleteTx(AccountID const& account, uint256 const& domain)
 {
-    Json::Value jv{Json::objectValue};
+    Json::Value jv{Json::ObjectValue};
     jv[sfTransactionType] = jss::PermissionedDomainDelete;
     jv[sfAccount] = to_string(account);
     jv[sfDomainID] = to_string(domain);
@@ -69,7 +69,7 @@ getObjects(Account const& account, Env& env, bool withType)
         params[jss::type] = jss::permissioned_domain;
 
     auto const& resp = env.rpc("json", "account_objects", to_string(params));
-    Json::Value objects(Json::arrayValue);
+    Json::Value objects(Json::ArrayValue);
     objects = resp[jss::result][jss::account_objects];
     for (auto const& object : objects)
     {
@@ -120,11 +120,11 @@ credentialsFromJson(
     std::unordered_map<std::string, Account> const& human2Acc)
 {
     Credentials ret;
-    Json::Value credentials(Json::arrayValue);
+    Json::Value credentials(Json::ArrayValue);
     credentials = object["AcceptedCredentials"];
     for (auto const& credential : credentials)
     {
-        Json::Value obj(Json::objectValue);
+        Json::Value obj(Json::ObjectValue);
         obj = credential[jss::Credential];
         auto const& issuer = obj[jss::Issuer];
         auto const& credentialType = obj["CredentialType"];
@@ -150,8 +150,8 @@ uint256
 getNewDomain(std::shared_ptr<STObject const> const& meta)
 {
     uint256 ret;
-    auto metaJson = meta->getJson(JsonOptions::kNONE);
-    Json::Value a(Json::arrayValue);
+    auto metaJson = meta->getJson(JsonOptions::KNone);
+    Json::Value a(Json::ArrayValue);
     a = metaJson["AffectedNodes"];
 
     for (auto const& node : a)

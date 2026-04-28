@@ -157,7 +157,7 @@ randomBigInt(std::uint8_t minSize = 1, std::uint8_t maxSize = 5)
 }
 }  // namespace multiprecision_utils
 
-class base58_test : public beast::unit_test::suite
+class base58_test : public beast::unit_test::Suite
 {
     void
     testMultiprecision()
@@ -182,7 +182,7 @@ class base58_test : public beast::unit_test::suite
             auto const refDiv = boostBigInt / d;
             auto const refMod = boostBigInt % d;
 
-            auto const mod = b58_fast::detail::inplace_bigint_div_rem(
+            auto const mod = b58_fast::detail::inplaceBigintDivRem(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
             auto const foundDiv = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refMod.convert_to<std::uint64_t>() == mod);
@@ -201,9 +201,9 @@ class base58_test : public beast::unit_test::suite
 
             auto const refAdd = boostBigInt + d;
 
-            auto const result = b58_fast::detail::inplace_bigint_add(
+            auto const result = b58_fast::detail::inplaceBigintAdd(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            BEAST_EXPECT(result == TokenCodecErrc::success);
+            BEAST_EXPECT(result == TokenCodecErrc::Success);
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refAdd == foundAdd);
         }
@@ -218,9 +218,9 @@ class base58_test : public beast::unit_test::suite
 
             auto const refAdd = boostBigInt + d;
 
-            auto const result = b58_fast::detail::inplace_bigint_add(
+            auto const result = b58_fast::detail::inplaceBigintAdd(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            BEAST_EXPECT(result == TokenCodecErrc::overflowAdd);
+            BEAST_EXPECT(result == TokenCodecErrc::OverflowAdd);
             auto const foundAdd = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refAdd != foundAdd);
         }
@@ -236,9 +236,9 @@ class base58_test : public beast::unit_test::suite
 
             auto const refMul = boostBigInt * d;
 
-            auto const result = b58_fast::detail::inplace_bigint_mul(
+            auto const result = b58_fast::detail::inplaceBigintMul(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            BEAST_EXPECT(result == TokenCodecErrc::success);
+            BEAST_EXPECT(result == TokenCodecErrc::Success);
             auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refMul == foundMul);
         }
@@ -252,9 +252,9 @@ class base58_test : public beast::unit_test::suite
 
             auto const refMul = boostBigInt * d;
 
-            auto const result = b58_fast::detail::inplace_bigint_mul(
+            auto const result = b58_fast::detail::inplaceBigintMul(
                 std::span<uint64_t>(bigInt.data(), bigInt.size()), d);
-            BEAST_EXPECT(result == TokenCodecErrc::inputTooLarge);
+            BEAST_EXPECT(result == TokenCodecErrc::InputTooLarge);
             auto const foundMul = multiprecision_utils::toBoostMP(bigInt);
             BEAST_EXPECT(refMul != foundMul);
         }
@@ -275,7 +275,7 @@ class base58_test : public beast::unit_test::suite
                 std::span const outBuf{b58ResultBuf[i]};
                 if (i == 0)
                 {
-                    auto const r = xrpl::b58_fast::detail::b256_to_b58_be(b256Data, outBuf);
+                    auto const r = xrpl::b58_fast::detail::b256ToB58Be(b256Data, outBuf);
                     BEAST_EXPECT(r);
                     b58Result[i] = r.value();
                 }
@@ -305,7 +305,7 @@ class base58_test : public beast::unit_test::suite
                 {
                     std::string const in(
                         b58Result[i].data(), b58Result[i].data() + b58Result[i].size());
-                    auto const r = xrpl::b58_fast::detail::b58_to_b256_be(in, outBuf);
+                    auto const r = xrpl::b58_fast::detail::b58ToB256Be(in, outBuf);
                     BEAST_EXPECT(r);
                     b256Result[i] = r.value();
                 }

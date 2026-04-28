@@ -68,13 +68,13 @@ ceilInImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality c
 }
 
 Amounts
-Quality::ceil_in(Amounts const& amount, STAmount const& limit) const
+Quality::ceilIn(Amounts const& amount, STAmount const& limit) const
 {
     return ceilInImpl<divRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
-Quality::ceil_in_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const
+Quality::ceilInStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
     return ceilInImpl<divRoundStrict>(amount, limit, roundUp, *this);
 }
@@ -97,19 +97,19 @@ ceilOutImpl(Amounts const& amount, STAmount const& limit, bool roundUp, Quality 
 }
 
 Amounts
-Quality::ceil_out(Amounts const& amount, STAmount const& limit) const
+Quality::ceilOut(Amounts const& amount, STAmount const& limit) const
 {
     return ceilOutImpl<mulRound>(amount, limit, /* roundUp */ true, *this);
 }
 
 Amounts
-Quality::ceil_out_strict(Amounts const& amount, STAmount const& limit, bool roundUp) const
+Quality::ceilOutStrict(Amounts const& amount, STAmount const& limit, bool roundUp) const
 {
     return ceilOutImpl<mulRoundStrict>(amount, limit, roundUp, *this);
 }
 
 Quality
-composed_quality(Quality const& lhs, Quality const& rhs)
+composedQuality(Quality const& lhs, Quality const& rhs)
 {
     STAmount const lhsRate(lhs.rate());
     XRPL_ASSERT(lhsRate != beast::zero, "xrpl::composed_quality : nonzero left input");

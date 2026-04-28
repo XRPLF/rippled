@@ -30,7 +30,7 @@
 
 namespace xrpl::tests {
 
-class FetchPack_test : public beast::unit_test::suite
+class FetchPack_test : public beast::unit_test::Suite
 {
 public:
     enum { TableItems = 100, TableItemsExtra = 20 };
@@ -85,8 +85,8 @@ public:
     {
         Serializer s;
         for (int d = 0; d < 3; ++d)
-            s.add32(xrpl::rand_int<std::uint32_t>(r));
-        return make_shamapitem(s.getSHA512Half(), s.slice());
+            s.add32(xrpl::randInt<std::uint32_t>(r));
+        return makeShamapitem(s.getSHA512Half(), s.slice());
     }
 
     static void
@@ -94,7 +94,7 @@ public:
     {
         while ((n--) != 0u)
         {
-            auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, makeRandomItemMember(r)));
+            auto const result(t.addItem(SHAMapNodeType::TnAccountState, makeRandomItemMember(r)));
             assert(result);
             (void)result;
         }
@@ -103,7 +103,7 @@ public:
     void
     onFetch(Map& map, SHAMapHash const& hash, Blob const& blob)
     {
-        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.as_uint256());
+        BEAST_EXPECT(sha512Half(makeSlice(blob)) == hash.asUint256());
         map.emplace(hash, blob);
     }
 

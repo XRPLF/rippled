@@ -21,12 +21,12 @@ namespace xrpl {
 // code assumes this node is synced (and will continue to do so until
 // there's a functional network.
 
-InfoSub::InfoSub(Source& source) : source_(source), seq_(assign_id())
+InfoSub::InfoSub(Source& source) : source_(source), seq_(assignId())
 {
 }
 
 InfoSub::InfoSub(Source& source, Consumer consumer)
-    : consumer_(consumer), source_(source), seq_(assign_id())
+    : consumer_(consumer), source_(source), seq_(assignId())
 {
 }
 

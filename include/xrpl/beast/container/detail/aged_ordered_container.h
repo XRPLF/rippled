@@ -212,7 +212,7 @@ private:
     using ElementAllocatorTraits = std::allocator_traits<ElementAllocator>;
 
     class ConfigT : private KeyValueCompare,
-                    public beast::detail::empty_base_optimization<ElementAllocator>
+                    public beast::detail::EmptyBaseOptimization<ElementAllocator>
     {
     public:
         explicit ConfigT(clock_type& clock) : clock(clock)
@@ -224,20 +224,20 @@ private:
         }
 
         ConfigT(clock_type& clock, Allocator const& alloc)
-            : beast::detail::empty_base_optimization<ElementAllocator>(alloc), clock(clock)
+            : beast::detail::EmptyBaseOptimization<ElementAllocator>(alloc), clock(clock)
         {
         }
 
         ConfigT(clock_type& clock, Compare const& comp, Allocator const& alloc)
             : KeyValueCompare(comp)
-            , beast::detail::empty_base_optimization<ElementAllocator>(alloc)
+            , beast::detail::EmptyBaseOptimization<ElementAllocator>(alloc)
             , clock(clock)
         {
         }
 
         ConfigT(ConfigT const& other)
             : KeyValueCompare(other.keyCompare())
-            , beast::detail::empty_base_optimization<ElementAllocator>(
+            , beast::detail::EmptyBaseOptimization<ElementAllocator>(
                   ElementAllocatorTraits::select_on_container_copy_construction(other.alloc()))
             , clock(other.clock)
         {
@@ -245,15 +245,15 @@ private:
 
         ConfigT(ConfigT const& other, Allocator const& alloc)
             : KeyValueCompare(other.keyCompare())
-            , beast::detail::empty_base_optimization<ElementAllocator>(alloc)
+            , beast::detail::EmptyBaseOptimization<ElementAllocator>(alloc)
             , clock(other.clock)
         {
         }
 
         ConfigT(ConfigT&& other)
             : KeyValueCompare(std::move(other.keyCompare()))
-            , beast::detail::empty_base_optimization<ElementAllocator>(std::move(
-                  static_cast<beast::detail::empty_base_optimization<ElementAllocator>&>(other)))
+            , beast::detail::EmptyBaseOptimization<ElementAllocator>(std::move(
+                  static_cast<beast::detail::EmptyBaseOptimization<ElementAllocator>&>(other)))
             , clock(other.clock)
         {
         }
@@ -262,7 +262,7 @@ private:
             ConfigT&& other,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             Allocator const& alloc)
             : KeyValueCompare(std::move(other.keyCompare()))
-            , beast::detail::empty_base_optimization<ElementAllocator>(alloc)
+            , beast::detail::EmptyBaseOptimization<ElementAllocator>(alloc)
             , clock(other.clock)
         {
         }
@@ -315,13 +315,13 @@ private:
         ElementAllocator&
         alloc()
         {
-            return beast::detail::empty_base_optimization<ElementAllocator>::member();
+            return beast::detail::EmptyBaseOptimization<ElementAllocator>::member();
         }
 
         [[nodiscard]] ElementAllocator const&
         alloc() const
         {
-            return beast::detail::empty_base_optimization<ElementAllocator>::member();
+            return beast::detail::EmptyBaseOptimization<ElementAllocator>::member();
         }
 
         std::reference_wrapper<clock_type> clock;
@@ -1778,11 +1778,11 @@ AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>::swapDat
 //------------------------------------------------------------------------------
 
 template <bool IsMulti, bool IsMap, class Key, class T, class Clock, class Compare, class Allocator>
-struct is_aged_container<
+struct IsAgedContainer<
     beast::detail::AgedOrderedContainer<IsMulti, IsMap, Key, T, Clock, Compare, Allocator>>
     : std::true_type
 {
-    explicit is_aged_container() = default;
+    explicit IsAgedContainer() = default;
 };
 
 // Free functions

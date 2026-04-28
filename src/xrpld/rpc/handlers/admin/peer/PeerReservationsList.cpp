@@ -12,8 +12,8 @@ doPeerReservationsList(RPC::JsonContext& context)
     auto const& reservations = context.app.getPeerReservations().list();
     // Enumerate the reservations in context.app.getPeerReservations()
     // as a Json::Value.
-    Json::Value result{Json::objectValue};
-    Json::Value& jaReservations = result[jss::reservations] = Json::arrayValue;
+    Json::Value result{Json::ObjectValue};
+    Json::Value& jaReservations = result[jss::reservations] = Json::ArrayValue;
     for (auto const& reservation : reservations)
     {
         jaReservations.append(reservation.toJson());

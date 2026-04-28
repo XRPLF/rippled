@@ -13,23 +13,23 @@ std::vector<SOElement> const&
 TxFormats::getCommonFields()
 {
     static auto const kCOMMON_FIELDS = std::vector<SOElement>{
-        {sfTransactionType, soeREQUIRED},
-        {sfFlags, soeOPTIONAL},
-        {sfSourceTag, soeOPTIONAL},
-        {sfAccount, soeREQUIRED},
-        {sfSequence, soeREQUIRED},
-        {sfPreviousTxnID, soeOPTIONAL},  // emulate027
-        {sfLastLedgerSequence, soeOPTIONAL},
-        {sfAccountTxnID, soeOPTIONAL},
-        {sfFee, soeREQUIRED},
-        {sfOperationLimit, soeOPTIONAL},
-        {sfMemos, soeOPTIONAL},
-        {sfSigningPubKey, soeREQUIRED},
-        {sfTicketSequence, soeOPTIONAL},
-        {sfTxnSignature, soeOPTIONAL},
-        {sfSigners, soeOPTIONAL},  // submit_multisigned
-        {sfNetworkID, soeOPTIONAL},
-        {sfDelegate, soeOPTIONAL},
+        {sfTransactionType, SoeRequired},
+        {sfFlags, SoeOptional},
+        {sfSourceTag, SoeOptional},
+        {sfAccount, SoeRequired},
+        {sfSequence, SoeRequired},
+        {sfPreviousTxnID, SoeOptional},  // emulate027
+        {sfLastLedgerSequence, SoeOptional},
+        {sfAccountTxnID, SoeOptional},
+        {sfFee, SoeRequired},
+        {sfOperationLimit, SoeOptional},
+        {sfMemos, SoeOptional},
+        {sfSigningPubKey, SoeRequired},
+        {sfTicketSequence, SoeOptional},
+        {sfTxnSignature, SoeOptional},
+        {sfSigners, SoeOptional},  // submit_multisigned
+        {sfNetworkID, SoeOptional},
+        {sfDelegate, SoeOptional},
     };
     return kCOMMON_FIELDS;
 }

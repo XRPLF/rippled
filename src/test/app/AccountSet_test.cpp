@@ -51,7 +51,7 @@
 
 namespace xrpl {
 
-class AccountSet_test : public beast::unit_test::suite
+class AccountSet_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -62,7 +62,7 @@ public:
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
-        env.fund(XRP(10000), noripple(alice));
+        env.fund(kXRP(10000), noripple(alice));
         // ask for the ledger entry - account root, to check its flags
         auto const jrr = env.le(alice);
         BEAST_EXPECT(jrr && jrr->at(sfFlags) == 0u);
@@ -77,11 +77,11 @@ public:
         Account const alice("alice");
 
         Env env(*this, testableAmendments());
-        env.fund(XRP(10000), noripple(alice));
+        env.fund(kXRP(10000), noripple(alice));
 
         // Give alice a regular key so she can legally set and clear
         // her asfDisableMaster flag.
-        Account const alie{"alie", KeyType::secp256k1};
+        Account const alie{"alie", KeyType::Secp256k1};
         env(regkey(alice, alie));
         env.close();
 
@@ -128,13 +128,13 @@ public:
                 if (std::ranges::find(goodFlags, flag) != goodFlags.end())
                 {
                     // Good flag
-                    env.Require(Nflags(alice, flag));
+                    env.require(Nflags(alice, flag));
                     env(fset(alice, flag), Sig(alice));
                     env.close();
-                    env.Require(Flags(alice, flag));
+                    env.require(Flags(alice, flag));
                     env(fclear(alice, flag), Sig(alie));
                     env.close();
-                    env.Require(Nflags(alice, flag));
+                    env.require(Nflags(alice, flag));
                     std::uint32_t const nowFlags = (*env.le(alice))[sfFlags];
                     BEAST_EXPECT(nowFlags == origFlags);
                 }
@@ -169,7 +169,7 @@ public:
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
-        env.fund(XRP(10000), noripple(alice));
+        env.fund(kXRP(10000), noripple(alice));
 
         std::uint32_t const origFlags = (*env.le(alice))[sfFlags];
 
@@ -192,17 +192,17 @@ public:
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
-        env.fund(XRP(10000), noripple(alice));
+        env.fund(kXRP(10000), noripple(alice));
         env.memoize("eric");
         env(regkey(alice, "eric"));
 
-        env.Require(Nflags(alice, asfNoFreeze));
+        env.require(Nflags(alice, asfNoFreeze));
         env(fset(alice, asfNoFreeze), Sig("eric"), Ter(tecNEED_MASTER_KEY));
         env(fset(alice, asfNoFreeze), Sig(alice));
-        env.Require(Flags(alice, asfNoFreeze));
+        env.require(Flags(alice, asfNoFreeze));
         env(fclear(alice, asfNoFreeze), Sig(alice));
         // verify flag is still set (clear does not clear in this case)
-        env.Require(Flags(alice, asfNoFreeze));
+        env.require(Flags(alice, asfNoFreeze));
     }
 
     void
@@ -213,7 +213,7 @@ public:
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         auto jt = noop(alice);
         // The Domain field is represented as the hex string of the lowercase
         // ASCII of the domain. For example, the domain example.com would be
@@ -262,10 +262,10 @@ public:
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         auto jt = noop(alice);
 
-        auto const rkp = randomKeyPair(KeyType::ed25519);
+        auto const rkp = randomKeyPair(KeyType::Ed25519);
         jt[sfMessageKey.fieldName] = strHex(rkp.first.slice());
         env(jt);
         BEAST_EXPECT(strHex((*env.le(alice))[sfMessageKey]) == strHex(rkp.first.slice()));
@@ -287,7 +287,7 @@ public:
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         auto jt = noop(alice);
 
         std::string const locator =
@@ -309,7 +309,7 @@ public:
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         auto jt = noop(alice);
 
         std::string const mh("5F31A79367DC3137FADA860C05742EE6");
@@ -340,7 +340,7 @@ public:
                 Env env(*this, features);
 
                 Account const alice("alice");
-                env.fund(XRP(10000), alice);
+                env.fund(kXRP(10000), alice);
 
                 for (auto const& r : testData)
                 {
@@ -386,7 +386,7 @@ public:
         for (double transferRate = 1.0; transferRate <= 2.0; transferRate += 0.03125)
         {
             Env env(*this);
-            env.fund(XRP(10000), gw, alice, bob);
+            env.fund(kXRP(10000), gw, alice, bob);
             env.close();
             env.trust(usd(10), alice, bob);
             env.close();
@@ -399,11 +399,11 @@ public:
 
             env(pay(gw, alice, usd(10)));
             env.close();
-            env(pay(alice, bob, usd(1)), sendmax(usd(10)));
+            env(pay(alice, bob, usd(1)), Sendmax(usd(10)));
             env.close();
 
-            env.Require(Balance(alice, usd(10) - amountWithRate));
-            env.Require(Balance(bob, usd(1)));
+            env.require(Balance(alice, usd(10) - amountWithRate));
+            env.require(Balance(bob, usd(1)));
         }
 
         // Since fix1201 was enabled on Nov 14 2017 a rate in excess of
@@ -417,7 +417,7 @@ public:
         for (double const transferRate : {4.0, 4.294967295})
         {
             Env env(*this);
-            env.fund(XRP(10000), gw, alice, bob);
+            env.fund(kXRP(10000), gw, alice, bob);
             env.close();
             env.trust(usd(10), alice, bob);
             env.close();
@@ -464,10 +464,10 @@ public:
                 toAmount<STAmount>(multiply(amount.value(), Rate(transferRate * QUALITY_ONE)));
 
             env(pay(gw, alice, usd(10)));
-            env(pay(alice, bob, amount), sendmax(usd(10)));
+            env(pay(alice, bob, amount), Sendmax(usd(10)));
 
-            env.Require(Balance(alice, usd(10) - amountWithRate));
-            env.Require(Balance(bob, amount));
+            env.require(Balance(alice, usd(10) - amountWithRate));
+            env.require(Balance(bob, amount));
         }
     }
 
@@ -479,7 +479,7 @@ public:
         using namespace test::jtx;
         Env env(*this);
         Account const alice("alice");
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
 
         auto jt = fset(alice, asfDisallowXRP);
         jt[jss::ClearFlag] = asfDisallowXRP;
@@ -522,7 +522,7 @@ public:
         Account const alice("alice");
         Account const bob("bob");
 
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
 
         // alice should have an empty directory.
@@ -550,29 +550,29 @@ public:
         Env env(*this);
         Account const alice("alice");
 
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
 
-        std::uint32_t const ticketSeq{env.Seq(alice) + 1};
+        std::uint32_t const ticketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 1));
         env.close();
-        env.Require(Owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), tickets(alice, 1));
 
         // Try using a ticket that alice doesn't have.
-        env(noop(alice), ticket::use(ticketSeq + 1), Ter(terPRE_TICKET));
+        env(noop(alice), ticket::Use(ticketSeq + 1), Ter(terPRE_TICKET));
         env.close();
-        env.Require(Owners(alice, 1), tickets(alice, 1));
+        env.require(Owners(alice, 1), tickets(alice, 1));
 
         // Actually use alice's ticket.  Note that if a transaction consumes
         // a ticket then the account's sequence number does not advance.
-        std::uint32_t const aliceSeq{env.Seq(alice)};
-        env(noop(alice), ticket::use(ticketSeq));
+        std::uint32_t const aliceSeq{env.seq(alice)};
+        env(noop(alice), ticket::Use(ticketSeq));
         env.close();
-        env.Require(Owners(alice, 0), tickets(alice, 0));
-        BEAST_EXPECT(aliceSeq == env.Seq(alice));
+        env.require(Owners(alice, 0), tickets(alice, 0));
+        BEAST_EXPECT(aliceSeq == env.seq(alice));
 
         // Try re-using a ticket that alice already used.
-        env(noop(alice), ticket::use(ticketSeq), Ter(tefNO_TICKET));
+        env(noop(alice), ticket::Use(ticketSeq), Ter(tefNO_TICKET));
         env.close();
     }
 
@@ -584,7 +584,7 @@ public:
         Env env(*this);
         Account const alice("alice");
 
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
 
         auto jtx = env.jt(noop("alice"), Ter(temBAD_SIGNATURE));
@@ -594,7 +594,7 @@ public:
         stx->at(sfSigningPubKey) = makeSlice(std::string("badkey"));
 
         env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
-            auto const result = xrpl::apply(env.app(), view, *stx, tapNONE, j);
+            auto const result = xrpl::apply(env.app(), view, *stx, TapNone, j);
             BEAST_EXPECT(result.ter == temBAD_SIGNATURE);
             BEAST_EXPECT(!result.applied);
             return result.applied;

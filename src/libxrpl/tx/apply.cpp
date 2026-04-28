@@ -173,9 +173,9 @@ applyBatchTransactions(
     auto const mode = batchTxn.getFlags();
 
     auto applyOneTransaction = [&registry, &j, &parentBatchId, &batchView](STTx const& tx) {
-        OpenView perTxBatchView(kBatchView, batchView);
+        OpenView perTxBatchView(kBATCH_VIEW, batchView);
 
-        auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+        auto const ret = apply(registry, perTxBatchView, parentBatchId, tx, TapBatch, j);
         XRPL_ASSERT(
             ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
             "Inner transaction should not be applied");
@@ -231,7 +231,7 @@ applyTransaction(
 {
     // Returns false if the transaction has need not be retried.
     if (retryAssured)
-        flags = flags | tapRETRY;
+        flags = flags | TapRetry;
 
     JLOG(j.debug()) << "TXN " << txn.getTransactionID() << (retryAssured ? "/retry" : "/final");
 
@@ -247,7 +247,7 @@ applyTransaction(
             // its inner transactions as necessary.
             if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
-                OpenView wholeBatchView(kBatchView, view);
+                OpenView wholeBatchView(kBATCH_VIEW, view);
 
                 if (applyBatchTransactions(registry, wholeBatchView, txn, j))
                     wholeBatchView.apply(view);

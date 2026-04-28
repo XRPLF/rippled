@@ -80,7 +80,7 @@ private:
 };
 
 template <class T, class... Args>
-Path::Path(T const& t, Args const&... args) : jv_(Json::arrayValue)
+Path::Path(T const& t, Args const&... args) : jv_(Json::ArrayValue)
 {
     append(t, args...);
 }

@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-class DepositAuthorized_test : public beast::unit_test::suite
+class DepositAuthorized_test : public beast::unit_test::Suite
 {
 public:
     // Helper function that builds arguments for a deposit_authorized command.
@@ -31,7 +31,7 @@ public:
         std::string const& ledger = "",
         std::vector<std::string> const& credentials = {})
     {
-        Json::Value args{Json::objectValue};
+        Json::Value args{Json::ObjectValue};
         args[jss::source_account] = source.human();
         args[jss::destination_account] = dest.human();
         if (!ledger.empty())
@@ -39,7 +39,7 @@ public:
 
         if (!credentials.empty())
         {
-            auto& arr(args[jss::credentials] = Json::arrayValue);
+            auto& arr(args[jss::credentials] = Json::ArrayValue);
             for (auto const& s : credentials)
                 arr.append(s);
         }
@@ -68,7 +68,7 @@ public:
         Account const carol{"carol"};
 
         Env env(*this);
-        env.fund(XRP(1000), alice, becky, carol);
+        env.fund(kXRP(1000), alice, becky, carol);
         env.close();
 
         // becky is authorized to deposit to herself.
@@ -230,7 +230,7 @@ public:
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "srcActNotFound", "Source account not found.");
         }
-        env.fund(XRP(1000), alice);
+        env.fund(kXRP(1000), alice);
         env.close();
         {
             // becky is not yet funded.
@@ -238,7 +238,7 @@ public:
             Json::Value const result{env.rpc("json", "deposit_authorized", args.toStyledString())};
             verifyErr(result, "dstActNotFound", "Destination account not found.");
         }
-        env.fund(XRP(1000), becky);
+        env.fund(kXRP(1000), becky);
         env.close();
         {
             // Once becky is funded try it again and see it succeed.
@@ -308,7 +308,7 @@ public:
         Account const carol{"carol"};
 
         Env env(*this);
-        env.fund(XRP(1000), alice, becky, carol, diana);
+        env.fund(kXRP(1000), alice, becky, carol, diana);
         env.close();
 
         // carol recognize alice
@@ -330,7 +330,7 @@ public:
             testcase("deposit_authorized with credentials failure: empty array.");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = Json::arrayValue;
+            args[jss::credentials] = Json::ArrayValue;
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());
             checkCredentialsResponse(jv[jss::result], alice, becky, false, {}, "invalidParams");
@@ -342,7 +342,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = Json::arrayValue;
+            args[jss::credentials] = Json::ArrayValue;
             args[jss::credentials].append(1);
             args[jss::credentials].append(3);
 
@@ -356,7 +356,7 @@ public:
                 "credentials");
 
             auto args = depositAuthArgs(alice, becky, "validated");
-            args[jss::credentials] = Json::arrayValue;
+            args[jss::credentials] = Json::ArrayValue;
             args[jss::credentials].append("hello world");
 
             auto const jv = env.rpc("json", "deposit_authorized", args.toStyledString());

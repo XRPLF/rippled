@@ -41,7 +41,7 @@ ConsensusTransSetSF::gotNode(
 
     nodeCache_.insert(nodeHash, nodeData);
 
-    if ((type == SHAMapNodeType::tnTRANSACTION_NM) && (nodeData.size() > 16))
+    if ((type == SHAMapNodeType::TnTransactionNm) && (nodeData.size() > 16))
     {
         // this is a transaction, and we didn't have it
         JLOG(j_.debug()) << "Node on our acquiring TX set is TXN we may not have";
@@ -58,7 +58,7 @@ ConsensusTransSetSF::gotNode(
                 "match");
             auto const pap = &app_;
             app_.getJobQueue().addJob(
-                jtTRANSACTION, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
+                JtTransaction, "TxsToTxn", [pap, stx]() { pap->getOPs().submitTransaction(stx); });
         }
         catch (std::exception const& ex)
         {
@@ -75,14 +75,14 @@ ConsensusTransSetSF::getNode(SHAMapHash const& nodeHash) const
     if (nodeCache_.retrieve(nodeHash, nodeData))
         return nodeData;
 
-    auto txn = app_.getMasterTransaction().fetch_from_cache(nodeHash.as_uint256());
+    auto txn = app_.getMasterTransaction().fetchFromCache(nodeHash.asUint256());
 
     if (txn)
     {
         // this is a transaction, and we have it
         JLOG(j_.trace()) << "Node in our acquiring TX set is TXN we have";
         Serializer s;
-        s.add32(HashPrefix::transactionID);
+        s.add32(HashPrefix::TransactionId);
         txn->getSTransaction()->add(s);
         XRPL_ASSERT(
             sha512Half(s.slice()) == nodeHash.as_uint256(),

@@ -16,7 +16,7 @@
 
 namespace xrpl::test {
 
-class AccountOffers_test : public beast::unit_test::suite
+class AccountOffers_test : public beast::unit_test::Suite
 {
 public:
     // test helper
@@ -39,7 +39,7 @@ public:
         Account const bob("bob");
         auto const usdBob = bob["USD"];
 
-        env.fund(XRP(10000), gw, bob);
+        env.fund(kXRP(10000), gw, bob);
         env.trust(usdGw(1000), bob);
 
         // this is to provide some USD from gw in the
@@ -49,7 +49,7 @@ public:
         unsigned const offerCount = 12u;
         for (auto i = 0u; i < offerCount; i++)
         {
-            Json::Value jvo = offer(bob, XRP(100 + i), usdGw(1));
+            Json::Value jvo = offer(bob, kXRP(100 + i), usdGw(1));
             jvo[sfExpiration.fieldName] = 10000000u;
             env(jvo);
         }
@@ -83,7 +83,7 @@ public:
         Account const bob("bob");
         auto const usdBob = bob["USD"];
 
-        env.fund(XRP(10000), gw, bob);
+        env.fund(kXRP(10000), gw, bob);
         env.trust(usdGw(1000), bob);
 
         // this is to provide some USD from gw in the
@@ -91,9 +91,9 @@ public:
         // make offers that give those USDs
         env(pay(gw, bob, usdGw(10)));
 
-        env(offer(bob, XRP(100), usdBob(1)));
-        env(offer(bob, XRP(200), usdGw(2)));
-        env(offer(bob, XRP(30), usdGw(6)));
+        env(offer(bob, kXRP(100), usdBob(1)));
+        env(offer(bob, kXRP(200), usdGw(2)));
+        env(offer(bob, kXRP(30), usdGw(6)));
 
         // make the RPC call
         auto const jroOuter = env.rpc("account_offers", bob.human())[jss::result][jss::offers];
@@ -188,7 +188,7 @@ public:
         Account const bob("bob");
         auto const usdBob = bob["USD"];
 
-        env.fund(XRP(10000), gw, bob);
+        env.fund(kXRP(10000), gw, bob);
         env.trust(usdGw(1000), bob);
 
         {
@@ -212,9 +212,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(Json::Value(Json::NullValue));
+            testInvalidAccountParam(Json::Value(Json::ObjectValue));
+            testInvalidAccountParam(Json::Value(Json::ArrayValue));
         }
 
         {

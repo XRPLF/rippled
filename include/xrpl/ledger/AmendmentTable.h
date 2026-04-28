@@ -163,14 +163,14 @@ public:
                             << amendTx;
 
             initialPosition->addGiveItem(
-                SHAMapNodeType::tnTRANSACTION_NM,
-                make_shamapitem(amendTx.getTransactionID(), s.slice()));
+                SHAMapNodeType::TnTransactionNm,
+                makeShamapitem(amendTx.getTransactionID(), s.slice()));
         }
     }
 };
 
 std::unique_ptr<AmendmentTable>
-make_AmendmentTable(
+makeAmendmentTable(
     ServiceRegistry& registry,
     std::chrono::seconds majorityTime,
     std::vector<AmendmentTable::FeatureInfo> const& supported,

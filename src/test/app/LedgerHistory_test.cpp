@@ -26,7 +26,7 @@
 
 namespace xrpl::test {
 
-class LedgerHistory_test : public beast::unit_test::suite
+class LedgerHistory_test : public beast::unit_test::Suite
 {
 public:
     /** Generate a new ledger by hand, applying a specific close time offset
@@ -48,7 +48,7 @@ public:
         {
             assert(!stx);
             return std::make_shared<Ledger>(
-                create_genesis,
+                kCREATE_GENESIS,
                 Rules{env.app().config().features},
                 env.app().config().FEES.toFees(),
                 std::vector<uint256>{},
@@ -59,14 +59,14 @@ public:
         if (stx)
         {
             OpenView accum(&*res);
-            applyTransaction(env.app(), accum, *stx, false, tapNONE, env.journal);
+            applyTransaction(env.app(), accum, *stx, false, TapNone, env.journal);
             accum.apply(*res);
         }
         res->updateSkipList();
 
         {
-            res->stateMap().flushDirty(hotACCOUNT_NODE);
-            res->txMap().flushDirty(hotTRANSACTION_NODE);
+            res->stateMap().flushDirty(HotAccountNode);
+            res->txMap().flushDirty(HotTransactionNode);
         }
         res->unshare();
 
@@ -151,7 +151,7 @@ public:
 
             Account const alice{"A1"};
             Account const bob{"A2"};
-            env.fund(XRP(1000), alice, bob);
+            env.fund(kXRP(1000), alice, bob);
             env.close();
 
             auto const ledgerBase = env.app().getLedgerMaster().getClosedLedger();

@@ -22,7 +22,7 @@
 
 namespace xrpl::test {
 
-class AccountInfo_test : public beast::unit_test::suite
+class AccountInfo_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -43,7 +43,7 @@ public:
                 "account_info",
                 "{\"account\": "
                 "\"n94JNrQYkDrpt62bbSR7nVEhdyAvcJXRAsjEkFYyqRkh9SUTYEqV\"}");
-            BEAST_EXPECT(info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
         }
         {
@@ -52,13 +52,13 @@ public:
             Json::Value params;
             params[jss::account] = bogie.human();
             auto const info = env.rpc("json", "account_info", to_string(params));
-            BEAST_EXPECT(info[jss::result][jss::error_code] == rpcACT_NOT_FOUND);
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActNotFound);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account not found.");
         }
         {
             // Cannot use a seed as account
             auto const info = env.rpc("json", "account_info", R"({"account": "foo"})");
-            BEAST_EXPECT(info[jss::result][jss::error_code] == rpcACT_MALFORMED);
+            BEAST_EXPECT(info[jss::result][jss::error_code] == RpcActMalformed);
             BEAST_EXPECT(info[jss::result][jss::error_message] == "Account malformed.");
         }
         {
@@ -75,9 +75,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(Json::Value(Json::NullValue));
+            testInvalidAccountParam(Json::Value(Json::ObjectValue));
+            testInvalidAccountParam(Json::Value(Json::ArrayValue));
         }
         {
             // Cannot pass a non-string into the `ident` param
@@ -93,9 +93,9 @@ public:
             testInvalidIdentParam(1);
             testInvalidIdentParam(1.1);
             testInvalidIdentParam(true);
-            testInvalidIdentParam(Json::Value(Json::nullValue));
-            testInvalidIdentParam(Json::Value(Json::objectValue));
-            testInvalidIdentParam(Json::Value(Json::arrayValue));
+            testInvalidIdentParam(Json::Value(Json::NullValue));
+            testInvalidIdentParam(Json::Value(Json::ObjectValue));
+            testInvalidIdentParam(Json::Value(Json::ArrayValue));
         }
     }
 
@@ -107,7 +107,7 @@ public:
         using namespace jtx;
         Env env(*this);
         Account const alice{"alice"};
-        env.fund(XRP(1000), alice);
+        env.fund(kXRP(1000), alice);
 
         Json::Value withoutSigners;
         withoutSigners[jss::account] = alice.human();
@@ -223,7 +223,7 @@ public:
         using namespace jtx;
         Env env{*this};
         Account const alice{"alice"};
-        env.fund(XRP(1000), alice);
+        env.fund(kXRP(1000), alice);
 
         Json::Value withoutSigners;
         withoutSigners[jss::api_version] = 2;
@@ -345,7 +345,7 @@ public:
         using namespace jtx;
         Env env(*this);
         Account const alice{"alice"};
-        env.fund(XRP(1000), alice);
+        env.fund(kXRP(1000), alice);
 
         auto const withoutSigners = std::string("{ ") +
             "\"jsonrpc\": \"2.0\", "
@@ -510,7 +510,7 @@ public:
         Env env(*this, features);
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(XRP(1000), alice, bob);
+        env.fund(kXRP(1000), alice, bob);
 
         auto getAccountFlag = [&env](std::string_view fName, Account const& account) {
             Json::Value params;

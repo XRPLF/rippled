@@ -35,9 +35,9 @@ public:
 
     /** Create an account from a simple string name. */
     /** @{ */
-    Account(std::string name, KeyType type = KeyType::secp256k1);
+    Account(std::string name, KeyType type = KeyType::Secp256k1);
 
-    Account(char const* name, KeyType type = KeyType::secp256k1) : Account(std::string(name), type)
+    Account(char const* name, KeyType type = KeyType::Secp256k1) : Account(std::string(name), type)
     {
     }
 
@@ -109,7 +109,7 @@ public:
     operator[](std::string const& s) const;
 
 private:
-    static std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> cache_;
+    static std::unordered_map<std::pair<std::string, KeyType>, Account, beast::Uhash<>> cache;
 
     // Return the account from the cache & add it to the cache if needed
     static Account

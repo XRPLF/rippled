@@ -36,11 +36,11 @@ namespace xrpl {
 LedgerHistory::LedgerHistory(beast::insight::Collector::ptr const& collector, Application& app)
     : app_(app)
     , collector_(collector)
-    , mismatch_counter_(collector->make_counter("ledger.history", "mismatch"))
+    , mismatch_counter_(collector->makeCounter("ledger.history", "mismatch"))
     , ledgers_by_hash_(
           "LedgerCache",
-          app_.config().getValueFor(SizedItem::ledgerSize),
-          std::chrono::seconds{app_.config().getValueFor(SizedItem::ledgerAge)},
+          app_.config().getValueFor(SizedItem::LedgerSize),
+          std::chrono::seconds{app_.config().getValueFor(SizedItem::LedgerAge)},
           stopwatch(),
           app_.getJournal("TaggedCache"))
     , consensus_validated_(
@@ -57,7 +57,7 @@ bool
 LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validated)
 {
     if (!ledger->isImmutable())
-        LogicError("mutable Ledger in insert");
+        logicError("mutable Ledger in insert");
 
     XRPL_ASSERT(
         ledger->stateMap().getHash().isNonZero(), "xrpl::LedgerHistory::insert : nonzero hash");
@@ -65,7 +65,7 @@ LedgerHistory::insert(std::shared_ptr<Ledger const> const& ledger, bool validate
     std::unique_lock const sl(ledgers_by_hash_.peekMutex());
 
     bool const alreadyHad =
-        ledgers_by_hash_.canonicalize_replace_cache(ledger->header().hash, ledger);
+        ledgers_by_hash_.canonicalizeReplaceCache(ledger->header().hash, ledger);
     if (validated)
         ledgersByIndex_[ledger->header().seq] = ledger->header().hash;
 
@@ -112,7 +112,7 @@ LedgerHistory::getLedgerBySeq(LedgerIndex index)
 
         XRPL_ASSERT(
             ret->isImmutable(), "xrpl::LedgerHistory::getLedgerBySeq : immutable result ledger");
-        ledgers_by_hash_.canonicalize_replace_client(ret->header().hash, ret);
+        ledgers_by_hash_.canonicalizeReplaceClient(ret->header().hash, ret);
         ledgersByIndex_[ret->header().seq] = ret->header().hash;
         return (ret->header().seq == index) ? ret : nullptr;
     }
@@ -148,7 +148,7 @@ LedgerHistory::getLedgerByHash(LedgerHash const& hash)
     XRPL_ASSERT(
         ret->header().hash == hash,
         "xrpl::LedgerHistory::getLedgerByHash : loaded ledger hash match");
-    ledgers_by_hash_.canonicalize_replace_client(ret->header().hash, ret);
+    ledgers_by_hash_.canonicalizeReplaceClient(ret->header().hash, ret);
     XRPL_ASSERT(
         ret->header().hash == hash, "xrpl::LedgerHistory::getLedgerByHash : result hash match");
 
@@ -164,7 +164,7 @@ logOne(ReadView const& ledger, uint256 const& tx, char const* msg, beast::Journa
     {
         JLOG(j.debug()) << "MISMATCH on TX " << tx << ": " << msg
                         << " is missing this transaction:\n"
-                        << metaData->getJson(JsonOptions::kNONE);
+                        << metaData->getJson(JsonOptions::KNone);
     }
     else
     {
@@ -245,38 +245,38 @@ logMetadataDifference(
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx
                                 << ": Different result, index and nodes!";
-                JLOG(j.debug()) << " Built:\n" << builtMetaData->getJson(JsonOptions::kNONE);
-                JLOG(j.debug()) << " Valid:\n" << validMetaData->getJson(JsonOptions::kNONE);
+                JLOG(j.debug()) << " Built:\n" << builtMetaData->getJson(JsonOptions::KNone);
+                JLOG(j.debug()) << " Valid:\n" << validMetaData->getJson(JsonOptions::KNone);
             }
             else if (resultDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different result and nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Result: " << builtMetaData->getResult() << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::kNONE);
+                                << builtNodes.getJson(JsonOptions::KNone);
                 JLOG(j.debug()) << " Valid:"
                                 << " Result: " << validMetaData->getResult() << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::kNONE);
+                                << validNodes.getJson(JsonOptions::KNone);
             }
             else if (indexDiff)
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different index and nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Index: " << builtMetaData->getIndex() << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::kNONE);
+                                << builtNodes.getJson(JsonOptions::KNone);
                 JLOG(j.debug()) << " Valid:"
                                 << " Index: " << validMetaData->getIndex() << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::kNONE);
+                                << validNodes.getJson(JsonOptions::KNone);
             }
             else  // nodes_diff
             {
                 JLOG(j.debug()) << "MISMATCH on TX " << tx << ": Different nodes!";
                 JLOG(j.debug()) << " Built:"
                                 << " Nodes:\n"
-                                << builtNodes.getJson(JsonOptions::kNONE);
+                                << builtNodes.getJson(JsonOptions::KNone);
                 JLOG(j.debug()) << " Valid:"
                                 << " Nodes:\n"
-                                << validNodes.getJson(JsonOptions::kNONE);
+                                << validNodes.getJson(JsonOptions::KNone);
             }
         }
 
@@ -286,13 +286,13 @@ logMetadataDifference(
     if (validMetaData)
     {
         JLOG(j.error()) << "MISMATCH on TX " << tx << ": Metadata Difference. Valid=\n"
-                        << validMetaData->getJson(JsonOptions::kNONE);
+                        << validMetaData->getJson(JsonOptions::KNone);
     }
 
     if (builtMetaData)
     {
         JLOG(j.error()) << "MISMATCH on TX " << tx << ": Metadata Difference. Built=\n"
-                        << builtMetaData->getJson(JsonOptions::kNONE);
+                        << builtMetaData->getJson(JsonOptions::KNone);
     }
 }
 
@@ -432,8 +432,8 @@ LedgerHistory::builtLedger(
 
     std::unique_lock const sl(consensus_validated_.peekMutex());
 
-    auto entry = std::make_shared<cv_entry>();
-    consensus_validated_.canonicalize_replace_client(index, entry);
+    auto entry = std::make_shared<CvEntry>();
+    consensus_validated_.canonicalizeReplaceClient(index, entry);
 
     if (entry->validated && !entry->built)
     {
@@ -471,8 +471,8 @@ LedgerHistory::validatedLedger(
 
     std::unique_lock const sl(consensus_validated_.peekMutex());
 
-    auto entry = std::make_shared<cv_entry>();
-    consensus_validated_.canonicalize_replace_client(index, entry);
+    auto entry = std::make_shared<CvEntry>();
+    consensus_validated_.canonicalizeReplaceClient(index, entry);
 
     if (entry->built && !entry->validated)
     {

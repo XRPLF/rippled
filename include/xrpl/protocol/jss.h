@@ -4,6 +4,7 @@
 
 namespace xrpl::jss {
 
+// NOLINTBEGIN(readability-identifier-naming)
 // JSON static strings
 
 #define JSS(x) constexpr ::Json::StaticString x(#x)
@@ -706,5 +707,7 @@ JSS(write_load);                  // out: GetCounts
 #pragma pop_macro("LEDGER_ENTRY_DUPLICATE")
 
 #undef JSS
+
+// NOLINTEND(readability-identifier-naming)
 
 }  // namespace xrpl::jss

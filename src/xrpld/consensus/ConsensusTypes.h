@@ -49,7 +49,7 @@ enum class ConsensusMode {
 };
 
 inline std::string
-toString(ConsensusMode m)
+to_string(ConsensusMode m)
 {
     switch (m)
     {
@@ -96,7 +96,7 @@ enum class ConsensusPhase {
 };
 
 inline std::string
-toString(ConsensusPhase p)
+to_string(ConsensusPhase p)
 {
     switch (p)
     {

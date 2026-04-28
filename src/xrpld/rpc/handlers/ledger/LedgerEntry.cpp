@@ -79,9 +79,9 @@ parseIndex(Json::Value const& params, Json::StaticString const fieldName, unsign
     if (apiVersion > 2u && params.isString())
     {
         std::string const index = params.asString();
-        if (index == jss::amendments.c_str())
+        if (index == jss::amendments.cStr())
             return keylet::amendments().key;
-        if (index == jss::fee.c_str())
+        if (index == jss::fee.cStr())
             return keylet::fees().key;
         if (index == jss::nunl)
             return keylet::negativeUNL().key;
@@ -203,7 +203,7 @@ parseCredential(
         return Unexpected(issuer.error());
 
     auto const credType = LedgerEntryHelpers::requiredHexBlob(
-        cred, jss::credential_type, maxCredentialTypeLength, "malformedRequest");
+        cred, jss::credential_type, kMAX_CREDENTIAL_TYPE_LENGTH, "malformedRequest");
     if (!credType)
         return Unexpected(credType.error());
 
@@ -244,7 +244,7 @@ parseAuthorizeCredentials(Json::Value const& jv)
     }
 
     std::uint32_t const n = jv.size();
-    if (n > maxCredentialsArraySize)
+    if (n > kMAX_CREDENTIALS_ARRAY_SIZE)
     {
         return Unexpected(
             LedgerEntryHelpers::malformedError(
@@ -283,14 +283,17 @@ parseAuthorizeCredentials(Json::Value const& jv)
             return Unexpected(issuer.error());
 
         auto const credentialType = LedgerEntryHelpers::requiredHexBlob(
-            jo, jss::credential_type, maxCredentialTypeLength, "malformedAuthorizedCredentials");
+            jo,
+            jss::credential_type,
+            kMAX_CREDENTIAL_TYPE_LENGTH,
+            "malformedAuthorizedCredentials");
         if (!credentialType)
             return Unexpected(credentialType.error());
 
         auto credential = STObject::makeInnerObject(sfCredential);
         credential.setAccountID(sfIssuer, *issuer);
         credential.setFieldVL(sfCredentialType, *credentialType);
-        arr.push_back(std::move(credential));
+        arr.pushBack(std::move(credential));
     }
 
     return arr;
@@ -333,7 +336,7 @@ parseDepositPreauth(
 
     auto const& ac(dp[jss::authorized_credentials]);
     auto const arr = parseAuthorizeCredentials(ac);
-    if (!arr.has_value())
+    if (!arr.hasValue())
         return Unexpected(arr.error());
 
     auto const& sorted = credentials::makeSorted(arr.value());
@@ -374,7 +377,7 @@ parseDirectoryNode(
     }
 
     if (params.isMember(jss::sub_index) &&
-        (!params[jss::sub_index].isConvertibleTo(Json::uintValue) ||
+        (!params[jss::sub_index].isConvertibleTo(Json::UintValue) ||
          params[jss::sub_index].isBool()))
     {
         return LedgerEntryHelpers::invalidFieldError("malformedRequest", jss::sub_index, "number");
@@ -701,7 +704,7 @@ parseRippleState(
     }
 
     if (!jvRippleState[jss::currency].isString() || jvRippleState[jss::currency] == "" ||
-        !to_currency(uCurrency, jvRippleState[jss::currency].asString()))
+        !toCurrency(uCurrency, jvRippleState[jss::currency].asString()))
     {
         return LedgerEntryHelpers::invalidFieldError(
             "malformedCurrency", jss::currency, "Currency");
@@ -870,7 +873,7 @@ doLedgerEntry(RPC::JsonContext& context)
 
     if (hasMoreThanOneMember)
     {
-        return RPC::make_param_error("Too many fields provided.");
+        return RPC::makeParamError("Too many fields provided.");
     }
 
     std::shared_ptr<ReadView const> lpLedger;
@@ -914,16 +917,16 @@ doLedgerEntry(RPC::JsonContext& context)
                 jvResult[jss::error] = "unknownOption";
                 return jvResult;
             }
-            return RPC::make_param_error("No ledger_entry params provided.");
+            return RPC::makeParamError("No ledger_entry params provided.");
         }
     }
-    catch (Json::error const& e)
+    catch (Json::Error const& e)
     {
         if (context.apiVersion > 1u)
         {
             // For apiVersion 2 onwards, any parsing failures that throw
             // this exception return an invalidParam error.
-            return RPC::make_error(rpcINVALID_PARAMS);
+            return RPC::makeError(RpcInvalidParams);
         }
 
         throw;
@@ -934,7 +937,7 @@ doLedgerEntry(RPC::JsonContext& context)
 
     if (uNodeIndex.isZero())
     {
-        RPC::inject_error(rpcENTRY_NOT_FOUND, jvResult);
+        RPC::injectError(RpcEntryNotFound, jvResult);
         return jvResult;
     }
 
@@ -947,13 +950,13 @@ doLedgerEntry(RPC::JsonContext& context)
     if (!sleNode)
     {
         // Not found.
-        RPC::inject_error(rpcENTRY_NOT_FOUND, jvResult);
+        RPC::injectError(RpcEntryNotFound, jvResult);
         return jvResult;
     }
 
     if ((expectedType != ltANY) && (expectedType != sleNode->getType()))
     {
-        RPC::inject_error(rpcUNEXPECTED_LEDGER_TYPE, jvResult);
+        RPC::injectError(RpcUnexpectedLedgerType, jvResult);
         return jvResult;
     }
 
@@ -967,7 +970,7 @@ doLedgerEntry(RPC::JsonContext& context)
     }
     else
     {
-        jvResult[jss::node] = sleNode->getJson(JsonOptions::kNONE);
+        jvResult[jss::node] = sleNode->getJson(JsonOptions::KNone);
     }
 
     return jvResult;
@@ -984,7 +987,7 @@ doLedgerEntryGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerEntryRequest>& c
     if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        if (status.toErrorCode() == RpcInvalidParams)
         {
             errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }

@@ -237,7 +237,7 @@ public:
 
 namespace test {
 extern std::atomic<bool> gEnvUseIPv4;
-}
+}  // namespace test
 
 template <class Runner>
 static bool
@@ -279,12 +279,12 @@ runUnitTests(
 
     if (!child && numJobs == 1)
     {
-        multi_runner_parent const parentRunner;
+        MultiRunnerParent const parentRunner;
 
-        multi_runner_child childRunner{numJobs, quiet, log};
+        MultiRunnerChild childRunner{numJobs, quiet, log};
         childRunner.arg(argument);
         MultiSelector const pred(pattern);
-        auto const anyFailed = childRunner.run_multi(pred) || anyMissing(childRunner, pred);
+        auto const anyFailed = childRunner.runMulti(pred) || anyMissing(childRunner, pred);
 
         if (anyFailed)
             return EXIT_FAILURE;
@@ -292,7 +292,7 @@ runUnitTests(
     }
     if (!child)
     {
-        multi_runner_parent parentRunner;
+        MultiRunnerParent parentRunner;
         std::vector<boost::process::v1::child> children;
 
         std::string const exeName = argv[0];
@@ -338,9 +338,9 @@ runUnitTests(
     }
 
     // child
-    multi_runner_child runner{numJobs, quiet, log};
+    MultiRunnerChild runner{numJobs, quiet, log};
     runner.arg(argument);
-    auto const anyFailed = runner.run_multi(MultiSelector(pattern));
+    auto const anyFailed = runner.runMulti(MultiSelector(pattern));
 
     if (anyFailed)
         return EXIT_FAILURE;
@@ -588,7 +588,7 @@ run(int argc, char** argv)
 
         try
         {
-            auto setup = setup_DatabaseCon(*config);
+            auto setup = setupDatabaseCon(*config);
             if (!doVacuumDB(setup, config->journal()))
                 return -1;
         }
@@ -716,7 +716,7 @@ run(int argc, char** argv)
     // happen after the config file is loaded.
     if (vm.contains("rpc_ip"))
     {
-        auto endpoint = beast::IP::Endpoint::from_string_checked(vm["rpc_ip"].as<std::string>());
+        auto endpoint = beast::IP::Endpoint::fromStringChecked(vm["rpc_ip"].as<std::string>());
         if (!endpoint)
         {
             std::cerr << "Invalid rpc_ip = " << vm["rpc_ip"].as<std::string>() << "\n";
@@ -731,7 +731,7 @@ run(int argc, char** argv)
                 std::cerr << "WARNING: using deprecated rpc_port param.\n";
                 try
                 {
-                    endpoint = endpoint->at_port(vm["rpc_port"].as<std::uint16_t>());
+                    endpoint = endpoint->atPort(vm["rpc_port"].as<std::uint16_t>());
                     if (endpoint->port() == 0)
                         throw std::domain_error("0");
                 }
@@ -769,15 +769,15 @@ run(int argc, char** argv)
 
     // Construct the logs object at the configured severity
     using namespace beast::severities;
-    Severity thresh = kInfo;
+    Severity thresh = KInfo;
 
     if (vm.contains("quiet"))
     {
-        thresh = kFatal;
+        thresh = KFatal;
     }
     else if (vm.contains("verbose"))
     {
-        thresh = kTrace;
+        thresh = KTrace;
     }
 
     auto logs = std::make_unique<Logs>(thresh);
@@ -785,7 +785,7 @@ run(int argc, char** argv)
     // No arguments. Run server.
     if (!vm.contains("parameters"))
     {
-        if (config->had_trailing_comments())
+        if (config->hadTrailingComments())
         {
             JLOG(logs->journal("Application").warn())
                 << "Trailing comments were seen in your config file. "
@@ -802,7 +802,7 @@ run(int argc, char** argv)
             return -1;
 
         if (vm.contains("debug"))
-            setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
+            setDebugLogSink(logs->makeSink("Debug", beast::severities::KTrace));
 
         auto app =
             makeApplication(std::move(config), std::move(logs), std::make_unique<TimeKeeper>());

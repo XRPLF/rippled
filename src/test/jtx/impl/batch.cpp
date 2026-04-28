@@ -44,7 +44,7 @@ outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint3
     Json::Value jv;
     jv[jss::TransactionType] = jss::Batch;
     jv[jss::Account] = account.human();
-    jv[jss::RawTransactions] = Json::Value{Json::arrayValue};
+    jv[jss::RawTransactions] = Json::Value{Json::ArrayValue};
     jv[jss::Sequence] = seq;
     jv[jss::Flags] = flags;
     jv[jss::Fee] = to_string(fee);
@@ -52,7 +52,7 @@ outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint3
 }
 
 void
-inner::operator()(Env& env, JTx& jt) const
+Inner::operator()(Env& env, JTx& jt) const
 {
     auto const index = jt.jv[jss::RawTransactions].size();
     Json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
@@ -76,7 +76,7 @@ Sig::operator()(Env& env, JTx& jt) const
     catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& js = jt[sfBatchSigners.getJsonName()];
@@ -109,7 +109,7 @@ Msig::operator()(Env& env, JTx& jt) const
     catch (ParseError const&)
     {
         env.test.log << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
     STTx const& stx = STTx{std::move(*st)};
     auto& bs = jt[sfBatchSigners.getJsonName()];

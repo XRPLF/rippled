@@ -253,7 +253,7 @@ protected:
         // Build the signing data: HashPrefix::txSign + serialized object
         // (without signing fields)
         Serializer s;
-        s.add32(HashPrefix::txSign);
+        s.add32(HashPrefix::TxSign);
         object_.addWithoutSigningFields(s);
 
         // Sign and set the signature

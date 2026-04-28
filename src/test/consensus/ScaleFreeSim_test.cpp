@@ -17,7 +17,7 @@
 
 namespace xrpl::test {
 
-class ScaleFreeSim_test : public beast::unit_test::suite
+class ScaleFreeSim_test : public beast::unit_test::Suite
 {
     void
     run() override

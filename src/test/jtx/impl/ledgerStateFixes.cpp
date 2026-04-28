@@ -14,7 +14,7 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = acct.human();
-    jv[sfLedgerFixType.jsonName] = LedgerStateFix::nfTokenPageLink;
+    jv[sfLedgerFixType.jsonName] = LedgerStateFix::NfTokenPageLink;
     jv[sfOwner.jsonName] = owner.human();
     jv[sfTransactionType.jsonName] = jss::LedgerStateFix;
     return jv;

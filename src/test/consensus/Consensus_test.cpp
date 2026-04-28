@@ -31,7 +31,7 @@
 
 namespace xrpl::test {
 
-class Consensus_test : public beast::unit_test::suite
+class Consensus_test : public beast::unit_test::Suite
 {
     SuiteJournal journal_;
 
@@ -1086,7 +1086,7 @@ public:
         ConsensusParms const p;
         std::size_t peersUnchanged = 0;
 
-        auto logs = std::make_unique<Logs>(beast::severities::kError);
+        auto logs = std::make_unique<Logs>(beast::severities::KError);
         auto j = logs->journal("Test");
         auto clog = std::make_unique<std::stringstream>();
 
@@ -1100,10 +1100,10 @@ public:
             Dispute proposingFalse{txFalse.id(), false, numPeers, journal_};
             Dispute followingTrue{txFollowingTrue.id(), true, numPeers, journal_};
             Dispute followingFalse{txFollowingFalse.id(), false, numPeers, journal_};
-            BEAST_EXPECT(proposingTrue.ID() == 99);
-            BEAST_EXPECT(proposingFalse.ID() == 98);
-            BEAST_EXPECT(followingTrue.ID() == 97);
-            BEAST_EXPECT(followingFalse.ID() == 96);
+            BEAST_EXPECT(proposingTrue.id() == 99);
+            BEAST_EXPECT(proposingFalse.id() == 98);
+            BEAST_EXPECT(followingTrue.id() == 97);
+            BEAST_EXPECT(followingFalse.id() == 96);
 
             // Create an even split in the peer votes
             for (int i = 0; i < numPeers; ++i)

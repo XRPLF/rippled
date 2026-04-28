@@ -44,7 +44,7 @@ TransactionAcquire::TransactionAcquire(
           app,
           hash,
           kTX_ACQUIRE_TIMEOUT,
-          {.jobType = jtTXN_DATA, .jobName = "TxAcq", .jobLimit = {}},
+          {.jobType = JtTxnData, .jobName = "TxAcq", .jobLimit = {}},
           app.getJournal("TransactionAcquire"))
     , peerSet_(std::move(peerSet))
 {
@@ -74,7 +74,7 @@ TransactionAcquire::done()
         // not be called.  That's fine.  According to David the giveSet() call
         // just updates the consensus and related structures when we acquire
         // a transaction set. No need to update them if we're shutting down.
-        app_.getJobQueue().addJob(jtTXN_DATA, "ComplAcquire", [pap, hash, map]() {
+        app_.getJobQueue().addJob(JtTxnData, "ComplAcquire", [pap, hash, map]() {
             pap->getInboundTransactions().giveSet(hash, map, true);
         });
     }

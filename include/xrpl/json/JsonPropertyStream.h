@@ -9,8 +9,8 @@ namespace xrpl {
 class JsonPropertyStream : public beast::PropertyStream
 {
 public:
-    Json::Value top_;
-    std::vector<Json::Value*> stack_;
+    Json::Value topValue;  // TODO: rename: clashes with top() method
+    std::vector<Json::Value*> stack;
 
 public:
     JsonPropertyStream();

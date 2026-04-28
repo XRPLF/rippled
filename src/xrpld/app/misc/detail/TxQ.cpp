@@ -397,7 +397,7 @@ TxQ::canBeHeld(
     // queue yet, but should be added in the future.
     // tapFAIL_HARD transactions are never held
     if (tx.isFieldPresent(sfPreviousTxnID) || tx.isFieldPresent(sfAccountTxnID) ||
-        ((flags & tapFAIL_HARD) != 0u))
+        ((flags & TapFailHard) != 0u))
         return telCAN_NOT_QUEUE;
 
     {
@@ -761,7 +761,7 @@ TxQ::apply(
     // If the transaction needs a Ticket is that Ticket in the ledger?
     SeqProxy const acctSeqProx = SeqProxy::sequence((*sleAccount)[sfSequence]);
     SeqProxy const txSeqProx = tx->getSeqProxy();
-    if (txSeqProx.isTicket() && !view.exists(keylet::ticket(account, txSeqProx)))
+    if (txSeqProx.isTicket() && !view.exists(keylet::kTICKET(account, txSeqProx)))
     {
         if (txSeqProx.value() < acctSeqProx.value())
         {
@@ -1027,8 +1027,8 @@ TxQ::apply(
             // Sum fees and spending for all of the queued transactions
             // so we know how much to remove from the account balance
             // for the trial preclaim.
-            XRPAmount potentialSpend = beast::zero;
-            XRPAmount totalFee = beast::zero;
+            XRPAmount potentialSpend = beast::kZERO;
+            XRPAmount totalFee = beast::kZERO;
             for (auto iter = txIter->first; iter != txIter->end; ++iter)
             {
                 // If we're replacing this transaction don't include
@@ -1176,10 +1176,10 @@ TxQ::apply(
             conditions change, but don't waste the effort to clear).
     */
     if (txSeqProx.isSeq() && txIter && multiTxn.has_value() &&
-        txIter->first->second.retriesRemaining == MaybeTx::retriesAllowed &&
+        txIter->first->second.retriesRemaining == MaybeTx::kRETRIES_ALLOWED &&
         feeLevelPaid > requiredFeeLevel && requiredFeeLevel > kBASE_LEVEL)
     {
-        OpenView sandbox(kOpenLedger, &view, view.rules());
+        OpenView sandbox(kOPEN_LEDGER, &view, view.rules());
 
         auto result = tryClearAccountQueueUpThruTx(
             app,
@@ -1302,7 +1302,7 @@ TxQ::apply(
     // will not be checked again, so the cost should be minimal.
 
     // Don't allow soft failures, which can lead to retries
-    flags &= ~tapRETRY;
+    flags &= ~TapRetry;
 
     auto& candidate = accountIter->second.add({tx, transactionID, feeLevelPaid, flags, pfResult});
 
@@ -1430,7 +1430,7 @@ TxQ::accept(Application& app, OpenView& view)
             candidateIter++;
             continue;
         }
-        auto const requiredFeeLevel = getRequiredFeeLevel(view, tapNONE, metricsSnapshot, lock);
+        auto const requiredFeeLevel = getRequiredFeeLevel(view, TapNone, metricsSnapshot, lock);
         auto const feeLevelPaid = candidateIter->feeLevel;
         JLOG(j_.trace()) << "Queued transaction " << candidateIter->txID << " from account "
                          << candidateIter->account << " has fee level of " << feeLevelPaid
@@ -1825,9 +1825,9 @@ TxQ::doRPC(Application& app) const
 
     auto const metrics = getMetrics(*view);
 
-    Json::Value ret(Json::objectValue);
+    Json::Value ret(Json::ObjectValue);
 
-    auto& levels = ret[jss::levels] = Json::objectValue;
+    auto& levels = ret[jss::levels] = Json::ObjectValue;
 
     ret[jss::ledger_current_index] = view->header().seq;
     ret[jss::expected_ledger_size] = std::to_string(metrics.txPerLedger);

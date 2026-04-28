@@ -14,7 +14,7 @@
 
 namespace xrpl::test {
 
-class HashRouter_test : public beast::unit_test::suite
+class HashRouter_test : public beast::unit_test::Suite
 {
     static HashRouter::Setup
     getSetup(std::chrono::seconds hold, std::chrono::seconds relay)

@@ -32,7 +32,7 @@ inline TaggedCache<
         beast::insight::Collector::ptr const& collector)
     : journal_(journal)
     , clock_(clock)
-    , stats_(name, std::bind(&TaggedCache::collect_metrics, this), collector)
+    , stats_(name, std::bind(&TaggedCache::collectMetrics, this), collector)
     , name_(name)
     , target_size_(size)
     , target_age_(expiration)
@@ -174,7 +174,7 @@ template <
 template <class KeyComparable>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    touch_if_exists(KeyComparable const& key)
+    touchIfExists(KeyComparable const& key)
 {
     std::lock_guard lock(mutex_);
     auto const iter(cache_.find(key));
@@ -388,7 +388,7 @@ template <
     class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize_replace_cache(key_type const& key, SharedPointerType const& data)
+    canonicalizeReplaceCache(key_type const& key, SharedPointerType const& data)
 {
     return canonicalize(key, const_cast<SharedPointerType&>(data), []() { return true; });
 }
@@ -404,7 +404,7 @@ template <
     class Mutex>
 inline bool
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    canonicalize_replace_client(key_type const& key, SharedPointerType& data)
+    canonicalizeReplaceClient(key_type const& key, SharedPointerType& data)
 {
     return canonicalize(key, data, []() { return false; });
 }
@@ -450,12 +450,12 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
     if constexpr (std::is_same_v<std::shared_ptr<T>, SharedPointerType>)
     {
         auto p = std::make_shared<T>(std::cref(value));
-        return canonicalize_replace_client(key, p);
+        return canonicalizeReplaceClient(key, p);
     }
     if constexpr (std::is_same_v<intr_ptr::SharedPtr<T>, SharedPointerType>)
     {
-        auto p = intr_ptr::make_shared<T>(std::cref(value));
-        return canonicalize_replace_client(key, p);
+        auto p = intr_ptr::makeShared<T>(std::cref(value));
+        return canonicalizeReplaceClient(key, p);
     }
 }
 
@@ -647,7 +647,7 @@ template <
     class Mutex>
 inline void
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
-    collect_metrics()
+    collectMetrics()
 {
     stats_.size.set(getCacheSize());
 
@@ -675,7 +675,7 @@ template <
 inline std::thread
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     sweepHelper(
-        clock_type::time_point const& when_expire,
+        clock_type::time_point const& whenExpire,
         [[maybe_unused]] clock_type::time_point const& now,
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
@@ -707,7 +707,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                         ++cit;
                     }
                 }
-                else if (cit->second.last_access <= when_expire)
+                else if (cit->second.last_access <= whenExpire)
                 {
                     // strong, expired
                     ++cacheRemovals;
@@ -755,7 +755,7 @@ template <
 inline std::thread
 TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash, KeyEqual, Mutex>::
     sweepHelper(
-        clock_type::time_point const& when_expire,
+        clock_type::time_point const& whenExpire,
         clock_type::time_point const& now,
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
@@ -777,7 +777,7 @@ TaggedCache<Key, T, IsKeyCache, SharedWeakUnionPointer, SharedPointerType, Hash,
                     cit->second.last_access = now;
                     ++cit;
                 }
-                else if (cit->second.last_access <= when_expire)
+                else if (cit->second.last_access <= whenExpire)
                 {
                     cit = partition.erase(cit);
                 }

@@ -8,26 +8,26 @@
 
 namespace xrpl {
 
-std::unordered_map<protocol::MessageType, TrafficCount::category> const kTYPE_LOOKUP = {
-    {protocol::mtPING, TrafficCount::category::Base},
-    {protocol::mtSTATUS_CHANGE, TrafficCount::category::Base},
-    {protocol::mtMANIFESTS, TrafficCount::category::Manifests},
-    {protocol::mtENDPOINTS, TrafficCount::category::Overlay},
-    {protocol::mtTRANSACTION, TrafficCount::category::Transaction},
-    {protocol::mtVALIDATOR_LIST, TrafficCount::category::Validatorlist},
-    {protocol::mtVALIDATOR_LIST_COLLECTION, TrafficCount::category::Validatorlist},
-    {protocol::mtVALIDATION, TrafficCount::category::Validation},
-    {protocol::mtPROPOSE_LEDGER, TrafficCount::category::Proposal},
-    {protocol::mtPROOF_PATH_REQ, TrafficCount::category::ProofPathRequest},
-    {protocol::mtPROOF_PATH_RESPONSE, TrafficCount::category::ProofPathResponse},
-    {protocol::mtREPLAY_DELTA_REQ, TrafficCount::category::ReplayDeltaRequest},
-    {protocol::mtREPLAY_DELTA_RESPONSE, TrafficCount::category::ReplayDeltaResponse},
-    {protocol::mtHAVE_TRANSACTIONS, TrafficCount::category::HaveTransactions},
-    {protocol::mtTRANSACTIONS, TrafficCount::category::RequestedTransactions},
-    {protocol::mtSQUELCH, TrafficCount::category::Squelch},
+std::unordered_map<protocol::MessageType, TrafficCount::Category> const kTYPE_LOOKUP = {
+    {protocol::mtPING, TrafficCount::Category::Base},
+    {protocol::mtSTATUS_CHANGE, TrafficCount::Category::Base},
+    {protocol::mtMANIFESTS, TrafficCount::Category::Manifests},
+    {protocol::mtENDPOINTS, TrafficCount::Category::Overlay},
+    {protocol::mtTRANSACTION, TrafficCount::Category::Transaction},
+    {protocol::mtVALIDATOR_LIST, TrafficCount::Category::Validatorlist},
+    {protocol::mtVALIDATOR_LIST_COLLECTION, TrafficCount::Category::Validatorlist},
+    {protocol::mtVALIDATION, TrafficCount::Category::Validation},
+    {protocol::mtPROPOSE_LEDGER, TrafficCount::Category::Proposal},
+    {protocol::mtPROOF_PATH_REQ, TrafficCount::Category::ProofPathRequest},
+    {protocol::mtPROOF_PATH_RESPONSE, TrafficCount::Category::ProofPathResponse},
+    {protocol::mtREPLAY_DELTA_REQ, TrafficCount::Category::ReplayDeltaRequest},
+    {protocol::mtREPLAY_DELTA_RESPONSE, TrafficCount::Category::ReplayDeltaResponse},
+    {protocol::mtHAVE_TRANSACTIONS, TrafficCount::Category::HaveTransactions},
+    {protocol::mtTRANSACTIONS, TrafficCount::Category::RequestedTransactions},
+    {protocol::mtSQUELCH, TrafficCount::Category::Squelch},
 };
 
-TrafficCount::category
+TrafficCount::Category
 TrafficCount::categorize(
     ::google::protobuf::Message const& message,
     protocol::MessageType type,
@@ -37,101 +37,101 @@ TrafficCount::categorize(
         return item->second;
 
     if (type == protocol::mtHAVE_SET)
-        return inbound ? TrafficCount::category::GetSet : TrafficCount::category::ShareSet;
+        return inbound ? TrafficCount::Category::GetSet : TrafficCount::Category::ShareSet;
 
     if (auto msg = dynamic_cast<protocol::TMLedgerData const*>(&message))
     {
         if (msg->type() == protocol::liTS_CANDIDATE)
         {
-            return (inbound && !msg->has_requestcookie()) ? TrafficCount::category::LdTscGet
-                                                          : TrafficCount::category::LdTscShare;
+            return (inbound && !msg->has_requestcookie()) ? TrafficCount::Category::LdTscGet
+                                                          : TrafficCount::Category::LdTscShare;
         }
 
         if (msg->type() == protocol::liTX_NODE)
         {
-            return (inbound && !msg->has_requestcookie()) ? TrafficCount::category::LdTxnGet
-                                                          : TrafficCount::category::LdTxnShare;
+            return (inbound && !msg->has_requestcookie()) ? TrafficCount::Category::LdTxnGet
+                                                          : TrafficCount::Category::LdTxnShare;
         }
 
         if (msg->type() == protocol::liAS_NODE)
         {
-            return (inbound && !msg->has_requestcookie()) ? TrafficCount::category::LdAsnGet
-                                                          : TrafficCount::category::LdAsnShare;
+            return (inbound && !msg->has_requestcookie()) ? TrafficCount::Category::LdAsnGet
+                                                          : TrafficCount::Category::LdAsnShare;
         }
 
-        return (inbound && !msg->has_requestcookie()) ? TrafficCount::category::LdGet
-                                                      : TrafficCount::category::LdShare;
+        return (inbound && !msg->has_requestcookie()) ? TrafficCount::Category::LdGet
+                                                      : TrafficCount::Category::LdShare;
     }
 
     if (auto msg = dynamic_cast<protocol::TMGetLedger const*>(&message))
     {
         if (msg->itype() == protocol::liTS_CANDIDATE)
         {
-            return (inbound || msg->has_requestcookie()) ? TrafficCount::category::GlTscShare
-                                                         : TrafficCount::category::GlTscGet;
+            return (inbound || msg->has_requestcookie()) ? TrafficCount::Category::GlTscShare
+                                                         : TrafficCount::Category::GlTscGet;
         }
 
         if (msg->itype() == protocol::liTX_NODE)
         {
-            return (inbound || msg->has_requestcookie()) ? TrafficCount::category::GlTxnShare
-                                                         : TrafficCount::category::GlTxnGet;
+            return (inbound || msg->has_requestcookie()) ? TrafficCount::Category::GlTxnShare
+                                                         : TrafficCount::Category::GlTxnGet;
         }
 
         if (msg->itype() == protocol::liAS_NODE)
         {
-            return (inbound || msg->has_requestcookie()) ? TrafficCount::category::GlAsnShare
-                                                         : TrafficCount::category::GlAsnGet;
+            return (inbound || msg->has_requestcookie()) ? TrafficCount::Category::GlAsnShare
+                                                         : TrafficCount::Category::GlAsnGet;
         }
 
-        return (inbound || msg->has_requestcookie()) ? TrafficCount::category::GlShare
-                                                     : TrafficCount::category::GlGet;
+        return (inbound || msg->has_requestcookie()) ? TrafficCount::Category::GlShare
+                                                     : TrafficCount::Category::GlGet;
     }
 
     if (auto msg = dynamic_cast<protocol::TMGetObjectByHash const*>(&message))
     {
         if (msg->type() == protocol::TMGetObjectByHash::otLEDGER)
         {
-            return (msg->query() == inbound) ? TrafficCount::category::ShareHashLedger
-                                             : TrafficCount::category::GetHashLedger;
+            return (msg->query() == inbound) ? TrafficCount::Category::ShareHashLedger
+                                             : TrafficCount::Category::GetHashLedger;
         }
 
         if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTION)
         {
-            return (msg->query() == inbound) ? TrafficCount::category::ShareHashTx
-                                             : TrafficCount::category::GetHashTx;
+            return (msg->query() == inbound) ? TrafficCount::Category::ShareHashTx
+                                             : TrafficCount::Category::GetHashTx;
         }
 
         if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTION_NODE)
         {
-            return (msg->query() == inbound) ? TrafficCount::category::ShareHashTxnode
-                                             : TrafficCount::category::GetHashTxnode;
+            return (msg->query() == inbound) ? TrafficCount::Category::ShareHashTxnode
+                                             : TrafficCount::Category::GetHashTxnode;
         }
 
         if (msg->type() == protocol::TMGetObjectByHash::otSTATE_NODE)
         {
-            return (msg->query() == inbound) ? TrafficCount::category::ShareHashAsnode
-                                             : TrafficCount::category::GetHashAsnode;
+            return (msg->query() == inbound) ? TrafficCount::Category::ShareHashAsnode
+                                             : TrafficCount::Category::GetHashAsnode;
         }
 
         if (msg->type() == protocol::TMGetObjectByHash::otCAS_OBJECT)
         {
-            return (msg->query() == inbound) ? TrafficCount::category::ShareCasObject
-                                             : TrafficCount::category::GetCasObject;
+            return (msg->query() == inbound) ? TrafficCount::Category::ShareCasObject
+                                             : TrafficCount::Category::GetCasObject;
         }
 
         if (msg->type() == protocol::TMGetObjectByHash::otFETCH_PACK)
         {
-            return (msg->query() == inbound) ? TrafficCount::category::ShareFetchPack
-                                             : TrafficCount::category::GetFetchPack;
+            return (msg->query() == inbound) ? TrafficCount::Category::ShareFetchPack
+                                             : TrafficCount::Category::GetFetchPack;
         }
 
         if (msg->type() == protocol::TMGetObjectByHash::otTRANSACTIONS)
-            return TrafficCount::category::GetTransactions;
+            return TrafficCount::Category::GetTransactions;
 
-        return (msg->query() == inbound) ? TrafficCount::category::ShareHash
-                                         : TrafficCount::category::GetHash;
+        return (msg->query() == inbound) ? TrafficCount::Category::ShareHash
+                                         : TrafficCount::Category::GetHash;
     }
 
-    return TrafficCount::category::Unknown;
+    return TrafficCount::Category::Unknown;
 }
 }  // namespace xrpl

@@ -31,7 +31,7 @@ public:
         testcase("Backend type=" + type);
 
         Section params;
-        beast::temp_dir const tempDir;
+        beast::TempDir const tempDir;
         params.set("type", type);
         params.set("path", tempDir.path());
 

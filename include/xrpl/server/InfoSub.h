@@ -72,7 +72,7 @@ public:
          * historical transactions
          * @return rpcSUCCESS if successful, otherwise an error code
          */
-        virtual error_code_i
+        virtual ErrorCodeI
         subAccountHistory(ref ispListener, AccountID const& account) = 0;
 
         /**
@@ -220,10 +220,10 @@ private:
     unsigned int apiVersion_ = 0;
 
     static int
-    assign_id()
+    assignId()
     {
-        static std::atomic<std::uint64_t> id(0);
-        return ++id;
+        static std::atomic<std::uint64_t> kID(0);
+        return ++kID;
     }
 };
 

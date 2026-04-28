@@ -81,7 +81,7 @@ public:
     void
     start(CollectionType ct)
     {
-        char const ch = (ct == array) ? kOPEN_BRACKET : kOPEN_BRACE;
+        char const ch = (ct == Array) ? kOPEN_BRACKET : kOPEN_BRACE;
         output({&ch, 1});
         stack_.emplace(Collection{.type = ct});
     }
@@ -134,7 +134,7 @@ public:
         auto t = stack_.top().type;
         if (t != type)
         {
-            check(false, "Not an " + ((type == array ? "array: " : "object: ") + message));
+            check(false, "Not an " + ((type == Array ? "array: " : "object: ") + message));
         }
         if (stack_.top().isFirst)
         {
@@ -171,7 +171,7 @@ public:
     {
         check(!empty(), "Empty stack in finish()");
 
-        auto isArray = stack_.top().type == array;
+        auto isArray = stack_.top().type == Array;
         auto ch = isArray ? kCLOSE_BRACKET : kCLOSE_BRACE;
         output_({&ch, 1});
         stack_.pop();
@@ -198,7 +198,7 @@ private:
     struct Collection
     {
         /** What type of collection are we in? */
-        Writer::CollectionType type = Writer::CollectionType::array;
+        Writer::CollectionType type = Writer::CollectionType::Array;
 
         /** Is this the first entry in a collection?
          *  If false, we have to emit a , before we write the next entry. */
@@ -301,7 +301,7 @@ Writer::finishAll()
 void
 Writer::rawAppend()
 {
-    impl_->nextCollectionEntry(array, "append");
+    impl_->nextCollectionEntry(Array, "append");
 }
 
 void
@@ -309,7 +309,7 @@ Writer::rawSet(std::string const& tag)
 {
     check(!tag.empty(), "Tag can't be empty");
 
-    impl_->nextCollectionEntry(object, "set");
+    impl_->nextCollectionEntry(Object, "set");
     impl_->writeObjectTag(tag);
 }
 
@@ -322,14 +322,14 @@ Writer::startRoot(CollectionType type)
 void
 Writer::startAppend(CollectionType type)
 {
-    impl_->nextCollectionEntry(array, "startAppend");
+    impl_->nextCollectionEntry(Array, "startAppend");
     impl_->start(type);
 }
 
 void
 Writer::startSet(CollectionType type, std::string const& key)
 {
-    impl_->nextCollectionEntry(object, "startSet");
+    impl_->nextCollectionEntry(Object, "startSet");
     impl_->writeObjectTag(key);
     impl_->start(type);
 }

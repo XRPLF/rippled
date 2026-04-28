@@ -118,7 +118,7 @@ Cluster::load(Section const& nodes)
             continue;
         }
 
-        update(*id, trim_whitespace(match[2]));
+        update(*id, trimWhitespace(match[2]));
     }
 
     return true;

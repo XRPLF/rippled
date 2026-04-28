@@ -16,7 +16,7 @@
 
 namespace xrpl::test {
 
-struct Expected_test : beast::unit_test::suite
+struct Expected_test : beast::unit_test::Suite
 {
     void
     run() override
@@ -25,7 +25,7 @@ struct Expected_test : beast::unit_test::suite
         {
             auto const expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
             BEAST_EXPECT(expected);
-            BEAST_EXPECT(expected.has_value());
+            BEAST_EXPECT(expected.hasValue());
             BEAST_EXPECT(expected.value() == "Valid value");
             BEAST_EXPECT(*expected == "Valid value");
             BEAST_EXPECT(expected->at(0) == 'V');
@@ -47,7 +47,7 @@ struct Expected_test : beast::unit_test::suite
         {
             auto expected = []() -> Expected<std::string, TER> { return "Valid value"; }();
             BEAST_EXPECT(expected);
-            BEAST_EXPECT(expected.has_value());
+            BEAST_EXPECT(expected.hasValue());
             BEAST_EXPECT(expected.value() == "Valid value");
             BEAST_EXPECT(*expected == "Valid value");
             BEAST_EXPECT(expected->at(0) == 'V');
@@ -71,7 +71,7 @@ struct Expected_test : beast::unit_test::suite
         {
             auto expected = []() -> Expected<std::uint32_t, std::uint16_t> { return 1; }();
             BEAST_EXPECT(expected);
-            BEAST_EXPECT(expected.has_value());
+            BEAST_EXPECT(expected.hasValue());
             BEAST_EXPECT(expected.value() == 1);
             BEAST_EXPECT(*expected == 1);
 
@@ -94,7 +94,7 @@ struct Expected_test : beast::unit_test::suite
                 return Unexpected(telLOCAL_ERROR);
             }();
             BEAST_EXPECT(!expected);
-            BEAST_EXPECT(!expected.has_value());
+            BEAST_EXPECT(!expected.hasValue());
             BEAST_EXPECT(expected.error() == telLOCAL_ERROR);
 
             bool throwOccurred = false;
@@ -115,7 +115,7 @@ struct Expected_test : beast::unit_test::suite
             auto const err(telLOCAL_ERROR);
             auto expected = [&err]() -> Expected<std::string, TER> { return Unexpected(err); }();
             BEAST_EXPECT(!expected);
-            BEAST_EXPECT(!expected.has_value());
+            BEAST_EXPECT(!expected.hasValue());
             BEAST_EXPECT(expected.error() == telLOCAL_ERROR);
 
             bool throwOccurred = false;
@@ -137,7 +137,7 @@ struct Expected_test : beast::unit_test::suite
                 return Unexpected("Not what is expected!");
             }();
             BEAST_EXPECT(!expected);
-            BEAST_EXPECT(!expected.has_value());
+            BEAST_EXPECT(!expected.hasValue());
             BEAST_EXPECT(expected.error() == std::string("Not what is expected!"));
         }
         // Test error construction of string from const char*.
@@ -146,7 +146,7 @@ struct Expected_test : beast::unit_test::suite
                 return Unexpected("Not what is expected!");
             }();
             BEAST_EXPECT(!expected);
-            BEAST_EXPECT(!expected.has_value());
+            BEAST_EXPECT(!expected.hasValue());
             BEAST_EXPECT(expected.error() == "Not what is expected!");
             std::string const s(std::move(expected.error()));
             BEAST_EXPECT(s == "Not what is expected!");

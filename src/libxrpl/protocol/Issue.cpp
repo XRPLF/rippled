@@ -78,7 +78,7 @@ to_string(Issue const& ac)
 }
 
 Json::Value
-to_json(Issue const& is)
+toJson(Issue const& is)
 {
     Json::Value jv;
     is.setJson(jv);
@@ -104,33 +104,33 @@ issueFromJson(Json::Value const& v)
 
     if (!curStr.isString())
     {
-        Throw<Json::error>("issueFromJson currency must be a string Json value");
+        Throw<Json::Error>("issueFromJson currency must be a string Json value");
     }
 
-    auto const currency = to_currency(curStr.asString());
+    auto const currency = toCurrency(curStr.asString());
     if (currency == badCurrency() || currency == noCurrency())
     {
-        Throw<Json::error>("issueFromJson currency must be a valid currency");
+        Throw<Json::Error>("issueFromJson currency must be a valid currency");
     }
 
     if (isXRP(currency))
     {
         if (!issStr.isNull())
         {
-            Throw<Json::error>("Issue, XRP should not have issuer");
+            Throw<Json::Error>("Issue, XRP should not have issuer");
         }
         return xrpIssue();
     }
 
     if (!issStr.isString())
     {
-        Throw<Json::error>("issueFromJson issuer must be a string Json value");
+        Throw<Json::Error>("issueFromJson issuer must be a string Json value");
     }
     auto const issuer = parseBase58<AccountID>(issStr.asString());
 
     if (!issuer)
     {
-        Throw<Json::error>("issueFromJson issuer must be a valid account");
+        Throw<Json::Error>("issueFromJson issuer must be a valid account");
     }
 
     return Issue{currency, *issuer};

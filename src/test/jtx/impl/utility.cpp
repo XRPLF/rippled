@@ -40,7 +40,7 @@ sign(Json::Value& jv, Account const& account, Json::Value& sigObject)
 {
     sigObject[jss::SigningPubKey] = strHex(account.pk().slice());
     Serializer ss;
-    ss.add32(HashPrefix::txSign);
+    ss.add32(HashPrefix::TxSign);
     parse(jv).addWithoutSigningFields(ss);
     auto const sig = xrpl::sign(account.pk(), account.sk(), ss.slice());
     sigObject[jss::TxnSignature] = strHex(Slice{sig.data(), sig.size()});
@@ -77,7 +77,7 @@ fillSeq(Json::Value& jv, ReadView const& view)
 Json::Value
 cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned int apiVersion)
 {
-    Json::Value jv = Json::Value(Json::objectValue);
+    Json::Value jv = Json::Value(Json::ObjectValue);
     auto const paramsObj = rpcCmdToJson(args, jv, apiVersion, j);
 
     // Re-use jv to return our formatted result.
@@ -89,7 +89,7 @@ cmdToJSONRPC(std::vector<std::string> const& args, beast::Journal j, unsigned in
     // If paramsObj is not empty, put it in a [params] array.
     if (paramsObj.begin() != paramsObj.end())
     {
-        auto& paramsArray = jv[jss::params] = Json::arrayValue;
+        auto& paramsArray = jv[jss::params] = Json::ArrayValue;
         paramsArray.append(paramsObj);
     }
     if (paramsObj.isMember(jss::jsonrpc))

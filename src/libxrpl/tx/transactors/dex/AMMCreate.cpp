@@ -76,7 +76,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return err;
     }
 
-    if (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)
+    if (ctx.tx[sfTradingFee] > kTRADING_FEE_THRESHOLD)
     {
         JLOG(ctx.j.debug()) << "AMM Instance: invalid trading fee.";
         return temBAD_FEE;
@@ -146,7 +146,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     // Check the reserve for LPToken trustline
     STAmount const xrpBalance = xrpLiquid(ctx.view, accountID, 1, ctx.j);
     // Insufficient reserve
-    if (xrpBalance <= beast::zero)
+    if (xrpBalance <= beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "AMM Instance: insufficient reserves";
         return tecINSUF_RESERVE_LINE;
@@ -159,8 +159,8 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
                    ctx.view,
                    accountID,
                    amount,
-                   FreezeHandling::fhZERO_IF_FROZEN,
-                   AuthHandling::ahZERO_IF_UNAUTHORIZED,
+                   FreezeHandling::FhZeroIfFrozen,
+                   AuthHandling::AhZeroIfUnauthorized,
                    ctx.j) < amount;
     };
 
@@ -187,7 +187,7 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
     {
         if (auto const accountId =
                 pseudoAccountAddress(ctx.view, keylet::amm(amount.asset(), amount2.asset()).key);
-            accountId == beast::zero)
+            accountId == beast::kZERO)
             return terADDRESS_COLLISION;
     }
 
@@ -368,7 +368,7 @@ applyCreate(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Jou
                     << lpTokens << " " << amount << " " << amount2;
     auto addOrderBook = [&](Asset const& assetIn, Asset const& assetOut, std::uint64_t uRate) {
         Book const book{assetIn, assetOut, std::nullopt};
-        auto const dir = keylet::quality(keylet::book(book), uRate);
+        auto const dir = keylet::quality(keylet::kBOOK(book), uRate);
         if (auto const bookExisted = static_cast<bool>(sb.read(dir)); !bookExisted)
             ctx.registry.get().getOrderBookDB().addOrderBook(book);
     };

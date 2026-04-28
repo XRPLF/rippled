@@ -31,7 +31,7 @@ ManagerImp::instance()
 }
 
 void
-ManagerImp::missing_backend()
+ManagerImp::missingBackend()
 {
     Throw<std::runtime_error>(
         "Your xrpld.cfg is missing a [node_db] entry, "
@@ -68,15 +68,16 @@ ManagerImp::makeBackend(
 {
     std::string const type{get(parameters, "type")};
     if (type.empty())
-        missing_backend();
+        missingBackend();
 
     auto factory{find(type)};
     if (factory == nullptr)
     {
-        missing_backend();
+        missingBackend();
     }
 
-    return factory->createInstance(NodeObject::keyBytes, parameters, burstSize, scheduler, journal);
+    return factory->createInstance(
+        NodeObject::kEY_BYTES, parameters, burstSize, scheduler, journal);
 }
 
 std::unique_ptr<Database>

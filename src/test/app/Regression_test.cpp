@@ -53,7 +53,7 @@
 
 namespace xrpl::test {
 
-struct Regression_test : public beast::unit_test::suite
+struct Regression_test : public beast::unit_test::Suite
 {
     // OfferCreate, then OfferCreate with cancel
     void
@@ -63,9 +63,9 @@ struct Regression_test : public beast::unit_test::suite
         Env env(*this);
         auto const gw = Account("gw");
         auto const usd = gw["USD"];
-        env.fund(XRP(10000), "alice", gw);
-        env(offer("alice", usd(10), XRP(10)), Require(Owners("alice", 1)));
-        env(offer("alice", usd(20), XRP(10)),
+        env.fund(kXRP(10000), "alice", gw);
+        env(offer("alice", usd(10), kXRP(10)), Require(Owners("alice", 1)));
+        env(offer("alice", usd(20), kXRP(10)),
             json(R"raw(
                 { "OfferSequence" : 4 }
             )raw"),
@@ -84,16 +84,16 @@ struct Regression_test : public beast::unit_test::suite
         // be reproduced against an open ledger. Make a local
         // closed ledger and work with it directly.
         auto closed = std::make_shared<Ledger>(
-            create_genesis,
+            kCREATE_GENESIS,
             Rules{env.app().config().features},
             env.app().config().FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
-        auto expectedDrops = INITIAL_XRP;
+        auto expectedDrops = kINITIAL_XRP;
         BEAST_EXPECT(closed->header().drops == expectedDrops);
 
         auto const aliceXRP = 400;
-        auto const aliceAmount = XRP(aliceXRP);
+        auto const aliceAmount = kXRP(aliceXRP);
 
         auto next = std::make_shared<Ledger>(*closed, env.app().getTimeKeeper().closeTime());
         {
@@ -101,7 +101,7 @@ struct Regression_test : public beast::unit_test::suite
             auto const jt = env.jt(pay(env.master, "alice", aliceAmount));
             OpenView accum(&*next);
 
-            auto const result = xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
+            auto const result = xrpl::apply(env.app(), accum, *jt.stx, TapNone, env.journal);
             BEAST_EXPECT(isTesSuccess(result.ter));
             BEAST_EXPECT(result.applied);
 
@@ -124,7 +124,7 @@ struct Regression_test : public beast::unit_test::suite
 
             OpenView accum(&*next);
 
-            auto const result = xrpl::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
+            auto const result = xrpl::apply(env.app(), accum, *jt.stx, TapNone, env.journal);
             BEAST_EXPECT(result.ter == tecINSUFF_FEE);
             BEAST_EXPECT(result.applied);
 
@@ -135,7 +135,7 @@ struct Regression_test : public beast::unit_test::suite
             BEAST_EXPECT(sle);
             auto balance = sle->getFieldAmount(sfBalance);
 
-            BEAST_EXPECT(balance == XRP(0));
+            BEAST_EXPECT(balance == kXRP(0));
         }
         expectedDrops -= aliceXRP * kDROPS_PER_XRP;
         BEAST_EXPECT(next->header().drops == expectedDrops);
@@ -151,7 +151,7 @@ struct Regression_test : public beast::unit_test::suite
         // Test case we'll use.
         auto test256r1key = [&env](Account const& acct) {
             auto const baseFee = env.current()->fees().base;
-            std::uint32_t const acctSeq = env.Seq(acct);
+            std::uint32_t const acctSeq = env.seq(acct);
             Json::Value const jsonNoop =
                 env.json(noop(acct), Fee(baseFee), Seq(acctSeq), Sig(acct));
             JTx jt = env.jt(jsonNoop);
@@ -174,13 +174,13 @@ struct Regression_test : public beast::unit_test::suite
             secp256r1Sig->setFieldVL(sfSigningPubKey, *pubKeyBlob);
             jt.stx.reset(secp256r1Sig.release());
 
-            env(jt, rpc("invalidTransaction", "fails local checks: Invalid signature."));
+            env(jt, Rpc("invalidTransaction", "fails local checks: Invalid signature."));
         };
 
-        Account const alice{"alice", KeyType::secp256k1};
-        Account const becky{"becky", KeyType::ed25519};
+        Account const alice{"alice", KeyType::Secp256k1};
+        Account const becky{"becky", KeyType::Ed25519};
 
-        env.fund(XRP(10000), alice, becky);
+        env.fund(kXRP(10000), alice, becky);
 
         test256r1key(alice);
         test256r1key(becky);
@@ -196,12 +196,12 @@ struct Regression_test : public beast::unit_test::suite
             cfg->FEES.reference_fee = 10;
             return cfg;
         }));
-        Env_ss envs(env);
+        EnvSs envs(env);
 
         auto const alice = Account("alice");
-        env.fund(XRP(100000), alice);
+        env.fund(kXRP(100000), alice);
 
-        auto params = Json::Value(Json::objectValue);
+        auto params = Json::Value(Json::ObjectValue);
         // Max fee = 50k drops
         params[jss::fee_mult_max] = 5000;
         std::vector<int> const expectedFees({10, 10, 8889, 13889, 20000});
@@ -279,14 +279,14 @@ struct Regression_test : public beast::unit_test::suite
 
         Account const alice("alice");
         Account const bob("bob");
-        env.fund(XRP(10'000), alice, bob);
+        env.fund(kXRP(10'000), alice, bob);
         env.close();
 
         {
             auto const aliceIndex = keylet::account(alice).key;
             if (BEAST_EXPECT(aliceIndex.isNonZero()))
             {
-                env(check::cash(alice, aliceIndex, check::DeliverMin(XRP(100))), Ter(tecNO_ENTRY));
+                env(check::cash(alice, aliceIndex, check::DeliverMin(kXRP(100))), Ter(tecNO_ENTRY));
             }
         }
 
@@ -298,7 +298,7 @@ struct Regression_test : public beast::unit_test::suite
                 SHAMapHash digest;
                 if (!state.peekItem(bobIndex, digest))
                     return std::nullopt;
-                return digest.as_uint256();
+                return digest.asUint256();
             }();
 
             auto const mapCounts = [&](CountedObjects::List const& list) {
@@ -317,7 +317,7 @@ struct Regression_test : public beast::unit_test::suite
                 cache.del(*digest, false);  // NOLINT(bugprone-unchecked-optional-access)
                 auto const beforeCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 
-                env(check::cash(alice, bobIndex, check::DeliverMin(XRP(100))), Ter(tecNO_ENTRY));
+                env(check::cash(alice, bobIndex, check::DeliverMin(kXRP(100))), Ter(tecNO_ENTRY));
 
                 auto const afterCounts = mapCounts(CountedObjects::getInstance().getCounts(0));
 

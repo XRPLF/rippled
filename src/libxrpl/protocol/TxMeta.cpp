@@ -187,7 +187,7 @@ TxMeta::getAsObject() const
     XRPL_ASSERT(result_ != 255, "xrpl::TxMeta::getAsObject : result_ is set");
     metaData.setFieldU8(sfTransactionResult, result_);
     metaData.setFieldU32(sfTransactionIndex, index_);
-    metaData.emplace_back(nodes_);
+    metaData.emplaceBack(nodes_);
     if (deliveredAmount_.has_value())
         metaData.setFieldAmount(sfDeliveredAmount, *deliveredAmount_);
 

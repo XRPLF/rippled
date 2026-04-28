@@ -25,9 +25,9 @@ public:
     set(std::shared_ptr<Ledger const> ledger)
     {
         if (!ledger)
-            LogicError("LedgerHolder::set with nullptr");
+            logicError("LedgerHolder::set with nullptr");
         if (!ledger->isImmutable())
-            LogicError("LedgerHolder::set with mutable Ledger");
+            logicError("LedgerHolder::set with mutable Ledger");
         std::lock_guard const sl(lock_);
         heldLedger_ = std::move(ledger);
     }

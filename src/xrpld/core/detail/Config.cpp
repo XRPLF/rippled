@@ -121,19 +121,19 @@ kSIZED_ITEMS
     //        config option that can be used to override the default.
 
     //                                   tiny    small   medium    large     huge
-    {SizedItem::sweepInterval,      {{     10,      30,      60,      90,     120 }}},
-    {SizedItem::treeCacheSize,      {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
-    {SizedItem::treeCacheAge,       {{     30,      60,      90,     120,     900 }}},
-    {SizedItem::ledgerSize,         {{     32,      32,      64,     256,     384 }}},
-    {SizedItem::ledgerAge,          {{     30,      60,     180,     300,     600 }}},
-    {SizedItem::ledgerFetch,        {{      2,       3,       4,       5,       8 }}},
-    {SizedItem::hashNodeDBCache,    {{      4,      12,      24,      64,     128 }}},
-    {SizedItem::txnDBCache,         {{      4,      12,      24,      64,     128 }}},
-    {SizedItem::lgrDBCache,         {{      4,       8,      16,      32,     128 }}},
-    {SizedItem::openFinalLimit,     {{      8,      16,      32,      64,     128 }}},
-    {SizedItem::burstSize,          {{      4,       8,      16,      32,      48 }}},
-    {SizedItem::ramSizeGB,          {{      6,       8,      12,      24,       0 }}},
-    {SizedItem::accountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
+    {SizedItem::SweepInterval,      {{     10,      30,      60,      90,     120 }}},
+    {SizedItem::TreeCacheSize,      {{ 262144,  524288, 2097152, 4194304, 8388608 }}},
+    {SizedItem::TreeCacheAge,       {{     30,      60,      90,     120,     900 }}},
+    {SizedItem::LedgerSize,         {{     32,      32,      64,     256,     384 }}},
+    {SizedItem::LedgerAge,          {{     30,      60,     180,     300,     600 }}},
+    {SizedItem::LedgerFetch,        {{      2,       3,       4,       5,       8 }}},
+    {SizedItem::HashNodeDbCache,    {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::TxnDbCache,         {{      4,      12,      24,      64,     128 }}},
+    {SizedItem::LgrDbCache,         {{      4,       8,      16,      32,     128 }}},
+    {SizedItem::OpenFinalLimit,     {{      8,      16,      32,      64,     128 }}},
+    {SizedItem::BurstSize,          {{      4,       8,      16,      32,      48 }}},
+    {SizedItem::RamSizeGb,          {{      6,       8,      12,      24,       0 }}},
+    {SizedItem::AccountIdCacheSize, {{  20047,   50053,   77081,  150061,  300007 }}}
 }};
 // clang-format on
 
@@ -248,10 +248,10 @@ getSingleSection(
 //
 //------------------------------------------------------------------------------
 
-char const* const Config::configFileName = "xrpld.cfg";
-char const* const Config::configLegacyName = "rippled.cfg";
-char const* const Config::databaseDirName = "db";
-char const* const Config::validatorsFileName = "validators.txt";
+char const* const Config::kCONFIG_FILE_NAME = "xrpld.cfg";
+char const* const Config::kCONFIG_LEGACY_NAME = "rippled.cfg";
+char const* const Config::kDATABASE_DIR_NAME = "db";
+char const* const Config::kVALIDATORS_FILE_NAME = "validators.txt";
 
 [[nodiscard]] static std::string
 getEnvVar(char const* name)
@@ -274,9 +274,9 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 {
     XRPL_ASSERT(NODE_SIZE == 0, "xrpl::Config::setupControl : node size not set");
 
-    QUIET = bQuiet || bSilent;
-    SILENT = bSilent;
-    RUN_STANDALONE = bStandalone;
+    QUIET_ = bQuiet || bSilent;
+    SILENT_ = bSilent;
+    RUN_STANDALONE_ = bStandalone;
 
     // We try to autodetect the appropriate node size by checking available
     // RAM and CPU resources. We default to "tiny" for standalone mode.
@@ -284,7 +284,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     {
         // First, check against 'minimum' RAM requirements per node size:
         auto const& threshold =
-            kSIZED_ITEMS[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
+            kSIZED_ITEMS[std::underlying_type_t<SizedItem>(SizedItem::RamSizeGb)];
 
         auto ns = std::ranges::find_if(threshold.second, [this](std::size_t limit) {
             return (limit == 0) || (ramSize_ < limit);
@@ -319,10 +319,10 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     if (!strConf.empty())
     {
         // --conf=<path> : everything is relative that file.
-        CONFIG_FILE = strConf;
-        CONFIG_DIR = boost::filesystem::absolute(CONFIG_FILE);
+        CONFIG_FILE_ = strConf;
+        CONFIG_DIR = boost::filesystem::absolute(CONFIG_FILE_);
         CONFIG_DIR.remove_filename();
-        dataDir = CONFIG_DIR / databaseDirName;
+        dataDir = CONFIG_DIR / kDATABASE_DIR_NAME;
     }
     else
     {
@@ -332,12 +332,12 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
             // directory, in which case the databases will be stored in a
             // subdirectory.
             CONFIG_DIR = boost::filesystem::current_path();
-            dataDir = CONFIG_DIR / databaseDirName;
-            CONFIG_FILE = CONFIG_DIR / configFileName;
-            if (boost::filesystem::exists(CONFIG_FILE))
+            dataDir = CONFIG_DIR / kDATABASE_DIR_NAME;
+            CONFIG_FILE_ = CONFIG_DIR / kCONFIG_FILE_NAME;
+            if (boost::filesystem::exists(CONFIG_FILE_))
                 break;
-            CONFIG_FILE = CONFIG_DIR / configLegacyName;
-            if (boost::filesystem::exists(CONFIG_FILE))
+            CONFIG_FILE_ = CONFIG_DIR / kCONFIG_LEGACY_NAME;
+            if (boost::filesystem::exists(CONFIG_FILE_))
                 break;
 
             // Check if the home directory is set, and optionally the XDG config
@@ -363,21 +363,21 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
                 // dir.
                 dataDir = strXdgDataHome + "/" + systemName();
                 CONFIG_DIR = strXdgConfigHome + "/" + systemName();
-                CONFIG_FILE = CONFIG_DIR / configFileName;
-                if (boost::filesystem::exists(CONFIG_FILE))
+                CONFIG_FILE_ = CONFIG_DIR / kCONFIG_FILE_NAME;
+                if (boost::filesystem::exists(CONFIG_FILE_))
                     break;
-                CONFIG_FILE = CONFIG_DIR / configLegacyName;
-                if (boost::filesystem::exists(CONFIG_FILE))
+                CONFIG_FILE_ = CONFIG_DIR / kCONFIG_LEGACY_NAME;
+                if (boost::filesystem::exists(CONFIG_FILE_))
                     break;
             }
 
             // As a last resort, check the system config directory.
             dataDir = "/var/opt/" + systemName();
             CONFIG_DIR = "/etc/opt/" + systemName();
-            CONFIG_FILE = CONFIG_DIR / configFileName;
-            if (boost::filesystem::exists(CONFIG_FILE))
+            CONFIG_FILE_ = CONFIG_DIR / kCONFIG_FILE_NAME;
+            if (boost::filesystem::exists(CONFIG_FILE_))
                 break;
-            CONFIG_FILE = CONFIG_DIR / configLegacyName;
+            CONFIG_FILE_ = CONFIG_DIR / kCONFIG_LEGACY_NAME;
         } while (false);
     }
 
@@ -390,7 +390,7 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
         {
             dataDir = boost::filesystem::path(dbPath);
         }
-        else if (RUN_STANDALONE)
+        else if (RUN_STANDALONE_)
         {
             dataDir.clear();
         }
@@ -410,14 +410,14 @@ Config::setup(std::string const& strConf, bool bQuiet, bool bSilent, bool bStand
     HTTPClient::initializeSSLContext(
         this->SSL_VERIFY_DIR, this->SSL_VERIFY_FILE, this->SSL_VERIFY, j_);
 
-    if (RUN_STANDALONE)
+    if (RUN_STANDALONE_)
         LEDGER_HISTORY = 0;
 
     Section const ledgerTxTablesSection = section("ledger_tx_tables");
-    get_if_exists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES);
+    getIfExists(ledgerTxTablesSection, "use_tx_tables", USE_TX_TABLES_);
 
     Section const& nodeDbSection{section(ConfigSection::nodeDatabase())};
-    get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
+    getIfExists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
 // 0 ports are allowed for unit tests, but still not allowed to be present in
@@ -454,16 +454,16 @@ Config::load()
     // NOTE: this writes to cerr because we want cout to be reserved
     // for the writing of the json response (so that stdout can be part of a
     // pipeline, for instance)
-    if (!QUIET)
-        std::cerr << "Loading: " << CONFIG_FILE << "\n";
+    if (!QUIET_)
+        std::cerr << "Loading: " << CONFIG_FILE_ << "\n";
 
     boost::system::error_code ec;
-    auto const fileContents = getFileContents(ec, CONFIG_FILE);
+    auto const fileContents = getFileContents(ec, CONFIG_FILE_);
 
     if (ec)
     {
-        std::cerr << "Failed to read '" << CONFIG_FILE << "'." << ec.value() << ": " << ec.message()
-                  << std::endl;
+        std::cerr << "Failed to read '" << CONFIG_FILE_ << "'." << ec.value() << ": "
+                  << ec.message() << std::endl;
         return;
     }
 
@@ -674,7 +674,7 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_NETWORK_QUORUM, strTemp, j_))
         NETWORK_QUORUM = beast::lexicalCastThrow<std::size_t>(strTemp);
 
-    FEES = setup_FeeVote(section("voting"));
+    FEES = setupFeeVote(section("voting"));
     /* [fee_default] is documented in the example config files as useful for
      * things like offline transaction signing. Until that's completely
      * deprecated, allow it to override the [voting] section. */
@@ -730,7 +730,7 @@ Config::loadFromString(std::string const& fileContents)
         PATH_SEARCH_MAX = beast::lexicalCastThrow<int>(strTemp);
 
     if (getSingleSection(secConfig, SECTION_DEBUG_LOGFILE, strTemp, j_))
-        DEBUG_LOGFILE = strTemp;
+        DEBUG_LOGFILE_ = strTemp;
 
     if (getSingleSection(secConfig, SECTION_SWEEP_INTERVAL, strTemp, j_))
     {
@@ -803,11 +803,11 @@ Config::loadFromString(std::string const& fileContents)
 
         if (sec.exists("vp_base_squelch_enable"))
         {
-            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = sec.value_or("vp_base_squelch_enable", false);
+            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = sec.valueOr("vp_base_squelch_enable", false);
         }
         else if (sec.exists("vp_enable"))
         {
-            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = sec.value_or("vp_enable", false);
+            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = sec.valueOr("vp_enable", false);
         }
         else
         {
@@ -820,7 +820,7 @@ Config::loadFromString(std::string const& fileContents)
         // validator messages. The config must be removed once squelching is //
         // made the default routing algorithm.                               //
         VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS =
-            sec.value_or("vp_base_squelch_max_selected_peers", 5);
+            sec.valueOr("vp_base_squelch_max_selected_peers", 5);
         if (VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS < 3)
         {
             Throw<std::runtime_error>("Invalid " SECTION_REDUCE_RELAY
@@ -829,10 +829,10 @@ Config::loadFromString(std::string const& fileContents)
         }
         /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
 
-        TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
-        TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
-        TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);
-        TX_RELAY_PERCENTAGE = sec.value_or("tx_relay_percentage", 25);
+        TX_REDUCE_RELAY_ENABLE = sec.valueOr("tx_enable", false);
+        TX_REDUCE_RELAY_METRICS = sec.valueOr("tx_metrics", false);
+        TX_REDUCE_RELAY_MIN_PEERS = sec.valueOr("tx_min_peers", 20);
+        TX_RELAY_PERCENTAGE = sec.valueOr("tx_relay_percentage", 25);
         if (TX_RELAY_PERCENTAGE < 10 || TX_RELAY_PERCENTAGE > 100 || TX_REDUCE_RELAY_MIN_PEERS < 10)
         {
             Throw<std::runtime_error>("Invalid " SECTION_REDUCE_RELAY
@@ -845,7 +845,7 @@ Config::loadFromString(std::string const& fileContents)
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))
     {
         MAX_TRANSACTIONS =
-            std::clamp(beast::lexicalCastThrow<int>(strTemp), MIN_JOB_QUEUE_TX, MAX_JOB_QUEUE_TX);
+            std::clamp(beast::lexicalCastThrow<int>(strTemp), kMIN_JOB_QUEUE_TX, kMAX_JOB_QUEUE_TX);
     }
 
     if (getSingleSection(secConfig, SECTION_SERVER_DOMAIN, strTemp, j_))
@@ -944,7 +944,7 @@ Config::loadFromString(std::string const& fileContents)
         BETA_RPC_API = beast::lexicalCastThrow<bool>(strTemp);
 
     // Do not load trusted validator configuration for standalone mode
-    if (!RUN_STANDALONE)
+    if (!RUN_STANDALONE_)
     {
         // If a file was explicitly specified, then throw if the
         // path is malformed or if the file does not exist or is
@@ -988,7 +988,7 @@ Config::loadFromString(std::string const& fileContents)
         }
         else if (!CONFIG_DIR.empty())
         {
-            validatorsFile = CONFIG_DIR / validatorsFileName;
+            validatorsFile = CONFIG_DIR / kVALIDATORS_FILE_NAME;
 
             if (!validatorsFile.empty())
             {
@@ -1138,7 +1138,7 @@ Config::loadFromString(std::string const& fileContents)
 boost::filesystem::path
 Config::getDebugLogFile() const
 {
-    auto logFile = DEBUG_LOGFILE;
+    auto logFile = DEBUG_LOGFILE_;
 
     if (!logFile.empty() && !logFile.is_absolute())
     {
@@ -1179,7 +1179,7 @@ Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 }
 
 FeeSetup
-setup_FeeVote(Section const& section)
+setupFeeVote(Section const& section)
 {
     FeeSetup setup;
     {
@@ -1199,7 +1199,7 @@ setup_FeeVote(Section const& section)
 }
 
 DatabaseCon::Setup
-setup_DatabaseCon(Config const& c, std::optional<beast::Journal> j)
+setupDatabaseCon(Config const& c, std::optional<beast::Journal> j)
 {
     DatabaseCon::Setup setup;
 

@@ -114,10 +114,10 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
         if (isMutate && ((txFlags & tfUniversalMask) != 0u))
             return temMALFORMED;
 
-        if (transferFee && *transferFee > maxTransferFee)
+        if (transferFee && *transferFee > kMAX_TRANSFER_FEE)
             return temBAD_TRANSFER_FEE;
 
-        if (metadata && metadata->length() > maxMPTokenMetadataLength)
+        if (metadata && metadata->length() > kMAX_MP_TOKEN_METADATA_LENGTH)
             return temMALFORMED;
 
         if (mutableFlags)
@@ -218,7 +218,7 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
         if (not sleMptIssuance->isFlag(lsfMPTRequireAuth))
             return tecNO_PERMISSION;
 
-        if (*domain != beast::zero)
+        if (*domain != beast::kZERO)
         {
             auto const sleDomain = ctx.view.read(keylet::permissionedDomain(*domain));
             if (!sleDomain)
@@ -362,7 +362,7 @@ MPTokenIssuanceSet::doApply()
             sle->getType() == ltMPTOKEN_ISSUANCE,
             "MPTokenIssuanceSet::doApply : modifying MPTokenIssuance");
 
-        if (*domainID != beast::zero)
+        if (*domainID != beast::kZERO)
         {
             sle->setFieldH256(sfDomainID, *domainID);
         }

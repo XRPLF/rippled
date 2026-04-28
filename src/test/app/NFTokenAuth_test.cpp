@@ -29,7 +29,7 @@
 
 namespace xrpl {
 
-class NFTokenAuth_test : public beast::unit_test::suite
+class NFTokenAuth_test : public beast::unit_test::Suite
 {
     static auto
     mintAndOfferNFT(
@@ -40,11 +40,11 @@ class NFTokenAuth_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         auto const nftID{token::getNextID(env, account, 0u, tfTransferable, xfee)};
-        env(token::mint(account, 0), token::xferFee(xfee), txflags(tfTransferable));
+        env(token::mint(account, 0), token::XferFee(xfee), Txflags(tfTransferable));
         env.close();
 
-        auto const sellIdx = keylet::nftoffer(account, env.Seq(account)).key;
-        env(token::createOffer(account, nftID, currency), txflags(tfSellNFToken));
+        auto const sellIdx = keylet::nftoffer(account, env.seq(account)).key;
+        env(token::createOffer(account, nftID, currency), Txflags(tfSellNFToken));
         env.close();
 
         return std::make_tuple(nftID, sellIdx);
@@ -63,7 +63,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, a1, a2);
+        env.fund(kXRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -74,11 +74,11 @@ public:
         env(pay(g1, a1, usd(1000)));
 
         auto const [nftID, _] = mintAndOfferNFT(env, a2, drops(1));
-        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
+        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
 
         // It should be possible to create a buy offer even if NFT owner is not
         // authorized
-        env(token::createOffer(a1, nftID, usd(10)), token::owner(a2));
+        env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
@@ -100,7 +100,7 @@ public:
             env(token::acceptBuyOffer(a2, buyIdx));
             env.close();
 
-            BEAST_EXPECT(env.Balance(a2, usd) == usd(10));
+            BEAST_EXPECT(env.balance(a2, usd) == usd(10));
         }
     }
 
@@ -116,14 +116,14 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, a1, a2);
+        env.fund(kXRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
         auto const [nftID, _] = mintAndOfferNFT(env, a2, drops(1));
 
         // test: check that buyer can't make an offer if they're not authorized.
-        env(token::createOffer(a1, nftID, usd(10)), token::owner(a2), Ter(tecUNFUNDED_OFFER));
+        env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2), Ter(tecUNFUNDED_OFFER));
         env.close();
 
         // Artificially create an unauthorized trustline with balance. Don't
@@ -140,13 +140,13 @@ public:
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: check that buyer can't make an offer even with balance
-            env(token::createOffer(a1, nftID, usd(10)), token::owner(a2), Ter(tecNO_AUTH));
+            env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2), Ter(tecNO_AUTH));
         }
         else
         {
             // old behavior: can create an offer if balance allows, regardless
             // ot authorization
-            env(token::createOffer(a1, nftID, usd(10)), token::owner(a2));
+            env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
         }
     }
 
@@ -162,7 +162,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, a1, a2);
+        env.fund(kXRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -179,8 +179,8 @@ public:
         env(pay(g1, a2, usd(10)));
         env.close();
 
-        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
-        env(token::createOffer(a1, nftID, usd(10)), token::owner(a2));
+        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        env(token::createOffer(a1, nftID, usd(10)), token::Owner(a2));
         env.close();
 
         env(pay(a1, g1, usd(10)));
@@ -220,7 +220,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, a1, a2);
+        env.fund(kXRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -235,17 +235,17 @@ public:
         {
             // test: can't create sell offer if there is no trustline but auth
             // required
-            env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken), Ter(tecNO_LINE));
+            env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken), Ter(tecNO_LINE));
 
             env(trust(a2, limit));
             // test: can't create sell offer if not authorized to hold token
-            env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken), Ter(tecNO_AUTH));
+            env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken), Ter(tecNO_AUTH));
 
             // Authorizing trustline to make an offer creation possible
             env(trust(g1, usd(0), a2, tfSetfAuth));
             env.close();
-            auto const sellIdx = keylet::nftoffer(a2, env.Seq(a2)).key;
-            env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken));
+            auto const sellIdx = keylet::nftoffer(a2, env.seq(a2)).key;
+            env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken));
             env.close();
             //
 
@@ -268,10 +268,10 @@ public:
         }
         else
         {
-            auto const sellIdx = keylet::nftoffer(a2, env.Seq(a2)).key;
+            auto const sellIdx = keylet::nftoffer(a2, env.seq(a2)).key;
 
             // Old behavior: sell offer can be created without authorization
-            env(token::createOffer(a2, nftID, usd(10)), txflags(tfSellNFToken));
+            env(token::createOffer(a2, nftID, usd(10)), Txflags(tfSellNFToken));
             env.close();
 
             // Old behavior: it is possible to sell NFT and receive IOUs
@@ -279,7 +279,7 @@ public:
             env(token::acceptSellOffer(a1, sellIdx));
             env.close();
 
-            BEAST_EXPECT(env.Balance(a2, usd) == usd(10));
+            BEAST_EXPECT(env.balance(a2, usd) == usd(10));
         }
     }
 
@@ -295,7 +295,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, a1, a2);
+        env.fund(kXRP(10000), g1, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -338,7 +338,7 @@ public:
         Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, a1, a2, broker);
+        env.fund(kXRP(10000), g1, a1, a2, broker);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -353,15 +353,15 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
-        env(token::createOffer(a1, nftID, usd(11)), token::owner(a2));
+        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
         env.close();
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
             // test: G1 requires authorization of broker, no trust line exists
             env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(usd(1)),
+                token::BrokerFee(usd(1)),
                 Ter(tecNO_LINE));
             env.close();
 
@@ -371,7 +371,7 @@ public:
 
             // test: G1 requires authorization of broker
             env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(usd(1)),
+                token::BrokerFee(usd(1)),
                 Ter(tecNO_AUTH));
             env.close();
 
@@ -382,10 +382,10 @@ public:
         else
         {
             // Old behavior: broker can receive IOUs without the authorization
-            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(usd(1)));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::BrokerFee(usd(1)));
             env.close();
 
-            BEAST_EXPECT(env.Balance(broker, usd) == usd(1));
+            BEAST_EXPECT(env.balance(broker, usd) == usd(1));
         }
     }
 
@@ -404,7 +404,7 @@ public:
         Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, a1, a2, broker);
+        env.fund(kXRP(10000), g1, a1, a2, broker);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -422,8 +422,8 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
-        env(token::createOffer(a1, nftID, usd(11)), token::owner(a2));
+        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
         env.close();
 
         // Resetting buyer's trust line to delete it
@@ -443,7 +443,7 @@ public:
         {
             // test: G1 requires authorization of A2
             env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(usd(1)),
+                token::BrokerFee(usd(1)),
                 Ter(tecNO_AUTH));
             env.close();
         }
@@ -464,7 +464,7 @@ public:
         Account const broker{"broker"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, a1, a2, broker);
+        env.fund(kXRP(10000), g1, a1, a2, broker);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -483,8 +483,8 @@ public:
         env.close();
 
         auto const [nftID, sellIdx] = mintAndOfferNFT(env, a2, usd(10));
-        auto const buyIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
-        env(token::createOffer(a1, nftID, usd(11)), token::owner(a2));
+        auto const buyIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        env(token::createOffer(a1, nftID, usd(11)), token::Owner(a2));
         env.close();
 
         // Reseting trustline to delete it. This allows to check if
@@ -496,7 +496,7 @@ public:
         {
             // test: G1 requires authorization of broker, no trust line exists
             env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(usd(1)),
+                token::BrokerFee(usd(1)),
                 Ter(tecNO_LINE));
             env.close();
 
@@ -506,7 +506,7 @@ public:
 
             // test: G1 requires authorization of A2
             env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(usd(1)),
+                token::BrokerFee(usd(1)),
                 Ter(tecNO_AUTH));
             env.close();
 
@@ -517,10 +517,10 @@ public:
         else
         {
             // Old behavior: broker can receive IOUs without the authorization
-            env(token::brokerOffers(broker, buyIdx, sellIdx), token::brokerFee(usd(1)));
+            env(token::brokerOffers(broker, buyIdx, sellIdx), token::BrokerFee(usd(1)));
             env.close();
 
-            BEAST_EXPECT(env.Balance(a2, usd) == usd(10));
+            BEAST_EXPECT(env.balance(a2, usd) == usd(10));
             return;
         }
     }
@@ -538,7 +538,7 @@ public:
         Account const a2{"A2"};
         auto const usd{g1["USD"]};
 
-        env.fund(XRP(10000), g1, minter, a1, a2);
+        env.fund(kXRP(10000), g1, minter, a1, a2);
         env(fset(g1, asfRequireAuth));
         env.close();
 
@@ -559,8 +559,8 @@ public:
         auto const [nftID, minterSellIdx] = mintAndOfferNFT(env, minter, drops(1), 1);
         env(token::acceptSellOffer(a1, minterSellIdx));
 
-        uint256 const sellIdx = keylet::nftoffer(a1, env.Seq(a1)).key;
-        env(token::createOffer(a1, nftID, usd(100)), txflags(tfSellNFToken));
+        uint256 const sellIdx = keylet::nftoffer(a1, env.seq(a1)).key;
+        env(token::createOffer(a1, nftID, usd(100)), Txflags(tfSellNFToken));
 
         if (features[fixEnforceNFTokenTrustlineV2])
         {
@@ -574,7 +574,7 @@ public:
             env(token::acceptSellOffer(a2, sellIdx));
             env.close();
 
-            BEAST_EXPECT(env.Balance(minter, usd) == usd(0.001));
+            BEAST_EXPECT(env.balance(minter, usd) == usd(0.001));
         }
     }
 

@@ -25,7 +25,7 @@ makeProtocol(std::uint16_t major, std::uint16_t minor)
 
 /** Print a protocol version a human-readable string. */
 std::string
-toString(ProtocolVersion const& p);
+to_string(ProtocolVersion const& p);
 
 /** Parse a set of protocol versions.
 

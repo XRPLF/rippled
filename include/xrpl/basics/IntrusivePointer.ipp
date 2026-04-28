@@ -266,12 +266,12 @@ SharedIntrusive<T>::unsafeReleaseAndStore(T* next)
     auto action = prev->releaseStrongRef();
     switch (action)
     {
-        case noop:
+        case Noop:
             break;
-        case destroy:
+        case Destroy:
             delete prev;
             break;
-        case partialDestroy:
+        case PartialDestroy:
             prev->partialDestructor();
             partialDestructorFinished(&prev);
             // prev is null and may no longer be used
@@ -367,9 +367,9 @@ WeakIntrusive<T>::unsafeReleaseNoStore()
     auto action = ptr_->releaseWeakRef();
     switch (action)
     {
-        case noop:
+        case Noop:
             break;
-        case destroy:
+        case Destroy:
             delete ptr_;
             break;
     }
@@ -398,7 +398,7 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT> const& rhs)
     auto p = rhs.unsafeGetRawPtr();
     if (p)
         p->addStrongRef();
-    unsafeSetRawPtr(p, RefStrength::strong);
+    unsafeSetRawPtr(p, RefStrength::Strong);
 }
 
 template <class T>
@@ -414,7 +414,7 @@ SharedWeakUnion<T>::SharedWeakUnion(SharedIntrusive<TT>&& rhs)
 {
     auto p = rhs.unsafeGetRawPtr();
     if (p)
-        unsafeSetRawPtr(p, RefStrength::strong);
+        unsafeSetRawPtr(p, RefStrength::Strong);
     rhs.unsafeSetRawPtr(nullptr);
 }
 
@@ -431,12 +431,12 @@ SharedWeakUnion<T>::operator=(SharedWeakUnion const& rhs)
         if (rhs.isStrong())
         {
             p->addStrongRef();
-            unsafeSetRawPtr(p, RefStrength::strong);
+            unsafeSetRawPtr(p, RefStrength::Strong);
         }
         else
         {
             p->addWeakRef();
-            unsafeSetRawPtr(p, RefStrength::weak);
+            unsafeSetRawPtr(p, RefStrength::Weak);
         }
     }
     else
@@ -456,7 +456,7 @@ SharedWeakUnion<T>::operator=(SharedIntrusive<TT> const& rhs)
     auto p = rhs.unsafeGetRawPtr();
     if (p)
         p->addStrongRef();
-    unsafeSetRawPtr(p, RefStrength::strong);
+    unsafeSetRawPtr(p, RefStrength::Strong);
     return *this;
 }
 
@@ -467,7 +467,7 @@ SharedWeakUnion<T>&
 SharedWeakUnion<T>::operator=(SharedIntrusive<TT>&& rhs)
 {
     unsafeReleaseNoStore();
-    unsafeSetRawPtr(rhs.unsafeGetRawPtr(), RefStrength::strong);
+    unsafeSetRawPtr(rhs.unsafeGetRawPtr(), RefStrength::Strong);
     rhs.unsafeSetRawPtr(nullptr);
     return *this;
 }
@@ -559,14 +559,14 @@ template <class T>
 bool
 SharedWeakUnion<T>::isStrong() const
 {
-    return !(tp_ & tagMask);
+    return !(tp_ & kTAG_MASK);
 }
 
 template <class T>
 bool
 SharedWeakUnion<T>::isWeak() const
 {
-    return tp_ & tagMask;
+    return tp_ & kTAG_MASK;
 }
 
 template <class T>
@@ -584,7 +584,7 @@ SharedWeakUnion<T>::convertToStrong()
             (action == ReleaseWeakRefAction::noop),
             "xrpl::SharedWeakUnion::convertToStrong : "
             "action is noop");
-        unsafeSetRawPtr(p, RefStrength::strong);
+        unsafeSetRawPtr(p, RefStrength::Strong);
         return true;
     }
     return false;
@@ -605,9 +605,9 @@ SharedWeakUnion<T>::convertToWeak()
     auto action = p->addWeakReleaseStrongRef();
     switch (action)
     {
-        case noop:
+        case Noop:
             break;
-        case destroy:
+        case Destroy:
             // We just added a weak ref. How could we destroy?
             // LCOV_EXCL_START
             UNREACHABLE(
@@ -617,7 +617,7 @@ SharedWeakUnion<T>::convertToWeak()
             unsafeSetRawPtr(nullptr);
             return true;  // Should never happen
             // LCOV_EXCL_STOP
-        case partialDestroy:
+        case PartialDestroy:
             // This is a weird case. We just converted the last strong
             // pointer to a weak pointer.
             p->partialDestructor();
@@ -625,7 +625,7 @@ SharedWeakUnion<T>::convertToWeak()
             // p is null and may no longer be used
             break;
     }
-    unsafeSetRawPtr(p, RefStrength::weak);
+    unsafeSetRawPtr(p, RefStrength::Weak);
     return true;
 }
 
@@ -633,7 +633,7 @@ template <class T>
 T*
 SharedWeakUnion<T>::unsafeGetRawPtr() const
 {
-    return reinterpret_cast<T*>(tp_ & ptrMask);
+    return reinterpret_cast<T*>(tp_ & kPTR_MASK);
 }
 
 template <class T>
@@ -641,8 +641,8 @@ void
 SharedWeakUnion<T>::unsafeSetRawPtr(T* p, RefStrength rs)
 {
     tp_ = reinterpret_cast<std::uintptr_t>(p);
-    if (tp_ && rs == RefStrength::weak)
-        tp_ |= tagMask;
+    if (tp_ && rs == RefStrength::Weak)
+        tp_ |= kTAG_MASK;
 }
 
 template <class T>
@@ -666,12 +666,12 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
         auto strongAction = p->releaseStrongRef();
         switch (strongAction)
         {
-            case noop:
+            case Noop:
                 break;
-            case destroy:
+            case Destroy:
                 delete p;
                 break;
-            case partialDestroy:
+            case PartialDestroy:
                 p->partialDestructor();
                 partialDestructorFinished(&p);
                 // p is null and may no longer be used
@@ -684,9 +684,9 @@ SharedWeakUnion<T>::unsafeReleaseNoStore()
         auto weakAction = p->releaseWeakRef();
         switch (weakAction)
         {
-            case noop:
+            case Noop:
                 break;
-            case destroy:
+            case Destroy:
                 delete p;
                 break;
         }

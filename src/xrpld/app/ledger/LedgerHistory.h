@@ -107,7 +107,7 @@ private:
 
     // Maps ledger indexes to the corresponding hashes
     // For debug and logging purposes
-    struct cv_entry
+    struct CvEntry
     {
         // Hash of locally built ledger
         std::optional<LedgerHash> built;
@@ -120,7 +120,7 @@ private:
         // Consensus metadata of built ledger
         std::optional<Json::Value> consensus;
     };
-    using ConsensusValidated = TaggedCache<LedgerIndex, cv_entry>;
+    using ConsensusValidated = TaggedCache<LedgerIndex, CvEntry>;
     ConsensusValidated consensus_validated_;
 
     // Maps ledger indexes to the corresponding hash.

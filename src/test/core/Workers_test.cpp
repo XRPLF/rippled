@@ -81,7 +81,7 @@ class PerfLogTest : public PerfLog
 
 //------------------------------------------------------------------------------
 
-class Workers_test : public beast::unit_test::suite
+class Workers_test : public beast::unit_test::Suite
 {
 public:
     struct TestCallback : Workers::Callback

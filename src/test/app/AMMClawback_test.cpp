@@ -25,7 +25,7 @@
 #include <utility>
 
 namespace xrpl::test {
-class AMMClawback_test : public beast::unit_test::suite
+class AMMClawback_test : public beast::unit_test::Suite
 {
     void
     testInvalidRequest(FeatureBitset features)
@@ -38,22 +38,22 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(100000), gw, alice);
+            env.fund(kXRP(100000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             auto const usd = gw["USD"];
             env.trust(usd(10000), alice);
             env(pay(gw, alice, usd(100)));
 
-            AMM const amm(env, alice, XRP(100), usd(100));
+            AMM const amm(env, alice, kXRP(100), usd(100));
             env.close();
 
-            env(amm::ammClawback(gw, Account("unknown"), usd, XRP, std::nullopt),
+            env(amm::ammClawback(gw, Account("unknown"), usd, kXRP, std::nullopt),
                 Ter(terNO_ACCOUNT));
         }
 
@@ -63,13 +63,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(100000), gw, alice);
+            env.fund(kXRP(100000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 100 USD to Alice.
             auto const usd = gw["USD"];
@@ -79,7 +79,7 @@ class AMMClawback_test : public beast::unit_test::suite
 
             // Withdraw all the tokens from the AMMAccount.
             // The AMMAccount will be auto deleted.
-            AMM amm(env, gw, XRP(100), usd(100));
+            AMM amm(env, gw, kXRP(100), usd(100));
             amm.withdrawAll(gw);
             BEAST_EXPECT(!amm.ammExists());
             env.close();
@@ -95,13 +95,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(10000), gw, alice);
+            env.fund(kXRP(10000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 100 USD to Alice.
             auto const usd = gw["USD"];
@@ -109,13 +109,13 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, usd(100)));
             env.close();
 
-            AMM const amm(env, gw, XRP(100), usd(100), Ter(tesSUCCESS));
+            AMM const amm(env, gw, kXRP(100), usd(100), Ter(tesSUCCESS));
 
             // Issuer can not clawback from himself.
-            env(amm::ammClawback(gw, gw, usd, XRP, std::nullopt), Ter(temMALFORMED));
+            env(amm::ammClawback(gw, gw, usd, kXRP, std::nullopt), Ter(temMALFORMED));
 
             // Holder can not clawback from himself.
-            env(amm::ammClawback(alice, alice, usd, XRP, std::nullopt), Ter(temMALFORMED));
+            env(amm::ammClawback(alice, alice, usd, kXRP, std::nullopt), Ter(temMALFORMED));
         }
 
         // Test if the Asset field matches the Account field.
@@ -123,13 +123,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(10000), gw, alice);
+            env.fund(kXRP(10000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 100 USD to Alice.
             auto const usd = gw["USD"];
@@ -137,12 +137,12 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, usd(100)));
             env.close();
 
-            AMM const amm(env, gw, XRP(100), usd(100), Ter(tesSUCCESS));
+            AMM const amm(env, gw, kXRP(100), usd(100), Ter(tesSUCCESS));
 
             // The Asset's issuer field is alice, while the Account field is gw.
             // This should return temMALFORMED because they do not match.
             env(amm::ammClawback(
-                    gw, alice, Issue{gw["USD"].currency, alice.id()}, XRP, std::nullopt),
+                    gw, alice, Issue{gw["USD"].currency, alice.id()}, kXRP, std::nullopt),
                 Ter(temMALFORMED));
         }
 
@@ -151,13 +151,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(10000), gw, alice);
+            env.fund(kXRP(10000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 100 USD to Alice.
             auto const usd = gw["USD"];
@@ -165,13 +165,13 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, usd(100)));
             env.close();
 
-            AMM const amm(env, gw, XRP(100), usd(100), Ter(tesSUCCESS));
+            AMM const amm(env, gw, kXRP(100), usd(100), Ter(tesSUCCESS));
 
             // The Asset's issuer subfield is gw account and Amount's issuer
             // subfield is alice account. Return temBAD_AMOUNT because
             // they do not match.
             env(amm::ammClawback(
-                    gw, alice, usd, XRP, STAmount{Issue{gw["USD"].currency, alice.id()}, 1}),
+                    gw, alice, usd, kXRP, STAmount{Issue{gw["USD"].currency, alice.id()}, 1}),
                 Ter(temBAD_AMOUNT));
         }
 
@@ -180,13 +180,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(10000), gw, alice);
+            env.fund(kXRP(10000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 100 USD to Alice.
             auto const usd = gw["USD"];
@@ -194,16 +194,16 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, usd(100)));
             env.close();
 
-            AMM const amm(env, gw, XRP(100), usd(100), Ter(tesSUCCESS));
+            AMM const amm(env, gw, kXRP(100), usd(100), Ter(tesSUCCESS));
 
             // Return temBAD_AMOUNT if the Amount value is less than 0.
             env(amm::ammClawback(
-                    gw, alice, usd, XRP, STAmount{Issue{gw["USD"].currency, gw.id()}, -1}),
+                    gw, alice, usd, kXRP, STAmount{Issue{gw["USD"].currency, gw.id()}, -1}),
                 Ter(temBAD_AMOUNT));
 
             // Return temBAD_AMOUNT if the Amount value is 0.
             env(amm::ammClawback(
-                    gw, alice, usd, XRP, STAmount{Issue{gw["USD"].currency, gw.id()}, 0}),
+                    gw, alice, usd, kXRP, STAmount{Issue{gw["USD"].currency, gw.id()}, 0}),
                 Ter(temBAD_AMOUNT));
         }
 
@@ -213,7 +213,7 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(10000), gw, alice);
+            env.fund(kXRP(10000), gw, alice);
             env.close();
 
             // gw issues 100 USD to Alice.
@@ -221,15 +221,15 @@ class AMMClawback_test : public beast::unit_test::suite
             env.trust(usd(1000), alice);
             env(pay(gw, alice, usd(100)));
             env.close();
-            env.Require(Balance(alice, usd(100)));
-            env.Require(Balance(gw, alice["USD"](-100)));
+            env.require(Balance(alice, usd(100)));
+            env.require(Balance(gw, alice["USD"](-100)));
 
             // gw creates AMM pool of XRP/USD.
-            AMM const amm(env, gw, XRP(100), usd(100), Ter(tesSUCCESS));
+            AMM const amm(env, gw, kXRP(100), usd(100), Ter(tesSUCCESS));
 
             // If asfAllowTrustLineClawback is not set, the issuer is not
             // allowed to send the AMMClawback transaction.
-            env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt), Ter(tecNO_PERMISSION));
+            env(amm::ammClawback(gw, alice, usd, kXRP, std::nullopt), Ter(tecNO_PERMISSION));
         }
 
         // Test invalid flag.
@@ -237,13 +237,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(10000), gw, alice);
+            env.fund(kXRP(10000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 100 USD to Alice.
             auto const usd = gw["USD"];
@@ -251,11 +251,11 @@ class AMMClawback_test : public beast::unit_test::suite
             env(pay(gw, alice, usd(100)));
             env.close();
 
-            AMM const amm(env, gw, XRP(100), usd(100), Ter(tesSUCCESS));
+            AMM const amm(env, gw, kXRP(100), usd(100), Ter(tesSUCCESS));
 
             // Return temINVALID_FLAG when providing invalid flag.
-            env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt),
-                txflags(tfTwoAssetIfEmpty),
+            env(amm::ammClawback(gw, alice, usd, kXRP, std::nullopt),
+                Txflags(tfTwoAssetIfEmpty),
                 Ter(temINVALID_FLAG));
         }
 
@@ -265,13 +265,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(10000), gw, alice);
+            env.fund(kXRP(10000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 100 USD to Alice.
             auto const usd = gw["USD"];
@@ -280,14 +280,14 @@ class AMMClawback_test : public beast::unit_test::suite
             env.close();
 
             // gw creates AMM pool of XRP/USD.
-            AMM const amm(env, gw, XRP(100), usd(100), Ter(tesSUCCESS));
+            AMM const amm(env, gw, kXRP(100), usd(100), Ter(tesSUCCESS));
 
             // Return temINVALID_FLAG because the issuer set tfClawTwoAssets,
             // but the issuer only issues USD in the pool. The issuer is not
             // allowed to set tfClawTwoAssets flag if he did not issue both
             // assets in the pool.
-            env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt),
-                txflags(tfClawTwoAssets),
+            env(amm::ammClawback(gw, alice, usd, kXRP, std::nullopt),
+                Txflags(tfClawTwoAssets),
                 Ter(temINVALID_FLAG));
         }
 
@@ -296,13 +296,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(1000000), gw, alice);
+            env.fund(kXRP(1000000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 3000 USD to Alice.
             auto const usd = gw["USD"];
@@ -311,11 +311,11 @@ class AMMClawback_test : public beast::unit_test::suite
             env.close();
 
             // Alice creates AMM pool of XRP/USD.
-            AMM const amm(env, alice, XRP(1000), usd(2000), Ter(tesSUCCESS));
+            AMM const amm(env, alice, kXRP(1000), usd(2000), Ter(tesSUCCESS));
             env.close();
 
             // Clawback XRP is prohibited.
-            env(amm::ammClawback(gw, alice, XRP, usd, std::nullopt), Ter(temMALFORMED));
+            env(amm::ammClawback(gw, alice, kXRP, usd, std::nullopt), Ter(temMALFORMED));
         }
     }
 
@@ -329,13 +329,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(1000000), gw, alice);
+            env.fund(kXRP(1000000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 3000 USD to Alice.
             auto const usd = gw["USD"];
@@ -346,7 +346,7 @@ class AMMClawback_test : public beast::unit_test::suite
             // When featureAMMClawback is not enabled, AMMClawback is disabled.
             // Because when featureAMMClawback is disabled, we can not create
             // amm account, call amm::ammClawback directly for testing purpose.
-            env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt), Ter(temDISABLED));
+            env(amm::ammClawback(gw, alice, usd, kXRP, std::nullopt), Ter(temDISABLED));
         }
     }
 
@@ -363,29 +363,29 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"};
             Account const gw2{"gateway2"};
             Account const alice{"alice"};
-            env.fund(XRP(1000000), gw, gw2, alice);
+            env.fund(kXRP(1000000), gw, gw2, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 3000 USD to Alice.
             auto const usd = gw["USD"];
             env.trust(usd(100000), alice);
             env(pay(gw, alice, usd(3000)));
             env.close();
-            env.Require(Balance(gw, alice["USD"](-3000)));
-            env.Require(Balance(alice, usd(3000)));
+            env.require(Balance(gw, alice["USD"](-3000)));
+            env.require(Balance(alice, usd(3000)));
 
             // gw2 issues 3000 EUR to Alice.
             auto const eur = gw2["EUR"];
             env.trust(eur(100000), alice);
             env(pay(gw2, alice, eur(3000)));
             env.close();
-            env.Require(Balance(gw2, alice["EUR"](-3000)));
-            env.Require(Balance(alice, eur(3000)));
+            env.require(Balance(gw2, alice["EUR"](-3000)));
+            env.require(Balance(alice, eur(3000)));
 
             // Alice creates AMM pool of EUR/USD.
             AMM const amm(env, alice, eur(1000), usd(2000), Ter(tesSUCCESS));
@@ -401,14 +401,14 @@ class AMMClawback_test : public beast::unit_test::suite
             // Alice's initial balance for USD is 3000 USD. Alice deposited 2000
             // USD into the pool, then she has 1000 USD. And 1000 USD was clawed
             // back from the AMM pool, so she still has 1000 USD.
-            env.Require(Balance(gw, alice["USD"](-1000)));
-            env.Require(Balance(alice, usd(1000)));
+            env.require(Balance(gw, alice["USD"](-1000)));
+            env.require(Balance(alice, usd(1000)));
 
             // Alice's initial balance for EUR is 3000 EUR. Alice deposited 1000
             // EUR into the pool, 500 EUR was withdrawn proportionally. So she
             // has 2500 EUR now.
-            env.Require(Balance(gw2, alice["EUR"](-2500)));
-            env.Require(Balance(alice, eur(2500)));
+            env.require(Balance(gw2, alice["EUR"](-2500)));
+            env.require(Balance(alice, eur(2500)));
 
             // 1000 USD and 500 EUR was withdrawn from the AMM pool, so the
             // current balance is 1000 USD and 500 EUR.
@@ -424,13 +424,13 @@ class AMMClawback_test : public beast::unit_test::suite
 
             // Alice should still has 1000 USD because gw clawed back from the
             // AMM pool.
-            env.Require(Balance(gw, alice["USD"](-1000)));
-            env.Require(Balance(alice, usd(1000)));
+            env.require(Balance(gw, alice["USD"](-1000)));
+            env.require(Balance(alice, usd(1000)));
 
             // Alice should has 3000 EUR now because another 500 EUR was
             // withdrawn.
-            env.Require(Balance(gw2, alice["EUR"](-3000)));
-            env.Require(Balance(alice, eur(3000)));
+            env.require(Balance(gw2, alice["EUR"](-3000)));
+            env.require(Balance(alice, eur(3000)));
 
             // amm is automatically deleted.
             BEAST_EXPECT(!amm.ammExists());
@@ -442,63 +442,65 @@ class AMMClawback_test : public beast::unit_test::suite
             Env env(*this, features);
             Account const gw{"gateway"};
             Account const alice{"alice"};
-            env.fund(XRP(1000000), gw, alice);
+            env.fund(kXRP(1000000), gw, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 3000 USD to Alice.
             auto const usd = gw["USD"];
             env.trust(usd(100000), alice);
             env(pay(gw, alice, usd(3000)));
             env.close();
-            env.Require(Balance(gw, alice["USD"](-3000)));
-            env.Require(Balance(alice, usd(3000)));
+            env.require(Balance(gw, alice["USD"](-3000)));
+            env.require(Balance(alice, usd(3000)));
 
             // Alice creates AMM pool of XRP/USD.
-            AMM const amm(env, alice, XRP(1000), usd(2000), Ter(tesSUCCESS));
+            AMM const amm(env, alice, kXRP(1000), usd(2000), Ter(tesSUCCESS));
             env.close();
 
-            BEAST_EXPECT(amm.expectBalances(usd(2000), XRP(1000), IOUAmount{1414213562373095, -9}));
+            BEAST_EXPECT(
+                amm.expectBalances(usd(2000), kXRP(1000), IOUAmount{1414213562373095, -9}));
 
-            auto aliceXrpBalance = env.Balance(alice, XRP);
+            auto aliceXrpBalance = env.balance(alice, kXRP);
 
             // gw clawback 1000 USD from the AMM pool.
-            env(amm::ammClawback(gw, alice, usd, XRP, usd(1000)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw, alice, usd, kXRP, usd(1000)), Ter(tesSUCCESS));
             env.close();
 
             // Alice's initial balance for USD is 3000 USD. Alice deposited 2000
             // USD into the pool, then she has 1000 USD. And 1000 USD was clawed
             // back from the AMM pool, so she still has 1000 USD.
-            env.Require(Balance(gw, alice["USD"](-1000)));
-            env.Require(Balance(alice, usd(1000)));
+            env.require(Balance(gw, alice["USD"](-1000)));
+            env.require(Balance(alice, usd(1000)));
 
             // Alice will get 500 XRP back.
-            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(500)));
-            aliceXrpBalance = env.Balance(alice, XRP);
+            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(500)));
+            aliceXrpBalance = env.balance(alice, kXRP);
 
             // 1000 USD and 500 XRP was withdrawn from the AMM pool, so the
             // current balance is 1000 USD and 500 XRP.
-            BEAST_EXPECT(amm.expectBalances(usd(1000), XRP(500), IOUAmount{7071067811865475, -10}));
+            BEAST_EXPECT(
+                amm.expectBalances(usd(1000), kXRP(500), IOUAmount{7071067811865475, -10}));
 
             // Alice has half of its initial lptokens Left.
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{7071067811865475, -10}));
 
             // gw clawback another 1000 USD from the AMM pool. The AMM pool will
             // be empty and get deleted.
-            env(amm::ammClawback(gw, alice, usd, XRP, usd(1000)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw, alice, usd, kXRP, usd(1000)), Ter(tesSUCCESS));
             env.close();
 
             // Alice should still has 1000 USD because gw clawed back from the
             // AMM pool.
-            env.Require(Balance(gw, alice["USD"](-1000)));
-            env.Require(Balance(alice, usd(1000)));
+            env.require(Balance(gw, alice["USD"](-1000)));
+            env.require(Balance(alice, usd(1000)));
 
             // Alice will get another 500 XRP back.
-            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(500)));
+            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(500)));
 
             // amm is automatically deleted.
             BEAST_EXPECT(!amm.ammExists());
@@ -522,27 +524,27 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"};
             Account const gw2{"gateway2"};
             Account const alice{"alice"};
-            env.fund(XRP(1000000), gw, gw2, alice);
+            env.fund(kXRP(1000000), gw, gw2, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 6000 USD to Alice.
             auto const usd = gw["USD"];
             env.trust(usd(100000), alice);
             env(pay(gw, alice, usd(6000)));
             env.close();
-            env.Require(Balance(alice, usd(6000)));
+            env.require(Balance(alice, usd(6000)));
 
             // gw2 issues 6000 EUR to Alice.
             auto const eur = gw2["EUR"];
             env.trust(eur(100000), alice);
             env(pay(gw2, alice, eur(6000)));
             env.close();
-            env.Require(Balance(alice, eur(6000)));
+            env.require(Balance(alice, eur(6000)));
 
             // Alice creates AMM pool of EUR/USD
             AMM const amm(env, alice, eur(5000), usd(4000), Ter(tesSUCCESS));
@@ -566,12 +568,12 @@ class AMMClawback_test : public beast::unit_test::suite
             // Alice's initial balance for USD is 6000 USD. Alice deposited 4000
             // USD into the pool, then she has 2000 USD. And 1000 USD was clawed
             // back from the AMM pool, so she still has 2000 USD.
-            env.Require(Balance(alice, usd(2000)));
+            env.require(Balance(alice, usd(2000)));
 
             // Alice's initial balance for EUR is 6000 EUR. Alice deposited 5000
             // EUR into the pool, 1250 EUR was withdrawn proportionally. So she
             // has 2500 EUR now.
-            env.Require(Balance(alice, eur(2250)));
+            env.require(Balance(alice, eur(2250)));
 
             // 1000 USD and 1250 EUR was withdrawn from the AMM pool, so the
             // current balance is 3000 USD and 3750 EUR.
@@ -602,7 +604,7 @@ class AMMClawback_test : public beast::unit_test::suite
 
             // Alice should still has 2000 USD because gw clawed back from the
             // AMM pool.
-            env.Require(Balance(alice, usd(2000)));
+            env.require(Balance(alice, usd(2000)));
 
             if (!features[fixAMMv1_3])
             {
@@ -620,11 +622,11 @@ class AMMClawback_test : public beast::unit_test::suite
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    env.Balance(alice, eur) == STAmount(eur, UINT64_C(2874999999999999), -12));
+                    env.balance(alice, eur) == STAmount(eur, UINT64_C(2874999999999999), -12));
             }
             else
             {
-                BEAST_EXPECT(env.Balance(alice, eur) == eur(2875));
+                BEAST_EXPECT(env.balance(alice, eur) == eur(2875));
             }
 
             // gw clawback small amount, 1 USD.
@@ -632,7 +634,7 @@ class AMMClawback_test : public beast::unit_test::suite
             env.close();
 
             // Another 1 USD / 1.25 EUR was withdrawn.
-            env.Require(Balance(alice, usd(2000)));
+            env.require(Balance(alice, usd(2000)));
 
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
@@ -657,16 +659,16 @@ class AMMClawback_test : public beast::unit_test::suite
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    env.Balance(alice, eur) == STAmount(eur, UINT64_C(2876'249999999998), -12));
+                    env.balance(alice, eur) == STAmount(eur, UINT64_C(2876'249999999998), -12));
             }
             else if (!features[fixAMMClawbackRounding])
             {
-                BEAST_EXPECT(env.Balance(alice, eur) == eur(2876.25));
+                BEAST_EXPECT(env.balance(alice, eur) == eur(2876.25));
             }
             else if (features[fixAMMClawbackRounding] && features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    env.Balance(alice, eur) == STAmount(eur, UINT64_C(2876'249999999999), -12));
+                    env.balance(alice, eur) == STAmount(eur, UINT64_C(2876'249999999999), -12));
             }
 
             // gw clawback 4000 USD, exceeding the current balance. We
@@ -674,10 +676,10 @@ class AMMClawback_test : public beast::unit_test::suite
             env(amm::ammClawback(gw, alice, usd, eur, usd(4000)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, usd(2000)));
+            env.require(Balance(alice, usd(2000)));
 
             // All alice's EUR in the pool goes back to alice.
-            BEAST_EXPECT(env.Balance(alice, eur) == STAmount(eur, UINT64_C(6000000000000000), -12));
+            BEAST_EXPECT(env.balance(alice, eur) == STAmount(eur, UINT64_C(6000000000000000), -12));
 
             // amm is automatically deleted.
             BEAST_EXPECT(!amm.ammExists());
@@ -694,18 +696,18 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw2{"gateway2"};
             Account const alice{"alice"};
             Account const bob{"bob"};
-            env.fund(XRP(1000000), gw, gw2, alice, bob);
+            env.fund(kXRP(1000000), gw, gw2, alice, bob);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw2 sets asfAllowTrustLineClawback.
             env(fset(gw2, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw2, asfAllowTrustLineClawback));
+            env.require(Flags(gw2, asfAllowTrustLineClawback));
 
             // gw issues 6000 USD to Alice and 5000 USD to Bob.
             auto const usd = gw["USD"];
@@ -724,88 +726,91 @@ class AMMClawback_test : public beast::unit_test::suite
             env.close();
 
             // gw creates AMM pool of XRP/USD, alice and bob deposit XRP/USD.
-            AMM amm(env, gw, XRP(2000), usd(1000), Ter(tesSUCCESS));
-            BEAST_EXPECT(amm.expectBalances(usd(1000), XRP(2000), IOUAmount{1414213562373095, -9}));
-            amm.deposit(alice, usd(1000), XRP(2000));
-            BEAST_EXPECT(amm.expectBalances(usd(2000), XRP(4000), IOUAmount{2828427124746190, -9}));
-            amm.deposit(bob, usd(1000), XRP(2000));
-            BEAST_EXPECT(amm.expectBalances(usd(3000), XRP(6000), IOUAmount{4242640687119285, -9}));
+            AMM amm(env, gw, kXRP(2000), usd(1000), Ter(tesSUCCESS));
+            BEAST_EXPECT(
+                amm.expectBalances(usd(1000), kXRP(2000), IOUAmount{1414213562373095, -9}));
+            amm.deposit(alice, usd(1000), kXRP(2000));
+            BEAST_EXPECT(
+                amm.expectBalances(usd(2000), kXRP(4000), IOUAmount{2828427124746190, -9}));
+            amm.deposit(bob, usd(1000), kXRP(2000));
+            BEAST_EXPECT(
+                amm.expectBalances(usd(3000), kXRP(6000), IOUAmount{4242640687119285, -9}));
             env.close();
 
             // gw2 creates AMM pool of XRP/EUR, alice and bob deposit XRP/EUR.
-            AMM amm2(env, gw2, XRP(3000), eur(1000), Ter(tesSUCCESS));
+            AMM amm2(env, gw2, kXRP(3000), eur(1000), Ter(tesSUCCESS));
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(1000), XRP(3000), IOUAmount{1732050807568878, -9}));
+                    amm2.expectBalances(eur(1000), kXRP(3000), IOUAmount{1732050807568878, -9}));
             }
             else
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(1000), XRP(3000), IOUAmount{1732050807568877, -9}));
+                    amm2.expectBalances(eur(1000), kXRP(3000), IOUAmount{1732050807568877, -9}));
             }
 
-            amm2.deposit(alice, eur(1000), XRP(3000));
+            amm2.deposit(alice, eur(1000), kXRP(3000));
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(2000), XRP(6000), IOUAmount{3464101615137756, -9}));
+                    amm2.expectBalances(eur(2000), kXRP(6000), IOUAmount{3464101615137756, -9}));
             }
             else
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(2000), XRP(6000), IOUAmount{3464101615137754, -9}));
+                    amm2.expectBalances(eur(2000), kXRP(6000), IOUAmount{3464101615137754, -9}));
             }
 
-            amm2.deposit(bob, eur(1000), XRP(3000));
+            amm2.deposit(bob, eur(1000), kXRP(3000));
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(3000), XRP(9000), IOUAmount{5196152422706634, -9}));
+                    amm2.expectBalances(eur(3000), kXRP(9000), IOUAmount{5196152422706634, -9}));
             }
             else
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(3000), XRP(9000), IOUAmount{5196152422706631, -9}));
+                    amm2.expectBalances(eur(3000), kXRP(9000), IOUAmount{5196152422706631, -9}));
             }
             env.close();
 
-            auto aliceXrpBalance = env.Balance(alice, XRP);
-            auto bobXrpBalance = env.Balance(bob, XRP);
+            auto aliceXrpBalance = env.balance(alice, kXRP);
+            auto bobXrpBalance = env.balance(bob, kXRP);
 
             // gw clawback 500 USD from alice in amm
-            env(amm::ammClawback(gw, alice, usd, XRP, usd(500)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw, alice, usd, kXRP, usd(500)), Ter(tesSUCCESS));
             env.close();
 
             // Alice's initial balance for USD is 6000 USD. Alice deposited 1000
             // USD into the pool, then she has 5000 USD. And 500 USD was clawed
             // back from the AMM pool, so she still has 5000 USD.
-            env.Require(Balance(alice, usd(5000)));
+            env.require(Balance(alice, usd(5000)));
 
             // Bob's balance is not changed.
-            env.Require(Balance(bob, usd(4000)));
+            env.require(Balance(bob, usd(4000)));
 
             // Alice gets 1000 XRP back.
             if (features[fixAMMClawbackRounding] && features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(1000) - XRPAmount(1)));
+                    expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(1000) - XRPAmount(1)));
             }
             else
             {
-                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(1000)));
+                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(1000)));
             }
-            aliceXrpBalance = env.Balance(alice, XRP);
+            aliceXrpBalance = env.balance(alice, kXRP);
 
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(2500), XRP(5000), IOUAmount{3535533905932738, -9}));
+                    amm.expectBalances(usd(2500), kXRP(5000), IOUAmount{3535533905932738, -9}));
             }
             else if (!features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(2500), XRP(5000), IOUAmount{3535533905932737, -9}));
+                    amm.expectBalances(usd(2500), kXRP(5000), IOUAmount{3535533905932737, -9}));
             }
             else if (features[fixAMMClawbackRounding] && features[fixAMMv1_3])
             {
@@ -829,27 +834,27 @@ class AMMClawback_test : public beast::unit_test::suite
             BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount{1414213562373095, -9}));
 
             // gw clawback 10 USD from bob in amm.
-            env(amm::ammClawback(gw, bob, usd, XRP, usd(10)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw, bob, usd, kXRP, usd(10)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, usd(5000)));
-            env.Require(Balance(bob, usd(4000)));
+            env.require(Balance(alice, usd(5000)));
+            env.require(Balance(bob, usd(4000)));
 
             // Bob gets 20 XRP back.
-            BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance + XRP(20)));
-            bobXrpBalance = env.Balance(bob, XRP);
+            BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance + kXRP(20)));
+            bobXrpBalance = env.balance(bob, kXRP);
 
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{usd, UINT64_C(2490000000000001), -12},
-                    XRP(4980),
+                    kXRP(4980),
                     IOUAmount{3521391770309008, -9}));
             }
             else if (!features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(2'490), XRP(4980), IOUAmount{3521391770309006, -9}));
+                    amm.expectBalances(usd(2'490), kXRP(4980), IOUAmount{3521391770309006, -9}));
             }
             else if (features[fixAMMClawbackRounding] && features[fixAMMv1_3])
             {
@@ -886,36 +891,36 @@ class AMMClawback_test : public beast::unit_test::suite
             }
 
             // gw2 clawback 200 EUR from amm2.
-            env(amm::ammClawback(gw2, alice, eur, XRP, eur(200)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw2, alice, eur, kXRP, eur(200)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, eur(4000)));
-            env.Require(Balance(bob, eur(3000)));
+            env.require(Balance(alice, eur(4000)));
+            env.require(Balance(bob, eur(3000)));
 
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
-                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(600)));
+                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(600)));
             }
             else if (!features[fixAMMClawbackRounding])
             {
-                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(600)));
+                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(600)));
             }
             else if (features[fixAMMClawbackRounding] && features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(600) - XRPAmount{1}));
+                    expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(600) - XRPAmount{1}));
             }
-            aliceXrpBalance = env.Balance(alice, XRP);
+            aliceXrpBalance = env.balance(alice, kXRP);
 
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(2800), XRP(8400), IOUAmount{4849742261192859, -9}));
+                    amm2.expectBalances(eur(2800), kXRP(8400), IOUAmount{4849742261192859, -9}));
             }
             else if (!features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(2800), XRP(8400), IOUAmount{4849742261192856, -9}));
+                    amm2.expectBalances(eur(2800), kXRP(8400), IOUAmount{4849742261192856, -9}));
             }
             else if (features[fixAMMv1_3] && features[fixAMMClawbackRounding])
             {
@@ -943,27 +948,27 @@ class AMMClawback_test : public beast::unit_test::suite
             // gw claw back 1000 USD from alice in amm, which exceeds alice's
             // balance. This will clawback all the remaining LP tokens of alice
             // (corresponding 500 USD / 1000 XRP).
-            env(amm::ammClawback(gw, alice, usd, XRP, usd(1000)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw, alice, usd, kXRP, usd(1000)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, usd(5000)));
-            env.Require(Balance(bob, usd(4000)));
+            env.require(Balance(alice, usd(5000)));
+            env.require(Balance(bob, usd(4000)));
 
             // Alice gets 1000 XRP back.
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
-                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(1000)));
+                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(1000)));
             }
             else if (!features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(1000) - XRPAmount{1}));
+                    expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(1000) - XRPAmount{1}));
             }
             else if (features[fixAMMv1_3] && features[fixAMMClawbackRounding])
             {
-                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(1000)));
+                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(1000)));
             }
-            aliceXrpBalance = env.Balance(alice, XRP);
+            aliceXrpBalance = env.balance(alice, kXRP);
 
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(0)));
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
@@ -983,7 +988,7 @@ class AMMClawback_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount{usd, UINT64_C(1990000000000001), -12},
-                    XRP(3980),
+                    kXRP(3980),
                     IOUAmount{2814284989122460, -9}));
             }
             else if (!features[fixAMMClawbackRounding])
@@ -1002,16 +1007,16 @@ class AMMClawback_test : public beast::unit_test::suite
             // gw clawback 1000 USD from bob in amm, which also exceeds bob's
             // balance in amm. All bob's lptoken in amm will be consumed, which
             // corresponds to 990 USD / 1980 XRP
-            env(amm::ammClawback(gw, bob, usd, XRP, usd(1000)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw, bob, usd, kXRP, usd(1000)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, usd(5000)));
-            env.Require(Balance(bob, usd(4000)));
+            env.require(Balance(alice, usd(5000)));
+            env.require(Balance(bob, usd(4000)));
 
             BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance));
 
-            BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance + XRP(1980)));
-            bobXrpBalance = env.Balance(bob, XRP);
+            BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance + kXRP(1980)));
+            bobXrpBalance = env.balance(bob, kXRP);
 
             // Now neither alice nor bob has any lptoken in amm.
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(0)));
@@ -1020,18 +1025,18 @@ class AMMClawback_test : public beast::unit_test::suite
             // gw2 claw back 1000 EUR from alice in amm2, which exceeds alice's
             // balance. All alice's lptokens will be consumed, which corresponds
             // to 800EUR / 2400 XRP.
-            env(amm::ammClawback(gw2, alice, eur, XRP, eur(1000)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw2, alice, eur, kXRP, eur(1000)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, eur(4000)));
-            env.Require(Balance(bob, eur(3000)));
+            env.require(Balance(alice, eur(4000)));
+            env.require(Balance(bob, eur(3000)));
 
             // Alice gets another 2400 XRP back, bob's XRP balance remains the
             // same.
-            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(2400)));
+            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(2400)));
 
             BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance));
-            aliceXrpBalance = env.Balance(alice, XRP);
+            aliceXrpBalance = env.balance(alice, kXRP);
 
             // Alice now does not have any lptoken in amm2
             BEAST_EXPECT(amm2.expectLPTokens(alice, IOUAmount(0)));
@@ -1039,12 +1044,12 @@ class AMMClawback_test : public beast::unit_test::suite
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(2000), XRP(6000), IOUAmount{3464101615137756, -9}));
+                    amm2.expectBalances(eur(2000), kXRP(6000), IOUAmount{3464101615137756, -9}));
             }
             else if (!features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(2000), XRP(6000), IOUAmount{3464101615137754, -9}));
+                    amm2.expectBalances(eur(2000), kXRP(6000), IOUAmount{3464101615137754, -9}));
             }
             else if (features[fixAMMv1_3] && features[fixAMMClawbackRounding])
             {
@@ -1055,18 +1060,18 @@ class AMMClawback_test : public beast::unit_test::suite
             // gw2 claw back 2000 EUR from bob in amm2, which exceeds bob's
             // balance. All bob's lptokens will be consumed, which corresponds
             // to 1000EUR / 3000 XRP.
-            env(amm::ammClawback(gw2, bob, eur, XRP, eur(2000)), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw2, bob, eur, kXRP, eur(2000)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, eur(4000)));
-            env.Require(Balance(bob, eur(3000)));
+            env.require(Balance(alice, eur(4000)));
+            env.require(Balance(bob, eur(3000)));
 
             // Bob gets another 3000 XRP back. Alice's XRP balance remains the
             // same.
             BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance));
 
-            BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance + XRP(3000)));
-            bobXrpBalance = env.Balance(bob, XRP);
+            BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance + kXRP(3000)));
+            bobXrpBalance = env.balance(bob, kXRP);
 
             // Neither alice nor bob has any lptoken in amm2
             BEAST_EXPECT(amm2.expectLPTokens(alice, IOUAmount(0)));
@@ -1075,12 +1080,12 @@ class AMMClawback_test : public beast::unit_test::suite
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(1000), XRP(3000), IOUAmount{1732050807568878, -9}));
+                    amm2.expectBalances(eur(1000), kXRP(3000), IOUAmount{1732050807568878, -9}));
             }
             else if (!features[fixAMMClawbackRounding])
             {
                 BEAST_EXPECT(
-                    amm2.expectBalances(eur(1000), XRP(3000), IOUAmount{1732050807568877, -9}));
+                    amm2.expectBalances(eur(1000), kXRP(3000), IOUAmount{1732050807568877, -9}));
             }
             else if (features[fixAMMv1_3] && features[fixAMMClawbackRounding])
             {
@@ -1105,18 +1110,18 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const carol{"carol"};
-            env.fund(XRP(1000000), gw, gw2, alice, bob, carol);
+            env.fund(kXRP(1000000), gw, gw2, alice, bob, carol);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw2 sets asfAllowTrustLineClawback.
             env(fset(gw2, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw2, asfAllowTrustLineClawback));
+            env.require(Flags(gw2, asfAllowTrustLineClawback));
 
             // gw issues 6000 USD to Alice, 5000 USD to Bob, and 4000 USD
             // to Carol.
@@ -1202,12 +1207,12 @@ class AMMClawback_test : public beast::unit_test::suite
                 BEAST_EXPECT(amm.expectLPTokens(carol, IOUAmount{1118033988749894, -12}));
             }
 
-            env.Require(Balance(alice, usd(2000)));
-            env.Require(Balance(alice, eur(1000)));
-            env.Require(Balance(bob, usd(3000)));
-            env.Require(Balance(bob, eur(2500)));
-            env.Require(Balance(carol, usd(3000)));
-            env.Require(Balance(carol, eur(2750)));
+            env.require(Balance(alice, usd(2000)));
+            env.require(Balance(alice, eur(1000)));
+            env.require(Balance(bob, usd(3000)));
+            env.require(Balance(bob, eur(2500)));
+            env.require(Balance(carol, usd(3000)));
+            env.require(Balance(carol, eur(2750)));
 
             // gw clawback all the bob's USD in amm. (2000 USD / 2500 EUR)
             env(amm::ammClawback(gw, bob, usd, eur, std::nullopt), Ter(tesSUCCESS));
@@ -1247,22 +1252,22 @@ class AMMClawback_test : public beast::unit_test::suite
             }
 
             // Bob will get 2500 EUR back.
-            env.Require(Balance(alice, usd(2000)));
-            env.Require(Balance(alice, eur(1000)));
-            BEAST_EXPECT(env.Balance(bob, usd) == STAmount(usd, UINT64_C(3000000000000000), -12));
+            env.require(Balance(alice, usd(2000)));
+            env.require(Balance(alice, eur(1000)));
+            BEAST_EXPECT(env.balance(bob, usd) == STAmount(usd, UINT64_C(3000000000000000), -12));
 
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    env.Balance(bob, eur) == STAmount(eur, UINT64_C(5000000000000001), -12));
+                    env.balance(bob, eur) == STAmount(eur, UINT64_C(5000000000000001), -12));
             }
             else
             {
                 BEAST_EXPECT(
-                    env.Balance(bob, eur) == STAmount(eur, UINT64_C(4999999999999999), -12));
+                    env.balance(bob, eur) == STAmount(eur, UINT64_C(4999999999999999), -12));
             }
-            env.Require(Balance(carol, usd(3000)));
-            env.Require(Balance(carol, eur(2750)));
+            env.require(Balance(carol, usd(3000)));
+            env.require(Balance(carol, eur(2750)));
 
             // gw2 clawback all carol's EUR in amm. (1000 USD / 1250 EUR)
             env(amm::ammClawback(gw2, carol, eur, usd, std::nullopt), Ter(tesSUCCESS));
@@ -1297,8 +1302,8 @@ class AMMClawback_test : public beast::unit_test::suite
             env(amm::ammClawback(gw2, alice, eur, usd, std::nullopt), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(carol, eur(2750)));
-            env.Require(Balance(carol, usd(4000)));
+            env.require(Balance(carol, eur(2750)));
+            env.require(Balance(carol, usd(4000)));
             BEAST_EXPECT(!amm.ammExists());
         }
 
@@ -1309,13 +1314,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"};
             Account const alice{"alice"};
             Account const bob{"bob"};
-            env.fund(XRP(1000000), gw, alice, bob);
+            env.fund(kXRP(1000000), gw, alice, bob);
             env.close();
 
             // gw sets asfAllowTrustLineClawback
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 600000 USD to Alice and 500000 USD to Bob.
             auto const usd = gw["USD"];
@@ -1326,51 +1331,51 @@ class AMMClawback_test : public beast::unit_test::suite
             env.close();
 
             // gw creates AMM pool of XRP/USD, alice and bob deposit XRP/USD.
-            AMM amm(env, gw, XRP(2000), usd(10000), Ter(tesSUCCESS));
+            AMM amm(env, gw, kXRP(2000), usd(10000), Ter(tesSUCCESS));
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(10000), XRP(2000), IOUAmount{4472135954999580, -9}));
+                    amm.expectBalances(usd(10000), kXRP(2000), IOUAmount{4472135954999580, -9}));
             }
             else
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(10000), XRP(2000), IOUAmount{4472135954999579, -9}));
+                    amm.expectBalances(usd(10000), kXRP(2000), IOUAmount{4472135954999579, -9}));
             }
-            amm.deposit(alice, usd(1000), XRP(200));
+            amm.deposit(alice, usd(1000), kXRP(200));
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(11000), XRP(2200), IOUAmount{4919349550499538, -9}));
+                    amm.expectBalances(usd(11000), kXRP(2200), IOUAmount{4919349550499538, -9}));
             }
             else
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(11000), XRP(2200), IOUAmount{4919349550499536, -9}));
+                    amm.expectBalances(usd(11000), kXRP(2200), IOUAmount{4919349550499536, -9}));
             }
-            amm.deposit(bob, usd(2000), XRP(400));
+            amm.deposit(bob, usd(2000), kXRP(400));
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(13000), XRP(2600), IOUAmount{5813776741499453, -9}));
+                    amm.expectBalances(usd(13000), kXRP(2600), IOUAmount{5813776741499453, -9}));
             }
             else
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(13000), XRP(2600), IOUAmount{5813776741499451, -9}));
+                    amm.expectBalances(usd(13000), kXRP(2600), IOUAmount{5813776741499451, -9}));
             }
             env.close();
 
-            auto aliceXrpBalance = env.Balance(alice, XRP);
-            auto bobXrpBalance = env.Balance(bob, XRP);
+            auto aliceXrpBalance = env.balance(alice, kXRP);
+            auto bobXrpBalance = env.balance(bob, kXRP);
 
             // gw clawback all alice's USD in amm. (1000 USD / 200 XRP)
-            env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw, alice, usd, kXRP, std::nullopt), Ter(tesSUCCESS));
             env.close();
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(12000), XRP(2400), IOUAmount{5366563145999495, -9}));
+                    amm.expectBalances(usd(12000), kXRP(2400), IOUAmount{5366563145999495, -9}));
             }
             else
             {
@@ -1379,29 +1384,29 @@ class AMMClawback_test : public beast::unit_test::suite
             }
             if (!features[fixAMMv1_3])
             {
-                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(200)));
+                BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(200)));
             }
             else
             {
                 BEAST_EXPECT(
-                    expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(200) - XRPAmount{1}));
+                    expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(200) - XRPAmount{1}));
             }
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(0)));
 
             // gw clawback all bob's USD in amm. (2000 USD / 400 XRP)
-            env(amm::ammClawback(gw, bob, usd, XRP, std::nullopt), Ter(tesSUCCESS));
+            env(amm::ammClawback(gw, bob, usd, kXRP, std::nullopt), Ter(tesSUCCESS));
             env.close();
             if (!features[fixAMMv1_3])
             {
                 BEAST_EXPECT(
-                    amm.expectBalances(usd(10000), XRP(2000), IOUAmount{4472135954999580, -9}));
+                    amm.expectBalances(usd(10000), kXRP(2000), IOUAmount{4472135954999580, -9}));
             }
             else
             {
                 BEAST_EXPECT(amm.expectBalances(
                     usd(10000), XRPAmount(2000000001), IOUAmount{4472135954999579, -9}));
             }
-            BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance + XRP(400)));
+            BEAST_EXPECT(expectLedgerEntryRoot(env, bob, bobXrpBalance + kXRP(400)));
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(0)));
             BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount(0)));
         }
@@ -1422,13 +1427,13 @@ class AMMClawback_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
-        env.fund(XRP(1000000), gw, alice, bob, carol);
+        env.fund(kXRP(1000000), gw, alice, bob, carol);
         env.close();
 
         // gw sets asfAllowTrustLineClawback.
         env(fset(gw, asfAllowTrustLineClawback));
         env.close();
-        env.Require(Flags(gw, asfAllowTrustLineClawback));
+        env.require(Flags(gw, asfAllowTrustLineClawback));
 
         auto const usd = gw["USD"];
         env.trust(usd(100000), alice);
@@ -1471,27 +1476,27 @@ class AMMClawback_test : public beast::unit_test::suite
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(4000)));
         BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount(2000)));
         BEAST_EXPECT(amm.expectLPTokens(carol, IOUAmount(500)));
-        BEAST_EXPECT(env.Balance(alice, usd) == usd(2000));
-        BEAST_EXPECT(env.Balance(alice, eur) == eur(8000));
-        BEAST_EXPECT(env.Balance(bob, usd) == usd(5000));
-        BEAST_EXPECT(env.Balance(bob, eur) == eur(8000));
+        BEAST_EXPECT(env.balance(alice, usd) == usd(2000));
+        BEAST_EXPECT(env.balance(alice, eur) == eur(8000));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(5000));
+        BEAST_EXPECT(env.balance(bob, eur) == eur(8000));
         if (!features[fixAMMv1_3])
         {
-            BEAST_EXPECT(env.Balance(carol, usd) == usd(6000));
+            BEAST_EXPECT(env.balance(carol, usd) == usd(6000));
         }
         else
         {
             BEAST_EXPECT(
-                env.Balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
+                env.balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
         }
         // 250 EUR goes back to carol.
-        BEAST_EXPECT(env.Balance(carol, eur) == eur(7750));
+        BEAST_EXPECT(env.balance(carol, eur) == eur(7750));
 
         // gw clawback 1000 USD from bob with tfClawTwoAssets flag.
         // then the corresponding EUR will also be clawed back
         // by gw.
         env(amm::ammClawback(gw, bob, usd, eur, usd(1000)),
-            txflags(tfClawTwoAssets),
+            Txflags(tfClawTwoAssets),
             Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(amm.expectBalances(usd(12000), eur(3000), IOUAmount(6000)));
@@ -1499,25 +1504,25 @@ class AMMClawback_test : public beast::unit_test::suite
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(4000)));
         BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount(1500)));
         BEAST_EXPECT(amm.expectLPTokens(carol, IOUAmount(500)));
-        BEAST_EXPECT(env.Balance(alice, usd) == usd(2000));
-        BEAST_EXPECT(env.Balance(alice, eur) == eur(8000));
-        BEAST_EXPECT(env.Balance(bob, usd) == usd(5000));
+        BEAST_EXPECT(env.balance(alice, usd) == usd(2000));
+        BEAST_EXPECT(env.balance(alice, eur) == eur(8000));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(5000));
         // 250 EUR did not go back to bob because tfClawTwoAssets is set.
-        BEAST_EXPECT(env.Balance(bob, eur) == eur(8000));
+        BEAST_EXPECT(env.balance(bob, eur) == eur(8000));
         if (!features[fixAMMv1_3])
         {
-            BEAST_EXPECT(env.Balance(carol, usd) == usd(6000));
+            BEAST_EXPECT(env.balance(carol, usd) == usd(6000));
         }
         else
         {
             BEAST_EXPECT(
-                env.Balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
+                env.balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
         }
-        BEAST_EXPECT(env.Balance(carol, eur) == eur(7750));
+        BEAST_EXPECT(env.balance(carol, eur) == eur(7750));
 
         // gw clawback all USD from alice and set tfClawTwoAssets.
         env(amm::ammClawback(gw, alice, usd, eur, std::nullopt),
-            txflags(tfClawTwoAssets),
+            Txflags(tfClawTwoAssets),
             Ter(tesSUCCESS));
         env.close();
         BEAST_EXPECT(amm.expectBalances(usd(4000), eur(1000), IOUAmount(2000)));
@@ -1525,20 +1530,20 @@ class AMMClawback_test : public beast::unit_test::suite
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(0)));
         BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount(1500)));
         BEAST_EXPECT(amm.expectLPTokens(carol, IOUAmount(500)));
-        BEAST_EXPECT(env.Balance(alice, usd) == usd(2000));
-        BEAST_EXPECT(env.Balance(alice, eur) == eur(8000));
-        BEAST_EXPECT(env.Balance(bob, usd) == usd(5000));
-        BEAST_EXPECT(env.Balance(bob, eur) == eur(8000));
+        BEAST_EXPECT(env.balance(alice, usd) == usd(2000));
+        BEAST_EXPECT(env.balance(alice, eur) == eur(8000));
+        BEAST_EXPECT(env.balance(bob, usd) == usd(5000));
+        BEAST_EXPECT(env.balance(bob, eur) == eur(8000));
         if (!features[fixAMMv1_3])
         {
-            BEAST_EXPECT(env.Balance(carol, usd) == usd(6000));
+            BEAST_EXPECT(env.balance(carol, usd) == usd(6000));
         }
         else
         {
             BEAST_EXPECT(
-                env.Balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
+                env.balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
         }
-        BEAST_EXPECT(env.Balance(carol, eur) == eur(7750));
+        BEAST_EXPECT(env.balance(carol, eur) == eur(7750));
     }
 
     void
@@ -1556,18 +1561,18 @@ class AMMClawback_test : public beast::unit_test::suite
         Account const gw2{"gateway2"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(XRP(1000000), gw, gw2, alice, bob);
+        env.fund(kXRP(1000000), gw, gw2, alice, bob);
         env.close();
 
         // gw sets asfAllowTrustLineClawback.
         env(fset(gw, asfAllowTrustLineClawback));
         env.close();
-        env.Require(Flags(gw, asfAllowTrustLineClawback));
+        env.require(Flags(gw, asfAllowTrustLineClawback));
 
         // gw2 sets asfAllowTrustLineClawback.
         env(fset(gw2, asfAllowTrustLineClawback));
         env.close();
-        env.Require(Flags(gw2, asfAllowTrustLineClawback));
+        env.require(Flags(gw2, asfAllowTrustLineClawback));
 
         env.trust(gw["USD"](100000), alice);
         env(pay(gw, alice, gw["USD"](8000)));
@@ -1615,10 +1620,10 @@ class AMMClawback_test : public beast::unit_test::suite
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{8164965809277260, -13}));
         BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount{2449489742783178, -12}));
         BEAST_EXPECT(
-            env.Balance(alice, gw["USD"]) == STAmount(gw["USD"], UINT64_C(7333333333333333), -12));
-        BEAST_EXPECT(env.Balance(alice, gw2["USD"]) == gw2["USD"](4500));
-        BEAST_EXPECT(env.Balance(bob, gw["USD"]) == gw["USD"](5000));
-        BEAST_EXPECT(env.Balance(bob, gw2["USD"]) == gw2["USD"](2000));
+            env.balance(alice, gw["USD"]) == STAmount(gw["USD"], UINT64_C(7333333333333333), -12));
+        BEAST_EXPECT(env.balance(alice, gw2["USD"]) == gw2["USD"](4500));
+        BEAST_EXPECT(env.balance(bob, gw["USD"]) == gw["USD"](5000));
+        BEAST_EXPECT(env.balance(bob, gw2["USD"]) == gw2["USD"](2000));
 
         // gw clawback all gw["USD"] from bob.
         env(amm::ammClawback(gw, bob, gw["USD"], gw2["USD"], std::nullopt), Ter(tesSUCCESS));
@@ -1631,11 +1636,11 @@ class AMMClawback_test : public beast::unit_test::suite
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{8164965809277260, -13}));
         BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount(0)));
         BEAST_EXPECT(
-            env.Balance(alice, gw["USD"]) == STAmount(gw["USD"], UINT64_C(7333333333333333), -12));
-        BEAST_EXPECT(env.Balance(alice, gw2["USD"]) == gw2["USD"](4500));
-        BEAST_EXPECT(env.Balance(bob, gw["USD"]) == gw["USD"](5000));
+            env.balance(alice, gw["USD"]) == STAmount(gw["USD"], UINT64_C(7333333333333333), -12));
+        BEAST_EXPECT(env.balance(alice, gw2["USD"]) == gw2["USD"](4500));
+        BEAST_EXPECT(env.balance(bob, gw["USD"]) == gw["USD"](5000));
         // Bob gets 3000 gw2["USD"] back and now his balance is 5000.
-        BEAST_EXPECT(env.Balance(bob, gw2["USD"]) == gw2["USD"](5000));
+        BEAST_EXPECT(env.balance(bob, gw2["USD"]) == gw2["USD"](5000));
     }
 
     void
@@ -1650,18 +1655,18 @@ class AMMClawback_test : public beast::unit_test::suite
         Account const gw{"gateway"};
         Account const gw2{"gateway2"};
         Account const alice{"alice"};
-        env.fund(XRP(1000000), gw, gw2, alice);
+        env.fund(kXRP(1000000), gw, gw2, alice);
         env.close();
 
         // gw sets asfAllowTrustLineClawback.
         env(fset(gw, asfAllowTrustLineClawback));
         env.close();
-        env.Require(Flags(gw, asfAllowTrustLineClawback));
+        env.require(Flags(gw, asfAllowTrustLineClawback));
 
         // gw2 sets asfAllowTrustLineClawback.
         env(fset(gw2, asfAllowTrustLineClawback));
         env.close();
-        env.Require(Flags(gw2, asfAllowTrustLineClawback));
+        env.require(Flags(gw2, asfAllowTrustLineClawback));
 
         auto const usd = gw["USD"];
         env.trust(usd(100000), gw2);
@@ -1715,10 +1720,10 @@ class AMMClawback_test : public beast::unit_test::suite
         }
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{4242640687119285, -12}));
 
-        BEAST_EXPECT(env.Balance(alice, usd) == usd(2000));
-        BEAST_EXPECT(env.Balance(alice, eur) == eur(0));
-        BEAST_EXPECT(env.Balance(gw, eur) == eur(4000));
-        BEAST_EXPECT(env.Balance(gw2, usd) == usd(3000));
+        BEAST_EXPECT(env.balance(alice, usd) == usd(2000));
+        BEAST_EXPECT(env.balance(alice, eur) == eur(0));
+        BEAST_EXPECT(env.balance(gw, eur) == eur(4000));
+        BEAST_EXPECT(env.balance(gw2, usd) == usd(3000));
 
         // gw2 claws back 1000 EUR from gw.
         env(amm::ammClawback(gw2, gw, eur, usd, eur(1000)), Ter(tesSUCCESS));
@@ -1767,10 +1772,10 @@ class AMMClawback_test : public beast::unit_test::suite
 
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{4242640687119285, -12}));
 
-        BEAST_EXPECT(env.Balance(alice, usd) == usd(2000));
-        BEAST_EXPECT(env.Balance(alice, eur) == eur(0));
-        BEAST_EXPECT(env.Balance(gw, eur) == eur(4000));
-        BEAST_EXPECT(env.Balance(gw2, usd) == usd(3000));
+        BEAST_EXPECT(env.balance(alice, usd) == usd(2000));
+        BEAST_EXPECT(env.balance(alice, eur) == eur(0));
+        BEAST_EXPECT(env.balance(gw, eur) == eur(4000));
+        BEAST_EXPECT(env.balance(gw2, usd) == usd(3000));
 
         // gw2 claws back 4000 EUR from alice.
         env(amm::ammClawback(gw2, alice, eur, usd, eur(4000)), Ter(tesSUCCESS));
@@ -1818,10 +1823,10 @@ class AMMClawback_test : public beast::unit_test::suite
         }
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{1414213562373095, -12}));
 
-        BEAST_EXPECT(env.Balance(alice, usd) == usd(4000));
-        BEAST_EXPECT(env.Balance(alice, eur) == eur(0));
-        BEAST_EXPECT(env.Balance(gw, eur) == eur(4000));
-        BEAST_EXPECT(env.Balance(gw2, usd) == usd(3000));
+        BEAST_EXPECT(env.balance(alice, usd) == usd(4000));
+        BEAST_EXPECT(env.balance(alice, eur) == eur(0));
+        BEAST_EXPECT(env.balance(gw, eur) == eur(4000));
+        BEAST_EXPECT(env.balance(gw2, usd) == usd(3000));
     }
 
     void
@@ -1835,24 +1840,24 @@ class AMMClawback_test : public beast::unit_test::suite
         Env env(*this, features);
         Account const gw{"gateway"};
         Account const alice{"alice"};
-        env.fund(XRP(1000000), gw, alice);
+        env.fund(kXRP(1000000), gw, alice);
         env.close();
 
         // gw sets asfAllowTrustLineClawback.
         env(fset(gw, asfAllowTrustLineClawback));
         env.close();
-        env.Require(Flags(gw, asfAllowTrustLineClawback));
+        env.require(Flags(gw, asfAllowTrustLineClawback));
 
         auto const usd = gw["USD"];
         env.trust(usd(100000), alice);
         env(pay(gw, alice, usd(5000)));
 
-        AMM const amm(env, gw, usd(1000), XRP(2000), Ter(tesSUCCESS));
+        AMM const amm(env, gw, usd(1000), kXRP(2000), Ter(tesSUCCESS));
         env.close();
 
         // Alice did not deposit in the amm pool. So AMMClawback from Alice
         // will fail.
-        env(amm::ammClawback(gw, alice, usd, XRP, usd(1000)), Ter(tecAMM_BALANCE));
+        env(amm::ammClawback(gw, alice, usd, kXRP, usd(1000)), Ter(tecAMM_BALANCE));
     }
 
     void
@@ -1867,27 +1872,27 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"};
             Account const gw2{"gateway2"};
             Account const alice{"alice"};
-            env.fund(XRP(1000000), gw, gw2, alice);
+            env.fund(kXRP(1000000), gw, gw2, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 3000 USD to Alice.
             auto const usd = gw["USD"];
             env.trust(usd(100000), alice);
             env(pay(gw, alice, usd(3000)));
             env.close();
-            env.Require(Balance(alice, usd(3000)));
+            env.require(Balance(alice, usd(3000)));
 
             // gw2 issues 3000 EUR to Alice.
             auto const eur = gw2["EUR"];
             env.trust(eur(100000), alice);
             env(pay(gw2, alice, eur(3000)));
             env.close();
-            env.Require(Balance(alice, eur(3000)));
+            env.require(Balance(alice, eur(3000)));
 
             // Alice creates AMM pool of EUR/USD.
             AMM const amm(env, alice, eur(1000), usd(2000), Ter(tesSUCCESS));
@@ -1904,8 +1909,8 @@ class AMMClawback_test : public beast::unit_test::suite
             env(amm::ammClawback(gw, alice, usd, eur, usd(1000)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, usd(1000)));
-            env.Require(Balance(alice, eur(2500)));
+            env.require(Balance(alice, usd(1000)));
+            env.require(Balance(alice, eur(2500)));
             BEAST_EXPECT(amm.expectBalances(usd(1000), eur(500), IOUAmount{7071067811865475, -13}));
 
             // Alice has half of its initial lptokens Left.
@@ -1918,8 +1923,8 @@ class AMMClawback_test : public beast::unit_test::suite
 
             // Alice should still has 1000 USD because gw clawed back from the
             // AMM pool.
-            env.Require(Balance(alice, usd(1000)));
-            env.Require(Balance(alice, eur(3000)));
+            env.require(Balance(alice, usd(1000)));
+            env.require(Balance(alice, eur(3000)));
 
             // amm is automatically deleted.
             BEAST_EXPECT(!amm.ammExists());
@@ -1931,27 +1936,27 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"};
             Account const gw2{"gateway2"};
             Account const alice{"alice"};
-            env.fund(XRP(1000000), gw, gw2, alice);
+            env.fund(kXRP(1000000), gw, gw2, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 3000 USD to Alice.
             auto const usd = gw["USD"];
             env.trust(usd(100000), alice);
             env(pay(gw, alice, usd(3000)));
             env.close();
-            env.Require(Balance(alice, usd(3000)));
+            env.require(Balance(alice, usd(3000)));
 
             // gw2 issues 3000 EUR to Alice.
             auto const eur = gw2["EUR"];
             env.trust(eur(100000), alice);
             env(pay(gw2, alice, eur(3000)));
             env.close();
-            env.Require(Balance(alice, eur(3000)));
+            env.require(Balance(alice, eur(3000)));
 
             // Alice creates AMM pool of EUR/USD.
             AMM const amm(env, alice, eur(1000), usd(2000), Ter(tesSUCCESS));
@@ -1969,8 +1974,8 @@ class AMMClawback_test : public beast::unit_test::suite
             env(amm::ammClawback(gw, alice, usd, eur, usd(1000)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, usd(1000)));
-            env.Require(Balance(alice, eur(2500)));
+            env.require(Balance(alice, usd(1000)));
+            env.require(Balance(alice, eur(2500)));
             BEAST_EXPECT(amm.expectBalances(usd(1000), eur(500), IOUAmount{7071067811865475, -13}));
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{7071067811865475, -13}));
         }
@@ -1981,27 +1986,27 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"};
             Account const gw2{"gateway2"};
             Account const alice{"alice"};
-            env.fund(XRP(1000000), gw, gw2, alice);
+            env.fund(kXRP(1000000), gw, gw2, alice);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             // gw issues 3000 USD to Alice.
             auto const usd = gw["USD"];
             env.trust(usd(100000), alice);
             env(pay(gw, alice, usd(3000)));
             env.close();
-            env.Require(Balance(alice, usd(3000)));
+            env.require(Balance(alice, usd(3000)));
 
             // gw2 issues 3000 EUR to Alice.
             auto const eur = gw2["EUR"];
             env.trust(eur(100000), alice);
             env(pay(gw2, alice, eur(3000)));
             env.close();
-            env.Require(Balance(alice, eur(3000)));
+            env.require(Balance(alice, eur(3000)));
 
             // Alice creates AMM pool of EUR/USD.
             AMM const amm(env, alice, eur(1000), usd(2000), Ter(tesSUCCESS));
@@ -2018,8 +2023,8 @@ class AMMClawback_test : public beast::unit_test::suite
             env(amm::ammClawback(gw, alice, usd, eur, usd(1000)), Ter(tesSUCCESS));
             env.close();
 
-            env.Require(Balance(alice, usd(1000)));
-            env.Require(Balance(alice, eur(2500)));
+            env.require(Balance(alice, usd(1000)));
+            env.require(Balance(alice, eur(2500)));
             BEAST_EXPECT(amm.expectBalances(usd(1000), eur(500), IOUAmount{7071067811865475, -13}));
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount{7071067811865475, -13}));
         }
@@ -2032,13 +2037,13 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const alice{"alice"};
             Account const bob{"bob"};
             Account const carol{"carol"};
-            env.fund(XRP(1000000), gw, alice, bob, carol);
+            env.fund(kXRP(1000000), gw, alice, bob, carol);
             env.close();
 
             // gw sets asfAllowTrustLineClawback.
             env(fset(gw, asfAllowTrustLineClawback));
             env.close();
-            env.Require(Flags(gw, asfAllowTrustLineClawback));
+            env.require(Flags(gw, asfAllowTrustLineClawback));
 
             auto const usd = gw["USD"];
             env.trust(usd(100000), alice);
@@ -2086,27 +2091,27 @@ class AMMClawback_test : public beast::unit_test::suite
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(4000)));
             BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount(2000)));
             BEAST_EXPECT(amm.expectLPTokens(carol, IOUAmount(500)));
-            BEAST_EXPECT(env.Balance(alice, usd) == usd(2000));
-            BEAST_EXPECT(env.Balance(alice, eur) == eur(8000));
-            BEAST_EXPECT(env.Balance(bob, usd) == usd(5000));
-            BEAST_EXPECT(env.Balance(bob, eur) == eur(8000));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(2000));
+            BEAST_EXPECT(env.balance(alice, eur) == eur(8000));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(5000));
+            BEAST_EXPECT(env.balance(bob, eur) == eur(8000));
             if (!features[fixAMMv1_3])
             {
-                BEAST_EXPECT(env.Balance(carol, usd) == usd(6000));
+                BEAST_EXPECT(env.balance(carol, usd) == usd(6000));
             }
             else
             {
                 BEAST_EXPECT(
-                    env.Balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
+                    env.balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
             }
             // 250 EUR goes back to carol.
-            BEAST_EXPECT(env.Balance(carol, eur) == eur(7750));
+            BEAST_EXPECT(env.balance(carol, eur) == eur(7750));
 
             // gw clawback 1000 USD from bob with tfClawTwoAssets flag.
             // then the corresponding EUR will also be clawed back
             // by gw.
             env(amm::ammClawback(gw, bob, usd, eur, usd(1000)),
-                txflags(tfClawTwoAssets),
+                Txflags(tfClawTwoAssets),
                 Ter(tesSUCCESS));
             env.close();
             BEAST_EXPECT(amm.expectBalances(usd(12000), eur(3000), IOUAmount(6000)));
@@ -2114,25 +2119,25 @@ class AMMClawback_test : public beast::unit_test::suite
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(4000)));
             BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount(1500)));
             BEAST_EXPECT(amm.expectLPTokens(carol, IOUAmount(500)));
-            BEAST_EXPECT(env.Balance(alice, usd) == usd(2000));
-            BEAST_EXPECT(env.Balance(alice, eur) == eur(8000));
-            BEAST_EXPECT(env.Balance(bob, usd) == usd(5000));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(2000));
+            BEAST_EXPECT(env.balance(alice, eur) == eur(8000));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(5000));
             // 250 EUR did not go back to bob because tfClawTwoAssets is set.
-            BEAST_EXPECT(env.Balance(bob, eur) == eur(8000));
+            BEAST_EXPECT(env.balance(bob, eur) == eur(8000));
             if (!features[fixAMMv1_3])
             {
-                BEAST_EXPECT(env.Balance(carol, usd) == usd(6000));
+                BEAST_EXPECT(env.balance(carol, usd) == usd(6000));
             }
             else
             {
                 BEAST_EXPECT(
-                    env.Balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
+                    env.balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
             }
-            BEAST_EXPECT(env.Balance(carol, eur) == eur(7750));
+            BEAST_EXPECT(env.balance(carol, eur) == eur(7750));
 
             // gw clawback all USD from alice and set tfClawTwoAssets.
             env(amm::ammClawback(gw, alice, usd, eur, std::nullopt),
-                txflags(tfClawTwoAssets),
+                Txflags(tfClawTwoAssets),
                 Ter(tesSUCCESS));
             env.close();
             BEAST_EXPECT(amm.expectBalances(usd(4000), eur(1000), IOUAmount(2000)));
@@ -2140,20 +2145,20 @@ class AMMClawback_test : public beast::unit_test::suite
             BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(0)));
             BEAST_EXPECT(amm.expectLPTokens(bob, IOUAmount(1500)));
             BEAST_EXPECT(amm.expectLPTokens(carol, IOUAmount(500)));
-            BEAST_EXPECT(env.Balance(alice, usd) == usd(2000));
-            BEAST_EXPECT(env.Balance(alice, eur) == eur(8000));
-            BEAST_EXPECT(env.Balance(bob, usd) == usd(5000));
-            BEAST_EXPECT(env.Balance(bob, eur) == eur(8000));
+            BEAST_EXPECT(env.balance(alice, usd) == usd(2000));
+            BEAST_EXPECT(env.balance(alice, eur) == eur(8000));
+            BEAST_EXPECT(env.balance(bob, usd) == usd(5000));
+            BEAST_EXPECT(env.balance(bob, eur) == eur(8000));
             if (!features[fixAMMv1_3])
             {
-                BEAST_EXPECT(env.Balance(carol, usd) == usd(6000));
+                BEAST_EXPECT(env.balance(carol, usd) == usd(6000));
             }
             else
             {
                 BEAST_EXPECT(
-                    env.Balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
+                    env.balance(carol, usd) == STAmount(usd, UINT64_C(5999'999999999999), -12));
             }
-            BEAST_EXPECT(env.Balance(carol, eur) == eur(7750));
+            BEAST_EXPECT(env.balance(carol, eur) == eur(7750));
         }
     }
 
@@ -2169,55 +2174,59 @@ class AMMClawback_test : public beast::unit_test::suite
         Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
         Account const gw{"gateway"};
         Account const alice{"alice"};
-        env.fund(XRP(1000000000), gw, alice);
+        env.fund(kXRP(1000000000), gw, alice);
         env.close();
 
         // gw sets asfAllowTrustLineClawback.
         env(fset(gw, asfAllowTrustLineClawback));
         env.close();
-        env.Require(Flags(gw, asfAllowTrustLineClawback));
+        env.require(Flags(gw, asfAllowTrustLineClawback));
 
         // gw issues 1000 USD to Alice.
         auto const usd = gw["USD"];
         env.trust(usd(100000), alice);
         env(pay(gw, alice, usd(1000)));
         env.close();
-        env.Require(Balance(alice, usd(1000)));
+        env.require(Balance(alice, usd(1000)));
 
         // gw creates AMM pool of XRP/USD.
-        AMM amm(env, gw, XRP(100), usd(400), Ter(tesSUCCESS));
+        AMM amm(env, gw, kXRP(100), usd(400), Ter(tesSUCCESS));
         env.close();
 
-        BEAST_EXPECT(amm.expectBalances(usd(400), XRP(100), IOUAmount(200000)));
+        BEAST_EXPECT(amm.expectBalances(usd(400), kXRP(100), IOUAmount(200000)));
 
         amm.deposit(alice, usd(400));
         env.close();
 
-        BEAST_EXPECT(amm.expectBalances(usd(800), XRP(100), IOUAmount{2828427124746190, -10}));
+        BEAST_EXPECT(amm.expectBalances(usd(800), kXRP(100), IOUAmount{2828427124746190, -10}));
 
-        auto aliceXrpBalance = env.Balance(alice, XRP);
+        auto aliceXrpBalance = env.balance(alice, kXRP);
 
-        env(amm::ammClawback(gw, alice, usd, XRP, usd(400)), Ter(tesSUCCESS));
+        env(amm::ammClawback(gw, alice, usd, kXRP, usd(400)), Ter(tesSUCCESS));
         env.close();
 
         if (!features[fixAMMv1_3])
         {
             BEAST_EXPECT(amm.expectBalances(
-                STAmount(usd, UINT64_C(5656854249492380), -13), XRP(70.710678), IOUAmount(200000)));
+                STAmount(usd, UINT64_C(5656854249492380), -13),
+                kXRP(70.710678),
+                IOUAmount(200000)));
         }
         else
         {
             BEAST_EXPECT(amm.expectBalances(
-                STAmount(usd, UINT64_C(565'685424949238), -12), XRP(70.710679), IOUAmount(200000)));
+                STAmount(usd, UINT64_C(565'685424949238), -12),
+                kXRP(70.710679),
+                IOUAmount(200000)));
         }
         BEAST_EXPECT(amm.expectLPTokens(alice, IOUAmount(0)));
         if (!features[fixAMMv1_3])
         {
-            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(29.289322)));
+            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(29.289322)));
         }
         else
         {
-            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + XRP(29.289321)));
+            BEAST_EXPECT(expectLedgerEntryRoot(env, alice, aliceXrpBalance + kXRP(29.289321)));
         }
     }
 
@@ -2232,7 +2241,7 @@ class AMMClawback_test : public beast::unit_test::suite
 
         auto setupAccounts =
             [&](Env& env, Account const& gw, Account const& alice, Account const& bob) {
-                env.fund(XRP(100000), gw, alice, bob);
+                env.fund(kXRP(100000), gw, alice, bob);
                 env.close();
                 env(fset(gw, asfAllowTrustLineClawback));
                 env.close();
@@ -2264,7 +2273,7 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const usd = setupAccounts(env, gw, alice, bob);
 
-            AMM amm(env, alice, XRP(2), usd(1));
+            AMM amm(env, alice, kXRP(2), usd(1));
             amm.deposit(alice, IOUAmount{1'876123487565916, -15});
             amm.deposit(bob, IOUAmount{1'000'000});
             amm.withdraw(alice, IOUAmount{1'876123487565916, -15});
@@ -2278,13 +2287,13 @@ class AMMClawback_test : public beast::unit_test::suite
 
             if (!features[fixAMMClawbackRounding] || !features[fixAMMv1_3])
             {
-                env(amm::ammClawback(gw, alice, usd, XRP, usd(1)), Ter(tecAMM_BALANCE));
+                env(amm::ammClawback(gw, alice, usd, kXRP, usd(1)), Ter(tecAMM_BALANCE));
                 BEAST_EXPECT(amm.ammExists());
             }
             else
             {
                 auto const lpBalance = IOUAmount{989, -12};
-                env(amm::ammClawback(gw, alice, usd, XRP, usd(1)));
+                env(amm::ammClawback(gw, alice, usd, kXRP, usd(1)));
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount(usd, UINT64_C(7000000000000000), -28), XRPAmount(1), lpBalance));
                 BEAST_EXPECT(amm.expectLPTokens(alice, lpBalance));
@@ -2297,7 +2306,7 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const usd = setupAccounts(env, gw, alice, bob);
 
-            AMM amm(env, alice, XRP(2), usd(1));
+            AMM amm(env, alice, kXRP(2), usd(1));
             amm.deposit(alice, IOUAmount{1'876123487565916, -15});
             amm.deposit(bob, IOUAmount{1'000'000});
             amm.withdrawAll(bob);
@@ -2308,7 +2317,7 @@ class AMMClawback_test : public beast::unit_test::suite
             auto res = isOnlyLiquidityProvider(*env.current(), amm.lptIssue(), alice);
             BEAST_EXPECT(res && res.value());
 
-            env(amm::ammClawback(gw, alice, usd, XRP, usd(0.5)));
+            env(amm::ammClawback(gw, alice, usd, kXRP, usd(0.5)));
 
             if (!features[fixAMMv1_3] && !features[fixAMMClawbackRounding])
             {
@@ -2339,7 +2348,7 @@ class AMMClawback_test : public beast::unit_test::suite
             Account const gw{"gateway"}, alice{"alice"}, bob{"bob"};
             auto const usd = setupAccounts(env, gw, alice, bob);
 
-            AMM amm(env, alice, XRP(2), usd(1));
+            AMM amm(env, alice, kXRP(2), usd(1));
             amm.deposit(alice, IOUAmount{1'876123487565916, -15});
             amm.deposit(bob, IOUAmount{1'000'000});
             amm.withdraw(alice, IOUAmount{1'876123487565916, -15});
@@ -2353,11 +2362,11 @@ class AMMClawback_test : public beast::unit_test::suite
 
             if (!features[fixAMMClawbackRounding] && !features[fixAMMv1_3])
             {
-                env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt), Ter(tecAMM_BALANCE));
+                env(amm::ammClawback(gw, alice, usd, kXRP, std::nullopt), Ter(tecAMM_BALANCE));
             }
             else if (!features[fixAMMClawbackRounding])
             {
-                env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt));
+                env(amm::ammClawback(gw, alice, usd, kXRP, std::nullopt));
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount(usd, UINT64_C(2410000000000000), -28),
                     XRPAmount(1),
@@ -2365,7 +2374,7 @@ class AMMClawback_test : public beast::unit_test::suite
             }
             else if (features[fixAMMv1_3] && features[fixAMMClawbackRounding])
             {
-                env(amm::ammClawback(gw, alice, usd, XRP, std::nullopt));
+                env(amm::ammClawback(gw, alice, usd, kXRP, std::nullopt));
                 BEAST_EXPECT(!amm.ammExists());
             }
         }
@@ -2377,7 +2386,7 @@ class AMMClawback_test : public beast::unit_test::suite
             auto const usd = setupAccounts(env, gw, alice, bob);
 
             Account const gw2{"gateway2"};
-            env.fund(XRP(100000), gw2);
+            env.fund(kXRP(100000), gw2);
             env.close();
             auto const eur = gw2["EUR"];
             env.trust(eur(100000), alice);
@@ -2437,13 +2446,13 @@ class AMMClawback_test : public beast::unit_test::suite
 
             if (features[fixAMMClawbackRounding])
             {
-                env(amm::ammClawback(gw, alice, usd, eur, std::nullopt), txflags(tfClawTwoAssets));
+                env(amm::ammClawback(gw, alice, usd, eur, std::nullopt), Txflags(tfClawTwoAssets));
                 BEAST_EXPECT(!amm.ammExists());
             }
             else
             {
                 env(amm::ammClawback(gw, alice, usd, eur, std::nullopt),
-                    txflags(tfClawTwoAssets),
+                    Txflags(tfClawTwoAssets),
                     Ter(tecINTERNAL));
                 BEAST_EXPECT(amm.ammExists());
             }
@@ -2492,7 +2501,7 @@ class AMMClawback_test : public beast::unit_test::suite
             }
             else if (features[fixAMMv1_3] && features[fixAMMClawbackRounding])
             {
-                env(amm::ammClawback(gw, alice, usd, eur, usd(1)), txflags(tfClawTwoAssets));
+                env(amm::ammClawback(gw, alice, usd, eur, usd(1)), Txflags(tfClawTwoAssets));
                 auto const lpBalance = IOUAmount{5, -12};
                 BEAST_EXPECT(amm.expectBalances(
                     STAmount(usd, UINT64_C(4), -15), STAmount(eur, UINT64_C(8), -9), lpBalance));

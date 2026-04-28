@@ -18,7 +18,7 @@
 
 namespace xrpl {
 
-struct STNumber_test : public beast::unit_test::suite
+struct STNumber_test : public beast::unit_test::Suite
 {
     void
     testCombo(Number number)
@@ -55,7 +55,7 @@ struct STNumber_test : public beast::unit_test::suite
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
-            Number::minExponent, -1, 0, 1, Number::maxExponent - 1};
+            Number::kMIN_EXPONENT, -1, 0, 1, Number::kMAX_EXPONENT - 1};
         for (std::int32_t const exponent : exponents)
             testCombo(Number{123, exponent});
 
@@ -101,12 +101,12 @@ struct STNumber_test : public beast::unit_test::suite
             BEAST_EXPECT(numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
 
             {
-                NumberRoundModeGuard const mg(Number::towards_zero);
+                NumberRoundModeGuard const mg(Number::TowardsZero);
                 // maxint64 9,223,372,036,854,775,807
                 auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
                 // minint64 -9,223,372,036,854,775,808
                 auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
-                if (Number::getMantissaScale() == MantissaRange::small)
+                if (Number::getMantissaScale() == MantissaRange::Small)
                 {
                     BEAST_EXPECT(
                         numberFromJson(sfNumber, maxInt) ==
@@ -124,7 +124,7 @@ struct STNumber_test : public beast::unit_test::suite
                         numberFromJson(sfNumber, minInt) ==
                         STNumber(
                             sfNumber,
-                            Number{true, 9'223'372'036'854'775'808ULL, 0, Number::normalized{}}));
+                            Number{true, 9'223'372'036'854'775'808ULL, 0, Number::Normalized{}}));
                 }
             }
 
@@ -280,7 +280,7 @@ struct STNumber_test : public beast::unit_test::suite
     {
         static_assert(!std::is_convertible_v<STNumber*, Number*>);
 
-        for (auto const scale : {MantissaRange::small, MantissaRange::large})
+        for (auto const scale : {MantissaRange::Small, MantissaRange::Large})
         {
             NumberMantissaScaleGuard const sg(scale);
             testcase << to_string(Number::getMantissaScale());

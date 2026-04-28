@@ -42,7 +42,7 @@ LedgerDeltaAcquire::LedgerDeltaAcquire(
           app,
           ledgerHash,
           LedgerReplayParameters::kSUB_TASK_TIMEOUT,
-          {.jobType = jtREPLAY_TASK,
+          {.jobType = JtReplayTask,
            .jobName = "LedReplDelta",
            .jobLimit = LedgerReplayParameters::kMAX_QUEUED_TASKS},
           app.getJournal("LedgerReplayDelta"))
@@ -203,7 +203,7 @@ LedgerDeltaAcquire::tryBuild(std::shared_ptr<Ledger const> const& parent)
         "xrpl::LedgerDeltaAcquire::tryBuild : parent hash match");
     // build ledger
     LedgerReplay const replayData(parent, replayTemp_, std::move(orderedTxns_));
-    fullLedger_ = buildLedger(replayData, tapNONE, app_, journal_);
+    fullLedger_ = buildLedger(replayData, TapNone, app_, journal_);
     if (fullLedger_ && fullLedger_->header().hash == hash_)
     {
         JLOG(journal_.info()) << "Built " << hash_;
@@ -232,7 +232,7 @@ LedgerDeltaAcquire::onLedgerBuilt(ScopedLockType& sl, std::optional<InboundLedge
         firstTime = false;
     }
     app_.getJobQueue().addJob(
-        jtREPLAY_TASK, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_]() {
+        JtReplayTask, "OnLedBuilt", [=, ledger = this->fullLedger_, &app = this->app_]() {
             for (auto reason : reasons)
             {
                 switch (reason)

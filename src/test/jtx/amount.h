@@ -55,7 +55,8 @@ struct None
 // This value is also defined in SystemParameters.h. It's
 // duplicated here to catch any possible future errors that
 // could change that value (however unlikely).
-constexpr XRPAmount kDROPS_PER_XRP{1'000'000};
+// TODO: rename — clashes with xrpl::kDROPS_PER_XRP
+constexpr XRPAmount kJtxDropsPerXrp{1'000'000};
 
 /** Represents an XRP, IOU, or MPT quantity
     This customizes the string conversion and supports
@@ -136,7 +137,7 @@ public:
 
     operator Json::Value() const
     {
-        return to_json(value());
+        return toJson(value());
     }
 };
 
@@ -185,18 +186,18 @@ public:
 
     operator Json::Value() const
     {
-        return to_json(asset_);
+        return toJson(asset_);
     }
 
     template <std::integral T>
     PrettyAmount
-    operator()(T v, Number::rounding_mode rounding = Number::getround()) const
+    operator()(T v, Number::RoundingMode rounding = Number::getround()) const
     {
         return operator()(Number(v), rounding);
     }
 
     PrettyAmount
-    operator()(Number v, Number::rounding_mode rounding = Number::getround()) const
+    operator()(Number v, Number::RoundingMode rounding = Number::getround()) const
     {
         NumberRoundModeGuard const mg(rounding);
         STAmount const amount{asset_, v * scale_};
@@ -275,7 +276,7 @@ struct XrpT
     operator()(T v) const
     {
         using TOut = std::conditional_t<std::is_signed_v<T>, std::int64_t, std::uint64_t>;
-        return {TOut{v} * kDROPS_PER_XRP};
+        return {TOut{v} * kJtxDropsPerXrp};
     }
 
     /** Returns an amount of XRP as PrettyAmount,
@@ -286,7 +287,7 @@ struct XrpT
     PrettyAmount
     operator()(Number v) const
     {
-        auto const c = kDROPS_PER_XRP.drops();
+        auto const c = kJtxDropsPerXrp.drops();
         auto const d = std::int64_t(v * c);
         if (Number(d) / c != v)
             Throw<std::domain_error>("unrepresentable");
@@ -296,7 +297,7 @@ struct XrpT
     PrettyAmount
     operator()(double v) const
     {
-        auto const c = kDROPS_PER_XRP.drops();
+        auto const c = kJtxDropsPerXrp.drops();
         if (v >= 0)
         {
             auto const d = std::uint64_t(std::round(v * c));
@@ -331,7 +332,7 @@ struct XrpT
         XRP         Converts to the XRP Issue
         XRP(10)     Returns STAmount of 10 XRP
 */
-extern XrpT const XRP;
+extern XrpT const kXRP;
 
 /** Returns an XRP PrettyAmount, which is trivially convertible to STAmount.
 

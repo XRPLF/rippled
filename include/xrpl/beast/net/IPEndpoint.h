@@ -27,9 +27,9 @@ public:
         @return An optional endpoint; will be `std::nullopt` on failure
     */
     static std::optional<Endpoint>
-    from_string_checked(std::string const& s);
+    fromStringChecked(std::string const& s);
     static Endpoint
-    from_string(std::string const& s);
+    fromString(std::string const& s);
 
     /** Returns a string representing the endpoint. */
     [[nodiscard]] std::string
@@ -44,7 +44,7 @@ public:
 
     /** Returns a new Endpoint with a different port. */
     [[nodiscard]] Endpoint
-    at_port(Port port) const
+    atPort(Port port) const
     {
         return Endpoint(addr_, port);
     }
@@ -59,22 +59,22 @@ public:
     /** Convenience accessors for the address part. */
     /** @{ */
     [[nodiscard]] bool
-    is_v4() const
+    isV4() const
     {
         return addr_.is_v4();
     }
     [[nodiscard]] bool
-    is_v6() const
+    isV6() const
     {
         return addr_.is_v6();
     }
     [[nodiscard]] AddressV4
-    to_v4() const
+    toV4() const
     {
         return addr_.to_v4();
     }
     [[nodiscard]] AddressV6
-    to_v6() const
+    toV6() const
     {
         return addr_.to_v6();
     }
@@ -128,37 +128,37 @@ private:
 
 /** Returns `true` if the endpoint is a loopback address. */
 inline bool
-is_loopback(Endpoint const& endpoint)
+isLoopback(Endpoint const& endpoint)
 {
-    return is_loopback(endpoint.address());
+    return isLoopback(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is unspecified. */
 inline bool
-is_unspecified(Endpoint const& endpoint)
+isUnspecified(Endpoint const& endpoint)
 {
-    return is_unspecified(endpoint.address());
+    return isUnspecified(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a multicast address. */
 inline bool
-is_multicast(Endpoint const& endpoint)
+isMulticast(Endpoint const& endpoint)
 {
-    return is_multicast(endpoint.address());
+    return isMulticast(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a private unroutable address. */
 inline bool
-is_private(Endpoint const& endpoint)
+isPrivate(Endpoint const& endpoint)
 {
-    return is_private(endpoint.address());
+    return isPrivate(endpoint.address());
 }
 
 /** Returns `true` if the endpoint is a public routable address. */
 inline bool
-is_public(Endpoint const& endpoint)
+isPublic(Endpoint const& endpoint)
 {
-    return is_public(endpoint.address());
+    return isPublic(endpoint.address());
 }
 
 //------------------------------------------------------------------------------
@@ -197,7 +197,7 @@ struct hash<::beast::IP::Endpoint>
     std::size_t
     operator()(::beast::IP::Endpoint const& endpoint) const
     {
-        return ::beast::uhash<>{}(endpoint);
+        return ::beast::Uhash<>{}(endpoint);
     }
 };
 }  // namespace std
@@ -212,7 +212,7 @@ struct hash<::beast::IP::Endpoint>
     std::size_t
     operator()(::beast::IP::Endpoint const& endpoint) const
     {
-        return ::beast::uhash<>{}(endpoint);
+        return ::beast::Uhash<>{}(endpoint);
     }
 };
 }  // namespace boost

@@ -33,7 +33,7 @@ doTransactionEntry(RPC::JsonContext& context)
     {
         jvResult[jss::error] = "fieldNotFoundTransaction";
     }
-    else if (jvResult.get(jss::ledger_hash, Json::nullValue).isNull())
+    else if (jvResult.get(jss::ledger_hash, Json::NullValue).isNull())
     {
         // We don't work on ledger current.
 
@@ -60,7 +60,7 @@ doTransactionEntry(RPC::JsonContext& context)
         {
             if (context.apiVersion > 1)
             {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::kDISABLE_API_PRIOR_V2);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::KDisableApiPriorV2);
                 jvResult[jss::hash] = to_string(sttx->getTransactionID());
 
                 if (!lpLedger->open())
@@ -76,19 +76,19 @@ doTransactionEntry(RPC::JsonContext& context)
                 {
                     jvResult[jss::ledger_index] = lpLedger->seq();
                     if (auto closeTime = context.ledgerMaster.getCloseTimeBySeq(lpLedger->seq()))
-                        jvResult[jss::close_time_iso] = to_string_iso(*closeTime);
+                        jvResult[jss::close_time_iso] = toStringIso(*closeTime);
                 }
             }
             else
             {
-                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::kNONE);
+                jvResult[jss::tx_json] = sttx->getJson(JsonOptions::KNone);
             }
 
             RPC::insertDeliverMax(jvResult[jss::tx_json], sttx->getTxnType(), context.apiVersion);
 
             auto const jsonMeta = (context.apiVersion > 1 ? jss::meta : jss::metadata);
             if (stobj)
-                jvResult[jsonMeta] = stobj->getJson(JsonOptions::kNONE);
+                jvResult[jsonMeta] = stobj->getJson(JsonOptions::KNone);
             // 'accounts'
             // 'engine_...'
             // 'ledger_...'

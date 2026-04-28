@@ -39,7 +39,7 @@
 
 namespace xrpl {
 
-class PerfLog_test : public beast::unit_test::suite
+class PerfLog_test : public beast::unit_test::Suite
 {
     enum class WithFile : bool { No = false, Yes = true };
 
@@ -47,7 +47,7 @@ class PerfLog_test : public beast::unit_test::suite
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
+    test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::severities::KDisabled};
     beast::Journal j_{env_.app().getJournal("PerfLog_test")};
 
     struct Fixture
@@ -117,7 +117,7 @@ class PerfLog_test : public beast::unit_test::suite
         {
             perf::PerfLog::Setup const setup{
                 .perfLog = withFile == WithFile::No ? "" : logFile(), .logInterval = logInterval()};
-            return perf::make_PerfLog(setup, app, j, [this]() {
+            return perf::makePerfLog(setup, app, j, [this]() {
                 signalStop();
                 return;
             });
@@ -313,7 +313,7 @@ public:
         // Get the all the labels we can use for RPC interfaces without
         // causing an assert.
         std::vector<char const*> labels = test::jtx::makeVector(xrpl::RPC::getHandlerNames());
-        std::shuffle(labels.begin(), labels.end(), default_prng());
+        std::shuffle(labels.begin(), labels.end(), defaultPrng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at
         // boundaries, so we pick IDs starting from zero and ending at
@@ -328,7 +328,7 @@ public:
             std::back_inserter(ids),
             labels.size(),
             [i = std::numeric_limits<std::uint64_t>::max()]() mutable { return i--; });
-        std::shuffle(ids.begin(), ids.end(), default_prng());
+        std::shuffle(ids.begin(), ids.end(), defaultPrng());
 
         // Start all of the RPC commands twice to show they can all be tracked
         // simultaneously.
@@ -483,7 +483,7 @@ public:
 
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -527,7 +527,7 @@ public:
                 jobs.emplace_back(job.first, job.second.name());
             }
         }
-        std::shuffle(jobs.begin(), jobs.end(), default_prng());
+        std::shuffle(jobs.begin(), jobs.end(), defaultPrng());
 
         // Walk through all of the jobs, enqueuing every job once.  Check
         // the jobs data with every addition.
@@ -804,7 +804,7 @@ public:
 
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;
@@ -830,14 +830,14 @@ public:
         perfLog->start();
 
         // Randomly select a job type and its name.
-        JobType jobType = jtINVALID;
+        JobType jobType = JtInvalid;
         std::string jobTypeName;
         {
             auto const& jobTypes = JobTypes::instance();
 
             std::uniform_int_distribution<> dis(0, jobTypes.size() - 1);
             auto iter{jobTypes.begin()};
-            std::advance(iter, dis(default_prng()));
+            std::advance(iter, dis(defaultPrng()));
 
             jobType = iter->second.type();
             jobTypeName = iter->second.name();
@@ -944,7 +944,7 @@ public:
 
             Json::Value parsedLastLine;
             Json::Reader().parse(lastLine, parsedLastLine);
-            if (!BEAST_EXPECT(!RPC::contains_error(parsedLastLine)))
+            if (!BEAST_EXPECT(!RPC::containsError(parsedLastLine)))
             {
                 // Avoid cascade of failures
                 return;

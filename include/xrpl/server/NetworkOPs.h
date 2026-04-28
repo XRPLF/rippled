@@ -72,11 +72,11 @@ class NetworkOPs : public InfoSub::Source
 public:
     using clock_type = beast::AbstractClock<std::chrono::steady_clock>;
 
-    enum class FailHard : unsigned char { no, yes };
+    enum class FailHard : unsigned char { No, Yes };
     static FailHard
     doFailHard(bool noMeansDont)
     {
-        return noMeansDont ? FailHard::yes : FailHard::no;
+        return noMeansDont ? FailHard::Yes : FailHard::No;
     }
 
 public:

@@ -16,7 +16,7 @@
 namespace beast::unit_test {
 
 /** A suite that prints the list of globally defined suites. */
-class print_test : public suite
+class print_test : public Suite
 {
 public:
     void
@@ -27,7 +27,7 @@ public:
 
         auto prefix = [](SuiteInfo const& s) { return s.manual() ? "|M| " : "    "; };
 
-        for (auto const& s : global_suites())
+        for (auto const& s : globalSuites())
         {
             log << prefix(s) << s.fullName() << '\n';
 

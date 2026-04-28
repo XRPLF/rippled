@@ -35,8 +35,8 @@ JobQueue::JobQueue(
 {
     JLOG(journal_.info()) << "Using " << threadCount << "  threads";
 
-    hook = collector_->make_hook(std::bind(&JobQueue::collect, this));
-    job_count = collector_->make_gauge("job_count");
+    hook_ = collector_->makeHook(std::bind(&JobQueue::collect, this));
+    job_count_ = collector_->makeGauge("job_count");
 
     {
         std::lock_guard const lock(mutex_);
@@ -59,14 +59,14 @@ JobQueue::JobQueue(
 JobQueue::~JobQueue()
 {
     // Must unhook before destroying
-    hook = beast::insight::Hook();
+    hook_ = beast::insight::Hook();
 }
 
 void
 JobQueue::collect()
 {
     std::lock_guard const lock(mutex_);
-    job_count = jobSet_.size();
+    job_count_ = jobSet_.size();
 }
 
 bool
@@ -169,7 +169,7 @@ void
 JobQueue::addLoadEvents(JobType t, int count, std::chrono::milliseconds elapsed)
 {
     if (isStopped())
-        LogicError("JobQueue::addLoadEvents() called after JobQueue stopped");
+        logicError("JobQueue::addLoadEvents() called after JobQueue stopped");
 
     JobDataMap::iterator const iter(jobData_.find(t));
     XRPL_ASSERT(iter != jobData_.end(), "xrpl::JobQueue::addLoadEvents : valid job type input");
@@ -186,11 +186,11 @@ Json::Value
 JobQueue::getJson(int c)
 {
     using namespace std::chrono_literals;
-    Json::Value ret(Json::objectValue);
+    Json::Value ret(Json::ObjectValue);
 
     ret["threads"] = workers_.getNumberOfThreads();
 
-    Json::Value priorities = Json::arrayValue;
+    Json::Value priorities = Json::ArrayValue;
 
     std::lock_guard const lock(mutex_);
 
@@ -198,7 +198,7 @@ JobQueue::getJson(int c)
     {
         XRPL_ASSERT(x.first != jtINVALID, "xrpl::JobQueue::getJson : valid job type");
 
-        if (x.first == jtGENERIC)
+        if (x.first == JtGeneric)
             continue;
 
         JobTypeData& data(x.second);
@@ -210,7 +210,7 @@ JobQueue::getJson(int c)
 
         if ((stats.count != 0) || (waiting != 0) || (stats.latencyPeak != 0ms) || (running != 0))
         {
-            Json::Value& pri = priorities.append(Json::objectValue);
+            Json::Value& pri = priorities.append(Json::ObjectValue);
 
             pri["job_type"] = data.name();
 
@@ -341,7 +341,7 @@ JobQueue::finishJob(JobType type)
 void
 JobQueue::processTask(int instance)
 {
-    JobType type = jtINVALID;
+    JobType type = JtInvalid;
 
     {
         using namespace std::chrono;
@@ -358,7 +358,7 @@ JobQueue::processTask(int instance)
             JLOG(journal_.trace()) << "Doing " << data.name() << "job";
 
             // The amount of time that the job was in the queue
-            auto const qTime = ceil<microseconds>(startTime - job.queue_time());
+            auto const qTime = ceil<microseconds>(startTime - job.queueTime());
             perfLog_.jobStart(type, qTime, startTime, instance);
 
             job.doJob();

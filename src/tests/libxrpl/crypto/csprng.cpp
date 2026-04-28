@@ -8,7 +8,7 @@ using namespace xrpl;
 
 TEST(csprng, get_values)
 {
-    auto& engine = crypto_prng();
+    auto& engine = cryptoPrng();
     auto randVal = engine();
     EXPECT_GE(randVal, engine.min());
     EXPECT_LE(randVal, engine.max());

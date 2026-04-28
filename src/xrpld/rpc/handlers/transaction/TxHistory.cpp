@@ -19,17 +19,17 @@ Json::Value
 doTxHistory(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
-        return rpcError(rpcNOT_ENABLED);
+        return rpcError(RpcNotEnabled);
 
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     if (!context.params.isMember(jss::start))
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
 
     unsigned int const startIndex = context.params[jss::start].asUInt();
 
     if ((startIndex > 10000) && (!isUnlimited(context.role)))
-        return rpcError(rpcNO_PERMISSION);
+        return rpcError(RpcNoPermission);
 
     auto trans = context.app.getRelationalDatabase().getTxHistory(startIndex);
 
@@ -39,7 +39,7 @@ doTxHistory(RPC::JsonContext& context)
 
     for (auto const& t : trans)
     {
-        Json::Value txJson = t->getJson(JsonOptions::kNONE);
+        Json::Value txJson = t->getJson(JsonOptions::KNone);
         RPC::insertDeliverMax(txJson, t->getSTransaction()->getTxnType(), context.apiVersion);
         txs.append(txJson);
     }

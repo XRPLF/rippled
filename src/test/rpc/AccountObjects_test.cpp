@@ -114,7 +114,7 @@ static char const* gBobAccountObjects[] = {
     "index" : "F03ABE26CB8C5F4AFB31A86590BD25C64C5756FCE5CE9704C27AFE291A4A29A1"
 })json"};
 
-class AccountObjects_test : public beast::unit_test::suite
+class AccountObjects_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -144,9 +144,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(Json::Value(Json::NullValue));
+            testInvalidAccountParam(Json::Value(Json::ObjectValue));
+            testInvalidAccountParam(Json::Value(Json::ArrayValue));
         }
         // test error on  malformed account string.
         {
@@ -172,7 +172,7 @@ public:
             BEAST_EXPECT(resp[jss::result][jss::error_message] == "ledgerNotFound");
         }
 
-        env.fund(XRP(1000), bob);
+        env.fund(kXRP(1000), bob);
         // test error on type param not a string
         {
             Json::Value params;
@@ -203,11 +203,11 @@ public:
         // test errors on marker
         {
             Account const gw{"G"};
-            env.fund(XRP(1000), gw);
+            env.fund(kXRP(1000), gw);
             auto const usd = gw["USD"];
             env.trust(usd(1000), bob);
-            env(pay(gw, bob, XRP(1)));
-            env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
+            env(pay(gw, bob, kXRP(1)));
+            env(offer(bob, kXRP(100), bob["USD"](1)), Txflags(tfPassive));
 
             Json::Value params;
             params[jss::account] = bob.human();
@@ -265,15 +265,15 @@ public:
         auto const usD1 = gw1["USD"];
         auto const usD2 = gw2["USD"];
 
-        env.fund(XRP(1000), gw1, gw2, bob);
+        env.fund(kXRP(1000), gw1, gw2, bob);
         env.trust(usD1(1000), bob);
         env.trust(usD2(1000), bob);
 
         env(pay(gw1, bob, usD1(1000)));
         env(pay(gw2, bob, usD2(1000)));
 
-        env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
-        env(offer(bob, XRP(100), usD1(1)), txflags(tfPassive));
+        env(offer(bob, kXRP(100), bob["USD"](1)), Txflags(tfPassive));
+        env(offer(bob, kXRP(100), usD1(1)), Txflags(tfPassive));
 
         Json::Value bobj[4];
         for (int i = 0; i < 4; ++i)
@@ -361,7 +361,7 @@ public:
         auto const usD1 = gw1["USD"];
         auto const usD2 = gw2["USD"];
 
-        env.fund(XRP(1000), gw1, gw2, bob);
+        env.fund(kXRP(1000), gw1, gw2, bob);
         env.close();
 
         // Check behavior if there are no account objects.
@@ -381,7 +381,7 @@ public:
         }
 
         // Check behavior if there are only NFTokens.
-        env(token::mint(bob, 0u), txflags(tfTransferable));
+        env(token::mint(bob, 0u), Txflags(tfTransferable));
         env.close();
 
         // test 'unstepped'
@@ -431,8 +431,8 @@ public:
         env(pay(gw1, bob, usD1(1000)));
         env(pay(gw2, bob, usD2(1000)));
 
-        env(offer(bob, XRP(100), bob["USD"](1)), txflags(tfPassive));
-        env(offer(bob, XRP(100), usD1(1)), txflags(tfPassive));
+        env(offer(bob, kXRP(100), bob["USD"](1)), Txflags(tfPassive));
+        env(offer(bob, kXRP(100), usD1(1)), Txflags(tfPassive));
         env.close();
 
         // test 'unstepped'
@@ -488,7 +488,7 @@ public:
         // Make sure things still work if there is more than 1 NFT Page.
         for (int i = 0; i < 32; ++i)
         {
-            env(token::mint(bob, 0u), txflags(tfTransferable));
+            env(token::mint(bob, 0u), Txflags(tfTransferable));
             env.close();
         }
         // test 'unstepped'
@@ -587,7 +587,7 @@ public:
                 resp[jss::result][jss::error_message] == "Invalid field \'type\'.";
         };
 
-        env.fund(XRP(10000), gw, alice);
+        env.fund(kXRP(10000), gw, alice);
         env.close();
 
         // Since the account is empty now, all account objects should come
@@ -615,7 +615,7 @@ public:
 
         // gw mints an NFT so we can find it.
         uint256 const nftID{token::getNextID(env, gw, 0u, tfTransferable)};
-        env(token::mint(gw, 0u), txflags(tfTransferable));
+        env(token::mint(gw, 0u), Txflags(tfTransferable));
         env.close();
         {
             // Find the NFToken page and make sure it's the right one.
@@ -674,7 +674,7 @@ public:
             jvEscrow[jss::TransactionType] = jss::EscrowCreate;
             jvEscrow[jss::Account] = gw.human();
             jvEscrow[jss::Destination] = gw.human();
-            jvEscrow[jss::Amount] = XRP(100).value().getJson(JsonOptions::kNONE);
+            jvEscrow[jss::Amount] = kXRP(100).value().getJson(JsonOptions::KNone);
             jvEscrow[sfFinishAfter.jsonName] = env.now().time_since_epoch().count() + 1;
             env(jvEscrow);
             env.close();
@@ -693,7 +693,7 @@ public:
         {
             std::string const credentialType1 = "credential1";
             Account issuer("issuer");
-            env.fund(XRP(5000), issuer);
+            env.fund(kXRP(5000), issuer);
 
             // gw creates an PermissionedDomain.
             env(pdomain::setTx(gw, {{issuer, credentialType1}}));
@@ -760,9 +760,9 @@ public:
             Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
 
-            scEnv(xchain_create_claim_id(x.scAlice, x.jvb, x.reward, x.mcAlice));
+            scEnv(xchainCreateClaimId(x.scAlice, x.jvb, x.reward, x.mcAlice));
             scEnv.close();
-            scEnv(xchain_create_claim_id(x.scBob, x.jvb, x.reward, x.mcBob));
+            scEnv(xchainCreateClaimId(x.scBob, x.jvb, x.reward, x.mcBob));
             scEnv.close();
 
             auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
@@ -796,14 +796,14 @@ public:
             test::jtx::XChainBridgeObjects x;
             Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
-            auto const amt = XRP(1000);
+            auto const amt = kXRP(1000);
 
             // send first batch of account create attestations, so the
             // xchain_create_account_claim_id_ should be present on the door
             // account (Account::kMASTER) to collect the signatures until a
             // quorum is reached
             scEnv(
-                test::jtx::create_account_attestation(
+                test::jtx::createAccountAttestation(
                     x.scAttester,
                     x.jvb,
                     x.mcCarol,
@@ -841,7 +841,7 @@ public:
         }
 
         // gw creates an offer that we can look for in the ledger.
-        env(offer(gw, usd(7), XRP(14)));
+        env(offer(gw, usd(7), kXRP(14)));
         env.close();
         {
             // Find the offer.
@@ -860,7 +860,7 @@ public:
             jvPayChan[jss::TransactionType] = jss::PaymentChannelCreate;
             jvPayChan[jss::Account] = gw.human();
             jvPayChan[jss::Destination] = alice.human();
-            jvPayChan[jss::Amount] = XRP(300).value().getJson(JsonOptions::kNONE);
+            jvPayChan[jss::Amount] = kXRP(300).value().getJson(JsonOptions::KNone);
             jvPayChan[sfSettleDelay.jsonName] = 24 * 60 * 60;
             jvPayChan[sfPublicKey.jsonName] = strHex(gw.pk().slice());
             env(jvPayChan);
@@ -911,7 +911,7 @@ public:
         }
 
         {
-            auto const seq = env.Seq(gw);
+            auto const seq = env.seq(gw);
             // Create a Ticket for gw.
             env(ticket::create(gw, 1));
             env.close();
@@ -935,12 +935,12 @@ public:
 
             std::vector<std::string> const expectedLedgerTypes = [] {
                 std::vector<std::string> v{
-                    jss::Escrow.c_str(),
-                    jss::Check.c_str(),
-                    jss::NFTokenPage.c_str(),
-                    jss::RippleState.c_str(),
-                    jss::PayChannel.c_str(),
-                    jss::PermissionedDomain.c_str()};
+                    jss::Escrow.cStr(),
+                    jss::Check.cStr(),
+                    jss::NFTokenPage.cStr(),
+                    jss::RippleState.cStr(),
+                    jss::PayChannel.cStr(),
+                    jss::PermissionedDomain.cStr()};
                 std::ranges::sort(v);
                 return v;
             }();
@@ -995,7 +995,7 @@ public:
                 return types == typesOut;
             };
             // Find AMM objects
-            AMM amm(env, gw, XRP(1'000), usd(1'000));
+            AMM amm(env, gw, kXRP(1'000), usd(1'000));
             amm.deposit(alice, usd(1));
             // AMM account has 4 objects: AMM object and 3 trustlines
             auto const lines = getAccountLines(env, amm.ammAccount());
@@ -1013,15 +1013,14 @@ public:
             BEAST_EXPECT(
                 (typesOut ==
                  std::vector<std::string>{
-                     jss::AMM.c_str(),
-                     jss::RippleState.c_str(),
-                     jss::RippleState.c_str(),
-                     jss::RippleState.c_str()}));
+                     jss::AMM.cStr(),
+                     jss::RippleState.cStr(),
+                     jss::RippleState.cStr(),
+                     jss::RippleState.cStr()}));
             // filter by state: there are three trustlines
             resp = acctObjs(amm.ammAccount(), jss::state, 10);
             BEAST_EXPECT(expectObjects(
-                resp,
-                {jss::RippleState.c_str(), jss::RippleState.c_str(), jss::RippleState.c_str()}));
+                resp, {jss::RippleState.cStr(), jss::RippleState.cStr(), jss::RippleState.cStr()}));
             // AMM account doesn't own offers
             BEAST_EXPECT(acctObjsIsSize(acctObjs(amm.ammAccount(), jss::offer), 0));
             // gw account doesn't own AMM object
@@ -1060,7 +1059,7 @@ public:
         Env env(*this);
 
         Account const bob{"bob"};
-        env.fund(XRP(10000), bob);
+        env.fund(kXRP(10000), bob);
 
         static constexpr unsigned kNFTS_SIZE = 10;
         for (unsigned i = 0; i < kNFTS_SIZE; i++)
@@ -1181,9 +1180,9 @@ public:
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(Json::Value(Json::NullValue));
+            testInvalidAccountParam(Json::Value(Json::ObjectValue));
+            testInvalidAccountParam(Json::Value(Json::ArrayValue));
         }
     }
 
@@ -1198,11 +1197,11 @@ public:
         Account const alice{"alice"};
         Account const bob{"bob"};
         Account const carol{"carol"};
-        env.fund(XRP(10000), alice, bob, carol);
+        env.fund(kXRP(10000), alice, bob, carol);
 
         unsigned const accountObjectSize = 30;
         for (unsigned i = 0; i < accountObjectSize; i++)
-            env(check::create(alice, bob, XRP(10)));
+            env(check::create(alice, bob, kXRP(10)));
 
         for (unsigned i = 0; i < 10; i++)
             env(token::mint(carol, 0));

@@ -23,7 +23,7 @@
 
 namespace xrpl::test {
 
-class NetworkID_test : public beast::unit_test::suite
+class NetworkID_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -118,13 +118,13 @@ public:
             test::jtx::Env env{*this, makeNetworkConfig(1025)};
             BEAST_EXPECT(env.app().getNetworkIDService().getNetworkID() == 1025);
             {
-                env.fund(XRP(200), alice);
+                env.fund(kXRP(200), alice);
                 // try to submit a txn without network id, this should not work
                 Json::Value jvn;
                 jvn[jss::Account] = alice.human();
                 jvn[jss::TransactionType] = jss::AccountSet;
                 jvn[jss::Fee] = to_string(env.current()->fees().base);
-                jvn[jss::Sequence] = env.Seq(alice);
+                jvn[jss::Sequence] = env.seq(alice);
                 jvn[jss::LastLedgerSequence] = env.current()->header().seq + 2;
                 auto jt = env.jtnofill(jvn);
                 Serializer s;

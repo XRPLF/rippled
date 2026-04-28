@@ -11,7 +11,7 @@
 
 namespace xrpl {
 
-class Quality_test : public beast::unit_test::suite
+class Quality_test : public beast::unit_test::Suite
 {
 public:
     // Create a raw, non-integral amount from mantissa and exponent
@@ -50,7 +50,7 @@ public:
     ceilIn(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
         auto expectResult(amounts(inExpected, outExpected));
-        auto actualResult(q.ceil_in(amounts(in, out), amount(limit)));
+        auto actualResult(q.ceilIn(amounts(in, out), amount(limit)));
 
         BEAST_EXPECT(actualResult == expectResult);
     }
@@ -60,7 +60,7 @@ public:
     ceilOut(Quality const& q, In1 in, Out1 out, Int limit, In2 inExpected, Out2 outExpected)
     {
         auto const expectResult(amounts(inExpected, outExpected));
-        auto const actualResult(q.ceil_out(amounts(in, out), amount(limit)));
+        auto const actualResult(q.ceilOut(amounts(in, out), amount(limit)));
 
         BEAST_EXPECT(actualResult == expectResult);
     }
@@ -262,8 +262,8 @@ public:
                 amount(349469768),                             // 349.469768 XRP
                 raw(2755280000000000ull, -15));                // 2.75528
             STAmount const limit(raw(4131113916555555, -16));  // .4131113916555555
-            Amounts const result(q.ceil_out(value, limit));
-            BEAST_EXPECT(result.in != beast::zero);
+            Amounts const result(q.ceilOut(value, limit));
+            BEAST_EXPECT(result.in != beast::kZERO);
         }
     }
 
@@ -341,10 +341,10 @@ public:
         Quality const q21(Amounts(amount2, amount1));
         Quality const q31(Amounts(amount3, amount1));
 
-        BEAST_EXPECT(composed_quality(q12, q21) == q11);
+        BEAST_EXPECT(composedQuality(q12, q21) == q11);
 
-        Quality const q1331(composed_quality(q13, q31));
-        Quality const q3113(composed_quality(q31, q13));
+        Quality const q1331(composedQuality(q13, q31));
+        Quality const q3113(composedQuality(q31, q13));
 
         BEAST_EXPECT(q1331 == q3113);
         BEAST_EXPECT(q1331 == q11);

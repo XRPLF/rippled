@@ -30,7 +30,7 @@ TrustLineBase::TrustLineBase(std::shared_ptr<SLE const> const& sle, AccountID co
 Json::Value
 TrustLineBase::getJson(int)
 {
-    Json::Value ret(Json::objectValue);
+    Json::Value ret(Json::ObjectValue);
     ret["low_id"] = to_string(lowLimit_.getIssuer());
     ret["high_id"] = to_string(highLimit_.getIssuer());
     return ret;
@@ -50,7 +50,7 @@ std::vector<T>
 getTrustLineItems(
     AccountID const& accountID,
     ReadView const& view,
-    LineDirection direction = LineDirection::outgoing)
+    LineDirection direction = LineDirection::Outgoing)
 {
     std::vector<T> items;
     forEachItem(
@@ -58,7 +58,7 @@ getTrustLineItems(
         accountID,
         [&items, &accountID, &direction](std::shared_ptr<SLE const> const& sleCur) {
             auto ret = T::makeItem(accountID, sleCur);
-            if (ret && (direction == LineDirection::outgoing || !ret->getNoRipple()))
+            if (ret && (direction == LineDirection::Outgoing || !ret->getNoRipple()))
                 items.push_back(std::move(*ret));
         });
     // This list may be around for a while, so free up any unneeded

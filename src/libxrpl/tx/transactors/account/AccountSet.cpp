@@ -143,7 +143,7 @@ AccountSet::preflight(PreflightContext const& ctx)
     {
         auto uTickSize = tx[sfTickSize];
         if ((uTickSize != 0u) &&
-            ((uTickSize < Quality::minTickSize) || (uTickSize > Quality::maxTickSize)))
+            ((uTickSize < Quality::kMIN_TICK_SIZE) || (uTickSize > Quality::kMAX_TICK_SIZE)))
         {
             JLOG(j.trace()) << "Malformed transaction: Bad tick size.";
             return temBAD_TICK_SIZE;
@@ -159,7 +159,7 @@ AccountSet::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const domain = tx[~sfDomain]; domain && domain->size() > maxDomainLength)
+    if (auto const domain = tx[~sfDomain]; domain && domain->size() > kMAX_DOMAIN_LENGTH)
     {
         JLOG(j.trace()) << "domain too long";
         return telBAD_DOMAIN;
@@ -250,7 +250,7 @@ AccountSet::preclaim(PreclaimContext const& ctx)
         if (!dirIsEmpty(ctx.view, keylet::ownerDir(id)))
         {
             JLOG(ctx.j.trace()) << "Retry: Owner directory not empty.";
-            return ((ctx.flags & tapRETRY) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
+            return ((ctx.flags & TapRetry) != 0u) ? TER{terOWNERS} : TER{tecOWNERS};
         }
     }
 
@@ -574,7 +574,7 @@ AccountSet::doApply()
     if (tx.isFieldPresent(sfTickSize))
     {
         auto uTickSize = tx[sfTickSize];
-        if ((uTickSize == 0) || (uTickSize == Quality::maxTickSize))
+        if ((uTickSize == 0) || (uTickSize == Quality::kMAX_TICK_SIZE))
         {
             JLOG(j_.trace()) << "unset tick size";
             sle->makeFieldAbsent(sfTickSize);

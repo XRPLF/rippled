@@ -3,7 +3,7 @@
 
 namespace beast {
 
-class BasicSecondsClock_test : public unit_test::suite
+class BasicSecondsClock_test : public unit_test::Suite
 {
 public:
     void

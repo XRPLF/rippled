@@ -23,7 +23,7 @@ create(Account const& account, std::uint32_t count)
 }
 
 void
-use::operator()(Env&, JTx& jt) const
+Use::operator()(Env&, JTx& jt) const
 {
     jt.fillSeq = false;
     jt[sfSequence.jsonName] = 0u;

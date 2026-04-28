@@ -9,13 +9,13 @@
 namespace xrpl {
 
 /// Body that holds JSON
-struct json_body
+struct JsonBody
 {
-    explicit json_body() = default;
+    explicit JsonBody() = default;
 
     using value_type = Json::Value;
 
-    class reader
+    class Reader
     {
         using dynamic_buffer_type = boost::beast::multi_buffer;
 
@@ -26,8 +26,8 @@ struct json_body
 
         using is_deferred = std::false_type;
 
-        template <bool isRequest, class Fields>
-        explicit reader(boost::beast::http::message<isRequest, json_body, Fields> const& m)
+        template <bool IsRequest, class Fields>
+        explicit Reader(boost::beast::http::message<IsRequest, JsonBody, Fields> const& m)
         {
             stream(m.body, [&](void const* data, std::size_t n) {
                 buffer_.commit(
@@ -61,9 +61,9 @@ struct json_body
     public:
         using const_buffers_type = boost::asio::const_buffer;
 
-        template <bool isRequest, class Fields>
+        template <bool IsRequest, class Fields>
         explicit writer(
-            boost::beast::http::header<isRequest, Fields> const& fields,
+            boost::beast::http::header<IsRequest, Fields> const& fields,
             value_type const& value)
             : body_string_(to_string(value))
         {

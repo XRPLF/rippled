@@ -92,7 +92,7 @@ currencyFromJson(SField const& name, Json::Value const& v)
         Throw<std::runtime_error>("currencyFromJson currency must be a string Json value");
     }
 
-    auto const currency = to_currency(v.asString());
+    auto const currency = toCurrency(v.asString());
     if (currency == badCurrency() || currency == noCurrency())
     {
         Throw<std::runtime_error>("currencyFromJson currency must be a valid currency");

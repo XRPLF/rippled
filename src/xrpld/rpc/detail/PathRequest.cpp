@@ -57,17 +57,17 @@ PathRequest::PathRequest(
     : app_(app)
     , journal_(journal)
     , owner_(owner)
-    , wpSubscriber(subscriber)
+    , wpSubscriber_(subscriber)
     , consumer_(subscriber->getConsumer())
-    , jvStatus(Json::objectValue)
+    , jvStatus_(Json::ObjectValue)
     , lastIndex_(0)
     , inProgress_(false)
-    , iLevel(0)
-    , bLastSuccess(false)
-    , iIdentifier(id)
+    , iLevel_(0)
+    , bLastSuccess_(false)
+    , iIdentifier_(id)
     , created_(std::chrono::steady_clock::now())
 {
-    JLOG(journal_.debug()) << iIdentifier << " created";
+    JLOG(journal_.debug()) << iIdentifier_ << " created";
 }
 
 PathRequest::PathRequest(
@@ -80,17 +80,17 @@ PathRequest::PathRequest(
     : app_(app)
     , journal_(journal)
     , owner_(owner)
-    , fCompletion(completion)
+    , fCompletion_(completion)
     , consumer_(consumer)
-    , jvStatus(Json::objectValue)
+    , jvStatus_(Json::ObjectValue)
     , lastIndex_(0)
     , inProgress_(false)
-    , iLevel(0)
-    , bLastSuccess(false)
-    , iIdentifier(id)
+    , iLevel_(0)
+    , bLastSuccess_(false)
+    , iIdentifier_(id)
     , created_(std::chrono::steady_clock::now())
 {
-    JLOG(journal_.debug()) << iIdentifier << " created";
+    JLOG(journal_.debug()) << iIdentifier_ << " created";
 }
 
 PathRequest::~PathRequest()
@@ -113,7 +113,7 @@ PathRequest::~PathRequest()
         full += std::to_string(duration_cast<milliseconds>(full_reply_ - created_).count());
         full += "ms";
     }
-    stream << iIdentifier << " complete:" << fast << full
+    stream << iIdentifier_ << " complete:" << fast << full
            << " total:" << duration_cast<milliseconds>(steady_clock::now() - created_).count()
            << "ms";
 }
@@ -156,7 +156,7 @@ PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 bool
 PathRequest::hasCompletion()
 {
-    return bool(fCompletion);
+    return bool(fCompletion_);
 }
 
 void
@@ -167,53 +167,53 @@ PathRequest::updateComplete()
     XRPL_ASSERT(inProgress_, "xrpl::PathRequest::updateComplete : in progress");
     inProgress_ = false;
 
-    if (fCompletion)
+    if (fCompletion_)
     {
-        fCompletion();
-        fCompletion = std::function<void(void)>();
+        fCompletion_();
+        fCompletion_ = std::function<void(void)>();
     }
 }
 
 bool
 PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
 {
-    if (!raSrcAccount || !raDstAccount)
+    if (!raSrcAccount_ || !raDstAccount_)
         return false;
 
-    if (!convert_all_ && (saSendMax || saDstAmount <= beast::zero))
+    if (!convert_all_ && (saSendMax_ || saDstAmount_ <= beast::kZERO))
     {
         // If send max specified, dst amt must be -1.
-        jvStatus = rpcError(rpcDST_AMT_MALFORMED);
+        jvStatus_ = rpcError(RpcDstAmtMalformed);
         return false;
     }
 
     auto const& lrLedger = crCache->getLedger();
 
-    if (!lrLedger->exists(keylet::account(*raSrcAccount)))
+    if (!lrLedger->exists(keylet::account(*raSrcAccount_)))
     {
         // Source account does not exist.
-        jvStatus = rpcError(rpcSRC_ACT_NOT_FOUND);
+        jvStatus_ = rpcError(RpcSrcActNotFound);
         return false;
     }
 
-    auto const sleDest = lrLedger->read(keylet::account(*raDstAccount));
+    auto const sleDest = lrLedger->read(keylet::account(*raDstAccount_));
 
-    Json::Value& jvDestCur = (jvStatus[jss::destination_currencies] = Json::arrayValue);
+    Json::Value& jvDestCur = (jvStatus_[jss::destination_currencies] = Json::ArrayValue);
 
     if (!sleDest)
     {
         jvDestCur.append(Json::Value(systemCurrencyCode()));
-        if (!saDstAmount.native())
+        if (!saDstAmount_.native())
         {
             // Only XRP can be send to a non-existent account.
-            jvStatus = rpcError(rpcACT_NOT_FOUND);
+            jvStatus_ = rpcError(RpcActNotFound);
             return false;
         }
 
-        if (!convert_all_ && saDstAmount < STAmount(lrLedger->fees().reserve))
+        if (!convert_all_ && saDstAmount_ < STAmount(lrLedger->fees().reserve))
         {
             // Payment must meet reserve.
-            jvStatus = rpcError(rpcDST_AMT_MALFORMED);
+            jvStatus_ = rpcError(RpcDstAmtMalformed);
             return false;
         }
     }
@@ -221,16 +221,16 @@ PathRequest::isValid(std::shared_ptr<AssetCache> const& crCache)
     {
         bool const disallowXRP((sleDest->getFlags() & lsfDisallowXRP) != 0u);
 
-        auto const destAssets = accountDestAssets(*raDstAccount, crCache, !disallowXRP);
+        auto const destAssets = accountDestAssets(*raDstAccount_, crCache, !disallowXRP);
 
         for (auto const& asset : destAssets)
             jvDestCur.append(to_string(asset));
 
-        jvStatus[jss::destination_tag] = (sleDest->getFlags() & lsfRequireDestTag);
+        jvStatus_[jss::destination_tag] = (sleDest->getFlags() & lsfRequireDestTag);
     }
 
-    jvStatus[jss::ledger_hash] = to_string(lrLedger->header().hash);
-    jvStatus[jss::ledger_index] = lrLedger->seq();
+    jvStatus_[jss::ledger_hash] = to_string(lrLedger->header().hash);
+    jvStatus_[jss::ledger_index] = lrLedger->seq();
     return true;
 }
 
@@ -259,16 +259,16 @@ PathRequest::doCreate(std::shared_ptr<AssetCache> const& cache, Json::Value cons
     {
         if (valid)
         {
-            stream << iIdentifier << " valid: " << toBase58(*raSrcAccount);
-            stream << iIdentifier << " deliver: " << saDstAmount.getFullText();
+            stream << iIdentifier_ << " valid: " << toBase58(*raSrcAccount_);
+            stream << iIdentifier_ << " deliver: " << saDstAmount_.getFullText();
         }
         else
         {
-            stream << iIdentifier << " invalid";
+            stream << iIdentifier_ << " invalid";
         }
     }
 
-    return {valid, jvStatus};
+    return {valid, jvStatus_};
 }
 
 int
@@ -276,47 +276,47 @@ PathRequest::parseJson(Json::Value const& jvParams)
 {
     if (!jvParams.isMember(jss::source_account))
     {
-        jvStatus = rpcError(rpcSRC_ACT_MISSING);
+        jvStatus_ = rpcError(RpcSrcActMissing);
         return PFR_PJ_INVALID;
     }
 
     if (!jvParams.isMember(jss::destination_account))
     {
-        jvStatus = rpcError(rpcDST_ACT_MISSING);
+        jvStatus_ = rpcError(RpcDstActMissing);
         return PFR_PJ_INVALID;
     }
 
     if (!jvParams.isMember(jss::destination_amount))
     {
-        jvStatus = rpcError(rpcDST_AMT_MISSING);
+        jvStatus_ = rpcError(RpcDstAmtMissing);
         return PFR_PJ_INVALID;
     }
 
-    raSrcAccount = parseBase58<AccountID>(jvParams[jss::source_account].asString());
-    if (!raSrcAccount)
+    raSrcAccount_ = parseBase58<AccountID>(jvParams[jss::source_account].asString());
+    if (!raSrcAccount_)
     {
-        jvStatus = rpcError(rpcSRC_ACT_MALFORMED);
+        jvStatus_ = rpcError(RpcSrcActMalformed);
         return PFR_PJ_INVALID;
     }
 
-    raDstAccount = parseBase58<AccountID>(jvParams[jss::destination_account].asString());
-    if (!raDstAccount)
+    raDstAccount_ = parseBase58<AccountID>(jvParams[jss::destination_account].asString());
+    if (!raDstAccount_)
     {
-        jvStatus = rpcError(rpcDST_ACT_MALFORMED);
+        jvStatus_ = rpcError(RpcDstActMalformed);
         return PFR_PJ_INVALID;
     }
 
-    if (!amountFromJsonNoThrow(saDstAmount, jvParams[jss::destination_amount]))
+    if (!amountFromJsonNoThrow(saDstAmount_, jvParams[jss::destination_amount]))
     {
-        jvStatus = rpcError(rpcDST_AMT_MALFORMED);
+        jvStatus_ = rpcError(RpcDstAmtMalformed);
         return PFR_PJ_INVALID;
     }
 
-    convert_all_ = saDstAmount == STAmount(saDstAmount.asset(), 1u, 0, true);
+    convert_all_ = saDstAmount_ == STAmount(saDstAmount_.asset(), 1u, 0, true);
 
-    if (!validAsset(saDstAmount.asset()) || (!convert_all_ && saDstAmount <= beast::zero))
+    if (!validAsset(saDstAmount_.asset()) || (!convert_all_ && saDstAmount_ <= beast::kZERO))
     {
-        jvStatus = rpcError(rpcDST_AMT_MALFORMED);
+        jvStatus_ = rpcError(RpcDstAmtMalformed);
         return PFR_PJ_INVALID;
     }
 
@@ -325,16 +325,17 @@ PathRequest::parseJson(Json::Value const& jvParams)
         // Send_max requires destination amount to be -1.
         if (!convert_all_)
         {
-            jvStatus = rpcError(rpcDST_AMT_MALFORMED);
+            jvStatus_ = rpcError(RpcDstAmtMalformed);
             return PFR_PJ_INVALID;
         }
 
-        saSendMax.emplace();
-        if (!amountFromJsonNoThrow(*saSendMax, jvParams[jss::send_max]) ||
-            !validAsset(saSendMax->asset()) ||
-            (*saSendMax <= beast::zero && *saSendMax != STAmount(saSendMax->asset(), 1u, 0, true)))
+        saSendMax_.emplace();
+        if (!amountFromJsonNoThrow(*saSendMax_, jvParams[jss::send_max]) ||
+            !validAsset(saSendMax_->asset()) ||
+            (*saSendMax_ <= beast::kZERO &&
+             *saSendMax_ != STAmount(saSendMax_->asset(), 1u, 0, true)))
         {
-            jvStatus = rpcError(rpcSENDMAX_MALFORMED);
+            jvStatus_ = rpcError(RpcSendmaxMalformed);
             return PFR_PJ_INVALID;
         }
     }
@@ -343,20 +344,20 @@ PathRequest::parseJson(Json::Value const& jvParams)
     {
         Json::Value const& jvSrcCurrencies = jvParams[jss::source_currencies];
         if (!jvSrcCurrencies.isArray() || jvSrcCurrencies.size() == 0 ||
-            jvSrcCurrencies.size() > RPC::Tuning::max_src_cur)
+            jvSrcCurrencies.size() > RPC::Tuning::kMAX_SRC_CUR)
         {
-            jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
+            jvStatus_ = rpcError(RpcSrcCurMalformed);
             return PFR_PJ_INVALID;
         }
 
-        sciSourceAssets.clear();
+        sciSourceAssets_.clear();
 
         for (auto const& c : jvSrcCurrencies)
         {
             // Mandatory currency or MPT
             if (!validJSONAsset(c) || !c.isObject())
             {
-                jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
+                jvStatus_ = rpcError(RpcSrcCurMalformed);
                 return PFR_PJ_INVALID;
             }
 
@@ -365,9 +366,9 @@ PathRequest::parseJson(Json::Value const& jvParams)
             {
                 Currency currency;
                 if (!c[jss::currency].isString() ||
-                    !to_currency(currency, c[jss::currency].asString()))
+                    !toCurrency(currency, c[jss::currency].asString()))
                 {
-                    jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
+                    jvStatus_ = rpcError(RpcSrcCurMalformed);
                     return PFR_PJ_INVALID;
                 }
                 srcPathAsset = currency;
@@ -378,7 +379,7 @@ PathRequest::parseJson(Json::Value const& jvParams)
                 if (!c[jss::mpt_issuance_id].isString() ||
                     !u.parseHex(c[jss::mpt_issuance_id].asString()))
                 {
-                    jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
+                    jvStatus_ = rpcError(RpcSrcCurMalformed);
                     return PFR_PJ_INVALID;
                 }
                 srcPathAsset = u;
@@ -388,9 +389,9 @@ PathRequest::parseJson(Json::Value const& jvParams)
             AccountID srcIssuerID;
             if (c.isMember(jss::issuer) &&
                 (c.isMember(jss::mpt_issuance_id) || !c[jss::issuer].isString() ||
-                 !to_issuer(srcIssuerID, c[jss::issuer].asString())))
+                 !toIssuer(srcIssuerID, c[jss::issuer].asString())))
             {
-                jvStatus = rpcError(rpcSRC_ISR_MALFORMED);
+                jvStatus_ = rpcError(RpcSrcIsrMalformed);
                 return PFR_PJ_INVALID;
             }
 
@@ -400,27 +401,28 @@ PathRequest::parseJson(Json::Value const& jvParams)
                 {
                     if (srcIssuerID.isNonZero())
                     {
-                        jvStatus = rpcError(rpcSRC_CUR_MALFORMED);
+                        jvStatus_ = rpcError(RpcSrcCurMalformed);
                         return PFR_PJ_INVALID;
                     }
                 }
                 else if (srcIssuerID.isZero())
                 {
-                    srcIssuerID = *raSrcAccount;
+                    srcIssuerID = *raSrcAccount_;
                 }
             }
 
-            if (saSendMax)
+            if (saSendMax_)
             {
                 // If the assets don't match, ignore the source asset.
-                if (srcPathAsset == saSendMax->asset())
+                if (srcPathAsset == saSendMax_->asset())
                 {
                     // If neither is the source and they are not equal, then the
                     // source issuer is illegal.
-                    if (srcIssuerID != *raSrcAccount && saSendMax->getIssuer() != *raSrcAccount &&
-                        srcIssuerID != saSendMax->getIssuer())
+                    if (srcIssuerID != *raSrcAccount_ &&
+                        saSendMax_->getIssuer() != *raSrcAccount_ &&
+                        srcIssuerID != saSendMax_->getIssuer())
                     {
-                        jvStatus = rpcError(rpcSRC_ISR_MALFORMED);
+                        jvStatus_ = rpcError(RpcSrcIsrMalformed);
                         return PFR_PJ_INVALID;
                     }
 
@@ -428,45 +430,45 @@ PathRequest::parseJson(Json::Value const& jvParams)
                     // Otherwise, use the one that's not the source.
                     srcPathAsset.visit(
                         [&](Currency const& currency) {
-                            if (srcIssuerID != *raSrcAccount)
+                            if (srcIssuerID != *raSrcAccount_)
                             {
-                                sciSourceAssets.insert(Issue{currency, srcIssuerID});
+                                sciSourceAssets_.insert(Issue{currency, srcIssuerID});
                             }
-                            else if (saSendMax->getIssuer() != *raSrcAccount)
+                            else if (saSendMax_->getIssuer() != *raSrcAccount_)
                             {
-                                sciSourceAssets.insert(Issue{currency, saSendMax->getIssuer()});
+                                sciSourceAssets_.insert(Issue{currency, saSendMax_->getIssuer()});
                             }
                             {
-                                sciSourceAssets.insert(Issue{currency, *raSrcAccount});
+                                sciSourceAssets_.insert(Issue{currency, *raSrcAccount_});
                             }
                         },
-                        [&](MPTID const& mpt) { sciSourceAssets.insert(mpt); });
+                        [&](MPTID const& mpt) { sciSourceAssets_.insert(mpt); });
                 }
             }
             else
             {
                 srcPathAsset.visit(
                     [&](Currency const& currency) {
-                        sciSourceAssets.insert(Issue{currency, srcIssuerID});
+                        sciSourceAssets_.insert(Issue{currency, srcIssuerID});
                     },
-                    [&](MPTID const& mpt) { sciSourceAssets.insert(MPTIssue{mpt}); });
+                    [&](MPTID const& mpt) { sciSourceAssets_.insert(MPTIssue{mpt}); });
             }
         }
     }
 
     if (jvParams.isMember(jss::id))
-        jvId = jvParams[jss::id];
+        jvId_ = jvParams[jss::id];
 
     if (jvParams.isMember(jss::domain))
     {
         uint256 num;
         if (!jvParams[jss::domain].isString() || !num.parseHex(jvParams[jss::domain].asString()))
         {
-            jvStatus = rpcError(rpcDOMAIN_MALFORMED);
+            jvStatus_ = rpcError(RpcDomainMalformed);
             return PFR_PJ_INVALID;
         }
 
-        domain = num;
+        domain_ = num;
     }
 
     return PFR_PJ_NOCHANGE;
@@ -475,24 +477,24 @@ PathRequest::parseJson(Json::Value const& jvParams)
 Json::Value
 PathRequest::doClose()
 {
-    JLOG(journal_.debug()) << iIdentifier << " closed";
+    JLOG(journal_.debug()) << iIdentifier_ << " closed";
     std::lock_guard const sl(lock_);
-    jvStatus[jss::closed] = true;
-    return jvStatus;
+    jvStatus_[jss::closed] = true;
+    return jvStatus_;
 }
 
 Json::Value
 PathRequest::doStatus(Json::Value const&)
 {
     std::lock_guard const sl(lock_);
-    jvStatus[jss::status] = jss::success;
-    return jvStatus;
+    jvStatus_[jss::status] = jss::success;
+    return jvStatus_;
 }
 
 void
 PathRequest::doAborting() const
 {
-    JLOG(journal_.info()) << iIdentifier << " aborting early";
+    JLOG(journal_.info()) << iIdentifier_ << " aborting early";
 }
 
 std::unique_ptr<Pathfinder> const&
@@ -510,18 +512,18 @@ PathRequest::getPathFinder(
     // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
     auto pathfinder = std::make_unique<Pathfinder>(
         cache,
-        *raSrcAccount,
-        *raDstAccount,
+        *raSrcAccount_,
+        *raDstAccount_,
         currency,
         std::nullopt,
         dstAmount,
-        saSendMax,
-        domain,
+        saSendMax_,
+        domain_,
         app_);
     // NOLINTEND(bugprone-unchecked-optional-access)
     if (pathfinder->findPaths(level, continueCallback))
     {
-        pathfinder->computePathRanks(max_paths_, continueCallback);
+        pathfinder->computePathRanks(kMAX_PATHS, continueCallback);
     }
     else
     {
@@ -537,29 +539,29 @@ PathRequest::findPaths(
     Json::Value& jvArray,
     std::function<bool(void)> const& continueCallback)
 {
-    auto sourceAssets = sciSourceAssets;
-    if (sourceAssets.empty() && saSendMax)
+    auto sourceAssets = sciSourceAssets_;
+    if (sourceAssets.empty() && saSendMax_)
     {
-        sourceAssets.insert(saSendMax->asset());
+        sourceAssets.insert(saSendMax_->asset());
     }
     if (sourceAssets.empty())
     {
         // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-        auto assets = accountSourceAssets(*raSrcAccount, cache, true);
-        bool const sameAccount = *raSrcAccount == *raDstAccount;
+        auto assets = accountSourceAssets(*raSrcAccount_, cache, true);
+        bool const sameAccount = *raSrcAccount_ == *raDstAccount_;
         // NOLINTEND(bugprone-unchecked-optional-access)
         for (auto const& asset : assets)
         {
             if (!std::visit(
                     [&]<typename TAsset>(TAsset const& a) {
-                        if (!sameAccount || a != saDstAmount.asset())
+                        if (!sameAccount || a != saDstAmount_.asset())
                         {
-                            if (sourceAssets.size() >= RPC::Tuning::max_auto_src_cur)
+                            if (sourceAssets.size() >= RPC::Tuning::kMAX_AUTO_SRC_CUR)
                                 return false;
                             if constexpr (std::is_same_v<TAsset, Currency>)
                             {
                                 sourceAssets.insert(
-                                    Issue{a, a.isZero() ? xrpAccount() : *raSrcAccount});
+                                    Issue{a, a.isZero() ? xrpAccount() : *raSrcAccount_});
                             }
                             else
                             {
@@ -575,26 +577,26 @@ PathRequest::findPaths(
         }
     }
 
-    auto const dstAmount = convertAmount(saDstAmount, convert_all_);
+    auto const dstAmount = convertAmount(saDstAmount_, convert_all_);
     hash_map<PathAsset, std::unique_ptr<Pathfinder>> currencyMap;
     for (auto const& asset : sourceAssets)
     {
         if (continueCallback && !continueCallback())
             break;
-        JLOG(journal_.debug()) << iIdentifier
+        JLOG(journal_.debug()) << iIdentifier_
                                << " Trying to find paths: " << STAmount(asset, 1).getFullText();
 
         auto& pathfinder =
             getPathFinder(cache, currencyMap, PathAsset(asset), dstAmount, level, continueCallback);
         if (!pathfinder)
         {
-            JLOG(journal_.debug()) << iIdentifier << " No paths found";
+            JLOG(journal_.debug()) << iIdentifier_ << " No paths found";
             continue;
         }
 
         STPath fullLiquidityPath;
         auto ps = pathfinder->getBestPaths(
-            max_paths_, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
+            kMAX_PATHS, fullLiquidityPath, context_[asset], asset.getIssuer(), continueCallback);
         context_[asset] = ps;
 
         auto const& sourceAccount = [&] {
@@ -604,12 +606,12 @@ PathRequest::findPaths(
             if (isXRP(asset))
                 return xrpAccount();
 
-            return *raSrcAccount;
+            return *raSrcAccount_;
         }();
 
         STAmount const saMaxAmount = [&]() {
-            if (saSendMax)
-                return *saSendMax;
+            if (saSendMax_)
+                return *saSendMax_;
             return asset.visit(
                 [&](Issue const& issue) {
                     return STAmount(Issue{issue.currency, sourceAccount}, 1u, 0, true);
@@ -617,73 +619,73 @@ PathRequest::findPaths(
                 [](MPTIssue const& issue) { return STAmount(issue, 1u, 0, true); });
         }();
 
-        JLOG(journal_.debug()) << iIdentifier << " Paths found, calling rippleCalc";
+        JLOG(journal_.debug()) << iIdentifier_ << " Paths found, calling rippleCalc";
 
         path::RippleCalc::Input rcInput;
         if (convert_all_)
             rcInput.partialPaymentAllowed = true;
-        auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), tapNONE);
+        auto sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
         auto rc = path::RippleCalc::rippleCalculate(
             *sandbox,
             saMaxAmount,  // --> Amount to send is unlimited
                           //     to get an estimate.
             dstAmount,    // --> Amount to deliver.
             // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-            *raDstAccount,  // --> Account to deliver to.
-            *raSrcAccount,  // --> Account sending from.
+            *raDstAccount_,  // --> Account to deliver to.
+            *raSrcAccount_,  // --> Account sending from.
             // NOLINTEND(bugprone-unchecked-optional-access)
-            ps,      // --> Path set.
-            domain,  // --> Domain.
+            ps,       // --> Path set.
+            domain_,  // --> Domain.
             app_,
             &rcInput);
 
         if (!convert_all_ && !fullLiquidityPath.empty() &&
             (rc.result() == terNO_LINE || rc.result() == tecPATH_PARTIAL))
         {
-            JLOG(journal_.debug()) << iIdentifier << " Trying with an extra path element";
+            JLOG(journal_.debug()) << iIdentifier_ << " Trying with an extra path element";
 
-            ps.push_back(fullLiquidityPath);
-            sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), tapNONE);
+            ps.pushBack(fullLiquidityPath);
+            sandbox = std::make_unique<PaymentSandbox>(&*cache->getLedger(), TapNone);
             rc = path::RippleCalc::rippleCalculate(
                 *sandbox,
                 saMaxAmount,  // --> Amount to send is unlimited
                               //     to get an estimate.
                 dstAmount,    // --> Amount to deliver.
                 // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-                *raDstAccount,  // --> Account to deliver to.
-                *raSrcAccount,  // --> Account sending from.
+                *raDstAccount_,  // --> Account to deliver to.
+                *raSrcAccount_,  // --> Account sending from.
                 // NOLINTEND(bugprone-unchecked-optional-access)
-                ps,      // --> Path set.
-                domain,  // --> Domain.
+                ps,       // --> Path set.
+                domain_,  // --> Domain.
                 app_);
 
             if (!isTesSuccess(rc.result()))
             {
                 JLOG(journal_.warn())
-                    << iIdentifier << " Failed with covering path " << transHuman(rc.result());
+                    << iIdentifier_ << " Failed with covering path " << transHuman(rc.result());
             }
             else
             {
                 JLOG(journal_.debug())
-                    << iIdentifier << " Extra path element gives " << transHuman(rc.result());
+                    << iIdentifier_ << " Extra path element gives " << transHuman(rc.result());
             }
         }
 
         if (rc.result() == tesSUCCESS)
         {
-            Json::Value jvEntry(Json::objectValue);
+            Json::Value jvEntry(Json::ObjectValue);
             if (rc.actualAmountIn.holds<Issue>())
                 rc.actualAmountIn.get<Issue>().account = sourceAccount;
-            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::kNONE);
-            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::kNONE);
+            jvEntry[jss::source_amount] = rc.actualAmountIn.getJson(JsonOptions::KNone);
+            jvEntry[jss::paths_computed] = ps.getJson(JsonOptions::KNone);
 
             if (convert_all_)
-                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(JsonOptions::kNONE);
+                jvEntry[jss::destination_amount] = rc.actualAmountOut.getJson(JsonOptions::KNone);
 
             if (hasCompletion())
             {
                 // Old ripple_path_find API requires this
-                jvEntry[jss::paths_canonical] = Json::arrayValue;
+                jvEntry[jss::paths_canonical] = Json::ArrayValue;
             }
 
             jvArray.append(jvEntry);
@@ -691,7 +693,7 @@ PathRequest::findPaths(
         else
         {
             JLOG(journal_.debug())
-                << iIdentifier << " rippleCalc returns " << transHuman(rc.result());
+                << iIdentifier_ << " rippleCalc returns " << transHuman(rc.result());
         }
     }
 
@@ -711,86 +713,86 @@ PathRequest::doUpdate(
     std::function<bool(void)> const& continueCallback)
 {
     using namespace std::chrono;
-    JLOG(journal_.debug()) << iIdentifier << " update " << (fast ? "fast" : "normal");
+    JLOG(journal_.debug()) << iIdentifier_ << " update " << (fast ? "fast" : "normal");
 
     {
         std::lock_guard const sl(lock_);
 
         if (!isValid(cache))
-            return jvStatus;
+            return jvStatus_;
     }
 
-    Json::Value newStatus = Json::objectValue;
+    Json::Value newStatus = Json::ObjectValue;
 
     if (hasCompletion())
     {
         // Old ripple_path_find API gives destination_currencies
-        auto& destAssets = (newStatus[jss::destination_currencies] = Json::arrayValue);
+        auto& destAssets = (newStatus[jss::destination_currencies] = Json::ArrayValue);
         // NOLINTNEXTLINE(bugprone-unchecked-optional-access) isValid() ensures both are set
-        auto const assets = accountDestAssets(*raDstAccount, cache, true);
+        auto const assets = accountDestAssets(*raDstAccount_, cache, true);
         for (auto const& asset : assets)
             destAssets.append(to_string(asset));
     }
 
     // NOLINTBEGIN(bugprone-unchecked-optional-access) isValid() ensures both are set
-    newStatus[jss::source_account] = toBase58(*raSrcAccount);
-    newStatus[jss::destination_account] = toBase58(*raDstAccount);
+    newStatus[jss::source_account] = toBase58(*raSrcAccount_);
+    newStatus[jss::destination_account] = toBase58(*raDstAccount_);
     // NOLINTEND(bugprone-unchecked-optional-access)
-    newStatus[jss::destination_amount] = saDstAmount.getJson(JsonOptions::kNONE);
+    newStatus[jss::destination_amount] = saDstAmount_.getJson(JsonOptions::KNone);
     newStatus[jss::full_reply] = !fast;
 
-    if (jvId)
-        newStatus[jss::id] = jvId;
+    if (jvId_)
+        newStatus[jss::id] = jvId_;
 
     bool const loaded = app_.getFeeTrack().isLoadedLocal();
 
-    if (iLevel == 0)
+    if (iLevel_ == 0)
     {
         // first pass
         if (loaded || fast)
         {
-            iLevel = app_.config().PATH_SEARCH_FAST;
+            iLevel_ = app_.config().PATH_SEARCH_FAST;
         }
         else
         {
-            iLevel = app_.config().PATH_SEARCH;
+            iLevel_ = app_.config().PATH_SEARCH;
         }
     }
-    else if ((iLevel == app_.config().PATH_SEARCH_FAST) && !fast)
+    else if ((iLevel_ == app_.config().PATH_SEARCH_FAST) && !fast)
     {
         // leaving fast pathfinding
-        iLevel = app_.config().PATH_SEARCH;
-        if (loaded && (iLevel > app_.config().PATH_SEARCH_FAST))
-            --iLevel;
+        iLevel_ = app_.config().PATH_SEARCH;
+        if (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST))
+            --iLevel_;
     }
-    else if (bLastSuccess)
+    else if (bLastSuccess_)
     {
         // decrement, if possible
-        if (iLevel > app_.config().PATH_SEARCH ||
-            (loaded && (iLevel > app_.config().PATH_SEARCH_FAST)))
-            --iLevel;
+        if (iLevel_ > app_.config().PATH_SEARCH ||
+            (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST)))
+            --iLevel_;
     }
     else
     {
         // adjust as needed
-        if (!loaded && (iLevel < app_.config().PATH_SEARCH_MAX))
-            ++iLevel;
-        if (loaded && (iLevel > app_.config().PATH_SEARCH_FAST))
-            --iLevel;
+        if (!loaded && (iLevel_ < app_.config().PATH_SEARCH_MAX))
+            ++iLevel_;
+        if (loaded && (iLevel_ > app_.config().PATH_SEARCH_FAST))
+            --iLevel_;
     }
 
-    JLOG(journal_.debug()) << iIdentifier << " processing at level " << iLevel;
+    JLOG(journal_.debug()) << iIdentifier_ << " processing at level " << iLevel_;
 
-    Json::Value jvArray = Json::arrayValue;
-    if (findPaths(cache, iLevel, jvArray, continueCallback))
+    Json::Value jvArray = Json::ArrayValue;
+    if (findPaths(cache, iLevel_, jvArray, continueCallback))
     {
-        bLastSuccess = jvArray.size() != 0;
+        bLastSuccess_ = jvArray.size() != 0;
         newStatus[jss::alternatives] = std::move(jvArray);
     }
     else
     {
-        bLastSuccess = false;
-        newStatus = rpcError(rpcINTERNAL);
+        bLastSuccess_ = false;
+        newStatus = rpcError(RpcInternal);
     }
 
     if (fast && quick_reply_ == steady_clock::time_point{})
@@ -806,17 +808,17 @@ PathRequest::doUpdate(
 
     {
         std::lock_guard const sl(lock_);
-        jvStatus = newStatus;
+        jvStatus_ = newStatus;
     }
 
-    JLOG(journal_.debug()) << iIdentifier << " update finished " << (fast ? "fast" : "normal");
+    JLOG(journal_.debug()) << iIdentifier_ << " update finished " << (fast ? "fast" : "normal");
     return newStatus;
 }
 
 InfoSub::pointer
 PathRequest::getSubscriber() const
 {
-    return wpSubscriber.lock();
+    return wpSubscriber_.lock();
 }
 
 }  // namespace xrpl

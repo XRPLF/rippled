@@ -100,11 +100,11 @@ testableAmendments()
 
 class SuiteLogs : public Logs
 {
-    beast::unit_test::suite& suite_;
+    beast::unit_test::Suite& suite_;
 
 public:
-    explicit SuiteLogs(beast::unit_test::suite& suite)
-        : Logs(beast::severities::kError), suite_(suite)
+    explicit SuiteLogs(beast::unit_test::Suite& suite)
+        : Logs(beast::severities::KError), suite_(suite)
     {
     }
 
@@ -123,7 +123,7 @@ public:
 class Env
 {
 public:
-    beast::unit_test::suite& test;
+    beast::unit_test::Suite& test;
 
     Account const& master = Account::kMASTER;
 
@@ -135,7 +135,7 @@ public:
         // with an "error" that corresponds to the "code"), or with an "error"
         // and an "exception". However, this structure allows all possible
         // combinations.
-        std::optional<error_code_i> rpcCode;
+        std::optional<ErrorCodeI> rpcCode;
         std::string rpcMessage;
         std::string rpcError;
         std::string rpcException;
@@ -152,7 +152,7 @@ private:
 
         AppBundle() = default;
         AppBundle(
-            beast::unit_test::suite& suite,
+            beast::unit_test::Suite& suite,
             std::unique_ptr<Config> config,
             std::unique_ptr<Logs> logs,
             beast::severities::Severity thresh);
@@ -184,11 +184,11 @@ public:
      * supported_features_except() to enable all and disable specific features.
      */
     // VFALCO Could wrap the suite::log in a Journal here
-    Env(beast::unit_test::suite& suite,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::kError)
+        beast::severities::Severity thresh = beast::severities::KError)
         : test(suite)
         , bundle_(suite, std::move(config), std::move(logs), thresh)
         , journal{bundle_.app->getJournal("Env")}
@@ -213,7 +213,7 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite,
+    Env(beast::unit_test::Suite& suite,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr)
         : Env(suite, envconfig(), features, std::move(logs))
@@ -232,10 +232,10 @@ public:
      * the pointer. See envconfig and related functions for common config
      * tweaks.
      */
-    Env(beast::unit_test::suite& suite,
+    Env(beast::unit_test::Suite& suite,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::kError)
+        beast::severities::Severity thresh = beast::severities::KError)
         : Env(suite, std::move(config), testableAmendments(), std::move(logs), thresh)
     {
     }
@@ -249,8 +249,8 @@ public:
      *
      * @param suite the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite,
-        beast::severities::Severity thresh = beast::severities::kError)
+    Env(beast::unit_test::Suite& suite,
+        beast::severities::Severity thresh = beast::severities::KError)
         : Env(suite, envconfig(), nullptr, thresh)
     {
     }
@@ -502,21 +502,21 @@ public:
         Returns 0 if the account does not exist.
     */
     [[nodiscard]] PrettyAmount
-    Balance(Account const& account) const;
+    balance(Account const& account) const;
 
     /** Returns the next sequence number on account.
         Exceptions:
             Throws if the account does not exist
     */
     [[nodiscard]] std::uint32_t
-    Seq(Account const& account) const;
+    seq(Account const& account) const;
 
     /** Return the balance on an account.
         Returns 0 if the trust line does not exist.
     */
     // VFALCO NOTE This should return a unit-less amount
     [[nodiscard]] PrettyAmount
-    Balance(Account const& account, Asset const& asset) const;
+    balance(Account const& account, Asset const& asset) const;
 
     /** Returns the IOU limit on an account.
         Returns 0 if the trust line does not exist.
@@ -584,7 +584,7 @@ public:
     */
     template <class... Args>
     void
-    Require(Args const&... args)
+    require(Args const&... args)
     {
         jtx::required(args...)(*this);
     }
@@ -604,9 +604,9 @@ public:
         This calls postconditions.
     */
     void
-    sign_and_submit(
+    signAndSubmit(
         JTx const& jt,
-        Json::Value params = Json::nullValue,
+        Json::Value params = Json::NullValue,
         std::source_location const& loc = std::source_location::current());
 
     /** Check expected postconditions
@@ -654,7 +654,7 @@ public:
 
     /** Return the TER for the last JTx. */
     [[nodiscard]] TER
-    Ter() const
+    ter() const
     {
         return ter_;
     }
@@ -871,7 +871,7 @@ Env::rpc(
     Args&&... args)
 {
     return doRpc(
-        RPC::apiCommandLineVersion,
+        RPC::kAPI_COMMAND_LINE_VERSION,
         std::vector<std::string>{cmd, std::forward<Args>(args)...},
         headers);
 }

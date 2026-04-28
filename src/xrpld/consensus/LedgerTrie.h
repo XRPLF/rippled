@@ -232,7 +232,7 @@ struct Node
         res["branchSupport"] = branchSupport;
         if (!children.empty())
         {
-            Json::Value& cs = (res["children"] = Json::arrayValue);
+            Json::Value& cs = (res["children"] = Json::ArrayValue);
             for (auto const& child : children)
             {
                 cs.append(child->getJson());
@@ -779,7 +779,7 @@ public:
     {
         Json::Value res;
         res["trie"] = root_->getJson();
-        res["seq_support"] = Json::objectValue;
+        res["seq_support"] = Json::ObjectValue;
         for (auto const& [seq, sup] : seqSupport_)
             res["seq_support"][to_string(seq)] = sup;
         return res;

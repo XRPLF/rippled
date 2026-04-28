@@ -171,7 +171,7 @@ TOfferStreamBase<TIn, TOut>::shouldRmSmallIncreasedQOffer() const
             //
             // It turns out we can prevent order book blocking by rounding down
             // the ceil_out() result.
-            return offer_.quality().ceil_out_strict(ofrAmts, ownerFunds, /* roundUp */ false);
+            return offer_.quality().ceilOutStrict(ofrAmts, ownerFunds, /* roundUp */ false);
         }
         return ofrAmts;
     }();
@@ -266,12 +266,12 @@ TOfferStreamBase<TIn, TOut>::step()
             offer_.owner(),
             amount.out,
             offer_.assetOut(),
-            fhZERO_IF_FROZEN,
-            ahZERO_IF_UNAUTHORIZED,
+            FhZeroIfFrozen,
+            AhZeroIfUnauthorized,
             j_);
 
         // Check for unfunded offer
-        if (*ownerFunds_ <= beast::zero)
+        if (*ownerFunds_ <= beast::kZERO)
         {
             // If the owner's balance in the pristine view is the same,
             // we haven't modified the balance and therefore the
@@ -281,8 +281,8 @@ TOfferStreamBase<TIn, TOut>::step()
                 offer_.owner(),
                 amount.out,
                 offer_.assetOut(),
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FhZeroIfFrozen,
+                AhZeroIfUnauthorized,
                 j_);
 
             if (originalFunds == *ownerFunds_)
@@ -306,8 +306,8 @@ TOfferStreamBase<TIn, TOut>::step()
                 offer_.owner(),
                 amount.out,
                 offer_.assetOut(),
-                fhZERO_IF_FROZEN,
-                ahZERO_IF_UNAUTHORIZED,
+                FhZeroIfFrozen,
+                AhZeroIfUnauthorized,
                 j_);
 
             if (originalFunds == *ownerFunds_)

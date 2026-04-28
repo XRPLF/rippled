@@ -95,7 +95,7 @@ template <class... Args>
 static uint256
 indexHash(LedgerNameSpace space, Args const&... args)
 {
-    return sha512Half(safe_cast<std::uint16_t>(space), args...);
+    return sha512Half(safeCast<std::uint16_t>(space), args...);
 }
 
 uint256
@@ -232,7 +232,7 @@ negativeUNL() noexcept
 }
 
 Keylet
-book_t::operator()(Book const& b) const
+BookT::operator()(Book const& b) const
 {
     return {ltDIR_NODE, getBookBase(b)};
 }
@@ -285,20 +285,20 @@ quality(Keylet const& k, std::uint64_t q) noexcept
 }
 
 Keylet
-next_t::operator()(Keylet const& k) const
+NextT::operator()(Keylet const& k) const
 {
     XRPL_ASSERT(k.type == ltDIR_NODE, "xrpl::keylet::next_t::operator() : valid input type");
     return {ltDIR_NODE, getQualityNext(k.key)};
 }
 
 Keylet
-ticket_t::operator()(AccountID const& id, std::uint32_t ticketSeq) const
+TicketT::operator()(AccountID const& id, std::uint32_t ticketSeq) const
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
 
 Keylet
-ticket_t::operator()(AccountID const& id, SeqProxy ticketSeq) const
+TicketT::operator()(AccountID const& id, SeqProxy ticketSeq) const
 {
     return {ltTICKET, getTicketIndex(id, ticketSeq)};
 }
@@ -381,7 +381,7 @@ payChan(AccountID const& src, AccountID const& dst, std::uint32_t seq) noexcept
 }
 
 Keylet
-nftpage_min(AccountID const& owner)
+nftpageMin(AccountID const& owner)
 {
     std::array<std::uint8_t, 32> buf{};
     std::memcpy(buf.data(), owner.data(), owner.size());
@@ -389,9 +389,9 @@ nftpage_min(AccountID const& owner)
 }
 
 Keylet
-nftpage_max(AccountID const& owner)
+nftpageMax(AccountID const& owner)
 {
-    uint256 id = nft::pageMask;
+    uint256 id = nft::kPAGE_MASK;
     std::memcpy(id.data(), owner.data(), owner.size());
     return {ltNFTOKEN_PAGE, id};
 }
@@ -400,7 +400,7 @@ Keylet
 nftpage(Keylet const& k, uint256 const& token)
 {
     XRPL_ASSERT(k.type == ltNFTOKEN_PAGE, "xrpl::keylet::nftpage : valid input type");
-    return {ltNFTOKEN_PAGE, (k.key & ~nft::pageMask) + (token & nft::pageMask)};
+    return {ltNFTOKEN_PAGE, (k.key & ~nft::kPAGE_MASK) + (token & nft::kPAGE_MASK)};
 }
 
 Keylet
@@ -410,13 +410,13 @@ nftoffer(AccountID const& owner, std::uint32_t seq)
 }
 
 Keylet
-nft_buys(uint256 const& id) noexcept
+nftBuys(uint256 const& id) noexcept
 {
     return {ltDIR_NODE, indexHash(LedgerNameSpace::NftokenBuyOffers, id)};
 }
 
 Keylet
-nft_sells(uint256 const& id) noexcept
+nftSells(uint256 const& id) noexcept
 {
     return {ltDIR_NODE, indexHash(LedgerNameSpace::NftokenSellOffers, id)};
 }

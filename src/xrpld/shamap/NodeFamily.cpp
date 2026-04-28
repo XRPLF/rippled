@@ -35,8 +35,8 @@ NodeFamily::NodeFamily(Application& app, CollectorManager& cm)
     , tnCache_(
           std::make_shared<TreeNodeCache>(
               "Node family tree node cache",
-              app.config().getValueFor(SizedItem::treeCacheSize),
-              std::chrono::seconds(app.config().getValueFor(SizedItem::treeCacheAge)),
+              app.config().getValueFor(SizedItem::TreeCacheSize),
+              std::chrono::seconds(app.config().getValueFor(SizedItem::TreeCacheAge)),
               stopwatch(),
               j_))
 {

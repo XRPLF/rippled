@@ -41,7 +41,7 @@
 
 namespace xrpl {
 
-class AmendmentTable_test final : public beast::unit_test::suite
+class AmendmentTable_test final : public beast::unit_test::Suite
 {
 private:
     static uint256
@@ -191,7 +191,7 @@ public:
         Section const& enabled,
         Section const& vetoed)
     {
-        return make_AmendmentTable(app, majorityTime, supported, enabled, vetoed, journal_);
+        return makeAmendmentTable(app, majorityTime, supported, enabled, vetoed, journal_);
     }
 
     std::unique_ptr<AmendmentTable>
@@ -471,7 +471,7 @@ public:
         trustedValidators.reserve(num);
         for (int i = 0; i < num; ++i)
         {
-            auto const& back = ret.emplace_back(randomKeyPair(KeyType::secp256k1));
+            auto const& back = ret.emplace_back(randomKeyPair(KeyType::Secp256k1));
             trustedValidators.insert(back.first);
         }
         table->trustChanged(trustedValidators);
@@ -968,7 +968,7 @@ public:
         }
 
         // Add one new validator to the UNL.
-        validators.emplace_back(randomKeyPair(KeyType::secp256k1));
+        validators.emplace_back(randomKeyPair(KeyType::Secp256k1));
 
         // A lambda that updates the AmendmentTable with the latest
         // trusted validators.

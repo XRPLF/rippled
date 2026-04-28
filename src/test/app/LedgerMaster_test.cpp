@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-class LedgerMaster_test : public beast::unit_test::suite
+class LedgerMaster_test : public beast::unit_test::Suite
 {
     static std::unique_ptr<Config>
     makeNetworkConfig(uint32_t networkID)
@@ -45,7 +45,7 @@ class LedgerMaster_test : public beast::unit_test::suite
         test::jtx::Env env{*this, makeNetworkConfig(11111)};
 
         auto const alice = Account("alice");
-        env.fund(XRP(1000), alice);
+        env.fund(kXRP(1000), alice);
         env.close();
 
         // build ledgers

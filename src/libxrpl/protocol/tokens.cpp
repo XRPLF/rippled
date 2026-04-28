@@ -308,7 +308,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
 
     // Lay the data out as
     //      <type><token><checksum>
-    buf[0] = safe_cast<std::underlying_type_t<TokenType>>(type);
+    buf[0] = safeCast<std::underlying_type_t<TokenType>>(type);
     if (size != 0u)
         std::memcpy(buf.data() + 1, token, size);
     checksum(buf.data() + 1 + size, buf.data(), 1 + size);
@@ -326,7 +326,7 @@ decodeBase58Token(std::string const& s, TokenType type)
         return {};
 
     // The type must match.
-    if (type != safe_cast<TokenType>(static_cast<std::uint8_t>(ret[0])))
+    if (type != safeCast<TokenType>(static_cast<std::uint8_t>(ret[0])))
         return {};
 
     // And the checksum must as well.
@@ -347,13 +347,13 @@ namespace b58_fast {
 namespace detail {
 // Note: both the input and output will be BIG ENDIAN
 B58Result<std::span<std::uint8_t>>
-b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
+b256ToB58Be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 {
     // Max valid input is 38 bytes:
     // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
     if (input.size() > 38)
     {
-        return Unexpected(TokenCodecErrc::inputTooLarge);
+        return Unexpected(TokenCodecErrc::InputTooLarge);
     };
 
     auto countLeadingZeros = [](std::span<std::uint8_t const> const& col) -> std::size_t {
@@ -414,8 +414,8 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
     // compute the base 58^10 coeffs
     while (cur264End > 0)
     {
-        base5810Coeff[num5810Coeffs] = xrpl::b58_fast::detail::inplace_bigint_div_rem(
-            base264Coeff.subspan(0, cur264End), kB5810);
+        base5810Coeff[num5810Coeffs] =
+            xrpl::b58_fast::detail::inplaceBigintDivRem(base264Coeff.subspan(0, cur264End), kB5810);
         num5810Coeffs += 1;
         if (base264Coeff[cur264End - 1] == 0)
         {
@@ -441,10 +441,10 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
         static constexpr std::uint64_t kB5810 = 430804206899405824;  // 58^10;
         if (base5810Coeff[i] >= kB5810)
         {
-            return Unexpected(TokenCodecErrc::inputTooLarge);
+            return Unexpected(TokenCodecErrc::InputTooLarge);
         }
         std::array<std::uint8_t, 10> const b58Be =
-            xrpl::b58_fast::detail::b58_10_to_b58_be(base5810Coeff[i]);
+            xrpl::b58_fast::detail::b5810ToB58Be(base5810Coeff[i]);
         std::size_t toSkip = 0;
         std::span<std::uint8_t const> const b58BeS{b58Be.data(), b58Be.size()};
         if (skipZeros)
@@ -453,7 +453,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
             skipZeros = false;
             if (out.size() < ((i + 1) * 10) - toSkip)
             {
-                return Unexpected(TokenCodecErrc::outputTooSmall);
+                return Unexpected(TokenCodecErrc::OutputTooSmall);
             }
         }
         for (auto b58Coeff : b58BeS.subspan(toSkip))
@@ -468,7 +468,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 
 // Note the input is BIG ENDIAN (some fn in this module use little endian)
 B58Result<std::span<std::uint8_t>>
-b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
+b58ToB256Be(std::string_view input, std::span<std::uint8_t> out)
 {
     // Convert from b58 to b 58^10
 
@@ -476,11 +476,11 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     // log(2^(38*8),58) ~= 51.9
     if (input.size() > 52)
     {
-        return Unexpected(TokenCodecErrc::inputTooLarge);
+        return Unexpected(TokenCodecErrc::InputTooLarge);
     };
     if (out.size() < 8)
     {
-        return Unexpected(TokenCodecErrc::outputTooSmall);
+        return Unexpected(TokenCodecErrc::OutputTooSmall);
     }
 
     auto countLeadingZeros = [&](auto const& col) -> std::size_t {
@@ -502,7 +502,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     // (33 bytes for nodepublic + 1 byte token + 4 bytes checksum)
     // log(2^(38*8),58^10)) ~= 5.18. So 6 coeff are enough
     std::array<std::uint64_t, 6> b5810Coeff{};
-    auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::div_rem(input.size(), 10);
+    auto [num_full_coeffs, partial_coeff_len] = xrpl::b58_fast::detail::divRem(input.size(), 10);
     auto const numPartialCoeffs = (partial_coeff_len != 0u) ? 1 : 0;
     auto const numB5810Coeffs = num_full_coeffs + numPartialCoeffs;
     XRPL_ASSERT(
@@ -513,7 +513,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         auto curVal = ::xrpl::kALPHABET_REVERSE[c];
         if (curVal < 0)
         {
-            return Unexpected(TokenCodecErrc::invalidEncodingChar);
+            return Unexpected(TokenCodecErrc::InvalidEncodingChar);
         }
         b5810Coeff[0] *= 58;
         b5810Coeff[0] += curVal;
@@ -526,7 +526,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
             auto curVal = ::xrpl::kALPHABET_REVERSE[c];
             if (curVal < 0)
             {
-                return Unexpected(TokenCodecErrc::invalidEncodingChar);
+                return Unexpected(TokenCodecErrc::InvalidEncodingChar);
             }
             b5810Coeff[numPartialCoeffs + j] *= 58;
             b5810Coeff[numPartialCoeffs + j] += curVal;
@@ -544,17 +544,17 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
         std::uint64_t const c = b5810Coeff[i];
 
         {
-            auto code = xrpl::b58_fast::detail::inplace_bigint_mul(
+            auto code = xrpl::b58_fast::detail::inplaceBigintMul(
                 std::span(&result[0], curResultSize + 1), kB5810);
-            if (code != TokenCodecErrc::success)
+            if (code != TokenCodecErrc::Success)
             {
                 return Unexpected(code);
             }
         }
         {
-            auto code = xrpl::b58_fast::detail::inplace_bigint_add(
+            auto code = xrpl::b58_fast::detail::inplaceBigintAdd(
                 std::span(&result[0], curResultSize + 1), c);
-            if (code != TokenCodecErrc::success)
+            if (code != TokenCodecErrc::Success)
             {
                 return Unexpected(code);
             }
@@ -589,7 +589,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
     }
     if ((curOutI + (8 * (curResultSize - 1))) > out.size())
     {
-        return Unexpected(TokenCodecErrc::outputTooSmall);
+        return Unexpected(TokenCodecErrc::OutputTooSmall);
     }
 
     for (int i = curResultSize - 2; i >= 0; --i)
@@ -614,11 +614,11 @@ encodeBase58Token(
     std::array<std::uint8_t, kTMP_BUF_SIZE> buf{};
     if (input.size() > kTMP_BUF_SIZE - 5)
     {
-        return Unexpected(TokenCodecErrc::inputTooLarge);
+        return Unexpected(TokenCodecErrc::InputTooLarge);
     }
     if (input.empty())
     {
-        return Unexpected(TokenCodecErrc::inputTooSmall);
+        return Unexpected(TokenCodecErrc::InputTooSmall);
     }
     // <type (1 byte)><token (input len)><checksum (4 bytes)>
     buf[0] = static_cast<std::uint8_t>(tokenType);
@@ -628,7 +628,7 @@ encodeBase58Token(
     // buf[checksum_i..checksum_i + 4] = checksum
     checksum(buf.data() + checksumI, buf.data(), checksumI);
     std::span<std::uint8_t const> const b58Span(buf.data(), input.size() + 5);
-    return detail::b256_to_b58_be(b58Span, out);
+    return detail::b256ToB58Be(b58Span, out);
 }
 // Convert from base 58 to base 256, largest coefficients first
 // The input is encoded in XRPL format, with the token in the first
@@ -639,7 +639,7 @@ B58Result<std::span<std::uint8_t>>
 decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> outBuf)
 {
     std::array<std::uint8_t, 64> tmpBuf{};
-    auto const decodeResult = detail::b58_to_b256_be(s, std::span(tmpBuf.data(), tmpBuf.size()));
+    auto const decodeResult = detail::b58ToB256Be(s, std::span(tmpBuf.data(), tmpBuf.size()));
 
     if (!decodeResult)
         return decodeResult;
@@ -648,23 +648,23 @@ decodeBase58Token(TokenType type, std::string_view s, std::span<std::uint8_t> ou
 
     // Reject zero length tokens
     if (ret.size() < 6)
-        return Unexpected(TokenCodecErrc::inputTooSmall);
+        return Unexpected(TokenCodecErrc::InputTooSmall);
 
     // The type must match.
     if (type != static_cast<TokenType>(static_cast<std::uint8_t>(ret[0])))
-        return Unexpected(TokenCodecErrc::mismatchedTokenType);
+        return Unexpected(TokenCodecErrc::MismatchedTokenType);
 
     // And the checksum must as well.
     std::array<std::uint8_t, 4> guard{};
     checksum(guard.data(), ret.data(), ret.size() - guard.size());
     if (!std::equal(guard.rbegin(), guard.rend(), ret.rbegin()))
     {
-        return Unexpected(TokenCodecErrc::mismatchedChecksum);
+        return Unexpected(TokenCodecErrc::MismatchedChecksum);
     }
 
     std::size_t const outSize = ret.size() - 1 - guard.size();
     if (outBuf.size() < outSize)
-        return Unexpected(TokenCodecErrc::outputTooSmall);
+        return Unexpected(TokenCodecErrc::OutputTooSmall);
     // Skip the leading type byte and the trailing checksum.
     std::copy(ret.begin() + 1, ret.begin() + outSize + 1, outBuf.begin());
     return outBuf.subspan(0, outSize);

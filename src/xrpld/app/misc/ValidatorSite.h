@@ -65,9 +65,9 @@ private:
 
         struct Resource
         {
-            explicit Resource(std::string uri_);
+            explicit Resource(std::string uri);
             std::string const uri;
-            parsedURL pUrl;
+            ParsedUrl pUrl;
         };
 
         explicit Site(std::string uri);

@@ -15,7 +15,7 @@ struct JsonMissingKeyError : std::exception
 {
     char const* const key;
     mutable std::string msg;
-    JsonMissingKeyError(Json::StaticString const& k) : key{k.c_str()}
+    JsonMissingKeyError(Json::StaticString const& k) : key{k.cStr()}
     {
     }
     char const*
@@ -35,7 +35,7 @@ struct JsonTypeMismatchError : std::exception
     std::string const expectedType;
     mutable std::string msg;
     JsonTypeMismatchError(Json::StaticString const& k, std::string et)
-        : key{k.c_str()}, expectedType{std::move(et)}
+        : key{k.cStr()}, expectedType{std::move(et)}
     {
     }
     char const*

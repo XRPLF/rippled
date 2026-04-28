@@ -163,7 +163,7 @@ public:
     [[nodiscard]] OV
     value() const override
     {
-        return value_.getJson(JsonOptions::kNONE);
+        return value_.getJson(JsonOptions::KNone);
     }
 };
 
@@ -389,20 +389,13 @@ template <class... Args>
 void
 stpathsetAppend(STPathSet& st, STPath const& p, Args const&... args)
 {
-    st.push_back(p);
+    st.pushBack(p);
     if constexpr (sizeof...(args) > 0)
         stpathsetAppend(st, args...);
 }
 
 bool
 equal(STAmount const& sa1, STAmount const& sa2);
-
-// Issue path element
-STPathElement
-IPE(Issue const& iss);
-
-STPathElement
-IPE(MPTIssue const& iss);
 
 template <class... Args>
 STPath
@@ -439,9 +432,9 @@ rpf(jtx::Account const& src,
     std::optional<AccountID> const& srcIssuer = std::nullopt);
 
 jtx::Env
-pathTestEnv(beast::unit_test::suite& suite);
+pathTestEnv(beast::unit_test::Suite& suite);
 
-class gate
+class Gate
 {
 private:
     std::condition_variable cv_;
@@ -453,10 +446,10 @@ public:
     // Returns `true` if signaled.
     template <class Rep, class Period>
     bool
-    wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+    waitFor(std::chrono::duration<Rep, Period> const& relTime)
     {
         std::unique_lock<std::mutex> lk(mutex_);
-        auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+        auto b = cv_.wait_for(lk, relTime, [this] { return signaled_; });
         signaled_ = false;
         return b;
     }
@@ -545,13 +538,13 @@ Json::Value
 ledgerEntryState(Env& env, Account const& acctA, Account const& acctB, std::string const& currency);
 
 Json::Value
-ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offer_seq);
+ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offerSeq);
 
 Json::Value
 ledgerEntryMPT(jtx::Env& env, jtx::Account const& acct, MPTID const& mptID);
 
 Json::Value
-getBookOffers(jtx::Env& env, Asset const& taker_pays, Asset const& taker_gets);
+getBookOffers(jtx::Env& env, Asset const& takerPays, Asset const& takerGets);
 
 Json::Value
 accountBalance(Env& env, Account const& acct);
@@ -721,7 +714,7 @@ create(A const& account, A const& dest, STAmount const& sendMax)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = to_string(account);
-    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::kNONE);
+    jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::KNone);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
     return jv;
@@ -936,13 +929,13 @@ pay(AccountID const& account,
 }  // namespace loan
 
 /** Set Expiration on a JTx. */
-class expiration
+class Expiration
 {
 private:
     std::uint32_t const expiry_;
 
 public:
-    explicit expiration(NetClock::time_point const& expiry)
+    explicit Expiration(NetClock::time_point const& expiry)
         : expiry_{expiry.time_since_epoch().count()}
     {
     }
@@ -955,13 +948,13 @@ public:
 };
 
 /** Set SourceTag on a JTx. */
-class source_tag
+class SourceTag
 {
 private:
     std::uint32_t const tag_;
 
 public:
-    explicit source_tag(std::uint32_t tag) : tag_{tag}
+    explicit SourceTag(std::uint32_t tag) : tag_{tag}
     {
     }
 
@@ -973,13 +966,13 @@ public:
 };
 
 /** Set DestinationTag on a JTx. */
-class dest_tag
+class DestTag
 {
 private:
     std::uint32_t const tag_;
 
 public:
-    explicit dest_tag(std::uint32_t tag) : tag_{tag}
+    explicit DestTag(std::uint32_t tag) : tag_{tag}
     {
     }
 

@@ -29,7 +29,7 @@ namespace xrpl {
 class TrafficCount
 {
 public:
-    enum category : std::size_t;
+    enum Category : std::size_t;
 
     class TrafficStats
     {
@@ -41,7 +41,7 @@ public:
         std::atomic<std::uint64_t> messagesIn{0};
         std::atomic<std::uint64_t> messagesOut{0};
 
-        TrafficStats(TrafficCount::category cat) : name(TrafficCount::toString(cat))
+        TrafficStats(TrafficCount::Category cat) : name(TrafficCount::to_string(cat))
         {
         }
 
@@ -63,7 +63,7 @@ public:
     // If you add entries to this enum, you need to update the initialization
     // of the arrays at the bottom of this file which map array numbers to
     // human-readable, monitoring-tool friendly names.
-    enum category : std::size_t {
+    enum Category : std::size_t {
         Base,  // basic peer overhead, must be first
 
         Cluster,    // cluster overhead
@@ -182,7 +182,7 @@ public:
 
     /** Given a protocol message, determine which traffic category it belongs to
      */
-    static category
+    static Category
     categorize(
         ::google::protobuf::Message const& message,
         protocol::MessageType type,
@@ -190,7 +190,7 @@ public:
 
     /** Account for traffic associated with the given category */
     void
-    addCount(category cat, bool inbound, int bytes)
+    addCount(Category cat, bool inbound, int bytes)
     {
         XRPL_ASSERT(
             cat <= category::Unknown, "xrpl::TrafficCount::addCount : valid category input");
@@ -224,9 +224,9 @@ public:
     }
 
     static std::string
-    toString(category cat)
+    to_string(Category cat)
     {
-        static std::unordered_map<category, std::string> const category_map = {
+        static std::unordered_map<Category, std::string> const kCATEGORY_MAP = {
             {Base, "overhead"},
             {Cluster, "overhead_cluster"},
             {Overlay, "overhead_overlay"},
@@ -284,14 +284,14 @@ public:
             {RequestedTransactions, "requested_transactions"},
             {Total, "total"}};
 
-        if (auto it = category_map.find(cat); it != category_map.end())
+        if (auto it = kCATEGORY_MAP.find(cat); it != kCATEGORY_MAP.end())
             return it->second;
 
         return "unknown";
     }
 
 protected:
-    std::unordered_map<category, TrafficStats> counts_{
+    std::unordered_map<Category, TrafficStats> counts_{
         {Base, {Base}},
         {Cluster, {Cluster}},
         {Overlay, {Overlay}},

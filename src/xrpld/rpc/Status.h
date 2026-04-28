@@ -18,11 +18,11 @@ namespace xrpl::RPC {
 struct Status : public std::exception
 {
 public:
-    enum class Type { none, TER, error_code_i };
+    enum class Type { None, TER, ErrorCodeI };
     using Code = int;
     using Strings = std::vector<std::string>;
 
-    static constexpr Code OK = 0;
+    static constexpr Code kOK = 0;
 
     Status() = default;
 
@@ -37,13 +37,12 @@ public:
     {
     }
 
-    Status(error_code_i e, Strings d = {})
-        : type_(Type::error_code_i), code_(e), messages_(std::move(d))
+    Status(ErrorCodeI e, Strings d = {})
+        : type_(Type::ErrorCodeI), code_(e), messages_(std::move(d))
     {
     }
 
-    Status(error_code_i e, std::string const& s)
-        : type_(Type::error_code_i), code_(e), messages_({s})
+    Status(ErrorCodeI e, std::string const& s) : type_(Type::ErrorCodeI), code_(e), messages_({s})
     {
     }
 
@@ -56,7 +55,7 @@ public:
     /** Returns true if the Status is *not* OK. */
     operator bool() const
     {
-        return code_ != OK;
+        return code_ != kOK;
     }
 
     /** Returns true if the Status is OK. */
@@ -77,11 +76,11 @@ public:
 
     /** Returns the Status as an error_code_i.
         This may only be called if type() == Type::error_code_i. */
-    [[nodiscard]] error_code_i
+    [[nodiscard]] ErrorCodeI
     toErrorCode() const
     {
         XRPL_ASSERT(type_ == Type::error_code_i, "xrpl::RPC::Status::toTER : type is error code");
-        return error_code_i(code_);
+        return ErrorCodeI(code_);
     }
 
     /** Apply the Status to a JsonObject
@@ -93,11 +92,11 @@ public:
         {
             if (messages_.empty())
             {
-                inject_error(ec, object);
+                injectError(ec, object);
             }
             else
             {
-                inject_error(ec, message(), object);
+                injectError(ec, message(), object);
             }
         }
     }
@@ -119,7 +118,7 @@ public:
     }
 
     [[nodiscard]] std::string
-    toString() const;
+    to_string() const;
 
     /** Fill a Json::Value with an RPC 2.0 response.
         If the Status is OK, fillJson has no effect.
@@ -128,8 +127,8 @@ public:
     fillJson(Json::Value&);
 
 private:
-    Type type_ = Type::none;
-    Code code_ = OK;
+    Type type_ = Type::None;
+    Code code_ = kOK;
     Strings messages_;
 };
 

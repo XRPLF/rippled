@@ -28,7 +28,7 @@ public:
 
     /** Returns `true` if the slot can become active. */
     [[nodiscard]] bool
-    can_activate(Slot const& s) const
+    canActivate(Slot const& s) const
     {
         // Must be handshaked and in the right state
         XRPL_ASSERT(
@@ -46,7 +46,7 @@ public:
 
     /** Returns the number of attempts needed to bring us to the max. */
     [[nodiscard]] std::size_t
-    attempts_needed() const
+    attemptsNeeded() const
     {
         if (attempts_ >= Tuning::MaxConnectAttempts)
             return 0;
@@ -62,7 +62,7 @@ public:
 
     /** Returns the total number of outbound slots. */
     [[nodiscard]] int
-    out_max() const
+    outMax() const
     {
         return out_max_;
     }
@@ -71,7 +71,7 @@ public:
         Fixed peers do not count towards outbound slots used.
     */
     [[nodiscard]] int
-    out_active() const
+    outActive() const
     {
         return out_active_;
     }
@@ -85,7 +85,7 @@ public:
 
     /** Returns the number of active fixed connections. */
     [[nodiscard]] std::size_t
-    fixed_active() const
+    fixedActive() const
     {
         return fixed_active_;
     }
@@ -124,7 +124,7 @@ public:
 
     /** Returns the total number of inbound slots. */
     [[nodiscard]] int
-    in_max() const
+    inMax() const
     {
         return in_max_;
     }
@@ -197,7 +197,7 @@ public:
 
     /** Records the state for diagnostics. */
     [[nodiscard]] std::string
-    state_string() const
+    stateString() const
     {
         std::stringstream ss;
         ss << out_active_ << "/" << out_max_ << " out, " << in_active_ << "/" << in_max_ << " in, "

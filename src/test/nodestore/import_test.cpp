@@ -282,7 +282,7 @@ parseArgs(std::string const& s)
 
 #if XRPL_ROCKSDB_AVAILABLE
 
-class import_test : public beast::unit_test::suite
+class import_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -399,12 +399,12 @@ public:
                 auto const size = it->value().size();
                 std::unique_ptr<char[]> const clean(new char[size]);
                 std::memcpy(clean.get(), data, size);
-                filter_inner(clean.get(), size);
-                auto const out = nodeobject_compress(clean.get(), size, buf);
+                filterInner(clean.get(), size);
+                auto const out = nodeobjectCompress(clean.get(), size, buf);
                 // Verify codec correctness
                 {
                     buffer buf2;
-                    auto const check = nodeobject_decompress(out.first, out.second, buf2);
+                    auto const check = nodeobjectDecompress(out.first, out.second, buf2);
                     BEAST_EXPECT(check.second == size);
                     BEAST_EXPECT(std::memcmp(check.first, clean.get(), size) == 0);
                 }

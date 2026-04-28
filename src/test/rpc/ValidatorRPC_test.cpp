@@ -30,7 +30,7 @@
 
 namespace xrpl::test {
 
-class ValidatorRPC_test : public beast::unit_test::suite
+class ValidatorRPC_test : public beast::unit_test::Suite
 {
     using Validator = TrustedPublisherServer::Validator;
 
@@ -133,8 +133,8 @@ public:
         // Negative UNL update
         {
             hash_set<PublicKey> disabledKeys;
-            auto k1 = randomKeyPair(KeyType::ed25519).first;
-            auto k2 = randomKeyPair(KeyType::ed25519).first;
+            auto k1 = randomKeyPair(KeyType::Ed25519).first;
+            auto k2 = randomKeyPair(KeyType::Ed25519).first;
             disabledKeys.insert(k1);
             disabledKeys.insert(k2);
             env.app().getValidators().setNegativeUNL(disabledKeys);

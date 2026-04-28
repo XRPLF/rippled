@@ -80,15 +80,15 @@ doTxHelp(RPC::Context& context, TxArgs args)
         constexpr uint16_t kMAX_RANGE = 1000;
 
         if (args.ledgerRange->second < args.ledgerRange->first)
-            return {result, rpcINVALID_LGR_RANGE};
+            return {result, RpcInvalidLgrRange};
 
         if (args.ledgerRange->second - args.ledgerRange->first > kMAX_RANGE)
-            return {result, rpcEXCESSIVE_LGR_RANGE};
+            return {result, RpcExcessiveLgrRange};
 
         range = ClosedInterval<uint32_t>(args.ledgerRange->first, args.ledgerRange->second);
     }
 
-    auto ec{rpcSUCCESS};
+    auto ec{RpcSuccess};
 
     using TxPair = std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>;
 
@@ -105,7 +105,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
     }
 
     if (!args.hash)
-        return {result, rpcTXN_NOT_FOUND};
+        return {result, RpcTxnNotFound};
 
     if (args.ledgerRange)
     {
@@ -119,25 +119,25 @@ doTxHelp(RPC::Context& context, TxArgs args)
     if (auto e = std::get_if<TxSearched>(&v))
     {
         result.searchedAll = *e;
-        return {result, rpcTXN_NOT_FOUND};
+        return {result, RpcTxnNotFound};
     }
 
     auto [txn, meta] = std::get<TxPair>(v);
 
-    if (ec == rpcDB_DESERIALIZATION)
+    if (ec == RpcDbDeserialization)
     {
         return {result, ec};
     }
     if (!txn)
     {
-        return {result, rpcTXN_NOT_FOUND};
+        return {result, RpcTxnNotFound};
     }
 
     // populate transaction data
     result.txn = txn;
     if (txn->getLedger() == 0)
     {
-        return {result, rpcSUCCESS};
+        return {result, RpcSuccess};
     }
 
     std::shared_ptr<Ledger const> const ledger =
@@ -173,7 +173,7 @@ doTxHelp(RPC::Context& context, TxArgs args)
         }
     }
 
-    return {result, rpcSUCCESS};
+    return {result, RpcSuccess};
 }
 
 Json::Value
@@ -186,11 +186,11 @@ populateJsonResponse(
     RPC::Status const& error = res.second;
     TxResult const& result = res.first;
     // handle errors
-    if (error.toErrorCode() != rpcSUCCESS)
+    if (error.toErrorCode() != RpcSuccess)
     {
-        if (error.toErrorCode() == rpcTXN_NOT_FOUND && result.searchedAll != TxSearched::Unknown)
+        if (error.toErrorCode() == RpcTxnNotFound && result.searchedAll != TxSearched::Unknown)
         {
-            response = Json::Value(Json::objectValue);
+            response = Json::Value(Json::ObjectValue);
             response[jss::searched_all] = (result.searchedAll == TxSearched::All);
             error.inject(response);
         }
@@ -206,7 +206,7 @@ populateJsonResponse(
         if (context.apiVersion > 1)
         {
             constexpr auto kOPTIONS_JSON =
-                JsonOptions::kINCLUDE_DATE | JsonOptions::kDISABLE_API_PRIOR_V2;
+                JsonOptions::KIncludeDate | JsonOptions::KDisableApiPriorV2;
             if (args.binary)
             {
                 response[jss::tx_blob] = result.txn->getJson(kOPTIONS_JSON, true);
@@ -228,12 +228,12 @@ populateJsonResponse(
             {
                 response[jss::ledger_index] = result.txn->getLedger();
                 if (result.closeTime)
-                    response[jss::close_time_iso] = to_string_iso(*result.closeTime);
+                    response[jss::close_time_iso] = toStringIso(*result.closeTime);
             }
         }
         else
         {
-            response = result.txn->getJson(JsonOptions::kINCLUDE_DATE, args.binary);
+            response = result.txn->getJson(JsonOptions::KIncludeDate, args.binary);
             if (!args.binary)
                 RPC::insertDeliverMax(response, sttx->getTxnType(), context.apiVersion);
         }
@@ -251,7 +251,7 @@ populateJsonResponse(
             auto& meta = *m;
             if (meta)
             {
-                response[jss::meta] = meta->getJson(JsonOptions::kNONE);
+                response[jss::meta] = meta->getJson(JsonOptions::KNone);
                 insertDeliveredAmount(response[jss::meta], context, result.txn, *meta);
                 RPC::insertNFTSyntheticInJson(response, sttx, *meta);
                 RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
@@ -269,7 +269,7 @@ Json::Value
 doTxJson(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
-        return rpcError(rpcNOT_ENABLED);
+        return rpcError(RpcNotEnabled);
 
     // Deserialize and validate JSON arguments
 
@@ -278,21 +278,21 @@ doTxJson(RPC::JsonContext& context)
     if (context.params.isMember(jss::transaction) && context.params.isMember(jss::ctid))
     {
         // specifying both is ambiguous
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     if (context.params.isMember(jss::transaction))
     {
         uint256 hash;
         if (!hash.parseHex(context.params[jss::transaction].asString()))
-            return rpcError(rpcNOT_IMPL);
+            return rpcError(RpcNotImpl);
         args.hash = hash;
     }
     else if (context.params.isMember(jss::ctid))
     {
         auto ctid = RPC::decodeCTID(context.params[jss::ctid].asString());
         if (!ctid)
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
 
         auto const [lgr_seq, txn_idx, net_id] = *ctid;
         if (net_id != context.app.getNetworkIDService().getNetworkID())
@@ -301,13 +301,13 @@ doTxJson(RPC::JsonContext& context)
             out << "Wrong network. You should submit this request to a node "
                    "running on NetworkID: "
                 << net_id;
-            return RPC::make_error(rpcWRONG_NETWORK, out.str());
+            return RPC::makeError(RpcWrongNetwork, out.str());
         }
         args.ctid = {lgr_seq, txn_idx};
     }
     else
     {
-        return rpcError(rpcINVALID_PARAMS);
+        return rpcError(RpcInvalidParams);
     }
 
     args.binary = context.params.isMember(jss::binary) && context.params[jss::binary].asBool();
@@ -322,7 +322,7 @@ doTxJson(RPC::JsonContext& context)
         catch (...)
         {
             // One of the calls to `asUInt ()` failed.
-            return rpcError(rpcINVALID_LGR_RANGE);
+            return rpcError(RpcInvalidLgrRange);
         }
     }
 

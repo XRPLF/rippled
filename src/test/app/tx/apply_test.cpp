@@ -14,7 +14,7 @@
 
 namespace xrpl {
 
-class Apply_test : public beast::unit_test::suite
+class Apply_test : public beast::unit_test::Suite
 {
 public:
     void

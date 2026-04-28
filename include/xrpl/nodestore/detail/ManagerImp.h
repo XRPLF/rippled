@@ -15,7 +15,7 @@ public:
     instance();
 
     static void
-    missing_backend();
+    missingBackend();
 
     ManagerImp();
 

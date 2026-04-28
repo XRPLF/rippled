@@ -120,38 +120,38 @@ public:
     //--------------------------------------------------------------------------
 
     std::pair<std::shared_ptr<Slot>, Result>
-    new_inbound_slot(
+    newInboundSlot(
         beast::IP::Endpoint const& localEndpoint,
         beast::IP::Endpoint const& remoteEndpoint) override
     {
-        return logic_.new_inbound_slot(localEndpoint, remoteEndpoint);
+        return logic_.newInboundSlot(localEndpoint, remoteEndpoint);
     }
 
     std::pair<std::shared_ptr<Slot>, Result>
-    new_outbound_slot(beast::IP::Endpoint const& remoteEndpoint) override
+    newOutboundSlot(beast::IP::Endpoint const& remoteEndpoint) override
     {
-        return logic_.new_outbound_slot(remoteEndpoint);
+        return logic_.newOutboundSlot(remoteEndpoint);
     }
 
     void
-    on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
+    onEndpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
     {
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        logic_.on_endpoints(impl, endpoints);
+        logic_.onEndpoints(impl, endpoints);
     }
 
     void
-    on_closed(std::shared_ptr<Slot> const& slot) override
+    onClosed(std::shared_ptr<Slot> const& slot) override
     {
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        logic_.on_closed(impl);
+        logic_.onClosed(impl);
     }
 
     void
-    on_failure(std::shared_ptr<Slot> const& slot) override
+    onFailure(std::shared_ptr<Slot> const& slot) override
     {
         SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
-        logic_.on_failure(impl);
+        logic_.onFailure(impl);
     }
 
     void
@@ -193,9 +193,9 @@ public:
     }
 
     void
-    once_per_second() override
+    oncePerSecond() override
     {
-        logic_.once_per_second();
+        logic_.oncePerSecond();
     }
 
     std::vector<std::pair<std::shared_ptr<Slot>, std::vector<Endpoint>>>
@@ -228,9 +228,9 @@ private:
     {
         template <class Handler>
         Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
-            : hook(collector->make_hook(handler))
-            , activeInboundPeers(collector->make_gauge("Peer_Finder", "Active_Inbound_Peers"))
-            , activeOutboundPeers(collector->make_gauge("Peer_Finder", "Active_Outbound_Peers"))
+            : hook(collector->makeHook(handler))
+            , activeInboundPeers(collector->makeGauge("Peer_Finder", "Active_Inbound_Peers"))
+            , activeOutboundPeers(collector->makeGauge("Peer_Finder", "Active_Outbound_Peers"))
         {
         }
 
@@ -246,8 +246,8 @@ private:
     collectMetrics()
     {
         std::lock_guard const lock(statsMutex_);
-        stats_.activeInboundPeers = logic_.counts_.inboundActive();
-        stats_.activeOutboundPeers = logic_.counts_.out_active();
+        stats_.activeInboundPeers = logic_.counts().inboundActive();
+        stats_.activeOutboundPeers = logic_.counts().outActive();
     }
 };
 

@@ -84,7 +84,7 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     else
     {
         // Without those features enabled, always use the old number rules.
-        mantissaScaleGuard.emplace(MantissaRange::small);
+        mantissaScaleGuard.emplace(MantissaRange::Small);
     }
 
     switch (txnType)
@@ -106,7 +106,7 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 }
 }  // namespace
 
-// Templates so preflight does the right thing with T::ConsequencesFactory.
+// Templates so preflight does the right thing with T::kCONSEQUENCES_FACTORY.
 //
 // This could be done more easily using if constexpr, but Visual Studio
 // 2017 doesn't handle if constexpr correctly.  So once we're no longer
@@ -117,7 +117,7 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
 //
 
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Normal)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Normal)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
@@ -126,7 +126,7 @@ consequencesHelper(PreflightContext const& ctx)
 
 // For Transactor::Blocker
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Blocker)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Blocker)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
@@ -135,7 +135,7 @@ consequencesHelper(PreflightContext const& ctx)
 
 // For Transactor::Custom
 template <class T>
-    requires(T::ConsequencesFactory == Transactor::Custom)
+    requires(T::kCONSEQUENCES_FACTORY == Transactor::Custom)
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
@@ -186,7 +186,7 @@ invokePreclaim(PreclaimContext const& ctx)
             // a flagged a failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
 
-            if (id != beast::zero)
+            if (id != beast::kZERO)
             {
                 if (NotTEC const preSigResult = [&]() -> NotTEC {
                         if (NotTEC const result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j))
@@ -259,8 +259,8 @@ invokeCalculateBaseFee(ReadView const& view, STTx const& tx)
 
 TxConsequences::TxConsequences(NotTEC pfResult)
     : isBlocker_(false)
-    , fee_(beast::zero)
-    , potentialSpend_(beast::zero)
+    , fee_(beast::kZERO)
+    , potentialSpend_(beast::kZERO)
     , seqProx_(SeqProxy::sequence(0))
     , sequencesConsumed_(0)
 {
@@ -270,8 +270,8 @@ TxConsequences::TxConsequences(NotTEC pfResult)
 
 TxConsequences::TxConsequences(STTx const& tx)
     : isBlocker_(false)
-    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::zero)
-    , potentialSpend_(beast::zero)
+    , fee_(tx[sfFee].native() && !tx[sfFee].negative() ? tx[sfFee].xrp() : beast::kZERO)
+    , potentialSpend_(beast::kZERO)
     , seqProx_(tx.getSeqProxy())
     , sequencesConsumed_(tx.getSeqProxy().isSeq() ? 1 : 0)
 {

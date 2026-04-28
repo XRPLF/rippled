@@ -93,7 +93,7 @@ public:
             params[jss::key_type] = *keyType;
         Json::Value result = walletPropose(params);
 
-        BEAST_EXPECT(!contains_error(result));
+        BEAST_EXPECT(!containsError(result));
         BEAST_EXPECT(result.isMember(jss::account_id));
         BEAST_EXPECT(result.isMember(jss::master_seed));
         BEAST_EXPECT(result.isMember(jss::master_seed_hex));
@@ -119,7 +119,7 @@ public:
     {
         Json::Value result = walletPropose(params);
 
-        BEAST_EXPECT(!contains_error(result));
+        BEAST_EXPECT(!containsError(result));
         expectEquals(result[jss::account_id], s.account_id);
         expectEquals(result[jss::master_seed], s.master_seed);
         expectEquals(result[jss::master_seed_hex], s.master_seed_hex);
@@ -209,7 +209,7 @@ public:
         params[jss::seed_hex] = strings.master_seed_hex;
 
         // Secret fields are mutually exclusive.
-        BEAST_EXPECT(contains_error(walletPropose(params)));
+        BEAST_EXPECT(containsError(walletPropose(params)));
     }
 
     void
@@ -223,25 +223,25 @@ public:
             params[jss::key_type] = "secp256k1";
             params[jss::passphrase] = 20160506;
             auto result = walletPropose(params);
-            BEAST_EXPECT(contains_error(result));
+            BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'passphrase', not string.");
         }
 
         {
             Json::Value params;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed] = Json::objectValue;
+            params[jss::seed] = Json::ObjectValue;
             auto result = walletPropose(params);
-            BEAST_EXPECT(contains_error(result));
+            BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'seed', not string.");
         }
 
         {
             Json::Value params;
             params[jss::key_type] = "ed25519";
-            params[jss::seed_hex] = Json::arrayValue;
+            params[jss::seed_hex] = Json::ArrayValue;
             auto result = walletPropose(params);
-            BEAST_EXPECT(contains_error(result));
+            BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'seed_hex', not string.");
         }
 
@@ -253,7 +253,7 @@ public:
             params[jss::seed_hex] = common::gMasterSeedHex;
             params[jss::seed] = common::gMasterSeed;
             auto result = walletPropose(params);
-            BEAST_EXPECT(contains_error(result));
+            BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(
                 result[jss::error_message] ==
                 "Exactly one of the following must be specified: passphrase, "
@@ -266,25 +266,25 @@ public:
             params[jss::key_type] = "prime256v1";
             params[jss::passphrase] = common::gMasterKey;
             auto result = walletPropose(params);
-            BEAST_EXPECT(contains_error(result));
+            BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid parameters.");
         }
 
         {
             Json::Value params;
-            params[jss::key_type] = Json::objectValue;
+            params[jss::key_type] = Json::ObjectValue;
             params[jss::seed_hex] = common::gMasterSeedHex;
             auto result = walletPropose(params);
-            BEAST_EXPECT(contains_error(result));
+            BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'key_type', not string.");
         }
 
         {
             Json::Value params;
-            params[jss::key_type] = Json::arrayValue;
+            params[jss::key_type] = Json::ArrayValue;
             params[jss::seed] = common::gMasterSeed;
             auto result = walletPropose(params);
-            BEAST_EXPECT(contains_error(result));
+            BEAST_EXPECT(containsError(result));
             BEAST_EXPECT(result[jss::error_message] == "Invalid field 'key_type', not string.");
         }
     }
@@ -305,7 +305,7 @@ public:
                 params[jss::secret] = strings.master_seed;
 
                 auto ret = keypairForSignature(params, error);
-                BEAST_EXPECT(!contains_error(error));
+                BEAST_EXPECT(!containsError(error));
                 if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
@@ -319,7 +319,7 @@ public:
                 params[jss::secret] = strings.master_seed_hex;
 
                 auto ret = keypairForSignature(params, error);
-                BEAST_EXPECT(!contains_error(error));
+                BEAST_EXPECT(!containsError(error));
                 if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
@@ -333,7 +333,7 @@ public:
                 params[jss::secret] = strings.master_key;
 
                 auto ret = keypairForSignature(params, error);
-                BEAST_EXPECT(!contains_error(error));
+                BEAST_EXPECT(!containsError(error));
                 if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
@@ -352,7 +352,7 @@ public:
             params[jss::seed] = strings.master_seed;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(!contains_error(error));
+            BEAST_EXPECT(!containsError(error));
             if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
@@ -368,7 +368,7 @@ public:
             params[jss::seed_hex] = strings.master_seed_hex;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(!contains_error(error));
+            BEAST_EXPECT(!containsError(error));
             if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
@@ -384,7 +384,7 @@ public:
             params[jss::passphrase] = strings.master_key;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(!contains_error(error));
+            BEAST_EXPECT(!containsError(error));
             if (BEAST_EXPECT(ret); ret.has_value())
             {
                 BEAST_EXPECT(ret->first.size() != 0);
@@ -402,7 +402,7 @@ public:
             Json::Value error;
             params[jss::secret] = 314159265;
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'secret', not string.");
         }
@@ -410,11 +410,11 @@ public:
         {
             Json::Value params;
             Json::Value error;
-            params[jss::secret] = Json::arrayValue;
+            params[jss::secret] = Json::ArrayValue;
             params[jss::secret].append("array:0");
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'secret', not string.");
         }
@@ -422,12 +422,12 @@ public:
         {
             Json::Value params;
             Json::Value error;
-            params[jss::secret] = Json::objectValue;
+            params[jss::secret] = Json::ObjectValue;
             params[jss::secret]["string"] = "string";
             params[jss::secret]["number"] = 702;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'secret', not string.");
         }
@@ -440,7 +440,7 @@ public:
             params[jss::secret] = common::gMasterSeed;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(
                 error[jss::error_message] ==
@@ -455,7 +455,7 @@ public:
             params[jss::passphrase] = common::gMasterKey;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type'.");
         }
@@ -463,11 +463,11 @@ public:
         {
             Json::Value params;
             Json::Value error;
-            params[jss::key_type] = Json::objectValue;
+            params[jss::key_type] = Json::ObjectValue;
             params[jss::seed_hex] = common::gMasterSeedHex;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type', not string.");
         }
@@ -475,11 +475,11 @@ public:
         {
             Json::Value params;
             Json::Value error;
-            params[jss::key_type] = Json::arrayValue;
+            params[jss::key_type] = Json::ArrayValue;
             params[jss::seed] = common::gMasterSeed;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'key_type', not string.");
         }
@@ -492,7 +492,7 @@ public:
             params[jss::passphrase] = 1234567890;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'passphrase', not string.");
         }
@@ -501,10 +501,10 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::passphrase] = Json::objectValue;
+            params[jss::passphrase] = Json::ObjectValue;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'passphrase', not string.");
         }
@@ -513,10 +513,10 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::passphrase] = Json::arrayValue;
+            params[jss::passphrase] = Json::ArrayValue;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'passphrase', not string.");
         }
@@ -528,7 +528,7 @@ public:
             params[jss::passphrase] = "";
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
         }
@@ -541,7 +541,7 @@ public:
             params[jss::seed] = 443556;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed', not string.");
         }
@@ -550,10 +550,10 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed] = Json::objectValue;
+            params[jss::seed] = Json::ObjectValue;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed', not string.");
         }
@@ -562,10 +562,10 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed] = Json::arrayValue;
+            params[jss::seed] = Json::ArrayValue;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed', not string.");
         }
@@ -577,7 +577,7 @@ public:
             params[jss::seed] = "";
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
         }
@@ -589,7 +589,7 @@ public:
             params[jss::seed] = "s M V s h z D F p t Z E m h s";
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
         }
@@ -601,7 +601,7 @@ public:
             params[jss::seed] = "pnnjkbnobnml43679nbvjdsklnbjs";
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
         }
@@ -614,7 +614,7 @@ public:
             params[jss::seed_hex] = 443556;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed_hex', not string.");
         }
@@ -623,10 +623,10 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed_hex] = Json::objectValue;
+            params[jss::seed_hex] = Json::ObjectValue;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed_hex', not string.");
         }
@@ -635,10 +635,10 @@ public:
             Json::Value params;
             Json::Value error;
             params[jss::key_type] = "secp256k1";
-            params[jss::seed_hex] = Json::arrayValue;
+            params[jss::seed_hex] = Json::ArrayValue;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Invalid field 'seed_hex', not string.");
         }
@@ -650,7 +650,7 @@ public:
             params[jss::seed_hex] = "";
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
         }
@@ -662,7 +662,7 @@ public:
             params[jss::seed_hex] = "A670A19B";
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
         }
@@ -674,7 +674,7 @@ public:
             params[jss::seed_hex] = common::gPassphrase;
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
         }
@@ -686,7 +686,7 @@ public:
             params[jss::seed_hex] = "BE6A670A19B209E112146D0A7ED2AAD72567D0FC913";
 
             auto ret = keypairForSignature(params, error);
-            BEAST_EXPECT(contains_error(error));
+            BEAST_EXPECT(containsError(error));
             BEAST_EXPECT(!ret);
             BEAST_EXPECT(error[jss::error_message] == "Disallowed seed.");
         }
@@ -706,7 +706,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
 
-                BEAST_EXPECT(!contains_error(error));
+                BEAST_EXPECT(!containsError(error));
                 if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
@@ -723,7 +723,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
 
-                BEAST_EXPECT(contains_error(error));
+                BEAST_EXPECT(containsError(error));
                 BEAST_EXPECT(
                     error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
             }
@@ -737,7 +737,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
 
-                BEAST_EXPECT(!contains_error(error));
+                BEAST_EXPECT(!containsError(error));
                 if (BEAST_EXPECT(ret); ret.has_value())
                 {
                     BEAST_EXPECT(ret->first.size() != 0);
@@ -754,7 +754,7 @@ public:
 
                 auto ret = keypairForSignature(params, error);
 
-                BEAST_EXPECT(contains_error(error));
+                BEAST_EXPECT(containsError(error));
                 BEAST_EXPECT(
                     error[jss::error_message] == "Specified seed is for an Ed25519 wallet.");
             }

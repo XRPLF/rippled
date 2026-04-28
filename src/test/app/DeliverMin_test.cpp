@@ -18,7 +18,7 @@
 
 namespace xrpl::test {
 
-class DeliverMin_test : public beast::unit_test::suite
+class DeliverMin_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -32,99 +32,99 @@ public:
 
         {
             Env env(*this, features);
-            env.fund(XRP(10000), "alice", "bob", "carol", gw);
+            env.fund(kXRP(10000), "alice", "bob", "carol", gw);
             env.close();
             env.trust(usd(100), "alice", "bob", "carol");
             env.close();
-            env(pay("alice", "bob", usd(10)), deliver_min(usd(10)), Ter(temBAD_AMOUNT));
+            env(pay("alice", "bob", usd(10)), DeliverMin(usd(10)), Ter(temBAD_AMOUNT));
             env(pay("alice", "bob", usd(10)),
-                deliver_min(usd(-5)),
-                txflags(tfPartialPayment),
+                DeliverMin(usd(-5)),
+                Txflags(tfPartialPayment),
                 Ter(temBAD_AMOUNT));
             env(pay("alice", "bob", usd(10)),
-                deliver_min(XRP(5)),
-                txflags(tfPartialPayment),
+                DeliverMin(kXRP(5)),
+                Txflags(tfPartialPayment),
                 Ter(temBAD_AMOUNT));
             env(pay("alice", "bob", usd(10)),
-                deliver_min(Account("carol")["USD"](5)),
-                txflags(tfPartialPayment),
+                DeliverMin(Account("carol")["USD"](5)),
+                Txflags(tfPartialPayment),
                 Ter(temBAD_AMOUNT));
             env(pay("alice", "bob", usd(10)),
-                deliver_min(usd(15)),
-                txflags(tfPartialPayment),
+                DeliverMin(usd(15)),
+                Txflags(tfPartialPayment),
                 Ter(temBAD_AMOUNT));
             env(pay(gw, "carol", usd(50)));
-            env(offer("carol", XRP(5), usd(5)));
+            env(offer("carol", kXRP(5), usd(5)));
             env(pay("alice", "bob", usd(10)),
-                Paths(XRP),
-                deliver_min(usd(7)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(5)),
+                Paths(kXRP),
+                DeliverMin(usd(7)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(5)),
                 Ter(tecPATH_PARTIAL));
-            env.Require(Balance("alice", XRP(10000) - drops(env.current()->fees().base)));
-            env.Require(Balance("bob", XRP(10000)));
+            env.require(Balance("alice", kXRP(10000) - drops(env.current()->fees().base)));
+            env.require(Balance("bob", kXRP(10000)));
         }
 
         {
             Env env(*this, features);
-            env.fund(XRP(10000), "alice", "bob", gw);
+            env.fund(kXRP(10000), "alice", "bob", gw);
             env.close();
             env.trust(usd(1000), "alice", "bob");
             env.close();
             env(pay(gw, "bob", usd(100)));
-            env(offer("bob", XRP(100), usd(100)));
+            env(offer("bob", kXRP(100), usd(100)));
             env(pay("alice", "alice", usd(10000)),
-                Paths(XRP),
-                deliver_min(usd(100)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(100)));
-            env.Require(Balance("alice", usd(100)));
+                Paths(kXRP),
+                DeliverMin(usd(100)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(100)));
+            env.require(Balance("alice", usd(100)));
         }
 
         {
             Env env(*this, features);
-            env.fund(XRP(10000), "alice", "bob", "carol", gw);
+            env.fund(kXRP(10000), "alice", "bob", "carol", gw);
             env.close();
             env.trust(usd(1000), "bob", "carol");
             env.close();
             env(pay(gw, "bob", usd(200)));
-            env(offer("bob", XRP(100), usd(100)));
-            env(offer("bob", XRP(1000), usd(100)));
-            env(offer("bob", XRP(10000), usd(100)));
+            env(offer("bob", kXRP(100), usd(100)));
+            env(offer("bob", kXRP(1000), usd(100)));
+            env(offer("bob", kXRP(10000), usd(100)));
             env(pay("alice", "carol", usd(10000)),
-                Paths(XRP),
-                deliver_min(usd(200)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(1000)),
+                Paths(kXRP),
+                DeliverMin(usd(200)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(1000)),
                 Ter(tecPATH_PARTIAL));
             env(pay("alice", "carol", usd(10000)),
-                Paths(XRP),
-                deliver_min(usd(200)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(1100)));
-            env.Require(Balance("bob", usd(0)));
-            env.Require(Balance("carol", usd(200)));
+                Paths(kXRP),
+                DeliverMin(usd(200)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(1100)));
+            env.require(Balance("bob", usd(0)));
+            env.require(Balance("carol", usd(200)));
         }
 
         {
             Env env(*this, features);
-            env.fund(XRP(10000), "alice", "bob", "carol", "dan", gw);
+            env.fund(kXRP(10000), "alice", "bob", "carol", "dan", gw);
             env.close();
             env.trust(usd(1000), "bob", "carol", "dan");
             env.close();
             env(pay(gw, "bob", usd(100)));
             env(pay(gw, "dan", usd(100)));
-            env(offer("bob", XRP(100), usd(100)));
-            env(offer("bob", XRP(1000), usd(100)));
-            env(offer("dan", XRP(100), usd(100)));
+            env(offer("bob", kXRP(100), usd(100)));
+            env(offer("bob", kXRP(1000), usd(100)));
+            env(offer("dan", kXRP(100), usd(100)));
             env(pay("alice", "carol", usd(10000)),
-                Paths(XRP),
-                deliver_min(usd(200)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(200)));
-            env.Require(Balance("bob", usd(0)));
-            env.Require(Balance("carol", usd(200)));
-            env.Require(Balance("dan", usd(0)));
+                Paths(kXRP),
+                DeliverMin(usd(200)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(200)));
+            env.require(Balance("bob", usd(0)));
+            env.require(Balance("carol", usd(200)));
+            env.require(Balance("dan", usd(0)));
         }
     }
 

@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-class RPCOverload_test : public beast::unit_test::suite
+class RPCOverload_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -35,13 +35,13 @@ public:
 
         Account const alice{"alice"};
         Account const bob{"bob"};
-        env.fund(XRP(10000), alice, bob);
+        env.fund(kXRP(10000), alice, bob);
 
         std::unique_ptr<AbstractClient> client =
             useWS ? makeWSClient(env.app().config()) : makeJSONRPCClient(env.app().config());
 
-        Json::Value tx = Json::objectValue;
-        tx[jss::tx_json] = pay(alice, bob, XRP(1));
+        Json::Value tx = Json::ObjectValue;
+        tx[jss::tx_json] = pay(alice, bob, kXRP(1));
         tx[jss::secret] = toBase58(generateSeed("alice"));
 
         // Ask the server to repeatedly sign this transaction

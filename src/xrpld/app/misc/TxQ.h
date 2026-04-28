@@ -512,7 +512,7 @@ private:
             their `retriesRemaining` forced down as part of the
             penalty.
         */
-        int retriesRemaining{retriesAllowed};
+        int retriesRemaining{kRETRIES_ALLOWED};
         /// Flags provided to `apply`. If the transaction is later
         /// attempted with different flags, it will need to be
         /// `preflight`ed again.
@@ -548,7 +548,7 @@ private:
             that the queue doesn't fill up with stale transactions
             which prevent lower fee level transactions from queuing.
         */
-        static constexpr int retriesAllowed = 10;
+        static constexpr int kRETRIES_ALLOWED = 10;
 
         /** The hash of the parent ledger.
 
@@ -761,7 +761,7 @@ private:
     /**
         parentHash_ used for logging only
     */
-    LedgerHash parentHash_{beast::zero};
+    LedgerHash parentHash_{beast::kZERO};
 
     /** Most queue operations are done under the master lock,
         but use this mutex for the RPC "fee" command, which isn't.
@@ -770,7 +770,7 @@ private:
 
 private:
     /// Is the queue at least `fillPercentage` full?
-    template <size_t fillPercentage = 100>
+    template <size_t FillPercentage = 100>
     bool
     isFull() const;
 
@@ -831,7 +831,7 @@ template <class T>
 XRPAmount
 toDrops(FeeLevel<T> const& level, XRPAmount baseFee)
 {
-    return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::cMaxNativeN));
+    return mulDiv(level, baseFee, TxQ::kBASE_LEVEL).value_or(XRPAmount(STAmount::kC_MAX_NATIVE_N));
 }
 
 inline FeeLevel64

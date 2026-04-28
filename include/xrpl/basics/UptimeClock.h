@@ -30,8 +30,8 @@ public:
     now();  // seconds since xrpld program start
 
 private:
-    static std::atomic<rep> now_;
-    static std::atomic<bool> stop_;
+    static std::atomic<rep> kNOW;
+    static std::atomic<bool> kSTOP;
 
     struct UpdateThread : private std::thread
     {

@@ -38,7 +38,7 @@ createRoot(
     describe(newRoot);
 
     STVector256 v;
-    v.push_back(key);
+    v.pushBack(key);
     newRoot->setFieldV256(sfIndexes, v);
 
     view.insert(newRoot);
@@ -80,7 +80,7 @@ insertKey(
         if (std::ranges::find(indexes, key) != indexes.end())
             Throw<std::logic_error>("dirInsert: double insertion");  // LCOV_EXCL_LINE
 
-        indexes.push_back(key);
+        indexes.pushBack(key);
     }
     else
     {
@@ -125,7 +125,7 @@ insertPage(
     // Check whether we're out of pages.
     if (page == 0)
         return std::nullopt;
-    if (!view.rules().enabled(fixDirectoryLimit) && page >= dirNodeMaxPages)  // Old pages limit
+    if (!view.rules().enabled(fixDirectoryLimit) && page >= kDIR_NODE_MAX_PAGES)  // Old pages limit
         return std::nullopt;
 
     // We are about to create a new node; we'll link it to
@@ -138,7 +138,7 @@ insertPage(
 
     // Insert the new key:
     STVector256 indexes;
-    indexes.push_back(key);
+    indexes.pushBack(key);
 
     node = std::make_shared<SLE>(keylet::page(directory, page));
     node->setFieldH256(sfRootIndex, directory.key);
@@ -179,7 +179,7 @@ ApplyView::dirAdd(
     auto [page, node, indexes] = directory::findPreviousPage(*this, directory, root);
 
     // If there's space, we use it:
-    if (indexes.size() < dirNodeMaxEntries)
+    if (indexes.size() < kDIR_NODE_MAX_ENTRIES)
     {
         return directory::insertKey(*this, node, page, preserveOrder, indexes, key);
     }

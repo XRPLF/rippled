@@ -42,7 +42,7 @@ OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig co
 }
 
 std::unique_ptr<OrderBookDB>
-make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config)
+makeOrderBookDb(ServiceRegistry& registry, OrderBookDBConfig const& config)
 {
     return std::make_unique<OrderBookDBImpl>(registry, config);
 }
@@ -83,7 +83,7 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
             // Shorten job name to fit Linux 15-char thread name limit with "j:" prefix
             // "OB" + seq (max 9 digits) = 11 chars, + "j:" = 13 chars (fits in 15)
             registry_.get().getJobQueue().addJob(
-                jtUPDATE_PF, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
+                JtUpdatePf, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
                     update(ledger);
                 });
         }

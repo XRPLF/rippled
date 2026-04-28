@@ -83,11 +83,11 @@ TEST_F(WriterFixture, primitives)
 
 TEST_F(WriterFixture, empty)
 {
-    writer_->startRoot(Writer::array);
+    writer_->startRoot(Writer::Array);
     writer_->finish();
     checkOutputAndReset("[]");
 
-    writer_->startRoot(Writer::object);
+    writer_->startRoot(Writer::Object);
     writer_->finish();
     checkOutputAndReset("{}");
 }
@@ -112,7 +112,7 @@ TEST_F(WriterFixture, escaping)
 
 TEST_F(WriterFixture, array)
 {
-    writer_->startRoot(Writer::array);
+    writer_->startRoot(Writer::Array);
     writer_->append(12);
     writer_->finish();
     checkOutputAndReset("[12]");
@@ -120,7 +120,7 @@ TEST_F(WriterFixture, array)
 
 TEST_F(WriterFixture, long_array)
 {
-    writer_->startRoot(Writer::array);
+    writer_->startRoot(Writer::Array);
     writer_->append(12);
     writer_->append(true);
     writer_->append("hello");
@@ -130,8 +130,8 @@ TEST_F(WriterFixture, long_array)
 
 TEST_F(WriterFixture, embedded_array_simple)
 {
-    writer_->startRoot(Writer::array);
-    writer_->startAppend(Writer::array);
+    writer_->startRoot(Writer::Array);
+    writer_->startAppend(Writer::Array);
     writer_->finish();
     writer_->finish();
     checkOutputAndReset("[[]]");
@@ -139,7 +139,7 @@ TEST_F(WriterFixture, embedded_array_simple)
 
 TEST_F(WriterFixture, object)
 {
-    writer_->startRoot(Writer::object);
+    writer_->startRoot(Writer::Object);
     writer_->set("hello", "world");
     writer_->finish();
     checkOutputAndReset(R"({"hello":"world"})");
@@ -147,15 +147,15 @@ TEST_F(WriterFixture, object)
 
 TEST_F(WriterFixture, complex_object)
 {
-    writer_->startRoot(Writer::object);
+    writer_->startRoot(Writer::Object);
     writer_->set("hello", "world");
-    writer_->startSet(Writer::array, "array");
+    writer_->startSet(Writer::Array, "array");
     writer_->append(true);
     writer_->append(12);
-    writer_->startAppend(Writer::array);
-    writer_->startAppend(Writer::object);
+    writer_->startAppend(Writer::Array);
+    writer_->startAppend(Writer::Object);
     writer_->set("goodbye", "cruel world.");
-    writer_->startSet(Writer::array, "subarray");
+    writer_->startSet(Writer::Array, "subarray");
     writer_->append(23.5);
     writer_->finishAll();
     checkOutputAndReset(
@@ -164,9 +164,9 @@ TEST_F(WriterFixture, complex_object)
 
 TEST_F(WriterFixture, json_value)
 {
-    Json::Value value(Json::objectValue);
+    Json::Value value(Json::ObjectValue);
     value["foo"] = 23;
-    writer_->startRoot(Writer::object);
+    writer_->startRoot(Writer::Object);
     writer_->set("hello", value);
     writer_->finish();
     checkOutputAndReset(R"({"hello":{"foo":23}})");

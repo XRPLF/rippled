@@ -17,7 +17,7 @@ doValidatorInfo(RPC::JsonContext& context)
     // return error if not configured as validator
     auto const validationPK = context.app.getValidationPublicKey();
     if (!validationPK)
-        return RPC::not_validator_error();
+        return RPC::notValidatorError();
 
     Json::Value ret;
 
@@ -33,7 +33,7 @@ doValidatorInfo(RPC::JsonContext& context)
     ret[jss::ephemeral_key] = toBase58(TokenType::NodePublic, *validationPK);
 
     if (auto const manifest = context.app.getValidatorManifests().getManifest(mk))
-        ret[jss::manifest] = base64_encode(*manifest);
+        ret[jss::manifest] = base64Encode(*manifest);
 
     if (auto const seq = context.app.getValidatorManifests().getSequence(mk))
         ret[jss::seq] = *seq;

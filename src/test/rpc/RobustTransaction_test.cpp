@@ -16,7 +16,7 @@
 
 namespace xrpl::test {
 
-class RobustTransaction_test : public beast::unit_test::suite
+class RobustTransaction_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -25,14 +25,14 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
-        env.fund(XRP(10000), "alice", "bob");
+        env.fund(kXRP(10000), "alice", "bob");
         env.close();
         auto wsc = makeWSClient(env.app().config());
 
         {
             // RPC subscribe to transactions stream
             Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
+            jv[jss::streams] = Json::ArrayValue;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("subscribe", jv);
             BEAST_EXPECT(jv[jss::status] == "success");
@@ -48,7 +48,7 @@ public:
             // Submit past ledger sequence transaction
             Json::Value payment;
             payment[jss::secret] = toBase58(generateSeed("alice"));
-            payment[jss::tx_json] = pay("alice", "bob", XRP(1));
+            payment[jss::tx_json] = pay("alice", "bob", kXRP(1));
             payment[jss::tx_json][sfLastLedgerSequence.fieldName] = 1;
             auto jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
@@ -60,8 +60,8 @@ public:
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tefMAX_LEDGER");
 
             // Submit past sequence transaction
-            payment[jss::tx_json] = pay("alice", "bob", XRP(1));
-            payment[jss::tx_json][sfSequence.fieldName] = env.Seq("alice") - 1;
+            payment[jss::tx_json] = pay("alice", "bob", kXRP(1));
+            payment[jss::tx_json][sfSequence.fieldName] = env.seq("alice") - 1;
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
@@ -72,7 +72,7 @@ public:
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "tefPAST_SEQ");
 
             // Submit future sequence transaction
-            payment[jss::tx_json][sfSequence.fieldName] = env.Seq("alice") + 1;
+            payment[jss::tx_json][sfSequence.fieldName] = env.seq("alice") + 1;
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
@@ -83,7 +83,7 @@ public:
             BEAST_EXPECT(jv[jss::result][jss::engine_result] == "terPRE_SEQ");
 
             // Submit transaction to bridge the sequence gap
-            payment[jss::tx_json][sfSequence.fieldName] = env.Seq("alice");
+            payment[jss::tx_json][sfSequence.fieldName] = env.seq("alice");
             jv = wsc->invoke("submit", payment);
             if (wsc->version() == 2)
             {
@@ -123,7 +123,7 @@ public:
         {
             // RPC unsubscribe to transactions stream
             Json::Value jv;
-            jv[jss::streams] = Json::arrayValue;
+            jv[jss::streams] = Json::ArrayValue;
             jv[jss::streams].append("transactions");
             jv = wsc->invoke("unsubscribe", jv);
             if (wsc->version() == 2)
@@ -152,7 +152,7 @@ public:
     {
         using namespace jtx;
         Env env(*this);
-        env.fund(XRP(10000), "alice", "bob");
+        env.fund(kXRP(10000), "alice", "bob");
         env.close();
         auto wsc = makeWSClient(env.app().config());
 
@@ -160,7 +160,7 @@ public:
             // Submit normal payment
             Json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
-            jv[jss::tx_json] = pay("alice", "bob", XRP(1));
+            jv[jss::tx_json] = pay("alice", "bob", kXRP(1));
             jv = wsc->invoke("submit", jv);
             if (wsc->version() == 2)
             {
@@ -206,7 +206,7 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
-        env.fund(XRP(10000), "alice", "bob");
+        env.fund(kXRP(10000), "alice", "bob");
         env.close();
         auto wsc = makeWSClient(env.app().config());
 
@@ -214,7 +214,7 @@ public:
             // Submit normal payment
             Json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
-            jv[jss::tx_json] = pay("alice", "bob", XRP(1));
+            jv[jss::tx_json] = pay("alice", "bob", kXRP(1));
             jv = wsc->invoke("submit", jv);
             if (wsc->version() == 2)
             {
@@ -242,7 +242,7 @@ public:
             {
                 // RPC subscribe to ledger stream
                 Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                jv[jss::streams] = Json::ArrayValue;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("subscribe", jv);
                 if (wsc->version() == 2)
@@ -276,7 +276,7 @@ public:
             {
                 // RPC unsubscribe to ledger stream
                 Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                jv[jss::streams] = Json::ArrayValue;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("unsubscribe", jv);
                 if (wsc->version() == 2)
@@ -295,7 +295,7 @@ public:
             {
                 // RPC subscribe to ledger stream
                 Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                jv[jss::streams] = Json::ArrayValue;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("subscribe", jv);
                 if (wsc->version() == 2)
@@ -329,7 +329,7 @@ public:
             {
                 // RPC unsubscribe to ledger stream
                 Json::Value jv;
-                jv[jss::streams] = Json::arrayValue;
+                jv[jss::streams] = Json::ArrayValue;
                 jv[jss::streams].append("ledger");
                 jv = wsc->invoke("unsubscribe", jv);
                 if (wsc->version() == 2)
@@ -371,14 +371,14 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
-        env.fund(XRP(10000), "alice");
+        env.fund(kXRP(10000), "alice");
         env.close();
         auto wsc = makeWSClient(env.app().config());
 
         {
             // RPC subscribe to accounts_proposed stream
             Json::Value jv;
-            jv[jss::accounts_proposed] = Json::arrayValue;
+            jv[jss::accounts_proposed] = Json::ArrayValue;
             jv[jss::accounts_proposed].append(Account("alice").human());
             jv = wsc->invoke("subscribe", jv);
             if (wsc->version() == 2)
@@ -416,7 +416,7 @@ public:
         {
             // RPC unsubscribe to accounts_proposed stream
             Json::Value jv;
-            jv[jss::accounts_proposed] = Json::arrayValue;
+            jv[jss::accounts_proposed] = Json::ArrayValue;
             jv[jss::accounts_proposed].append(Account("alice").human());
             jv = wsc->invoke("unsubscribe", jv);
             if (wsc->version() == 2)

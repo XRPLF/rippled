@@ -19,7 +19,7 @@
 
 namespace xrpl {
 
-class STValidation_test : public beast::unit_test::suite
+class STValidation_test : public beast::unit_test::Suite
 {
     // No public key:
     static constexpr std::uint8_t kPAYLOAD1[] = {
@@ -272,7 +272,7 @@ public:
             auto v2 = v;
 
             while (v2[i] == v[i])
-                v2[i] = rand_byte<std::uint8_t>(g);
+                v2[i] = randByte<std::uint8_t>(g);
 
             try
             {

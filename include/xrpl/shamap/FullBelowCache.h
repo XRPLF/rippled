@@ -22,7 +22,7 @@ private:
     using CacheType = KeyCache;
 
 public:
-    enum { defaultCacheTargetSize = 0 };
+    enum { DefaultCacheTargetSize = 0 };
 
     using key_type = uint256;
     using clock_type = typename CacheType::clock_type;
@@ -39,9 +39,9 @@ public:
         clock_type& clock,
         beast::Journal j,
         beast::insight::Collector::ptr const& collector = beast::insight::NullCollector::New(),
-        std::size_t target_size = defaultCacheTargetSize,
+        std::size_t targetSize = DefaultCacheTargetSize,
         std::chrono::seconds expiration = std::chrono::minutes{2})
-        : cache_(name, target_size, expiration, clock, j, collector), gen_(1)
+        : cache_(name, targetSize, expiration, clock, j, collector), gen_(1)
     {
     }
 
@@ -79,9 +79,9 @@ public:
         @return `true` If the key exists.
     */
     bool
-    touch_if_exists(key_type const& key)
+    touchIfExists(key_type const& key)
     {
-        return cache_.touch_if_exists(key);
+        return cache_.touchIfExists(key);
     }
 
     /** Insert a key into the cache.

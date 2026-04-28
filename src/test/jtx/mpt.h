@@ -96,8 +96,8 @@ struct MPTCreate
 struct MPTInit
 {
     Holders holders = {};  // NOLINT(readability-redundant-member-init)
-    PrettyAmount const xrp = XRP(10'000);
-    PrettyAmount const xrpHolders = XRP(10'000);
+    PrettyAmount const xrp = kXRP(10'000);
+    PrettyAmount const xrpHolders = kXRP(10'000);
     bool fund = true;
     bool close = true;
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
@@ -290,16 +290,16 @@ private:
     TER
     submit(A const& arg, Json::Value const& jv)
     {
-        env_(jv, txflags(arg.flags.value_or(0)), Ter(arg.err.value_or(tesSUCCESS)));
-        auto const err = env_.Ter();
+        env_(jv, Txflags(arg.flags.value_or(0)), Ter(arg.err.value_or(tesSUCCESS)));
+        auto const err = env_.ter();
         if (close_)
             env_.close();
         if (arg.ownerCount)
-            env_.Require(Owners(issuer_, *arg.ownerCount));
+            env_.require(Owners(issuer_, *arg.ownerCount));
         if (arg.holderCount)
         {
             for (auto const& it : holders_)
-                env_.Require(Owners(it.second, *arg.holderCount));
+                env_.require(Owners(it.second, *arg.holderCount));
         }
         return err;
     }

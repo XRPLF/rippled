@@ -74,7 +74,7 @@ Msig::operator()(Env& env, JTx& jt) const
         }
         else if (sigObject.isNull())
         {
-            sigObject = Json::Value(Json::objectValue);
+            sigObject = Json::Value(Json::ObjectValue);
         }
         std::optional<STObject> st;
         try
@@ -84,7 +84,7 @@ Msig::operator()(Env& env, JTx& jt) const
         catch (ParseError const&)
         {
             env.test.log << pretty(jtx.jv) << std::endl;
-            Rethrow();
+            rethrow();
         }
         auto& js = sigObject[sfSigners];
         for (std::size_t i = 0; i < mySigners.size(); ++i)

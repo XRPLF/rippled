@@ -22,7 +22,7 @@
 
 namespace xrpl {
 
-class Feature_test : public beast::unit_test::suite
+class Feature_test : public beast::unit_test::Suite
 {
     void
     testInternals()
@@ -258,9 +258,9 @@ class Feature_test : public beast::unit_test::suite
         testInvalidParam(1);
         testInvalidParam(1.1);
         testInvalidParam(true);
-        testInvalidParam(Json::Value(Json::nullValue));
-        testInvalidParam(Json::Value(Json::objectValue));
-        testInvalidParam(Json::Value(Json::arrayValue));
+        testInvalidParam(Json::Value(Json::NullValue));
+        testInvalidParam(Json::Value(Json::ObjectValue));
+        testInvalidParam(Json::Value(Json::ArrayValue));
 
         {
             auto jrr = env.rpc("feature", "AllTheThings")[jss::result];

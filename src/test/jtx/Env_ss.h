@@ -8,7 +8,7 @@ namespace xrpl::test::jtx {
     Transactions submitted in sign-and-submit mode
     by default.
 */
-class Env_ss
+class EnvSs
 {
 private:
     Env& env_;
@@ -27,9 +27,9 @@ private:
         }
 
         void
-        operator()(Json::Value const& params = Json::nullValue)
+        operator()(Json::Value const& params = Json::NullValue)
         {
-            env_.sign_and_submit(jt_, params, loc_);
+            env_.signAndSubmit(jt_, params, loc_);
         }
 
     private:
@@ -39,11 +39,11 @@ private:
     };
 
 public:
-    Env_ss(Env_ss const&) = delete;
-    Env_ss&
-    operator=(Env_ss const&) = delete;
+    EnvSs(EnvSs const&) = delete;
+    EnvSs&
+    operator=(EnvSs const&) = delete;
 
-    Env_ss(Env& env) : env_(env)
+    EnvSs(Env& env) : env_(env)
     {
     }
 

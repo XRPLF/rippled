@@ -15,7 +15,7 @@
 
 namespace xrpl::test {
 
-class ValidatorInfo_test : public beast::unit_test::suite
+class ValidatorInfo_test : public beast::unit_test::Suite
 {
 public:
     void

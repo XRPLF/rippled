@@ -116,7 +116,7 @@ public:
         Blob value(d_size_(gen_));
         rngcpy(&value[0], value.size(), gen_);
         return NodeObject::createObject(
-            safe_cast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
+            safeCast<NodeObjectType>(d_type_(gen_)), std::move(value), key);
     }
 
     // returns a batch of NodeObjects starting at n
@@ -132,7 +132,7 @@ public:
 
 //----------------------------------------------------------------------------------
 
-class Timing_test : public beast::unit_test::suite
+class Timing_test : public beast::unit_test::Suite
 {
 public:
     enum {
@@ -157,7 +157,7 @@ public:
     };
 
     static std::string
-    toString(Section const& config)
+    to_string(Section const& config)
     {
         std::string s;
         for (auto iter = config.begin(); iter != config.end(); ++iter)
@@ -166,7 +166,7 @@ public:
     }
 
     static std::string
-    toString(duration_type const& d)
+    to_string(duration_type const& d)
     {
         std::stringstream ss;
         ss << std::fixed << std::setprecision(3) << (d.count() / 1000.) << "s";
@@ -260,12 +260,12 @@ public:
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             Backend& backend_;
             Sequence seq_;
 
         public:
-            explicit Body(suite& s, Backend& backend) : suite_(s), backend_(backend), seq_(1)
+            explicit Body(Suite& s, Backend& backend) : suite_(s), backend_(backend), seq_(1)
             {
             }
 
@@ -292,7 +292,7 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
@@ -309,14 +309,14 @@ public:
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             Backend& backend_;
             Sequence seq1_;
             beast::xor_shift_engine gen_;
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
+            Body(std::size_t id, Suite& s, Params const& params, Backend& backend)
                 : suite_(s), backend_(backend), seq1_(1), gen_(id + 1), dist_(0, params.items - 1)
             {
             }
@@ -352,7 +352,7 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
@@ -369,7 +369,7 @@ public:
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             // Params const& params_;
             Backend& backend_;
             Sequence seq2_;
@@ -377,7 +377,7 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
+            Body(std::size_t id, Suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 //, params_ (params)
                 , backend_(backend)
@@ -418,7 +418,7 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
@@ -435,7 +435,7 @@ public:
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             // Params const& params_;
             Backend& backend_;
             Sequence seq1_;
@@ -445,7 +445,7 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
+            Body(std::size_t id, Suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 //, params_ (params)
                 , backend_(backend)
@@ -499,7 +499,7 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
@@ -521,7 +521,7 @@ public:
         class Body
         {
         private:
-            suite& suite_;
+            Suite& suite_;
             Params const& params_;
             Backend& backend_;
             Sequence seq1_;
@@ -531,7 +531,7 @@ public:
             std::uniform_int_distribution<std::size_t> older_;
 
         public:
-            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
+            Body(std::size_t id, Suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 , params_(params)
                 , backend_(backend)
@@ -609,7 +609,7 @@ public:
 #if NODESTORE_TIMING_DO_VERIFY
             backend->verify();
 #endif
-            Rethrow();
+            rethrow();
         }
         backend->close();
     }
@@ -659,16 +659,16 @@ public:
             params.threads = threads;
             for (auto i = default_repeat; (i--) != 0u;)
             {
-                beast::temp_dir const tempDir;
+                beast::TempDir const tempDir;
                 Section config = parse(configString);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
                 ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
                 {
-                    ss << " " << setw(w) << toString(doTest(test.second, config, params, journal));
+                    ss << " " << setw(w) << to_string(doTest(test.second, config, params, journal));
                 }
-                ss << "   " << toString(config);
+                ss << "   " << to_string(config);
                 log << ss.str() << std::endl;
             }
         }

@@ -29,7 +29,7 @@ LoanDelete::checkExtraFeatures(PreflightContext const& ctx)
 NotTEC
 LoanDelete::preflight(PreflightContext const& ctx)
 {
-    if (ctx.tx[sfLoanID] == beast::zero)
+    if (ctx.tx[sfLoanID] == beast::kZERO)
         return temINVALID;
 
     return tesSUCCESS;
@@ -117,7 +117,7 @@ LoanDelete::doApply()
     if (brokerSle->at(sfOwnerCount) == 0)
     {
         auto debtTotalProxy = brokerSle->at(sfDebtTotal);
-        if (*debtTotalProxy != beast::zero)
+        if (*debtTotalProxy != beast::kZERO)
         {
             XRPL_ASSERT_PARTS(
                 roundToAsset(

@@ -9,7 +9,7 @@
 
 namespace xrpl::test {
 
-class traffic_count_test : public beast::unit_test::suite
+class traffic_count_test : public beast::unit_test::Suite
 {
 public:
     traffic_count_test() = default;
@@ -23,12 +23,12 @@ public:
 
         // a known message is categorized to a proper category
         auto const known = TrafficCount::categorize(message, protocol::mtPING, false);
-        BEAST_EXPECT(known == TrafficCount::category::Base);
+        BEAST_EXPECT(known == TrafficCount::Category::Base);
 
         // an unknown message type is categorized as unknown
         auto const unknown =
             TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
-        BEAST_EXPECT(unknown == TrafficCount::category::Unknown);
+        BEAST_EXPECT(unknown == TrafficCount::Category::Unknown);
     }
 
     struct TestCase
@@ -108,11 +108,11 @@ public:
         testcase("category-to-string");
 
         // known category returns known string value
-        BEAST_EXPECT(TrafficCount::toString(TrafficCount::category::Total) == "total");
+        BEAST_EXPECT(TrafficCount::to_string(TrafficCount::Category::Total) == "total");
 
         // return "unknown" for unknown categories
         BEAST_EXPECT(
-            TrafficCount::toString(static_cast<TrafficCount::category>(1000)) == "unknown");
+            TrafficCount::to_string(static_cast<TrafficCount::Category>(1000)) == "unknown");
     }
 
     void

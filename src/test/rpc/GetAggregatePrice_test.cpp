@@ -15,7 +15,7 @@
 
 namespace xrpl::test::jtx::oracle {
 
-class GetAggregatePrice_test : public beast::unit_test::suite
+class GetAggregatePrice_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -40,7 +40,7 @@ public:
 
             // invalid base_asset, quote_asset
             std::vector<AnyValue> const invalidAsset = {
-                NoneTag,
+                kNONE_TAG,
                 1,
                 -1,
                 1.2,
@@ -81,7 +81,7 @@ public:
             ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, 2}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
             // invalid values
-            std::vector<AnyValue> const invalidDocument = {NoneTag, 1.2, -1, "", "kNONE", "1.2"};
+            std::vector<AnyValue> const invalidDocument = {kNONE_TAG, 1.2, -1, "", "kNONE", "1.2"};
             for (auto const& v : invalidDocument)
             {
                 ret = Oracle::aggregatePrice(env, "XRP", "USD", {{{owner, v}}});
@@ -101,7 +101,7 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "oracleMalformed");
 
             // oracles have wrong asset pair
-            env.fund(XRP(1'000), owner);
+            env.fund(kXRP(1'000), owner);
             Oracle const oracle(
                 env,
                 {.owner = owner,
@@ -111,7 +111,8 @@ public:
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
 
             // invalid trim value
-            std::vector<AnyValue> const invalidTrim = {NoneTag, 0, 26, -1, 1.2, "", "kNONE", "1.2"};
+            std::vector<AnyValue> const invalidTrim = {
+                kNONE_TAG, 0, 26, -1, 1.2, "", "kNONE", "1.2"};
             for (auto const& v : invalidTrim)
             {
                 ret =
@@ -120,7 +121,7 @@ public:
             }
 
             // invalid time threshold value
-            std::vector<AnyValue> const invalidTime = {NoneTag, -1, 1.2, "", "kNONE", "1.2"};
+            std::vector<AnyValue> const invalidTime = {kNONE_TAG, -1, 1.2, "", "kNONE", "1.2"};
             for (auto const& v : invalidTime)
             {
                 ret = Oracle::aggregatePrice(
@@ -138,7 +139,7 @@ public:
             for (int i = 0; i < 201; ++i)
             {
                 Account const owner(std::to_string(i));
-                env.fund(XRP(1'000), owner);
+                env.fund(kXRP(1'000), owner);
                 Oracle const oracle(env, {.owner = owner, .documentID = i, .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
@@ -160,7 +161,7 @@ public:
                 auto const baseFee = static_cast<int>(env.current()->fees().base.drops());
 
                 Account const owner{std::to_string(i)};
-                env.fund(XRP(1'000), owner);
+                env.fund(kXRP(1'000), owner);
                 Oracle const oracle(
                     env,
                     {.owner = owner,
@@ -177,7 +178,7 @@ public:
             auto const all = testableAmendments();
             for (auto const& feats : {all - featureSingleAssetVault - featureLendingProtocol, all})
             {
-                for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})
+                for (auto const mantissaSize : {MantissaRange::Small, MantissaRange::Large})
                 {
                     // Regardless of the features enabled, RPC is controlled by
                     // the global mantissa size. And since it's a thread-local,

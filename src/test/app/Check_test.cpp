@@ -49,7 +49,7 @@
 
 namespace xrpl {
 
-class Check_test : public beast::unit_test::suite
+class Check_test : public beast::unit_test::Suite
 {
     static uint256
     getCheckIndex(AccountID const& account, std::uint32_t uSequence)
@@ -77,7 +77,7 @@ class Check_test : public beast::unit_test::suite
     verifyDeliveredAmount(test::jtx::Env& env, STAmount const& amount)
     {
         // Get the hash for the most recent transaction.
-        std::string const txHash{env.tx()->getJson(JsonOptions::kNONE)[jss::hash].asString()};
+        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
 
         // Verify DeliveredAmount and delivered_amount metadata are correct.
         env.close();
@@ -89,8 +89,8 @@ class Check_test : public beast::unit_test::suite
 
         // DeliveredAmount and delivered_amount should both be present and
         // equal amount.
-        BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == amount.getJson(JsonOptions::kNONE));
-        BEAST_EXPECT(meta[jss::delivered_amount] == amount.getJson(JsonOptions::kNONE));
+        BEAST_EXPECT(meta[sfDeliveredAmount.jsonName] == amount.getJson(JsonOptions::KNone));
+        BEAST_EXPECT(meta[jss::delivered_amount] == amount.getJson(JsonOptions::KNone));
     }
 
     void
@@ -105,18 +105,18 @@ class Check_test : public beast::unit_test::suite
             // facilities should be available.
             Env env{*this, features};
 
-            env.fund(XRP(1000), alice);
+            env.fund(kXRP(1000), alice);
             env.close();
 
-            uint256 const checkId1{getCheckIndex(env.master, env.Seq(env.master))};
-            env(check::create(env.master, alice, XRP(100)));
+            uint256 const checkId1{getCheckIndex(env.master, env.seq(env.master))};
+            env(check::create(env.master, alice, kXRP(100)));
             env.close();
 
-            env(check::cash(alice, checkId1, XRP(100)));
+            env(check::cash(alice, checkId1, kXRP(100)));
             env.close();
 
-            uint256 const checkId2{getCheckIndex(env.master, env.Seq(env.master))};
-            env(check::create(env.master, alice, XRP(100)));
+            uint256 const checkId2{getCheckIndex(env.master, env.seq(env.master))};
+            env(check::create(env.master, alice, kXRP(100)));
             env.close();
 
             env(check::cancel(alice, checkId2));
@@ -139,7 +139,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{XRP(1000).value()};
+        STAmount const startBalance{kXRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
         env.close();
 
@@ -153,7 +153,7 @@ class Check_test : public beast::unit_test::suite
             std::size_t const fromCkCount{checksOnAccount(env, from).size()};
             std::size_t const toCkCount{checksOnAccount(env, to).size()};
 
-            env(check::create(from, to, XRP(2000)));
+            env(check::create(from, to, kXRP(2000)));
             env.close();
 
             env(check::create(from, to, usd(50)));
@@ -162,8 +162,8 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(checksOnAccount(env, from).size() == fromCkCount + 2);
             BEAST_EXPECT(checksOnAccount(env, to).size() == toCkCount + 2);
 
-            env.Require(Owners(from, fromOwnerCount + 2));
-            env.Require(Owners(to, to == from ? fromOwnerCount + 2 : toOwnerCount));
+            env.require(Owners(from, fromOwnerCount + 2));
+            env.require(Owners(to, to == from ? fromOwnerCount + 2 : toOwnerCount));
         };
         //  from     to
         writeTwoChecks(alice, bob);
@@ -177,32 +177,32 @@ class Check_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         std::size_t const aliceCount{checksOnAccount(env, alice).size()};
         std::size_t const bobCount{checksOnAccount(env, bob).size()};
-        env(check::create(alice, bob, usd(50)), expiration(env.now() + 1s));
+        env(check::create(alice, bob, usd(50)), Expiration(env.now() + 1s));
         env.close();
 
-        env(check::create(alice, bob, usd(50)), source_tag(2));
+        env(check::create(alice, bob, usd(50)), SourceTag(2));
         env.close();
-        env(check::create(alice, bob, usd(50)), dest_tag(3));
+        env(check::create(alice, bob, usd(50)), DestTag(3));
         env.close();
-        env(check::create(alice, bob, usd(50)), invoice_id(uint256{4}));
+        env(check::create(alice, bob, usd(50)), InvoiceId(uint256{4}));
         env.close();
         env(check::create(alice, bob, usd(50)),
-            expiration(env.now() + 1s),
-            source_tag(12),
-            dest_tag(13),
-            invoice_id(uint256{4}));
+            Expiration(env.now() + 1s),
+            SourceTag(12),
+            DestTag(13),
+            InvoiceId(uint256{4}));
         env.close();
 
         BEAST_EXPECT(checksOnAccount(env, alice).size() == aliceCount + 5);
         BEAST_EXPECT(checksOnAccount(env, bob).size() == bobCount + 5);
 
         // Use a regular key and also multisign to create a check.
-        Account const alie{"alie", KeyType::ed25519};
+        Account const alie{"alie", KeyType::Ed25519};
         env(regkey(alice, alie));
         env.close();
 
-        Account const bogie{"bogie", KeyType::secp256k1};
-        Account const demon{"demon", KeyType::ed25519};
+        Account const bogie{"bogie", KeyType::Secp256k1};
+        Account const demon{"demon", KeyType::Ed25519};
         env(signers(alice, 2, {{bogie, 1}, {demon, 1}}), Sig(alie));
         env.close();
 
@@ -234,7 +234,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{XRP(1000).value()};
+        STAmount const startBalance{kXRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
         env.close();
 
@@ -250,7 +250,7 @@ class Check_test : public beast::unit_test::suite
             std::size_t const fromCkCount{checksOnAccount(env, from).size()};
             std::size_t const toCkCount{checksOnAccount(env, to).size()};
 
-            env(check::create(from, to, XRP(2000)), Ter(expected));
+            env(check::create(from, to, kXRP(2000)), Ter(expected));
             env.close();
 
             env(check::create(from, to, usd(50)), Ter(expected));
@@ -261,16 +261,16 @@ class Check_test : public beast::unit_test::suite
                 BEAST_EXPECT(checksOnAccount(env, from).size() == fromCkCount + 2);
                 BEAST_EXPECT(checksOnAccount(env, to).size() == toCkCount + 2);
 
-                env.Require(Owners(from, fromOwnerCount + 2));
-                env.Require(Owners(to, to == from ? fromOwnerCount + 2 : toOwnerCount));
+                env.require(Owners(from, fromOwnerCount + 2));
+                env.require(Owners(to, to == from ? fromOwnerCount + 2 : toOwnerCount));
                 return;
             }
 
             BEAST_EXPECT(checksOnAccount(env, from).size() == fromCkCount);
             BEAST_EXPECT(checksOnAccount(env, to).size() == toCkCount);
 
-            env.Require(Owners(from, fromOwnerCount));
-            env.Require(Owners(to, to == from ? fromOwnerCount : toOwnerCount));
+            env.require(Owners(from, fromOwnerCount));
+            env.require(Owners(to, to == from ? fromOwnerCount : toOwnerCount));
         };
 
         // enable the DisallowIncoming flag on both bob and alice
@@ -315,7 +315,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        STAmount const startBalance{XRP(1000).value()};
+        STAmount const startBalance{kXRP(1000).value()};
         env.fund(startBalance, gw1, gwF, alice, bob);
         env.close();
 
@@ -324,11 +324,11 @@ class Check_test : public beast::unit_test::suite
         env.close();
 
         // Bad flags.
-        env(check::create(alice, bob, usd(50)), txflags(tfImmediateOrCancel), Ter(temINVALID_FLAG));
+        env(check::create(alice, bob, usd(50)), Txflags(tfImmediateOrCancel), Ter(temINVALID_FLAG));
         env.close();
 
         // Check to self.
-        env(check::create(alice, alice, XRP(10)), Ter(temREDUNDANT));
+        env(check::create(alice, alice, kXRP(10)), Ter(temREDUNDANT));
         env.close();
 
         // Bad amount.
@@ -357,7 +357,7 @@ class Check_test : public beast::unit_test::suite
 
         // Bad expiration.
         env(check::create(alice, bob, usd(50)),
-            expiration(NetClock::time_point{}),
+            Expiration(NetClock::time_point{}),
             Ter(temBAD_EXPIRATION));
         env.close();
 
@@ -373,7 +373,7 @@ class Check_test : public beast::unit_test::suite
         env(check::create(alice, bob, usd(50)), Ter(tecDST_TAG_NEEDED));
         env.close();
 
-        env(check::create(alice, bob, usd(50)), dest_tag(11));
+        env(check::create(alice, bob, usd(50)), DestTag(11));
         env.close();
 
         env(fclear(bob, asfRequireDest));
@@ -461,11 +461,11 @@ class Check_test : public beast::unit_test::suite
         }
 
         // Expired expiration.
-        env(check::create(alice, bob, usd(50)), expiration(env.now()), Ter(tecEXPIRED));
+        env(check::create(alice, bob, usd(50)), Expiration(env.now()), Ter(tecEXPIRED));
         env.close();
 
         using namespace std::chrono_literals;
-        env(check::create(alice, bob, usd(50)), expiration(env.now() + 1s));
+        env(check::create(alice, bob, usd(50)), Expiration(env.now() + 1s));
         env.close();
 
         // Insufficient reserve.
@@ -499,42 +499,42 @@ class Check_test : public beast::unit_test::suite
         Env env{*this, features};
 
         XRPAmount const baseFeeDrops{env.current()->fees().base};
-        STAmount const startBalance{XRP(300).value()};
+        STAmount const startBalance{kXRP(300).value()};
         env.fund(startBalance, alice, bob);
         env.close();
         {
             // Basic XRP check.
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)));
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, kXRP(10)));
             env.close();
-            env.Require(Balance(alice, startBalance - drops(baseFeeDrops)));
-            env.Require(Balance(bob, startBalance));
+            env.require(Balance(alice, startBalance - drops(baseFeeDrops)));
+            env.require(Balance(bob, startBalance));
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
-            env(check::cash(bob, chkId, XRP(10)));
+            env(check::cash(bob, chkId, kXRP(10)));
             env.close();
-            env.Require(Balance(alice, startBalance - XRP(10) - drops(baseFeeDrops)));
-            env.Require(Balance(bob, startBalance + XRP(10) - drops(baseFeeDrops)));
+            env.require(Balance(alice, startBalance - kXRP(10) - drops(baseFeeDrops)));
+            env.require(Balance(bob, startBalance + kXRP(10) - drops(baseFeeDrops)));
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
             BEAST_EXPECT(ownerCount(env, bob) == 0);
 
             // Make alice's and bob's balances easy to think about.
-            env(pay(env.master, alice, XRP(10) + drops(baseFeeDrops)));
-            env(pay(bob, env.master, XRP(10) - drops(baseFeeDrops * 2)));
+            env(pay(env.master, alice, kXRP(10) + drops(baseFeeDrops)));
+            env(pay(bob, env.master, kXRP(10) - drops(baseFeeDrops * 2)));
             env.close();
-            env.Require(Balance(alice, startBalance));
-            env.Require(Balance(bob, startBalance));
+            env.require(Balance(alice, startBalance));
+            env.require(Balance(bob, startBalance));
         }
         {
             // Write a check that chews into alice's reserve.
             STAmount const reserve{env.current()->fees().reserve};
             STAmount const checkAmount{startBalance - reserve - drops(baseFeeDrops)};
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, checkAmount));
             env.close();
 
@@ -550,8 +550,8 @@ class Check_test : public beast::unit_test::suite
             // check is consumed.
             env(check::cash(bob, chkId, check::DeliverMin(checkAmount)));
             verifyDeliveredAmount(env, drops(checkAmount.mantissa()));
-            env.Require(Balance(alice, reserve));
-            env.Require(Balance(bob, startBalance + checkAmount - drops(baseFeeDrops * 3)));
+            env.require(Balance(alice, reserve));
+            env.require(Balance(bob, startBalance + checkAmount - drops(baseFeeDrops * 3)));
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -561,14 +561,14 @@ class Check_test : public beast::unit_test::suite
             env(pay(env.master, alice, checkAmount + drops(baseFeeDrops)));
             env(pay(bob, env.master, checkAmount - drops(baseFeeDrops * 4)));
             env.close();
-            env.Require(Balance(alice, startBalance));
-            env.Require(Balance(bob, startBalance));
+            env.require(Balance(alice, startBalance));
+            env.require(Balance(bob, startBalance));
         }
         {
             // Write a check that goes one drop past what alice can pay.
             STAmount const reserve{env.current()->fees().reserve};
             STAmount const checkAmount{startBalance - reserve - drops(baseFeeDrops - 1)};
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, checkAmount));
             env.close();
 
@@ -580,8 +580,8 @@ class Check_test : public beast::unit_test::suite
             // bob decides to get what he can from the bounced check.
             env(check::cash(bob, chkId, check::DeliverMin(drops(1))));
             verifyDeliveredAmount(env, drops(checkAmount.mantissa() - 1));
-            env.Require(Balance(alice, reserve));
-            env.Require(Balance(bob, startBalance + checkAmount - drops(baseFeeDrops * 2 + 1)));
+            env.require(Balance(alice, reserve));
+            env.require(Balance(bob, startBalance + checkAmount - drops(baseFeeDrops * 2 + 1)));
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 0);
@@ -591,8 +591,8 @@ class Check_test : public beast::unit_test::suite
             env(pay(env.master, alice, checkAmount + drops(baseFeeDrops - 1)));
             env(pay(bob, env.master, checkAmount - drops(baseFeeDrops * 3 + 1)));
             env.close();
-            env.Require(Balance(alice, startBalance));
-            env.Require(Balance(bob, startBalance));
+            env.require(Balance(alice, startBalance));
+            env.require(Balance(bob, startBalance));
         }
     }
 
@@ -612,11 +612,11 @@ class Check_test : public beast::unit_test::suite
             // Simple IOU check cashed with Amount (with failures).
             Env env{*this, features};
 
-            env.fund(XRP(1000), gw, alice, bob);
+            env.fund(kXRP(1000), gw, alice, bob);
             env.close();
 
             // alice writes the check before she gets the funds.
-            uint256 const chkId1{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId1{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(10)));
             env.close();
 
@@ -651,8 +651,8 @@ class Check_test : public beast::unit_test::suite
             // bob asks for exactly the check amount and the check clears.
             env(check::cash(bob, chkId1, usd(10)));
             env.close();
-            env.Require(Balance(alice, usd(0)));
-            env.Require(Balance(bob, usd(10)));
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(bob, usd(10)));
 
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
@@ -667,7 +667,7 @@ class Check_test : public beast::unit_test::suite
             env(pay(bob, alice, usd(7)));
             env.close();
 
-            uint256 const chkId2{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId2{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(7)));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
@@ -677,18 +677,18 @@ class Check_test : public beast::unit_test::suite
             // consumes the check, and bob receives as much as he asked for.
             env(check::cash(bob, chkId2, usd(5)));
             env.close();
-            env.Require(Balance(alice, usd(2)));
-            env.Require(Balance(bob, usd(8)));
+            env.require(Balance(alice, usd(2)));
+            env.require(Balance(bob, usd(8)));
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
             BEAST_EXPECT(ownerCount(env, bob) == 1);
 
             // alice writes two checks for USD(2), although she only has USD(2).
-            uint256 const chkId3{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId3{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(2)));
             env.close();
-            uint256 const chkId4{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId4{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(2)));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 2);
@@ -697,8 +697,8 @@ class Check_test : public beast::unit_test::suite
             // bob cashes the second check for the face amount.
             env(check::cash(bob, chkId4, usd(2)));
             env.close();
-            env.Require(Balance(alice, usd(0)));
-            env.Require(Balance(bob, usd(10)));
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(bob, usd(10)));
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -708,8 +708,8 @@ class Check_test : public beast::unit_test::suite
             // use check::cancel instead.
             env(check::cash(bob, chkId3, usd(0)), Ter(temBAD_AMOUNT));
             env.close();
-            env.Require(Balance(alice, usd(0)));
-            env.Require(Balance(bob, usd(10)));
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(bob, usd(10)));
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -728,14 +728,14 @@ class Check_test : public beast::unit_test::suite
             env(pay(gw, bob, usd(20)), Ter(tecPATH_PARTIAL));
             env.close();
 
-            uint256 const chkId20{getCheckIndex(gw, env.Seq(gw))};
+            uint256 const chkId20{getCheckIndex(gw, env.seq(gw))};
             env(check::create(gw, bob, usd(20)));
             env.close();
 
             // However cashing a check for 20 USD succeeds.
             env(check::cash(bob, chkId20, usd(20)));
             env.close();
-            env.Require(Balance(bob, usd(30)));
+            env.require(Balance(bob, usd(30)));
 
             // Clean up this most recent experiment so the rest of the
             // tests work.
@@ -744,8 +744,8 @@ class Check_test : public beast::unit_test::suite
             // ... so bob cancels alice's remaining check.
             env(check::cancel(bob, chkId3));
             env.close();
-            env.Require(Balance(alice, usd(0)));
-            env.Require(Balance(bob, usd(10)));
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(bob, usd(10)));
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -755,7 +755,7 @@ class Check_test : public beast::unit_test::suite
             // Simple IOU check cashed with DeliverMin (with failures).
             Env env{*this, features};
 
-            env.fund(XRP(1000), gw, alice, bob);
+            env.fund(kXRP(1000), gw, alice, bob);
             env.close();
 
             env(trust(alice, usd(20)));
@@ -765,16 +765,16 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // alice creates several checks ahead of time.
-            uint256 const chkId9{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId9{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(9)));
             env.close();
-            uint256 const chkId8{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId8{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(8)));
             env.close();
-            uint256 const chkId7{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId7{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(7)));
             env.close();
-            uint256 const chkId6{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId6{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(6)));
             env.close();
 
@@ -786,8 +786,8 @@ class Check_test : public beast::unit_test::suite
             // bob sets a DeliverMin of 7 and gets all that alice has.
             env(check::cash(bob, chkId9, check::DeliverMin(usd(7))));
             verifyDeliveredAmount(env, usd(8));
-            env.Require(Balance(alice, usd(0)));
-            env.Require(Balance(bob, usd(8)));
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(bob, usd(8)));
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 3);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 3);
             BEAST_EXPECT(ownerCount(env, alice) == 4);
@@ -801,8 +801,8 @@ class Check_test : public beast::unit_test::suite
             // transfer fees) should work just like setting Amount.
             env(check::cash(bob, chkId7, check::DeliverMin(usd(7))));
             verifyDeliveredAmount(env, usd(7));
-            env.Require(Balance(alice, usd(0)));
-            env.Require(Balance(bob, usd(8)));
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(bob, usd(8)));
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 2);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 2);
             BEAST_EXPECT(ownerCount(env, alice) == 3);
@@ -816,8 +816,8 @@ class Check_test : public beast::unit_test::suite
             // DeliverMin of 4, he should get the SendMax value of the check.
             env(check::cash(bob, chkId6, check::DeliverMin(usd(4))));
             verifyDeliveredAmount(env, usd(6));
-            env.Require(Balance(alice, usd(2)));
-            env.Require(Balance(bob, usd(6)));
+            env.require(Balance(alice, usd(2)));
+            env.require(Balance(bob, usd(6)));
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -827,8 +827,8 @@ class Check_test : public beast::unit_test::suite
             // of exactly alice's remaining USD.
             env(check::cash(bob, chkId8, check::DeliverMin(usd(2))));
             verifyDeliveredAmount(env, usd(2));
-            env.Require(Balance(alice, usd(0)));
-            env.Require(Balance(bob, usd(8)));
+            env.require(Balance(alice, usd(0)));
+            env.require(Balance(bob, usd(8)));
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -838,10 +838,10 @@ class Check_test : public beast::unit_test::suite
             // Examine the effects of the asfRequireAuth flag.
             Env env(*this, features);
 
-            env.fund(XRP(1000), gw, alice, bob);
+            env.fund(kXRP(1000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
-            env(trust(gw, alice["USD"](100)), txflags(tfSetfAuth));
+            env(trust(gw, alice["USD"](100)), Txflags(tfSetfAuth));
             env(trust(alice, usd(20)));
             env.close();
             env(pay(gw, alice, usd(8)));
@@ -849,7 +849,7 @@ class Check_test : public beast::unit_test::suite
 
             // alice writes a check to bob for USD.  bob can't cash it
             // because he is not authorized to hold gw["USD"].
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(7)));
             env.close();
 
@@ -865,7 +865,7 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // bob gets authorization to hold gw["USD"].
-            env(trust(gw, bob["USD"](1)), txflags(tfSetfAuth));
+            env(trust(gw, bob["USD"](1)), Txflags(tfSetfAuth));
             env.close();
 
             // Two possible outcomes here depending on whether cashing a
@@ -878,8 +878,8 @@ class Check_test : public beast::unit_test::suite
             env(check::cash(bob, chkId, check::DeliverMin(usd(4))));
             STAmount const bobGot = usd(7);
             verifyDeliveredAmount(env, bobGot);
-            env.Require(Balance(alice, usd(8) - bobGot));
-            env.Require(Balance(bob, bobGot));
+            env.require(Balance(alice, usd(8) - bobGot));
+            env.require(Balance(bob, bobGot));
 
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
@@ -890,15 +890,15 @@ class Check_test : public beast::unit_test::suite
         // Use a regular key and also multisign to cash a check.
         {
             Env env{*this, features};
-            env.fund(XRP(1000), gw, alice, bob);
+            env.fund(kXRP(1000), gw, alice, bob);
             env.close();
 
             // alice creates her checks ahead of time.
-            uint256 const chkId1{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId1{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(1)));
             env.close();
 
-            uint256 const chkId2{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId2{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(2)));
             env.close();
 
@@ -909,12 +909,12 @@ class Check_test : public beast::unit_test::suite
             env.close();
 
             // Give bob a regular key and signers
-            Account const bobby{"bobby", KeyType::secp256k1};
+            Account const bobby{"bobby", KeyType::Secp256k1};
             env(regkey(bob, bobby));
             env.close();
 
-            Account const bogie{"bogie", KeyType::secp256k1};
-            Account const demon{"demon", KeyType::ed25519};
+            Account const bogie{"bogie", KeyType::Secp256k1};
+            Account const demon{"demon", KeyType::Ed25519};
             env(signers(bob, 2, {{bogie, 1}, {demon, 1}}), Sig(bobby));
             env.close();
 
@@ -923,8 +923,8 @@ class Check_test : public beast::unit_test::suite
             // bob uses his regular key to cash a check.
             env(check::cash(bob, chkId1, (usd(1))), Sig(bobby));
             env.close();
-            env.Require(Balance(alice, usd(7)));
-            env.Require(Balance(bob, usd(1)));
+            env.require(Balance(alice, usd(7)));
+            env.require(Balance(bob, usd(1)));
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
             BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
             BEAST_EXPECT(ownerCount(env, alice) == 2);
@@ -934,8 +934,8 @@ class Check_test : public beast::unit_test::suite
             XRPAmount const baseFeeDrops{env.current()->fees().base};
             env(check::cash(bob, chkId2, (usd(2))), Msig(bogie, demon), Fee(3 * baseFeeDrops));
             env.close();
-            env.Require(Balance(alice, usd(5)));
-            env.Require(Balance(bob, usd(3)));
+            env.require(Balance(alice, usd(5)));
+            env.require(Balance(bob, usd(3)));
             BEAST_EXPECT(checksOnAccount(env, alice).empty());
             BEAST_EXPECT(checksOnAccount(env, bob).empty());
             BEAST_EXPECT(ownerCount(env, alice) == 1);
@@ -958,7 +958,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        env.fund(XRP(1000), gw, alice, bob);
+        env.fund(kXRP(1000), gw, alice, bob);
         env.close();
 
         env(trust(alice, usd(1000)));
@@ -973,14 +973,14 @@ class Check_test : public beast::unit_test::suite
 
         // alice writes a check with a SendMax of USD(125).  The most bob
         // can get is USD(100) because of the transfer rate.
-        uint256 const chkId125{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkId125{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(125)));
         env.close();
 
         // alice writes another check that won't get cashed until the transfer
         // rate changes so we can see the rate applies when the check is
         // cashed, not when it is created.
-        uint256 const chkId120{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkId120{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(120)));
         env.close();
 
@@ -994,8 +994,8 @@ class Check_test : public beast::unit_test::suite
         // He gets USD(100).
         env(check::cash(bob, chkId125, check::DeliverMin(usd(75))));
         verifyDeliveredAmount(env, usd(100));
-        env.Require(Balance(alice, usd(1000 - 125)));
-        env.Require(Balance(bob, usd(0 + 100)));
+        env.require(Balance(alice, usd(1000 - 125)));
+        env.require(Balance(bob, usd(0 + 100)));
         BEAST_EXPECT(checksOnAccount(env, alice).size() == 1);
         BEAST_EXPECT(checksOnAccount(env, bob).size() == 1);
 
@@ -1007,8 +1007,8 @@ class Check_test : public beast::unit_test::suite
         // rate applies to the actual value transferred.
         env(check::cash(bob, chkId120, usd(50)));
         env.close();
-        env.Require(Balance(alice, usd(1000 - 125 - 60)));
-        env.Require(Balance(bob, usd(0 + 100 + 50)));
+        env.require(Balance(alice, usd(1000 - 125 - 60)));
+        env.require(Balance(bob, usd(0 + 100 + 50)));
         BEAST_EXPECT(checksOnAccount(env, alice).empty());
         BEAST_EXPECT(checksOnAccount(env, bob).empty());
     }
@@ -1028,7 +1028,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        env.fund(XRP(1000), gw, alice, bob);
+        env.fund(kXRP(1000), gw, alice, bob);
         env.close();
 
         env(trust(alice, usd(1000)));
@@ -1054,17 +1054,17 @@ class Check_test : public beast::unit_test::suite
                                      double pct,
                                      double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.Balance(alice, usd).value()};
-            STAmount const bobStart{env.Balance(bob, usd).value()};
+            STAmount const aliceStart{env.balance(alice, usd).value()};
+            STAmount const bobStart{env.balance(bob, usd).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
             env.close();
 
-            env(pay(alice, bob, usd(amount)), sendmax(usd(10)));
+            env(pay(alice, bob, usd(amount)), Sendmax(usd(10)));
             env.close();
-            env.Require(Balance(alice, aliceStart - usd(10)));
-            env.Require(Balance(bob, bobStart + usd(10)));
+            env.require(Balance(alice, aliceStart - usd(10)));
+            env.require(Balance(bob, bobStart + usd(10)));
 
             // Return the quality to the unmodified state so it doesn't
             // interfere with upcoming tests.
@@ -1079,21 +1079,21 @@ class Check_test : public beast::unit_test::suite
                                        double pct,
                                        double amount) {
             // Capture bob's and alice's balances so we can test at the end.
-            STAmount const aliceStart{env.Balance(alice, usd).value()};
-            STAmount const bobStart{env.Balance(bob, usd).value()};
+            STAmount const aliceStart{env.balance(alice, usd).value()};
+            STAmount const bobStart{env.balance(bob, usd).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
             env.close();
 
-            uint256 const chkId = getCheckIndex(alice, env.Seq(alice));
+            uint256 const chkId = getCheckIndex(alice, env.seq(alice));
             env(check::create(alice, bob, usd(10)));
             env.close();
 
             env(check::cash(bob, chkId, usd(amount)));
             env.close();
-            env.Require(Balance(alice, aliceStart - usd(10)));
-            env.Require(Balance(bob, bobStart + usd(10)));
+            env.require(Balance(alice, aliceStart - usd(10)));
+            env.require(Balance(bob, bobStart + usd(10)));
 
             // Return the quality to the unmodified state so it doesn't
             // interfere with upcoming tests.
@@ -1143,21 +1143,21 @@ class Check_test : public beast::unit_test::suite
                                   double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of a gateway.
-            STAmount const aliceStart{env.Balance(alice, usd).value()};
+            STAmount const aliceStart{env.balance(alice, usd).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
             env.close();
 
             // alice pays gw.
-            env(pay(alice, gw, usd(amt1)), sendmax(usd(max1)));
+            env(pay(alice, gw, usd(amt1)), Sendmax(usd(max1)));
             env.close();
-            env.Require(Balance(alice, aliceStart - usd(10)));
+            env.require(Balance(alice, aliceStart - usd(10)));
 
             // gw pays alice.
-            env(pay(gw, alice, usd(amt2)), sendmax(usd(max2)));
+            env(pay(gw, alice, usd(amt2)), Sendmax(usd(max2)));
             env.close();
-            env.Require(Balance(alice, aliceStart));
+            env.require(Balance(alice, aliceStart));
 
             // Return the quality to the unmodified state so it doesn't
             // interfere with upcoming tests.
@@ -1176,29 +1176,29 @@ class Check_test : public beast::unit_test::suite
                                     double max2) {
             // Capture alice's balance so we can test at the end.  It doesn't
             // make any sense to look at the balance of the issuer.
-            STAmount const aliceStart{env.Balance(alice, usd).value()};
+            STAmount const aliceStart{env.balance(alice, usd).value()};
 
             // Set the modified quality.
             env(trust(truster, iou(1000)), inOrOut(pct));
             env.close();
 
             // alice writes check to gw.  gw cashes.
-            uint256 const chkAliceId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkAliceId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, gw, usd(max1)));
             env.close();
 
             env(check::cash(gw, chkAliceId, usd(amt1)));
             env.close();
-            env.Require(Balance(alice, aliceStart - usd(10)));
+            env.require(Balance(alice, aliceStart - usd(10)));
 
             // gw writes check to alice.  alice cashes.
-            uint256 const chkGwId{getCheckIndex(gw, env.Seq(gw))};
+            uint256 const chkGwId{getCheckIndex(gw, env.seq(gw))};
             env(check::create(gw, alice, usd(max2)));
             env.close();
 
             env(check::cash(alice, chkGwId, usd(amt2)));
             env.close();
-            env.Require(Balance(alice, aliceStart));
+            env.require(Balance(alice, aliceStart));
 
             // Return the quality to the unmodified state so it doesn't
             // interfere with upcoming tests.
@@ -1237,7 +1237,7 @@ class Check_test : public beast::unit_test::suite
 
         Env env(*this, features);
 
-        env.fund(XRP(1000), gw, alice, bob, zoe);
+        env.fund(kXRP(1000), gw, alice, bob, zoe);
         env.close();
 
         // Now set up alice's trustline.
@@ -1252,55 +1252,55 @@ class Check_test : public beast::unit_test::suite
 
         // bob tries to cash a non-existent check from alice.
         {
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::cash(bob, chkId, usd(20)), Ter(tecNO_ENTRY));
             env.close();
         }
 
         // alice creates her checks ahead of time.
-        uint256 const chkIdU{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkIdU{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(20)));
         env.close();
 
-        uint256 const chkIdX{getCheckIndex(alice, env.Seq(alice))};
-        env(check::create(alice, bob, XRP(10)));
+        uint256 const chkIdX{getCheckIndex(alice, env.seq(alice))};
+        env(check::create(alice, bob, kXRP(10)));
         env.close();
 
         using namespace std::chrono_literals;
-        uint256 const chkIdExp{getCheckIndex(alice, env.Seq(alice))};
-        env(check::create(alice, bob, XRP(10)), expiration(env.now() + 1s));
+        uint256 const chkIdExp{getCheckIndex(alice, env.seq(alice))};
+        env(check::create(alice, bob, kXRP(10)), Expiration(env.now() + 1s));
         env.close();
 
-        uint256 const chkIdFroz1{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkIdFroz1{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(1)));
         env.close();
 
-        uint256 const chkIdFroz2{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkIdFroz2{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(2)));
         env.close();
 
-        uint256 const chkIdFroz3{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkIdFroz3{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(3)));
         env.close();
 
-        uint256 const chkIdFroz4{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkIdFroz4{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(4)));
         env.close();
 
-        uint256 const chkIdFroz4ToIssuer{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkIdFroz4ToIssuer{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, gw, usd(4)));
         env.close();
 
-        uint256 const chkIdFroz4Issuer{getCheckIndex(gw, env.Seq(gw))};
+        uint256 const chkIdFroz4Issuer{getCheckIndex(gw, env.seq(gw))};
         env(check::create(gw, alice, usd(4)));
         env.close();
 
-        uint256 const chkIdNoDest1{getCheckIndex(alice, env.Seq(alice))};
+        uint256 const chkIdNoDest1{getCheckIndex(alice, env.seq(alice))};
         env(check::create(alice, bob, usd(1)));
         env.close();
 
-        uint256 const chkIdHasDest2{getCheckIndex(alice, env.Seq(alice))};
-        env(check::create(alice, bob, usd(2)), dest_tag(7));
+        uint256 const chkIdHasDest2{getCheckIndex(alice, env.seq(alice))};
+        env(check::create(alice, bob, usd(2)), DestTag(7));
         env.close();
 
         // Same set of failing cases for both IOU and XRP check cashing.
@@ -1312,7 +1312,7 @@ class Check_test : public beast::unit_test::suite
 
             // Bad flags.
             env(check::cash(bob, chkId, amount),
-                txflags(tfImmediateOrCancel),
+                Txflags(tfImmediateOrCancel),
                 Ter(temINVALID_FLAG));
             env.close();
 
@@ -1326,7 +1326,7 @@ class Check_test : public beast::unit_test::suite
             // Both Amount and DeliverMin present.
             {
                 Json::Value tx{check::cash(bob, chkId, amount)};
-                tx[sfDeliverMin.jsonName] = amount.getJson(JsonOptions::kNONE);
+                tx[sfDeliverMin.jsonName] = amount.getJson(JsonOptions::KNone);
                 env(tx, Ter(temMALFORMED));
                 env.close();
             }
@@ -1384,17 +1384,17 @@ class Check_test : public beast::unit_test::suite
             env.close();
         };
 
-        failingCases(chkIdX, XRP(10));
+        failingCases(chkIdX, kXRP(10));
         failingCases(chkIdU, usd(20));
 
         // Verify that those two checks really were cashable.
         env(check::cash(bob, chkIdU, usd(20)));
         env.close();
-        env(check::cash(bob, chkIdX, check::DeliverMin(XRP(10))));
-        verifyDeliveredAmount(env, XRP(10));
+        env(check::cash(bob, chkIdX, check::DeliverMin(kXRP(10))));
+        verifyDeliveredAmount(env, kXRP(10));
 
         // Try to cash an expired check.
-        env(check::cash(bob, chkIdExp, XRP(10)), Ter(tecEXPIRED));
+        env(check::cash(bob, chkIdExp, kXRP(10)), Ter(tecEXPIRED));
         env.close();
 
         // Cancel the expired check.  Anyone can cancel an expired check.
@@ -1405,8 +1405,8 @@ class Check_test : public beast::unit_test::suite
         {
             env(pay(bob, alice, usd(20)));
             env.close();
-            env.Require(Balance(alice, usd(20)));
-            env.Require(Balance(bob, usd(0)));
+            env.require(Balance(alice, usd(20)));
+            env.require(Balance(bob, usd(0)));
 
             // Global freeze
             env(fset(gw, asfGlobalFreeze));
@@ -1434,8 +1434,8 @@ class Check_test : public beast::unit_test::suite
             // No longer frozen.  Success.
             env(check::cash(bob, chkIdFroz1, usd(1)));
             env.close();
-            env.Require(Balance(alice, usd(19)));
-            env.Require(Balance(bob, usd(1)));
+            env.require(Balance(alice, usd(19)));
+            env.require(Balance(bob, usd(1)));
 
             env(check::cash(gw, chkIdFroz4ToIssuer, usd(1)));
             env.close();
@@ -1453,8 +1453,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env(check::cash(bob, chkIdFroz2, usd(2)));
             env.close();
-            env.Require(Balance(alice, usd(16)));
-            env.Require(Balance(bob, usd(3)));
+            env.require(Balance(alice, usd(16)));
+            env.require(Balance(bob, usd(3)));
 
             // Freeze bob's trustline.  bob can't cash the check.
             env(trust(gw, bob["USD"](0), tfSetFreeze));
@@ -1469,8 +1469,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env(check::cash(bob, chkIdFroz3, check::DeliverMin(usd(1))));
             verifyDeliveredAmount(env, usd(3));
-            env.Require(Balance(alice, usd(13)));
-            env.Require(Balance(bob, usd(6)));
+            env.require(Balance(alice, usd(13)));
+            env.require(Balance(bob, usd(6)));
 
             // Set bob's freeze bit in the other direction.  Check
             // cashing fails.
@@ -1486,8 +1486,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env(check::cash(bob, chkIdFroz4, usd(4)));
             env.close();
-            env.Require(Balance(alice, usd(9)));
-            env.Require(Balance(bob, usd(10)));
+            env.require(Balance(alice, usd(9)));
+            env.require(Balance(bob, usd(10)));
         }
         {
             // Set the RequireDest flag on bob's account (after the check
@@ -1503,8 +1503,8 @@ class Check_test : public beast::unit_test::suite
             // bob can cash a check with a destination tag.
             env(check::cash(bob, chkIdHasDest2, usd(2)));
             env.close();
-            env.Require(Balance(alice, usd(7)));
-            env.Require(Balance(bob, usd(12)));
+            env.require(Balance(alice, usd(7)));
+            env.require(Balance(bob, usd(12)));
 
             // Clear the RequireDest flag on bob's account so he can
             // cash the check with no DestinationTag.
@@ -1512,8 +1512,8 @@ class Check_test : public beast::unit_test::suite
             env.close();
             env(check::cash(bob, chkIdNoDest1, usd(1)));
             env.close();
-            env.Require(Balance(alice, usd(6)));
-            env.Require(Balance(bob, usd(13)));
+            env.require(Balance(alice, usd(6)));
+            env.require(Balance(bob, usd(13)));
         }
     }
 
@@ -1534,57 +1534,57 @@ class Check_test : public beast::unit_test::suite
         {
             Env env{*this, features};
 
-            env.fund(XRP(1000), gw, alice, bob, zoe);
+            env.fund(kXRP(1000), gw, alice, bob, zoe);
             env.close();
 
             // alice creates her checks ahead of time.
             // Three ordinary checks with no expiration.
-            uint256 const chkId1{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId1{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(10)));
             env.close();
 
-            uint256 const chkId2{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)));
+            uint256 const chkId2{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, kXRP(10)));
             env.close();
 
-            uint256 const chkId3{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId3{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(10)));
             env.close();
 
             // Three checks that expire in 10 minutes.
             using namespace std::chrono_literals;
-            uint256 const chkIdNotExp1{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)), expiration(env.now() + 600s));
+            uint256 const chkIdNotExp1{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, kXRP(10)), Expiration(env.now() + 600s));
             env.close();
 
-            uint256 const chkIdNotExp2{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, usd(10)), expiration(env.now() + 600s));
+            uint256 const chkIdNotExp2{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, usd(10)), Expiration(env.now() + 600s));
             env.close();
 
-            uint256 const chkIdNotExp3{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)), expiration(env.now() + 600s));
+            uint256 const chkIdNotExp3{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, kXRP(10)), Expiration(env.now() + 600s));
             env.close();
 
             // Three checks that expire in one second.
-            uint256 const chkIdExp1{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, usd(10)), expiration(env.now() + 1s));
+            uint256 const chkIdExp1{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, usd(10)), Expiration(env.now() + 1s));
             env.close();
 
-            uint256 const chkIdExp2{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)), expiration(env.now() + 1s));
+            uint256 const chkIdExp2{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, kXRP(10)), Expiration(env.now() + 1s));
             env.close();
 
-            uint256 const chkIdExp3{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, usd(10)), expiration(env.now() + 1s));
+            uint256 const chkIdExp3{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, usd(10)), Expiration(env.now() + 1s));
             env.close();
 
             // Two checks to cancel using a regular key and using multisigning.
-            uint256 const chkIdReg{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkIdReg{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, usd(10)));
             env.close();
 
-            uint256 const chkIdMSig{getCheckIndex(alice, env.Seq(alice))};
-            env(check::create(alice, bob, XRP(10)));
+            uint256 const chkIdMSig{getCheckIndex(alice, env.seq(alice))};
+            env(check::create(alice, bob, kXRP(10)));
             env.close();
             BEAST_EXPECT(checksOnAccount(env, alice).size() == 11);
             BEAST_EXPECT(ownerCount(env, alice) == 11);
@@ -1638,12 +1638,12 @@ class Check_test : public beast::unit_test::suite
             BEAST_EXPECT(ownerCount(env, alice) == 4);
 
             // Use a regular key and also multisign to cancel checks.
-            Account const alie{"alie", KeyType::ed25519};
+            Account const alie{"alie", KeyType::Ed25519};
             env(regkey(alice, alie));
             env.close();
 
-            Account const bogie{"bogie", KeyType::secp256k1};
-            Account const demon{"demon", KeyType::ed25519};
+            Account const bogie{"bogie", KeyType::Secp256k1};
+            Account const demon{"demon", KeyType::Ed25519};
             env(signers(alice, 2, {{bogie, 1}, {demon, 1}}), Sig(alie));
             env.close();
 
@@ -1686,23 +1686,23 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        env.fund(XRP(1000), alice, bob);
+        env.fund(kXRP(1000), alice, bob);
         env.close();
 
         // Bad fee.
-        env(check::cancel(bob, getCheckIndex(alice, env.Seq(alice))),
+        env(check::cancel(bob, getCheckIndex(alice, env.seq(alice))),
             Fee(drops(-10)),
             Ter(temBAD_FEE));
         env.close();
 
         // Bad flags.
-        env(check::cancel(bob, getCheckIndex(alice, env.Seq(alice))),
-            txflags(tfImmediateOrCancel),
+        env(check::cancel(bob, getCheckIndex(alice, env.seq(alice))),
+            Txflags(tfImmediateOrCancel),
             Ter(temINVALID_FLAG));
         env.close();
 
         // Non-existent check.
-        env(check::cancel(bob, getCheckIndex(alice, env.Seq(alice))), Ter(tecNO_ENTRY));
+        env(check::cancel(bob, getCheckIndex(alice, env.seq(alice))), Ter(tecNO_ENTRY));
         env.close();
     }
 
@@ -1717,17 +1717,17 @@ class Check_test : public beast::unit_test::suite
 
         Env env{*this, features};
 
-        env.fund(XRP(1000), alice, bob);
+        env.fund(kXRP(1000), alice, bob);
         env.close();
 
-        uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
-        env(check::create(alice, bob, XRP(200)));
+        uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
+        env(check::create(alice, bob, kXRP(200)));
         env.close();
 
-        env(check::cash(bob, chkId, check::DeliverMin(XRP(100))));
+        env(check::cash(bob, chkId, check::DeliverMin(kXRP(100))));
 
         // Get the hash for the most recent transaction.
-        std::string const txHash{env.tx()->getJson(JsonOptions::kNONE)[jss::hash].asString()};
+        std::string const txHash{env.tx()->getJson(JsonOptions::KNone)[jss::hash].asString()};
 
         env.close();
         Json::Value const meta = env.rpc("tx", txHash)[jss::result][jss::meta];
@@ -1750,36 +1750,36 @@ class Check_test : public beast::unit_test::suite
         IOU const usd{gw["USD"]};
 
         Env env{*this, features};
-        env.fund(XRP(1000), gw, alice, bob);
+        env.fund(kXRP(1000), gw, alice, bob);
         env.close();
 
         // alice and bob grab enough tickets for all of the following
         // transactions.  Note that once the tickets are acquired alice's
         // and bob's account sequence numbers should not advance.
-        std::uint32_t aliceTicketSeq{env.Seq(alice) + 1};
+        std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
         env(ticket::create(alice, 10));
-        std::uint32_t const aliceSeq{env.Seq(alice)};
+        std::uint32_t const aliceSeq{env.seq(alice)};
 
-        std::uint32_t bobTicketSeq{env.Seq(bob) + 1};
+        std::uint32_t bobTicketSeq{env.seq(bob) + 1};
         env(ticket::create(bob, 10));
-        std::uint32_t const bobSeq{env.Seq(bob)};
+        std::uint32_t const bobSeq{env.seq(bob)};
 
         env.close();
-        env.Require(Owners(alice, 10));
-        env.Require(Owners(bob, 10));
+        env.require(Owners(alice, 10));
+        env.require(Owners(bob, 10));
 
         // alice gets enough USD to write a few checks.
-        env(trust(alice, usd(1000)), ticket::use(aliceTicketSeq++));
-        env(trust(bob, usd(1000)), ticket::use(bobTicketSeq++));
+        env(trust(alice, usd(1000)), ticket::Use(aliceTicketSeq++));
+        env(trust(bob, usd(1000)), ticket::Use(bobTicketSeq++));
         env.close();
-        env.Require(Owners(alice, 10));
-        env.Require(Owners(bob, 10));
+        env.require(Owners(alice, 10));
+        env.require(Owners(bob, 10));
 
-        env.Require(tickets(alice, env.Seq(alice) - aliceTicketSeq));
-        BEAST_EXPECT(env.Seq(alice) == aliceSeq);
+        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
-        env.Require(tickets(bob, env.Seq(bob) - bobTicketSeq));
-        BEAST_EXPECT(env.Seq(bob) == bobSeq);
+        env.require(tickets(bob, env.seq(bob) - bobTicketSeq));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
 
         env(pay(gw, alice, usd(900)));
         env.close();
@@ -1787,54 +1787,54 @@ class Check_test : public beast::unit_test::suite
         // alice creates four checks; two XRP, two IOU.  Bob will cash
         // one of each and cancel one of each.
         uint256 const chkIdXrp1{getCheckIndex(alice, aliceTicketSeq)};
-        env(check::create(alice, bob, XRP(200)), ticket::use(aliceTicketSeq++));
+        env(check::create(alice, bob, kXRP(200)), ticket::Use(aliceTicketSeq++));
 
         uint256 const chkIdXrp2{getCheckIndex(alice, aliceTicketSeq)};
-        env(check::create(alice, bob, XRP(300)), ticket::use(aliceTicketSeq++));
+        env(check::create(alice, bob, kXRP(300)), ticket::Use(aliceTicketSeq++));
 
         uint256 const chkIdUsd1{getCheckIndex(alice, aliceTicketSeq)};
-        env(check::create(alice, bob, usd(200)), ticket::use(aliceTicketSeq++));
+        env(check::create(alice, bob, usd(200)), ticket::Use(aliceTicketSeq++));
 
         uint256 const chkIdUsd2{getCheckIndex(alice, aliceTicketSeq)};
-        env(check::create(alice, bob, usd(300)), ticket::use(aliceTicketSeq++));
+        env(check::create(alice, bob, usd(300)), ticket::Use(aliceTicketSeq++));
 
         env.close();
         // Alice used four tickets but created four checks.
-        env.Require(Owners(alice, 10));
-        env.Require(tickets(alice, env.Seq(alice) - aliceTicketSeq));
+        env.require(Owners(alice, 10));
+        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(checksOnAccount(env, alice).size() == 4);
-        BEAST_EXPECT(env.Seq(alice) == aliceSeq);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
-        env.Require(Owners(bob, 10));
-        BEAST_EXPECT(env.Seq(bob) == bobSeq);
+        env.require(Owners(bob, 10));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
 
         // Bob cancels two of alice's checks.
-        env(check::cancel(bob, chkIdXrp1), ticket::use(bobTicketSeq++));
-        env(check::cancel(bob, chkIdUsd2), ticket::use(bobTicketSeq++));
+        env(check::cancel(bob, chkIdXrp1), ticket::Use(bobTicketSeq++));
+        env(check::cancel(bob, chkIdUsd2), ticket::Use(bobTicketSeq++));
         env.close();
 
-        env.Require(Owners(alice, 8));
-        env.Require(tickets(alice, env.Seq(alice) - aliceTicketSeq));
+        env.require(Owners(alice, 8));
+        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(checksOnAccount(env, alice).size() == 2);
-        BEAST_EXPECT(env.Seq(alice) == aliceSeq);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
 
-        env.Require(Owners(bob, 8));
-        BEAST_EXPECT(env.Seq(bob) == bobSeq);
+        env.require(Owners(bob, 8));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
 
         // Bob cashes alice's two remaining checks.
-        env(check::cash(bob, chkIdXrp2, XRP(300)), ticket::use(bobTicketSeq++));
-        env(check::cash(bob, chkIdUsd1, usd(200)), ticket::use(bobTicketSeq++));
+        env(check::cash(bob, chkIdXrp2, kXRP(300)), ticket::Use(bobTicketSeq++));
+        env(check::cash(bob, chkIdUsd1, usd(200)), ticket::Use(bobTicketSeq++));
         env.close();
 
-        env.Require(Owners(alice, 6));
-        env.Require(tickets(alice, env.Seq(alice) - aliceTicketSeq));
+        env.require(Owners(alice, 6));
+        env.require(tickets(alice, env.seq(alice) - aliceTicketSeq));
         BEAST_EXPECT(checksOnAccount(env, alice).empty());
-        BEAST_EXPECT(env.Seq(alice) == aliceSeq);
-        env.Require(Balance(alice, usd(700)));
+        BEAST_EXPECT(env.seq(alice) == aliceSeq);
+        env.require(Balance(alice, usd(700)));
 
-        env.Require(Owners(bob, 6));
-        BEAST_EXPECT(env.Seq(bob) == bobSeq);
-        env.Require(Balance(bob, usd(200)));
+        env.require(Owners(bob, 6));
+        BEAST_EXPECT(env.seq(bob) == bobSeq);
+        env.require(Balance(bob, usd(200)));
     }
 
     void
@@ -1852,7 +1852,7 @@ class Check_test : public beast::unit_test::suite
         // An account that independently tracks its owner count.
         struct AccountOwns
         {
-            beast::unit_test::suite& suite;
+            beast::unit_test::Suite& suite;
             Env const& env;
             Account const acct;
             std::size_t owners;
@@ -1886,7 +1886,7 @@ class Check_test : public beast::unit_test::suite
         AccountOwns bob{.suite = *this, .env = env, .acct = "bob", .owners = 0};
 
         // Fund with noripple so the accounts do not have any flags set.
-        env.fund(XRP(5000), noripple(alice, bob));
+        env.fund(kXRP(5000), noripple(alice, bob));
         env.close();
 
         // Automatic trust line creation should fail if the check destination
@@ -1897,7 +1897,7 @@ class Check_test : public beast::unit_test::suite
             // Fund gw1 with noripple (even though that's atypical for a
             // gateway) so it does not have any flags set.  We'll set flags
             // on gw1 later.
-            env.fund(XRP(5000), noripple(gw1));
+            env.fund(kXRP(5000), noripple(gw1));
             env.close();
 
             IOU const cK8 = gw1["CK8"];
@@ -1908,10 +1908,10 @@ class Check_test : public beast::unit_test::suite
             // Note the reserve in unit tests is 200 XRP, not 20.  So here
             // we're just barely giving yui enough XRP to meet the
             // account reserve.
-            env.fund(XRP(200), yui);
+            env.fund(kXRP(200), yui);
             env.close();
 
-            uint256 const chkId{getCheckIndex(gw1, env.Seq(gw1))};
+            uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, yui, cK8(99)));
             env.close();
 
@@ -1921,7 +1921,7 @@ class Check_test : public beast::unit_test::suite
 
             // Give yui enough XRP to meet the trust line's reserve.  Cashing
             // the check succeeds and creates the trust line.
-            env(pay(env.master, yui, XRP(51)));
+            env(pay(env.master, yui, kXRP(51)));
             env.close();
             env(check::cash(yui, chkId, cK8(99)));
             verifyDeliveredAmount(env, cK8(99));
@@ -2020,10 +2020,10 @@ class Check_test : public beast::unit_test::suite
 
             // Use offers to automatically create the trust line.
             IOU const oF1 = gw1["OF1"];
-            env(offer(gw1, XRP(98), oF1(98)));
+            env(offer(gw1, kXRP(98), oF1(98)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw1, alice, oF1.currency)) == nullptr);
-            env(offer(alice, oF1(98), XRP(98)));
+            env(offer(alice, oF1(98), kXRP(98)));
             ++alice.owners;
             env.close();
 
@@ -2037,7 +2037,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK1 = gw1["CK1"];
-            uint256 const chkId{getCheckIndex(gw1, env.Seq(gw1))};
+            uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, alice, cK1(98)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw1, alice, cK1.currency)) == nullptr);
@@ -2067,16 +2067,16 @@ class Check_test : public beast::unit_test::suite
             // trust line.
             AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
             IOU const oF1 = gw1["OF1"];
-            env(offer(alice, XRP(97), oF1(97)));
+            env(offer(alice, kXRP(97), oF1(97)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, oF1.currency)) == nullptr);
-            env(offer(bob, oF1(97), XRP(97)));
+            env(offer(bob, oF1(97), kXRP(97)));
             ++bob.owners;
             env.close();
 
             // Both offers should be consumed.
-            env.Require(Balance(alice, oF1(1)));
-            env.Require(Balance(bob, oF1(97)));
+            env.require(Balance(alice, oF1(1)));
+            env.require(Balance(bob, oF1(97)));
 
             // bob now has an owner count of 1 due to the new trust line.
             gw1.verifyOwners(__LINE__);
@@ -2090,7 +2090,7 @@ class Check_test : public beast::unit_test::suite
             // have rippling enabled the check cash fails and bob does not
             // have a trust line created.
             IOU const cK1 = gw1["CK1"];
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, cK1(97)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, cK1.currency)) == nullptr);
@@ -2120,10 +2120,10 @@ class Check_test : public beast::unit_test::suite
 
             // Use offers to automatically create the trust line.
             IOU const oF2 = gw1["OF2"];
-            env(offer(gw1, XRP(96), oF2(96)));
+            env(offer(gw1, kXRP(96), oF2(96)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw1, alice, oF2.currency)) == nullptr);
-            env(offer(alice, oF2(96), XRP(96)));
+            env(offer(alice, oF2(96), kXRP(96)));
             ++alice.owners;
             env.close();
 
@@ -2137,7 +2137,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK2 = gw1["CK2"];
-            uint256 const chkId{getCheckIndex(gw1, env.Seq(gw1))};
+            uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, alice, cK2(96)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw1, alice, cK2.currency)) == nullptr);
@@ -2164,10 +2164,10 @@ class Check_test : public beast::unit_test::suite
             // Use offers to automatically create the trust line.
             AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
             IOU const oF2 = gw1["OF2"];
-            env(offer(alice, XRP(95), oF2(95)));
+            env(offer(alice, kXRP(95), oF2(95)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, oF2.currency)) == nullptr);
-            env(offer(bob, oF2(95), XRP(95)));
+            env(offer(bob, oF2(95), kXRP(95)));
             ++bob.owners;
             env.close();
 
@@ -2178,7 +2178,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK2 = gw1["CK2"];
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, cK2(95)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, cK2.currency)) == nullptr);
@@ -2211,10 +2211,10 @@ class Check_test : public beast::unit_test::suite
 
             // Use offers to automatically create the trust line.
             IOU const oF3 = gw1["OF3"];
-            env(offer(gw1, XRP(94), oF3(94)));
+            env(offer(gw1, kXRP(94), oF3(94)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw1, alice, oF3.currency)) == nullptr);
-            env(offer(alice, oF3(94), XRP(94)));
+            env(offer(alice, oF3(94), kXRP(94)));
             ++alice.owners;
             env.close();
 
@@ -2228,7 +2228,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK3 = gw1["CK3"];
-            uint256 const chkId{getCheckIndex(gw1, env.Seq(gw1))};
+            uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, alice, cK3(94)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw1, alice, cK3.currency)) == nullptr);
@@ -2255,10 +2255,10 @@ class Check_test : public beast::unit_test::suite
             // Use offers to automatically create the trust line.
             AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
             IOU const oF3 = gw1["OF3"];
-            env(offer(alice, XRP(93), oF3(93)));
+            env(offer(alice, kXRP(93), oF3(93)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, oF3.currency)) == nullptr);
-            env(offer(bob, oF3(93), XRP(93)));
+            env(offer(bob, oF3(93), kXRP(93)));
             ++bob.owners;
             env.close();
 
@@ -2269,7 +2269,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK3 = gw1["CK3"];
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, cK3(93)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, cK3.currency)) == nullptr);
@@ -2296,10 +2296,10 @@ class Check_test : public beast::unit_test::suite
 
             // Use offers to automatically create the trust line.
             IOU const oF4 = gw1["OF4"];
-            env(offer(gw1, XRP(92), oF4(92)), Ter(tecFROZEN));
+            env(offer(gw1, kXRP(92), oF4(92)), Ter(tecFROZEN));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw1, alice, oF4.currency)) == nullptr);
-            env(offer(alice, oF4(92), XRP(92)), Ter(tecFROZEN));
+            env(offer(alice, oF4(92), kXRP(92)), Ter(tecFROZEN));
             env.close();
 
             // No one's owner count should have changed.
@@ -2309,7 +2309,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK4 = gw1["CK4"];
-            uint256 const chkId{getCheckIndex(gw1, env.Seq(gw1))};
+            uint256 const chkId{getCheckIndex(gw1, env.seq(gw1))};
             env(check::create(gw1, alice, cK4(92)), Ter(tecFROZEN));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw1, alice, cK4.currency)) == nullptr);
@@ -2334,10 +2334,10 @@ class Check_test : public beast::unit_test::suite
             // Use offers to automatically create the trust line.
             AccountOwns const gw1{.suite = *this, .env = env, .acct = "gw1", .owners = 0};
             IOU const oF4 = gw1["OF4"];
-            env(offer(alice, XRP(91), oF4(91)), Ter(tecFROZEN));
+            env(offer(alice, kXRP(91), oF4(91)), Ter(tecFROZEN));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, oF4.currency)) == nullptr);
-            env(offer(bob, oF4(91), XRP(91)), Ter(tecFROZEN));
+            env(offer(bob, oF4(91), kXRP(91)), Ter(tecFROZEN));
             env.close();
 
             // No one's owner count should have changed.
@@ -2347,7 +2347,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK4 = gw1["CK4"];
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, cK4(91)), Ter(tecFROZEN));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, cK4.currency)) == nullptr);
@@ -2372,7 +2372,7 @@ class Check_test : public beast::unit_test::suite
         // a new gateway and use that.
         {
             AccountOwns gw2{.suite = *this, .env = env, .acct = "gw2", .owners = 0};
-            env.fund(XRP(5000), gw2);
+            env.fund(kXRP(5000), gw2);
             env.close();
 
             // Set lsfRequireAuth on gw2.  That should stop any automatic
@@ -2382,12 +2382,12 @@ class Check_test : public beast::unit_test::suite
 
             // Use offers to automatically create the trust line.
             IOU const oF5 = gw2["OF5"];
-            std::uint32_t const gw2OfferSeq = {env.Seq(gw2)};
-            env(offer(gw2, XRP(92), oF5(92)));
+            std::uint32_t const gw2OfferSeq = {env.seq(gw2)};
+            env(offer(gw2, kXRP(92), oF5(92)));
             ++gw2.owners;
             env.close();
             BEAST_EXPECT(env.le(keylet::line(gw2, alice, oF5.currency)) == nullptr);
-            env(offer(alice, oF5(92), XRP(92)), Ter(tecNO_LINE));
+            env(offer(alice, oF5(92), kXRP(92)), Ter(tecNO_LINE));
             env.close();
 
             // gw2 should still own the offer, but no one else's owner
@@ -2404,7 +2404,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK5 = gw2["CK5"];
-            uint256 const chkId{getCheckIndex(gw2, env.Seq(gw2))};
+            uint256 const chkId{getCheckIndex(gw2, env.seq(gw2))};
             env(check::create(gw2, alice, cK5(92)));
             ++gw2.owners;
             env.close();
@@ -2437,9 +2437,9 @@ class Check_test : public beast::unit_test::suite
             // Use offers to automatically create the trust line.
             AccountOwns const gw2{.suite = *this, .env = env, .acct = "gw2", .owners = 0};
             IOU const oF5 = gw2["OF5"];
-            env(offer(alice, XRP(91), oF5(91)), Ter(tecUNFUNDED_OFFER));
+            env(offer(alice, kXRP(91), oF5(91)), Ter(tecUNFUNDED_OFFER));
             env.close();
-            env(offer(bob, oF5(91), XRP(91)), Ter(tecNO_LINE));
+            env(offer(bob, oF5(91), kXRP(91)), Ter(tecNO_LINE));
             BEAST_EXPECT(env.le(keylet::line(gw2, bob, oF5.currency)) == nullptr);
             env.close();
 
@@ -2449,7 +2449,7 @@ class Check_test : public beast::unit_test::suite
 
             // Use check cashing to automatically create the trust line.
             IOU const cK5 = gw2["CK5"];
-            uint256 const chkId{getCheckIndex(alice, env.Seq(alice))};
+            uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
             env(check::create(alice, bob, cK5(91)));
             env.close();
             BEAST_EXPECT(env.le(keylet::line(alice, bob, cK5.currency)) == nullptr);

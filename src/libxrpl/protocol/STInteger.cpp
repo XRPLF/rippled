@@ -91,7 +91,7 @@ STUInt16::getText() const
 {
     if (getFName() == sfLedgerEntryType)
     {
-        auto item = LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_));
+        auto item = LedgerFormats::getInstance().findByType(safeCast<LedgerEntryType>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -99,7 +99,7 @@ STUInt16::getText() const
 
     if (getFName() == sfTransactionType)
     {
-        auto item = TxFormats::getInstance().findByType(safe_cast<TxType>(value_));
+        auto item = TxFormats::getInstance().findByType(safeCast<TxType>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -114,7 +114,7 @@ STUInt16::getJson(JsonOptions) const
 {
     if (getFName() == sfLedgerEntryType)
     {
-        auto item = LedgerFormats::getInstance().findByType(safe_cast<LedgerEntryType>(value_));
+        auto item = LedgerFormats::getInstance().findByType(safeCast<LedgerEntryType>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -122,7 +122,7 @@ STUInt16::getJson(JsonOptions) const
 
     if (getFName() == sfTransactionType)
     {
-        auto item = TxFormats::getInstance().findByType(safe_cast<TxType>(value_));
+        auto item = TxFormats::getInstance().findByType(safeCast<TxType>(value_));
 
         if (item != nullptr)
             return item->getName();
@@ -208,7 +208,7 @@ STUInt64::getJson(JsonOptions) const
         return str;
     };
 
-    if (auto const& fName = getFName(); fName.shouldMeta(SField::sMD_BaseTen))
+    if (auto const& fName = getFName(); fName.shouldMeta(SField::SMdBaseTen))
     {
         return convertToString(value_, 10);  // Convert to base 10
     }

@@ -8,7 +8,7 @@
 
 namespace xrpl::test {
 
-class BasicNetwork_test : public beast::unit_test::suite
+class BasicNetwork_test : public beast::unit_test::Suite
 {
 public:
     struct Peer

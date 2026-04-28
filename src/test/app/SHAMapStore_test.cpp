@@ -34,7 +34,7 @@
 
 namespace xrpl::test {
 
-class SHAMapStore_test : public beast::unit_test::suite
+class SHAMapStore_test : public beast::unit_test::Suite
 {
     static auto const kDELETE_INTERVAL = 8;
 
@@ -58,7 +58,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     static bool
     goodLedger(jtx::Env& env, Json::Value const& json, std::string ledgerID, bool checkDB = false)
     {
-        auto good = json.isMember(jss::result) && !RPC::contains_error(json[jss::result]) &&
+        auto good = json.isMember(jss::result) && !RPC::containsError(json[jss::result]) &&
             json[jss::result][jss::ledger][jss::ledger_index] == ledgerID;
         if (!good || !checkDB)
             return good;
@@ -95,9 +95,9 @@ class SHAMapStore_test : public beast::unit_test::suite
     }
 
     static bool
-    bad(Json::Value const& json, error_code_i error = rpcLGR_NOT_FOUND)
+    bad(Json::Value const& json, ErrorCodeI error = RpcLgrNotFound)
     {
-        return json.isMember(jss::result) && RPC::contains_error(json[jss::result]) &&
+        return json.isMember(jss::result) && RPC::containsError(json[jss::result]) &&
             json[jss::result][jss::error_code] == error;
     }
 
@@ -167,7 +167,7 @@ public:
         Env env(*this, envconfig(onlineDelete));
 
         auto& store = env.app().getSHAMapStore();
-        env.fund(XRP(10000), noripple("alice"));
+        env.fund(kXRP(10000), noripple("alice"));
 
         ledgerCheck(env, 1, 2);
         transactionCheck(env, 0);
@@ -198,7 +198,7 @@ public:
 
         for (auto i = firstSeq + 1; i < kDELETE_INTERVAL + firstSeq; ++i)
         {
-            env.fund(XRP(10000), noripple("test" + std::to_string(i)));
+            env.fund(kXRP(10000), noripple("test" + std::to_string(i)));
             env.close();
 
             ledgerTmp = env.rpc("ledger", "current");
@@ -280,7 +280,7 @@ public:
         // Because advisory_delete is unset,
         // "can_delete" is disabled.
         auto const canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(bad(canDelete, rpcNOT_ENABLED));
+        BEAST_EXPECT(bad(canDelete, RpcNotEnabled));
 
         // Close ledgers without triggering a rotate
         for (; ledgerSeq < lastRotated + kDELETE_INTERVAL; ++ledgerSeq)
@@ -345,11 +345,11 @@ public:
         BEAST_EXPECT(lastRotated != 2);
 
         auto canDelete = env.rpc("can_delete");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         canDelete = env.rpc("can_delete", "never");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == 0);
 
         auto const firstBatch = kDELETE_INTERVAL + ledgerSeq;
@@ -368,7 +368,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", std::to_string(ledgerSeq + (kDELETE_INTERVAL / 2)));
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq + (kDELETE_INTERVAL / 2));
 
         store.rendezvous();
@@ -421,7 +421,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "always");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(
             canDelete[jss::result][jss::can_delete] == std::numeric_limits<unsigned int>::max());
 
@@ -455,7 +455,7 @@ public:
 
         // This does not kick off a cleanup
         canDelete = env.rpc("can_delete", "now");
-        BEAST_EXPECT(!RPC::contains_error(canDelete[jss::result]));
+        BEAST_EXPECT(!RPC::containsError(canDelete[jss::result]));
         BEAST_EXPECT(canDelete[jss::result][jss::can_delete] == ledgerSeq - 1);
 
         for (; ledgerSeq < lastRotated + kDELETE_INTERVAL; ++ledgerSeq)
@@ -500,7 +500,7 @@ public:
 
         auto backend{NodeStore::Manager::instance().makeBackend(
             section,
-            megabytes(env.app().config().getValueFor(SizedItem::burstSize, std::nullopt)),
+            megabytes(env.app().config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler,
             env.app().getJournal("NodeStoreTest"))};
         backend->open();

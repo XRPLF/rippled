@@ -75,7 +75,7 @@ makeTransactor(ApplyContext& ctx);
 
 namespace xrpl::test {
 
-class Invariants_test : public beast::unit_test::suite
+class Invariants_test : public beast::unit_test::Suite
 {
     // The optional Preclose function is used to process additional transactions
     // on the ledger after creating two accounts, but before closing it, and
@@ -150,7 +150,7 @@ class Invariants_test : public beast::unit_test::suite
 
         Account const a1{"A1"};
         Account const a2{"A2"};
-        env.fund(XRP(1000), a1, a2);
+        env.fund(kXRP(1000), a1, a2);
         if (preclose)
             BEAST_EXPECT(preclose(a1, a2, env));
         env.close();
@@ -176,9 +176,9 @@ class Invariants_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         OpenView ov{*env.current()};
-        test::StreamSink sink{beast::severities::kWarning};
+        test::StreamSink sink{beast::severities::KWarning};
         beast::Journal const jlog{sink};
-        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, tapNONE, jlog};
+        ApplyContext ac{env.app(), ov, tx, tesSUCCESS, env.current()->fees().base, TapNone, jlog};
 
         BEAST_EXPECT(precheck(a1, a2, ac));
 
@@ -251,7 +251,7 @@ class Invariants_test : public beast::unit_test::suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::zero;
+                sle->at(sfBalance) = beast::kZERO;
                 ac.view().erase(sle);
                 return true;
             });
@@ -280,8 +280,8 @@ class Invariants_test : public beast::unit_test::suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sleA1->at(sfBalance) = beast::zero;
-                sleA2->at(sfBalance) = beast::zero;
+                sleA1->at(sfBalance) = beast::kZERO;
+                sleA2->at(sfBalance) = beast::kZERO;
                 ac.view().erase(sleA1);
                 ac.view().erase(sleA2);
                 return true;
@@ -305,7 +305,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto const sleA1 = ac.view().peek(keylet::account(a1));
                 if (!sleA1)
                     return false;
-                if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::zero))
+                if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::kZERO))
                     return false;
 
                 ac.view().erase(sleA1);
@@ -327,7 +327,7 @@ class Invariants_test : public beast::unit_test::suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sleA1->at(sfBalance) = beast::zero;
+                sleA1->at(sfBalance) = beast::kZERO;
                 BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
                 adjustOwnerCount(ac.view(), sleA1, 1, ac.journal);
 
@@ -338,7 +338,7 @@ class Invariants_test : public beast::unit_test::suite
             XRPAmount{},
             STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
-        for (auto const& keyletInfo : directAccountKeylets)
+        for (auto const& keyletInfo : kDIRECT_ACCOUNT_KEYLETS)
         {
             // TODO: Use structured binding once LLVM 16 is the minimum
             // supported version. See also:
@@ -352,7 +352,7 @@ class Invariants_test : public beast::unit_test::suite
             using namespace std::string_literals;
 
             doInvariantCheck(
-                {{"account deletion left behind a "s + type.c_str() + " object"}},
+                {{"account deletion left behind a "s + type.cStr() + " object"}},
                 // NOLINTNEXTLINE(readability-identifier-naming)
                 [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                     // Add an object to the ledger for account A1, then delete
@@ -368,7 +368,7 @@ class Invariants_test : public beast::unit_test::suite
                     // Clear the balance so the "account deletion left behind a
                     // non-zero balance" check doesn't trip earlier than the
                     // desired check.
-                    sleA1->at(sfBalance) = beast::zero;
+                    sleA1->at(sfBalance) = beast::kZERO;
                     ac.view().erase(sleA1);
 
                     return true;
@@ -388,7 +388,7 @@ class Invariants_test : public beast::unit_test::suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::zero;
+                sle->at(sfBalance) = beast::kZERO;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
                 return true;
@@ -423,7 +423,7 @@ class Invariants_test : public beast::unit_test::suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::zero;
+                sle->at(sfBalance) = beast::kZERO;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
@@ -435,7 +435,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& a1, Account const& a2, Env& env) {
                 // Preclose callback to create the AMM which will be partially
                 // deleted in the Precheck callback above.
-                AMM const amm(env, a1, XRP(100), a1["USD"](50));
+                AMM const amm(env, a1, kXRP(100), a1["USD"](50));
                 ammAcctID = amm.ammAccount();
                 ammKey = amm.ammID();
                 ammIssue = amm.lptIssue();
@@ -487,7 +487,7 @@ class Invariants_test : public beast::unit_test::suite
                 // Clear the balance so the "account deletion left behind a
                 // non-zero balance" check doesn't trip earlier than the desired
                 // check.
-                sle->at(sfBalance) = beast::zero;
+                sle->at(sfBalance) = beast::kZERO;
                 sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
@@ -499,7 +499,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& a1, Account const& a2, Env& env) {
                 // Preclose callback to create the AMM which will be partially
                 // deleted in the Precheck callback above.
-                AMM const amm(env, a1, XRP(100), a1["USD"](50));
+                AMM const amm(env, a1, kXRP(100), a1["USD"](50));
                 ammAcctID = amm.ammAccount();
                 ammKey = amm.ammID();
                 ammIssue = amm.lptIssue();
@@ -650,7 +650,7 @@ class Invariants_test : public beast::unit_test::suite
         // Helper function to establish the trustlines
         auto const createTrustlines = [&](Account const& a1, Account const& a2, Env& env) {
             // Preclose callback to establish trust lines with gateway
-            env.fund(XRP(1000), g1);
+            env.fund(kXRP(1000), g1);
 
             env.trust(g1["USD"](10000), a1);
             env.trust(g1["USD"](10000), a2);
@@ -759,7 +759,7 @@ class Invariants_test : public beast::unit_test::suite
                     return false;
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
-                sle->setFieldAmount(sfBalance, INITIAL_XRP + drops(1));
+                sle->setFieldAmount(sfBalance, kINITIAL_XRP + drops(1));
                 BEAST_EXPECT(!sle->getFieldAmount(sfBalance).negative());
                 ac.view().update(sle);
                 return true;
@@ -793,10 +793,10 @@ class Invariants_test : public beast::unit_test::suite
             XRPAmount{-1});
 
         doInvariantCheck(
-            {{"fee paid exceeds system limit: "s + to_string(INITIAL_XRP)},
-             {"XRP net change of 0 doesn't match fee "s + to_string(INITIAL_XRP)}},
+            {{"fee paid exceeds system limit: "s + to_string(kINITIAL_XRP)},
+             {"XRP net change of 0 doesn't match fee "s + to_string(kINITIAL_XRP)}},
             [](Account const&, Account const&, ApplyContext&) { return true; },
-            XRPAmount{INITIAL_XRP});
+            XRPAmount{kINITIAL_XRP});
 
         doInvariantCheck(
             {{"fee paid is 20 exceeds fee specified in transaction."},
@@ -821,7 +821,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleNew = std::make_shared<SLE>(keylet::offer(a1.id(), (*sle)[sfSequence]));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
-                sleNew->setFieldAmount(sfTakerPays, XRP(-1));
+                sleNew->setFieldAmount(sfTakerPays, kXRP(-1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -836,7 +836,7 @@ class Invariants_test : public beast::unit_test::suite
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
                 sleNew->setFieldAmount(sfTakerPays, a1["USD"](10));
-                sleNew->setFieldAmount(sfTakerGets, XRP(-1));
+                sleNew->setFieldAmount(sfTakerGets, kXRP(-1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -850,8 +850,8 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleNew = std::make_shared<SLE>(keylet::offer(a1.id(), (*sle)[sfSequence]));
                 sleNew->setAccountID(sfAccount, a1.id());
                 sleNew->setFieldU32(sfSequence, (*sle)[sfSequence]);
-                sleNew->setFieldAmount(sfTakerPays, XRP(10));
-                sleNew->setFieldAmount(sfTakerGets, XRP(11));
+                sleNew->setFieldAmount(sfTakerPays, kXRP(10));
+                sleNew->setFieldAmount(sfTakerGets, kXRP(11));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -872,7 +872,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(a1, (*sle)[sfSequence] + 2));
-                sleNew->setFieldAmount(sfAmount, XRP(-1));
+                sleNew->setFieldAmount(sfAmount, kXRP(-1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -888,7 +888,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleNew = std::make_shared<SLE>(keylet::escrow(a1, (*sle)[sfSequence] + 2));
                 // Use `drops(1)` to bypass a call to STAmount::canonicalize
                 // with an invalid value
-                sleNew->setFieldAmount(sfAmount, INITIAL_XRP + drops(1));
+                sleNew->setFieldAmount(sfAmount, kINITIAL_XRP + drops(1));
                 ac.view().insert(sleNew);
                 return true;
             });
@@ -1160,7 +1160,7 @@ class Invariants_test : public beast::unit_test::suite
                 STObject newNFToken(*nfTokenTemplate, sfNFToken, [&nftID](STObject& object) {
                     object.setFieldH256(sfNFTokenID, nftID);
                 });
-                ret.push_back(std::move(newNFToken));
+                ret.pushBack(std::move(newNFToken));
                 ++nftID;
             }
             return ret;
@@ -1169,7 +1169,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(0));
 
                 ac.view().insert(nftPage);
@@ -1179,7 +1179,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page has invalid size"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(33));
 
                 ac.view().insert(nftPage);
@@ -1192,7 +1192,7 @@ class Invariants_test : public beast::unit_test::suite
                 STArray nfTokens = makeNFTokenIDs(2);
                 std::iter_swap(nfTokens.begin(), nfTokens.begin() + 1);
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1205,7 +1205,7 @@ class Invariants_test : public beast::unit_test::suite
                 STArray nfTokens = makeNFTokenIDs(1);
                 nfTokens[0].setFieldVL(sfURI, Blob{});
 
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1215,9 +1215,9 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
-                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpage_max(a1).key);
+                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpageMax(a1).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1226,9 +1226,9 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
-                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpage_min(a2).key);
+                nftPage->setFieldH256(sfPreviousPageMin, keylet::nftpageMin(a2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1237,7 +1237,7 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"NFT page is improperly linked"}},
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
-                auto nftPage = std::make_shared<SLE>(keylet::nftpage_max(a1));
+                auto nftPage = std::make_shared<SLE>(keylet::nftpageMax(a1));
                 nftPage->setFieldArray(sfNFTokens, makeNFTokenIDs(1));
                 nftPage->setFieldH256(sfNextPageMin, nftPage->key());
 
@@ -1250,9 +1250,9 @@ class Invariants_test : public beast::unit_test::suite
             [&makeNFTokenIDs](Account const& a1, Account const& a2, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(1);
                 auto nftPage = std::make_shared<SLE>(keylet::nftpage(
-                    keylet::nftpage_max(a1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
+                    keylet::nftpageMax(a1), ++(nfTokens[0].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
-                nftPage->setFieldH256(sfNextPageMin, keylet::nftpage_max(a2).key);
+                nftPage->setFieldH256(sfNextPageMin, keylet::nftpageMax(a2).key);
 
                 ac.view().insert(nftPage);
                 return true;
@@ -1263,7 +1263,7 @@ class Invariants_test : public beast::unit_test::suite
             [&makeNFTokenIDs](Account const& a1, Account const&, ApplyContext& ac) {
                 STArray nfTokens = makeNFTokenIDs(2);
                 auto nftPage = std::make_shared<SLE>(keylet::nftpage(
-                    keylet::nftpage_max(a1), (nfTokens[1].getFieldH256(sfNFTokenID))));
+                    keylet::nftpageMax(a1), (nfTokens[1].getFieldH256(sfNFTokenID))));
                 nftPage->setFieldArray(sfNFTokens, nfTokens);
 
                 ac.view().insert(nftPage);
@@ -1296,7 +1296,7 @@ class Invariants_test : public beast::unit_test::suite
                 cred.setAccountID(sfIssuer, a2);
                 auto credType = "cred_type" + std::to_string(n);
                 cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-                credentials.push_back(std::move(cred));
+                credentials.pushBack(std::move(cred));
             }
             sle->setFieldArray(sfAcceptedCredentials, credentials);
         }
@@ -1328,7 +1328,7 @@ class Invariants_test : public beast::unit_test::suite
 
         testcase << "PermissionedDomain 2";
 
-        auto constexpr kTOO_BIG = maxPermissionedDomainCredentialsArraySize + 1;
+        auto constexpr kTOO_BIG = kMAX_PERMISSIONED_DOMAIN_CREDENTIALS_ARRAY_SIZE + 1;
         doInvariantCheck(
             Env(*this, features),
             {{"permissioned domain bad credentials size " + std::to_string(kTOO_BIG)}},
@@ -1353,7 +1353,7 @@ class Invariants_test : public beast::unit_test::suite
                     cred.setAccountID(sfIssuer, a2);
                     auto credType = std::string("cred_type") + std::to_string(9 - n);
                     cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-                    credentials.push_back(std::move(cred));
+                    credentials.pushBack(std::move(cred));
                 }
                 slePd->setFieldArray(sfAcceptedCredentials, credentials);
                 ac.view().update(slePd);
@@ -1376,7 +1376,7 @@ class Invariants_test : public beast::unit_test::suite
                     auto cred = STObject::makeInnerObject(sfCredential);
                     cred.setAccountID(sfIssuer, a2);
                     cred.setFieldVL(sfCredentialType, Slice("cred_type", 9));
-                    credentials.push_back(std::move(cred));
+                    credentials.pushBack(std::move(cred));
                 }
                 slePd->setFieldArray(sfAcceptedCredentials, credentials);
                 ac.view().update(slePd);
@@ -1425,7 +1425,7 @@ class Invariants_test : public beast::unit_test::suite
                         cred.setAccountID(sfIssuer, a2);
                         auto credType = "cred_type2" + std::to_string(n);
                         cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-                        credentials.push_back(std::move(cred));
+                        credentials.pushBack(std::move(cred));
                     }
 
                     slePd->setFieldArray(sfAcceptedCredentials, credentials);
@@ -1455,7 +1455,7 @@ class Invariants_test : public beast::unit_test::suite
                         cred.setAccountID(sfIssuer, a2);
                         auto credType = std::string("cred_type2") + std::to_string(9 - n);
                         cred.setFieldVL(sfCredentialType, Slice(credType.c_str(), credType.size()));
-                        credentials.push_back(std::move(cred));
+                        credentials.pushBack(std::move(cred));
                     }
 
                     slePd->setFieldArray(sfAcceptedCredentials, credentials);
@@ -1484,7 +1484,7 @@ class Invariants_test : public beast::unit_test::suite
                         auto cred = STObject::makeInnerObject(sfCredential);
                         cred.setAccountID(sfIssuer, a2);
                         cred.setFieldVL(sfCredentialType, Slice("cred_type", 9));
-                        credentials.push_back(std::move(cred));
+                        credentials.pushBack(std::move(cred));
                     }
                     slePd->setFieldArray(sfAcceptedCredentials, credentials);
                     ac.view().update(slePd);
@@ -1530,7 +1530,7 @@ class Invariants_test : public beast::unit_test::suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(XRP(1000), a1, a2);
+            env1.fund(kXRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1572,7 +1572,7 @@ class Invariants_test : public beast::unit_test::suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(XRP(1000), a1, a2);
+            env1.fund(kXRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1597,7 +1597,7 @@ class Invariants_test : public beast::unit_test::suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(XRP(1000), a1, a2);
+            env1.fund(kXRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1782,7 +1782,7 @@ class Invariants_test : public beast::unit_test::suite
             credentials.push_back({a2, credType});
         }
 
-        std::uint32_t const seq = env.Seq(a1);
+        std::uint32_t const seq = env.seq(a1);
         env(pdomain::setTx(a1, credentials));
         uint256 const key = pdomain::getNewDomain(env.meta());
 
@@ -1810,7 +1810,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleOffer = std::make_shared<SLE>(offerKey);
                 sleOffer->setAccountID(sfAccount, a1);
                 sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
                 ac.view().insert(sleOffer);
                 return true;
             },
@@ -1824,7 +1824,7 @@ class Invariants_test : public beast::unit_test::suite
                                 "70F3649CE134E5"});
                     Account const a1{"A1"};
                     tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                    tx.setFieldAmount(sfTakerGets, XRP(1));
+                    tx.setFieldAmount(sfTakerGets, kXRP(1));
                 }},
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
 
@@ -1837,11 +1837,11 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleOffer = std::make_shared<SLE>(offerKey);
                 sleOffer->setAccountID(sfAccount, a2);
                 sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
                 sleOffer->setFlag(lsfHybrid);
 
                 STArray bookArr;
-                bookArr.push_back(STObject::makeInnerObject(sfBook));
+                bookArr.pushBack(STObject::makeInnerObject(sfBook));
                 sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
                 ac.view().insert(sleOffer);
                 return true;
@@ -1856,7 +1856,7 @@ class Invariants_test : public beast::unit_test::suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(XRP(1000), a1, a2);
+            env1.fund(kXRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1872,13 +1872,13 @@ class Invariants_test : public beast::unit_test::suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
                     sleOffer->setFlag(lsfHybrid);
                     sleOffer->setFieldH256(sfDomainID, pd1);
 
                     STArray bookArr;
-                    bookArr.push_back(STObject::makeInnerObject(sfBook));
-                    bookArr.push_back(STObject::makeInnerObject(sfBook));
+                    bookArr.pushBack(STObject::makeInnerObject(sfBook));
+                    bookArr.pushBack(STObject::makeInnerObject(sfBook));
                     sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
                     ac.view().insert(sleOffer);
                     return true;
@@ -1892,26 +1892,26 @@ class Invariants_test : public beast::unit_test::suite
         {
             Env env1(*this, features);
 
-            Account const A1{"A1"};
-            Account const A2{"A2"};
-            env1.fund(XRP(1000), A1, A2);
+            Account const a1{"A1"};
+            Account const a2{"A2"};
+            env1.fund(kXRP(1000), a1, a2);
             env1.close();
 
-            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, A1, A2);
+            [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
             env1.close();
 
             doInvariantCheck(
                 std::move(env1),
-                A1,
-                A2,
+                a1,
+                a2,
                 fixS313Enabled ? std::vector<std::string>{{"hybrid offer is malformed"}}
                                : std::vector<std::string>{},
-                [&pd1](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    Keylet const offerKey = keylet::offer(A2.id(), 10);
+                [&pd1](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    Keylet const offerKey = keylet::offer(a2.id(), 10);
                     auto sleOffer = std::make_shared<SLE>(offerKey);
-                    sleOffer->setAccountID(sfAccount, A2);
-                    sleOffer->setFieldAmount(sfTakerPays, A1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                    sleOffer->setAccountID(sfAccount, a2);
+                    sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
+                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
                     sleOffer->setFlag(lsfHybrid);
                     sleOffer->setFieldH256(sfDomainID, pd1);
 
@@ -1933,7 +1933,7 @@ class Invariants_test : public beast::unit_test::suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(XRP(1000), a1, a2);
+            env1.fund(kXRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1949,7 +1949,7 @@ class Invariants_test : public beast::unit_test::suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
                     sleOffer->setFlag(lsfHybrid);
                     sleOffer->setFieldH256(sfDomainID, pd1);
                     ac.view().insert(sleOffer);
@@ -1965,7 +1965,7 @@ class Invariants_test : public beast::unit_test::suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(XRP(1000), a1, a2);
+            env1.fund(kXRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -1982,7 +1982,7 @@ class Invariants_test : public beast::unit_test::suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
                     sleOffer->setFieldH256(sfDomainID, pd1);
                     ac.view().insert(sleOffer);
                     return true;
@@ -1993,7 +1993,7 @@ class Invariants_test : public beast::unit_test::suite
                     [&pd2, &a1](STObject& tx) {
                         tx.setFieldH256(sfDomainID, pd2);
                         tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                        tx.setFieldAmount(sfTakerGets, XRP(1));
+                        tx.setFieldAmount(sfTakerGets, kXRP(1));
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
         }
@@ -2003,7 +2003,7 @@ class Invariants_test : public beast::unit_test::suite
 
             Account const a1{"A1"};
             Account const a2{"A2"};
-            env1.fund(XRP(1000), a1, a2);
+            env1.fund(kXRP(1000), a1, a2);
             env1.close();
 
             [[maybe_unused]] auto [seq1, pd1] = createPermissionedDomainEnv(env1, a1, a2);
@@ -2019,7 +2019,7 @@ class Invariants_test : public beast::unit_test::suite
                     auto sleOffer = std::make_shared<SLE>(offerKey);
                     sleOffer->setAccountID(sfAccount, a2);
                     sleOffer->setFieldAmount(sfTakerPays, a1["USD"](10));
-                    sleOffer->setFieldAmount(sfTakerGets, XRP(1));
+                    sleOffer->setFieldAmount(sfTakerGets, kXRP(1));
                     ac.view().insert(sleOffer);
                     return true;
                 },
@@ -2030,7 +2030,7 @@ class Invariants_test : public beast::unit_test::suite
                         Account const a1{"A1"};
                         tx.setFieldH256(sfDomainID, pd1);
                         tx.setFieldAmount(sfTakerPays, a1["USD"](10));
-                        tx.setFieldAmount(sfTakerGets, XRP(1));
+                        tx.setFieldAmount(sfTakerGets, kXRP(1));
                     }},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
         }
@@ -2053,7 +2053,7 @@ class Invariants_test : public beast::unit_test::suite
         // Create Loan Broker
         using namespace loanBroker;
 
-        auto const loanBrokerKeylet = keylet::loanbroker(a.id(), env.Seq(a));
+        auto const loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
         // Create a Loan Broker with all default values.
         env(set(a, vaultID), Fee(kINCREMENT));
 
@@ -2543,13 +2543,13 @@ class Invariants_test : public beast::unit_test::suite
         Account const a3{"A3"};
         Account const a4{"A4"};
         auto const precloseXrp = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-            env.fund(XRP(1000), a3, a4);
+            env.fund(kXRP(1000), a3, a4);
             Vault const vault{env};
             auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
             env(tx);
-            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
-            env(vault.deposit({.depositor = a2, .id = keylet.key, .amount = XRP(10)}));
-            env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = XRP(10)}));
+            env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = kXRP(10)}));
+            env(vault.deposit({.depositor = a2, .id = keylet.key, .amount = kXRP(10)}));
+            env(vault.deposit({.depositor = a3, .id = keylet.key, .amount = kXRP(10)}));
             return true;
         };
 
@@ -2748,7 +2748,7 @@ class Invariants_test : public beast::unit_test::suite
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
                 env(tx);
-                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = kXRP(10)}));
                 return true;
             });
 
@@ -2884,7 +2884,7 @@ class Invariants_test : public beast::unit_test::suite
                 Vault const vault{env};
                 auto [tx, keylet] = vault.create({.owner = a1, .asset = xrpIssue()});
                 env(tx);
-                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = XRP(10)}));
+                env(vault.deposit({.depositor = a1, .id = keylet.key, .amount = kXRP(10)}));
                 return true;
             });
 
@@ -2915,8 +2915,8 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().update(sleA4);
 
                 return kADJUST(ac.view(), keylet, kARGS(a2.id(), 0, [&](Adjustments& sample) {
-                                   sample.assetsAvailable = (DROPS_PER_XRP * -100).value();
-                                   sample.assetsTotal = (DROPS_PER_XRP * -200).value();
+                                   sample.assetsAvailable = (kDROPS_PER_XRP * -100).value();
+                                   sample.assetsTotal = (kDROPS_PER_XRP * -200).value();
                                    sample.sharesTotal = -1;
                                }));
             },
@@ -3091,7 +3091,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto sleShares = ac.view().peek(keylet::mptIssuance((*sleVault)[sfShareMPTID]));
                 if (!sleShares)
                     return false;
-                (*sleShares)[sfOutstandingAmount] = maxMPTokenAmount + 1;
+                (*sleShares)[sfOutstandingAmount] = kMAX_MP_TOKEN_AMOUNT + 1;
                 ac.view().update(sleShares);
                 return true;
             },
@@ -3308,7 +3308,7 @@ class Invariants_test : public beast::unit_test::suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3368,7 +3368,7 @@ class Invariants_test : public beast::unit_test::suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3409,7 +3409,7 @@ class Invariants_test : public beast::unit_test::suite
                 sleVault->at(sfAssetsAvailable) = Number(0);
                 sleVault->at(sfLossUnrealized) = Number(0);
                 sleVault->at(sfShareMPTID) = sharesMptId;
-                sleVault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
+                sleVault->at(sfWithdrawalPolicy) = kVAULT_STRATEGY_FIRST_COME_FIRST_SERVE;
 
                 ac.view().insert(sleVault);
                 ac.view().insert(sleShares);
@@ -3796,7 +3796,7 @@ class Invariants_test : public beast::unit_test::suite
             TxAccount::A2);
 
         auto const precloseMpt = [&](Account const& a1, Account const& a2, Env& env) -> bool {
-            env.fund(XRP(1000), a3, a4);
+            env.fund(kXRP(1000), a3, a4);
 
             // Create MPT asset
             {
@@ -3808,7 +3808,7 @@ class Invariants_test : public beast::unit_test::suite
                 env.close();
             }
 
-            auto const mptID = makeMptID(env.Seq(a3) - 1, a3);
+            auto const mptID = makeMptID(env.seq(a3) - 1, a3);
             Asset const asset = MPTIssue(mptID);
             // Authorize A1 A2 A4
             {
@@ -3965,13 +3965,13 @@ class Invariants_test : public beast::unit_test::suite
         // MPT OutstandingAmount > MaximumAmount
         doInvariantCheck(
             {{"OutstandingAmount overflow"}},
-            [](Account const& A1, Account const&, ApplyContext& ac) {
+            [](Account const& a1, Account const&, ApplyContext& ac) {
                 // mptissuance outstanding is negative
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), A1)}};
+                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), a1)}};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 110);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
@@ -3982,19 +3982,19 @@ class Invariants_test : public beast::unit_test::suite
         // MPTToken amount doesn't add up to OutstandingAmount
         doInvariantCheck(
             {{"invalid OutstandingAmount balance"}},
-            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+            [](Account const& a1, Account const& a2, ApplyContext& ac) {
                 // mptissuance outstanding is negative
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto const sle = ac.view().peek(keylet::account(a1.id()));
                 if (!sle)
                     return false;
 
-                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), A1)}};
+                MPTIssue const mpt{MPTIssue{makeMptID(sle->getFieldU32(sfSequence), a1)}};
                 auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                 sleNew->setFieldU64(sfOutstandingAmount, 100);
                 sleNew->setFieldU64(sfMaximumAmount, 100);
                 ac.view().insert(sleNew);
 
-                sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), A2));
+                sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a2));
                 sleNew->setFieldU64(sfMPTAmount, 90);
                 ac.view().insert(sleNew);
 
@@ -4006,25 +4006,25 @@ class Invariants_test : public beast::unit_test::suite
             MPTID id;
             doInvariantCheck(
                 {{log}},
-                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    return update(id, ac, A1);
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    return update(id, ac, a1);
                 },
                 XRPAmount{},
                 STTx{ttPAYMENT, [](STObject& tx) {}},
                 {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
-                [&](Account const& A1, Account const& A2, Env& env) {
+                [&](Account const& a1, Account const& a2, Env& env) {
                     Account const gw("gw");
-                    env.fund(XRP(1'000), gw);
+                    env.fund(kXRP(1'000), gw);
                     MPTTester const mpt(
-                        {.env = env, .issuer = gw, .holders = {A1}, .pay = 100, .maxAmt = 100});
+                        {.env = env, .issuer = gw, .holders = {a1}, .pay = 100, .maxAmt = 100});
                     id = mpt.issuanceID();
                     return true;
                 });
         };
         testPayment(
             "invalid OutstandingAmount balance",
-            [&](MPTID const& id, ApplyContext& ac, Account const& A1) {
-                auto sle = ac.view().peek(keylet::mptoken(id, A1));
+            [&](MPTID const& id, ApplyContext& ac, Account const& a1) {
+                auto sle = ac.view().peek(keylet::mptoken(id, a1));
                 if (!sle)
                     return false;
                 sle->setFieldU64(sfMPTAmount, 101);
@@ -4051,19 +4051,19 @@ class Invariants_test : public beast::unit_test::suite
         {
             doInvariantCheck(
                 {{std::string("MPToken created for the MPT issuer")}},
-                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    auto const sle = ac.view().peek(keylet::account(A1.id()));
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    auto const sle = ac.view().peek(keylet::account(a1.id()));
                     if (!sle)
                         return false;
 
                     auto seq = sle->getFieldU32(sfSequence);
                     for (int i = 0; i < nTokens; ++i)
                     {
-                        MPTIssue const mpt{MPTIssue{makeMptID(seq + i, A1)}};
+                        MPTIssue const mpt{MPTIssue{makeMptID(seq + i, a1)}};
                         auto sleNew = std::make_shared<SLE>(keylet::mptIssuance(mpt.getMptID()));
                         ac.view().insert(sleNew);
 
-                        sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), A2));
+                        sleNew = std::make_shared<SLE>(keylet::mptoken(mpt.getMptID(), a2));
                         ac.view().insert(sleNew);
                     }
 
@@ -4078,11 +4078,11 @@ class Invariants_test : public beast::unit_test::suite
         for (auto const& tx : {ttAMM_WITHDRAW, ttAMM_CLAWBACK})
         {
             MPTID id;
-            Account const A3("A3");
+            Account const a3("A3");
             doInvariantCheck(
                 {{"MPT authorize  succeeded but created/deleted bad number of mptokens"}},
-                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                    for (auto const& a : {A1, A2, A3})
+                [&](Account const& a1, Account const& a2, ApplyContext& ac) {
+                    for (auto const& a : {a1, a2, a3})
                     {
                         auto sle = ac.view().peek(keylet::mptoken(id, a));
                         if (!sle)
@@ -4094,10 +4094,10 @@ class Invariants_test : public beast::unit_test::suite
                 XRPAmount{},
                 STTx{tx, [](STObject& tx) {}},
                 {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
-                [&](Account const& A1, Account const& A2, Env& env) {
+                [&](Account const& a1, Account const& a2, Env& env) {
                     Account const gw("gw");
-                    env.fund(XRP(1'000), gw, A3);
-                    MPTTester const mpt({.env = env, .issuer = gw, .holders = {A1, A2, A3}});
+                    env.fund(kXRP(1'000), gw, a3);
+                    MPTTester const mpt({.env = env, .issuer = gw, .holders = {a1, a2, a3}});
                     id = mpt.issuanceID();
                     return true;
                 });
@@ -4119,7 +4119,7 @@ class Invariants_test : public beast::unit_test::suite
             std::vector<ValidVault::DeltaInfo> values;
         };
 
-        NumberMantissaScaleGuard const g{MantissaRange::large};
+        NumberMantissaScaleGuard const g{MantissaRange::Large};
 
         auto makeDelta = [&vaultAsset](Number const& n) -> ValidVault::DeltaInfo {
             return {.delta = n, .scale = scale(n, vaultAsset.raw())};

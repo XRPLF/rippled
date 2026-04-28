@@ -39,7 +39,7 @@
 
 namespace beast {
 
-class AgedAssociativeContainerTestBase : public unit_test::suite
+class AgedAssociativeContainerTestBase : public unit_test::Suite
 {
 public:
     template <class T>
@@ -113,7 +113,7 @@ public:
         // using std::true_type::type = propagate_on_container_swap :;
 
         template <class U>
-        struct rebind
+        struct Rebind
         {
             using other = AllocT<U>;
         };
@@ -615,7 +615,7 @@ public:
 // Check contents via at() and operator[]
 // map, unordered_map
 template <class Container, class Values>
-typename std::enable_if<Container::is_map::value && !Container::is_multi::value>::type
+std::enable_if_t<Container::is_map::value && !Container::is_multi::value>
 AgedAssociativeContainerTestBase::checkMapContents(Container& c, Values const& v)
 {
     if (v.empty())
@@ -641,16 +641,16 @@ AgedAssociativeContainerTestBase::checkMapContents(Container& c, Values const& v
 
 // unordered
 template <class C, class Values>
-typename std::enable_if<std::remove_reference<C>::type::is_unordered::value>::type
+std::enable_if_t<std::remove_reference<C>::type::is_unordered::value>
 AgedAssociativeContainerTestBase::checkUnorderedContentsRefRef(C&& c, Values const& v)
 {
     using Cont = std::remove_reference_t<C>;
     using Traits =
         TestTraits<Cont::is_unordered::value, Cont::is_multi::value, Cont::is_map::value>;
     using size_type = typename Cont::size_type;
-    auto const hash(c.hash_function());
-    auto const keyEq(c.key_eq());
-    for (size_type i(0); i < c.bucket_count(); ++i)
+    auto const hash(c.hashFunction());
+    auto const keyEq(c.keyEq());
+    for (size_type i(0); i < c.bucketCount(); ++i)
     {
         auto const last(c.end(i));
         for (auto iter(c.begin(i)); iter != last; ++iter)
@@ -715,7 +715,7 @@ AgedAssociativeContainerTestBase::checkContents(Cont& c)
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<!IsUnordered>::type
+std::enable_if_t<!IsUnordered>
 AgedAssociativeContainerTestBase::testConstructEmpty()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -751,7 +751,7 @@ AgedAssociativeContainerTestBase::testConstructEmpty()
 
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<IsUnordered>::type
+std::enable_if_t<IsUnordered>
 AgedAssociativeContainerTestBase::testConstructEmpty()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -809,7 +809,7 @@ AgedAssociativeContainerTestBase::testConstructEmpty()
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<!IsUnordered>::type
+std::enable_if_t<!IsUnordered>
 AgedAssociativeContainerTestBase::testConstructRange()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -856,7 +856,7 @@ AgedAssociativeContainerTestBase::testConstructRange()
 
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<IsUnordered>::type
+std::enable_if_t<IsUnordered>
 AgedAssociativeContainerTestBase::testConstructRange()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -922,7 +922,7 @@ AgedAssociativeContainerTestBase::testConstructRange()
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<!IsUnordered>::type
+std::enable_if_t<!IsUnordered>
 AgedAssociativeContainerTestBase::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -938,7 +938,7 @@ AgedAssociativeContainerTestBase::testConstructInitList()
 
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<IsUnordered>::type
+std::enable_if_t<IsUnordered>
 AgedAssociativeContainerTestBase::testConstructInitList()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -1084,7 +1084,7 @@ AgedAssociativeContainerTestBase::testIterator()
 }
 
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<!IsUnordered>::type
+std::enable_if_t<!IsUnordered>
 AgedAssociativeContainerTestBase::testReverseIterator()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -1360,7 +1360,7 @@ AgedAssociativeContainerTestBase::testChronological()
 
 // map, unordered_map
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<IsMap && !IsMulti>::type
+std::enable_if_t<IsMap && !IsMulti>
 AgedAssociativeContainerTestBase::testArrayCreate()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -1643,7 +1643,7 @@ AgedAssociativeContainerTestBase::testRangeErase()
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<!IsUnordered>::type
+std::enable_if_t<!IsUnordered>
 AgedAssociativeContainerTestBase::testCompare()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -1674,7 +1674,7 @@ AgedAssociativeContainerTestBase::testCompare()
 
 // ordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<!IsUnordered>::type
+std::enable_if_t<!IsUnordered>
 AgedAssociativeContainerTestBase::testObservers()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -1692,7 +1692,7 @@ AgedAssociativeContainerTestBase::testObservers()
 
 // unordered
 template <bool IsUnordered, bool IsMulti, bool IsMap>
-typename std::enable_if<IsUnordered>::type
+std::enable_if_t<IsUnordered>
 AgedAssociativeContainerTestBase::testObservers()
 {
     using Traits = TestTraits<IsUnordered, IsMulti, IsMap>;
@@ -1702,8 +1702,8 @@ AgedAssociativeContainerTestBase::testObservers()
     testcase("observers");
 
     typename Traits::template Cont<> const c(clock);
-    c.hash_function();
-    c.key_eq();
+    c.hashFunction();
+    c.keyEq();
 
     pass();
 }
@@ -1744,21 +1744,19 @@ public:
     using T = int;
 
     static_assert(
-        std::is_same<aged_set<Key>, detail::AgedOrderedContainer<false, false, Key, void>>::value,
+        std::is_same_v<aged_set<Key>, detail::AgedOrderedContainer<false, false, Key, void>>,
         "bad alias: aged_set");
 
     static_assert(
-        std::is_same<aged_multiset<Key>, detail::AgedOrderedContainer<true, false, Key, void>>::
-            value,
+        std::is_same_v<aged_multiset<Key>, detail::AgedOrderedContainer<true, false, Key, void>>,
         "bad alias: aged_multiset");
 
     static_assert(
-        std::is_same<aged_map<Key, T>, detail::AgedOrderedContainer<false, true, Key, T>>::value,
+        std::is_same_v<aged_map<Key, T>, detail::AgedOrderedContainer<false, true, Key, T>>,
         "bad alias: aged_map");
 
     static_assert(
-        std::is_same<aged_multimap<Key, T>, detail::AgedOrderedContainer<true, true, Key, T>>::
-            value,
+        std::is_same_v<aged_multimap<Key, T>, detail::AgedOrderedContainer<true, true, Key, T>>,
         "bad alias: aged_multimap");
 
     static_assert(

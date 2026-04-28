@@ -351,7 +351,7 @@ public:
 
     /** Write only this Source to the stream. */
     void
-    write_one(PropertyStream& stream);
+    writeOne(PropertyStream& stream);
 
     /** write this source and all its children recursively to the stream. */
     void
@@ -395,7 +395,7 @@ public:
     static bool
     peelTrailingSlashstar(std::string* path);
     static std::string
-    peel_name(std::string* path);
+    peelName(std::string* path);
 
     //--------------------------------------------------------------------------
 

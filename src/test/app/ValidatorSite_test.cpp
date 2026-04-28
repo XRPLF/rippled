@@ -50,7 +50,7 @@ auto constexpr kDEFAULT_EFFECTIVE_OVERLAP = std::chrono::seconds{30};
 }  // namespace detail
 
 namespace test {
-class ValidatorSite_test : public beast::unit_test::suite
+class ValidatorSite_test : public beast::unit_test::Suite
 {
 private:
     using Validator = TrustedPublisherServer::Validator;
@@ -62,7 +62,7 @@ private:
 
         using namespace jtx;
 
-        Env env(*this, envconfig(), nullptr, beast::severities::kDisabled);
+        Env env(*this, envconfig(), nullptr, beast::severities::KDisabled);
         auto trustedSites = std::make_unique<ValidatorSite>(env.app(), env.journal);
 
         // load should accept empty sites list
@@ -495,7 +495,7 @@ public:
                   false,
                   true,
                   1,
-                  std::chrono::seconds{Json::Value::minInt}}});
+                  std::chrono::seconds{Json::Value::kMIN_INT}}});
             // force an out-of-range validUntil value on the future list
             // The first list is accepted. The second fails. The parser
             // returns the "best" result, so this looks like a success.
@@ -507,7 +507,7 @@ public:
                   false,
                   false,
                   1,
-                  std::chrono::seconds{Json::Value::maxInt - 300},
+                  std::chrono::seconds{Json::Value::kMAX_INT - 300},
                   299s}});
             // force an out-of-range validFrom value
             // The first list is accepted. The second fails. The parser
@@ -520,7 +520,7 @@ public:
                   false,
                   false,
                   1,
-                  std::chrono::seconds{Json::Value::maxInt - 300},
+                  std::chrono::seconds{Json::Value::kMAX_INT - 300},
                   301s}});
             // force an out-of-range validUntil value on _both_ lists
             testFetchList(
@@ -531,8 +531,8 @@ public:
                   false,
                   true,
                   1,
-                  std::chrono::seconds{Json::Value::minInt},
-                  std::chrono::seconds{Json::Value::maxInt - 6000}}});
+                  std::chrono::seconds{Json::Value::kMIN_INT},
+                  std::chrono::seconds{Json::Value::kMAX_INT - 6000}}});
             // verify refresh intervals are properly clamped
             testFetchList(
                 good,

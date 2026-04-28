@@ -29,7 +29,7 @@ static auto const kTOKEN =
     "VUSmEydzBpMjFlcTNNWXl3TFZKWm5GT3I3QzBrdzJBaVR6U0NqSXpkaXRROD0ifQ==\n";
 }  // namespace validator_data
 
-class ServerInfo_test : public beast::unit_test::suite
+class ServerInfo_test : public beast::unit_test::Suite
 {
 public:
     static std::unique_ptr<Config>

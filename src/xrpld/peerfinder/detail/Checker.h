@@ -19,10 +19,10 @@ class Checker
 private:
     using error_code = boost::system::error_code;
 
-    struct basic_async_op : boost::intrusive::list_base_hook<
-                                boost::intrusive::link_mode<boost::intrusive::normal_link>>
+    struct BasicAsyncOp : boost::intrusive::list_base_hook<
+                              boost::intrusive::link_mode<boost::intrusive::normal_link>>
     {
-        virtual ~basic_async_op() = default;
+        virtual ~BasicAsyncOp() = default;
 
         virtual void
         stop() = 0;
@@ -32,7 +32,7 @@ private:
     };
 
     template <class Handler>
-    struct async_op : basic_async_op
+    struct AsyncOp : BasicAsyncOp
     {
         using socket_type = typename Protocol::socket;
         using endpoint_type = typename Protocol::endpoint;
@@ -41,9 +41,9 @@ private:
         socket_type socket;
         Handler handler;
 
-        async_op(Checker& owner, boost::asio::io_context& ioContext, Handler&& handler);
+        AsyncOp(Checker& owner, boost::asio::io_context& ioContext, Handler&& handler);
 
-        ~async_op() override
+        ~AsyncOp() override
         {
             checker.remove(*this);
         }
@@ -58,7 +58,7 @@ private:
     //--------------------------------------------------------------------------
 
     using list_type = typename boost::intrusive::
-        make_list<basic_async_op, boost::intrusive::constant_time_size<true>>::type;
+        make_list<BasicAsyncOp, boost::intrusive::constant_time_size<true>>::type;
 
     std::mutex mutex_;
     std::condition_variable cond_;
@@ -100,14 +100,14 @@ public:
 
 private:
     void
-    remove(basic_async_op& op);
+    remove(BasicAsyncOp& op);
 };
 
 //------------------------------------------------------------------------------
 
 template <class Protocol>
 template <class Handler>
-Checker<Protocol>::async_op<Handler>::async_op(
+Checker<Protocol>::AsyncOp<Handler>::AsyncOp(
     Checker& owner,
     boost::asio::io_context& ioContext,
     Handler&& handler)
@@ -118,7 +118,7 @@ Checker<Protocol>::async_op<Handler>::async_op(
 template <class Protocol>
 template <class Handler>
 void
-Checker<Protocol>::async_op<Handler>::stop()
+Checker<Protocol>::AsyncOp<Handler>::stop()
 {
     error_code ec;
     socket.cancel(ec);
@@ -127,7 +127,7 @@ Checker<Protocol>::async_op<Handler>::stop()
 template <class Protocol>
 template <class Handler>
 void
-Checker<Protocol>::async_op<Handler>::operator()(error_code const& ec)
+Checker<Protocol>::AsyncOp<Handler>::operator()(error_code const& ec)
 {
     handler(ec);
 }
@@ -173,19 +173,19 @@ void
 Checker<Protocol>::asyncConnect(beast::IP::Endpoint const& endpoint, Handler&& handler)
 {
     auto const op =
-        std::make_shared<async_op<Handler>>(*this, ioContext_, std::forward<Handler>(handler));
+        std::make_shared<AsyncOp<Handler>>(*this, ioContext_, std::forward<Handler>(handler));
     {
         std::lock_guard const lock(mutex_);
         list_.push_back(*op);
     }
     op->socket.async_connect(
         beast::IPAddressConversion::toAsioEndpoint(endpoint),
-        std::bind(&basic_async_op::operator(), op, std::placeholders::_1));
+        std::bind(&BasicAsyncOp::operator(), op, std::placeholders::_1));
 }
 
 template <class Protocol>
 void
-Checker<Protocol>::remove(basic_async_op& op)
+Checker<Protocol>::remove(BasicAsyncOp& op)
 {
     std::lock_guard const lock(mutex_);
     list_.erase(list_.iterator_to(op));

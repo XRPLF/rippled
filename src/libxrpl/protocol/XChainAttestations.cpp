@@ -195,7 +195,7 @@ AttestationClaim::message(
     std::uint64_t claimID,
     std::optional<AccountID> const& dst)
 {
-    STObject o{sfGeneric};
+    STObject o{kSF_GENERIC};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainClaimID] = claimID;
     o[sfAmount] = sendingAmount;
@@ -332,7 +332,7 @@ AttestationCreateAccount::message(
     std::uint64_t createCount,
     AccountID const& dst)
 {
-    STObject o{sfGeneric};
+    STObject o{kSF_GENERIC};
     // Serialize in SField order to make python serializers easier to write
     o[sfXChainAccountCreateCount] = createCount;
     o[sfAmount] = sendingAmount;
@@ -387,8 +387,8 @@ operator==(AttestationCreateAccount const& lhs, AttestationCreateAccount const& 
 
 }  // namespace Attestations
 
-SField const& XChainClaimAttestation::ArrayFieldName{sfXChainClaimAttestations};
-SField const& XChainCreateAccountAttestation::ArrayFieldName{sfXChainCreateAccountAttestations};
+SField const& XChainClaimAttestation::arrayFieldName{sfXChainClaimAttestations};
+SField const& XChainCreateAccountAttestation::arrayFieldName{sfXChainCreateAccountAttestations};
 
 XChainClaimAttestation::XChainClaimAttestation(
     AccountID const& keyAccount,
@@ -500,10 +500,10 @@ AttestationMatch
 XChainClaimAttestation::match(XChainClaimAttestation::MatchFields const& rhs) const
 {
     if (std::tie(amount, wasLockingChainSend) != std::tie(rhs.amount, rhs.wasLockingChainSend))
-        return AttestationMatch::nonDstMismatch;
+        return AttestationMatch::NonDstMismatch;
     if (dst != rhs.dst)
-        return AttestationMatch::matchExceptDst;
-    return AttestationMatch::match;
+        return AttestationMatch::MatchExceptDst;
+    return AttestationMatch::Match;
 }
 
 //------------------------------------------------------------------------------
@@ -591,10 +591,10 @@ XChainCreateAccountAttestation::match(XChainCreateAccountAttestation::MatchField
 {
     if (std::tie(amount, rewardAmount, wasLockingChainSend) !=
         std::tie(rhs.amount, rhs.rewardAmount, rhs.wasLockingChainSend))
-        return AttestationMatch::nonDstMismatch;
+        return AttestationMatch::NonDstMismatch;
     if (dst != rhs.dst)
-        return AttestationMatch::matchExceptDst;
-    return AttestationMatch::match;
+        return AttestationMatch::MatchExceptDst;
+    return AttestationMatch::Match;
 }
 
 bool
@@ -668,7 +668,7 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(Json::Value const& 
     attestations_ = [&] {
         auto const jAtts = v[jss::attestations];
 
-        if (jAtts.size() > maxAttestations)
+        if (jAtts.size() > kMAX_ATTESTATIONS)
             Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
         std::vector<TAttestation> r;
@@ -682,7 +682,7 @@ XChainAttestationsBase<TAttestation>::XChainAttestationsBase(Json::Value const& 
 template <class TAttestation>
 XChainAttestationsBase<TAttestation>::XChainAttestationsBase(STArray const& arr)
 {
-    if (arr.size() > maxAttestations)
+    if (arr.size() > kMAX_ATTESTATIONS)
         Throw<std::runtime_error>("XChainAttestationsBase exceeded max number of attestations");
 
     attestations_.reserve(arr.size());
@@ -694,9 +694,9 @@ template <class TAttestation>
 STArray
 XChainAttestationsBase<TAttestation>::toSTArray() const
 {
-    STArray r{TAttestation::ArrayFieldName, attestations_.size()};
+    STArray r{TAttestation::arrayFieldName, attestations_.size()};
     for (auto const& e : attestations_)
-        r.emplace_back(e.toSTObject());
+        r.emplaceBack(e.toSTObject());
     return r;
 }
 

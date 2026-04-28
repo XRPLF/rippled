@@ -68,7 +68,7 @@ isFeatureValue(
     std::string const& value)
 {
     if (auto const fvalue = getFeatureValue(headers, feature))
-        return beast::rfc2616::token_in_list(fvalue.value(), value);
+        return beast::rfc2616::tokenInList(fvalue.value(), value);
 
     return false;
 }
@@ -132,7 +132,7 @@ makeFeaturesResponseHeader(
           this topic, see https://github.com/openssl/openssl/issues/5509 and
           https://github.com/XRPLF/rippled/issues/2413.
 */
-static std::optional<base_uint<512>>
+static std::optional<BaseUint<512>>
 hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 {
     constexpr std::size_t kSSL_MINIMUM_FINISHED_LENGTH = 12;
@@ -145,7 +145,7 @@ hashLastMessage(SSL const* ssl, size_t (*get)(const SSL*, void*, size_t))
 
     sha512_hasher const h;
 
-    base_uint<512> cookie;
+    BaseUint<512> cookie;
     SHA512(buf, len, cookie.data());
     return cookie;
 }
@@ -171,7 +171,7 @@ makeSharedValue(stream_type& ssl, beast::Journal journal)
 
     // Both messages hash to the same value and the cookie
     // is 0. Don't allow this.
-    if (result == beast::zero)
+    if (result == beast::kZERO)
     {
         JLOG(journal.error()) << "Cookie generation: identical finished messages";
         return std::nullopt;
@@ -204,7 +204,7 @@ buildHandshake(
     {
         auto const sig =
             signDigest(app.nodeIdentity().first, app.nodeIdentity().second, sharedValue);
-        h.insert("Session-Signature", base64_encode(sig.data(), sig.size()));
+        h.insert("Session-Signature", base64Encode(sig.data(), sig.size()));
     }
 
     h.insert("Instance-Cookie", std::to_string(app.instanceID()));
@@ -212,7 +212,7 @@ buildHandshake(
     if (!app.config().SERVER_DOMAIN.empty())
         h.insert("Server-Domain", app.config().SERVER_DOMAIN);
 
-    if (beast::IP::is_public(remoteIp))
+    if (beast::IP::isPublic(remoteIp))
         h.insert("Remote-IP", remoteIp.to_string());
 
     if (!publicIp.is_unspecified())
@@ -291,7 +291,7 @@ verifyHandshake(
 
             if (pk)
             {
-                if (publicKeyType(*pk) != KeyType::secp256k1)
+                if (publicKeyType(*pk) != KeyType::Secp256k1)
                     throw std::runtime_error("Unsupported public key type");
 
                 return *pk;
@@ -313,7 +313,7 @@ verifyHandshake(
         if (iter == headers.end())
             throw std::runtime_error("No session signature specified");
 
-        auto sig = base64_decode(iter->value());
+        auto sig = base64Decode(iter->value());
 
         if (!verifyDigest(publicKey, sharedValue, makeSlice(sig), false))
             throw std::runtime_error("Failed to verify session");
@@ -330,7 +330,7 @@ verifyHandshake(
         if (ec)
             throw std::runtime_error("Invalid Local-IP");
 
-        if (beast::IP::is_public(remote) && remote != localIp)
+        if (beast::IP::isPublic(remote) && remote != localIp)
         {
             throw std::runtime_error(
                 "Incorrect Local-IP: " + remote.to_string() + " instead of " + localIp.to_string());
@@ -345,7 +345,7 @@ verifyHandshake(
         if (ec)
             throw std::runtime_error("Invalid Remote-IP");
 
-        if (beast::IP::is_public(remote) && !beast::IP::is_unspecified(publicIp))
+        if (beast::IP::isPublic(remote) && !beast::IP::isUnspecified(publicIp))
         {
             // We know our public IP and peer reports our connection came
             // from some other IP.
@@ -400,7 +400,7 @@ makeResponse(
     resp.result(boost::beast::http::status::switching_protocols);
     resp.version(req.version());
     resp.insert("Connection", "Upgrade");
-    resp.insert("Upgrade", toString(protocol));
+    resp.insert("Upgrade", to_string(protocol));
     resp.insert("Connect-As", "Peer");
     resp.insert("Server", BuildInfo::getFullVersionString());
     resp.insert("Crawl", crawlPublic ? "public" : "private");

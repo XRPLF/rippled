@@ -47,7 +47,7 @@ using namespace jtx;
  * Tuning::hardMaxReplyNodes to prevent excessive memory usage and
  * potential DoS attacks from peers requesting large numbers of objects.
  */
-class TMGetObjectByHash_test : public beast::unit_test::suite
+class TMGetObjectByHash_test : public beast::unit_test::Suite
 {
     using middle_type = boost::beast::tcp_stream;
     using stream_type = boost::beast::ssl_stream<middle_type>;
@@ -111,7 +111,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         std::shared_ptr<Message> lastSentMessage_;
     };
 
-    shared_context context_{make_SSLContext("")};
+    shared_context context_{makeSslContext("")};
     ProtocolVersion protocolVersion_{1, 7};
 
     std::shared_ptr<PeerTest>
@@ -125,9 +125,9 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
         beast::IP::Endpoint const local(boost::asio::ip::make_address("172.1.1.1"), 51235);
         beast::IP::Endpoint const remote(boost::asio::ip::make_address("172.1.1.2"), 51235);
 
-        PublicKey const key(std::get<0>(randomKeyPair(KeyType::ed25519)));
+        PublicKey const key(std::get<0>(randomKeyPair(KeyType::Ed25519)));
         auto consumer = overlay.resourceManager().newInboundEndpoint(remote);
-        auto [slot, _] = overlay.peerFinder().new_inbound_slot(local, remote);
+        auto [slot, _] = overlay.peerFinder().newInboundSlot(local, remote);
 
         auto peer = std::make_shared<PeerTest>(
             env.app(),
@@ -139,7 +139,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             std::move(streamPtr),
             overlay);
 
-        overlay.add_active(peer);
+        overlay.addActive(peer);
         return peer;
     }
 
@@ -158,7 +158,7 @@ class TMGetObjectByHash_test : public beast::unit_test::suite
             hashes.push_back(hash);
 
             Blob data(100, static_cast<unsigned char>(i % 256));
-            nodeStore.store(hotLEDGER, std::move(data), hash, nodeStore.earliestLedgerSeq());
+            nodeStore.store(HotLedger, std::move(data), hash, nodeStore.earliestLedgerSeq());
         }
 
         // Create a request with more objects than hardMaxReplyNodes

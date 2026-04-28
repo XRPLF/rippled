@@ -26,7 +26,7 @@
 
 namespace xrpl::test {
 
-class ReducedOffer_test : public beast::unit_test::suite
+class ReducedOffer_test : public beast::unit_test::Suite
 {
     static auto
     ledgerEntryOffer(jtx::Env& env, jtx::Account const& acct, std::uint32_t offerSeq)
@@ -74,7 +74,7 @@ public:
             Env env{*this, testableAmendments()};
 
             // Make sure none of the offers we generate are under funded.
-            env.fund(XRP(10'000'000), gw, alice, bob);
+            env.fund(kXRP(10'000'000), gw, alice, bob);
             env.close();
 
             env(trust(alice, usd(10'000'000)));
@@ -93,18 +93,18 @@ public:
                                          Amounts const& inLedger,
                                          Amounts const& newOffer) -> unsigned int {
                 // Put inLedger offer in the ledger so newOffer can cross it.
-                std::uint32_t const aliceOfferSeq = env.Seq(alice);
+                std::uint32_t const aliceOfferSeq = env.seq(alice);
                 env(offer(alice, inLedger.in, inLedger.out));
                 env.close();
 
                 // Now alice's offer will partially cross bob's offer.
                 STAmount const initialRate = Quality(newOffer).rate();
-                std::uint32_t const bobOfferSeq = env.Seq(bob);
-                STAmount const bobInitialBalance = env.Balance(bob);
+                std::uint32_t const bobOfferSeq = env.seq(bob);
+                STAmount const bobInitialBalance = env.balance(bob);
                 STAmount const bobFee = env.current()->fees().base;
                 env(offer(bob, newOffer.in, newOffer.out, tfSell), Fee(bobFee));
                 env.close();
-                STAmount const bobFinalBalance = env.Balance(bob);
+                STAmount const bobFinalBalance = env.balance(bob);
 
                 // alice's offer should be fully crossed and so gone from
                 // the ledger.
@@ -124,7 +124,7 @@ public:
                         amountFromJson(sfTakerGets, bobOffer[jss::node][sfTakerGets.jsonName]);
                     STAmount const reducedTakerPays =
                         amountFromJson(sfTakerPays, bobOffer[jss::node][sfTakerPays.jsonName]);
-                    STAmount const bobGot = env.Balance(bob) + bobFee - bobInitialBalance;
+                    STAmount const bobGot = env.balance(bob) + bobFee - bobInitialBalance;
                     BEAST_EXPECT(reducedTakerPays < newOffer.in);
                     BEAST_EXPECT(reducedTakerGets < newOffer.out);
                     STAmount const inLedgerRate =
@@ -167,7 +167,7 @@ public:
             };
 
             // bob's offer (the new offer) is the same every time:
-            Amounts const bobOffer{STAmount(XRP(1)), STAmount(usd, 1, 0)};
+            Amounts const bobOffer{STAmount(kXRP(1)), STAmount(usd, 1, 0)};
 
             // alice's offer has a slightly smaller TakerPays with each
             // iteration.  This should mean that the size of the offer bob
@@ -207,7 +207,7 @@ public:
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, testableAmendments()};
-            env.fund(XRP(10'000'000), gw, alice, bob);
+            env.fund(kXRP(10'000'000), gw, alice, bob);
             env.close();
 
             env(trust(alice, usd(10'000'000)));
@@ -227,16 +227,16 @@ public:
                 // Get the inLedger offer into the ledger so newOffer can cross
                 // it.
                 STAmount const initialRate = Quality(inLedger).rate();
-                std::uint32_t const aliceOfferSeq = env.Seq(alice);
+                std::uint32_t const aliceOfferSeq = env.seq(alice);
                 env(offer(alice, inLedger.in, inLedger.out));
                 env.close();
 
                 // Now bob's offer will partially cross alice's offer.
-                std::uint32_t const bobOfferSeq = env.Seq(bob);
-                STAmount const aliceInitialBalance = env.Balance(alice);
+                std::uint32_t const bobOfferSeq = env.seq(bob);
+                STAmount const aliceInitialBalance = env.balance(alice);
                 env(offer(bob, newOffer.in, newOffer.out));
                 env.close();
-                STAmount const aliceFinalBalance = env.Balance(alice);
+                STAmount const aliceFinalBalance = env.balance(alice);
 
                 // bob's offer should not have made it into the ledger.
                 if (!BEAST_EXPECT(!offerInLedger(env, bob, bobOfferSeq)))
@@ -256,7 +256,7 @@ public:
                         amountFromJson(sfTakerGets, aliceOffer[jss::node][sfTakerGets.jsonName]);
                     STAmount const reducedTakerPays =
                         amountFromJson(sfTakerPays, aliceOffer[jss::node][sfTakerPays.jsonName]);
-                    STAmount const aliceGot = env.Balance(alice) - aliceInitialBalance;
+                    STAmount const aliceGot = env.balance(alice) - aliceInitialBalance;
                     BEAST_EXPECT(reducedTakerPays < inLedger.in);
                     BEAST_EXPECT(reducedTakerGets < inLedger.out);
                     STAmount const inLedgerRate =
@@ -299,7 +299,7 @@ public:
             };
 
             // alice's offer (the old offer) is the same every time:
-            Amounts const aliceOffer{STAmount(XRP(1)), STAmount(usd, 1, 0)};
+            Amounts const aliceOffer{STAmount(kXRP(1)), STAmount(usd, 1, 0)};
 
             // bob's offer has a slightly smaller TakerPays with each iteration.
             // This should mean that the size of the offer alice leaves in the
@@ -341,7 +341,7 @@ public:
         {
             Env env{*this, testableAmendments()};
 
-            env.fund(XRP(10000), alice, bob, gw);
+            env.fund(kXRP(10000), alice, bob, gw);
             env.close();
             env.trust(usd(1000), alice, bob);
 
@@ -353,13 +353,13 @@ public:
                 env(pay(gw, bob, initialBobUSD));
                 env.close();
 
-                std::uint32_t const bobOfferSeq = env.Seq(bob);
+                std::uint32_t const bobOfferSeq = env.seq(bob);
                 env(offer(bob, drops(2), usd(1)));
                 env.close();
 
                 // alice places an offer that would cross bob's if bob's were
                 // well funded.
-                std::uint32_t const aliceOfferSeq = env.Seq(alice);
+                std::uint32_t const aliceOfferSeq = env.seq(alice);
                 env(offer(alice, usd(1), drops(2)));
                 env.close();
 
@@ -370,13 +370,13 @@ public:
                 // order book.
                 {
                     bool const bobOfferGone = !offerInLedger(env, bob, bobOfferSeq);
-                    STAmount const aliceBalanceUSD = env.Balance(alice, usd);
+                    STAmount const aliceBalanceUSD = env.balance(alice, usd);
 
                     // Sanity check the ledger if alice got USD.
                     if (aliceBalanceUSD.signum() > 0)
                     {
                         BEAST_EXPECT(aliceBalanceUSD == initialBobUSD);
-                        BEAST_EXPECT(env.Balance(bob, usd) == usd(0));
+                        BEAST_EXPECT(env.balance(bob, usd) == usd(0));
                         BEAST_EXPECT(bobOfferGone);
                     }
 
@@ -391,11 +391,11 @@ public:
                     cleanupOldOffers(env, {{alice, aliceOfferSeq}, {bob, bobOfferSeq}});
 
                     // Zero out alice's and bob's USD balances.
-                    if (STAmount const aliceBalance = env.Balance(alice, usd);
+                    if (STAmount const aliceBalance = env.balance(alice, usd);
                         aliceBalance.signum() > 0)
                         env(pay(alice, gw, aliceBalance));
 
-                    if (STAmount const bobBalance = env.Balance(bob, usd); bobBalance.signum() > 0)
+                    if (STAmount const bobBalance = env.balance(bob, usd); bobBalance.signum() > 0)
                         env(pay(bob, gw, bobBalance));
 
                     env.close();
@@ -429,7 +429,7 @@ public:
         {
             Env env{*this, testableAmendments()};
 
-            env.fund(XRP(10000), alice, bob, gw);
+            env.fund(kXRP(10000), alice, bob, gw);
             env.close();
             env.trust(usd(1000), alice, bob);
             env.trust(eur(1000), alice, bob);
@@ -449,20 +449,20 @@ public:
                 env.close();
 
                 // This offer is underfunded
-                std::uint32_t bobOfferSeq = env.Seq(bob);
+                std::uint32_t bobOfferSeq = env.seq(bob);
                 env(offer(bob, eurOffer, usdOffer));
                 env.close();
-                env.Require(offers(bob, 1));
+                env.require(offers(bob, 1));
 
                 // alice places an offer that crosses bob's.
-                std::uint32_t aliceOfferSeq = env.Seq(alice);
+                std::uint32_t aliceOfferSeq = env.seq(alice);
                 env(offer(alice, usdOffer, eurOffer));
                 env.close();
 
                 // Examine the aftermath of alice's offer.
                 {
                     bool const bobOfferGone = !offerInLedger(env, bob, bobOfferSeq);
-                    STAmount const aliceBalanceUSD = env.Balance(alice, usd);
+                    STAmount const aliceBalanceUSD = env.balance(alice, usd);
 #if 0
                     std::cout
                         << "bob initial: " << initialBobUSD
@@ -474,7 +474,7 @@ public:
                     if (aliceBalanceUSD.signum() > 0)
                     {
                         BEAST_EXPECT(aliceBalanceUSD == initialBobUSD);
-                        BEAST_EXPECT(env.Balance(bob, usd) == usd(0));
+                        BEAST_EXPECT(env.balance(bob, usd) == usd(0));
                         BEAST_EXPECT(bobOfferGone);
                     }
 
@@ -491,7 +491,7 @@ public:
 
                 // Zero out alice's and bob's IOU balances.
                 auto zeroBalance = [&env, &gw](Account const& acct, IOU const& iou) {
-                    if (STAmount const balance = env.Balance(acct, iou); balance.signum() > 0)
+                    if (STAmount const balance = env.balance(acct, iou); balance.signum() > 0)
                         env(pay(acct, gw, balance));
                 };
 
@@ -539,7 +539,7 @@ public:
         {
             // Make sure none of the offers we generate are under funded.
             Env env{*this, features};
-            env.fund(XRP(10'000'000), gw, alice, bob, carol);
+            env.fund(kXRP(10'000'000), gw, alice, bob, carol);
             env.close();
 
             env(trust(alice, usd(10'000'000)));
@@ -559,7 +559,7 @@ public:
             auto exerciseOfferTrio = [this, &env, &alice, &bob, &carol, &usd](
                                          Amounts const& carolOffer) -> unsigned int {
                 // alice submits an offer that may become a blocker.
-                std::uint32_t const aliceOfferSeq = env.Seq(alice);
+                std::uint32_t const aliceOfferSeq = env.seq(alice);
                 static Amounts const kALICE_INITIAL_OFFER(usd(2), drops(3382562));
                 env(offer(alice, kALICE_INITIAL_OFFER.in, kALICE_INITIAL_OFFER.out));
                 env.close();
@@ -568,14 +568,14 @@ public:
                                                  .rate();
 
                 // bob submits an offer that is more desirable than alice's
-                std::uint32_t const bobOfferSeq = env.Seq(bob);
+                std::uint32_t const bobOfferSeq = env.seq(bob);
                 env(offer(bob, usd(0.97086565812384), drops(1642020)));
                 env.close();
 
                 // Now carol's offer consumes bob's and partially crosses
                 // alice's.  The tfSell flag is important.
-                std::uint32_t const carolOfferSeq = env.Seq(carol);
-                env(offer(carol, carolOffer.in, carolOffer.out), txflags(tfSell));
+                std::uint32_t const carolOfferSeq = env.seq(carol);
+                env(offer(carol, carolOffer.in, carolOffer.out), Txflags(tfSell));
                 env.close();
 
                 // carol's offer should not have made it into the ledger and

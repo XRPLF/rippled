@@ -151,7 +151,7 @@ static TestJSONTxt const kTEST_ARRAY[] = {
 
 }  // namespace InnerObjectFormatsUnitTestDetail
 
-class InnerObjectFormatsParsedJSON_test : public beast::unit_test::suite
+class InnerObjectFormatsParsedJSON_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -166,7 +166,7 @@ public:
         {
             Json::Value req;
             Json::Reader().parse(test.txt, req);
-            if (RPC::contains_error(req))
+            if (RPC::containsError(req))
             {
                 Throw<std::runtime_error>(
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");

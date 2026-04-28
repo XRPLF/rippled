@@ -44,11 +44,11 @@ NotTEC
 PaymentChannelClaim::preflight(PreflightContext const& ctx)
 {
     auto const bal = ctx.tx[~sfBalance];
-    if (bal && (!isXRP(*bal) || *bal <= beast::zero))
+    if (bal && (!isXRP(*bal) || *bal <= beast::kZERO))
         return temBAD_AMOUNT;
 
     auto const amt = ctx.tx[~sfAmount];
-    if (amt && (!isXRP(*amt) || *amt <= beast::zero))
+    if (amt && (!isXRP(*amt) || *amt <= beast::kZERO))
         return temBAD_AMOUNT;
 
     if (bal && amt && *bal > *amt)

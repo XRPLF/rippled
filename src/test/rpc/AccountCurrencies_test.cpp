@@ -18,7 +18,7 @@
 
 namespace xrpl {
 
-class AccountCurrencies_test : public beast::unit_test::suite
+class AccountCurrencies_test : public beast::unit_test::Suite
 {
     void
     testBadInput()
@@ -29,7 +29,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
         Env env{*this};
 
         auto const alice = Account{"alice"};
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
 
         {  // invalid ledger (hash)
@@ -62,9 +62,9 @@ class AccountCurrencies_test : public beast::unit_test::suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(Json::Value(Json::NullValue));
+            testInvalidAccountParam(Json::Value(Json::ObjectValue));
+            testInvalidAccountParam(Json::Value(Json::ArrayValue));
         }
 
         {
@@ -80,9 +80,9 @@ class AccountCurrencies_test : public beast::unit_test::suite
             testInvalidIdentParam(1);
             testInvalidIdentParam(1.1);
             testInvalidIdentParam(true);
-            testInvalidIdentParam(Json::Value(Json::nullValue));
-            testInvalidIdentParam(Json::Value(Json::objectValue));
-            testInvalidIdentParam(Json::Value(Json::arrayValue));
+            testInvalidIdentParam(Json::Value(Json::NullValue));
+            testInvalidIdentParam(Json::Value(Json::ObjectValue));
+            testInvalidIdentParam(Json::Value(Json::ArrayValue));
         }
 
         {
@@ -124,7 +124,7 @@ class AccountCurrencies_test : public beast::unit_test::suite
 
         auto const alice = Account{"alice"};
         auto const gw = Account{"gateway"};
-        env.fund(XRP(10000), alice, gw);
+        env.fund(kXRP(10000), alice, gw);
         char currencySuffix{'A'};
         std::vector<std::optional<IOU>> gwCurrencies(26);  // A - Z
         std::ranges::generate(gwCurrencies, [&]() {

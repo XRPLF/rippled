@@ -78,7 +78,7 @@ TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 {
     auto const amount = ctx.tx[sfAmount];
-    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::zero};
+    return TxConsequences{ctx.tx, isXRP(amount) ? amount.xrp() : beast::kZERO};
 }
 
 template <ValidIssueType T>
@@ -90,7 +90,7 @@ NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
 {
     STAmount const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount <= beast::zero)
+    if (amount.native() || amount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     if (badCurrency() == amount.get<Issue>().currency)
@@ -107,7 +107,7 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount.native() || amount.mpt() > MPTAmount{maxMPTokenAmount} || amount <= beast::zero)
+    if (amount.native() || amount.mpt() > MPTAmount{kMAX_MP_TOKEN_AMOUNT} || amount <= beast::kZERO)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;
@@ -130,7 +130,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     }
     else
     {
-        if (amount <= beast::zero)
+        if (amount <= beast::kZERO)
             return temBAD_AMOUNT;
     }
 
@@ -205,11 +205,11 @@ escrowCreatePreclaimHelper<Issue>(
     STAmount const balance = (*sleRippleState)[sfBalance];
 
     // If balance is positive, issuer must have higher address than account
-    if (balance > beast::zero && issuer < account)
+    if (balance > beast::kZERO && issuer < account)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If balance is negative, issuer must have lower address than account
-    if (balance < beast::zero && issuer > account)
+    if (balance < beast::kZERO && issuer > account)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
@@ -229,10 +229,10 @@ escrowCreatePreclaimHelper<Issue>(
         return tecFROZEN;
 
     STAmount const spendableAmount =
-        accountHolds(ctx.view, account, issue.currency, issuer, fhIGNORE_FREEZE, ctx.j);
+        accountHolds(ctx.view, account, issue.currency, issuer, FhIgnoreFreeze, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
-    if (spendableAmount <= beast::zero)
+    if (spendableAmount <= beast::kZERO)
         return tecINSUFFICIENT_FUNDS;
 
     // If the spendable amount is less than the amount, return
@@ -305,10 +305,10 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return ter;
 
     STAmount const spendableAmount = accountHolds(
-        ctx.view, account, amount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j);
+        ctx.view, account, amount.get<MPTIssue>(), FhIgnoreFreeze, AhIgnoreAuth, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
-    if (spendableAmount <= beast::zero)
+    if (spendableAmount <= beast::kZERO)
         return tecINSUFFICIENT_FUNDS;
 
     // If the spendable amount is less than the amount, return
@@ -462,7 +462,7 @@ EscrowCreate::doApply()
     if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
     {
         auto const xferRate = transferRate(ctx_.view(), amount);
-        if (xferRate != parityRate)
+        if (xferRate != kPARITY_RATE)
             (*slep)[sfTransferRate] = xferRate.value;
     }
 

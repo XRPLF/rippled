@@ -59,21 +59,21 @@ getAccountObjects(
     // iterate NFT pages if the filter says so AND dirIndex == 0
     bool iterateNFTPages =
         (!typeFilter.has_value() || typeMatchesFilter(typeFilter.value(), ltNFTOKEN_PAGE)) &&
-        dirIndex == beast::zero;
+        dirIndex == beast::kZERO;
 
-    Keylet const firstNFTPage = keylet::nftpage_min(account);
+    Keylet const firstNFTPage = keylet::nftpageMin(account);
 
     // we need to check the marker to see if it is an NFTTokenPage index.
-    if (iterateNFTPages && entryIndex != beast::zero)
+    if (iterateNFTPages && entryIndex != beast::kZERO)
     {
         // if it is we will try to iterate the pages up to the limit
         // and then change over to the owner directory
 
-        if (firstNFTPage.key != (entryIndex & ~nft::pageMask))
+        if (firstNFTPage.key != (entryIndex & ~nft::kPAGE_MASK))
             iterateNFTPages = false;
     }
 
-    auto& jvObjects = (jvResult[jss::account_objects] = Json::arrayValue);
+    auto& jvObjects = (jvResult[jss::account_objects] = Json::ArrayValue);
 
     // this is a mutable version of limit, used to seamlessly switch
     // to iterating directory entries when nftokenpages are exhausted
@@ -83,9 +83,9 @@ getAccountObjects(
     if (iterateNFTPages)
     {
         Keylet const first =
-            entryIndex == beast::zero ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
+            entryIndex == beast::kZERO ? firstNFTPage : Keylet{ltNFTOKEN_PAGE, entryIndex};
 
-        Keylet const last = keylet::nftpage_max(account);
+        Keylet const last = keylet::nftpageMax(account);
 
         // current key
         uint256 ck = ledger.succ(first.key, last.key.next()).value_or(last.key);
@@ -95,7 +95,7 @@ getAccountObjects(
 
         while (cp)
         {
-            jvObjects.append(cp->getJson(JsonOptions::kNONE));
+            jvObjects.append(cp->getJson(JsonOptions::KNone));
             auto const npm = (*cp)[~sfNextPageMin];
             if (npm)
             {
@@ -126,7 +126,7 @@ getAccountObjects(
         // to iterating the root directory (and the conventional
         // behaviour of this RPC function.) Therefore we should
         // zero entryIndex so as not to terribly confuse things.
-        entryIndex = beast::zero;
+        entryIndex = beast::kZERO;
     }
 
     auto const root = keylet::ownerDir(account);
@@ -145,7 +145,7 @@ getAccountObjects(
         // directory entries. If there's no nftoken page, we will
         // give empty array for account_objects.
         if (mlimit >= limit)
-            jvResult[jss::account_objects] = Json::arrayValue;
+            jvResult[jss::account_objects] = Json::ArrayValue;
 
         // non-zero dirIndex validity was checked in the beginning of this
         // function; by this point, it should be zero. This function returns
@@ -187,7 +187,7 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::kNONE));
+                jvObjects.append(sleNode->getJson(JsonOptions::KNone));
             }
 
             if (++i == mlimit)
@@ -231,10 +231,10 @@ doAccountObjects(RPC::JsonContext& context)
 {
     auto const& params = context.params;
     if (!params.isMember(jss::account))
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalid_field_error(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     std::shared_ptr<ReadView const> ledger;
     auto result = RPC::lookupLedger(ledger, context);
@@ -244,13 +244,13 @@ doAccountObjects(RPC::JsonContext& context)
     auto const id = parseBase58<AccountID>(params[jss::account].asString());
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
 
     if (!ledger->exists(keylet::account(accountID)))
-        return rpcError(rpcACT_NOT_FOUND);
+        return rpcError(RpcActNotFound);
 
     std::optional<std::vector<LedgerEntryType>> typeFilter;
 
@@ -295,7 +295,7 @@ doAccountObjects(RPC::JsonContext& context)
         auto [rpcStatus, type] = RPC::chooseLedgerEntryType(params);
 
         if (!RPC::isAccountObjectsValidType(type))
-            return RPC::invalid_field_error(jss::type);
+            return RPC::invalidFieldError(jss::type);
 
         if (rpcStatus)
         {
@@ -310,7 +310,7 @@ doAccountObjects(RPC::JsonContext& context)
     }
 
     unsigned int limit = 0;
-    if (auto err = readLimitField(limit, RPC::Tuning::accountObjects, context))
+    if (auto err = readLimitField(limit, RPC::Tuning::kACCOUNT_OBJECTS, context))
         return *err;
 
     uint256 dirIndex;
@@ -319,25 +319,25 @@ doAccountObjects(RPC::JsonContext& context)
     {
         auto const& marker = params[jss::marker];
         if (!marker.isString())
-            return RPC::expected_field_error(jss::marker, "string");
+            return RPC::expectedFieldError(jss::marker, "string");
 
         auto const& markerStr = marker.asString();
         auto const& idx = markerStr.find(',');
         if (idx == std::string::npos)
-            return RPC::invalid_field_error(jss::marker);
+            return RPC::invalidFieldError(jss::marker);
 
         if (!dirIndex.parseHex(markerStr.substr(0, idx)))
-            return RPC::invalid_field_error(jss::marker);
+            return RPC::invalidFieldError(jss::marker);
 
         if (!entryIndex.parseHex(markerStr.substr(idx + 1)))
-            return RPC::invalid_field_error(jss::marker);
+            return RPC::invalidFieldError(jss::marker);
     }
 
     if (!getAccountObjects(*ledger, accountID, typeFilter, dirIndex, entryIndex, limit, result))
-        return RPC::invalid_field_error(jss::marker);
+        return RPC::invalidFieldError(jss::marker);
 
     result[jss::account] = toBase58(accountID);
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
     return result;
 }
 

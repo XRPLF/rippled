@@ -9,7 +9,7 @@
 
 namespace xrpl {
 
-class FileUtilities_test : public beast::unit_test::suite
+class FileUtilities_test : public beast::unit_test::Suite
 {
 public:
     void

@@ -27,7 +27,7 @@ signum(AdlTester2)
 
 }  // namespace inner_adl_test
 
-class Zero_test : public beast::unit_test::suite
+class Zero_test : public beast::unit_test::Suite
 {
 private:
     struct IntegerWrapper
@@ -55,12 +55,12 @@ public:
     void
     testLhsZero(IntegerWrapper x)
     {
-        expectSame(x >= zero, x.signum() >= 0, "lhs greater-than-or-equal-to");
-        expectSame(x > zero, x.signum() > 0, "lhs greater than");
-        expectSame(x == zero, x.signum() == 0, "lhs equal to");
-        expectSame(x != zero, x.signum() != 0, "lhs not equal to");
-        expectSame(x < zero, x.signum() < 0, "lhs less than");
-        expectSame(x <= zero, x.signum() <= 0, "lhs less-than-or-equal-to");
+        expectSame(x >= kZERO, x.signum() >= 0, "lhs greater-than-or-equal-to");
+        expectSame(x > kZERO, x.signum() > 0, "lhs greater than");
+        expectSame(x == kZERO, x.signum() == 0, "lhs equal to");
+        expectSame(x != kZERO, x.signum() != 0, "lhs not equal to");
+        expectSame(x < kZERO, x.signum() < 0, "lhs less than");
+        expectSame(x <= kZERO, x.signum() <= 0, "lhs less-than-or-equal-to");
     }
 
     void
@@ -76,12 +76,12 @@ public:
     void
     testRhsZero(IntegerWrapper x)
     {
-        expectSame(zero >= x, 0 >= x.signum(), "rhs greater-than-or-equal-to");
-        expectSame(zero > x, 0 > x.signum(), "rhs greater than");
-        expectSame(zero == x, 0 == x.signum(), "rhs equal to");
-        expectSame(zero != x, 0 != x.signum(), "rhs not equal to");
-        expectSame(zero < x, 0 < x.signum(), "rhs less than");
-        expectSame(zero <= x, 0 <= x.signum(), "rhs less-than-or-equal-to");
+        expectSame(kZERO >= x, 0 >= x.signum(), "rhs greater-than-or-equal-to");
+        expectSame(kZERO > x, 0 > x.signum(), "rhs greater than");
+        expectSame(kZERO == x, 0 == x.signum(), "rhs equal to");
+        expectSame(kZERO != x, 0 != x.signum(), "rhs not equal to");
+        expectSame(kZERO < x, 0 < x.signum(), "rhs less than");
+        expectSame(kZERO <= x, 0 <= x.signum(), "rhs less-than-or-equal-to");
     }
 
     void
@@ -97,8 +97,8 @@ public:
     void
     testAdl()
     {
-        expect(AdlTester{} == zero, "ADL failure!");
-        expect(inner_adl_test::AdlTester2{} == zero, "ADL failure!");
+        expect(AdlTester{} == kZERO, "ADL failure!");
+        expect(inner_adl_test::AdlTester2{} == kZERO, "ADL failure!");
     }
 
     void

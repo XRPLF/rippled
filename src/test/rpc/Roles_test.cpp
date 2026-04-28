@@ -12,7 +12,7 @@
 
 namespace xrpl::test {
 
-class Roles_test : public beast::unit_test::suite
+class Roles_test : public beast::unit_test::Suite
 {
     static bool
     isValidIpAddress(std::string const& addr)

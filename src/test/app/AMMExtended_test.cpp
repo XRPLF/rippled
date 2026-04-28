@@ -68,7 +68,7 @@ namespace xrpl::test {
 struct AMMExtended_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg{xrpl::MantissaRange::small};
+    NumberMantissaScaleGuard const sg{xrpl::MantissaRange::Small};
 
 private:
     void
@@ -89,28 +89,28 @@ private:
 
         Env env{*this, features};
 
-        fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000), {USD(200'000), BTC(2'000)});
+        fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000), {USD(200'000), BTC(2'000)});
 
         // Must be two offers at the same quality
         // "taker gets" must be XRP
         // (Different amounts so I can distinguish the offers)
-        env(offer(carol_, BTC(49), XRP(49)));
-        env(offer(carol_, BTC(51), XRP(51)));
+        env(offer(carol_, BTC(49), kXRP(49)));
+        env(offer(carol_, BTC(51), kXRP(51)));
 
         // Offers for the poor quality path
         // Must be two offers at the same quality
-        env(offer(carol_, XRP(50), USD(50)));
-        env(offer(carol_, XRP(50), USD(50)));
+        env(offer(carol_, kXRP(50), USD(50)));
+        env(offer(carol_, kXRP(50), USD(50)));
 
         // Good quality path
         AMM const ammCarol(env, carol_, BTC(1'000), USD(100'100));
 
-        PathSet const paths(TestPath(XRP, USD), TestPath(USD));
+        PathSet const paths(TestPath(kXRP, USD), TestPath(USD));
 
         env(pay(alice_, bob_, USD(100)),
             json(paths.json()),
-            sendmax(BTC(1'000)),
-            txflags(tfPartialPayment));
+            Sendmax(BTC(1'000)),
+            Txflags(tfPartialPayment));
 
         if (!features[fixAMMv1_1])
         {
@@ -123,8 +123,8 @@ private:
                 STAmount{BTC, UINT64_C(1'001'000000374815), -12}, USD(100'000), ammCarol.tokens()));
         }
 
-        env.Require(Balance(bob_, USD(200'100)));
-        BEAST_EXPECT(isOffer(env, carol_, BTC(49), XRP(49)));
+        env.require(Balance(bob_, USD(200'100)));
+        BEAST_EXPECT(isOffer(env, carol_, BTC(49), kXRP(49)));
     }
 
     void
@@ -143,7 +143,7 @@ private:
             auto const usD1 = gw1["USD"];
             auto const usD2 = gw2["USD"];
 
-            env.fund(XRP(20'000), alice_, noripple(bob_), carol_, dan, gw1, gw2);
+            env.fund(kXRP(20'000), alice_, noripple(bob_), carol_, dan, gw1, gw2);
             env.close();
             env.trust(usD1(20'000), alice_, carol_, dan);
             env(trust(bob_, usD1(1'000), tfSetNoRipple));
@@ -156,12 +156,12 @@ private:
             env(pay(gw2, bob_, usD2(50)));
             env.close();
 
-            AMM const ammDan(env, dan, XRP(10'000), usD1(10'000));
+            AMM const ammDan(env, dan, kXRP(10'000), usD1(10'000));
 
             env(pay(alice_, carol_, usD2(50)),
                 Path(~usD1, bob_),
-                sendmax(XRP(50)),
-                txflags(tfNoRippleDirect),
+                Sendmax(kXRP(50)),
+                Txflags(tfNoRippleDirect),
                 Ter(tecPATH_DRY));
         }
 
@@ -175,8 +175,8 @@ private:
             auto const usD1 = gw1["USD"];
             auto const usD2 = gw2["USD"];
 
-            env.fund(XRP(20'000), alice_, bob_, carol_, gw1, gw2);
-            env.fund(XRP(20'000), dan);
+            env.fund(kXRP(20'000), alice_, bob_, carol_, gw1, gw2);
+            env.fund(kXRP(20'000), dan);
             env.close();
             env.trust(usD1(20'000), alice_, bob_, carol_, dan);
             env.trust(usD2(1'000), alice_, bob_, carol_, dan);
@@ -187,15 +187,16 @@ private:
             env(pay(gw2, bob_, usD2(50)));
             env.close();
 
-            AMM const ammDan(env, dan, XRP(10'000), usD1(10'050));
+            AMM const ammDan(env, dan, kXRP(10'000), usD1(10'050));
 
             env(pay(alice_, carol_, usD2(50)),
                 Path(~usD1, bob_),
-                sendmax(XRP(50)),
-                txflags(tfNoRippleDirect));
-            BEAST_EXPECT(ammDan.expectBalances(XRP(10'050), usD1(10'000), ammDan.tokens()));
+                Sendmax(kXRP(50)),
+                Txflags(tfNoRippleDirect));
+            BEAST_EXPECT(ammDan.expectBalances(kXRP(10'050), usD1(10'000), ammDan.tokens()));
 
-            BEAST_EXPECT(expectLedgerEntryRoot(env, alice_, XRP(20'000) - XRP(50) - txFee(env, 1)));
+            BEAST_EXPECT(
+                expectLedgerEntryRoot(env, alice_, kXRP(20'000) - kXRP(50) - txFee(env, 1)));
             BEAST_EXPECT(expectHolding(env, bob_, usD1(100)));
             BEAST_EXPECT(expectHolding(env, bob_, usD2(0)));
             BEAST_EXPECT(expectHolding(env, carol_, usD2(50)));
@@ -208,7 +209,7 @@ private:
         testcase("Fill Modes");
         using namespace jtx;
 
-        auto const startBalance = XRP(1'000'000);
+        auto const startBalance = kXRP(1'000'000);
 
         // Fill or Kill - unless we fully cross, just charge a fee and don't
         // place the offer on the books.  But also clean up expired offers
@@ -217,23 +218,23 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 // Order that can't be filled
                 TER const killedCode{TER{tecKILLED}};
-                env(offer(carol_, USD(100), XRP(100)), txflags(tfFillOrKill), Ter(killedCode));
+                env(offer(carol_, USD(100), kXRP(100)), Txflags(tfFillOrKill), Ter(killedCode));
                 env.close();
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'100), USD(10'000), ammAlice.tokens()));
                 // fee = AMM
-                BEAST_EXPECT(expectLedgerEntryRoot(env, carol_, XRP(30'000) - (txFee(env, 1))));
+                BEAST_EXPECT(expectLedgerEntryRoot(env, carol_, kXRP(30'000) - (txFee(env, 1))));
                 BEAST_EXPECT(expectOffers(env, carol_, 0));
                 BEAST_EXPECT(expectHolding(env, carol_, USD(30'000)));
 
                 // Order that can be filled
-                env(offer(carol_, XRP(100), USD(100)), txflags(tfFillOrKill), Ter(tesSUCCESS));
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'100), ammAlice.tokens()));
+                env(offer(carol_, kXRP(100), USD(100)), Txflags(tfFillOrKill), Ter(tesSUCCESS));
+                BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'000), USD(10'100), ammAlice.tokens()));
                 BEAST_EXPECT(
-                    expectLedgerEntryRoot(env, carol_, XRP(30'000) + XRP(100) - txFee(env, 2)));
+                    expectLedgerEntryRoot(env, carol_, kXRP(30'000) + kXRP(100) - txFee(env, 2)));
                 BEAST_EXPECT(expectHolding(env, carol_, USD(29'900)));
                 BEAST_EXPECT(expectOffers(env, carol_, 0));
             },
-            {{XRP(10'100), USD(10'000)}},
+            {{kXRP(10'100), USD(10'000)}},
             0,
             std::nullopt,
             {features});
@@ -242,21 +243,21 @@ private:
         // and add nothing on the books.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                env(offer(carol_, XRP(200), USD(200)),
-                    txflags(tfImmediateOrCancel),
+                env(offer(carol_, kXRP(200), USD(200)),
+                    Txflags(tfImmediateOrCancel),
                     Ter(tesSUCCESS));
 
                 // AMM generates a synthetic offer of 100USD/100XRP
                 // to match the CLOB offer quality.
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'100), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'000), USD(10'100), ammAlice.tokens()));
                 // +AMM - offer * fee
                 BEAST_EXPECT(
-                    expectLedgerEntryRoot(env, carol_, XRP(30'000) + XRP(100) - txFee(env, 1)));
+                    expectLedgerEntryRoot(env, carol_, kXRP(30'000) + kXRP(100) - txFee(env, 1)));
                 // AMM
                 BEAST_EXPECT(expectHolding(env, carol_, USD(29'900)));
                 BEAST_EXPECT(expectOffers(env, carol_, 0));
             },
-            {{XRP(10'100), USD(10'000)}},
+            {{kXRP(10'100), USD(10'000)}},
             0,
             std::nullopt,
             {features});
@@ -266,13 +267,13 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 // Carol creates a passive offer that could cross AMM.
                 // Carol's offer should stay in the ledger.
-                env(offer(carol_, XRP(100), USD(100), tfPassive));
+                env(offer(carol_, kXRP(100), USD(100), tfPassive));
                 env.close();
-                BEAST_EXPECT(
-                    ammAlice.expectBalances(XRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
-                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{XRP(100), STAmount{USD, 100}}}}));
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    kXRP(10'100), STAmount{USD, 10'000}, ammAlice.tokens()));
+                BEAST_EXPECT(expectOffers(env, carol_, 1, {{{kXRP(100), STAmount{USD, 100}}}}));
             },
-            {{XRP(10'100), USD(10'000)}},
+            {{kXRP(10'100), USD(10'000)}},
             0,
             std::nullopt,
             {features});
@@ -280,21 +281,21 @@ private:
         // tfPassive -- cross only offers of better quality.
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                env(offer(alice_, USD(110), XRP(100)));
+                env(offer(alice_, USD(110), kXRP(100)));
                 env.close();
 
                 // Carol creates a passive offer.  That offer should cross
                 // AMM and leave Alice's offer untouched.
-                env(offer(carol_, XRP(100), USD(100), tfPassive));
+                env(offer(carol_, kXRP(100), USD(100), tfPassive));
                 env.close();
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    XRP(10'900),
+                    kXRP(10'900),
                     STAmount{USD, UINT64_C(9'082'56880733945), -11},
                     ammAlice.tokens()));
                 BEAST_EXPECT(expectOffers(env, carol_, 0));
                 BEAST_EXPECT(expectOffers(env, alice_, 1));
             },
-            {{XRP(11'000), USD(9'000)}},
+            {{kXRP(11'000), USD(9'000)}},
             0,
             std::nullopt,
             {features});
@@ -309,22 +310,22 @@ private:
 
         Env env{*this, features};
 
-        fund(env, gw_, {bob_, alice_}, XRP(300'000), {USD(100)}, Fund::All);
+        fund(env, gw_, {bob_, alice_}, kXRP(300'000), {USD(100)}, Fund::All);
 
-        AMM const ammAlice(env, alice_, XRP(150'000), USD(50));
+        AMM const ammAlice(env, alice_, kXRP(150'000), USD(50));
 
         // Existing offer pays better than this wants.
         // Partially consume existing offer.
         // Pay 1 USD, get 3061224490 Drops.
         auto const xrpTransferred = XRPAmount{3'061'224'490};
-        env(offer(bob_, USD(1), XRP(4'000)));
+        env(offer(bob_, USD(1), kXRP(4'000)));
 
         BEAST_EXPECT(ammAlice.expectBalances(
-            XRP(150'000) + xrpTransferred, USD(49), IOUAmount{273'861'278752583, -8}));
+            kXRP(150'000) + xrpTransferred, USD(49), IOUAmount{273'861'278752583, -8}));
 
         BEAST_EXPECT(expectHolding(env, bob_, STAmount{USD, 101}));
         BEAST_EXPECT(
-            expectLedgerEntryRoot(env, bob_, XRP(300'000) - xrpTransferred - txFee(env, 1)));
+            expectLedgerEntryRoot(env, bob_, kXRP(300'000) - xrpTransferred - txFee(env, 1)));
         BEAST_EXPECT(expectOffers(env, bob_, 0));
     }
 
@@ -337,24 +338,24 @@ private:
 
         Env env{*this, features};
 
-        env.fund(XRP(200'000), gw_, alice_, bob_);
+        env.fund(kXRP(200'000), gw_, alice_, bob_);
         env.close();
 
         env(trust(alice_, USD(1'000)));
 
         env(pay(gw_, alice_, alice_["USD"](500)));
 
-        AMM const ammAlice(env, alice_, XRP(150'000), USD(51));
-        env(offer(bob_, USD(1), XRP(3'000)));
+        AMM const ammAlice(env, alice_, kXRP(150'000), USD(51));
+        env(offer(bob_, USD(1), kXRP(3'000)));
 
-        BEAST_EXPECT(ammAlice.expectBalances(XRP(153'000), USD(50), ammAlice.tokens()));
+        BEAST_EXPECT(ammAlice.expectBalances(kXRP(153'000), USD(50), ammAlice.tokens()));
 
         auto jrr = ledgerEntryState(env, bob_, gw_, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "-1");
         jrr = ledgerEntryRoot(env, bob_);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            to_string((XRP(200'000) - XRP(3'000) - env.current()->fees().base * 1).xrp()));
+            to_string((kXRP(200'000) - kXRP(3'000) - env.current()->fees().base * 1).xrp()));
     }
 
     void
@@ -366,27 +367,27 @@ private:
 
         Env env{*this, features};
 
-        fund(env, gw_, {alice_, bob_}, XRP(10'000));
-        env.Require(Owners(bob_, 0));
+        fund(env, gw_, {alice_, bob_}, kXRP(10'000));
+        env.require(Owners(bob_, 0));
 
         env(trust(alice_, USD(100)));
         env(trust(bob_, USD(1'000)));
         env(pay(gw_, bob_, USD(1'000)));
 
-        env.Require(Owners(alice_, 1), Owners(bob_, 1));
+        env.require(Owners(alice_, 1), Owners(bob_, 1));
 
         env(pay(gw_, alice_, alice_["USD"](100)));
-        AMM const ammBob(env, bob_, USD(200), XRP(1'500));
+        AMM const ammBob(env, bob_, USD(200), kXRP(1'500));
 
-        env(pay(alice_, alice_, XRP(500)), sendmax(USD(100)));
+        env(pay(alice_, alice_, kXRP(500)), Sendmax(USD(100)));
 
-        BEAST_EXPECT(ammBob.expectBalances(USD(300), XRP(1'000), ammBob.tokens()));
+        BEAST_EXPECT(ammBob.expectBalances(USD(300), kXRP(1'000), ammBob.tokens()));
         BEAST_EXPECT(expectHolding(env, alice_, USD(0)));
 
         auto jrr = ledgerEntryRoot(env, alice_);
         BEAST_EXPECT(
             jrr[jss::node][sfBalance.fieldName] ==
-            to_string((XRP(10'000) + XRP(500) - env.current()->fees().base * 2).xrp()));
+            to_string((kXRP(10'000) + kXRP(500) - env.current()->fees().base * 2).xrp()));
     }
 
     void
@@ -400,11 +401,11 @@ private:
             [&](AMM& ammAlice, Env& env) {
                 // Alice converts USD to XRP which should fail
                 // due to PartialPayment.
-                env(pay(alice_, alice_, XRP(100)), sendmax(USD(100)), Ter(tecPATH_PARTIAL));
+                env(pay(alice_, alice_, kXRP(100)), Sendmax(USD(100)), Ter(tecPATH_PARTIAL));
 
                 // Alice converts USD to XRP, should succeed because
                 // we permit partial payment
-                env(pay(alice_, alice_, XRP(100)), sendmax(USD(100)), txflags(tfPartialPayment));
+                env(pay(alice_, alice_, kXRP(100)), Sendmax(USD(100)), Txflags(tfPartialPayment));
                 env.close();
                 BEAST_EXPECT(ammAlice.expectBalances(
                     XRPAmount{9'900'990'100}, USD(10'100), ammAlice.tokens()));
@@ -414,10 +415,10 @@ private:
                 BEAST_EXPECT(expectLedgerEntryRoot(
                     env,
                     alice_,
-                    XRP(30'000) - XRP(10'000) + XRPAmount{99'009'900} - ammCrtFee(env) -
+                    kXRP(30'000) - kXRP(10'000) + XRPAmount{99'009'900} - ammCrtFee(env) -
                         txFee(env, 2)));
             },
-            {{XRP(10'000), USD(10'000)}},
+            {{kXRP(10'000), USD(10'000)}},
             0,
             std::nullopt,
             {features});
@@ -432,15 +433,15 @@ private:
 
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                env.fund(XRP(1'000), bob_);
+                env.fund(kXRP(1'000), bob_);
                 env.close();
                 env(trust(bob_, USD(100)));
                 env.close();
-                env(pay(alice_, bob_, USD(100)), sendmax(XRP(100)));
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), USD(10'000), ammAlice.tokens()));
+                env(pay(alice_, bob_, USD(100)), Sendmax(kXRP(100)));
+                BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'100), USD(10'000), ammAlice.tokens()));
                 BEAST_EXPECT(expectHolding(env, bob_, USD(100)));
             },
-            {{XRP(10'000), USD(10'100)}},
+            {{kXRP(10'000), USD(10'100)}},
             0,
             std::nullopt,
             {features});
@@ -455,16 +456,16 @@ private:
 
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                env.fund(XRP(1'000), bob_);
+                env.fund(kXRP(1'000), bob_);
                 env.close();
                 env(trust(bob_, USD(100)));
                 env.close();
-                env(pay(alice_, bob_, XRP(100)), sendmax(USD(100)));
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'100), ammAlice.tokens()));
+                env(pay(alice_, bob_, kXRP(100)), Sendmax(USD(100)));
+                BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'000), USD(10'100), ammAlice.tokens()));
                 BEAST_EXPECT(
-                    expectLedgerEntryRoot(env, bob_, XRP(1'000) + XRP(100) - txFee(env, 1)));
+                    expectLedgerEntryRoot(env, bob_, kXRP(1'000) + kXRP(100) - txFee(env, 1)));
             },
-            {{XRP(10'100), USD(10'000)}},
+            {{kXRP(10'100), USD(10'000)}},
             0,
             std::nullopt,
             {features});
@@ -485,7 +486,7 @@ private:
         auto const usD1 = gw1["USD"];
         auto const euR1 = gw2["EUR"];
 
-        fund(env, gw1, {gw2, alice_, bob_, carol_, dan}, XRP(60'000));
+        fund(env, gw1, {gw2, alice_, bob_, carol_, dan}, kXRP(60'000));
         env(trust(alice_, usD1(1'000)));
         env.close();
         env(trust(bob_, euR1(1'000)));
@@ -501,18 +502,18 @@ private:
         env(pay(gw2, dan, dan["EUR"](400)));
         env.close();
 
-        AMM const ammCarol(env, carol_, usD1(5'000), XRP(50'000));
+        AMM const ammCarol(env, carol_, usD1(5'000), kXRP(50'000));
 
-        env(offer(dan, XRP(500), euR1(50)));
+        env(offer(dan, kXRP(500), euR1(50)));
         env.close();
 
-        Json::Value jtp{Json::arrayValue};
+        Json::Value jtp{Json::ArrayValue};
         jtp[0u][0u][jss::currency] = "XRP";
-        env(pay(alice_, bob_, euR1(30)), json(jss::Paths, jtp), sendmax(usD1(333)));
+        env(pay(alice_, bob_, euR1(30)), json(jss::Paths, jtp), Sendmax(usD1(333)));
         env.close();
         BEAST_EXPECT(ammCarol.expectBalances(
-            XRP(49'700), STAmount{usD1, UINT64_C(5'030'181086519115), -12}, ammCarol.tokens()));
-        BEAST_EXPECT(expectOffers(env, dan, 1, {{Amounts{XRP(200), EUR(20)}}}));
+            kXRP(49'700), STAmount{usD1, UINT64_C(5'030'181086519115), -12}, ammCarol.tokens()));
+        BEAST_EXPECT(expectOffers(env, dan, 1, {{Amounts{kXRP(200), EUR(20)}}}));
         BEAST_EXPECT(expectHolding(env, bob_, STAmount{euR1, 30}));
     }
 
@@ -541,10 +542,10 @@ private:
         //  1 for each trust limit == 3 (alice_ < mtgox/amazon/bitstamp) +
         //  1 for payment          == 4
         auto const startingXrp =
-            XRP(100) + env.current()->fees().accountReserve(3) + env.current()->fees().base * 4;
+            kXRP(100) + env.current()->fees().accountReserve(3) + env.current()->fees().base * 4;
 
         env.fund(startingXrp, gw1, gw2, gw3, localAlice);
-        env.fund(XRP(2'000), localBob);
+        env.fund(kXRP(2'000), localBob);
         env.close();
 
         env(trust(localAlice, usD1(1'000)));
@@ -555,20 +556,20 @@ private:
 
         env(pay(gw1, localBob, localBob["USD"](1'200)));
 
-        AMM const ammBob(env, localBob, XRP(1'000), usD1(1'200));
+        AMM const ammBob(env, localBob, kXRP(1'000), usD1(1'200));
         // Alice has 350 fees - a reserve of 50 = 250 reserve = 100 available.
         // Ask for more than available to prove reserve works.
-        env(offer(localAlice, usD1(200), XRP(200)));
+        env(offer(localAlice, usD1(200), kXRP(200)));
 
         // The pool gets only 100XRP for ~109.09USD, even though
         // it can exchange more.
         BEAST_EXPECT(ammBob.expectBalances(
-            XRP(1'100), STAmount{usD1, UINT64_C(1'090'909090909091), -12}, ammBob.tokens()));
+            kXRP(1'100), STAmount{usD1, UINT64_C(1'090'909090909091), -12}, ammBob.tokens()));
 
         auto jrr = ledgerEntryState(env, localAlice, gw1, "USD");
         BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName][jss::value] == "109.090909090909");
         jrr = ledgerEntryRoot(env, localAlice);
-        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName] == XRP(350).value().getText());
+        BEAST_EXPECT(jrr[jss::node][sfBalance.fieldName] == kXRP(350).value().getText());
     }
 
     void
@@ -580,7 +581,7 @@ private:
 
         Env env{*this, features};
 
-        fund(env, gw_, {alice_, bob_}, XRP(200'000));
+        fund(env, gw_, {alice_, bob_}, kXRP(200'000));
 
         env(rate(gw_, 1.005));
 
@@ -590,10 +591,10 @@ private:
         env(pay(gw_, bob_, USD(1)));
         env(pay(gw_, alice_, USD(200)));
 
-        AMM const ammAlice(env, alice_, USD(150), XRP(150'100));
-        env(offer(bob_, XRP(100), USD(0.1)));
+        AMM const ammAlice(env, alice_, USD(150), kXRP(150'100));
+        env(offer(bob_, kXRP(100), USD(0.1)));
 
-        BEAST_EXPECT(ammAlice.expectBalances(USD(150.1), XRP(150'000), ammAlice.tokens()));
+        BEAST_EXPECT(ammAlice.expectBalances(USD(150.1), kXRP(150'000), ammAlice.tokens()));
 
         auto const jrr = ledgerEntryState(env, bob_, gw_, "USD");
         // Bob pays 0.005 transfer fee. Note 10**-10 round-off.
@@ -609,15 +610,15 @@ private:
 
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                env(offer(carol_, USD(100), XRP(100)), json(jss::Flags, tfSell));
+                env(offer(carol_, USD(100), kXRP(100)), json(jss::Flags, tfSell));
                 env.close();
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(9'999), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'000), USD(9'999), ammAlice.tokens()));
                 BEAST_EXPECT(expectOffers(env, carol_, 0));
                 BEAST_EXPECT(expectHolding(env, carol_, USD(30'101)));
                 BEAST_EXPECT(
-                    expectLedgerEntryRoot(env, carol_, XRP(30'000) - XRP(100) - txFee(env, 1)));
+                    expectLedgerEntryRoot(env, carol_, kXRP(30'000) - kXRP(100) - txFee(env, 1)));
             },
-            {{XRP(9'900), USD(10'100)}},
+            {{kXRP(9'900), USD(10'100)}},
             0,
             std::nullopt,
             {features});
@@ -632,10 +633,10 @@ private:
 
         Env env{*this, features};
 
-        auto const startingXrp = XRP(100) + reserve(env, 1) + env.current()->fees().base * 2;
+        auto const startingXrp = kXRP(100) + reserve(env, 1) + env.current()->fees().base * 2;
 
         env.fund(startingXrp, gw_, alice_);
-        env.fund(XRP(2'000), bob_);
+        env.fund(kXRP(2'000), bob_);
         env.close();
 
         env(trust(alice_, USD(150)));
@@ -643,16 +644,16 @@ private:
 
         env(pay(gw_, bob_, bob_["USD"](2'200)));
 
-        AMM const ammBob(env, bob_, XRP(1'000), USD(2'200));
+        AMM const ammBob(env, bob_, kXRP(1'000), USD(2'200));
         // Alice has 350 fees - a reserve of 50 = 250 reserve = 100 available.
         // Ask for more than available to prove reserve works.
         // Taker pays 100 USD for 100 XRP.
         // Selling XRP.
         // Will sell all 100 XRP and get more USD than asked for.
-        env(offer(alice_, USD(100), XRP(200)), json(jss::Flags, tfSell));
-        BEAST_EXPECT(ammBob.expectBalances(XRP(1'100), USD(2'000), ammBob.tokens()));
+        env(offer(alice_, USD(100), kXRP(200)), json(jss::Flags, tfSell));
+        BEAST_EXPECT(ammBob.expectBalances(kXRP(1'100), USD(2'000), ammBob.tokens()));
         BEAST_EXPECT(expectHolding(env, alice_, USD(200)));
-        BEAST_EXPECT(expectLedgerEntryRoot(env, alice_, XRP(250)));
+        BEAST_EXPECT(expectLedgerEntryRoot(env, alice_, kXRP(250)));
         BEAST_EXPECT(expectOffers(env, alice_, 0));
     }
 
@@ -668,20 +669,20 @@ private:
         auto const xts = gw_["XTS"];
         auto const xxx = gw_["XXX"];
 
-        auto const startingXrp = XRP(100.1) + reserve(env, 1) + env.current()->fees().base * 2;
+        auto const startingXrp = kXRP(100.1) + reserve(env, 1) + env.current()->fees().base * 2;
         fund(env, gw_, {alice_, bob_}, startingXrp, {xts(100), xxx(100)}, Fund::All);
 
         AMM const ammAlice(env, alice_, xts(100), xxx(100));
 
         Json::Value payment;
         payment[jss::secret] = toBase58(generateSeed("bob"));
-        payment[jss::id] = env.Seq(bob_);
+        payment[jss::id] = env.seq(bob_);
         payment[jss::build_path] = true;
         payment[jss::tx_json] = pay(bob_, bob_, bob_["XXX"](1));
         payment[jss::tx_json][jss::Sequence] =
             env.current()->read(keylet::account(bob_.id()))->getFieldU32(sfSequence);
         payment[jss::tx_json][jss::Fee] = to_string(env.current()->fees().base);
-        payment[jss::tx_json][jss::SendMax] = bob_["XTS"](1.5).value().getJson(JsonOptions::kNONE);
+        payment[jss::tx_json][jss::SendMax] = bob_["XTS"](1.5).value().getJson(JsonOptions::KNone);
         payment[jss::tx_json][jss::Flags] = tfPartialPayment;
         auto const jrr = env.rpc("json", "submit", to_string(payment));
         BEAST_EXPECT(jrr[jss::result][jss::status] == "success");
@@ -719,16 +720,16 @@ private:
             //   o carol_ has EUR but wants USD.
             // Note that carol_'s offer must come last.  If carol_'s offer is
             // placed before AMM is created, then autobridging will not occur.
-            AMM const ammAlice(env, alice_, XRP(10'000), USD(10'100));
-            AMM const ammBob(env, bob_, EUR(10'000), XRP(10'100));
+            AMM const ammAlice(env, alice_, kXRP(10'000), USD(10'100));
+            AMM const ammBob(env, bob_, EUR(10'000), kXRP(10'100));
 
             // Carol makes an offer that consumes AMM liquidity and
             // fully consumes Carol's offer.
             env(offer(carol_, USD(100), EUR(100)));
             env.close();
 
-            BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), USD(10'000), ammAlice.tokens()));
-            BEAST_EXPECT(ammBob.expectBalances(XRP(10'000), EUR(10'100), ammBob.tokens()));
+            BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'100), USD(10'000), ammAlice.tokens()));
+            BEAST_EXPECT(ammBob.expectBalances(kXRP(10'000), EUR(10'100), ammBob.tokens()));
             BEAST_EXPECT(expectHolding(env, carol_, USD(15'100)));
             BEAST_EXPECT(expectHolding(env, carol_, EUR(14'900)));
             BEAST_EXPECT(expectOffers(env, carol_, 0));
@@ -746,8 +747,8 @@ private:
             // Note that carol_'s offer must come last.  If carol_'s offer is
             // placed before AMM and bob_'s offer are created, then autobridging
             // will not occur.
-            AMM const ammAlice(env, alice_, XRP(10'000), USD(10'100));
-            env(offer(bob_, EUR(100), XRP(100)));
+            AMM const ammAlice(env, alice_, kXRP(10'000), USD(10'100));
+            env(offer(bob_, EUR(100), kXRP(100)));
             env.close();
 
             // Carol makes an offer that consumes AMM liquidity and
@@ -755,7 +756,7 @@ private:
             env(offer(carol_, USD(100), EUR(100)));
             env.close();
 
-            BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), USD(10'000), ammAlice.tokens()));
+            BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'100), USD(10'000), ammAlice.tokens()));
             BEAST_EXPECT(expectHolding(env, carol_, USD(15'100)));
             BEAST_EXPECT(expectHolding(env, carol_, EUR(14'900)));
             BEAST_EXPECT(expectOffers(env, carol_, 0));
@@ -774,16 +775,16 @@ private:
             // Note that carol_'s offer must come last.  If carol_'s offer is
             // placed before AMM and alice_'s offer are created, then
             // autobridging will not occur.
-            env(offer(alice_, XRP(100), USD(100)));
+            env(offer(alice_, kXRP(100), USD(100)));
             env.close();
-            AMM const ammBob(env, bob_, EUR(10'000), XRP(10'100));
+            AMM const ammBob(env, bob_, EUR(10'000), kXRP(10'100));
 
             // Carol makes an offer that consumes AMM liquidity and
             // fully consumes Carol's offer.
             env(offer(carol_, USD(100), EUR(100)));
             env.close();
 
-            BEAST_EXPECT(ammBob.expectBalances(XRP(10'000), EUR(10'100), ammBob.tokens()));
+            BEAST_EXPECT(ammBob.expectBalances(kXRP(10'000), EUR(10'100), ammBob.tokens()));
             BEAST_EXPECT(expectHolding(env, carol_, USD(15'100)));
             BEAST_EXPECT(expectHolding(env, carol_, EUR(14'900)));
             BEAST_EXPECT(expectOffers(env, carol_, 0));
@@ -806,23 +807,23 @@ private:
         {
             Env env{*this, features};
             fund(env, gw_, {alice_, bob_}, {USD(20'000)}, Fund::All);
-            AMM const ammBob(env, bob_, XRP(20'000), USD(200));
+            AMM const ammBob(env, bob_, kXRP(20'000), USD(200));
             // alice_ submits a tfSell | tfFillOrKill offer that does not cross.
-            env(offer(alice_, USD(2.1), XRP(210), tfSell | tfFillOrKill), Ter(killedCode));
+            env(offer(alice_, USD(2.1), kXRP(210), tfSell | tfFillOrKill), Ter(killedCode));
 
-            BEAST_EXPECT(ammBob.expectBalances(XRP(20'000), USD(200), ammBob.tokens()));
+            BEAST_EXPECT(ammBob.expectBalances(kXRP(20'000), USD(200), ammBob.tokens()));
             BEAST_EXPECT(expectOffers(env, bob_, 0));
         }
         {
             Env env{*this, features};
             fund(env, gw_, {alice_, bob_}, {USD(1'000)}, Fund::All);
-            AMM const ammBob(env, bob_, XRP(20'000), USD(200));
+            AMM const ammBob(env, bob_, kXRP(20'000), USD(200));
             // alice_ submits a tfSell | tfFillOrKill offer that crosses.
             // Even though tfSell is present it doesn't matter this time.
-            env(offer(alice_, USD(2), XRP(220), tfSell | tfFillOrKill));
+            env(offer(alice_, USD(2), kXRP(220), tfSell | tfFillOrKill));
             env.close();
             BEAST_EXPECT(ammBob.expectBalances(
-                XRP(20'220), STAmount{USD, UINT64_C(197'8239366963403), -13}, ammBob.tokens()));
+                kXRP(20'220), STAmount{USD, UINT64_C(197'8239366963403), -13}, ammBob.tokens()));
             BEAST_EXPECT(
                 expectHolding(env, alice_, STAmount{USD, UINT64_C(1'002'17606330366), -11}));
             BEAST_EXPECT(expectOffers(env, alice_, 0));
@@ -832,13 +833,13 @@ private:
             // returns more than was asked for (because of the tfSell flag).
             Env env{*this, features};
             fund(env, gw_, {alice_, bob_}, {USD(1'000)}, Fund::All);
-            AMM const ammBob(env, bob_, XRP(20'000), USD(200));
+            AMM const ammBob(env, bob_, kXRP(20'000), USD(200));
 
-            env(offer(alice_, USD(10), XRP(1'500), tfSell | tfFillOrKill));
+            env(offer(alice_, USD(10), kXRP(1'500), tfSell | tfFillOrKill));
             env.close();
 
             BEAST_EXPECT(ammBob.expectBalances(
-                XRP(21'500), STAmount{USD, UINT64_C(186'046511627907), -12}, ammBob.tokens()));
+                kXRP(21'500), STAmount{USD, UINT64_C(186'046511627907), -12}, ammBob.tokens()));
             BEAST_EXPECT(
                 expectHolding(env, alice_, STAmount{USD, UINT64_C(1'013'953488372093), -12}));
             BEAST_EXPECT(expectOffers(env, alice_, 0));
@@ -851,9 +852,9 @@ private:
             // which matches alice_'s offer quality is ~ 10XRP/0.01996USD.
             Env env{*this, features};
             fund(env, gw_, {alice_, bob_}, {USD(10'000)}, Fund::All);
-            AMM const ammBob(env, bob_, XRP(5000), USD(10));
+            AMM const ammBob(env, bob_, kXRP(5000), USD(10));
 
-            env(offer(alice_, USD(1), XRP(501), tfSell | tfFillOrKill), Ter(tecKILLED));
+            env(offer(alice_, USD(1), kXRP(501), tfSell | tfFillOrKill), Ter(tecKILLED));
             env.close();
             BEAST_EXPECT(expectOffers(env, alice_, 0));
             BEAST_EXPECT(expectOffers(env, bob_, 0));
@@ -873,15 +874,15 @@ private:
                 env(rate(gw_, 1.25));
                 env.close();
 
-                env(offer(carol_, USD(100), XRP(100)));
+                env(offer(carol_, USD(100), kXRP(100)));
                 env.close();
 
                 // AMM doesn't pay the transfer fee
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), USD(10'000), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'100), USD(10'000), ammAlice.tokens()));
                 BEAST_EXPECT(expectHolding(env, carol_, USD(30'100)));
                 BEAST_EXPECT(expectOffers(env, carol_, 0));
             },
-            {{XRP(10'000), USD(10'100)}},
+            {{kXRP(10'000), USD(10'100)}},
             0,
             std::nullopt,
             {features});
@@ -893,15 +894,15 @@ private:
                 env(rate(gw_, 1.25));
                 env.close();
 
-                env(offer(carol_, XRP(100), USD(100)));
+                env(offer(carol_, kXRP(100), USD(100)));
                 env.close();
 
-                BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'100), ammAlice.tokens()));
+                BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'000), USD(10'100), ammAlice.tokens()));
                 // Carol pays 25% transfer fee
                 BEAST_EXPECT(expectHolding(env, carol_, USD(29'875)));
                 BEAST_EXPECT(expectOffers(env, carol_, 0));
             },
-            {{XRP(10'100), USD(10'000)}},
+            {{kXRP(10'100), USD(10'000)}},
             0,
             std::nullopt,
             {features});
@@ -918,8 +919,8 @@ private:
             //   o carol_ has EUR but wants USD.
             // Note that Carol's offer must come last.  If Carol's offer is
             // placed before AMM is created, then autobridging will not occur.
-            AMM const ammAlice(env, alice_, XRP(10'000), USD(10'100));
-            env(offer(bob_, EUR(100), XRP(100)));
+            AMM const ammAlice(env, alice_, kXRP(10'000), USD(10'100));
+            env(offer(bob_, EUR(100), kXRP(100)));
             env.close();
 
             // Carol makes an offer that consumes AMM liquidity and
@@ -928,7 +929,7 @@ private:
             env.close();
 
             // AMM doesn't pay the transfer fee
-            BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), USD(10'000), ammAlice.tokens()));
+            BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'100), USD(10'000), ammAlice.tokens()));
             BEAST_EXPECT(expectHolding(env, carol_, USD(15'100)));
             // Carol pays 25% transfer fee.
             BEAST_EXPECT(expectHolding(env, carol_, EUR(14'875)));
@@ -949,8 +950,8 @@ private:
             //   o carol_ has EUR but wants USD.
             // Note that Carol's offer must come last.  If Carol's offer is
             // placed before AMM is created, then autobridging will not occur.
-            AMM const ammAlice(env, alice_, XRP(10'000), USD(10'050));
-            env(offer(bob_, EUR(100), XRP(100)));
+            AMM const ammAlice(env, alice_, kXRP(10'000), USD(10'050));
+            env(offer(bob_, EUR(100), kXRP(100)));
             env.close();
 
             // Carol makes an offer that consumes AMM liquidity and
@@ -962,12 +963,12 @@ private:
             // account but not from the remaining offer.
 
             // AMM doesn't pay the transfer fee
-            BEAST_EXPECT(ammAlice.expectBalances(XRP(10'050), USD(10'000), ammAlice.tokens()));
+            BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'050), USD(10'000), ammAlice.tokens()));
             BEAST_EXPECT(expectHolding(env, carol_, USD(15'050)));
             // Carol pays 25% transfer fee.
             BEAST_EXPECT(expectHolding(env, carol_, EUR(14'937.5)));
             BEAST_EXPECT(expectOffers(env, carol_, 0));
-            BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{EUR(50), XRP(50)}}}));
+            BEAST_EXPECT(expectOffers(env, bob_, 1, {{Amounts{EUR(50), kXRP(50)}}}));
         }
 
         {
@@ -975,7 +976,7 @@ private:
             // Bridged crossing. The transfer fee is paid on the step not
             // involving AMM as src/dst.
             Env env{*this, features};
-            fund(env, gw_, {alice_, carol_, bob_}, XRP(30'000));
+            fund(env, gw_, {alice_, carol_, bob_}, kXRP(30'000));
             env(rate(gw_, 1.25));
             env(trust(alice_, USD(15'000)));
             env(trust(bob_, EUR(15'000)));
@@ -985,7 +986,7 @@ private:
             env.close();
 
             env(pay(gw_, alice_, USD(11'000)));
-            env(pay(gw_, carol_, EUR(1'000)), sendmax(EUR(10'000)));
+            env(pay(gw_, carol_, EUR(1'000)), Sendmax(EUR(10'000)));
             env.close();
             // 1000 / 0.8
             BEAST_EXPECT(expectHolding(env, carol_, EUR(1'250)));
@@ -995,8 +996,8 @@ private:
             //   o carol_ has EUR but wants USD.
             // Note that Carol's offer must come last.  If Carol's offer is
             // placed before AMM is created, then autobridging will not occur.
-            AMM const ammAlice(env, alice_, XRP(10'000), USD(10'100));
-            env(offer(bob_, EUR(100), XRP(100)));
+            AMM const ammAlice(env, alice_, kXRP(10'000), USD(10'100));
+            env(offer(bob_, EUR(100), kXRP(100)));
             env.close();
 
             // Carol makes an offer that consumes AMM liquidity and
@@ -1005,7 +1006,7 @@ private:
             env.close();
 
             // AMM doesn't pay the transfer fee
-            BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), USD(10'000), ammAlice.tokens()));
+            BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'100), USD(10'000), ammAlice.tokens()));
             BEAST_EXPECT(expectHolding(env, carol_, USD(100)));
             // Carol pays 25% transfer fee: 1250 - 100(offer) - 25(transfer fee)
             BEAST_EXPECT(expectHolding(env, carol_, EUR(1'125)));
@@ -1018,7 +1019,7 @@ private:
             // Bridged crossing. The transfer fee is paid on the step not
             // involving AMM as src/dst.
             Env env{*this, features};
-            fund(env, gw_, {alice_, carol_, bob_}, XRP(30'000));
+            fund(env, gw_, {alice_, carol_, bob_}, kXRP(30'000));
             env(rate(gw_, 1.25));
             env(trust(alice_, USD(15'000)));
             env(trust(bob_, EUR(15'000)));
@@ -1028,7 +1029,7 @@ private:
             env.close();
 
             env(pay(gw_, alice_, USD(11'000)));
-            env(pay(gw_, carol_, EUR(1'000)), sendmax(EUR(10'000)));
+            env(pay(gw_, carol_, EUR(1'000)), Sendmax(EUR(10'000)));
             env.close();
             BEAST_EXPECT(expectHolding(env, carol_, EUR(1'000)));
             // The scenario:
@@ -1037,8 +1038,8 @@ private:
             //   o carol_ has EUR but wants USD.
             // Note that Carol's offer must come last.  If Carol's offer is
             // placed before AMM is created, then autobridging will not occur.
-            AMM const ammAlice(env, alice_, XRP(10'000), USD(10'100));
-            env(offer(bob_, EUR(100), XRP(100)));
+            AMM const ammAlice(env, alice_, kXRP(10'000), USD(10'100));
+            env(offer(bob_, EUR(100), kXRP(100)));
             env.close();
 
             // Carol makes an offer that consumes AMM liquidity and
@@ -1047,7 +1048,7 @@ private:
             env.close();
 
             // AMM pay doesn't transfer fee
-            BEAST_EXPECT(ammAlice.expectBalances(XRP(10'100), USD(10'000), ammAlice.tokens()));
+            BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'100), USD(10'000), ammAlice.tokens()));
             BEAST_EXPECT(expectHolding(env, carol_, USD(100)));
             // Carol pays 25% transfer fee: 1000 - 100(offer) - 25(transfer fee)
             BEAST_EXPECT(expectHolding(env, carol_, EUR(875)));
@@ -1069,14 +1070,14 @@ private:
         auto const usdBob = bob_["USD"];
         auto const f = env.current()->fees().base;
 
-        env.fund(XRP(30'000) + f, alice_, bob_);
+        env.fund(kXRP(30'000) + f, alice_, bob_);
         env.close();
-        AMM const ammBob(env, bob_, XRP(10'000), usdBob(10'100));
+        AMM const ammBob(env, bob_, kXRP(10'000), usdBob(10'100));
 
-        env(offer(alice_, usdBob(100), XRP(100)));
+        env(offer(alice_, usdBob(100), kXRP(100)));
         env.close();
 
-        BEAST_EXPECT(ammBob.expectBalances(XRP(10'100), usdBob(10'000), ammBob.tokens()));
+        BEAST_EXPECT(ammBob.expectBalances(kXRP(10'100), usdBob(10'000), ammBob.tokens()));
         BEAST_EXPECT(expectOffers(env, alice_, 0));
         BEAST_EXPECT(expectHolding(env, alice_, usdBob(100)));
     }
@@ -1116,7 +1117,7 @@ private:
             env.close();
             BEAST_EXPECT(expectHolding(env, localBob, dBux(100)));
 
-            env(pay(ann, cam, dBux(60)), Path(localBob, dan), sendmax(aBux(200)));
+            env(pay(ann, cam, dBux(60)), Path(localBob, dan), Sendmax(aBux(200)));
             env.close();
 
             BEAST_EXPECT(expectHolding(env, ann, aBux(kNONE)));
@@ -1134,7 +1135,7 @@ private:
             env.close();
 
             // This payment caused the assert.
-            env(pay(ann, ann, dBux(30)), Path(aBux, dBux), sendmax(aBux(30)), Ter(temBAD_PATH));
+            env(pay(ann, ann, dBux(30)), Path(aBux, dBux), Sendmax(aBux(30)), Ter(temBAD_PATH));
             env.close();
 
             BEAST_EXPECT(ammBob.expectBalances(aBux(30), dBux(30), ammBob.tokens()));
@@ -1168,7 +1169,7 @@ private:
         auto const bBux = localBob["BUX"];
 
         auto const fee = env.current()->fees().base;
-        env.fund(XRP(1'000), carol);
+        env.fund(kXRP(1'000), carol);
         env.fund(reserve(env, 4) + (fee * 5), ann, localBob, cam);
         env.close();
 
@@ -1192,9 +1193,9 @@ private:
         // offer.
         env(offer(cam, aBux(29), bBux(30), tfPassive));
         env.close();
-        env.Require(Balance(cam, aBux(35)));
-        env.Require(Balance(cam, bBux(35)));
-        env.Require(offers(cam, 1));
+        env.require(Balance(cam, aBux(35)));
+        env.require(Balance(cam, bBux(35)));
+        env.require(offers(cam, 1));
 
         // This offer caused the assert.
         env(offer(cam, bBux(30), aBux(30)));
@@ -1242,7 +1243,7 @@ private:
         auto const aliceUSD = alice_["USD"];
         auto const bobUSD = bob_["USD"];
 
-        env.fund(XRP(400'000), gw_, alice_, bob_);
+        env.fund(kXRP(400'000), gw_, alice_, bob_);
         env.close();
 
         // GW requires authorization for holders of its IOUs
@@ -1250,18 +1251,18 @@ private:
         env.close();
 
         // Properly set trust and have gw_ authorize bob_ and alice_
-        env(trust(gw_, bobUSD(100)), txflags(tfSetfAuth));
+        env(trust(gw_, bobUSD(100)), Txflags(tfSetfAuth));
         env(trust(bob_, USD(100)));
-        env(trust(gw_, aliceUSD(100)), txflags(tfSetfAuth));
+        env(trust(gw_, aliceUSD(100)), Txflags(tfSetfAuth));
         env(trust(alice_, USD(2'000)));
         env(pay(gw_, alice_, USD(1'000)));
         env.close();
         // Alice is able to create AMM since the GW has authorized her
-        AMM const ammAlice(env, alice_, USD(1'000), XRP(1'050));
+        AMM const ammAlice(env, alice_, USD(1'000), kXRP(1'050));
 
         // Set up authorized trust line for AMM.
         env(trust(gw_, STAmount{Issue{USD.currency, ammAlice.ammAccount()}, 10}),
-            txflags(tfSetfAuth));
+            Txflags(tfSetfAuth));
         env.close();
 
         env(pay(gw_, bob_, USD(50)));
@@ -1270,10 +1271,10 @@ private:
         BEAST_EXPECT(expectHolding(env, bob_, USD(50)));
 
         // Bob's offer should cross Alice's AMM
-        env(offer(bob_, XRP(50), USD(50)));
+        env(offer(bob_, kXRP(50), USD(50)));
         env.close();
 
-        BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), XRP(1'000), ammAlice.tokens()));
+        BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), kXRP(1'000), ammAlice.tokens()));
         BEAST_EXPECT(expectOffers(env, bob_, 0));
         BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
     }
@@ -1287,18 +1288,18 @@ private:
 
         Env env{*this, features};
 
-        env.fund(XRP(400'000), gw_, alice_, bob_);
+        env.fund(kXRP(400'000), gw_, alice_, bob_);
         env.close();
 
         // Alice doesn't have the funds
         {
-            AMM const ammAlice(env, alice_, USD(1'000), XRP(1'000), Ter(tecUNFUNDED_AMM));
+            AMM const ammAlice(env, alice_, USD(1'000), kXRP(1'000), Ter(tecUNFUNDED_AMM));
         }
 
         env(fset(gw_, asfRequireAuth));
         env.close();
 
-        env(trust(gw_, bob_["USD"](50)), txflags(tfSetfAuth));
+        env(trust(gw_, bob_["USD"](50)), Txflags(tfSetfAuth));
         env.close();
         env(trust(bob_, USD(50)));
         env.close();
@@ -1309,7 +1310,7 @@ private:
 
         // Alice should not be able to create AMM without authorization.
         {
-            AMM const ammAlice(env, alice_, USD(1'000), XRP(1'000), Ter(tecNO_LINE));
+            AMM const ammAlice(env, alice_, USD(1'000), kXRP(1'000), Ter(tecNO_LINE));
         }
 
         // Set up a trust line for Alice, but don't authorize it. Alice
@@ -1318,28 +1319,28 @@ private:
         env.close();
 
         {
-            AMM const ammAlice(env, alice_, USD(1'000), XRP(1'000), Ter(tecNO_AUTH));
+            AMM const ammAlice(env, alice_, USD(1'000), kXRP(1'000), Ter(tecNO_AUTH));
         }
 
         // Finally, set up an authorized trust line for Alice. Now Alice's
         // AMM create should succeed.
-        env(trust(gw_, alice_["USD"](100)), txflags(tfSetfAuth));
+        env(trust(gw_, alice_["USD"](100)), Txflags(tfSetfAuth));
         env(trust(alice_, USD(2'000)));
         env(pay(gw_, alice_, USD(1'000)));
         env.close();
 
-        AMM const ammAlice(env, alice_, USD(1'000), XRP(1'050));
+        AMM const ammAlice(env, alice_, USD(1'000), kXRP(1'050));
 
         // Set up authorized trust line for AMM.
         env(trust(gw_, STAmount{Issue{USD.currency, ammAlice.ammAccount()}, 10}),
-            txflags(tfSetfAuth));
+            Txflags(tfSetfAuth));
         env.close();
 
         // Now bob_ creates his offer again, which crosses with  alice_'s AMM.
-        env(offer(bob_, XRP(50), USD(50)));
+        env(offer(bob_, kXRP(50), USD(50)));
         env.close();
 
-        BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), XRP(1'000), ammAlice.tokens()));
+        BEAST_EXPECT(ammAlice.expectBalances(USD(1'050), kXRP(1'000), ammAlice.tokens()));
         BEAST_EXPECT(expectOffers(env, bob_, 0));
         BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
     }
@@ -1388,21 +1389,21 @@ private:
         using namespace jtx;
 
         Env env = pathTestEnv();
-        env.fund(XRP(100'000'250), alice_);
+        env.fund(kXRP(100'000'250), alice_);
         fund(env, gw_, {carol_, bob_}, {USD(100)}, Fund::All);
         fund(env, gw_, {alice_}, {USD(100)}, Fund::TokenOnly);
-        AMM const ammCarol(env, carol_, XRP(100), USD(100));
+        AMM const ammCarol(env, carol_, kXRP(100), USD(100));
 
         STPathSet st;
         STAmount sa;
         STAmount da;
         std::tie(st, sa, da) = findPaths(
-            env, alice_, bob_, bob_["AUD"](-1), std::optional<STAmount>(XRP(100'000'000)));
+            env, alice_, bob_, bob_["AUD"](-1), std::optional<STAmount>(kXRP(100'000'000)));
         BEAST_EXPECT(st.empty());
         std::tie(st, sa, da) = findPaths(
-            env, alice_, bob_, bob_["USD"](-1), std::optional<STAmount>(XRP(100'000'000)));
+            env, alice_, bob_, bob_["USD"](-1), std::optional<STAmount>(kXRP(100'000'000)));
         // Alice sends all requested 100,000,000XRP
-        BEAST_EXPECT(sa == XRP(100'000'000));
+        BEAST_EXPECT(sa == kXRP(100'000'000));
         // Bob gets ~99.99USD. This is the amount Bob
         // can get out of AMM for 100,000,000XRP.
         BEAST_EXPECT(equal(da, STAmount{bob_["USD"], UINT64_C(99'9999000001), -10}));
@@ -1419,17 +1420,17 @@ private:
 
         Env env = pathTestEnv();
         auto const aud = gw_["AUD"];
-        env.fund(XRP(10'000), alice_, bob_, carol_, gw_);
+        env.fund(kXRP(10'000), alice_, bob_, carol_, gw_);
         env.close();
         env(rate(gw_, 1.1));
         env.trust(aud(2'000), bob_, carol_);
         env(pay(gw_, carol_, aud(51)));
         env.close();
-        AMM const ammCarol(env, carol_, XRP(40), aud(51));
-        env(pay(alice_, bob_, aud(10)), sendmax(XRP(100)), Paths(XRP));
+        AMM const ammCarol(env, carol_, kXRP(40), aud(51));
+        env(pay(alice_, bob_, aud(10)), Sendmax(kXRP(100)), Paths(kXRP));
         env.close();
         // AMM offer is 51.282052XRP/11AUD, 11AUD/1.1 = 10AUD to bob_
-        BEAST_EXPECT(ammCarol.expectBalances(XRP(51), aud(40), ammCarol.tokens()));
+        BEAST_EXPECT(ammCarol.expectBalances(kXRP(51), aud(40), ammCarol.tokens()));
         BEAST_EXPECT(expectHolding(env, bob_, aud(10)));
 
         auto const result = findPaths(env, alice_, bob_, Account(bob_)["USD"](25));
@@ -1446,9 +1447,9 @@ private:
             // XRP -> IOU receive max
             Env env = pathTestEnv();
             fund(env, gw_, {alice_, bob_, charlie}, {USD(11)}, Fund::All);
-            AMM const ammCharlie(env, charlie, XRP(10), USD(11));
-            auto [st, sa, da] = findPaths(env, alice_, bob_, USD(-1), XRP(1).value());
-            BEAST_EXPECT(sa == XRP(1));
+            AMM const ammCharlie(env, charlie, kXRP(10), USD(11));
+            auto [st, sa, da] = findPaths(env, alice_, bob_, USD(-1), kXRP(1).value());
+            BEAST_EXPECT(sa == kXRP(1));
             BEAST_EXPECT(equal(da, USD(1)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
@@ -1462,11 +1463,11 @@ private:
             // IOU -> XRP receive max
             Env env = pathTestEnv();
             fund(env, gw_, {alice_, bob_, charlie}, {USD(11)}, Fund::All);
-            AMM const ammCharlie(env, charlie, XRP(11), USD(10));
+            AMM const ammCharlie(env, charlie, kXRP(11), USD(10));
             env.close();
             auto [st, sa, da] = findPaths(env, alice_, bob_, drops(-1), USD(1).value());
             BEAST_EXPECT(sa == USD(1));
-            BEAST_EXPECT(equal(da, XRP(1)));
+            BEAST_EXPECT(equal(da, kXRP(1)));
             if (BEAST_EXPECT(st.size() == 1 && st[0].size() == 1))
             {
                 auto const& pathElem = st[0][0];
@@ -1491,10 +1492,10 @@ private:
         Account const g3{"G3"};
         Account const m1{"M1"};
 
-        env.fund(XRP(100'000), a1);
-        env.fund(XRP(10'000), a2);
-        env.fund(XRP(1'000), a3, g1, g2, g3);
-        env.fund(XRP(20'000), m1);
+        env.fund(kXRP(100'000), a1);
+        env.fund(kXRP(10'000), a2);
+        env.fund(kXRP(1'000), a3, g1, g2, g3);
+        env.fund(kXRP(20'000), m1);
         env.close();
 
         env.trust(g1["XYZ"](5'000), a1);
@@ -1515,13 +1516,13 @@ private:
         env.close();
 
         AMM const ammM1G1G2(env, m1, g1["XYZ"](1'000), g2["XYZ"](1'000));
-        AMM const ammM1XrpG3(env, m1, XRP(10'000), g3["ABC"](1'000));
+        AMM const ammM1XrpG3(env, m1, kXRP(10'000), g3["ABC"](1'000));
 
         STPathSet st;
         STAmount sa, da;
 
         {
-            auto const& sendAmt = XRP(10);
+            auto const& sendAmt = kXRP(10);
             std::tie(st, sa, da) = findPaths(env, a1, a2, sendAmt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, sendAmt));
             BEAST_EXPECT(st.empty());
@@ -1530,7 +1531,7 @@ private:
         {
             // no path should exist for this since dest account
             // does not exist.
-            auto const& sendAmt = XRP(200);
+            auto const& sendAmt = kXRP(200);
             std::tie(st, sa, da) =
                 findPaths(env, a1, Account{"A0"}, sendAmt, std::nullopt, xrpCurrency());
             BEAST_EXPECT(equal(da, sendAmt));
@@ -1573,8 +1574,8 @@ private:
         Account const g3{"G3"};
         Account const m1{"M1"};
 
-        env.fund(XRP(1'000), a1, a2, g3);
-        env.fund(XRP(11'000), m1);
+        env.fund(kXRP(1'000), a1, a2, g3);
+        env.fund(kXRP(11'000), m1);
         env.close();
 
         env.trust(g3["ABC"](1'000), a1, a2);
@@ -1586,12 +1587,12 @@ private:
         env(pay(g3, m1, g3["ABC"](1'200)));
         env.close();
 
-        AMM const ammM1(env, m1, g3["ABC"](1'000), XRP(10'010));
+        AMM const ammM1(env, m1, g3["ABC"](1'000), kXRP(10'010));
 
         STPathSet st;
         STAmount sa, da;
 
-        auto const& sendAmt = XRP(10);
+        auto const& sendAmt = kXRP(10);
         std::tie(st, sa, da) = findPaths(env, a1, a2, sendAmt, std::nullopt, a2["ABC"].currency);
         BEAST_EXPECT(equal(da, sendAmt));
         BEAST_EXPECT(equal(sa, a1["ABC"](1)));
@@ -1615,9 +1616,9 @@ private:
         Account const m1{"M1"};
         Account const m2{"M2"};
 
-        env.fund(XRP(1'000), a1, a2, a3, g1, g2, g3, g4);
-        env.fund(XRP(10'000), a4);
-        env.fund(XRP(21'000), m1, m2);
+        env.fund(kXRP(1'000), a1, a2, a3, g1, g2, g3, g4);
+        env.fund(kXRP(10'000), a4);
+        env.fund(kXRP(21'000), m1, m2);
         env.close();
 
         env.trust(g1["HKD"](2'000), a1);
@@ -1639,8 +1640,8 @@ private:
         env.close();
 
         AMM const ammM1(env, m1, g1["HKD"](1'010), g2["HKD"](1'000));
-        AMM const ammM2XrpG2(env, m2, XRP(10'000), g2["HKD"](1'010));
-        AMM const ammM2G1Xrp(env, m2, g1["HKD"](1'010), XRP(10'000));
+        AMM const ammM2XrpG2(env, m2, kXRP(10'000), g2["HKD"](1'010));
+        AMM const ammM2G1Xrp(env, m2, g1["HKD"](1'010), kXRP(10'000));
 
         STPathSet st;
         STAmount sa, da;
@@ -1741,8 +1742,8 @@ private:
         Account const g2{"G2"};
         Account const m1{"M1"};
 
-        env.fund(XRP(11'000), m1);
-        env.fund(XRP(1'000), a1, a2, a3, g1, g2);
+        env.fund(kXRP(11'000), m1);
+        env.fund(kXRP(1'000), a1, a2, a3, g1, g2);
         env.close();
 
         env.trust(g1["HKD"](2'000), a1);
@@ -1780,10 +1781,10 @@ private:
 
         Env env(*this, features);
 
-        env.fund(XRP(10'000), alice_, gw_);
+        env.fund(kXRP(10'000), alice_, gw_);
         // This removes no ripple for carol_,
         // different from the original test
-        fund(env, gw_, {carol_}, XRP(10'000), {}, Fund::Acct);
+        fund(env, gw_, {carol_}, kXRP(10'000), {}, Fund::Acct);
         auto const ammXrpPool = env.current()->fees().increment * 2;
         env.fund(reserve(env, 5) + ammCrtFee(env) + ammXrpPool, bob_);
         env.close();
@@ -1800,15 +1801,15 @@ private:
         // recursive calls to the EUR/XRP offer. The second call will return
         // tecPATH_DRY, but the entire path should not be marked as dry.
         // This is the second error case to test (when flowV1 is used).
-        env(offer(bob_, EUR(50), XRP(50)));
+        env(offer(bob_, EUR(50), kXRP(50)));
         AMM const ammBob(env, bob_, ammXrpPool, USD(150));
 
         env(pay(alice_, carol_, USD(1'000'000)),
-            Path(~XRP, ~USD),
-            sendmax(EUR(500)),
-            txflags(tfNoRippleDirect | tfPartialPayment));
+            Path(~kXRP, ~USD),
+            Sendmax(EUR(500)),
+            Txflags(tfNoRippleDirect | tfPartialPayment));
 
-        auto const carolUSD = env.Balance(carol_, USD).value();
+        auto const carolUSD = env.balance(carol_, USD).value();
         BEAST_EXPECT(carolUSD > USD(0) && carolUSD < USD(50));
     }
 
@@ -1823,11 +1824,11 @@ private:
             // simple IOU/IOU offer
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000), {BTC(100), USD(150)}, Fund::All);
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000), {BTC(100), USD(150)}, Fund::All);
 
             AMM const ammBob(env, bob_, BTC(100), USD(150));
 
-            env(pay(alice_, carol_, USD(50)), Path(~USD), sendmax(BTC(50)));
+            env(pay(alice_, carol_, USD(50)), Path(~USD), Sendmax(BTC(50)));
 
             BEAST_EXPECT(expectHolding(env, alice_, BTC(50)));
             BEAST_EXPECT(expectHolding(env, bob_, BTC(0)));
@@ -1839,58 +1840,60 @@ private:
             // simple IOU/XRP XRP/IOU offer
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, carol_, bob_}, XRP(10'000), {BTC(100), USD(150)}, Fund::All);
+            fund(env, gw_, {alice_, carol_, bob_}, kXRP(10'000), {BTC(100), USD(150)}, Fund::All);
 
-            AMM const ammBobBtcXrp(env, bob_, BTC(100), XRP(150));
-            AMM const ammBobXrpUsd(env, bob_, XRP(100), USD(150));
+            AMM const ammBobBtcXrp(env, bob_, BTC(100), kXRP(150));
+            AMM const ammBobXrpUsd(env, bob_, kXRP(100), USD(150));
 
-            env(pay(alice_, carol_, USD(50)), Path(~XRP, ~USD), sendmax(BTC(50)));
+            env(pay(alice_, carol_, USD(50)), Path(~kXRP, ~USD), Sendmax(BTC(50)));
 
             BEAST_EXPECT(expectHolding(env, alice_, BTC(50)));
             BEAST_EXPECT(expectHolding(env, bob_, BTC(0)));
             BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
             BEAST_EXPECT(expectHolding(env, carol_, USD(200)));
-            BEAST_EXPECT(ammBobBtcXrp.expectBalances(BTC(150), XRP(100), ammBobBtcXrp.tokens()));
-            BEAST_EXPECT(ammBobXrpUsd.expectBalances(XRP(150), USD(100), ammBobXrpUsd.tokens()));
+            BEAST_EXPECT(ammBobBtcXrp.expectBalances(BTC(150), kXRP(100), ammBobBtcXrp.tokens()));
+            BEAST_EXPECT(ammBobXrpUsd.expectBalances(kXRP(150), USD(100), ammBobXrpUsd.tokens()));
         }
         {
             // simple XRP -> USD through offer and sendmax
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, carol_, bob_}, XRP(10'000), {USD(150)}, Fund::All);
+            fund(env, gw_, {alice_, carol_, bob_}, kXRP(10'000), {USD(150)}, Fund::All);
 
-            AMM const ammBob(env, bob_, XRP(100), USD(150));
+            AMM const ammBob(env, bob_, kXRP(100), USD(150));
 
-            env(pay(alice_, carol_, USD(50)), Path(~USD), sendmax(XRP(50)));
+            env(pay(alice_, carol_, USD(50)), Path(~USD), Sendmax(kXRP(50)));
 
             BEAST_EXPECT(expectLedgerEntryRoot(env, alice_, xrpMinusFee(env, 10'000 - 50)));
-            BEAST_EXPECT(expectLedgerEntryRoot(env, bob_, XRP(10'000) - XRP(100) - ammCrtFee(env)));
+            BEAST_EXPECT(
+                expectLedgerEntryRoot(env, bob_, kXRP(10'000) - kXRP(100) - ammCrtFee(env)));
             BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
             BEAST_EXPECT(expectHolding(env, carol_, USD(200)));
-            BEAST_EXPECT(ammBob.expectBalances(XRP(150), USD(100), ammBob.tokens()));
+            BEAST_EXPECT(ammBob.expectBalances(kXRP(150), USD(100), ammBob.tokens()));
         }
         {
             // simple USD -> XRP through offer and sendmax
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, carol_, bob_}, XRP(10'000), {USD(100)}, Fund::All);
+            fund(env, gw_, {alice_, carol_, bob_}, kXRP(10'000), {USD(100)}, Fund::All);
 
-            AMM const ammBob(env, bob_, USD(100), XRP(150));
+            AMM const ammBob(env, bob_, USD(100), kXRP(150));
 
-            env(pay(alice_, carol_, XRP(50)), Path(~XRP), sendmax(USD(50)));
+            env(pay(alice_, carol_, kXRP(50)), Path(~kXRP), Sendmax(USD(50)));
 
             BEAST_EXPECT(expectHolding(env, alice_, USD(50)));
-            BEAST_EXPECT(expectLedgerEntryRoot(env, bob_, XRP(10'000) - XRP(150) - ammCrtFee(env)));
+            BEAST_EXPECT(
+                expectLedgerEntryRoot(env, bob_, kXRP(10'000) - kXRP(150) - ammCrtFee(env)));
             BEAST_EXPECT(expectHolding(env, bob_, USD(0)));
-            BEAST_EXPECT(expectLedgerEntryRoot(env, carol_, XRP(10'000 + 50)));
-            BEAST_EXPECT(ammBob.expectBalances(USD(150), XRP(100), ammBob.tokens()));
+            BEAST_EXPECT(expectLedgerEntryRoot(env, carol_, kXRP(10'000 + 50)));
+            BEAST_EXPECT(ammBob.expectBalances(USD(150), kXRP(100), ammBob.tokens()));
         }
         {
             // test unfunded offers are removed when payment succeeds
             Env env(*this, features);
 
-            env.fund(XRP(10'000), alice_, carol_, gw_);
-            env.fund(XRP(10'000), bob_);
+            env.fund(kXRP(10'000), alice_, carol_, gw_);
+            env.fund(kXRP(10'000), bob_);
             env.close();
             env.trust(USD(1'000), alice_, bob_, carol_);
             env.trust(BTC(1'000), alice_, bob_, carol_);
@@ -1912,13 +1915,13 @@ private:
             BEAST_EXPECT(isOffer(env, bob_, BTC(50), USD(50)));
             BEAST_EXPECT(isOffer(env, bob_, BTC(40), EUR(50)));
 
-            env(pay(alice_, carol_, USD(50)), Path(~USD), Path(~EUR, ~USD), sendmax(BTC(60)));
+            env(pay(alice_, carol_, USD(50)), Path(~USD), Path(~EUR, ~USD), Sendmax(BTC(60)));
 
-            env.Require(Balance(alice_, BTC(10)));
-            env.Require(Balance(bob_, BTC(50)));
-            env.Require(Balance(bob_, USD(0)));
-            env.Require(Balance(bob_, EUR(0)));
-            env.Require(Balance(carol_, USD(50)));
+            env.require(Balance(alice_, BTC(10)));
+            env.require(Balance(bob_, BTC(50)));
+            env.require(Balance(bob_, USD(0)));
+            env.require(Balance(bob_, EUR(0)));
+            env.require(Balance(carol_, USD(50)));
             // used in the payment
             BEAST_EXPECT(!isOffer(env, bob_, BTC(50), USD(50)));
             // found unfunded
@@ -1938,11 +1941,11 @@ private:
             // payment succeeds.
             Env env(*this, features);
 
-            env.fund(XRP(10'000), bob_, carol_, gw_);
+            env.fund(kXRP(10'000), bob_, carol_, gw_);
             env.close();
             // Sets rippling on, this is different from
             // the original test
-            fund(env, gw_, {alice_}, XRP(10'000), {}, Fund::Acct);
+            fund(env, gw_, {alice_}, kXRP(10'000), {}, Fund::Acct);
             env.trust(USD(1'000), alice_, bob_, carol_);
             env.trust(BTC(1'000), alice_, bob_, carol_);
             env.trust(EUR(1'000), alice_, bob_, carol_);
@@ -1972,11 +1975,11 @@ private:
             auto const flowResult = [&] {
                 STAmount const deliver(USD(51));
                 STAmount smax(BTC(61));
-                PaymentSandbox sb(env.current().get(), tapNONE);
+                PaymentSandbox sb(env.current().get(), TapNone);
                 STPathSet paths;
                 auto ipe = [](Issue const& iss) {
                     return STPathElement(
-                        STPathElement::typeCurrency | STPathElement::typeIssuer,
+                        STPathElement::TypeCurrency | STPathElement::TypeIssuer,
                         xrpAccount(),
                         iss.currency,
                         iss.account);
@@ -1984,10 +1987,10 @@ private:
                 {
                     // BTC -> USD
                     STPath const p1({ipe(USD)});
-                    paths.push_back(p1);
+                    paths.pushBack(p1);
                     // BTC -> EUR -> USD
                     STPath const p2({ipe(EUR), ipe(USD)});
-                    paths.push_back(p2);
+                    paths.pushBack(p2);
                 }
 
                 return flow(
@@ -1999,7 +2002,7 @@ private:
                     false,
                     false,
                     true,
-                    OfferCrossing::no,
+                    OfferCrossing::No,
                     std::nullopt,
                     smax,
                     std::nullopt,
@@ -2010,7 +2013,7 @@ private:
             env.app().getOpenLedger().modify([&](OpenView& view, beast::Journal j) {
                 if (flowResult.removableOffers.empty())
                     return false;
-                Sandbox sb(&view, tapNONE);
+                Sandbox sb(&view, TapNone);
                 for (auto const& o : flowResult.removableOffers)
                 {
                     if (auto ok = sb.peek(keylet::offer(o)))
@@ -2036,9 +2039,9 @@ private:
             // 1 EUR, as expected.
 
             Env env(*this, features);
-            env.fund(XRP(10'000), bob_, carol_, gw_);
+            env.fund(kXRP(10'000), bob_, carol_, gw_);
             env.close();
-            fund(env, gw_, {alice_}, XRP(10'000), {}, Fund::Acct);
+            fund(env, gw_, {alice_}, kXRP(10'000), {}, Fund::Acct);
             env.trust(USD(1'000), alice_, bob_, carol_);
             env.trust(EUR(1'000), alice_, bob_, carol_);
             env.close();
@@ -2050,12 +2053,12 @@ private:
 
             // env(offer(bob_, USD(1), drops(2)), txflags(tfPassive));
             AMM const ammBob(env, bob_, USD(8), XRPAmount{21});
-            env(offer(bob_, drops(1), EUR(1'000)), txflags(tfPassive));
+            env(offer(bob_, drops(1), EUR(1'000)), Txflags(tfPassive));
 
             env(pay(alice_, carol_, EUR(1)),
-                Path(~XRP, ~EUR),
-                sendmax(USD(0.4)),
-                txflags(tfNoRippleDirect | tfPartialPayment));
+                Path(~kXRP, ~EUR),
+                Sendmax(USD(0.4)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
 
             BEAST_EXPECT(expectHolding(env, carol_, EUR(1)));
             BEAST_EXPECT(ammBob.expectBalances(USD(8.4), XRPAmount{20}, ammBob.tokens()));
@@ -2072,7 +2075,7 @@ private:
             // payment via AMM
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(1'000), {USD(1'000), GBP(1'000)});
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(1'000), {USD(1'000), GBP(1'000)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2080,8 +2083,8 @@ private:
 
             env(pay(alice_, carol_, USD(100)),
                 Path(~USD),
-                sendmax(GBP(150)),
-                txflags(tfNoRippleDirect | tfPartialPayment));
+                Sendmax(GBP(150)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
             env.close();
 
             // alice_ buys 107.1428USD with 120GBP and pays 25% tr fee on 120GBP
@@ -2113,20 +2116,20 @@ private:
                 env,
                 gw_,
                 {alice_, bob_, carol_, ed},
-                XRP(1'000),
+                kXRP(1'000),
                 {USD(1'000), EUR(1'000), GBP(1'000)});
             env(rate(gw_, 1.25));
             env.close();
 
-            env(offer(ed, GBP(1'000), EUR(1'000)), txflags(tfPassive));
+            env(offer(ed, GBP(1'000), EUR(1'000)), Txflags(tfPassive));
             env.close();
 
             AMM const amm(env, bob_, EUR(1'000), USD(1'000));
 
             env(pay(alice_, carol_, USD(100)),
                 Path(~EUR, ~USD),
-                sendmax(GBP(150)),
-                txflags(tfNoRippleDirect | tfPartialPayment));
+                Sendmax(GBP(150)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
             env.close();
 
             // alice_ buys 120EUR with 120GBP via the offer
@@ -2154,7 +2157,7 @@ private:
                 env,
                 gw_,
                 {alice_, bob_, carol_, ed},
-                XRP(1'000),
+                kXRP(1'000),
                 {USD(1'000), EUR(1'000), GBP(1'000)});
             env(rate(gw_, 1.25));
             env.close();
@@ -2164,8 +2167,8 @@ private:
 
             env(pay(alice_, carol_, USD(100)),
                 Path(~EUR, ~USD),
-                sendmax(GBP(150)),
-                txflags(tfNoRippleDirect | tfPartialPayment));
+                Sendmax(GBP(150)),
+                Txflags(tfNoRippleDirect | tfPartialPayment));
             env.close();
 
             BEAST_EXPECT(expectHolding(env, alice_, GBP(850)));
@@ -2205,7 +2208,7 @@ private:
             // AMM offer crossing
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, bob_}, XRP(1'000), {USD(1'100), EUR(1'100)});
+            fund(env, gw_, {alice_, bob_}, kXRP(1'000), {USD(1'100), EUR(1'100)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2224,7 +2227,7 @@ private:
             // Payment via AMM with limit quality
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(1'000), {USD(1'000), GBP(1'000)});
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(1'000), {USD(1'000), GBP(1'000)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2234,8 +2237,8 @@ private:
             // trade quality is 100USD/178.5714 = 0.55999
             env(pay(alice_, carol_, USD(100)),
                 Path(~USD),
-                sendmax(GBP(178.58)),
-                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                Sendmax(GBP(178.58)),
+                Txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
             // alice_ buys 125USD with 142.8571GBP and pays 25% tr fee
@@ -2255,7 +2258,7 @@ private:
             // than requested
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(1'000), {USD(1'200), GBP(1'200)});
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(1'000), {USD(1'200), GBP(1'200)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2265,8 +2268,8 @@ private:
             // trade quality is 22.5USD/30GBP = 0.75
             env(pay(alice_, carol_, USD(90)),
                 Path(~USD),
-                sendmax(GBP(120)),
-                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                Sendmax(GBP(120)),
+                Txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
             if (!features[fixAMMv1_1])
@@ -2305,12 +2308,12 @@ private:
                 env,
                 gw_,
                 {alice_, bob_, carol_, ed},
-                XRP(1'000),
+                kXRP(1'000),
                 {USD(1'400), EUR(1'400), GBP(1'400)});
             env(rate(gw_, 1.25));
             env.close();
 
-            env(offer(ed, GBP(1'000), EUR(1'000)), txflags(tfPassive));
+            env(offer(ed, GBP(1'000), EUR(1'000)), Txflags(tfPassive));
             env.close();
 
             AMM const amm(env, bob_, EUR(1'000), USD(1'400));
@@ -2319,8 +2322,8 @@ private:
             // trade quality is 59.7321USD/88.0262GBP = 0.6785
             env(pay(alice_, carol_, USD(95)),
                 Path(~EUR, ~USD),
-                sendmax(GBP(140)),
-                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                Sendmax(GBP(140)),
+                Txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
             if (!features[fixAMMv1_1])
@@ -2393,22 +2396,22 @@ private:
                 env,
                 gw_,
                 {alice_, bob_, carol_, ed},
-                XRP(1'000),
+                kXRP(1'000),
                 {USD(1'400), EUR(1'400), GBP(1'400)});
             env(rate(gw_, 1.25));
             env.close();
 
             AMM const amm(env, bob_, GBP(1'000), EUR(1'000));
 
-            env(offer(ed, EUR(1'000), USD(1'400)), txflags(tfPassive));
+            env(offer(ed, EUR(1'000), USD(1'400)), Txflags(tfPassive));
             env.close();
 
             // requested quality limit is 95USD/140GBP = 0.6785
             // trade quality is 47.7857USD/70.4210GBP = 0.6785
             env(pay(alice_, carol_, USD(95)),
                 Path(~EUR, ~USD),
-                sendmax(GBP(140)),
-                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                Sendmax(GBP(140)),
+                Txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
             if (!features[fixAMMv1_1])
@@ -2469,7 +2472,7 @@ private:
                 env,
                 gw_,
                 {alice_, bob_, carol_, ed},
-                XRP(1'000),
+                kXRP(1'000),
                 {USD(1'400), EUR(1'400), GBP(1'400)});
             env(rate(gw_, 1.25));
             env.close();
@@ -2481,8 +2484,8 @@ private:
             // trade quality is 66.7432USD/107.5308GBP = 0.6206
             env(pay(alice_, carol_, USD(90)),
                 Path(~EUR, ~USD),
-                sendmax(GBP(145)),
-                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                Sendmax(GBP(145)),
+                Txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
             if (!features[fixAMMv1_1])
@@ -2533,7 +2536,11 @@ private:
             Env env(*this, features);
 
             fund(
-                env, gw_, {alice_, bob_, carol_}, XRP(1'000), {USD(1'400), EUR(1'400), GBP(1'400)});
+                env,
+                gw_,
+                {alice_, bob_, carol_},
+                kXRP(1'000),
+                {USD(1'400), EUR(1'400), GBP(1'400)});
             env(rate(gw_, 1.25));
             env.close();
 
@@ -2544,8 +2551,8 @@ private:
             // trade quality is 81.1111USD/108.1481GBP = 0.75
             env(pay(gw_, carol_, USD(90)),
                 Path(~EUR, ~USD),
-                sendmax(GBP(120)),
-                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                Sendmax(GBP(120)),
+                Txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
             env.close();
 
             if (!features[fixAMMv1_1])
@@ -2595,19 +2602,19 @@ private:
         {
             Env env(*this);
 
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000), {USD(2'000)});
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000), {USD(2'000)});
 
-            AMM const ammBob(env, bob_, XRP(1'000), USD(1'050));
-            env(offer(bob_, XRP(100), USD(50)));
+            AMM const ammBob(env, bob_, kXRP(1'000), USD(1'050));
+            env(offer(bob_, kXRP(100), USD(50)));
 
             env(pay(alice_, carol_, USD(100)),
                 Path(~USD),
-                sendmax(XRP(100)),
-                txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
+                Sendmax(kXRP(100)),
+                Txflags(tfNoRippleDirect | tfPartialPayment | tfLimitQuality));
 
-            BEAST_EXPECT(ammBob.expectBalances(XRP(1'050), USD(1'000), ammBob.tokens()));
+            BEAST_EXPECT(ammBob.expectBalances(kXRP(1'050), USD(1'000), ammBob.tokens()));
             BEAST_EXPECT(expectHolding(env, carol_, USD(2'050)));
-            BEAST_EXPECT(expectOffers(env, bob_, 1, {{{XRP(100), USD(50)}}}));
+            BEAST_EXPECT(expectOffers(env, bob_, 1, {{{kXRP(100), USD(50)}}}));
         }
     }
 
@@ -2622,17 +2629,17 @@ private:
             Env env(*this, testableAmendments());
             // Note, if alice_ doesn't have default ripple, then pay
             // fails with tecPATH_DRY.
-            fund(env, gw_, {alice_, bob_}, XRP(10'000), {USD(200), EUR(200)}, Fund::All);
+            fund(env, gw_, {alice_, bob_}, kXRP(10'000), {USD(200), EUR(200)}, Fund::All);
 
-            AMM const ammAliceXrpUsd(env, alice_, XRP(100), USD(101));
-            AMM const ammAliceXrpEur(env, alice_, XRP(100), EUR(101));
+            AMM const ammAliceXrpUsd(env, alice_, kXRP(100), USD(101));
+            AMM const ammAliceXrpEur(env, alice_, kXRP(100), EUR(101));
             env.close();
 
             TER const expectedTer = TER{temBAD_PATH_LOOP};
             env(pay(alice_, bob_, EUR(1)),
-                Path(~USD, ~XRP, ~EUR),
-                sendmax(XRP(1)),
-                txflags(tfNoRippleDirect),
+                Path(~USD, ~kXRP, ~EUR),
+                Sendmax(kXRP(1)),
+                Txflags(tfNoRippleDirect),
                 Ter(expectedTer));
         }
         {
@@ -2640,15 +2647,15 @@ private:
             Env env(*this);
             // Note, if alice_ doesn't have default ripple, then pay fails
             // with tecPATH_DRY.
-            fund(env, gw_, {alice_, bob_}, XRP(10'000), {USD(200), EUR(200)}, Fund::All);
+            fund(env, gw_, {alice_, bob_}, kXRP(10'000), {USD(200), EUR(200)}, Fund::All);
 
-            AMM const ammAliceXrpUsd(env, alice_, XRP(100), USD(100));
-            AMM const ammAliceXrpEur(env, alice_, XRP(100), EUR(100));
+            AMM const ammAliceXrpUsd(env, alice_, kXRP(100), USD(100));
+            AMM const ammAliceXrpEur(env, alice_, kXRP(100), EUR(100));
             // EUR -> //XRP -> //USD ->XRP
-            env(pay(alice_, bob_, XRP(1)),
-                Path(~XRP, ~USD, ~XRP),
-                sendmax(EUR(1)),
-                txflags(tfNoRippleDirect),
+            env(pay(alice_, bob_, kXRP(1)),
+                Path(~kXRP, ~USD, ~kXRP),
+                Sendmax(EUR(1)),
+                Txflags(tfNoRippleDirect),
                 Ter(temBAD_PATH_LOOP));
         }
         {
@@ -2658,16 +2665,16 @@ private:
             Env env(*this);
             // Note, if alice_ doesn't have default ripple, then pay fails
             // with tecPATH_DRY.
-            fund(env, gw_, {alice_, bob_}, XRP(10'000), {USD(200), EUR(200), jpy(200)}, Fund::All);
+            fund(env, gw_, {alice_, bob_}, kXRP(10'000), {USD(200), EUR(200), jpy(200)}, Fund::All);
 
-            AMM const ammAliceXrpUsd(env, alice_, XRP(100), USD(100));
-            AMM const ammAliceXrpEur(env, alice_, XRP(100), EUR(100));
-            AMM const ammAliceXrpJpy(env, alice_, XRP(100), jpy(100));
+            AMM const ammAliceXrpUsd(env, alice_, kXRP(100), USD(100));
+            AMM const ammAliceXrpEur(env, alice_, kXRP(100), EUR(100));
+            AMM const ammAliceXrpJpy(env, alice_, kXRP(100), jpy(100));
 
             env(pay(alice_, bob_, jpy(1)),
-                Path(~XRP, ~EUR, ~XRP, ~jpy),
-                sendmax(USD(1)),
-                txflags(tfNoRippleDirect),
+                Path(~kXRP, ~EUR, ~kXRP, ~jpy),
+                Sendmax(USD(1)),
+                Txflags(tfNoRippleDirect),
                 Ter(temBAD_PATH_LOOP));
         }
     }
@@ -2682,43 +2689,43 @@ private:
         auto const dan = Account("dan");
         auto const ed = Account("ed");
 
-        fund(env, gw_, {ed}, XRP(100'000'000), {USD(11)});
-        env.fund(XRP(100'000'000), alice_, bob_, carol_, dan);
+        fund(env, gw_, {ed}, kXRP(100'000'000), {USD(11)});
+        env.fund(kXRP(100'000'000), alice_, bob_, carol_, dan);
         env.close();
         env.trust(USD(1), bob_);
         env(pay(gw_, bob_, USD(1)));
         env.trust(USD(1), dan);
         env(pay(gw_, dan, USD(1)));
-        nOffers(env, 2'000, bob_, XRP(1), USD(1));
-        nOffers(env, 1, dan, XRP(1), USD(1));
-        AMM const ammEd(env, ed, XRP(9), USD(11));
+        nOffers(env, 2'000, bob_, kXRP(1), USD(1));
+        nOffers(env, 1, dan, kXRP(1), USD(1));
+        AMM const ammEd(env, ed, kXRP(9), USD(11));
 
         // Alice offers to buy 1000 XRP for 1000 USD. She takes Bob's first
         // offer, removes 999 more as unfunded, then hits the step limit.
-        env(offer(alice_, USD(1'000), XRP(1'000)));
+        env(offer(alice_, USD(1'000), kXRP(1'000)));
         if (!features[fixAMMv1_1])
         {
-            env.Require(Balance(alice_, STAmount{USD, UINT64_C(2'050126257867561), -15}));
+            env.require(Balance(alice_, STAmount{USD, UINT64_C(2'050126257867561), -15}));
         }
         else
         {
-            env.Require(Balance(alice_, STAmount{USD, UINT64_C(2'050125257867587), -15}));
+            env.require(Balance(alice_, STAmount{USD, UINT64_C(2'050125257867587), -15}));
         }
-        env.Require(Owners(alice_, 2));
-        env.Require(Balance(bob_, USD(0)));
-        env.Require(Owners(bob_, 1'001));
-        env.Require(Balance(dan, USD(1)));
-        env.Require(Owners(dan, 2));
+        env.require(Owners(alice_, 2));
+        env.require(Balance(bob_, USD(0)));
+        env.require(Owners(bob_, 1'001));
+        env.require(Balance(dan, USD(1)));
+        env.require(Owners(dan, 2));
 
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
-        env(offer(carol_, USD(1'000), XRP(1'000)));
-        env.Require(Balance(carol_, USD(kNONE)));
-        env.Require(Owners(carol_, 1));
-        env.Require(Balance(bob_, USD(0)));
-        env.Require(Owners(bob_, 1));
-        env.Require(Balance(dan, USD(1)));
-        env.Require(Owners(dan, 2));
+        env(offer(carol_, USD(1'000), kXRP(1'000)));
+        env.require(Balance(carol_, USD(kNONE)));
+        env.require(Owners(carol_, 1));
+        env.require(Balance(bob_, USD(0)));
+        env.require(Owners(bob_, 1));
+        env.require(Balance(dan, USD(1)));
+        env.require(Owners(dan, 2));
     }
 
     void
@@ -2730,104 +2737,104 @@ private:
 
         {
             Env env(*this, features);
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000));
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000));
             env.trust(USD(100), alice_, bob_, carol_);
-            env(pay(alice_, bob_, USD(10)), deliver_min(USD(10)), Ter(temBAD_AMOUNT));
+            env(pay(alice_, bob_, USD(10)), DeliverMin(USD(10)), Ter(temBAD_AMOUNT));
             env(pay(alice_, bob_, USD(10)),
-                deliver_min(USD(-5)),
-                txflags(tfPartialPayment),
+                DeliverMin(USD(-5)),
+                Txflags(tfPartialPayment),
                 Ter(temBAD_AMOUNT));
             env(pay(alice_, bob_, USD(10)),
-                deliver_min(XRP(5)),
-                txflags(tfPartialPayment),
+                DeliverMin(kXRP(5)),
+                Txflags(tfPartialPayment),
                 Ter(temBAD_AMOUNT));
             env(pay(alice_, bob_, USD(10)),
-                deliver_min(Account(carol_)["USD"](5)),
-                txflags(tfPartialPayment),
+                DeliverMin(Account(carol_)["USD"](5)),
+                Txflags(tfPartialPayment),
                 Ter(temBAD_AMOUNT));
             env(pay(alice_, bob_, USD(10)),
-                deliver_min(USD(15)),
-                txflags(tfPartialPayment),
+                DeliverMin(USD(15)),
+                Txflags(tfPartialPayment),
                 Ter(temBAD_AMOUNT));
             env(pay(gw_, carol_, USD(50)));
-            AMM const ammCarol(env, carol_, XRP(10), USD(15));
+            AMM const ammCarol(env, carol_, kXRP(10), USD(15));
             env(pay(alice_, bob_, USD(10)),
-                Paths(XRP),
-                deliver_min(USD(7)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(5)),
+                Paths(kXRP),
+                DeliverMin(USD(7)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(5)),
                 Ter(tecPATH_PARTIAL));
-            env.Require(
+            env.require(
                 Balance(alice_, drops(10'000'000'000 - env.current()->fees().base.drops())));
-            env.Require(Balance(bob_, XRP(10'000)));
+            env.require(Balance(bob_, kXRP(10'000)));
         }
 
         {
             Env env(*this, features);
-            fund(env, gw_, {alice_, bob_}, XRP(10'000));
+            fund(env, gw_, {alice_, bob_}, kXRP(10'000));
             env.trust(USD(1'100), alice_, bob_);
             env(pay(gw_, bob_, USD(1'100)));
-            AMM const ammBob(env, bob_, XRP(1'000), USD(1'100));
+            AMM const ammBob(env, bob_, kXRP(1'000), USD(1'100));
             env(pay(alice_, alice_, USD(10'000)),
-                Paths(XRP),
-                deliver_min(USD(100)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(100)));
-            env.Require(Balance(alice_, USD(100)));
+                Paths(kXRP),
+                DeliverMin(USD(100)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(100)));
+            env.require(Balance(alice_, USD(100)));
         }
 
         {
             Env env(*this, features);
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000));
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000));
             env.trust(USD(1'200), bob_, carol_);
             env(pay(gw_, bob_, USD(1'200)));
-            AMM const ammBob(env, bob_, XRP(5'500), USD(1'200));
+            AMM const ammBob(env, bob_, kXRP(5'500), USD(1'200));
             env(pay(alice_, carol_, USD(10'000)),
-                Paths(XRP),
-                deliver_min(USD(200)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(1'000)),
+                Paths(kXRP),
+                DeliverMin(USD(200)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(1'000)),
                 Ter(tecPATH_PARTIAL));
             env(pay(alice_, carol_, USD(10'000)),
-                Paths(XRP),
-                deliver_min(USD(200)),
-                txflags(tfPartialPayment),
-                sendmax(XRP(1'100)));
-            BEAST_EXPECT(ammBob.expectBalances(XRP(6'600), USD(1'000), ammBob.tokens()));
-            env.Require(Balance(carol_, USD(200)));
+                Paths(kXRP),
+                DeliverMin(USD(200)),
+                Txflags(tfPartialPayment),
+                Sendmax(kXRP(1'100)));
+            BEAST_EXPECT(ammBob.expectBalances(kXRP(6'600), USD(1'000), ammBob.tokens()));
+            env.require(Balance(carol_, USD(200)));
         }
 
         {
             auto const dan = Account("dan");
             Env env(*this, features);
-            fund(env, gw_, {alice_, bob_, carol_, dan}, XRP(10'000));
+            fund(env, gw_, {alice_, bob_, carol_, dan}, kXRP(10'000));
             env.close();
             env.trust(USD(1'100), bob_, carol_, dan);
             env(pay(gw_, bob_, USD(100)));
             env(pay(gw_, dan, USD(1'100)));
-            env(offer(bob_, XRP(100), USD(100)));
-            env(offer(bob_, XRP(1'000), USD(100)));
-            AMM const ammDan(env, dan, XRP(1'000), USD(1'100));
+            env(offer(bob_, kXRP(100), USD(100)));
+            env(offer(bob_, kXRP(1'000), USD(100)));
+            AMM const ammDan(env, dan, kXRP(1'000), USD(1'100));
             if (!features[fixAMMv1_1])
             {
                 env(pay(alice_, carol_, USD(10'000)),
-                    Paths(XRP),
-                    deliver_min(USD(200)),
-                    txflags(tfPartialPayment),
-                    sendmax(XRP(200)));
-                env.Require(Balance(bob_, USD(0)));
-                env.Require(Balance(carol_, USD(200)));
-                BEAST_EXPECT(ammDan.expectBalances(XRP(1'100), USD(1'000), ammDan.tokens()));
+                    Paths(kXRP),
+                    DeliverMin(USD(200)),
+                    Txflags(tfPartialPayment),
+                    Sendmax(kXRP(200)));
+                env.require(Balance(bob_, USD(0)));
+                env.require(Balance(carol_, USD(200)));
+                BEAST_EXPECT(ammDan.expectBalances(kXRP(1'100), USD(1'000), ammDan.tokens()));
             }
             else
             {
                 env(pay(alice_, carol_, USD(10'000)),
-                    Paths(XRP),
-                    deliver_min(USD(200)),
-                    txflags(tfPartialPayment),
-                    sendmax(XRPAmount(200'000'001)));
-                env.Require(Balance(bob_, USD(0)));
-                env.Require(Balance(carol_, STAmount{USD, UINT64_C(200'00000090909), -11}));
+                    Paths(kXRP),
+                    DeliverMin(USD(200)),
+                    Txflags(tfPartialPayment),
+                    Sendmax(XRPAmount(200'000'001)));
+                env.require(Balance(bob_, USD(0)));
+                env.require(Balance(carol_, STAmount{USD, UINT64_C(200'00000090909), -11}));
                 BEAST_EXPECT(ammDan.expectBalances(
                     XRPAmount{1'100'000'001},
                     STAmount{USD, UINT64_C(999'99999909091), -11},
@@ -2848,7 +2855,7 @@ private:
         // account with the DepositAuth flag set could not make a payment
         // to itself.  That bug was fixed in the DepositPreauth amendment.
         Env env(*this, features);
-        fund(env, gw_, {alice_, becky}, XRP(5'000));
+        fund(env, gw_, {alice_, becky}, kXRP(5'000));
         env.close();
 
         env.trust(USD(1'000), alice_);
@@ -2858,11 +2865,11 @@ private:
         env(pay(gw_, alice_, USD(500)));
         env.close();
 
-        AMM const ammAlice(env, alice_, XRP(100), USD(140));
+        AMM const ammAlice(env, alice_, kXRP(100), USD(140));
 
         // becky pays herself USD (10) by consuming part of alice_'s offer.
         // Make sure the payment works if PaymentAuth is not involved.
-        env(pay(becky, becky, USD(10)), Path(~USD), sendmax(XRP(10)));
+        env(pay(becky, becky, USD(10)), Path(~USD), Sendmax(kXRP(10)));
         env.close();
         BEAST_EXPECT(ammAlice.expectBalances(XRPAmount(107'692'308), USD(130), ammAlice.tokens()));
 
@@ -2871,7 +2878,7 @@ private:
         env.close();
 
         // becky pays herself again.
-        env(pay(becky, becky, USD(10)), Path(~USD), sendmax(XRP(10)), Ter(tesSUCCESS));
+        env(pay(becky, becky, USD(10)), Path(~USD), Sendmax(kXRP(10)), Ter(tesSUCCESS));
 
         env.close();
     }
@@ -2887,7 +2894,7 @@ private:
 
         Env env(*this);
 
-        fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000));
+        fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000));
         env.trust(USD(1'000), alice_, bob_, carol_);
         env.close();
 
@@ -2905,12 +2912,12 @@ private:
 
         // None of the following payments should succeed.
         auto failedIouPayments = [this, &env]() {
-            env.Require(Flags(bob_, asfDepositAuth));
+            env.require(Flags(bob_, asfDepositAuth));
 
             // Capture bob_'s balances before hand to confirm they don't
             // change.
-            PrettyAmount const bobXrpBalance{env.Balance(bob_, XRP)};
-            PrettyAmount const bobUsdBalance{env.Balance(bob_, USD)};
+            PrettyAmount const bobXrpBalance{env.balance(bob_, kXRP)};
+            PrettyAmount const bobUsdBalance{env.balance(bob_, USD)};
 
             env(pay(alice_, bob_, USD(50)), Ter(tecNO_PERMISSION));
             env.close();
@@ -2918,11 +2925,11 @@ private:
             // Note that even though alice_ is paying bob_ in XRP, the payment
             // is still not allowed since the payment passes through an
             // offer.
-            env(pay(alice_, bob_, drops(1)), sendmax(USD(1)), Ter(tecNO_PERMISSION));
+            env(pay(alice_, bob_, drops(1)), Sendmax(USD(1)), Ter(tecNO_PERMISSION));
             env.close();
 
-            BEAST_EXPECT(bobXrpBalance == env.Balance(bob_, XRP));
-            BEAST_EXPECT(bobUsdBalance == env.Balance(bob_, USD));
+            BEAST_EXPECT(bobXrpBalance == env.balance(bob_, kXRP));
+            BEAST_EXPECT(bobUsdBalance == env.balance(bob_, USD));
         };
 
         //  Test when bob_ has an XRP balance > base reserve.
@@ -2934,22 +2941,22 @@ private:
         env.close();
 
         {
-            STAmount const bobPaysXRP{env.Balance(bob_, XRP) - reserve(env, 1)};
+            STAmount const bobPaysXRP{env.balance(bob_, kXRP) - reserve(env, 1)};
             XRPAmount const bobPaysFee{reserve(env, 1) - reserve(env, 0)};
             env(pay(bob_, alice_, bobPaysXRP), Fee(bobPaysFee));
             env.close();
         }
 
         // Test when bob_'s XRP balance == base reserve.
-        BEAST_EXPECT(env.Balance(bob_, XRP) == reserve(env, 0));
-        BEAST_EXPECT(env.Balance(bob_, USD) == USD(25));
+        BEAST_EXPECT(env.balance(bob_, kXRP) == reserve(env, 0));
+        BEAST_EXPECT(env.balance(bob_, USD) == USD(25));
         failedIouPayments();
 
         // Test when bob_ has an XRP balance == 0.
         env(noop(bob_), Fee(reserve(env, 0)));
         env.close();
 
-        BEAST_EXPECT(env.Balance(bob_, XRP) == XRP(0));
+        BEAST_EXPECT(env.balance(bob_, kXRP) == kXRP(0));
         failedIouPayments();
 
         // Give bob_ enough XRP for the fee to clear the lsfDepositAuth flag.
@@ -2962,7 +2969,7 @@ private:
         env(pay(alice_, bob_, USD(50)));
         env.close();
 
-        env(pay(alice_, bob_, drops(1)), sendmax(USD(1)));
+        env(pay(alice_, bob_, drops(1)), Sendmax(USD(1)));
         env.close();
         BEAST_EXPECT(ammCarol.expectBalances(USD(101), XRPAmount(100), ammCarol.tokens()));
     }
@@ -2979,7 +2986,7 @@ private:
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(XRP(1'000), g1, alice, bob);
+        env.fund(kXRP(1'000), g1, alice, bob);
         env.close();
 
         env.trust(g1["USD"](100), bob);
@@ -2990,7 +2997,7 @@ private:
         env(pay(g1, alice, g1["USD"](205)));
         env.close();
 
-        AMM const ammAlice(env, alice, XRP(500), g1["USD"](105));
+        AMM const ammAlice(env, alice, kXRP(500), g1["USD"](105));
 
         {
             auto lines = getAccountLines(env, bob);
@@ -3027,14 +3034,14 @@ private:
         {
             // Account with line frozen by issuer
             //    test: can buy more assets on that line
-            env(offer(bob, g1["USD"](5), XRP(25)));
+            env(offer(bob, g1["USD"](5), kXRP(25)));
             env.close();
-            BEAST_EXPECT(ammAlice.expectBalances(XRP(525), g1["USD"](100), ammAlice.tokens()));
+            BEAST_EXPECT(ammAlice.expectBalances(kXRP(525), g1["USD"](100), ammAlice.tokens()));
         }
 
         {
             //    test: can not sell assets from that line
-            env(offer(bob, XRP(1), g1["USD"](5)), Ter(tecUNFUNDED_OFFER));
+            env(offer(bob, kXRP(1), g1["USD"](5)), Ter(tecUNFUNDED_OFFER));
 
             //    test: can receive Payment on that line
             env(pay(alice, bob, g1["USD"](1)));
@@ -3084,12 +3091,12 @@ private:
             // Is cleared via a TrustSet with ClearFreeze flag
             //    test: sets LowFreeze | HighFreeze flags
             env(trust(g1, bob["USD"](0), tfClearFreeze));
-            auto affected = env.meta()->getJson(JsonOptions::kNONE)[sfAffectedNodes.fieldName];
+            auto affected = env.meta()->getJson(JsonOptions::KNone)[sfAffectedNodes.fieldName];
             if (!BEAST_EXPECT(checkArraySize(affected, 2u)))
                 return;
             auto ff = affected[1u][sfModifiedNode.fieldName][sfFinalFields.fieldName];
             BEAST_EXPECT(
-                ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::kNONE));
+                ff[sfLowLimit.fieldName] == g1["USD"](0).value().getJson(JsonOptions::KNone));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfLowFreeze));
             BEAST_EXPECT(!(ff[jss::Flags].asUInt() & lsfHighFreeze));
             env.close();
@@ -3110,9 +3117,9 @@ private:
         Account const a3{"A3"};
         Account const a4{"A4"};
 
-        env.fund(XRP(12'000), g1);
-        env.fund(XRP(1'000), a1);
-        env.fund(XRP(20'000), a2, a3, a4);
+        env.fund(kXRP(12'000), g1);
+        env.fund(kXRP(1'000), a1);
+        env.fund(kXRP(20'000), a2, a3, a4);
         env.close();
 
         env.trust(g1["USD"](1'200), a1);
@@ -3127,9 +3134,9 @@ private:
         env(pay(g1, a4, g1["BTC"](100)));
         env.close();
 
-        AMM const ammG1(env, g1, XRP(10'000), g1["USD"](100));
-        env(offer(a1, XRP(10'000), g1["USD"](100)), txflags(tfPassive));
-        env(offer(a2, g1["USD"](100), XRP(10'000)), txflags(tfPassive));
+        AMM const ammG1(env, g1, kXRP(10'000), g1["USD"](100));
+        env(offer(a1, kXRP(10'000), g1["USD"](100)), Txflags(tfPassive));
+        env(offer(a2, g1["USD"](100), kXRP(10'000)), Txflags(tfPassive));
         env.close();
 
         {
@@ -3164,7 +3171,7 @@ private:
             // Offers/Payments
             //    test: assets can be bought on the market
             // env(offer(A3, G1["BTC"](1), XRP(1)));
-            AMM ammA3(env, a3, g1["BTC"](1), XRP(1));
+            AMM ammA3(env, a3, g1["BTC"](1), kXRP(1));
 
             //    test: assets can be sold on the market
             // AMM is bidirectional
@@ -3187,13 +3194,13 @@ private:
             // Account with GlobalFreeze
             //  set GlobalFreeze first
             //    test: SetFlag GlobalFreeze will toggle back to freeze
-            env.Require(Nflags(g1, asfGlobalFreeze));
+            env.require(Nflags(g1, asfGlobalFreeze));
             env(fset(g1, asfGlobalFreeze));
-            env.Require(Flags(g1, asfGlobalFreeze));
-            env.Require(Nflags(g1, asfNoFreeze));
+            env.require(Flags(g1, asfGlobalFreeze));
+            env.require(Nflags(g1, asfNoFreeze));
 
             //    test: assets can't be bought on the market
-            AMM const ammA3(env, a3, g1["BTC"](1), XRP(1), Ter(tecFROZEN));
+            AMM const ammA3(env, a3, g1["BTC"](1), kXRP(1), Ter(tecFROZEN));
 
             //    test: assets can't be sold on the market
             // AMM is bidirectional
@@ -3239,8 +3246,8 @@ private:
         Account const a3{"A3"};
         Account const a4{"A4"};
 
-        env.fund(XRP(2'000), g1, a3, a4);
-        env.fund(XRP(2'000), a2);
+        env.fund(kXRP(2'000), g1, a3, a4);
+        env.fund(kXRP(2'000), a2);
         env.close();
 
         env.trust(g1["USD"](1'000), a2);
@@ -3252,33 +3259,33 @@ private:
         env(pay(g1, a4, g1["USD"](2'001)));
         env.close();
 
-        AMM const ammA3(env, a3, XRP(1'000), g1["USD"](1'001));
+        AMM const ammA3(env, a3, kXRP(1'000), g1["USD"](1'001));
 
         // removal after successful payment
         //    test: make a payment with partially consuming offer
-        env(pay(a2, g1, g1["USD"](1)), Paths(g1["USD"]), sendmax(XRP(1)));
+        env(pay(a2, g1, g1["USD"](1)), Paths(g1["USD"]), Sendmax(kXRP(1)));
         env.close();
 
-        BEAST_EXPECT(ammA3.expectBalances(XRP(1'001), g1["USD"](1'000), ammA3.tokens()));
+        BEAST_EXPECT(ammA3.expectBalances(kXRP(1'001), g1["USD"](1'000), ammA3.tokens()));
 
         //    test: someone else creates an offer providing liquidity
-        env(offer(a4, XRP(999), g1["USD"](999)));
+        env(offer(a4, kXRP(999), g1["USD"](999)));
         env.close();
         // The offer consumes AMM offer
-        BEAST_EXPECT(ammA3.expectBalances(XRP(1'000), g1["USD"](1'001), ammA3.tokens()));
+        BEAST_EXPECT(ammA3.expectBalances(kXRP(1'000), g1["USD"](1'001), ammA3.tokens()));
 
         //    test: AMM line is frozen
-        auto const a3am = STAmount{Issue{to_currency("USD"), ammA3.ammAccount()}, 0};
+        auto const a3am = STAmount{Issue{toCurrency("USD"), ammA3.ammAccount()}, 0};
         env(trust(g1, a3am, tfSetFreeze));
         auto const info = ammA3.ammRpcInfo();
         BEAST_EXPECT(info[jss::amm][jss::asset2_frozen].asBool());
         env.close();
 
         //    test: Can make a payment via the new offer
-        env(pay(a2, g1, g1["USD"](1)), Paths(g1["USD"]), sendmax(XRP(1)));
+        env(pay(a2, g1, g1["USD"](1)), Paths(g1["USD"]), Sendmax(kXRP(1)));
         env.close();
         // AMM is not consumed
-        BEAST_EXPECT(ammA3.expectBalances(XRP(1'000), g1["USD"](1'001), ammA3.tokens()));
+        BEAST_EXPECT(ammA3.expectBalances(kXRP(1'000), g1["USD"](1'001), ammA3.tokens()));
 
         // removal buy successful OfferCreate
         //    test: freeze the new offer
@@ -3286,7 +3293,7 @@ private:
         env.close();
 
         //    test: can no longer create a crossing offer
-        env(offer(a2, g1["USD"](999), XRP(999)));
+        env(offer(a2, g1["USD"](999), kXRP(999)));
         env.close();
 
         //    test: offer was removed by offer_create
@@ -3302,21 +3309,21 @@ private:
 
         using namespace jtx;
         Env env{*this, features};
-        Account const bogie{"bogie", KeyType::secp256k1};
-        Account const alice{"alice", KeyType::secp256k1};
-        Account const becky{"becky", KeyType::ed25519};
-        Account const zelda{"zelda", KeyType::secp256k1};
-        fund(env, gw_, {alice, becky, zelda}, XRP(20'000), {USD(20'000)});
+        Account const bogie{"bogie", KeyType::Secp256k1};
+        Account const alice{"alice", KeyType::Secp256k1};
+        Account const becky{"becky", KeyType::Ed25519};
+        Account const zelda{"zelda", KeyType::Secp256k1};
+        fund(env, gw_, {alice, becky, zelda}, kXRP(20'000), {USD(20'000)});
 
         // alice_ uses a regular key with the master disabled.
-        Account const alie{"alie", KeyType::secp256k1};
+        Account const alie{"alie", KeyType::Secp256k1};
         env(regkey(alice, alie));
         env(fset(alice, asfDisableMaster), Sig(alice));
 
         // Attach signers to alice_.
         env(signers(alice, 2, {{becky, 1}, {bogie, 1}}), Sig(alie));
         env.close();
-        env.Require(Owners(alice, 2));
+        env.require(Owners(alice, 2));
 
         Msig const ms{becky, bogie};
 
@@ -3324,7 +3331,7 @@ private:
         AMM ammAlice(
             env,
             alice,
-            XRP(10'000),
+            kXRP(10'000),
             USD(10'000),
             false,
             0,
@@ -3333,13 +3340,13 @@ private:
             std::nullopt,
             ms,
             Ter(tesSUCCESS));
-        BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
+        BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'000), USD(10'000), ammAlice.tokens()));
 
         ammAlice.deposit(alice, 1'000'000);
-        BEAST_EXPECT(ammAlice.expectBalances(XRP(11'000), USD(11'000), IOUAmount{11'000'000, 0}));
+        BEAST_EXPECT(ammAlice.expectBalances(kXRP(11'000), USD(11'000), IOUAmount{11'000'000, 0}));
 
         ammAlice.withdraw(alice, 1'000'000);
-        BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), ammAlice.tokens()));
+        BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'000), USD(10'000), ammAlice.tokens()));
 
         ammAlice.vote({}, 1'000);
         BEAST_EXPECT(ammAlice.expectTradingFee(1'000));
@@ -3347,7 +3354,7 @@ private:
         env(ammAlice.bid({.account = alice, .bidMin = 100}), ms).close();
         BEAST_EXPECT(ammAlice.expectAuctionSlot(100, 0, IOUAmount{4'000}));
         // 4000 tokens burnt
-        BEAST_EXPECT(ammAlice.expectBalances(XRP(10'000), USD(10'000), IOUAmount{9'996'000, 0}));
+        BEAST_EXPECT(ammAlice.expectBalances(kXRP(10'000), USD(10'000), IOUAmount{9'996'000, 0}));
     }
 
     void
@@ -3361,16 +3368,16 @@ private:
 
         Env env(*this, features);
 
-        fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000), {USD(2'000), EUR(1'000)});
+        fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000), {USD(2'000), EUR(1'000)});
 
-        AMM const bobXrpUsd(env, bob_, XRP(1'000), USD(1'000));
+        AMM const bobXrpUsd(env, bob_, kXRP(1'000), USD(1'000));
         AMM const bobUsdEur(env, bob_, USD(1'000), EUR(1'000));
 
         // payment path: XRP -> XRP/USD -> USD/EUR -> EUR/USD
         env(pay(alice_, carol_, USD(100)),
             Path(~USD, ~EUR, ~USD),
-            sendmax(XRP(200)),
-            txflags(tfNoRippleDirect),
+            Sendmax(kXRP(200)),
+            Txflags(tfNoRippleDirect),
             Ter(temBAD_PATH_LOOP));
     }
 
@@ -3384,22 +3391,22 @@ private:
             Env env(*this, features);
             auto const bobUsd = bob_["USD"];
             auto const bobEur = bob_["EUR"];
-            fund(env, gw_, {alice_, bob_}, XRP(10'000));
+            fund(env, gw_, {alice_, bob_}, kXRP(10'000));
             env.trust(USD(1'000), alice_, bob_);
             env.trust(EUR(1'000), alice_, bob_);
             env.close();
             fund(env, bob_, {alice_, gw_}, {bobUsd(100), bobEur(100)}, Fund::TokenOnly);
 
-            AMM const ammBobXrpUsd(env, bob_, XRP(100), bobUsd(100));
-            env(offer(gw_, XRP(100), USD(100)), txflags(tfPassive));
+            AMM const ammBobXrpUsd(env, bob_, kXRP(100), bobUsd(100));
+            env(offer(gw_, kXRP(100), USD(100)), Txflags(tfPassive));
 
             AMM const ammBobUsdEur(env, bob_, bobUsd(100), bobEur(100));
-            env(offer(gw_, USD(100), EUR(100)), txflags(tfPassive));
+            env(offer(gw_, USD(100), EUR(100)), Txflags(tfPassive));
 
             TestPath const p = [&] {
                 TestPath result;
-                result.push_back(allPathElements(gw_, bobUsd));
-                result.push_back(cpe(EUR.currency));
+                result.pushBack(allPathElements(gw_, bobUsd));
+                result.pushBack(cpe(EUR.currency));
                 return result;
             }();
 
@@ -3407,37 +3414,37 @@ private:
 
             env(pay(alice_, alice_, EUR(1)),
                 json(paths.json()),
-                sendmax(XRP(10)),
-                txflags(tfNoRippleDirect | tfPartialPayment),
+                Sendmax(kXRP(10)),
+                Txflags(tfNoRippleDirect | tfPartialPayment),
                 Ter(temBAD_PATH));
         }
 
         {
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000), {USD(100)});
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000), {USD(100)});
 
-            AMM const ammBob(env, bob_, XRP(100), USD(100));
+            AMM const ammBob(env, bob_, kXRP(100), USD(100));
 
             // payment path: XRP -> XRP/USD -> USD/XRP
-            env(pay(alice_, carol_, XRP(100)),
-                Path(~USD, ~XRP),
-                txflags(tfNoRippleDirect),
+            env(pay(alice_, carol_, kXRP(100)),
+                Path(~USD, ~kXRP),
+                Txflags(tfNoRippleDirect),
                 Ter(temBAD_SEND_XRP_PATHS));
         }
 
         {
             Env env(*this, features);
 
-            fund(env, gw_, {alice_, bob_, carol_}, XRP(10'000), {USD(100)});
+            fund(env, gw_, {alice_, bob_, carol_}, kXRP(10'000), {USD(100)});
 
-            AMM const ammBob(env, bob_, XRP(100), USD(100));
+            AMM const ammBob(env, bob_, kXRP(100), USD(100));
 
             // payment path: XRP -> XRP/USD -> USD/XRP
-            env(pay(alice_, carol_, XRP(100)),
-                Path(~USD, ~XRP),
-                sendmax(XRP(200)),
-                txflags(tfNoRippleDirect),
+            env(pay(alice_, carol_, kXRP(100)),
+                Path(~USD, ~kXRP),
+                Sendmax(kXRP(200)),
+                Txflags(tfNoRippleDirect),
                 Ter(temBAD_SEND_XRP_MAX));
         }
     }
@@ -3453,7 +3460,7 @@ private:
         {
             Env env(*this, features);
 
-            env.fund(XRP(10'000), alice_, bob_, carol_, gw_);
+            env.fund(kXRP(10'000), alice_, bob_, carol_, gw_);
             env.close();
             env.trust(USD(10'000), alice_, bob_, carol_);
             env.close();
@@ -3461,20 +3468,20 @@ private:
             env(pay(gw_, alice_, USD(100)));
             env.close();
 
-            AMM const ammBob(env, bob_, XRP(100), USD(100));
+            AMM const ammBob(env, bob_, kXRP(100), USD(100));
 
             // payment path: USD -> USD/XRP -> XRP/USD
             env(pay(alice_, carol_, USD(100)),
-                sendmax(USD(100)),
-                Path(~XRP, ~USD),
-                txflags(tfNoRippleDirect),
+                Sendmax(USD(100)),
+                Path(~kXRP, ~USD),
+                Txflags(tfNoRippleDirect),
                 Ter(temBAD_PATH_LOOP));
         }
 
         {
             Env env(*this, features);
 
-            env.fund(XRP(10'000), alice_, bob_, carol_, gw_);
+            env.fund(kXRP(10'000), alice_, bob_, carol_, gw_);
             env.close();
             env.trust(USD(10'000), alice_, bob_, carol_);
             env.trust(EUR(10'000), alice_, bob_, carol_);
@@ -3484,15 +3491,15 @@ private:
             env(pay(gw_, bob_, EUR(200)));
             env(pay(gw_, bob_, cny(100)));
 
-            AMM const ammBobXrpUsd(env, bob_, XRP(100), USD(100));
+            AMM const ammBobXrpUsd(env, bob_, kXRP(100), USD(100));
             AMM const ammBobUsdEur(env, bob_, USD(100), EUR(100));
             AMM const ammBobEurCny(env, bob_, EUR(100), cny(100));
 
             // payment path: XRP->XRP/USD->USD/EUR->USD/CNY
             env(pay(alice_, carol_, cny(100)),
-                sendmax(XRP(100)),
+                Sendmax(kXRP(100)),
                 Path(~USD, ~EUR, ~USD, ~cny),
-                txflags(tfNoRippleDirect),
+                Txflags(tfNoRippleDirect),
                 Ter(temBAD_PATH_LOOP));
         }
     }

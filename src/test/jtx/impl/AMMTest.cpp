@@ -38,7 +38,7 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how)
 {
-    return fund(env, gw, accounts, XRP(30000), amts, how);
+    return fund(env, gw, accounts, kXRP(30000), amts, how);
 }
 
 [[maybe_unused]] std::vector<STAmount>
@@ -65,7 +65,7 @@ fund(
         int i = 0;
         for (auto const& amt : amts)
         {
-            auto amt_ = [&]() {
+            auto amount = [&]() {
                 if (amtsOut.size() == amts.size())
                 {
                     return amtsOut[i++];
@@ -77,11 +77,11 @@ fund(
                 }
                 return amt;
             }();
-            if (amt.holds<Issue>())
-                env.trust(amt_ + amt_, account);
+            if (amount.holds<Issue>())
+                env.trust(amount + amount, account);
             if (amtsOut.size() != amts.size())
-                amtsOut.push_back(amt_);
-            env(pay(amt_.getIssuer(), account, amt_));
+                amtsOut.push_back(amount);
+            env(pay(amount.getIssuer(), account, amount));
         }
     }
     env.close();
@@ -137,7 +137,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
     for (auto const& features : arg.features)
     {
         // Use small Number mantissas for the life of this test.
-        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::small};
+        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::Small};
 
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas
@@ -146,14 +146,15 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
             features - featureSingleAssetVault - featureLendingProtocol,
             arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
 
-        auto const [asset1, asset2] = arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
+        auto const [asset1, asset2] =
+            arg.pool ? *arg.pool : std::make_pair(kXRP(10000), USD(10000));
         auto toFund = [&](STAmount const& a) -> STAmount {
             if (a.native())
             {
-                auto const defXRP = XRP(30000);
+                auto const defXRP = kXRP(30000);
                 if (a <= defXRP)
                     return defXRP;
-                return a + XRP(1000);
+                return a + kXRP(1000);
             }
             auto defAmt = STAmount{a.asset(), 30000};
             if (a <= defAmt)

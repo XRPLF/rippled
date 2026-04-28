@@ -46,7 +46,7 @@
 
 namespace xrpl::test {
 
-class ServerStatus_test : public beast::unit_test::suite, public beast::test::EnableYieldTo
+class ServerStatus_test : public beast::unit_test::Suite, public beast::test::EnableYieldTo
 {
     class MyFields : public boost::beast::http::fields
     {
@@ -109,7 +109,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
             std::array<std::uint8_t, 16> key{};
             for (auto& v : key)
                 v = d(e);
-            req.insert("Sec-WebSocket-Key", base64_encode(key.data(), key.size()));
+            req.insert("Sec-WebSocket-Key", base64Encode(key.data(), key.size()));
         };
         req.insert("Sec-WebSocket-Version", "13");
         req.insert(boost::beast::http::field::connection, "upgrade");
@@ -246,14 +246,14 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
     {
         Json::Value jrr;
 
-        Json::Value jp = Json::objectValue;
+        Json::Value jp = Json::ObjectValue;
         if (!user.empty())
         {
             jp["admin_user"] = user;
             if (subobject)
             {
                 // special case of bad password..passed as object
-                Json::Value jpi = Json::objectValue;
+                Json::Value jpi = Json::ObjectValue;
                 jpi["admin_password"] = password;
                 jp["admin_password"] = jpi;
             }
@@ -529,7 +529,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
-        auth.set("Authorization", "Basic " + base64_encode("me:badpass"));
+        auth.set("Authorization", "Basic " + base64Encode("me:badpass"));
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
@@ -545,7 +545,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
         BEAST_EXPECT(resp.result() == boost::beast::http::status::forbidden);
 
         // finally if we use the correct user/pass encoded, we should get a 200
-        auth.set("Authorization", "Basic " + base64_encode(user + ":" + pass));
+        auth.set("Authorization", "Basic " + base64Encode(user + ":" + pass));
         doHTTPRequest(env, yield, secure, resp, ec, to_string(jr), auth);
         BEAST_EXPECT(resp.result() == boost::beast::http::status::ok);
         BEAST_EXPECT(!resp.body().empty());
@@ -692,19 +692,19 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
         auto sendAndParse = [&](std::string const& req) -> Json::Value {
             ws.async_write_some(true, buffer(req), yield[ec]);
             if (!BEAST_EXPECT(!ec))
-                return Json::objectValue;
+                return Json::ObjectValue;
 
             boost::beast::multi_buffer sb;
             ws.async_read(sb, yield[ec]);
             if (!BEAST_EXPECT(!ec))
-                return Json::objectValue;
+                return Json::ObjectValue;
 
             Json::Value resp;
             Json::Reader jr;
             if (!BEAST_EXPECT(jr.parse(
                     boost::lexical_cast<std::string>(boost::beast::make_printable(sb.data())),
                     resp)))
-                return Json::objectValue;
+                return Json::ObjectValue;
             sb.consume(sb.size());
             return resp;
         };
@@ -812,7 +812,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
         BEAST_EXPECT(
             si[jss::info].isMember(jss::warnings) && si[jss::info][jss::warnings].isArray() &&
             si[jss::info][jss::warnings].size() == 1 &&
-            si[jss::info][jss::warnings][0u][jss::id].asInt() == warnRPC_UNSUPPORTED_MAJORITY);
+            si[jss::info][jss::warnings][0u][jss::id].asInt() == WarnRpcUnsupportedMajority);
 
         // RPC request server_state again, now unsupported majority should be
         // returned
@@ -822,7 +822,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
         BEAST_EXPECT(
             si[jss::state].isMember(jss::warnings) && si[jss::state][jss::warnings].isArray() &&
             si[jss::state][jss::warnings].size() == 1 &&
-            si[jss::state][jss::warnings][0u][jss::id].asInt() == warnRPC_UNSUPPORTED_MAJORITY);
+            si[jss::state][jss::warnings][0u][jss::id].asInt() == WarnRpcUnsupportedMajority);
 
         // but status does not indicate a problem
         doRequest(
@@ -942,7 +942,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
         BEAST_EXPECT(
             si[jss::info].isMember(jss::warnings) && si[jss::info][jss::warnings].isArray() &&
             si[jss::info][jss::warnings].size() == 1 &&
-            si[jss::info][jss::warnings][0u][jss::id].asInt() == warnRPC_AMENDMENT_BLOCKED);
+            si[jss::info][jss::warnings][0u][jss::id].asInt() == WarnRpcAmendmentBlocked);
 
         // RPC request server_state again, now AB should be returned
         si = env.rpc("server_state")[jss::result];
@@ -952,7 +952,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
         BEAST_EXPECT(
             si[jss::state].isMember(jss::warnings) && si[jss::state][jss::warnings].isArray() &&
             si[jss::state][jss::warnings].size() == 1 &&
-            si[jss::state][jss::warnings][0u][jss::id].asInt() == warnRPC_AMENDMENT_BLOCKED);
+            si[jss::state][jss::warnings][0u][jss::id].asInt() == WarnRpcAmendmentBlocked);
 
         // but status does not indicate because it still relies on ELB
         // being enabled
@@ -1021,7 +1021,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            Json::Value jv(Json::arrayValue);
+            Json::Value jv(Json::ArrayValue);
             jv.append("invalid");
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
@@ -1030,7 +1030,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            Json::Value jv(Json::arrayValue);
+            Json::Value jv(Json::ArrayValue);
             Json::Value j;
             j["invalid"] = 1;
             jv.append(j);
@@ -1053,7 +1053,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
             boost::beast::http::response<boost::beast::http::string_body> resp;
             Json::Value jv;
             jv[jss::method] = "batch";
-            jv[jss::params] = Json::objectValue;
+            jv[jss::params] = Json::ObjectValue;
             jv[jss::params]["invalid"] = 3;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
@@ -1063,7 +1063,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
         Json::Value jv;
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            jv[jss::method] = Json::nullValue;
+            jv[jss::method] = Json::NullValue;
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);
             BEAST_EXPECT(resp.body() == "Null method\r\n");
@@ -1096,7 +1096,7 @@ class ServerStatus_test : public beast::unit_test::suite, public beast::test::En
 
         {
             boost::beast::http::response<boost::beast::http::string_body> resp;
-            jv[jss::params] = Json::arrayValue;
+            jv[jss::params] = Json::ArrayValue;
             jv[jss::params][0u] = "not an object";
             doHTTPRequest(env, yield, false, resp, ec, to_string(jv));
             BEAST_EXPECT(resp.result() == boost::beast::http::status::bad_request);

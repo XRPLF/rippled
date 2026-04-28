@@ -50,7 +50,7 @@ MPTIssue::setJson(Json::Value& jv) const
 }
 
 Json::Value
-to_json(MPTIssue const& mptIssue)
+toJson(MPTIssue const& mptIssue)
 {
     Json::Value jv;
     mptIssue.setJson(jv);
@@ -82,13 +82,13 @@ mptIssueFromJson(Json::Value const& v)
 
     if (!idStr.isString())
     {
-        Throw<Json::error>("mptIssueFromJson MPTID must be a string Json value");
+        Throw<Json::Error>("mptIssueFromJson MPTID must be a string Json value");
     }
 
     MPTID id;
     if (!id.parseHex(idStr.asString()))
     {
-        Throw<Json::error>("mptIssueFromJson MPTID is invalid");
+        Throw<Json::Error>("mptIssueFromJson MPTID is invalid");
     }
 
     return MPTIssue{id};

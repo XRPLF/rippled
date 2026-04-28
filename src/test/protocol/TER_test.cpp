@@ -8,7 +8,7 @@
 
 namespace xrpl {
 
-struct TER_test : public beast::unit_test::suite
+struct TER_test : public beast::unit_test::Suite
 {
     void
     testTransResultInfo()
@@ -44,7 +44,7 @@ struct TER_test : public beast::unit_test::suite
     public:
         template <typename Tup>
         void
-        operator()(Tup const& tup, beast::unit_test::suite&) const
+        operator()(Tup const& tup, beast::unit_test::Suite&) const
         {
             // Entries in the tuple should not be convertible or assignable
             // unless they are the same types.
@@ -73,7 +73,7 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 != 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -87,7 +87,7 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 == 0 && I2 != 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -101,7 +101,7 @@ struct TER_test : public beast::unit_test::suite
         template <std::size_t, std::size_t> class Func,
         typename Tup>
     std::enable_if_t<I1 == 0 && I2 == 0>
-    testIterate(Tup const& tup, beast::unit_test::suite& s)
+    testIterate(Tup const& tup, beast::unit_test::Suite& s)
     {
         Func<I1, I2> const func;
         func(tup, s);
@@ -181,7 +181,7 @@ struct TER_test : public beast::unit_test::suite
     public:
         template <typename Tup>
         void
-        operator()(Tup const& tup, beast::unit_test::suite& s) const
+        operator()(Tup const& tup, beast::unit_test::Suite& s) const
         {
             // All entries in the tuple should be comparable one to the other.
             auto const lhs = std::get<I1>(tup);

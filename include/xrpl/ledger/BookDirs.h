@@ -82,7 +82,7 @@ private:
     uint256 index_;
     std::optional<value_type> mutable cache_;
 
-    static beast::Journal j_;
+    static beast::Journal j;
 };
 
 }  // namespace xrpl

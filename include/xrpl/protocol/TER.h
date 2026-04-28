@@ -1,5 +1,7 @@
 #pragma once
 
+// NOLINTBEGIN(readability-identifier-naming)
+
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 
@@ -352,37 +354,37 @@ enum TECcodes : TERUnderlyingType {
 constexpr TERUnderlyingType
 TERtoInt(TELcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEMcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEFcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TERcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TEScodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 constexpr TERUnderlyingType
 TERtoInt(TECcodes v)
 {
-    return safe_cast<TERUnderlyingType>(v);
+    return safeCast<TERUnderlyingType>(v);
 }
 
 //------------------------------------------------------------------------------
@@ -668,3 +670,5 @@ std::optional<TER>
 transCode(std::string const& token);
 
 }  // namespace xrpl
+
+// NOLINTEND(readability-identifier-naming)

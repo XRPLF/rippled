@@ -113,32 +113,32 @@ SHAMapStoreImp::SHAMapStoreImp(
     {
         if (!section.exists("cache_mb"))
         {
-            section.set("cache_mb", std::to_string(config.getValueFor(SizedItem::hashNodeDBCache)));
+            section.set("cache_mb", std::to_string(config.getValueFor(SizedItem::HashNodeDbCache)));
         }
 
         if (!section.exists("filter_bits") && (config.NODE_SIZE >= 2))
             section.set("filter_bits", "10");
     }
 
-    get_if_exists(section, "online_delete", deleteInterval_);
+    getIfExists(section, "online_delete", deleteInterval_);
 
     if (deleteInterval_ != 0u)
     {
         // Configuration that affects the behavior of online delete
-        get_if_exists(section, "delete_batch", deleteBatch_);
+        getIfExists(section, "delete_batch", deleteBatch_);
         std::uint32_t temp = 0;
-        if (get_if_exists(section, "back_off_milliseconds", temp) ||
+        if (getIfExists(section, "back_off_milliseconds", temp) ||
             // Included for backward compatibility with an undocumented setting
-            get_if_exists(section, "backOff", temp))
+            getIfExists(section, "backOff", temp))
         {
             backOff_ = std::chrono::milliseconds{temp};
         }
-        if (get_if_exists(section, "age_threshold_seconds", temp))
+        if (getIfExists(section, "age_threshold_seconds", temp))
             ageThreshold_ = std::chrono::seconds{temp};
-        if (get_if_exists(section, "recovery_wait_seconds", temp))
+        if (getIfExists(section, "recovery_wait_seconds", temp))
             recoveryWaitTime_ = std::chrono::seconds{temp};
 
-        get_if_exists(section, "advisory_delete", advisoryDelete_);
+        getIfExists(section, "advisory_delete", advisoryDelete_);
 
         auto const minInterval =
             config.standalone() ? kMINIMUM_DELETION_INTERVAL_SA : kMINIMUM_DELETION_INTERVAL;
@@ -195,7 +195,7 @@ SHAMapStoreImp::makeNodeStore(int readThreads)
     else
     {
         db = NodeStore::Manager::instance().makeDatabase(
-            megabytes(app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
+            megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
             scheduler_,
             readThreads,
             nscfg,
@@ -237,7 +237,7 @@ SHAMapStoreImp::copyNode(std::uint64_t& nodeCount, SHAMapTreeNode const& node)
 {
     // Copy a single record from node to dbRotating_
     dbRotating_->fetchNodeObject(
-        node.getHash().as_uint256(), 0, NodeStore::FetchType::Synchronous, true);
+        node.getHash().asUint256(), 0, NodeStore::FetchType::Synchronous, true);
     if ((++nodeCount % checkHealthInterval_) == 0u)
     {
         if (healthWait() == Stopping)
@@ -480,7 +480,7 @@ SHAMapStoreImp::makeBackendRotating(std::string path)
 
     auto backend{NodeStore::Manager::instance().makeBackend(
         section,
-        megabytes(app_.config().getValueFor(SizedItem::burstSize, std::nullopt)),
+        megabytes(app_.config().getValueFor(SizedItem::BurstSize, std::nullopt)),
         scheduler_,
         app_.getJournal(kNODE_STORE_NAME))};
     backend->open();

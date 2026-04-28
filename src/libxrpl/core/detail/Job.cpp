@@ -11,7 +11,7 @@
 
 namespace xrpl {
 
-Job::Job() : type_(jtINVALID), jobIndex_(0)
+Job::Job() : type_(JtInvalid), jobIndex_(0)
 {
 }
 
@@ -37,7 +37,7 @@ Job::getType() const
 }
 
 Job::clock_type::time_point const&
-Job::queue_time() const
+Job::queueTime() const
 {
     return queue_time_;
 }

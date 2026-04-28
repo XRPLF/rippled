@@ -46,7 +46,7 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
     // the list.  A zero quorum means we're destroying the list.
     auto const quorum = tx[sfSignerQuorum];
     std::vector<SignerEntries::SignerEntry> sign;
-    Operation op = unknown;
+    Operation op = Unknown;
 
     bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
     if ((quorum != 0u) && hasSignerEntries)
@@ -60,11 +60,11 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
 
         // Save deserialized list for later.
         sign = std::move(*signers);
-        op = set;
+        op = Set;
     }
     else if ((quorum == 0) && !hasSignerEntries)
     {
-        op = destroy;
+        op = Destroy;
     }
 
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
@@ -85,14 +85,14 @@ SignerListSet::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(std::get<0>(result)))
         return std::get<0>(result);
 
-    if (std::get<3>(result) == unknown)
+    if (std::get<3>(result) == Unknown)
     {
         // Neither a set nor a destroy.  Malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: Invalid signer set list format.";
         return temMALFORMED;
     }
 
-    if (std::get<3>(result) == set)
+    if (std::get<3>(result) == Set)
     {
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
@@ -113,10 +113,10 @@ SignerListSet::doApply()
     // Perform the operation preCompute() decided on.
     switch (do_)
     {
-        case set:
+        case Set:
             return replaceSignerList();
 
-        case destroy:
+        case Destroy:
             return destroySignerList();
 
         default:
@@ -249,7 +249,7 @@ SignerListSet::validateQuorumAndSignerEntries(
     // Reject if there are too many or too few entries in the list.
     {
         std::size_t const signerCount = signers.size();
-        if (signerCount < STTx::minMultiSigners || signerCount > STTx::maxMultiSigners)
+        if (signerCount < STTx::kMIN_MULTI_SIGNERS || signerCount > STTx::kMAX_MULTI_SIGNERS)
         {
             JLOG(j.trace()) << "Too many or too few signers in signer list.";
             return temMALFORMED;
@@ -389,7 +389,7 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
     STArray toLedger(signers_.size());
     for (auto const& entry : signers_)
     {
-        toLedger.push_back(STObject::makeInnerObject(sfSignerEntry));
+        toLedger.pushBack(STObject::makeInnerObject(sfSignerEntry));
         STObject& obj = toLedger.back();
         obj.reserve(2);
         obj[sfAccount] = entry.account;

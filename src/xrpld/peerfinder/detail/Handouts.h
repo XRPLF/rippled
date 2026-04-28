@@ -21,15 +21,15 @@ namespace detail {
 //
 template <class Target, class HopContainer>
 std::size_t
-handout_one(Target& t, HopContainer& h)
+handoutOne(Target& t, HopContainer& h)
 {
     XRPL_ASSERT(!t.full(), "xrpl::PeerFinder::detail::handout_one : target is not full");
     for (auto it = h.begin(); it != h.end(); ++it)
     {
         auto const& e = *it;
-        if (t.try_insert(e))
+        if (t.tryInsert(e))
         {
-            h.move_back(it);
+            h.moveBack(it);
             return 1;
         }
     }
@@ -44,25 +44,25 @@ handout_one(Target& t, HopContainer& h)
 */
 template <class TargetFwdIter, class SeqFwdIter>
 void
-handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seq_first, SeqFwdIter seq_last)
+handout(TargetFwdIter first, TargetFwdIter last, SeqFwdIter seqFirst, SeqFwdIter seqLast)
 {
     for (;;)
     {
         std::size_t n(0);
-        for (auto si = seq_first; si != seq_last; ++si)
+        for (auto si = seqFirst; si != seqLast; ++si)
         {
             auto c = *si;
-            bool all_full(true);
+            bool allFull(true);
             for (auto ti = first; ti != last; ++ti)
             {
                 auto& t = *ti;
                 if (!t.full())
                 {
-                    n += detail::handout_one(t, c);
-                    all_full = false;
+                    n += detail::handoutOne(t, c);
+                    allFull = false;
                 }
             }
-            if (all_full)
+            if (allFull)
                 return;
         }
         if (!n)
@@ -83,7 +83,7 @@ public:
 
     template <class = void>
     bool
-    try_insert(Endpoint const& ep);
+    tryInsert(Endpoint const& ep);
 
     [[nodiscard]] bool
     full() const
@@ -122,7 +122,7 @@ RedirectHandouts::RedirectHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 
 template <class>
 bool
-RedirectHandouts::try_insert(Endpoint const& ep)
+RedirectHandouts::tryInsert(Endpoint const& ep)
 {
     if (full())
         return false;
@@ -167,7 +167,7 @@ public:
 
     template <class = void>
     bool
-    try_insert(Endpoint const& ep);
+    tryInsert(Endpoint const& ep);
 
     [[nodiscard]] bool
     full() const
@@ -206,7 +206,7 @@ SlotHandouts::SlotHandouts(SlotImp::ptr slot) : slot_(std::move(slot))
 
 template <class>
 bool
-SlotHandouts::try_insert(Endpoint const& ep)
+SlotHandouts::tryInsert(Endpoint const& ep)
 {
     if (full())
         return false;
@@ -263,7 +263,7 @@ public:
 
     template <class = void>
     bool
-    try_insert(beast::IP::Endpoint const& endpoint);
+    tryInsert(beast::IP::Endpoint const& endpoint);
 
     [[nodiscard]] bool
     empty() const
@@ -278,9 +278,9 @@ public:
     }
 
     bool
-    try_insert(Endpoint const& endpoint)
+    tryInsert(Endpoint const& endpoint)
     {
-        return try_insert(endpoint.address);
+        return tryInsert(endpoint.address);
     }
 
     list_type&
@@ -305,7 +305,7 @@ ConnectHandouts::ConnectHandouts(std::size_t needed, Squelches& squelches)
 
 template <class>
 bool
-ConnectHandouts::try_insert(beast::IP::Endpoint const& endpoint)
+ConnectHandouts::tryInsert(beast::IP::Endpoint const& endpoint)
 {
     if (full())
         return false;

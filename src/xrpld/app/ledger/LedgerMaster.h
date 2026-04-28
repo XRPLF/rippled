@@ -320,7 +320,7 @@ private:
     CanonicalTXSet heldTransactions_{uint256()};
 
     // A set of transactions to replay during the next close
-    std::unique_ptr<LedgerReplay> replayData;
+    std::unique_ptr<LedgerReplay> replayData_;
 
     std::recursive_mutex completeLock_;
     RangeSet<std::uint32_t> completeLedgers_;
@@ -370,9 +370,9 @@ private:
     {
         template <class Handler>
         Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
-            : hook(collector->make_hook(handler))
-            , validatedLedgerAge(collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
-            , publishedLedgerAge(collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
+            : hook(collector->makeHook(handler))
+            , validatedLedgerAge(collector->makeGauge("LedgerMaster", "Validated_Ledger_Age"))
+            , publishedLedgerAge(collector->makeGauge("LedgerMaster", "Published_Ledger_Age"))
         {
         }
 
@@ -385,7 +385,7 @@ private:
 
 private:
     void
-    collect_metrics()
+    collectMetrics()
     {
         std::lock_guard const lock(mutex_);
         stats_.validatedLedgerAge.set(getValidatedLedgerAge().count());

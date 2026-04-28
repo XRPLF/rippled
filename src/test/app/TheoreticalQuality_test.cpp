@@ -78,7 +78,7 @@ struct RippleCalcTestParams
                     if (pe.isMember(jss::account))
                     {
                         assert(!pe.isMember(jss::currency) && !pe.isMember(jss::issuer));
-                        p.emplace_back(
+                        p.emplaceBack(
                             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             *parseBase58<AccountID>(pe[jss::account].asString()),
                             std::nullopt,
@@ -86,7 +86,7 @@ struct RippleCalcTestParams
                     }
                     else if (pe.isMember(jss::currency) && pe.isMember(jss::issuer))
                     {
-                        auto const currency = to_currency(pe[jss::currency].asString());
+                        auto const currency = toCurrency(pe[jss::currency].asString());
                         std::optional<AccountID> issuer;
                         if (!isXRP(currency))
                         {
@@ -98,14 +98,14 @@ struct RippleCalcTestParams
                             // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                             assert(isXRP(*parseBase58<AccountID>(pe[jss::issuer].asString())));
                         }
-                        p.emplace_back(std::nullopt, currency, issuer);
+                        p.emplaceBack(std::nullopt, currency, issuer);
                     }
                     else
                     {
                         assert(0);
                     }
                 }
-                paths.emplace_back(std::move(p));
+                paths.emplaceBack(std::move(p));
             }
         }
     }
@@ -145,7 +145,7 @@ class RandomAccountParams
             return;
 
         auto const percent = qualityPercentDist_(engine_);
-        auto const& field = qDir == QualityDirection::in ? sfQualityIn : sfQualityOut;
+        auto const& field = qDir == QualityDirection::In ? sfQualityIn : sfQualityOut;
         auto const value = static_cast<std::uint32_t>((percent / 100) * QUALITY_ONE);
         jv[field.jsonName] = value;
     };
@@ -161,8 +161,8 @@ class RandomAccountParams
         using namespace jtx;
         IOU const iou{peer, currency};
         Json::Value jv = trust(acc, iou(trustAmount_));
-        maybeInsertQuality(jv, QualityDirection::in);
-        maybeInsertQuality(jv, QualityDirection::out);
+        maybeInsertQuality(jv, QualityDirection::In);
+        maybeInsertQuality(jv, QualityDirection::Out);
         env(jv);
         env.close();
     };
@@ -193,8 +193,8 @@ public:
         // Since input qualities complicate this payment, use `sendMax` with
         // `initialBalance` to make sure the balance is set correctly.
         env(pay(peer, acc, iou(trustAmount_)),
-            sendmax(iou(initialBalance_)),
-            txflags(tfPartialPayment));
+            Sendmax(iou(initialBalance_)),
+            Txflags(tfPartialPayment));
         env.close();
     }
 
@@ -225,7 +225,7 @@ public:
     };
 };
 
-class TheoreticalQuality_test : public beast::unit_test::suite
+class TheoreticalQuality_test : public beast::unit_test::Suite
 {
     static std::string
     prettyQuality(Quality const& q)
@@ -252,7 +252,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         std::shared_ptr<ReadView const> closed,
         std::optional<Quality> const& expectedQ = {})
     {
-        PaymentSandbox const sb(closed.get(), tapNONE);
+        PaymentSandbox const sb(closed.get(), TapNone);
         AMMContext ammContext(rcp.srcAccount, false);
 
         auto const sendMaxIssue = [&rcp]() -> std::optional<Asset> {
@@ -273,7 +273,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             rcp.paths,
             /*defaultPaths*/ rcp.paths.empty(),
             false,
-            OfferCrossing::no,
+            OfferCrossing::No,
             ammContext,
             std::nullopt,
             dummyJ);
@@ -337,7 +337,7 @@ public:
 
         using namespace jtx;
 
-        auto const currency = to_currency("USD");
+        auto const currency = toCurrency("USD");
 
         constexpr std::size_t const kNUM_ACCOUNTS = 4;
 
@@ -376,7 +376,7 @@ public:
             std::array<Account, kNUM_ACCOUNTS> accounts{{alice, bob, carol, dan}};
             static_assert(kNUM_ACCOUNTS == 4, "Path is only correct for four accounts");
             Path const accountsPath(accounts[1], accounts[2]);
-            env.fund(XRP(10000), alice, bob, carol, dan);
+            env.fund(kXRP(10000), alice, bob, carol, dan);
             env.close();
 
             // iterate through all pairs of accounts, randomly set the transfer
@@ -401,7 +401,7 @@ public:
             RippleCalcTestParams const rcp{env.json(
                 pay(accounts.front(), accounts.back(), iou(kPAYMENT_AMOUNT)),
                 accountsPath,
-                txflags(tfNoRippleDirect))};
+                Txflags(tfNoRippleDirect))};
 
             testCase(rcp, env.closed());
         }
@@ -424,8 +424,8 @@ public:
 
         constexpr std::uint32_t kPAYMENT_AMOUNT = 1;
 
-        Currency const eurCurrency = to_currency("EUR");
-        Currency const usdCurrency = to_currency("USD");
+        Currency const eurCurrency = toCurrency("EUR");
+        Currency const usdCurrency = toCurrency("USD");
 
         // Class to randomly set account transfer rates, qualities, and other
         // params.
@@ -452,7 +452,7 @@ public:
             // alice -> bob -> (USD/bob)|(EUR/carol) -> carol -> dan
             Path const bookPath(~eurc);
 
-            env.fund(XRP(10000), alice, bob, carol, dan, oscar);
+            env.fund(kXRP(10000), alice, bob, carol, dan, oscar);
             env.close();
 
             for (auto const& acc : accounts)
@@ -479,9 +479,9 @@ public:
             IOU const dstIOU{carol, eurCurrency};
             RippleCalcTestParams const rcp{env.json(
                 pay(alice, dan, dstIOU(kPAYMENT_AMOUNT)),
-                sendmax(srcIOU(100 * kPAYMENT_AMOUNT)),
+                Sendmax(srcIOU(100 * kPAYMENT_AMOUNT)),
                 bookPath,
-                txflags(tfNoRippleDirect))};
+                Txflags(tfNoRippleDirect))};
 
             testCase(rcp, env.closed());
         }

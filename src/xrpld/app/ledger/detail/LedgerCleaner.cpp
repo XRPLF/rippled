@@ -84,7 +84,7 @@ public:
     ~LedgerCleanerImp() override
     {
         if (thread_.joinable())
-            LogicError("LedgerCleanerImp::stop not called.");
+            logicError("LedgerCleanerImp::stop not called.");
     }
 
     void
@@ -257,7 +257,7 @@ private:
             app_.getInboundLedgers().acquire(
                 ledger->header().hash, ledger->header().seq, InboundLedger::Reason::GENERIC);
         }
-        return hash ? *hash : beast::zero;  // kludge
+        return hash ? *hash : beast::kZERO;  // kludge
     }
 
     /** Process a single ledger

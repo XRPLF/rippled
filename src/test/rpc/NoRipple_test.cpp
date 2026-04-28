@@ -23,7 +23,7 @@
 
 namespace xrpl::test {
 
-class NoRipple_test : public beast::unit_test::suite
+class NoRipple_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -37,7 +37,7 @@ public:
         auto const gw = Account("gateway");
         auto const alice = Account("alice");
 
-        env.fund(XRP(10000), gw, alice);
+        env.fund(kXRP(10000), gw, alice);
 
         auto const usd = gw["USD"];
 
@@ -77,7 +77,7 @@ public:
 
         Env env(*this, features);
 
-        env.fund(XRP(10000), gw, alice, bob, carol);
+        env.fund(kXRP(10000), gw, alice, bob, carol);
         env.close();
 
         env.trust(alice["USD"](100), bob);
@@ -157,7 +157,7 @@ public:
         auto const bob = Account("bob");
         auto const carol = Account("carol");
 
-        env.fund(XRP(10000), alice, bob, carol);
+        env.fund(kXRP(10000), alice, bob, carol);
 
         env(trust(bob, alice["USD"](100)));
         env(trust(carol, bob["USD"](100)));
@@ -198,7 +198,7 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        env.fund(XRP(10000), gw, noripple(alice, bob));
+        env.fund(kXRP(10000), gw, noripple(alice, bob));
 
         env(fset(bob, asfDefaultRipple));
 

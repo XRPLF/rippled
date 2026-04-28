@@ -18,7 +18,7 @@ namespace xrpl {
 auto
 PeerReservation::toJson() const -> Json::Value
 {
-    Json::Value result{Json::objectValue};
+    Json::Value result{Json::ObjectValue};
     result[jss::node] = toBase58(TokenType::NodePublic, nodeId);
     if (!description.empty())
     {

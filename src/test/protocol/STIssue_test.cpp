@@ -13,7 +13,7 @@
 
 namespace xrpl::test {
 
-class STIssue_test : public beast::unit_test::suite
+class STIssue_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -55,7 +55,7 @@ public:
             auto const data =
                 "00000000000000000000000055534400000000000000000000000000000000"
                 "000000000000000000";
-            base_uint<320> uint;
+            BaseUint<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
             STIssue const stissue(iter, sfAsset);
@@ -89,7 +89,7 @@ public:
             auto const data =
                 "0000000000000000000000005553440000000000ae123a8556f3cf91154711"
                 "376afb0f894f832b3d";
-            base_uint<320> uint;
+            BaseUint<320> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
             STIssue const stissue(iter, sfAsset);
@@ -103,7 +103,7 @@ public:
         try
         {
             auto const data = "0000000000000000000000000000000000000000";
-            base_uint<160> uint;
+            BaseUint<160> uint;
             (void)uint.parseHex(data);
             SerialIter iter(Slice(uint.data(), uint.size()));
             STIssue const stissue(iter, sfAsset);

@@ -259,31 +259,31 @@ public:
     }
 
     Hook
-    make_hook(HookImpl::HandlerType const& handler) override
+    makeHook(HookImpl::HandlerType const& handler) override
     {
         return Hook(std::make_shared<detail::StatsDHookImpl>(handler, shared_from_this()));
     }
 
     Counter
-    make_counter(std::string const& name) override
+    makeCounter(std::string const& name) override
     {
         return Counter(std::make_shared<detail::StatsDCounterImpl>(name, shared_from_this()));
     }
 
     Event
-    make_event(std::string const& name) override
+    makeEvent(std::string const& name) override
     {
         return Event(std::make_shared<detail::StatsDEventImpl>(name, shared_from_this()));
     }
 
     Gauge
-    make_gauge(std::string const& name) override
+    makeGauge(std::string const& name) override
     {
         return Gauge(std::make_shared<detail::StatsDGaugeImpl>(name, shared_from_this()));
     }
 
     Meter
-    make_meter(std::string const& name) override
+    makeMeter(std::string const& name) override
     {
         return Meter(std::make_shared<detail::StatsDMeterImpl>(name, shared_from_this()));
     }
@@ -294,14 +294,14 @@ public:
     add(StatsDMetricBase& metric)
     {
         std::lock_guard const _(metricsLock_);
-        metrics_.push_back(metric);
+        metrics_.pushBack(metric);
     }
 
     void
     remove(StatsDMetricBase& metric)
     {
         std::lock_guard const _(metricsLock_);
-        metrics_.erase(metrics_.iterator_to(metric));
+        metrics_.erase(metrics_.iteratorTo(metric));
     }
 
     //--------------------------------------------------------------------------

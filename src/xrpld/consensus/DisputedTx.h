@@ -48,7 +48,7 @@ public:
 
     //! The unique id/hash of the disputed transaction.
     [[nodiscard]] TxID_t const&
-    ID() const
+    id() const
     {
         return tx_.id();
     }
@@ -115,7 +115,7 @@ public:
             // stalling is an error condition for even a single
             // transaction.
             std::stringstream s;
-            s << "Transaction " << ID() << " is stalled. We have been voting "
+            s << "Transaction " << id() << " is stalled. We have been voting "
               << (getOurVote() ? "YES" : "NO") << " for " << currentVoteCounter_
               << " rounds. Peers have not changed their votes in " << peersUnchanged
               << " rounds. The transaction has " << weight << "% support. ";
@@ -320,7 +320,7 @@ DisputedTx<Tx, NodeId>::getJson() const
 {
     using std::to_string;
 
-    Json::Value ret(Json::objectValue);
+    Json::Value ret(Json::ObjectValue);
 
     ret["yays"] = yays_;
     ret["nays"] = nays_;
@@ -328,7 +328,7 @@ DisputedTx<Tx, NodeId>::getJson() const
 
     if (!votes_.empty())
     {
-        Json::Value votes(Json::objectValue);
+        Json::Value votes(Json::ObjectValue);
         for (auto const& [nodeId, vote] : votes_)
             votes[to_string(nodeId)] = vote;
         ret["votes"] = std::move(votes);

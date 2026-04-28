@@ -534,7 +534,7 @@ std::variant<RelationalDatabase::AccountTx, TxSearched>
 SQLiteDatabase::getTransaction(
     uint256 const& id,
     std::optional<ClosedInterval<std::uint32_t>> const& range,
-    error_code_i& ec)
+    ErrorCodeI& ec)
 {
     if (!useTxTables_)
         return TxSearched::Unknown;
@@ -635,7 +635,7 @@ SQLiteDatabase::SQLiteDatabase(ServiceRegistry& registry, Config const& config, 
     , useTxTables_(config.useTxTables())
     , j_(registry.getJournal("SQLiteDatabase"))
 {
-    DatabaseCon::Setup const setup = setup_DatabaseCon(config, j_);
+    DatabaseCon::Setup const setup = setupDatabaseCon(config, j_);
     if (!makeLedgerDBs(
             config,
             setup,

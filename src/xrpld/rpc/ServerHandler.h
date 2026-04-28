@@ -37,9 +37,9 @@ public:
         std::vector<Port> ports;
 
         // Memberspace
-        struct client_t
+        struct ClientT
         {
-            explicit client_t() = default;
+            explicit ClientT() = default;
 
             bool secure = false;
             std::string ip;
@@ -51,7 +51,7 @@ public:
         };
 
         // Configuration when acting in client role
-        client_t client;
+        ClientT client;
 
         // Configuration for the Overlay
         boost::asio::ip::tcp::endpoint overlay;
@@ -89,7 +89,7 @@ private:
     // Friend declaration that allows make_ServerHandler to access the
     // private type that restricts access to the ServerHandler ctor.
     friend std::unique_ptr<ServerHandler>
-    make_ServerHandler(
+    makeServerHandler(
         Application& app,
         boost::asio::io_context&,
         JobQueue&,
@@ -102,7 +102,7 @@ public:
     ServerHandler(
         ServerHandlerCreator const&,
         Application& app,
-        boost::asio::io_context& io_context,
+        boost::asio::io_context& ioContext,
         JobQueue& jobQueue,
         NetworkOPs& networkOPs,
         Resource::Manager& resourceManager,
@@ -142,15 +142,15 @@ public:
         Session& session,
         std::unique_ptr<stream_type>&& bundle,
         http_request_type&& request,
-        boost::asio::ip::tcp::endpoint const& remote_address);
+        boost::asio::ip::tcp::endpoint const& remoteAddress);
 
     Handoff
     onHandoff(
         Session& session,
         http_request_type&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
-        boost::asio::ip::tcp::endpoint const& remote_address)
+        boost::asio::ip::tcp::endpoint const& remoteAddress)
     {
-        return onHandoff(session, {}, std::forward<http_request_type>(request), remote_address);
+        return onHandoff(session, {}, std::forward<http_request_type>(request), remoteAddress);
     }
 
     void
@@ -192,10 +192,10 @@ private:
 };
 
 ServerHandler::Setup
-setup_ServerHandler(Config const& c, std::ostream& log);
+setupServerHandler(Config const& c, std::ostream& log);
 
 std::unique_ptr<ServerHandler>
-make_ServerHandler(
+makeServerHandler(
     Application& app,
     boost::asio::io_context&,
     JobQueue&,

@@ -13,7 +13,7 @@
 
 namespace xrpl::test {
 
-class CurrentThreadName_test : public beast::unit_test::suite
+class CurrentThreadName_test : public beast::unit_test::Suite
 {
 private:
     static void

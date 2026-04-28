@@ -35,33 +35,33 @@ private:
     using by_when_hook =
         boost::intrusive::set_base_hook<boost::intrusive::link_mode<boost::intrusive::normal_link>>;
 
-    struct event : by_when_hook
+    struct Event : by_when_hook
     {
         time_point when;
 
-        event(event const&) = delete;
-        event&
-        operator=(event const&) = delete;
+        Event(Event const&) = delete;
+        Event&
+        operator=(Event const&) = delete;
 
-        virtual ~event() = default;
+        virtual ~Event() = default;
 
         // Called to perform the event
         virtual void
         operator()() const = 0;
 
-        event(time_point when) : when(when)
+        Event(time_point when) : when(when)
         {
         }
 
         bool
-        operator<(event const& other) const
+        operator<(Event const& other) const
         {
             return when < other.when;
         }
     };
 
     template <class Handler>
-    class EventImpl : public event
+    class EventImpl : public Event
     {
         Handler const h_;
 
@@ -73,7 +73,7 @@ private:
 
         template <class DeducedHandler>
         EventImpl(time_point when, DeducedHandler&& h)
-            : event(when), h_(std::forward<DeducedHandler>(h))
+            : Event(when), h_(std::forward<DeducedHandler>(h))
         {
         }
 
@@ -88,7 +88,7 @@ private:
     {
     private:
         using by_when_set = typename boost::intrusive::
-            make_multiset<event, boost::intrusive::constant_time_size<false>>::type;
+            make_multiset<Event, boost::intrusive::constant_time_size<false>>::type;
         // alloc_ is owned by the scheduler
         boost::container::pmr::monotonic_buffer_resource* alloc_;
         by_when_set by_when_;
@@ -262,7 +262,7 @@ inline Scheduler::QueueType::~QueueType()
     {
         auto e = &*iter;
         ++iter;
-        e->~event();
+        e->~Event();
         alloc_->deallocate(e, sizeof(e));  // NOLINT(bugprone-sizeof-expression)
     }
 }
@@ -300,7 +300,7 @@ Scheduler::QueueType::erase(iterator iter) -> typename by_when_set::iterator
 {
     auto& e = *iter;
     auto next = by_when_.erase(iter);
-    e.~event();
+    e.~Event();
     alloc_->deallocate(&e, sizeof(e));
     return next;
 }

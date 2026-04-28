@@ -132,20 +132,20 @@ ecdsaCanonicality(Slice const& sig)
     if (!r || !s || !p.empty())
         return std::nullopt;
 
-    uint264 const R(sliceToHex(*r));
-    if (R >= kG)
+    uint264 const rNum(sliceToHex(*r));
+    if (rNum >= kG)
         return std::nullopt;
 
-    uint264 const S(sliceToHex(*s));
-    if (S >= kG)
+    uint264 const sNum(sliceToHex(*s));
+    if (sNum >= kG)
         return std::nullopt;
 
     // (R,S) and (R,G-S) are canonical,
     // but is fully canonical when S <= G-S
-    auto const Sp = kG - S;  // NOLINT(readability-identifier-naming)
-    if (S > Sp)
-        return ECDSACanonicality::canonical;
-    return ECDSACanonicality::fullyCanonical;
+    auto const Sp = kG - sNum;  // NOLINT(readability-identifier-naming)
+    if (sNum > Sp)
+        return ECDSACanonicality::Canonical;
+    return ECDSACanonicality::FullyCanonical;
 }
 
 static bool
@@ -173,21 +173,21 @@ ed25519Canonical(Slice const& sig)
 
 PublicKey::PublicKey(Slice const& slice)
 {
-    if (slice.size() < size_)
+    if (slice.size() < kSIZE)
     {
-        LogicError(
+        logicError(
             "PublicKey::PublicKey - Input slice cannot be an undersized "
             "buffer");
     }
 
     if (!publicKeyType(slice))
-        LogicError("PublicKey::PublicKey invalid type");
-    std::memcpy(buf_, slice.data(), size_);
+        logicError("PublicKey::PublicKey invalid type");
+    std::memcpy(buf_, slice.data(), kSIZE);
 }
 
 PublicKey::PublicKey(PublicKey const& other)
 {
-    std::memcpy(buf_, other.buf_, size_);
+    std::memcpy(buf_, other.buf_, kSIZE);
 }
 
 PublicKey&
@@ -195,7 +195,7 @@ PublicKey::operator=(PublicKey const& other)
 {
     if (this != &other)
     {
-        std::memcpy(buf_, other.buf_, size_);
+        std::memcpy(buf_, other.buf_, kSIZE);
     }
 
     return *this;
@@ -209,10 +209,10 @@ publicKeyType(Slice const& slice)
     if (slice.size() == 33)
     {
         if (slice[0] == 0xED)
-            return KeyType::ed25519;
+            return KeyType::Ed25519;
 
         if (slice[0] == 0x02 || slice[0] == 0x03)
-            return KeyType::secp256k1;
+            return KeyType::Secp256k1;
     }
 
     return std::nullopt;
@@ -225,12 +225,12 @@ verifyDigest(
     Slice const& sig,
     bool mustBeFullyCanonical) noexcept
 {
-    if (publicKeyType(publicKey) != KeyType::secp256k1)
-        LogicError("sign: secp256k1 required for digest signing");
+    if (publicKeyType(publicKey) != KeyType::Secp256k1)
+        logicError("sign: secp256k1 required for digest signing");
     auto const canonicality = ecdsaCanonicality(sig);
     if (!canonicality)
         return false;
-    if (mustBeFullyCanonical && (*canonicality != ECDSACanonicality::fullyCanonical))
+    if (mustBeFullyCanonical && (*canonicality != ECDSACanonicality::FullyCanonical))
         return false;
 
     secp256k1_pubkey pubkeyImp;
@@ -248,7 +248,7 @@ verifyDigest(
             reinterpret_cast<unsigned char const*>(sig.data()),
             sig.size()) != 1)
         return false;
-    if (*canonicality != ECDSACanonicality::fullyCanonical)
+    if (*canonicality != ECDSACanonicality::FullyCanonical)
     {
         secp256k1_ecdsa_signature sigNorm;
         if (secp256k1_ecdsa_signature_normalize(secp256k1Context(), &sigNorm, &sigImp) != 1)
@@ -271,11 +271,11 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
     if (auto const type = publicKeyType(publicKey))
     {
-        if (*type == KeyType::secp256k1)
+        if (*type == KeyType::Secp256k1)
         {
             return verifyDigest(publicKey, sha512Half(m), sig);
         }
-        if (*type == KeyType::ed25519)
+        if (*type == KeyType::Ed25519)
         {
             if (!ed25519Canonical(sig))
                 return false;
@@ -293,11 +293,11 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 NodeID
 calcNodeID(PublicKey const& pk)
 {
-    static_assert(NodeID::bytes == sizeof(ripesha_hasher::result_type));
+    static_assert(NodeID::kBYTES == sizeof(RipeshaHasher::result_type));
 
-    ripesha_hasher h;
+    RipeshaHasher h;
     h(pk.data(), pk.size());
-    return NodeID{static_cast<ripesha_hasher::result_type>(h)};
+    return NodeID{static_cast<RipeshaHasher::result_type>(h)};
 }
 
 }  // namespace xrpl

@@ -34,7 +34,7 @@
 
 namespace xrpl {
 
-class NoRippleCheck_test : public beast::unit_test::suite
+class NoRippleCheck_test : public beast::unit_test::Suite
 {
     void
     testBadInput()
@@ -45,7 +45,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         Env env{*this};
 
         auto const alice = Account{"alice"};
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
 
         {  // missing account field
@@ -76,9 +76,9 @@ class NoRippleCheck_test : public beast::unit_test::suite
             testInvalidAccountParam(1);
             testInvalidAccountParam(1.1);
             testInvalidAccountParam(true);
-            testInvalidAccountParam(Json::Value(Json::nullValue));
-            testInvalidAccountParam(Json::Value(Json::objectValue));
-            testInvalidAccountParam(Json::Value(Json::arrayValue));
+            testInvalidAccountParam(Json::Value(Json::NullValue));
+            testInvalidAccountParam(Json::Value(Json::ObjectValue));
+            testInvalidAccountParam(Json::Value(Json::ArrayValue));
         }
 
         {  // invalid role field
@@ -153,7 +153,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
             Json::Value params;
             params[jss::account] = Account{"nobody"}.human();
             params[jss::role] = "user";
-            params[jss::ledger] = Json::objectValue;
+            params[jss::ledger] = Json::ObjectValue;
             auto const result = env.rpc("json", "noripple_check", to_string(params))[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(
@@ -173,7 +173,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
         auto const gw = Account{"gw"};
         auto const alice = Account{"alice"};
 
-        env.fund(XRP(10000), gw, alice);
+        env.fund(kXRP(10000), gw, alice);
         if ((user && problems) || (!user && !problems))
         {
             env(fset(alice, asfDefaultRipple));
@@ -241,7 +241,7 @@ class NoRippleCheck_test : public beast::unit_test::suite
                 result[jss::transactions][txs.size() - 1][jss::TransactionType] == jss::TrustSet);
             BEAST_EXPECT(
                 result[jss::transactions][txs.size() - 1][jss::LimitAmount] ==
-                gw["USD"](100).value().getJson(JsonOptions::kNONE));
+                gw["USD"](100).value().getJson(JsonOptions::KNone));
         }
         else
         {
@@ -262,7 +262,7 @@ public:
     }
 };
 
-class NoRippleCheckLimits_test : public beast::unit_test::suite
+class NoRippleCheckLimits_test : public beast::unit_test::Suite
 {
     void
     testLimits(bool admin)
@@ -274,7 +274,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
         Env env{*this, admin ? envconfig() : envconfig(noAdmin)};
 
         auto const alice = Account{"alice"};
-        env.fund(XRP(100000), alice);
+        env.fund(kXRP(100000), alice);
         env(fset(alice, asfDefaultRipple));
         env.close();
 
@@ -290,18 +290,18 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             using namespace std::chrono;
             using namespace beast::IP;
             auto c = env.app().getResourceManager().newInboundEndpoint(
-                Endpoint::from_string(test::getEnvLocalhostAddr()));
+                Endpoint::fromString(test::getEnvLocalhostAddr()));
 
             // if we go above the warning threshold, reset
-            if (c.balance() > warningThreshold)
+            if (c.balance() > WarningThreshold)
             {
                 using ct = beast::AbstractClock<steady_clock>;
                 c.entry().local_balance =
-                    DecayingSample<decayWindowSeconds, ct>{steady_clock::now()};
+                    DecayingSample<DecayWindowSeconds, ct>{steady_clock::now()};
             }
         };
 
-        for (auto i = 0; i < xrpl::RPC::Tuning::noRippleCheck.rmax + 5; ++i)
+        for (auto i = 0; i < xrpl::RPC::Tuning::kNO_RIPPLE_CHECK.rmax + 5; ++i)
         {
             if (!admin)
                 checkBalance();
@@ -310,7 +310,7 @@ class NoRippleCheckLimits_test : public beast::unit_test::suite
             auto const gw = Account{"gw" + std::to_string(i)};
             env.memoize(gw);
             auto const baseFee = env.current()->fees().base;
-            env(pay(env.master, gw, XRP(1000)),
+            env(pay(env.master, gw, kXRP(1000)),
                 Seq(kAUTOFILL),
                 Fee(toDrops(txq.getMetrics(*env.current()).openLedgerFeeLevel, baseFee) + 1),
                 Sig(kAUTOFILL));

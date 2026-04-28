@@ -25,7 +25,7 @@ Endpoint::Endpoint(Address addr, Port port) : addr_(std::move(addr)), port_(port
 }
 
 std::optional<Endpoint>
-Endpoint::from_string_checked(std::string const& s)
+Endpoint::fromStringChecked(std::string const& s)
 {
     if (s.size() <= 64)
     {
@@ -39,9 +39,9 @@ Endpoint::from_string_checked(std::string const& s)
 }
 
 Endpoint
-Endpoint::from_string(std::string const& s)
+Endpoint::fromString(std::string const& s)
 {
-    if (std::optional<Endpoint> const result = from_string_checked(s))
+    if (std::optional<Endpoint> const result = fromStringChecked(s))
         return *result;
     return Endpoint{};
 }

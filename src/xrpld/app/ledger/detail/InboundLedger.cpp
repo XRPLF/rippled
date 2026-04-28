@@ -96,7 +96,7 @@ InboundLedger::InboundLedger(
           app,
           hash,
           kLEDGER_ACQUIRE_TIMEOUT,
-          {.jobType = jtLEDGER_DATA, .jobName = "InboundLedger", .jobLimit = 5},
+          {.jobType = JtLedgerData, .jobName = "InboundLedger", .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , clock_(clock)
     , seq_(seq)
@@ -276,7 +276,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
             if (std::addressof(dstDB) != std::addressof(srcDB))
             {
                 Blob blob{nodeObject->getData()};
-                dstDB.store(hotLEDGER, std::move(blob), hash_, ledger_->header().seq);
+                dstDB.store(HotLedger, std::move(blob), hash_, ledger_->header().seq);
             }
         }
         else
@@ -294,7 +294,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
 
             // Store the ledger header in the ledger's database
             ledger_->stateMap().family().db().store(
-                hotLEDGER, std::move(*data), hash_, ledger_->header().seq);
+                HotLedger, std::move(*data), hash_, ledger_->header().seq);
         }
 
         if (seq_ == 0)
@@ -397,10 +397,10 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         // otherwise, we need to trigger before we add
         // so each peer gets triggered once
         if (reason_ != Reason::HISTORY)
-            trigger(nullptr, TriggerReason::timeout);
+            trigger(nullptr, TriggerReason::Timeout);
         addPeers();
         if (reason_ == Reason::HISTORY)
-            trigger(nullptr, TriggerReason::timeout);
+            trigger(nullptr, TriggerReason::Timeout);
     }
 }
 
@@ -415,7 +415,7 @@ InboundLedger::addPeers()
             // For historical nodes, do not trigger too soon
             // since a fetch pack is probably coming
             if (reason_ != Reason::HISTORY)
-                trigger(peer, TriggerReason::added);
+                trigger(peer, TriggerReason::Added);
         });
 }
 
@@ -460,7 +460,7 @@ InboundLedger::done()
     }
 
     // We hold the PeerSet lock, so must dispatch
-    app_.getJobQueue().addJob(jtLEDGER_DATA, "AcqDone", [self = shared_from_this()]() {
+    app_.getJobQueue().addJob(JtLedgerData, "AcqDone", [self = shared_from_this()]() {
         if (self->complete_ && !self->failed_)
         {
             self->app_.getLedgerMaster().checkAccept(self->getLedger());
@@ -589,7 +589,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
     if (ledger_)
         tmGL.set_ledgerseq(ledger_->header().seq);
 
-    if (reason != TriggerReason::reply)
+    if (reason != TriggerReason::Reply)
     {
         // If we're querying blind, don't query deep
         tmGL.set_querydepth(0);
@@ -766,7 +766,7 @@ InboundLedger::filterNodes(
     {
         JLOG(journal_.trace()) << "filterNodes: all duplicates";
 
-        if (reason != TriggerReason::timeout)
+        if (reason != TriggerReason::Timeout)
         {
             nodes.clear();
             return;
@@ -779,7 +779,7 @@ InboundLedger::filterNodes(
         nodes.erase(dup.begin(), dup.end());
     }
 
-    std::size_t const limit = (reason == TriggerReason::reply) ? ReqNodesReply : ReqNodes;
+    std::size_t const limit = (reason == TriggerReason::Reply) ? ReqNodesReply : ReqNodes;
 
     if (nodes.size() > limit)
         nodes.resize(limit);
@@ -818,9 +818,9 @@ InboundLedger::takeHeader(std::string const& data)
     haveHeader_ = true;
 
     Serializer s(data.size() + 4);
-    s.add32(HashPrefix::ledgerMaster);
+    s.add32(HashPrefix::LedgerMaster);
     s.addRaw(data.data(), data.size());
-    f->db().store(hotLEDGER, std::move(s.modData()), hash_, seq_);
+    f->db().store(HotLedger, std::move(s.modData()), hash_, seq_);
 
     if (ledger_->header().txHash.isZero())
         haveTransactions_ = true;
@@ -1051,7 +1051,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         if (packet.nodes().empty())
         {
             JLOG(journal_.warn()) << peer->id() << ": empty header data";
-            peer->charge(Resource::feeMalformedRequest, "ledger_data empty header");
+            peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data empty header");
             return -1;
         }
 
@@ -1066,7 +1066,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
                 if (!takeHeader(packet.nodes(0).nodedata()))
                 {
                     JLOG(journal_.warn()) << "Got invalid header data";
-                    peer->charge(Resource::feeMalformedRequest, "ledger_data invalid header");
+                    peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data invalid header");
                     return -1;
                 }
 
@@ -1089,7 +1089,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         {
             JLOG(journal_.warn()) << "Included AS/TX root invalid: " << ex.what();
             using namespace std::string_literals;
-            peer->charge(Resource::feeInvalidData, "ledger_data "s + ex.what());
+            peer->charge(Resource::kFEE_INVALID_DATA, "ledger_data "s + ex.what());
             return -1;
         }
 
@@ -1105,7 +1105,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
         if (packet.nodes().empty())
         {
             JLOG(journal_.info()) << peer->id() << ": response with no nodes";
-            peer->charge(Resource::feeMalformedRequest, "ledger_data no nodes");
+            peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data no nodes");
             return -1;
         }
 
@@ -1117,7 +1117,7 @@ InboundLedger::processData(std::shared_ptr<Peer> peer, protocol::TMLedgerData& p
             if (!node.has_nodeid() || !node.has_nodedata())
             {
                 JLOG(journal_.warn()) << "Got bad node";
-                peer->charge(Resource::feeMalformedRequest, "ledger_data bad node");
+                peer->charge(Resource::kFEE_MALFORMED_REQUEST, "ledger_data bad node");
                 return -1;
             }
         }
@@ -1258,14 +1258,14 @@ InboundLedger::runData()
     // useful
     dataCounts.prune();
     dataCounts.sampleN(kMAX_USEFUL_PEERS, [&](std::shared_ptr<Peer> const& peer) {
-        trigger(peer, TriggerReason::reply);
+        trigger(peer, TriggerReason::Reply);
     });
 }
 
 Json::Value
 InboundLedger::getJson(int)
 {
-    Json::Value ret(Json::objectValue);
+    Json::Value ret(Json::ObjectValue);
 
     ScopedLockType const sl(mtx_);
 
@@ -1292,7 +1292,7 @@ InboundLedger::getJson(int)
 
     if (haveHeader_ && !haveState_)
     {
-        Json::Value hv(Json::arrayValue);
+        Json::Value hv(Json::ArrayValue);
         for (auto const& h : neededStateHashes(16, nullptr))
         {
             hv.append(to_string(h));
@@ -1302,7 +1302,7 @@ InboundLedger::getJson(int)
 
     if (haveHeader_ && !haveTransactions_)
     {
-        Json::Value hv(Json::arrayValue);
+        Json::Value hv(Json::ArrayValue);
         for (auto const& h : neededTxHashes(16, nullptr))
         {
             hv.append(to_string(h));

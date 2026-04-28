@@ -23,7 +23,7 @@
 
 namespace xrpl {
 
-class AmendmentBlocked_test : public beast::unit_test::suite
+class AmendmentBlocked_test : public beast::unit_test::Suite
 {
     void
     testBlockedMethods()
@@ -37,8 +37,8 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         auto const usd = gw["USD"];
         auto const alice = Account{"alice"};
         auto const bob = Account{"bob"};
-        Account const ali{"ali", KeyType::secp256k1};
-        env.fund(XRP(10000), alice, bob, gw);
+        Account const ali{"ali", KeyType::Secp256k1};
+        env.fund(kXRP(10000), alice, bob, gw);
         env.memoize(ali);
         // This close() ensures that all the accounts get created and their
         // default ripple flag gets set before the trust lines are created.
@@ -75,7 +75,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         pfReq[jss::subcommand] = "create";
         pfReq[jss::source_account] = alice.human();
         pfReq[jss::destination_account] = bob.human();
-        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::kNONE);
+        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::KNone);
         jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
@@ -99,7 +99,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         setTx[jss::Account] = bob.human();
         setTx[jss::TransactionType] = jss::AccountSet;
         setTx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
-        setTx[jss::Sequence] = env.Seq(bob);
+        setTx[jss::Sequence] = env.seq(bob);
         setTx[jss::SigningPubKey] = "";
 
         Json::Value signFor;
@@ -140,7 +140,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         pfReq[jss::subcommand] = "create";
         pfReq[jss::source_account] = alice.human();
         pfReq[jss::destination_account] = bob.human();
-        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::kNONE);
+        pfReq[jss::destination_amount] = bob["USD"](20).value().getJson(JsonOptions::KNone);
         jr = wsc->invoke("path_find", pfReq)[jss::result];
         BEAST_EXPECT(
             jr.isMember(jss::alternatives) && jr[jss::alternatives].isArray() &&
@@ -163,7 +163,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         setTx[jss::Account] = bob.human();
         setTx[jss::TransactionType] = jss::AccountSet;
         setTx[jss::Fee] = (8 * env.current()->fees().base).jsonClipped();
-        setTx[jss::Sequence] = env.Seq(bob);
+        setTx[jss::Sequence] = env.seq(bob);
         setTx[jss::SigningPubKey] = "";
 
         signFor[jss::tx_json] = setTx;
@@ -214,7 +214,7 @@ class AmendmentBlocked_test : public beast::unit_test::suite
         BEAST_EXPECT(!jr.isMember(jss::warnings));
 
         // submit_multisigned
-        setTx[jss::Sequence] = env.Seq(bob);
+        setTx[jss::Sequence] = env.seq(bob);
         signFor[jss::tx_json] = setTx;
         jr = env.rpc("json", "sign_for", to_string(signFor))[jss::result];
         BEAST_EXPECT(jr[jss::status] == "success");

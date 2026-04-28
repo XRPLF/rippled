@@ -81,7 +81,7 @@ ConnectAttempt::~ConnectAttempt()
     // slot_ will be null if we successfully connected
     // and transferred ownership to a PeerImp
     if (slot_ != nullptr)
-        overlay_.peerFinder().on_closed(slot_);
+        overlay_.peerFinder().onClosed(slot_);
 }
 
 void
@@ -641,7 +641,7 @@ ConnectAttempt::processResponse()
 
         usage_.setPublicKey(publicKey);
 
-        JLOG(journal_.debug()) << "Protocol: " << toString(*negotiatedProtocol);
+        JLOG(journal_.debug()) << "Protocol: " << to_string(*negotiatedProtocol);
         JLOG(journal_.info()) << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
 
         auto const member = app_.getCluster().member(publicKey);
@@ -651,7 +651,7 @@ ConnectAttempt::processResponse()
         }
 
         auto const result = overlay_.peerFinder().activate(slot_, publicKey, member.has_value());
-        if (result != PeerFinder::Result::success)
+        if (result != PeerFinder::Result::Success)
         {
             std::stringstream ss;
             ss << "Outbound Connect Attempt " << remoteEndpoint_ << " " << to_string(result);
@@ -680,7 +680,7 @@ ConnectAttempt::processResponse()
             id_,
             overlay_);
 
-        overlay_.add_active(peer);
+        overlay_.addActive(peer);
     }
     catch (std::exception const& e)
     {

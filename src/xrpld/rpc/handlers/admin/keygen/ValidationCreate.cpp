@@ -32,17 +32,17 @@ validationSeed(Json::Value const& params)
 Json::Value
 doValidationCreate(RPC::JsonContext& context)
 {
-    Json::Value obj(Json::objectValue);
+    Json::Value obj(Json::ObjectValue);
 
     auto seed = validationSeed(context.params);
 
     if (!seed)
-        return rpcError(rpcBAD_SEED);
+        return rpcError(RpcBadSeed);
 
-    auto const privateKey = generateSecretKey(KeyType::secp256k1, *seed);
+    auto const privateKey = generateSecretKey(KeyType::Secp256k1, *seed);
 
     obj[jss::validation_public_key] =
-        toBase58(TokenType::NodePublic, derivePublicKey(KeyType::secp256k1, privateKey));
+        toBase58(TokenType::NodePublic, derivePublicKey(KeyType::Secp256k1, privateKey));
 
     obj[jss::validation_private_key] = toBase58(TokenType::NodePrivate, privateKey);
 

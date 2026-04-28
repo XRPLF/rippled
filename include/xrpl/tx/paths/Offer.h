@@ -69,9 +69,9 @@ public:
     [[nodiscard]] bool
     fullyConsumed() const
     {
-        if (amounts_.in <= beast::zero)
+        if (amounts_.in <= beast::kZERO)
             return true;
-        if (amounts_.out <= beast::zero)
+        if (amounts_.out <= beast::kZERO)
             return true;
         return false;
     }
@@ -199,7 +199,7 @@ TOffer<TIn, TOut>::limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& 
 {
     // It turns out that the ceil_out implementation has some slop in
     // it, which ceil_out_strict removes.
-    return quality().ceil_out_strict(offerAmount, limit, roundUp);
+    return quality().ceilOutStrict(offerAmount, limit, roundUp);
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -214,9 +214,9 @@ TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& li
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
         // an amendment.
-        return quality().ceil_in_strict(offerAmount, limit, roundUp);
+        return quality().ceilInStrict(offerAmount, limit, roundUp);
     }
-    return quality_.ceil_in(offerAmount, limit);
+    return quality_.ceilIn(offerAmount, limit);
 }
 
 template <StepAmount TIn, StepAmount TOut>

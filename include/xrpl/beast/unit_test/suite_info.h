@@ -11,12 +11,12 @@
 
 namespace beast::unit_test {
 
-class runner;
+class Runner;
 
 /** Associates a unit test type with metadata. */
 class SuiteInfo
 {
-    using run_type = std::function<void(runner&)>;
+    using run_type = std::function<void(Runner&)>;
 
     std::string name_;
     std::string module_;
@@ -76,7 +76,7 @@ public:
 
     /// Run a new instance of the associated test suite.
     void
-    run(runner& r) const
+    run(Runner& r) const
     {
         run_(r);
     }
@@ -99,7 +99,7 @@ SuiteInfo
 makeSuiteInfo(std::string name, std::string module, std::string library, bool manual, int priority)
 {
     return SuiteInfo(
-        std::move(name), std::move(module), std::move(library), manual, priority, [](runner& r) {
+        std::move(name), std::move(module), std::move(library), manual, priority, [](Runner& r) {
             Suite{}(r);
         });
 }

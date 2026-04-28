@@ -16,7 +16,7 @@
 namespace beast::unit_test {
 
 /// A container of test suites.
-class suite_list : public detail::ConstContainer<std::set<SuiteInfo>>
+class SuiteList : public detail::ConstContainer<std::set<SuiteInfo>>
 {
 private:
 #ifndef NDEBUG
@@ -38,7 +38,7 @@ public:
 
 template <class Suite>
 void
-suite_list::insert(
+SuiteList::insert(
     char const* name,
     char const* module,
     char const* library,

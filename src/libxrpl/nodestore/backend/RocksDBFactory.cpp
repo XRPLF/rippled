@@ -113,7 +113,7 @@ public:
         RocksDBEnv* env)
         : deletePath_(false), journal(journal), keyBytes(keyBytes), batch(*this, scheduler)
     {
-        if (!get_if_exists(keyValues, "path", name))
+        if (!getIfExists(keyValues, "path", name))
             Throw<std::runtime_error>("Missing path in RocksDBFactory backend");
 
         rocksdb::BlockBasedTableOptions tableOptions;
@@ -138,7 +138,7 @@ public:
             tableOptions.filter_policy.reset(rocksdb::NewBloomFilterPolicy(v, filterBlocks));
         }
 
-        if (get_if_exists(keyValues, "open_files", options.max_open_files))
+        if (getIfExists(keyValues, "open_files", options.max_open_files))
         {
             if (!hardSet && options.max_open_files == 2000)
                 options.max_open_files = 8000;
@@ -158,7 +158,7 @@ public:
             options.write_buffer_size = 2 * options.target_file_size_base;
         }
 
-        get_if_exists(keyValues, "file_size_mult", options.target_file_size_multiplier);
+        getIfExists(keyValues, "file_size_mult", options.target_file_size_multiplier);
 
         if (keyValues.exists("bg_threads"))
         {
@@ -178,7 +178,7 @@ public:
 
         options.compression = rocksdb::kSnappyCompression;
 
-        get_if_exists(keyValues, "block_size", tableOptions.block_size);
+        getIfExists(keyValues, "block_size", tableOptions.block_size);
 
         if (keyValues.exists("universal_compaction") &&
             (get<int>(keyValues, "universal_compaction") != 0))
@@ -284,7 +284,7 @@ public:
         XRPL_ASSERT(db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
-        Status status(ok);
+        Status status(Ok);
 
         rocksdb::ReadOptions const options;
         rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), keyBytes);
@@ -305,22 +305,22 @@ public:
             {
                 // Decoding failed, probably corrupted!
                 //
-                status = dataCorrupt;
+                status = DataCorrupt;
             }
         }
         else
         {
             if (getStatus.IsCorruption())
             {
-                status = dataCorrupt;
+                status = DataCorrupt;
             }
             else if (getStatus.IsNotFound())
             {
-                status = notFound;
+                status = NotFound;
             }
             else
             {
-                status = Status(customCode + unsafe_cast<int>(getStatus.code()));
+                status = Status(CustomCode + unsafeCast<int>(getStatus.code()));
 
                 JLOG(journal.error()) << getStatus.ToString();
             }
@@ -338,7 +338,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != ok)
+            if (status != Ok)
             {
                 results.push_back({});
             }
@@ -348,7 +348,7 @@ public:
             }
         }
 
-        return {results, ok};
+        return {results, Ok};
     }
 
     void

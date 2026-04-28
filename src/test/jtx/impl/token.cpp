@@ -30,27 +30,27 @@ mint(jtx::Account const& account, std::uint32_t nfTokenTaxon)
 }
 
 void
-xferFee::operator()(Env& env, JTx& jt) const
+XferFee::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfTransferFee.jsonName] = xferFee_;
 }
 
 void
-issuer::operator()(Env& env, JTx& jt) const
+Issuer::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfIssuer.jsonName] = issuer_;
 }
 
 void
-uri::operator()(Env& env, JTx& jt) const
+Uri::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfURI.jsonName] = uri_;
 }
 
 void
-amount::operator()(Env& env, JTx& jt) const
+Amount::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfAmount.jsonName] = amount_.getJson(JsonOptions::kNONE);
+    jt.jv[sfAmount.jsonName] = amount_.getJson(JsonOptions::KNone);
 }
 
 uint256
@@ -77,7 +77,7 @@ getID(
 {
     // We must add issuer's FirstNFTokenSequence to offset the starting NFT
     // sequence number.
-    nftSeq += env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.Seq(issuer));
+    nftSeq += env.le(issuer)->at(~sfFirstNFTokenSequence).value_or(env.seq(issuer));
     return xrpl::NFTokenMint::createNFTokenID(
         flags, xferFee, issuer, nft::toTaxon(nfTokenTaxon), nftSeq);
 }
@@ -98,25 +98,25 @@ createOffer(jtx::Account const& account, uint256 const& nftokenID, STAmount cons
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfNFTokenID.jsonName] = to_string(nftokenID);
-    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::kNONE);
+    jv[sfAmount.jsonName] = amount.getJson(JsonOptions::KNone);
     jv[jss::TransactionType] = jss::NFTokenCreateOffer;
     return jv;
 }
 
 void
-owner::operator()(Env& env, JTx& jt) const
+Owner::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfOwner.jsonName] = owner_;
 }
 
 void
-expiration::operator()(Env& env, JTx& jt) const
+Expiration::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfExpiration.jsonName] = expires_;
 }
 
 void
-destination::operator()(Env& env, JTx& jt) const
+Destination::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfDestination.jsonName] = dest_;
 }
@@ -129,7 +129,7 @@ cancelOfferImpl(jtx::Account const& account, T const& nftokenOffers)
     jv[sfAccount.jsonName] = account.human();
     if (!empty(nftokenOffers))
     {
-        jv[sfNFTokenOffers.jsonName] = Json::arrayValue;
+        jv[sfNFTokenOffers.jsonName] = Json::ArrayValue;
         for (uint256 const& nftokenOffer : nftokenOffers)
             jv[sfNFTokenOffers.jsonName].append(to_string(nftokenOffer));
     }
@@ -150,7 +150,7 @@ cancelOffer(jtx::Account const& account, std::vector<uint256> const& nftokenOffe
 }
 
 void
-rootIndex::operator()(Env& env, JTx& jt) const
+RootIndex::operator()(Env& env, JTx& jt) const
 {
     jt.jv[sfRootIndex.jsonName] = rootIndex_;
 }
@@ -190,9 +190,9 @@ brokerOffers(
 }
 
 void
-brokerFee::operator()(Env& env, JTx& jt) const
+BrokerFee::operator()(Env& env, JTx& jt) const
 {
-    jt.jv[sfNFTokenBrokerFee.jsonName] = brokerFee_.getJson(JsonOptions::kNONE);
+    jt.jv[sfNFTokenBrokerFee.jsonName] = brokerFee_.getJson(JsonOptions::KNone);
 }
 
 Json::Value

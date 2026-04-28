@@ -49,7 +49,7 @@ namespace xrpl {
 void
 injectSLE(Json::Value& jv, SLE const& sle)
 {
-    jv = sle.getJson(JsonOptions::kNONE);
+    jv = sle.getJson(JsonOptions::KNone);
     if (sle.getType() == ltACCOUNT_ROOT)
     {
         if (sle.isFieldPresent(sfEmailHash))
@@ -93,18 +93,18 @@ doAccountInfo(RPC::JsonContext& context)
     if (params.isMember(jss::account))
     {
         if (!params[jss::account].isString())
-            return RPC::invalid_field_error(jss::account);
+            return RPC::invalidFieldError(jss::account);
         strIdent = params[jss::account].asString();
     }
     else if (params.isMember(jss::ident))
     {
         if (!params[jss::ident].isString())
-            return RPC::invalid_field_error(jss::ident);
+            return RPC::invalidFieldError(jss::ident);
         strIdent = params[jss::ident].asString();
     }
     else
     {
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
     }
 
     std::shared_ptr<ReadView const> ledger;
@@ -117,7 +117,7 @@ doAccountInfo(RPC::JsonContext& context)
     auto id = parseBase58<AccountID>(strIdent);
     if (!id)
     {
-        RPC::inject_error(rpcACT_MALFORMED, result);
+        RPC::injectError(RpcActMalformed, result);
         return result;
     }
     auto const accountID{id.value()};
@@ -155,15 +155,15 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // It doesn't make sense to request the queue
             // with any closed or validated ledger.
-            RPC::inject_error(rpcINVALID_PARAMS, result);
+            RPC::injectError(RpcInvalidParams, result);
             return result;
         }
 
-        Json::Value jvAccepted(Json::objectValue);
+        Json::Value jvAccepted(Json::ObjectValue);
         injectSLE(jvAccepted, *sleAccepted);
         result[jss::account_data] = jvAccepted;
 
-        Json::Value acctFlags{Json::objectValue};
+        Json::Value acctFlags{Json::ObjectValue};
         for (auto const& lsf : kLS_FLAGS)
             acctFlags[lsf.first.data()] = sleAccepted->isFlag(lsf.second);
 
@@ -210,7 +210,7 @@ doAccountInfo(RPC::JsonContext& context)
         if (context.apiVersion > 1u && params.isMember(jss::signer_lists) &&
             !params[jss::signer_lists].isBool())
         {
-            RPC::inject_error(rpcINVALID_PARAMS, result);
+            RPC::injectError(RpcInvalidParams, result);
             return result;
         }
 
@@ -219,13 +219,13 @@ doAccountInfo(RPC::JsonContext& context)
         {
             // We put the SignerList in an array because of an anticipated
             // future when we support multiple signer lists on one account.
-            Json::Value jvSignerList = Json::arrayValue;
+            Json::Value jvSignerList = Json::ArrayValue;
 
             // This code will need to be revisited if in the future we support
             // multiple SignerLists on one account.
             auto const sleSigners = ledger->read(keylet::signers(accountID));
             if (sleSigners)
-                jvSignerList.append(sleSigners->getJson(JsonOptions::kNONE));
+                jvSignerList.append(sleSigners->getJson(JsonOptions::KNone));
 
             // Documentation states this is returned as part of the account_info
             // response, but previously the code put it under account_data. We
@@ -243,7 +243,7 @@ doAccountInfo(RPC::JsonContext& context)
         // Return queue info if that is requested
         if (queue)
         {
-            Json::Value jvQueueData = Json::objectValue;
+            Json::Value jvQueueData = Json::ObjectValue;
 
             auto const txs = context.app.getTxQ().getAccountTxs(accountID);
             if (!txs.empty())
@@ -251,7 +251,7 @@ doAccountInfo(RPC::JsonContext& context)
                 jvQueueData[jss::txn_count] = static_cast<Json::UInt>(txs.size());
 
                 auto& jvQueueTx = jvQueueData[jss::transactions];
-                jvQueueTx = Json::arrayValue;
+                jvQueueTx = Json::ArrayValue;
 
                 std::uint32_t seqCount = 0;
                 std::uint32_t ticketCount = 0;
@@ -267,7 +267,7 @@ doAccountInfo(RPC::JsonContext& context)
                 SeqProxy prevSeqProxy = SeqProxy::sequence(0);
                 for (auto const& tx : txs)
                 {
-                    Json::Value jvTx = Json::objectValue;
+                    Json::Value jvTx = Json::ObjectValue;
 
                     if (tx.seqProxy.isSeq())
                     {
@@ -335,7 +335,7 @@ doAccountInfo(RPC::JsonContext& context)
     else
     {
         result[jss::account] = toBase58(accountID);
-        RPC::inject_error(rpcACT_NOT_FOUND, result);
+        RPC::injectError(RpcActNotFound, result);
     }
 
     return result;

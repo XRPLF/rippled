@@ -34,10 +34,10 @@ public:
         results.addresses.reserve(strings_.size());
         for (int i = 0; i < strings_.size(); ++i)
         {
-            beast::IP::Endpoint ep(beast::IP::Endpoint::from_string(strings_[i]));
-            if (is_unspecified(ep))
-                ep = beast::IP::Endpoint::from_string(strings_[i]);
-            if (!is_unspecified(ep))
+            beast::IP::Endpoint ep(beast::IP::Endpoint::fromString(strings_[i]));
+            if (isUnspecified(ep))
+                ep = beast::IP::Endpoint::fromString(strings_[i]);
+            if (!isUnspecified(ep))
                 results.addresses.push_back(ep);
         }
     }

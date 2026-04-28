@@ -30,7 +30,7 @@ public:
 protected:
     struct Element : boost::intrusive::list_base_hook<>
     {
-        Element(Endpoint endpoint_) : endpoint(std::move(endpoint_))
+        Element(Endpoint endpoint) : endpoint(std::move(endpoint))
         {
         }
 
@@ -124,7 +124,7 @@ public:
 
         // move the element to the end of the container
         void
-        move_back(const_iterator pos)
+        moveBack(const_iterator pos)
         {
             auto& e(const_cast<Element&>(*pos.base()));
             list_.get().erase(list_.get().iterator_to(e));
@@ -132,20 +132,20 @@ public:
         }
 
     private:
-        explicit Hop(typename beast::maybe_const<IsConst, list_type>::type& list) : list_(list)
+        explicit Hop(typename beast::MaybeConst<IsConst, list_type>::type& list) : list_(list)
         {
         }
 
         friend class LivecacheBase;
 
-        std::reference_wrapper<typename beast::maybe_const<IsConst, list_type>::type> list_;
+        std::reference_wrapper<typename beast::MaybeConst<IsConst, list_type>::type> list_;
     };
 
 protected:
     // Work-around to call Hop's private constructor from Livecache
     template <bool IsConst>
     static Hop<IsConst>
-    make_hop(typename beast::maybe_const<IsConst, list_type>::type& list)
+    makeHop(typename beast::MaybeConst<IsConst, list_type>::type& list)
     {
         return Hop<IsConst>(list);
     }
@@ -194,7 +194,7 @@ public:
     // where each list contains endpoints at a given hops.
     //
 
-    class hops_t
+    class HopsT
     {
     private:
         // An endpoint at hops=0 represents the local node.
@@ -214,10 +214,10 @@ public:
             explicit Transform() = default;
 
             Hop<IsConst>
-            operator()(typename beast::maybe_const<IsConst, typename lists_type::value_type>::type&
+            operator()(typename beast::MaybeConst<IsConst, typename lists_type::value_type>::type&
                            list) const
             {
-                return make_hop<IsConst>(list);
+                return makeHop<IsConst>(list);
             }
         };
 
@@ -313,7 +313,7 @@ public:
         histogram() const;
 
     private:
-        explicit hops_t(Allocator const& alloc);
+        explicit HopsT(Allocator const& alloc);
 
         void
         insert(Element& e);
@@ -459,14 +459,14 @@ Livecache<Allocator>::onWrite(beast::PropertyStream::Map& map)
 
 template <class Allocator>
 void
-Livecache<Allocator>::hops_t::shuffle()
+Livecache<Allocator>::HopsT::shuffle()
 {
     for (auto& list : lists_)
     {
         std::vector<std::reference_wrapper<Element>> v;
         v.reserve(list.size());
         std::ranges::copy(list, std::back_inserter(v));
-        std::shuffle(v.begin(), v.end(), default_prng());
+        std::shuffle(v.begin(), v.end(), defaultPrng());
         list.clear();
         for (auto& e : v)
             list.push_back(e);
@@ -475,7 +475,7 @@ Livecache<Allocator>::hops_t::shuffle()
 
 template <class Allocator>
 std::string
-Livecache<Allocator>::hops_t::histogram() const
+Livecache<Allocator>::HopsT::histogram() const
 {
     std::string s;
     for (auto const& h : hist_)
@@ -488,14 +488,14 @@ Livecache<Allocator>::hops_t::histogram() const
 }
 
 template <class Allocator>
-Livecache<Allocator>::hops_t::hops_t(Allocator const& alloc)
+Livecache<Allocator>::HopsT::HopsT(Allocator const& alloc)
 {
     std::ranges::fill(hist_, 0);
 }
 
 template <class Allocator>
 void
-Livecache<Allocator>::hops_t::insert(Element& e)
+Livecache<Allocator>::HopsT::insert(Element& e)
 {
     XRPL_ASSERT(
         e.endpoint.hops <= Tuning::kMAX_HOPS + 1,
@@ -507,7 +507,7 @@ Livecache<Allocator>::hops_t::insert(Element& e)
 
 template <class Allocator>
 void
-Livecache<Allocator>::hops_t::reinsert(Element& e, std::uint32_t numHops)
+Livecache<Allocator>::HopsT::reinsert(Element& e, std::uint32_t numHops)
 {
     XRPL_ASSERT(
         numHops <= Tuning::kMAX_HOPS + 1,
@@ -524,7 +524,7 @@ Livecache<Allocator>::hops_t::reinsert(Element& e, std::uint32_t numHops)
 
 template <class Allocator>
 void
-Livecache<Allocator>::hops_t::remove(Element& e)
+Livecache<Allocator>::HopsT::remove(Element& e)
 {
     --hist_[e.endpoint.hops];
 

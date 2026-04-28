@@ -18,7 +18,7 @@ namespace beast::unit_test {
     Derived classes can customize the reporting behavior. This interface is
     injected into the unit_test class to receive the results of the tests.
 */
-class runner
+class Runner
 {
     std::string arg_;
     bool default_ = false;
@@ -27,11 +27,11 @@ class runner
     std::recursive_mutex mutex_;
 
 public:
-    runner() = default;
-    virtual ~runner() = default;
-    runner(runner const&) = delete;
-    runner&
-    operator=(runner const&) = delete;
+    Runner() = default;
+    virtual ~Runner() = default;
+    Runner(Runner const&) = delete;
+    Runner&
+    operator=(Runner const&) = delete;
 
     /** Set the argument string.
 
@@ -143,7 +143,7 @@ protected:
     }
 
 private:
-    friend class suite;
+    friend class Suite;
 
     // Start a new testcase.
     template <class = void>
@@ -167,7 +167,7 @@ private:
 
 template <class>
 bool
-runner::run(SuiteInfo const& s)
+Runner::run(SuiteInfo const& s)
 {
     // Enable 'default' testcase
     default_ = true;
@@ -183,7 +183,7 @@ runner::run(SuiteInfo const& s)
 
 template <class FwdIter>
 bool
-runner::run(FwdIter first, FwdIter last)
+Runner::run(FwdIter first, FwdIter last)
 {
     bool failed(false);
     for (; first != last; ++first)
@@ -193,7 +193,7 @@ runner::run(FwdIter first, FwdIter last)
 
 template <class FwdIter, class Pred>
 bool
-runner::runIf(FwdIter first, FwdIter last, Pred pred)
+Runner::runIf(FwdIter first, FwdIter last, Pred pred)
 {
     bool failed(false);
     for (; first != last; ++first)
@@ -206,7 +206,7 @@ runner::runIf(FwdIter first, FwdIter last, Pred pred)
 
 template <class SequenceContainer>
 bool
-runner::runEach(SequenceContainer const& c)
+Runner::runEach(SequenceContainer const& c)
 {
     bool failed(false);
     for (auto const& s : c)
@@ -216,7 +216,7 @@ runner::runEach(SequenceContainer const& c)
 
 template <class SequenceContainer, class Pred>
 bool
-runner::runEachIf(SequenceContainer const& c, Pred pred)
+Runner::runEachIf(SequenceContainer const& c, Pred pred)
 {
     bool failed(false);
     for (auto const& s : c)
@@ -229,7 +229,7 @@ runner::runEachIf(SequenceContainer const& c, Pred pred)
 
 template <class>
 void
-runner::testcase(std::string const& name)
+Runner::testcase(std::string const& name)
 {
     std::lock_guard const lock(mutex_);
     // Name may not be empty
@@ -245,7 +245,7 @@ runner::testcase(std::string const& name)
 
 template <class>
 void
-runner::pass()
+Runner::pass()
 {
     std::lock_guard const lock(mutex_);
     if (default_)
@@ -256,7 +256,7 @@ runner::pass()
 
 template <class>
 void
-runner::fail(std::string const& reason)
+Runner::fail(std::string const& reason)
 {
     std::lock_guard const lock(mutex_);
     if (default_)
@@ -268,7 +268,7 @@ runner::fail(std::string const& reason)
 
 template <class>
 void
-runner::log(std::string const& s)
+Runner::log(std::string const& s)
 {
     std::lock_guard const lock(mutex_);
     if (default_)

@@ -76,7 +76,7 @@ SHAMapNodeID::getChildNodeID(unsigned int m) const
     XRPL_ASSERT(
         depth_ <= SHAMap::leafDepth, "xrpl::SHAMapNodeID::getChildNodeID : maximum leaf depth");
 
-    if (depth_ >= SHAMap::leafDepth)
+    if (depth_ >= SHAMap::kLEAF_DEPTH)
         Throw<std::logic_error>("Request for child node ID of " + to_string(*this));
 
     if (id_ != (id_ & depthMask(depth_)))
@@ -95,7 +95,7 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
     if (size == 33)
     {
         unsigned int const depth = *(static_cast<unsigned char const*>(data) + 32);
-        if (depth <= SHAMap::leafDepth)
+        if (depth <= SHAMap::kLEAF_DEPTH)
         {
             auto const id = uint256::fromVoid(data);
 

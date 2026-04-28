@@ -232,9 +232,9 @@ FeeVoteImpl::doVoting(
                 using XRPType = XRPAmount::value_type;
                 auto const vote = *field;
                 if (vote <= std::numeric_limits<XRPType>::max() &&
-                    isLegalAmountSigned(XRPAmount{unsafe_cast<XRPType>(vote)}))
+                    isLegalAmountSigned(XRPAmount{unsafeCast<XRPType>(vote)}))
                 {
-                    value.addVote(XRPAmount{unsafe_cast<XRPType>(vote)});
+                    value.addVote(XRPAmount{unsafeCast<XRPType>(vote)});
                 }
                 else
                 {
@@ -294,7 +294,7 @@ FeeVoteImpl::doVoting(
                     baseReserve.first.dropsAs<std::uint32_t>(baseReserveVote.current());
                 obj[sfReserveIncrement] =
                     incReserve.first.dropsAs<std::uint32_t>(incReserveVote.current());
-                obj[sfReferenceFeeUnits] = FEE_UNITS_DEPRECATED;
+                obj[sfReferenceFeeUnits] = kFEE_UNITS_DEPRECATED;
             }
         });
 
@@ -306,7 +306,7 @@ FeeVoteImpl::doVoting(
         feeTx.add(s);
 
         if (!initialPosition->addGiveItem(
-                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(txID, s.slice())))
+                SHAMapNodeType::TnTransactionNm, makeShamapitem(txID, s.slice())))
         {
             JLOG(journal_.warn()) << "Ledger already had fee change";
         }

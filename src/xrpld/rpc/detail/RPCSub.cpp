@@ -47,7 +47,7 @@ public:
         , j_(registry.getJournal("RPCSub"))
         , logs_(registry.getLogs())
     {
-        parsedURL pUrl;
+        ParsedUrl pUrl;
 
         if (!parseUrl(pUrl, strUrl))
         {
@@ -97,7 +97,7 @@ public:
             JLOG(j_.info()) << "RPCCall::fromNetwork start";
 
             sending_ =
-                jobQueue_.addJob(jtCLIENT_SUBSCRIBE, "RPCSubSendThr", [this]() { sendThread(); });
+                jobQueue_.addJob(JtClientSubscribe, "RPCSubSendThr", [this]() { sendThread(); });
         }
     }
 

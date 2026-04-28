@@ -21,7 +21,7 @@
 
 using namespace std::chrono_literals;
 
-class io_latency_probe_test : public beast::unit_test::suite, public beast::test::EnableYieldTo
+class io_latency_probe_test : public beast::unit_test::Suite, public beast::test::EnableYieldTo
 {
     using MyTimer = boost::asio::basic_waitable_timer<std::chrono::steady_clock>;
 
@@ -112,7 +112,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
 
     struct TestSampler
     {
-        beast::io_latency_probe<std::chrono::steady_clock> probe;
+        beast::IoLatencyProbe<std::chrono::steady_clock> probe;
         std::vector<std::chrono::steady_clock::duration> durations;
 
         TestSampler(std::chrono::milliseconds interval, boost::asio::io_context& ios)
@@ -129,7 +129,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         void
         startOne()
         {
-            probe.sample_one(std::ref(*this));
+            probe.sampleOne(std::ref(*this));
         }
 
         void
@@ -151,7 +151,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         if (!BEAST_EXPECTS(!ec, ec.message()))
             return;
         BEAST_EXPECT(ioProbe.durations.size() == 1);
-        ioProbe.probe.cancel_async();
+        ioProbe.probe.cancelAsync();
     }
 
     void
@@ -186,7 +186,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         BEAST_EXPECTS(
             probesSeen >= (expectedProbeCountMin - 1) && probesSeen <= (expectedProbeCountMax + 1),
             std::string("probe count is ") + std::to_string(probesSeen));
-        ioProbe.probe.cancel_async();
+        ioProbe.probe.cancelAsync();
         // wait again in order to flush the remaining
         // probes from the work queue
         timer.expires_after(1s);
@@ -198,7 +198,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
     {
         testcase << "canceled";
         TestSampler ioProbe{100ms, getIoContext()};
-        ioProbe.probe.cancel_async();
+        ioProbe.probe.cancelAsync();
         except<std::logic_error>([&ioProbe]() { ioProbe.startOne(); });
         except<std::logic_error>([&ioProbe]() { ioProbe.start(); });
     }

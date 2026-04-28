@@ -17,7 +17,7 @@
 
 namespace xrpl::test {
 
-class Coroutine_test : public beast::unit_test::suite
+class Coroutine_test : public beast::unit_test::Suite
 {
 public:
     class Gate
@@ -64,7 +64,7 @@ public:
 
         Gate g1, g2;
         std::shared_ptr<JobQueue::Coro> c;
-        env.app().getJobQueue().postCoro(jtCLIENT, "CoroTest", [&](auto const& cr) {
+        env.app().getJobQueue().postCoro(JtClient, "CoroTest", [&](auto const& cr) {
             c = cr;
             g1.signal();
             c->yield();
@@ -90,7 +90,7 @@ public:
         }));
 
         Gate g;
-        env.app().getJobQueue().postCoro(jtCLIENT, "CoroTest", [&](auto const& c) {
+        env.app().getJobQueue().postCoro(JtClient, "CoroTest", [&](auto const& c) {
             c->post();
             c->yield();
             g.signal();
@@ -116,7 +116,7 @@ public:
         BEAST_EXPECT(*lv == -1);
 
         Gate g;
-        jq.addJob(jtCLIENT, "LocalValTest", [&]() {
+        jq.addJob(JtClient, "LocalValTest", [&]() {
             this->BEAST_EXPECT(*lv == -1);
             *lv = -2;
             this->BEAST_EXPECT(*lv == -2);
@@ -127,7 +127,7 @@ public:
 
         for (int i = 0; i < kN; ++i)
         {
-            jq.postCoro(jtCLIENT, "CoroTest", [&, id = i](auto const& c) {
+            jq.postCoro(JtClient, "CoroTest", [&, id = i](auto const& c) {
                 a[id] = c;
                 g.signal();
                 c->yield();
@@ -155,7 +155,7 @@ public:
             c->join();
         }
 
-        jq.addJob(jtCLIENT, "LocalValTest", [&]() {
+        jq.addJob(JtClient, "LocalValTest", [&]() {
             this->BEAST_EXPECT(*lv == -2);
             g.signal();
         });

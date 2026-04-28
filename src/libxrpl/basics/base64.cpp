@@ -197,7 +197,7 @@ decode(void* dest, char const* src, std::size_t len)
 }  // namespace base64
 
 std::string
-base64_encode(std::uint8_t const* data, std::size_t len)
+base64Encode(std::uint8_t const* data, std::size_t len)
 {
     std::string dest;
     dest.resize(base64::encodedSize(len));
@@ -206,7 +206,7 @@ base64_encode(std::uint8_t const* data, std::size_t len)
 }
 
 std::string
-base64_decode(std::string_view data)
+base64Decode(std::string_view data)
 {
     std::string dest;
     dest.resize(base64::decodedSize(data.size()));

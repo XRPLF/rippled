@@ -670,13 +670,13 @@ ValidatorSite::getJson() const
     using namespace std::chrono;
     using Int = Json::Value::Int;
 
-    Json::Value jrr(Json::objectValue);
-    Json::Value& jSites = (jrr[jss::validator_sites] = Json::arrayValue);
+    Json::Value jrr(Json::ObjectValue);
+    Json::Value& jSites = (jrr[jss::validator_sites] = Json::ArrayValue);
     {
         std::lock_guard const lock{sites_mutex_};
         for (Site const& site : sites_)
         {
-            Json::Value& v = jSites.append(Json::objectValue);
+            Json::Value& v = jSites.append(Json::ObjectValue);
             std::stringstream uri;
             uri << site.loadedResource->uri;
             if (site.loadedResource != site.startingResource)
@@ -686,7 +686,7 @@ ValidatorSite::getJson() const
             if (site.lastRefreshStatus)
             {
                 v[jss::last_refresh_time] = to_string(site.lastRefreshStatus->refreshed);
-                v[jss::last_refresh_status] = toString(site.lastRefreshStatus->disposition);
+                v[jss::last_refresh_status] = to_string(site.lastRefreshStatus->disposition);
                 if (!site.lastRefreshStatus->message.empty())
                     v[jss::last_refresh_message] = site.lastRefreshStatus->message;
             }

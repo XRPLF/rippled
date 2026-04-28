@@ -17,13 +17,13 @@ public:
 
     // inbound
     SlotImp(
-        beast::IP::Endpoint const& local_endpoint,
-        beast::IP::Endpoint remote_endpoint,
+        beast::IP::Endpoint const& localEndpoint,
+        beast::IP::Endpoint remoteEndpoint,
         bool fixed,
         clock_type& clock);
 
     // outbound
-    SlotImp(beast::IP::Endpoint remote_endpoint, bool fixed, clock_type& clock);
+    SlotImp(beast::IP::Endpoint remoteEndpoint, bool fixed, clock_type& clock);
 
     bool
     inbound() const override
@@ -77,31 +77,31 @@ public:
     listeningPort() const override
     {
         std::uint32_t const value = listening_port_;
-        if (value == unknownPort)
+        if (value == kUNKNOWN_PORT)
             return std::nullopt;
         return value;
     }
 
     void
-    set_listening_port(std::uint16_t port)
+    setListeningPort(std::uint16_t port)
     {
         listening_port_ = port;
     }
 
     void
-    local_endpoint(beast::IP::Endpoint const& endpoint)
+    localEndpoint(beast::IP::Endpoint const& endpoint)
     {
         local_endpoint_ = endpoint;
     }
 
     void
-    remote_endpoint(beast::IP::Endpoint const& endpoint)
+    remoteEndpoint(beast::IP::Endpoint const& endpoint)
     {
         remote_endpoint_ = endpoint;
     }
 
     void
-    public_key(PublicKey const& key)
+    publicKey(PublicKey const& key)
     {
         public_key_ = key;
     }
@@ -115,7 +115,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
-    state(State state_);
+    state(State state);
 
     void
     activate(clock_type::time_point const& now);
@@ -125,10 +125,10 @@ public:
     // The set of all recent addresses that we have seen from this peer.
     // We try to avoid sending a peer the same addresses they gave us.
     //
-    class recent_t
+    class RecentT
     {
     public:
-        explicit recent_t(clock_type& clock);
+        explicit RecentT(clock_type& clock);
 
         /** Called for each valid endpoint received for a slot.
             We also insert messages that we send to the slot to prevent
@@ -146,7 +146,7 @@ public:
         expire();
 
         friend class SlotImp;
-        beast::aged_unordered_map<beast::IP::Endpoint, std::uint32_t> cache;
+        beast::aged_unordered_map<beast::IP::Endpoint, std::uint32_t> cache_;
     } recent;
 
     void
@@ -164,7 +164,7 @@ private:
     std::optional<beast::IP::Endpoint> local_endpoint_;
     std::optional<PublicKey> public_key_;
 
-    static std::int32_t constexpr unknownPort = -1;
+    static std::int32_t constexpr kUNKNOWN_PORT = -1;
     std::atomic<std::int32_t> listening_port_;
 
 public:

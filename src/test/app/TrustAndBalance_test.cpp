@@ -23,7 +23,7 @@
 
 namespace xrpl {
 
-class TrustAndBalance_test : public beast::unit_test::suite
+class TrustAndBalance_test : public beast::unit_test::Suite
 {
     void
     testPayNonexistent(FeatureBitset features)
@@ -32,7 +32,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         Env env{*this, features};
-        env(pay(env.master, "alice", XRP(1)), Ter(tecNO_DST_INSUF_XRP));
+        env(pay(env.master, "alice", kXRP(1)), Ter(tecNO_DST_INSUF_XRP));
         env.close();
     }
 
@@ -59,7 +59,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(XRP(10000), gw, alice, bob);
+        env.fund(kXRP(10000), gw, alice, bob);
         env.close();
 
         // credit limit doesn't exist yet - verify ledger_entry
@@ -130,7 +130,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(XRP(10000), alice, bob);
+        env.fund(kXRP(10000), alice, bob);
         env.close();
 
         env(trust(alice, bob["USD"](600)));
@@ -138,27 +138,27 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         // alice sends bob partial with alice as issuer
         env(pay(alice, bob, alice["USD"](24)));
-        env.Require(Balance(bob, alice["USD"](24)));
+        env.require(Balance(bob, alice["USD"](24)));
 
         // alice sends bob more with bob as issuer
         env(pay(alice, bob, bob["USD"](33)));
-        env.Require(Balance(bob, alice["USD"](57)));
+        env.require(Balance(bob, alice["USD"](57)));
 
         // bob sends back more than sent
         env(pay(bob, alice, bob["USD"](90)));
-        env.Require(Balance(bob, alice["USD"](-33)));
+        env.require(Balance(bob, alice["USD"](-33)));
 
         // alice sends to her limit
         env(pay(alice, bob, bob["USD"](733)));
-        env.Require(Balance(bob, alice["USD"](700)));
+        env.require(Balance(bob, alice["USD"](700)));
 
         // bob sends to his limit
         env(pay(bob, alice, bob["USD"](1300)));
-        env.Require(Balance(bob, alice["USD"](-600)));
+        env.require(Balance(bob, alice["USD"](-600)));
 
         // bob sends past limit
         env(pay(bob, alice, bob["USD"](1)), Ter(tecPATH_DRY));
-        env.Require(Balance(bob, alice["USD"](-600)));
+        env.require(Balance(bob, alice["USD"](-600)));
     }
 
     void
@@ -175,7 +175,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(XRP(10000), gw, alice, bob);
+        env.fund(kXRP(10000), gw, alice, bob);
         env.close();
 
         env(trust(alice, gw["AUD"](100)));
@@ -184,15 +184,15 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env(pay(gw, alice, alice["AUD"](1)));
         env.close();
 
-        env.Require(Balance(alice, gw["AUD"](1)));
+        env.require(Balance(alice, gw["AUD"](1)));
 
         // alice sends bob 1 AUD
         env(pay(alice, bob, gw["AUD"](1)));
         env.close();
 
-        env.Require(Balance(alice, gw["AUD"](0)));
-        env.Require(Balance(bob, gw["AUD"](1)));
-        env.Require(Balance(gw, bob["AUD"](-1)));
+        env.require(Balance(alice, gw["AUD"](0)));
+        env.require(Balance(bob, gw["AUD"](1)));
+        env.require(Balance(gw, bob["AUD"](-1)));
 
         if (withRate)
         {
@@ -200,7 +200,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
             env(rate(gw, 1.1));
             env.close();
             // bob sends alice 0.5 AUD with a max to spend
-            env(pay(bob, alice, gw["AUD"](0.5)), sendmax(gw["AUD"](0.55)));
+            env(pay(bob, alice, gw["AUD"](0.5)), Sendmax(gw["AUD"](0.55)));
         }
         else
         {
@@ -208,16 +208,16 @@ class TrustAndBalance_test : public beast::unit_test::suite
             env(pay(bob, alice, gw["AUD"](0.5)));
         }
 
-        env.Require(Balance(alice, gw["AUD"](0.5)));
-        env.Require(Balance(bob, gw["AUD"](withRate ? 0.45 : 0.5)));
-        env.Require(Balance(gw, bob["AUD"](withRate ? -0.45 : -0.5)));
+        env.require(Balance(alice, gw["AUD"](0.5)));
+        env.require(Balance(bob, gw["AUD"](withRate ? 0.45 : 0.5)));
+        env.require(Balance(gw, bob["AUD"](withRate ? -0.45 : -0.5)));
 
         if (subscribe)
         {
             Json::Value jvs;
-            jvs[jss::accounts] = Json::arrayValue;
+            jvs[jss::accounts] = Json::ArrayValue;
             jvs[jss::accounts].append(gw.human());
-            jvs[jss::streams] = Json::arrayValue;
+            jvs[jss::streams] = Json::ArrayValue;
             jvs[jss::streams].append("transactions");
             jvs[jss::streams].append("ledger");
             auto jv = wsc->invoke("subscribe", jvs);
@@ -248,7 +248,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(XRP(10000), gw, alice, bob);
+        env.fund(kXRP(10000), gw, alice, bob);
         env.close();
 
         // set a transfer rate
@@ -258,30 +258,30 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env(trust(bob, gw["AUD"](100)));
 
         env(pay(gw, alice, alice["AUD"](4.4)));
-        env.Require(Balance(alice, gw["AUD"](4.4)));
+        env.require(Balance(alice, gw["AUD"](4.4)));
 
         // alice sends gw issues to bob with a max spend that allows for the
         // xfer rate
-        env(pay(alice, bob, gw["AUD"](1)), sendmax(gw["AUD"](1.1)));
-        env.Require(Balance(alice, gw["AUD"](3.3)));
-        env.Require(Balance(bob, gw["AUD"](1)));
+        env(pay(alice, bob, gw["AUD"](1)), Sendmax(gw["AUD"](1.1)));
+        env.require(Balance(alice, gw["AUD"](3.3)));
+        env.require(Balance(bob, gw["AUD"](1)));
 
         // alice sends bob issues to bob with a max spend
-        env(pay(alice, bob, bob["AUD"](1)), sendmax(gw["AUD"](1.1)));
-        env.Require(Balance(alice, gw["AUD"](2.2)));
-        env.Require(Balance(bob, gw["AUD"](2)));
+        env(pay(alice, bob, bob["AUD"](1)), Sendmax(gw["AUD"](1.1)));
+        env.require(Balance(alice, gw["AUD"](2.2)));
+        env.require(Balance(bob, gw["AUD"](2)));
 
         // alice sends gw issues to bob with a max spend
-        env(pay(alice, bob, gw["AUD"](1)), sendmax(alice["AUD"](1.1)));
-        env.Require(Balance(alice, gw["AUD"](1.1)));
-        env.Require(Balance(bob, gw["AUD"](3)));
+        env(pay(alice, bob, gw["AUD"](1)), Sendmax(alice["AUD"](1.1)));
+        env.require(Balance(alice, gw["AUD"](1.1)));
+        env.require(Balance(bob, gw["AUD"](3)));
 
         // alice sends bob issues to bob with a max spend in alice issues.
         // expect fail since gw is not involved
-        env(pay(alice, bob, bob["AUD"](1)), sendmax(alice["AUD"](1.1)), Ter(tecPATH_DRY));
+        env(pay(alice, bob, bob["AUD"](1)), Sendmax(alice["AUD"](1.1)), Ter(tecPATH_DRY));
 
-        env.Require(Balance(alice, gw["AUD"](1.1)));
-        env.Require(Balance(bob, gw["AUD"](3)));
+        env.require(Balance(alice, gw["AUD"](1.1)));
+        env.require(Balance(bob, gw["AUD"](3)));
     }
 
     void
@@ -295,7 +295,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const bob{"bob"};
 
-        env.fund(XRP(10000), gw, alice, bob);
+        env.fund(kXRP(10000), gw, alice, bob);
         env.close();
 
         env(trust(alice, gw["USD"](600)));
@@ -304,8 +304,8 @@ class TrustAndBalance_test : public beast::unit_test::suite
         env(pay(gw, alice, alice["USD"](70)));
         env(pay(gw, bob, bob["USD"](50)));
 
-        env.Require(Balance(alice, gw["USD"](70)));
-        env.Require(Balance(bob, gw["USD"](50)));
+        env.require(Balance(alice, gw["USD"](70)));
+        env.require(Balance(bob, gw["USD"](50)));
 
         // alice sends more than has to issuer: 100 out of 70
         env(pay(alice, gw, gw["USD"](100)), Ter(tecPATH_PARTIAL));
@@ -315,14 +315,14 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         env.close();
 
-        env.Require(Balance(alice, gw["USD"](70)));
-        env.Require(Balance(bob, gw["USD"](50)));
+        env.require(Balance(alice, gw["USD"](70)));
+        env.require(Balance(bob, gw["USD"](50)));
 
         // send with an account path
         env(pay(alice, bob, gw["USD"](5)), test::jtx::Path(gw));
 
-        env.Require(Balance(alice, gw["USD"](65)));
-        env.Require(Balance(bob, gw["USD"](55)));
+        env.require(Balance(alice, gw["USD"](65)));
+        env.require(Balance(bob, gw["USD"](55)));
     }
 
     void
@@ -340,7 +340,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         Account const bob{"bob"};
         Account const carol{"carol"};
 
-        env.fund(XRP(10000), gw, amazon, alice, bob, carol);
+        env.fund(kXRP(10000), gw, amazon, alice, bob, carol);
         env.close();
 
         env(trust(amazon, gw["USD"](2000)));
@@ -360,7 +360,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
         if (withRate)
         {
             env(pay(alice, amazon, gw["USD"](150)),
-                sendmax(alice["USD"](200)),
+                Sendmax(alice["USD"](200)),
                 test::jtx::Path(bob),
                 test::jtx::Path(carol));
         }
@@ -371,19 +371,19 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         if (withRate)
         {
-            env.Require(Balance(
+            env.require(Balance(
                 alice,
-                STAmount(carol["USD"], 6500000000000000ull, -14, true, STAmount::unchecked{})));
-            env.Require(Balance(carol, gw["USD"](35)));
+                STAmount(carol["USD"], 6500000000000000ull, -14, true, STAmount::Unchecked{})));
+            env.require(Balance(carol, gw["USD"](35)));
         }
         else
         {
-            env.Require(Balance(alice, carol["USD"](-50)));
-            env.Require(Balance(carol, gw["USD"](50)));
+            env.require(Balance(alice, carol["USD"](-50)));
+            env.require(Balance(carol, gw["USD"](50)));
         }
-        env.Require(Balance(alice, bob["USD"](-100)));
-        env.Require(Balance(amazon, gw["USD"](150)));
-        env.Require(Balance(bob, gw["USD"](0)));
+        env.require(Balance(alice, bob["USD"](-100)));
+        env.require(Balance(amazon, gw["USD"](150)));
+        env.require(Balance(bob, gw["USD"](0)));
     }
 
     void
@@ -396,13 +396,13 @@ class TrustAndBalance_test : public beast::unit_test::suite
         Account const alice{"alice"};
         auto wsc = test::makeWSClient(env.app().config());
 
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
         env.close();
 
         Json::Value jvs;
-        jvs[jss::accounts] = Json::arrayValue;
+        jvs[jss::accounts] = Json::ArrayValue;
         jvs[jss::accounts].append(env.master.human());
-        jvs[jss::streams] = Json::arrayValue;
+        jvs[jss::streams] = Json::ArrayValue;
         jvs[jss::streams].append("transactions");
         BEAST_EXPECT(wsc->invoke("subscribe", jvs)[jss::status] == "success");
 
@@ -410,7 +410,7 @@ class TrustAndBalance_test : public beast::unit_test::suite
 
         Json::Value jv;
         auto tx =
-            env.jt(pay(env.master, alice, XRP(10000)), json(sfInvoiceID.fieldName, invoiceId));
+            env.jt(pay(env.master, alice, kXRP(10000)), json(sfInvoiceID.fieldName, invoiceId));
         jv[jss::tx_blob] = strHex(tx.stx->getSerializer().slice());
         auto jrr = wsc->invoke("submit", jv)[jss::result];
         BEAST_EXPECT(jrr[jss::status] == "success");

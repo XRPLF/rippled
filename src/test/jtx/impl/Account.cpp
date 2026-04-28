@@ -21,11 +21,11 @@
 
 namespace xrpl::test::jtx {
 
-std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> Account::cache_;
+std::unordered_map<std::pair<std::string, KeyType>, Account, beast::Uhash<>> Account::cache;
 
 Account const Account::kMASTER(
     "master",
-    generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase")),
+    generateKeyPair(KeyType::Secp256k1, generateSeed("masterpassphrase")),
     Account::PrivateCtorTag{});
 
 Account::Account(
@@ -44,8 +44,8 @@ Account
 Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 {
     auto p = std::make_pair(name, type);  // non-const so it can be moved from
-    auto const iter = cache_.find(p);
-    if (iter != cache_.end())
+    auto const iter = cache.find(p);
+    if (iter != cache.end())
         return iter->second;
 
     auto const keys = [stringType, &name, type]() {
@@ -60,7 +60,7 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
         }
         return generateKeyPair(type, generateSeed(name));
     }();
-    auto r = cache_.emplace(
+    auto r = cache.emplace(
         std::piecewise_construct,
         std::forward_as_tuple(std::move(p)),
         std::forward_as_tuple(std::move(name), keys, PrivateCtorTag{}));
@@ -73,12 +73,12 @@ Account::Account(std::string name, KeyType type)
 }
 
 Account::Account(AcctStringType stringType, std::string base58SeedStr)
-    : Account(fromCache(Account::Base58Seed, std::move(base58SeedStr), KeyType::secp256k1))
+    : Account(fromCache(Account::Base58Seed, std::move(base58SeedStr), KeyType::Secp256k1))
 {
 }
 
 Account::Account(std::string name, AccountID const& id)
-    : Account(name, randomKeyPair(KeyType::secp256k1), PrivateCtorTag{})
+    : Account(name, randomKeyPair(KeyType::Secp256k1), PrivateCtorTag{})
 {
     // override the randomly generated values
     id_ = id;
@@ -88,7 +88,7 @@ Account::Account(std::string name, AccountID const& id)
 IOU
 Account::operator[](std::string const& s) const
 {
-    auto const currency = to_currency(s);
+    auto const currency = toCurrency(s);
     assert(currency != noCurrency());
     return IOU(*this, currency);
 }

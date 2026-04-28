@@ -23,7 +23,7 @@
 
 namespace xrpl {
 
-class SetRegularKey_test : public beast::unit_test::suite
+class SetRegularKey_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -35,7 +35,7 @@ public:
         Env env{*this, testableAmendments()};
         Account const alice("alice");
         Account const bob("bob");
-        env.fund(XRP(10000), alice, bob);
+        env.fund(kXRP(10000), alice, bob);
 
         env(regkey(alice, bob));
         env(noop(alice), Sig(bob));
@@ -67,7 +67,7 @@ public:
         testcase("Set regular key to master key");
         Env env{*this, testableAmendments()};
         Account const alice("alice");
-        env.fund(XRP(10000), alice);
+        env.fund(kXRP(10000), alice);
 
         env(regkey(alice, alice), Ter(temBAD_REGKEY));
     }
@@ -81,7 +81,7 @@ public:
         Env env(*this);
         Account const alice("alice");
         Account const bob("bob");
-        env.fund(XRP(10000), alice, bob);
+        env.fund(kXRP(10000), alice, bob);
 
         auto ar = env.le(alice);
         BEAST_EXPECT(
@@ -113,7 +113,7 @@ public:
         Env env(*this);
         Account const alice("alice");
         Account const bob("bob");
-        env.fund(XRP(10000), alice, bob);
+        env.fund(kXRP(10000), alice, bob);
 
         auto jv = regkey(alice, bob);
         jv[sfFlags.fieldName] = tfUniversalMask;
@@ -127,38 +127,38 @@ public:
 
         testcase("Ticket regular key");
         Env env{*this};
-        Account const alice{"alice", KeyType::ed25519};
-        env.fund(XRP(1000), alice);
+        Account const alice{"alice", KeyType::Ed25519};
+        env.fund(kXRP(1000), alice);
         env.close();
 
         // alice makes herself some tickets.
         env(ticket::create(alice, 4));
         env.close();
-        std::uint32_t ticketSeq{env.Seq(alice)};
+        std::uint32_t ticketSeq{env.seq(alice)};
 
         // Make sure we can give a regular key using a ticket.
-        Account const alie{"alie", KeyType::secp256k1};
-        env(regkey(alice, alie), ticket::use(--ticketSeq));
+        Account const alie{"alie", KeyType::Secp256k1};
+        env(regkey(alice, alie), ticket::Use(--ticketSeq));
         env.close();
 
         // Disable alice's master key using a ticket.
-        env(fset(alice, asfDisableMaster), Sig(alice), ticket::use(--ticketSeq));
+        env(fset(alice, asfDisableMaster), Sig(alice), ticket::Use(--ticketSeq));
         env.close();
 
         // alice should be able to sign using the regular key but not the
         // master key.
-        std::uint32_t const aliceSeq{env.Seq(alice)};
+        std::uint32_t const aliceSeq{env.seq(alice)};
         env(noop(alice), Sig(alice), Ter(tefMASTER_DISABLED));
         env(noop(alice), Sig(alie), Ter(tesSUCCESS));
         env.close();
-        BEAST_EXPECT(env.Seq(alice) == aliceSeq + 1);
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         // Re-enable the master key using a ticket.
-        env(fclear(alice, asfDisableMaster), Sig(alie), ticket::use(--ticketSeq));
+        env(fclear(alice, asfDisableMaster), Sig(alie), ticket::Use(--ticketSeq));
         env.close();
 
         // Disable the regular key using a ticket.
-        env(regkey(alice, kDISABLED), Sig(alie), ticket::use(--ticketSeq));
+        env(regkey(alice, kDISABLED), Sig(alie), ticket::Use(--ticketSeq));
         env.close();
 
         // alice should be able to sign using the master key but not the

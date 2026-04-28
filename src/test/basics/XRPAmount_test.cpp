@@ -7,7 +7,7 @@
 
 namespace xrpl {
 
-class XRPAmount_test : public beast::unit_test::suite
+class XRPAmount_test : public beast::unit_test::Suite
 {
 public:
     void
@@ -39,25 +39,25 @@ public:
     {
         testcase("beast::Zero Comparisons");
 
-        using beast::zero;
+        using beast::kZERO;
 
         for (auto i : {-1, 0, 1})
         {
             XRPAmount const x(i);
 
-            BEAST_EXPECT((i == 0) == (x == zero));
-            BEAST_EXPECT((i != 0) == (x != zero));
-            BEAST_EXPECT((i < 0) == (x < zero));
-            BEAST_EXPECT((i > 0) == (x > zero));
-            BEAST_EXPECT((i <= 0) == (x <= zero));
-            BEAST_EXPECT((i >= 0) == (x >= zero));
+            BEAST_EXPECT((i == 0) == (x == kZERO));
+            BEAST_EXPECT((i != 0) == (x != kZERO));
+            BEAST_EXPECT((i < 0) == (x < kZERO));
+            BEAST_EXPECT((i > 0) == (x > kZERO));
+            BEAST_EXPECT((i <= 0) == (x <= kZERO));
+            BEAST_EXPECT((i >= 0) == (x >= kZERO));
 
-            BEAST_EXPECT((0 == i) == (zero == x));
-            BEAST_EXPECT((0 != i) == (zero != x));
-            BEAST_EXPECT((0 < i) == (zero < x));
-            BEAST_EXPECT((0 > i) == (zero > x));
-            BEAST_EXPECT((0 <= i) == (zero <= x));
-            BEAST_EXPECT((0 >= i) == (zero >= x));
+            BEAST_EXPECT((0 == i) == (kZERO == x));
+            BEAST_EXPECT((0 != i) == (kZERO != x));
+            BEAST_EXPECT((0 < i) == (kZERO < x));
+            BEAST_EXPECT((0 > i) == (kZERO > x));
+            BEAST_EXPECT((0 <= i) == (kZERO <= x));
+            BEAST_EXPECT((0 >= i) == (kZERO >= x));
         }
     }
 
@@ -109,7 +109,7 @@ public:
     testDecimal()
     {
         // Tautology
-        BEAST_EXPECT(DROPS_PER_XRP.decimalXRP() == 1);
+        BEAST_EXPECT(kDROPS_PER_XRP.decimalXRP() == 1);
 
         XRPAmount test{1};
         BEAST_EXPECT(test.decimalXRP() == 0.000001);
@@ -136,10 +136,10 @@ public:
         XRPAmount test{0};
         BEAST_EXPECT(test.drops() == 0);
 
-        test = make(beast::zero);
+        test = make(beast::kZERO);
         BEAST_EXPECT(test.drops() == 0);
 
-        test = beast::zero;
+        test = beast::kZERO;
         BEAST_EXPECT(test.drops() == 0);
 
         test = make(100);
@@ -234,7 +234,7 @@ public:
 
         {
             // Similar test as above, but for negative values
-            XRPAmount big(kMIN_XRP);
+            XRPAmount const big(kMIN_XRP);
             BEAST_EXPECT(big == mulRatio(big, kMAX_U_INT32, kMAX_U_INT32, true));
             // rounding mode shouldn't matter as the result is exact
             BEAST_EXPECT(big == mulRatio(big, kMAX_U_INT32, kMAX_U_INT32, false));
@@ -252,14 +252,14 @@ public:
             // Round up should give the smallest allowable number
             BEAST_EXPECT(tiny == mulRatio(tiny, 1, kMAX_U_INT32, true));
             // rounding down should be zero
-            BEAST_EXPECT(beast::zero == mulRatio(tiny, 1, kMAX_U_INT32, false));
-            BEAST_EXPECT(beast::zero == mulRatio(tiny, kMAX_U_INT32 - 1, kMAX_U_INT32, false));
+            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, 1, kMAX_U_INT32, false));
+            BEAST_EXPECT(beast::kZERO == mulRatio(tiny, kMAX_U_INT32 - 1, kMAX_U_INT32, false));
 
             // tiny negative numbers
             XRPAmount const tinyNeg(-1);
             // Round up should give zero
-            BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, 1, kMAX_U_INT32, true));
-            BEAST_EXPECT(beast::zero == mulRatio(tinyNeg, kMAX_U_INT32 - 1, kMAX_U_INT32, true));
+            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, 1, kMAX_U_INT32, true));
+            BEAST_EXPECT(beast::kZERO == mulRatio(tinyNeg, kMAX_U_INT32 - 1, kMAX_U_INT32, true));
             // rounding down should be tiny
             BEAST_EXPECT(tinyNeg == mulRatio(tinyNeg, kMAX_U_INT32 - 1, kMAX_U_INT32, false));
         }

@@ -70,7 +70,7 @@ namespace xrpl::test::jtx {
 //------------------------------------------------------------------------------
 
 Env::AppBundle::AppBundle(
-    beast::unit_test::suite& suite,
+    beast::unit_test::Suite& suite,
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
     beast::severities::Severity thresh)
@@ -79,13 +79,13 @@ Env::AppBundle::AppBundle(
     using namespace beast::severities;
     if (logs)
     {
-        setDebugLogSink(logs->makeSink("Debug", kFatal));
+        setDebugLogSink(logs->makeSink("Debug", KFatal));
     }
     else
     {
         logs = std::make_unique<SuiteLogs>(suite);
         // Use kFatal threshold to reduce noise from STObject.
-        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", kFatal, suite));
+        setDebugLogSink(std::make_unique<SuiteJournalSink>("Debug", KFatal, suite));
     }
     auto tk = std::make_unique<ManualTimeKeeper>();
     timeKeeper = tk.get();
@@ -198,21 +198,21 @@ Env::lookup(std::string const& base58ID) const
 }
 
 PrettyAmount
-Env::Balance(Account const& account) const
+Env::balance(Account const& account) const
 {
     auto const sle = le(account);
     if (!sle)
-        return XRP(0);
+        return kXRP(0);
     return {sle->getFieldAmount(sfBalance), ""};
 }
 
 PrettyAmount
-Env::Balance(Account const& account, Asset const& asset) const
+Env::balance(Account const& account, Asset const& asset) const
 {
     return asset.visit(
         [&](Issue const& issue) -> PrettyAmount {
             if (isXRP(issue.currency))
-                return Balance(account);
+                return balance(account);
             auto const sle = le(keylet::line(account.id(), issue));
             if (!sle)
                 return {STAmount(issue, 0), account.name()};
@@ -272,7 +272,7 @@ Env::ownerCount(Account const& account) const
 }
 
 std::uint32_t
-Env::Seq(Account const& account) const
+Env::seq(Account const& account) const
 {
     auto const sle = le(account);
     if (!sle)
@@ -309,7 +309,7 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
             jtx::Seq(jtx::kAUTOFILL),
             Fee(jtx::kAUTOFILL),
             Sig(jtx::kAUTOFILL));
-        Require(Flags(account, asfDefaultRipple));
+        require(Flags(account, asfDefaultRipple));
     }
     else
     {
@@ -318,9 +318,9 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
             jtx::Seq(jtx::kAUTOFILL),
             Fee(jtx::kAUTOFILL),
             Sig(jtx::kAUTOFILL));
-        Require(Nflags(account, asfDefaultRipple));
+        require(Nflags(account, asfDefaultRipple));
     }
-    Require(jtx::Balance(account, amount));
+    require(jtx::Balance(account, amount));
 }
 
 void
@@ -328,7 +328,7 @@ Env::trust(STAmount const& amount, Account const& account)
 {
     if (!amount.holds<Issue>())
         Throw<std::runtime_error>("Env::trust: amount doesn't hold Issue");
-    auto const start = Balance(account);
+    auto const start = balance(account);
     apply(
         jtx::trust(account, amount),
         jtx::Seq(jtx::kAUTOFILL),
@@ -339,7 +339,7 @@ Env::trust(STAmount const& amount, Account const& account)
         jtx::Seq(jtx::kAUTOFILL),
         Fee(jtx::kAUTOFILL),
         Sig(jtx::kAUTOFILL));
-    test.expect(Balance(account) == start);
+    test.expect(balance(account) == start);
 }
 
 Env::ParsedResult
@@ -353,7 +353,7 @@ Env::parseResult(Json::Value const& jr)
         if (!object.isObject())
             return;
         if (object.isMember(jss::error_code))
-            parsed.rpcCode = safe_cast<error_code_i>(object[jss::error_code].asInt());
+            parsed.rpcCode = safeCast<ErrorCodeI>(object[jss::error_code].asInt());
         if (object.isMember(jss::error_message))
             parsed.rpcMessage = object[jss::error_message].asString();
         if (object.isMember(jss::error))
@@ -368,7 +368,7 @@ Env::parseResult(Json::Value const& jr)
         if (result.isMember(jss::engine_result_code))
         {
             parsed.ter = TER::fromInt(result[jss::engine_result_code].asInt());
-            parsed.rpcCode.emplace(rpcSUCCESS);
+            parsed.rpcCode.emplace(RpcSuccess);
         }
         else
         {
@@ -412,7 +412,7 @@ Env::submit(JTx const& jt, std::source_location const& loc)
 }
 
 void
-Env::sign_and_submit(JTx const& jt, Json::Value params, std::source_location const& loc)
+Env::signAndSubmit(JTx const& jt, Json::Value params, std::source_location const& loc)
 {
     auto const account = lookup(jt.jv[jss::Account].asString());
     auto const& passphrase = account.name();
@@ -466,15 +466,15 @@ Env::postconditions(
                  transHuman(*parsed.ter) + "); Expected " + transToken(*jt.ter) + " (" +
                  transHuman(*jt.ter) + ")"));
     using namespace std::string_literals;
-    bad = (jt.rpcCode &&
-           !test.expect(
-               parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
-               "apply " + locStr + ": Got RPC result "s +
-                   (parsed.rpcCode ? RPC::get_error_info(*parsed.rpcCode).token.c_str()
-                                   : "NO RESULT") +
-                   " (" + parsed.rpcMessage + "); Expected " +
-                   RPC::get_error_info(jt.rpcCode->first).token.c_str() + " (" +
-                   jt.rpcCode->second + ")")) ||
+    bad =
+        (jt.rpcCode &&
+         !test.expect(
+             parsed.rpcCode == jt.rpcCode->first && parsed.rpcMessage == jt.rpcCode->second,
+             "apply " + locStr + ": Got RPC result "s +
+                 (parsed.rpcCode ? RPC::getErrorInfo(*parsed.rpcCode).token.cStr() : "NO RESULT") +
+                 " (" + parsed.rpcMessage + "); Expected " +
+                 RPC::getErrorInfo(jt.rpcCode->first).token.cStr() + " (" + jt.rpcCode->second +
+                 ")")) ||
         bad;
     // If we have an rpcCode (just checked), then the rpcException check is
     // optional - the 'error' field may not be defined, but if it is, it must
@@ -540,7 +540,7 @@ Env::autofillSig(JTx& jt)
 {
     auto& jv = jt.jv;
 
-    scope_success const success([&]() {
+    ScopeSuccess const success([&]() {
         // Call all the post-signers after the main signers or autofill are done
         for (auto const& signer : jt.postSigners)
             signer(*this, jt);
@@ -603,7 +603,7 @@ Env::autofill(JTx& jt)
     {
         if (!parseFailureExpected_)
             test.log << "parse failed:\n" << pretty(jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
 }
 
@@ -620,7 +620,7 @@ Env::st(JTx const& jt)
     catch (jtx::ParseError const&)
     {
         test.log << "Exception: ParseError\n" << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
 
     try
@@ -646,7 +646,7 @@ Env::ust(JTx const& jt)
     catch (jtx::ParseError const&)
     {
         test.log << "Exception: ParseError\n" << pretty(jt.jv) << std::endl;
-        Rethrow();
+        rethrow();
     }
 
     try
@@ -667,7 +667,7 @@ Env::doRpc(
 {
     auto response = rpcClient(args, app().config(), app().getLogs(), apiVersion, headers);
 
-    for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL); ++ctr)
+    for (unsigned ctr = 0; (ctr < retries_) and (response.first == RpcInternal); ++ctr)
     {
         JLOG(journal.error()) << "Env::doRpc error, retrying, attempt #" << ctr + 1 << " ...";
         std::this_thread::sleep_for(std::chrono::milliseconds(500));

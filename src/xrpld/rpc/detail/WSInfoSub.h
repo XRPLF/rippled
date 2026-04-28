@@ -23,14 +23,14 @@ public:
     {
         auto const& h = ws->request();
         if (ipAllowed(
-                beast::IPAddressConversion::fromAsio(ws->remote_endpoint()).address(),
+                beast::IPAddressConversion::fromAsio(ws->remoteEndpoint()).address(),
                 ws->port().secure_gateway_nets_v4,
                 ws->port().secure_gateway_nets_v6))
         {
             auto it = h.find("X-User");
             if (it != h.end())
                 user_ = it->value();
-            fwdfor_ = std::string(forwardedFor(h));
+            fwdfor_ = std::string(::xrpl::forwardedFor(h));
         }
     }
 
@@ -41,7 +41,7 @@ public:
     }
 
     [[nodiscard]] std::string_view
-    forwarded_for() const
+    forwardedFor() const
     {
         return fwdfor_;
     }

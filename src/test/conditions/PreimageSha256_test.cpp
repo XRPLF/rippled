@@ -12,7 +12,7 @@
 
 namespace xrpl::cryptoconditions {
 
-class PreimageSha256_test : public beast::unit_test::suite
+class PreimageSha256_test : public beast::unit_test::Suite
 {
     Buffer
     hexblob(std::string const& s)

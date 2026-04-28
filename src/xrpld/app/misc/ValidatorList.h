@@ -80,7 +80,7 @@ enum class PublisherStatus {
 };
 
 std::string
-toString(ListDisposition disposition);
+to_string(ListDisposition disposition);
 
 /** Changes in trusted nodes after updating validator list
  */
@@ -240,18 +240,18 @@ class ValidatorList
     // have any "remaining" manifests. It is assumed to be perennially
     // "available". The "validUntil" field is set to the highest possible
     // value of the field, hence this list is always valid.
-    PublisherList localPublisherList;
+    PublisherList localPublisherList_;
 
     // The master public keys of the current negative UNL
     hash_set<PublicKey> negativeUNL_;
 
     // Currently supported versions of publisher list format
-    static constexpr std::uint32_t supportedListVersions[]{1, 2};
+    static constexpr std::uint32_t kSUPPORTED_LIST_VERSIONS[]{1, 2};
     // In the initial release, to prevent potential abuse and attacks, any VL
     // collection with more than 5 entries will be considered malformed.
-    static constexpr std::size_t maxSupportedBlobs = 5;
+    static constexpr std::size_t kMAX_SUPPORTED_BLOBS = 5;
     // Prefix of the file name used to store cache files.
-    static std::string const filePrefix_;
+    static std::string const kFILE_PREFIX;
 
 public:
     ValidatorList(
@@ -293,9 +293,9 @@ public:
     {
         explicit MessageWithHash() = default;
         explicit MessageWithHash(
-            std::shared_ptr<Message> const& message_,
-            uint256 hash_,
-            std::size_t num_);
+            std::shared_ptr<Message> const& message,
+            uint256 hash,
+            std::size_t num);
         std::shared_ptr<Message> message;
         uint256 hash;
         std::size_t numVLs = 0;
@@ -569,7 +569,7 @@ public:
         May be called concurrently
     */
     void
-    for_each_listed(std::function<void(PublicKey const&, bool)> func) const;
+    forEachListed(std::function<void(PublicKey const&, bool)> func) const;
 
     /** Invokes the callback once for every available publisher list's raw
         data members
@@ -599,7 +599,7 @@ public:
         May be called concurrently
     */
     void
-    for_each_available(
+    forEachAvailable(
         std::function<void(
             std::string const& manifest,
             std::uint32_t version,
@@ -646,7 +646,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        shared_lock const read_lock{mutex_};
+        shared_lock const readLock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 

@@ -20,7 +20,7 @@ makeOverlay(
     ServerHandler& serverHandler,
     Resource::Manager& resourceManager,
     Resolver& resolver,
-    boost::asio::io_context& io_context,
+    boost::asio::io_context& ioContext,
     BasicConfig const& config,
     beast::insight::Collector::ptr const& collector);
 

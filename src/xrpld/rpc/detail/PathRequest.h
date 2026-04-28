@@ -122,23 +122,23 @@ private:
 
     PathRequestManager& owner_;
 
-    std::weak_ptr<InfoSub> wpSubscriber;  // Who this request came from
-    std::function<void(void)> fCompletion;
+    std::weak_ptr<InfoSub> wpSubscriber_;  // Who this request came from
+    std::function<void(void)> fCompletion_;
     Resource::Consumer& consumer_;  // Charge according to source currencies
 
-    Json::Value jvId;
-    Json::Value jvStatus;  // Last result
+    Json::Value jvId_;
+    Json::Value jvStatus_;  // Last result
 
     // Client request parameters
-    std::optional<AccountID> raSrcAccount;
-    std::optional<AccountID> raDstAccount;
-    STAmount saDstAmount;
-    std::optional<STAmount> saSendMax;
+    std::optional<AccountID> raSrcAccount_;
+    std::optional<AccountID> raDstAccount_;
+    STAmount saDstAmount_;
+    std::optional<STAmount> saSendMax_;
 
-    std::set<Asset> sciSourceAssets;
+    std::set<Asset> sciSourceAssets_;
     std::map<Asset, STPathSet> context_;
 
-    std::optional<uint256> domain;
+    std::optional<uint256> domain_;
 
     bool convert_all_{};
 
@@ -146,16 +146,16 @@ private:
     LedgerIndex lastIndex_;
     bool inProgress_;
 
-    int iLevel;
-    bool bLastSuccess;
+    int iLevel_;
+    bool bLastSuccess_;
 
-    int const iIdentifier;
+    int const iIdentifier_;
 
     std::chrono::steady_clock::time_point const created_;
     std::chrono::steady_clock::time_point quick_reply_;
     std::chrono::steady_clock::time_point full_reply_;
 
-    static unsigned int const max_paths_ = 4;
+    static unsigned int const kMAX_PATHS = 4;
 };
 
 }  // namespace xrpl

@@ -47,7 +47,7 @@ AMMVote::preflight(PreflightContext const& ctx)
         return res;
     }
 
-    if (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)
+    if (ctx.tx[sfTradingFee] > kTRADING_FEE_THRESHOLD)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid trading fee.";
         return temBAD_FEE;
@@ -65,12 +65,12 @@ AMMVote::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.debug()) << "AMM Vote: Invalid asset pair.";
         return terNO_AMM;
     }
-    if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::zero)
+    if (ammSle->getFieldAmount(sfLPTokenBalance) == beast::kZERO)
     {
         return tecAMM_EMPTY;
     }
     if (auto const lpTokensNew = ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
-        lpTokensNew == beast::zero)
+        lpTokensNew == beast::kZERO)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: account is not LP.";
         return tecAMM_INVALID_TOKENS;
@@ -106,7 +106,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
     {
         auto const entryAccount = entry[sfAccount];
         auto lpTokens = ammLPHolds(sb, *ammSle, entryAccount, ctx.journal);
-        if (lpTokens == beast::zero)
+        if (lpTokens == beast::kZERO)
         {
             JLOG(j.debug()) << "AMMVote::applyVote, account " << entryAccount << " is not LP";
             continue;
@@ -128,7 +128,8 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             newEntry.setFieldU16(sfTradingFee, feeVal);
         newEntry.setFieldU32(
             sfVoteWeight,
-            static_cast<std::int64_t>(Number(lpTokens) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
+            static_cast<std::int64_t>(
+                Number(lpTokens) * kVOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
 
         // Find an entry with the least tokens/fee. Make the order deterministic
         // if the tokens/fees are equal.
@@ -142,7 +143,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             minAccount = entryAccount;
             minFee = feeVal;
         }
-        updatedVoteSlots.push_back(std::move(newEntry));
+        updatedVoteSlots.pushBack(std::move(newEntry));
     }
 
     // The account doesn't have the vote entry.
@@ -155,7 +156,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             newEntry.setFieldU32(
                 sfVoteWeight,
                 static_cast<std::int64_t>(
-                    Number(lpTokensNew) * VOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
+                    Number(lpTokensNew) * kVOTE_WEIGHT_SCALE_FACTOR / lptAMMBalance));
             newEntry.setAccountID(sfAccount, account);
             num += feeNew * lpTokensNew;
             den += lpTokensNew;
@@ -165,12 +166,12 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
             }
             else
             {
-                updatedVoteSlots.push_back(std::move(newEntry));
+                updatedVoteSlots.pushBack(std::move(newEntry));
             }
         };
         // Add new entry if the number of the vote entries
         // is less than Max.
-        if (updatedVoteSlots.size() < VOTE_MAX_SLOTS)
+        if (updatedVoteSlots.size() < kVOTE_MAX_SLOTS)
         {
             update();
             // Add the entry if the account has more tokens than
@@ -182,7 +183,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
             // Remove the least token vote entry.
-            num -= Number((*entry)[~sfTradingFee].value_or(0)) * *minTokens;
+            num -= Number((*entry)[~sfTradingFee].valueOr(0)) * *minTokens;
             den -= *minTokens;
             update(minPos);
         }
@@ -208,7 +209,7 @@ applyVote(ApplyContext& ctx, Sandbox& sb, AccountID const& account, beast::Journ
         if (ammSle->isFieldPresent(sfAuctionSlot))
         {
             auto& auctionSlot = ammSle->peekFieldObject(sfAuctionSlot);
-            if (auto const discountedFee = fee / AUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
+            if (auto const discountedFee = fee / kAUCTION_SLOT_DISCOUNTED_FEE_FRACTION)
             {
                 auctionSlot.setFieldU16(sfDiscountedFee, discountedFee);
             }

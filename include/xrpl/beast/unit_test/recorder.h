@@ -10,7 +10,7 @@
 namespace beast::unit_test {
 
 /** A test runner that stores the results. */
-class recorder : public runner
+class Recorder : public Runner
 {
 private:
     Results results_;
@@ -18,7 +18,7 @@ private:
     CaseResults case_;
 
 public:
-    recorder() = default;
+    Recorder() = default;
 
     /** Returns a report with the results of all completed suites. */
     [[nodiscard]] Results const&

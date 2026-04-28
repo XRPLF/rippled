@@ -38,7 +38,7 @@ STLedgerEntry::STLedgerEntry(Keylet const& k) : STObject(sfLedgerEntry), key_(k.
     {
         Throw<std::runtime_error>(
             "Attempt to create a SLE of unknown type " +
-            std::to_string(safe_cast<std::uint16_t>(k.type)));
+            std::to_string(safeCast<std::uint16_t>(k.type)));
     }
 
     set(format->getSOTemplate());
@@ -63,7 +63,7 @@ void
 STLedgerEntry::setSLEType()
 {
     auto format = LedgerFormats::getInstance().findByType(
-        safe_cast<LedgerEntryType>(getFieldU16(sfLedgerEntryType)));
+        safeCast<LedgerEntryType>(getFieldU16(sfLedgerEntryType)));
 
     if (format == nullptr)
         Throw<std::runtime_error>("invalid ledger entry type");

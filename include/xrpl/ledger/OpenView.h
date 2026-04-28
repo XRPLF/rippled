@@ -23,7 +23,7 @@ namespace xrpl {
 inline constexpr struct OpenLedgerT
 {
     explicit constexpr OpenLedgerT() = default;
-} kOpenLedger{};
+} kOPEN_LEDGER{};
 
 /** Batch view construction tag.
 
@@ -33,7 +33,7 @@ inline constexpr struct OpenLedgerT
 inline constexpr struct BatchViewT
 {
     explicit constexpr BatchViewT() = default;
-} kBatchView{};
+} kBATCH_VIEW{};
 
 //------------------------------------------------------------------------------
 
@@ -47,9 +47,9 @@ private:
     // Initial size for the monotonic_buffer_resource used for allocations
     // The size was chosen from the old `qalloc` code (which this replaces).
     // It is unclear how the size initially chosen in qalloc.
-    static constexpr size_t kInitialBufferSize = kilobytes(256);
+    static constexpr size_t kINITIAL_BUFFER_SIZE = kilobytes(256);
 
-    class txs_iter_impl;
+    class TxsIterImpl;
 
     struct TxData
     {
@@ -139,7 +139,7 @@ public:
         std::shared_ptr<void const> hold = nullptr);
 
     OpenView(OpenLedgerT, Rules const& rules, std::shared_ptr<ReadView const> const& base)
-        : OpenView(kOpenLedger, &*base, rules, base)
+        : OpenView(kOPEN_LEDGER, &*base, rules, base)
     {
     }
 
@@ -200,19 +200,19 @@ public:
     std::shared_ptr<SLE const>
     read(Keylet const& k) const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesBegin() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesEnd() const override;
 
-    std::unique_ptr<sles_type::iter_base>
+    std::unique_ptr<SlesType::iter_base>
     slesUpperBound(uint256 const& key) const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsBegin() const override;
 
-    std::unique_ptr<txs_type::iter_base>
+    std::unique_ptr<TxsType::iter_base>
     txsEnd() const override;
 
     bool

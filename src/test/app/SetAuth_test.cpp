@@ -20,7 +20,7 @@
 
 namespace xrpl::test {
 
-struct SetAuth_test : public beast::unit_test::suite
+struct SetAuth_test : public beast::unit_test::Suite
 {
     // Set just the tfSetfAuth flag on a trust line
     // If the trust line does not exist, then it should
@@ -32,7 +32,7 @@ struct SetAuth_test : public beast::unit_test::suite
         Json::Value jv;
         jv[jss::Account] = account.human();
         jv[jss::LimitAmount] =
-            STAmount(Issue{to_currency(currency), dest}).getJson(JsonOptions::kNONE);
+            STAmount(Issue{toCurrency(currency), dest}).getJson(JsonOptions::KNone);
         jv[jss::TransactionType] = jss::TrustSet;
         jv[jss::Flags] = tfSetfAuth;
         return jv;
@@ -47,7 +47,7 @@ struct SetAuth_test : public beast::unit_test::suite
 
         Env env(*this);
 
-        env.fund(XRP(100000), "alice", "bob", gw);
+        env.fund(kXRP(100000), "alice", "bob", gw);
         env(fset(gw, asfRequireAuth));
         env.close();
         env(auth(gw, "alice", "USD"));

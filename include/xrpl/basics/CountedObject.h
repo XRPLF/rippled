@@ -108,8 +108,8 @@ private:
     static auto&
     getCounter() noexcept
     {
-        static CountedObjects::Counter c{beast::type_name<Object>()};
-        return c;
+        static CountedObjects::Counter kC{beast::typeName<Object>()};
+        return kC;
     }
 
     CountedObject() noexcept

@@ -97,7 +97,7 @@ private:
     bool needsUpdate_{false};
 
 public:
-    static constexpr int staticValence = 32;
+    static constexpr int kSTATIC_VALENCE = 32;
 
     using iterator = boost::transform_iterator<Transform, map_type::right_map::const_iterator>;
 
@@ -143,11 +143,11 @@ public:
 
     /** Called when an outbound connection handshake completes. */
     void
-    on_success(beast::IP::Endpoint const& endpoint);
+    onSuccess(beast::IP::Endpoint const& endpoint);
 
     /** Called when an outbound connection attempt fails to handshake. */
     void
-    on_failure(beast::IP::Endpoint const& endpoint);
+    onFailure(beast::IP::Endpoint const& endpoint);
 
     /** Stores the cache in the persistent database on a timer. */
     void

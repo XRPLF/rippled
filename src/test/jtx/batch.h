@@ -26,7 +26,7 @@ Json::Value
 outer(jtx::Account const& account, uint32_t seq, STAmount const& fee, std::uint32_t flags);
 
 /** Adds a new Batch Txn on a JTx and autofills. */
-class inner
+class Inner
 {
 private:
     Json::Value txn_;
@@ -34,7 +34,7 @@ private:
     std::optional<std::uint32_t> ticket_;
 
 public:
-    inner(
+    Inner(
         Json::Value txn,
         std::uint32_t const& sequence,
         std::optional<std::uint32_t> const& ticket = std::nullopt)

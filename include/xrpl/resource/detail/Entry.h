@@ -39,7 +39,7 @@ struct Entry : public beast::List<Entry>::Node
     [[nodiscard]] bool
     isUnlimited() const
     {
-        return key->kind == kindUnlimited;
+        return key->kind == KindUnlimited;
     }
 
     // Balance including remote contributions
@@ -67,7 +67,7 @@ struct Entry : public beast::List<Entry>::Node
     int refcount;
 
     // Exponentially decaying balance of resource consumption
-    DecayingSample<decayWindowSeconds, clock_type> local_balance;
+    DecayingSample<DecayWindowSeconds, clock_type> local_balance;
 
     // Normalized balance contribution from imports
     int remote_balance;

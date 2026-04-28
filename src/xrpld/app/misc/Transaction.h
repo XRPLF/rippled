@@ -345,7 +345,7 @@ public:
 
     static std::
         variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
-        load(uint256 const& id, Application& app, error_code_i& ec);
+        load(uint256 const& id, Application& app, ErrorCodeI& ec);
 
     static std::
         variant<std::pair<std::shared_ptr<Transaction>, std::shared_ptr<TxMeta>>, TxSearched>
@@ -353,7 +353,7 @@ public:
             uint256 const& id,
             Application& app,
             ClosedInterval<uint32_t> const& range,
-            error_code_i& ec);
+            ErrorCodeI& ec);
 
 private:
     static std::
@@ -362,7 +362,7 @@ private:
             uint256 const& id,
             Application& app,
             std::optional<ClosedInterval<uint32_t>> const& range,
-            error_code_i& ec);
+            ErrorCodeI& ec);
 
     uint256 transactionID_;
 

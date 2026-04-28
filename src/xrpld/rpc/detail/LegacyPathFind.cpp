@@ -20,14 +20,14 @@ LegacyPathFind::LegacyPathFind(bool isAdmin, Application& app)
         return;
     }
 
-    auto const& jobCount = app.getJobQueue().getJobCountGE(jtCLIENT);
-    if (jobCount > Tuning::maxPathfindJobCount || app.getFeeTrack().isLoadedLocal())
+    auto const& jobCount = app.getJobQueue().getJobCountGE(JtClient);
+    if (jobCount > Tuning::kMAX_PATHFIND_JOB_COUNT || app.getFeeTrack().isLoadedLocal())
         return;
 
     while (true)
     {
         int prevVal = inProgress.load();
-        if (prevVal >= Tuning::maxPathfindsInProgress)
+        if (prevVal >= Tuning::kMAX_PATHFINDS_IN_PROGRESS)
             return;
 
         if (inProgress.compare_exchange_strong(

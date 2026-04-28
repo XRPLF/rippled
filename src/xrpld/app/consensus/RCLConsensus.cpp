@@ -123,14 +123,14 @@ RCLConsensus::Adaptor::Adaptor(
     , inboundTransactions_{inboundTransactions}
     , j_(journal)
     , validatorKeys_(validatorKeys)
-    , valCookie_(1 + rand_int(crypto_prng(), std::numeric_limits<std::uint64_t>::max() - 1))
+    , valCookie_(1 + randInt(cryptoPrng(), std::numeric_limits<std::uint64_t>::max() - 1))
     , nUnlVote_(validatorKeys_.nodeID, j_)
 {
     XRPL_ASSERT(valCookie_, "xrpl::RCLConsensus::Adaptor::Adaptor : nonzero cookie");
 
     JLOG(j_.info()) << "Consensus engine started (cookie: " + std::to_string(valCookie_) + ")";
 
-    if (validatorKeys_.nodeID != beast::zero && validatorKeys_.keys)
+    if (validatorKeys_.nodeID != beast::kZERO && validatorKeys_.keys)
     {
         JLOG(j_.info()) << "Validator identity: "
                         << toBase58(TokenType::NodePublic, validatorKeys_.keys->masterPublicKey);
@@ -159,7 +159,7 @@ RCLConsensus::Adaptor::acquireLedger(LedgerHash const& hash)
             // Tell the ledger acquire system that we need the consensus ledger
             acquiringLedger_ = hash;
 
-            app_.getJobQueue().addJob(jtADVANCE, "GetConsL1", [id = hash, &app = app_, this]() {
+            app_.getJobQueue().addJob(JtAdvance, "GetConsL1", [id = hash, &app = app_, this]() {
                 JLOG(j_.debug()) << "JOB advanceLedger getConsensusLedger1 started";
                 app.getInboundLedgers().acquireAsync(id, 0, InboundLedger::Reason::CONSENSUS);
             });
@@ -350,8 +350,8 @@ RCLConsensus::Adaptor::onClose(
         Serializer s(2048);
         tx.first->add(s);
         initialSet->addItem(
-            SHAMapNodeType::tnTRANSACTION_NM,
-            make_shamapitem(tx.first->getTransactionID(), s.slice()));
+            SHAMapNodeType::TnTransactionNm,
+            makeShamapitem(tx.first->getTransactionID(), s.slice()));
     }
 
     // Add pseudo-transactions to the set
@@ -400,7 +400,7 @@ RCLConsensus::Adaptor::onClose(
     }
 
     // Needed because of the move below.
-    auto const setHash = initialSet->getHash().as_uint256();
+    auto const setHash = initialSet->getHash().asUint256();
 
     return Result{
         std::move(initialSet),
@@ -436,7 +436,7 @@ RCLConsensus::Adaptor::onAccept(
     bool const validating)
 {
     app_.getJobQueue().addJob(
-        jtACCEPT,
+        JtAccept,
         "AcceptLedger",
         // NOLINTNEXTLINE(cppcoreguidelines-misleading-capture-default-by-value)
         [=, this, cj = std::move(consensusJson)]() mutable {
@@ -499,7 +499,7 @@ RCLConsensus::Adaptor::doAccept(
     // we use the hash of the set.
     //
     // FIXME: Use a std::vector and a custom sorter instead of CanonicalTXSet?
-    CanonicalTXSet retriableTxs{result.txns.map->getHash().as_uint256()};
+    CanonicalTXSet retriableTxs{result.txns.map->getHash().asUint256()};
 
     JLOG(j_.debug()) << "Building canonical tx set: " << retriableTxs.key();
 
@@ -653,7 +653,7 @@ RCLConsensus::Adaptor::doAccept(
             localTxs_.getTxSet(),
             anyDisputes,
             retriableTxs,
-            tapNONE,
+            TapNone,
             "consensus",
             [&](OpenView& view, beast::Journal j) {
                 // Stuff the ledger with transactions from the queue.
@@ -733,8 +733,8 @@ RCLConsensus::Adaptor::notify(
     s.set_ledgerseq(ledger.seq());
     s.set_networktime(app_.getTimeKeeper().now().time_since_epoch().count());
     s.set_ledgerhashprevious(
-        ledger.parentID().begin(), std::decay_t<decltype(ledger.parentID())>::bytes);
-    s.set_ledgerhash(ledger.id().begin(), std::decay_t<decltype(ledger.id())>::bytes);
+        ledger.parentID().begin(), std::decay_t<decltype(ledger.parentID())>::kBYTES);
+    s.set_ledgerhash(ledger.id().begin(), std::decay_t<decltype(ledger.id())>::kBYTES);
 
     std::uint32_t uMin = 0, uMax = 0;
     if (!ledgerMaster_.getFullValidatedRange(uMin, uMax))
@@ -769,7 +769,7 @@ RCLConsensus::Adaptor::buildLCL(
             XRPL_ASSERT(
                 replayData->parent()->header().hash == previousLedger.id(),
                 "xrpl::RCLConsensus::Adaptor::buildLCL : parent hash match");
-            return buildLedger(*replayData, tapNONE, app_, j_);
+            return buildLedger(*replayData, TapNone, app_, j_);
         }
         return buildLedger(
             previousLedger.ledger,
@@ -831,7 +831,7 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
             v.setFieldU32(sfLedgerSequence, ledger.seq());
 
             if (proposing)
-                v.setFlag(vfFullValidation);
+                v.setFlag(kVF_FULL_VALIDATION);
 
             // Attest to the hash of what we consider to be the last fully
             // validated ledger. This may be the hash of the ledger we are
@@ -890,8 +890,8 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
 void
 RCLConsensus::Adaptor::onModeChange(ConsensusMode before, ConsensusMode after)
 {
-    JLOG(j_.info()) << "Consensus mode change before=" << toString(before)
-                    << ", after=" << toString(after);
+    JLOG(j_.info()) << "Consensus mode change before=" << to_string(before)
+                    << ", after=" << to_string(after);
 
     // If we were proposing but aren't any longer, we need to reset the
     // censorship tracking to avoid bogus warnings.
@@ -931,7 +931,7 @@ RCLConsensus::timerEntry(
         ss << "During consensus timerEntry: " << mn.what();
         JLOG(j_.error()) << ss.str();
         CLOG(clog) << ss.str();
-        Rethrow();
+        rethrow();
     }
 }
 
@@ -947,7 +947,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
     {
         // This should never happen
         JLOG(j_.error()) << "During consensus gotTxSet: " << mn.what();
-        Rethrow();
+        rethrow();
     }
 }
 
@@ -1090,7 +1090,7 @@ RclConsensusLogger::~RclConsensusLogger()
     std::stringstream outSs;
     outSs << header_ << "duration " << (duration.count() / 1000) << '.' << std::setw(3)
           << std::setfill('0') << (duration.count() % 1000) << "s. " << ss_->str();
-    j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
+    j_.sink().writeAlways(beast::severities::KInfo, outSs.str());
 }
 
 }  // namespace xrpl

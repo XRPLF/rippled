@@ -21,8 +21,8 @@ public:
 
     Book() = default;
 
-    Book(Asset const& in_, Asset const& out_, std::optional<uint256> const& domain_)
-        : in(in_), out(out_), domain(domain_)
+    Book(Asset const& in, Asset const& out, std::optional<uint256> const& domain)
+        : in(in), out(out), domain(domain)
     {
     }
 };
@@ -140,8 +140,8 @@ private:
     using issue_hasher = std::hash<xrpl::Issue>;
     using mptissue_hasher = std::hash<xrpl::MPTIssue>;
 
-    issue_hasher m_issue_hasher;
-    mptissue_hasher m_mptissue_hasher;
+    issue_hasher m_issue_hasher_;
+    mptissue_hasher m_mptissue_hasher_;
 
 public:
     explicit hash() = default;
@@ -151,11 +151,11 @@ public:
     {
         return asset.visit(
             [&](xrpl::Issue const& issue) {
-                value_type const result(m_issue_hasher(issue));
+                value_type const result(m_issue_hasher_(issue));
                 return result;
             },
             [&](xrpl::MPTIssue const& issue) {
-                value_type const result(m_mptissue_hasher(issue));
+                value_type const result(m_mptissue_hasher_(issue));
                 return result;
             });
     }

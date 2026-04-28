@@ -45,7 +45,7 @@ LedgerHandler::check()
     bool const needsLedger = params.isMember(jss::ledger) || params.isMember(jss::ledger_hash) ||
         params.isMember(jss::ledger_index);
     if (!needsLedger)
-        return Status::OK;
+        return Status::kOK;
 
     if (auto s = lookupLedger(ledger_, context_, result_))
         return s;
@@ -68,13 +68,14 @@ LedgerHandler::check()
         // Until some sane way to get full ledgers has been implemented,
         // disallow retrieving all state nodes.
         if (!isUnlimited(context_.role))
-            return rpcNO_PERMISSION;
+            return RpcNoPermission;
 
         if (context_.app.getFeeTrack().isLoadedLocal() && !isUnlimited(context_.role))
         {
-            return rpcTOO_BUSY;
+            return RpcTooBusy;
         }
-        context_.loadType = binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
+        context_.loadType =
+            binary ? Resource::kFEE_MEDIUM_BURDEN_RPC : Resource::kFEE_HEAVY_BURDEN_RPC;
     }
     if (queue)
     {
@@ -82,13 +83,13 @@ LedgerHandler::check()
         {
             // It doesn't make sense to request the queue
             // with a non-existent or closed/validated ledger.
-            return rpcINVALID_PARAMS;
+            return RpcInvalidParams;
         }
 
         queueTxs_ = context_.app.getTxQ().getTxs();
     }
 
-    return Status::OK;
+    return Status::kOK;
 }
 
 void
@@ -103,20 +104,20 @@ LedgerHandler::writeResult(Json::Value& value)
     {
         auto& master = context_.app.getLedgerMaster();
         {
-            auto& closed = value[jss::closed] = Json::objectValue;
+            auto& closed = value[jss::closed] = Json::ObjectValue;
             addJson(closed, {*master.getClosedLedger(), &context_, 0});
         }
         {
-            auto& open = value[jss::open] = Json::objectValue;
+            auto& open = value[jss::open] = Json::ObjectValue;
             addJson(open, {*master.getCurrentLedger(), &context_, 0});
         }
     }
 
-    Json::Value warnings{Json::arrayValue};
+    Json::Value warnings{Json::ArrayValue};
     if (context_.params.isMember(jss::type))
     {
-        Json::Value& w = warnings.append(Json::objectValue);
-        w[jss::id] = warnRPC_FIELDS_DEPRECATED;
+        Json::Value& w = warnings.append(Json::ObjectValue);
+        w[jss::id] = WarnRpcFieldsDeprecated;
         w[jss::message] =
             "Some fields from your request are deprecated. Please check the "
             "documentation at "
@@ -142,7 +143,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
     if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        if (status.toErrorCode() == RpcInvalidParams)
         {
             errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }
@@ -256,8 +257,8 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
             {
                 if (!(inBase && inDesired))
                 {
-                    auto lb = desired->stateMap().lower_bound(k);
-                    auto ub = desired->stateMap().upper_bound(k);
+                    auto lb = desired->stateMap().lowerBound(k);
+                    auto ub = desired->stateMap().upperBound(k);
                     if (lb != desired->stateMap().end())
                         obj->set_predecessor(lb->key().data(), lb->key().size());
                     if (ub != desired->stateMap().end())
@@ -270,7 +271,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             auto bookBase = keylet::quality({ltDIR_NODE, k}, 0);
                             if (!inBase && inDesired)
                             {
-                                auto firstBook = desired->stateMap().upper_bound(bookBase.key);
+                                auto firstBook = desired->stateMap().upperBound(bookBase.key);
                                 if (firstBook != desired->stateMap().end() &&
                                     firstBook->key() < getQualityNext(bookBase.key) &&
                                     firstBook->key() == k)
@@ -283,7 +284,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                             }
                             if (inBase && !inDesired)
                             {
-                                auto oldFirstBook = base->stateMap().upper_bound(bookBase.key);
+                                auto oldFirstBook = base->stateMap().upperBound(bookBase.key);
                                 if (oldFirstBook != base->stateMap().end() &&
                                     oldFirstBook->key() < getQualityNext(bookBase.key) &&
                                     oldFirstBook->key() == k)
@@ -291,7 +292,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                                     auto succ = response.add_book_successors();
                                     succ->set_book_base(bookBase.key.data(), bookBase.key.size());
                                     auto newFirstBook =
-                                        desired->stateMap().upper_bound(bookBase.key);
+                                        desired->stateMap().upperBound(bookBase.key);
 
                                     if (newFirstBook != desired->stateMap().end() &&
                                         newFirstBook->key() < getQualityNext(bookBase.key))

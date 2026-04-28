@@ -179,7 +179,7 @@ PropertyStream::Source::add(Source& source)
 
     XRPL_ASSERT(
         source.parent_ == nullptr, "beast::PropertyStream::Source::add : null source parent");
-    children_.push_back(source.item_);
+    children_.pushBack(source.item_);
     source.parent_ = this;
 }
 
@@ -192,7 +192,7 @@ PropertyStream::Source::remove(Source& child)
 
     XRPL_ASSERT(
         child.parent_ == this, "beast::PropertyStream::Source::remove : child parent match");
-    children_.erase(children_.iterator_to(child.item_));
+    children_.erase(children_.iteratorTo(child.item_));
     child.parent_ = nullptr;
 }
 
@@ -210,7 +210,7 @@ PropertyStream::Source::removeAll()
 //------------------------------------------------------------------------------
 
 void
-PropertyStream::Source::write_one(PropertyStream& stream)
+PropertyStream::Source::writeOne(PropertyStream& stream)
 {
     Map map(name_, stream);
     onWrite(map);
@@ -242,7 +242,7 @@ PropertyStream::Source::write(PropertyStream& stream, std::string const& path)
     }
     else
     {
-        result.first->write_one(stream);
+        result.first->writeOne(stream);
     }
 }
 
@@ -256,7 +256,7 @@ PropertyStream::Source::find(std::string path)
     {
         if (!rooted)
         {
-            std::string const name(peel_name(&path));
+            std::string const name(peelName(&path));
             source = findOneDeep(name);
             if (source == nullptr)
                 return std::make_pair(nullptr, deep);
@@ -294,7 +294,7 @@ PropertyStream::Source::peelTrailingSlashstar(std::string* path)
 }
 
 std::string
-PropertyStream::Source::peel_name(std::string* path)
+PropertyStream::Source::peelName(std::string* path)
 {
     if (path->empty())
         return "";
@@ -342,7 +342,7 @@ PropertyStream::Source::findPath(std::string path)
     Source* source(this);
     do
     {
-        std::string const name(peel_name(&path));
+        std::string const name(peelName(&path));
         if (name.empty())
             break;
         source = source->findOne(name);

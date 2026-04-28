@@ -39,7 +39,7 @@ authCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials> c
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfAuthorizeCredentials.jsonName] = Json::arrayValue;
+    jv[sfAuthorizeCredentials.jsonName] = Json::ArrayValue;
     auto& arr(jv[sfAuthorizeCredentials.jsonName]);
     for (auto const& o : auth)
     {
@@ -57,7 +57,7 @@ unauthCredentials(jtx::Account const& account, std::vector<AuthorizeCredentials>
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
-    jv[sfUnauthorizeCredentials.jsonName] = Json::arrayValue;
+    jv[sfUnauthorizeCredentials.jsonName] = Json::ArrayValue;
     auto& arr(jv[sfUnauthorizeCredentials.jsonName]);
     for (auto const& o : auth)
     {

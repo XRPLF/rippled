@@ -22,7 +22,7 @@
 
 namespace xrpl {
 
-class Discrepancy_test : public beast::unit_test::suite
+class Discrepancy_test : public beast::unit_test::Suite
 {
     // This is a legacy test ported from js/coffee. The ledger
     // state was originally setup via a saved ledger file and the relevant
@@ -44,11 +44,11 @@ class Discrepancy_test : public beast::unit_test::suite
         Account const a6{"A6"};
         Account const a7{"A7"};
 
-        env.fund(XRP(2000), a1);
-        env.fund(XRP(1000), a2, a6, a7);
-        env.fund(XRP(5000), a3);
-        env.fund(XRP(1000000), a4);
-        env.fund(XRP(600000), a5);
+        env.fund(kXRP(2000), a1);
+        env.fund(kXRP(1000), a2, a6, a7);
+        env.fund(kXRP(5000), a3);
+        env.fund(kXRP(1000000), a4);
+        env.fund(kXRP(600000), a5);
         env.close();
 
         env(trust(a1, a3["CNY"](200000)));
@@ -75,25 +75,25 @@ class Discrepancy_test : public beast::unit_test::suite
         env(pay(a6, a7, a6["CNY"](261)));
         env.close();
 
-        env(offer(a4, XRP(49147), a2["JPY"](34501)));
-        env(offer(a5, a3["CNY"](3150), XRP(80086)));
-        env(offer(a7, XRP(1233), a6["CNY"](25)));
+        env(offer(a4, kXRP(49147), a2["JPY"](34501)));
+        env(offer(a5, a3["CNY"](3150), kXRP(80086)));
+        env(offer(a7, kXRP(1233), a6["CNY"](25)));
         env.close();
 
         test::PathSet const payPaths{
             test::TestPath{a2["JPY"], a2},
-            test::TestPath{XRP, a2["JPY"], a2},
-            test::TestPath{a6, XRP, a2["JPY"], a2}};
+            test::TestPath{kXRP, a2["JPY"], a2},
+            test::TestPath{a6, kXRP, a2["JPY"], a2}};
 
         env(pay(a1, a1, a2["JPY"](1000)),
             json(payPaths.json()),
-            txflags(tfPartialPayment),
-            sendmax(a3["CNY"](56)));
+            Txflags(tfPartialPayment),
+            Sendmax(a3["CNY"](56)));
         env.close();
 
         Json::Value jrq2;
         jrq2[jss::binary] = false;
-        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::kNONE)[jss::hash];
+        jrq2[jss::transaction] = env.tx()->getJson(JsonOptions::KNone)[jss::hash];
         jrq2[jss::id] = 3;
         auto jrr = env.rpc("json", "tx", to_string(jrq2))[jss::result];
         uint64_t const fee{jrr[jss::Fee].asUInt()};

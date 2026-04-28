@@ -27,7 +27,7 @@
 
 namespace xrpl::test {
 
-class LedgerRPC_test : public beast::unit_test::suite
+class LedgerRPC_test : public beast::unit_test::Suite
 {
     void
     checkErrorValue(Json::Value const& jv, std::string const& err, std::string const& msg)
@@ -38,7 +38,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(jv[jss::error] == err);
         if (msg.empty())
         {
-            BEAST_EXPECT(jv[jss::error_message] == Json::nullValue || jv[jss::error_message] == "");
+            BEAST_EXPECT(jv[jss::error_message] == Json::NullValue || jv[jss::error_message] == "");
         }
         else if (BEAST_EXPECT(jv.isMember(jss::error_message)))
         {
@@ -107,7 +107,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         auto const usd = gw["USD"];
         Account const bob{"bob"};
 
-        env.fund(XRP(10000), gw, bob);
+        env.fund(kXRP(10000), gw, bob);
         env.close();
         env.trust(usd(1000), bob);
         env.close();
@@ -156,7 +156,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         {
             // Request a ledger with a very large (double) sequence.
             auto const ret = env.rpc("json", "ledger", "{ \"ledger_index\" : 2e15 }");
-            BEAST_EXPECT(RPC::contains_error(ret));
+            BEAST_EXPECT(RPC::containsError(ret));
             BEAST_EXPECT(ret[jss::error_message] == "Invalid parameters.");
         }
 
@@ -253,13 +253,13 @@ class LedgerRPC_test : public beast::unit_test::suite
         cfg->FEES.reference_fee = 10;
         Env env{*this, std::move(cfg), FeatureBitset{}};  // hashes requested below
                                                           // assume no amendments
-        env.fund(XRP(10000), "alice");
+        env.fund(kXRP(10000), "alice");
         env.close();
-        env.fund(XRP(10000), "bob");
+        env.fund(kXRP(10000), "bob");
         env.close();
-        env.fund(XRP(10000), "jim");
+        env.fund(kXRP(10000), "jim");
         env.close();
-        env.fund(XRP(10000), "jill");
+        env.fund(kXRP(10000), "jill");
 
         {
             // access via the legacy ledger field, keyword index values
@@ -431,11 +431,11 @@ class LedgerRPC_test : public beast::unit_test::suite
         Account const bob{"bob"};
         Account const charlie{"charlie"};
         Account const daria{"daria"};
-        env.fund(XRP(10000), alice);
-        env.fund(XRP(10000), bob);
+        env.fund(kXRP(10000), alice);
+        env.fund(kXRP(10000), bob);
         env.close();
-        env.fund(XRP(10000), charlie);
-        env.fund(XRP(10000), daria);
+        env.fund(kXRP(10000), charlie);
+        env.fund(kXRP(10000), daria);
         env.close();
 
         auto jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
@@ -453,13 +453,13 @@ class LedgerRPC_test : public beast::unit_test::suite
         BEAST_EXPECT(env.current()->header().seq == 5);
         // Put some txs in the queue
         // Alice
-        auto aliceSeq = env.Seq(alice);
-        env(pay(alice, "george", XRP(1000)), LastLedgerSeq(7), Ter(terQUEUED));
-        env(offer(alice, XRP(50000), alice["USD"](5000)), Seq(aliceSeq + 1), Ter(terQUEUED));
+        auto aliceSeq = env.seq(alice);
+        env(pay(alice, "george", kXRP(1000)), LastLedgerSeq(7), Ter(terQUEUED));
+        env(offer(alice, kXRP(50000), alice["USD"](5000)), Seq(aliceSeq + 1), Ter(terQUEUED));
         env(noop(alice), Seq(aliceSeq + 2), Ter(terQUEUED));
         // Bob
         auto batch = [&env](Account a) {
-            auto aSeq = env.Seq(a);
+            auto aSeq = env.seq(a);
             // Enough fee to get in front of alice in the queue
             for (int i = 0; i < 10; ++i)
             {
@@ -665,7 +665,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 jrr.isMember(jss::warnings) && jrr[jss::warnings].isArray() &&
                 jrr[jss::warnings].size() == 1 &&
-                jrr[jss::warnings][0u][jss::id].asInt() == warnRPC_FIELDS_DEPRECATED);
+                jrr[jss::warnings][0u][jss::id].asInt() == WarnRpcFieldsDeprecated);
         }
         {
             Json::Value jvParams;
@@ -684,7 +684,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 jrr.isMember(jss::warnings) && jrr[jss::warnings].isArray() &&
                 jrr[jss::warnings].size() == 1 &&
-                jrr[jss::warnings][0u][jss::id].asInt() == warnRPC_FIELDS_DEPRECATED);
+                jrr[jss::warnings][0u][jss::id].asInt() == WarnRpcFieldsDeprecated);
         }
     }
 

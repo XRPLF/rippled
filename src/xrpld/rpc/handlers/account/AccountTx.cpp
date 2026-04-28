@@ -57,7 +57,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         if ((params.isMember(jss::ledger_index_min) || params.isMember(jss::ledger_index_max)) &&
             (params.isMember(jss::ledger_hash) || params.isMember(jss::ledger_index)))
         {
-            RPC::Status const status{rpcINVALID_PARAMS, "invalidParams"};
+            RPC::Status const status{RpcInvalidParams, "invalidParams"};
             status.inject(response);
             return response;
         }
@@ -80,7 +80,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         auto& hashValue = params[jss::ledger_hash];
         if (!hashValue.isString())
         {
-            RPC::Status const status{rpcINVALID_PARAMS, "ledgerHashNotString"};
+            RPC::Status const status{RpcInvalidParams, "ledgerHashNotString"};
             status.inject(response);
             return response;
         }
@@ -88,7 +88,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
         LedgerHash hash;
         if (!hash.parseHex(hashValue.asString()))
         {
-            RPC::Status const status{rpcINVALID_PARAMS, "ledgerHashMalformed"};
+            RPC::Status const status{RpcInvalidParams, "ledgerHashMalformed"};
             status.inject(response);
             return response;
         }
@@ -119,7 +119,7 @@ parseLedgerArgs(RPC::Context& context, Json::Value const& params)
             }
             else
             {
-                RPC::Status const status{rpcINVALID_PARAMS, "ledger_index string malformed"};
+                RPC::Status const status{RpcInvalidParams, "ledger_index string malformed"};
                 status.inject(response);
                 return response;
             }
@@ -140,8 +140,8 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
     {
         // Don't have a validated ledger range.
         if (context.apiVersion == 1)
-            return rpcLGR_IDXS_INVALID;
-        return rpcNOT_SYNCED;
+            return RpcLgrIdxsInvalid;
+        return RpcNotSynced;
     }
 
     std::uint32_t uLedgerMin = uValidatedMin;
@@ -162,7 +162,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
                         if ((ls.max > uValidatedMax && ls.max != -1) ||
                             (ls.min < uValidatedMin && ls.min != 0))
                         {
-                            return rpcLGR_IDX_MALFORMED;
+                            return RpcLgrIdxMalformed;
                         }
                     }
                     if (ls.min > uValidatedMin)
@@ -176,8 +176,8 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
                     if (uLedgerMax < uLedgerMin)
                     {
                         if (context.apiVersion == 1)
-                            return rpcLGR_IDXS_INVALID;
-                        return rpcINVALID_LGR_RANGE;
+                            return RpcLgrIdxsInvalid;
+                        return RpcInvalidLgrRange;
                     }
                 }
                 else
@@ -194,11 +194,11 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
                     if (!validated || ledgerView->header().seq > uValidatedMax ||
                         ledgerView->header().seq < uValidatedMin)
                     {
-                        return rpcLGR_NOT_VALIDATED;
+                        return RpcLgrNotValidated;
                     }
                     uLedgerMin = uLedgerMax = ledgerView->header().seq;
                 }
-                return RPC::Status::OK;
+                return RPC::Status::kOK;
             },
             *ledgerSpecifier);
 
@@ -211,7 +211,7 @@ getLedgerRange(RPC::Context& context, std::optional<LedgerSpecifier> const& ledg
 std::pair<AccountTxResult, RPC::Status>
 doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
 {
-    context.loadType = Resource::feeMediumBurdenRPC;
+    context.loadType = Resource::kFEE_MEDIUM_BURDEN_RPC;
 
     AccountTxResult result;
 
@@ -269,7 +269,7 @@ doAccountTxHelp(RPC::Context& context, AccountTxArgs const& args)
     result.limit = args.limit;
     JLOG(context.j.debug()) << __func__ << " : finished";
 
-    return {result, rpcSUCCESS};
+    return {result, RpcSuccess};
 }
 
 Json::Value
@@ -280,7 +280,7 @@ populateJsonResponse(
 {
     Json::Value response;
     RPC::Status const& error = res.second;
-    if (error.toErrorCode() != rpcSUCCESS)
+    if (error.toErrorCode() != RpcSuccess)
     {
         error.inject(response);
     }
@@ -293,7 +293,7 @@ populateJsonResponse(
         response[jss::ledger_index_min] = result.ledgerRange.min;
         response[jss::ledger_index_max] = result.ledgerRange.max;
 
-        Json::Value& jvTxns = (response[jss::transactions] = Json::arrayValue);
+        Json::Value& jvTxns = (response[jss::transactions] = Json::ArrayValue);
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
@@ -303,14 +303,14 @@ populateJsonResponse(
             {
                 if (txn)
                 {
-                    Json::Value& jvObj = jvTxns.append(Json::objectValue);
+                    Json::Value& jvObj = jvTxns.append(Json::ObjectValue);
                     jvObj[jss::validated] = true;
 
                     auto const jsonTx = (context.apiVersion > 1 ? jss::tx_json : jss::tx);
                     if (context.apiVersion > 1)
                     {
                         jvObj[jsonTx] = txn->getJson(
-                            JsonOptions::kINCLUDE_DATE | JsonOptions::kDISABLE_API_PRIOR_V2, false);
+                            JsonOptions::KIncludeDate | JsonOptions::KDisableApiPriorV2, false);
                         jvObj[jss::hash] = to_string(txn->getID());
                         jvObj[jss::ledger_index] = txn->getLedger();
                         jvObj[jss::ledger_hash] =
@@ -318,18 +318,18 @@ populateJsonResponse(
 
                         if (auto closeTime =
                                 context.ledgerMaster.getCloseTimeBySeq(txn->getLedger()))
-                            jvObj[jss::close_time_iso] = to_string_iso(*closeTime);
+                            jvObj[jss::close_time_iso] = toStringIso(*closeTime);
                     }
                     else
                     {
-                        jvObj[jsonTx] = txn->getJson(JsonOptions::kINCLUDE_DATE);
+                        jvObj[jsonTx] = txn->getJson(JsonOptions::KIncludeDate);
                     }
 
                     auto const& sttx = txn->getSTransaction();
                     RPC::insertDeliverMax(jvObj[jsonTx], sttx->getTxnType(), context.apiVersion);
                     if (txnMeta)
                     {
-                        jvObj[jss::meta] = txnMeta->getJson(JsonOptions::kINCLUDE_DATE);
+                        jvObj[jss::meta] = txnMeta->getJson(JsonOptions::KIncludeDate);
                         insertDeliveredAmount(jvObj[jss::meta], context, txn, *txnMeta);
                         RPC::insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
                         RPC::insertMPTokenIssuanceID(jvObj[jss::meta], sttx, *txnMeta);
@@ -351,7 +351,7 @@ populateJsonResponse(
 
             for (auto const& binaryData : std::get<TxnsDataBinary>(result.transactions))
             {
-                Json::Value& jvObj = jvTxns.append(Json::objectValue);
+                Json::Value& jvObj = jvTxns.append(Json::ObjectValue);
 
                 jvObj[jss::tx_blob] = strHex(std::get<0>(binaryData));
                 auto const jsonMeta = (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
@@ -363,7 +363,7 @@ populateJsonResponse(
 
         if (result.marker)
         {
-            response[jss::marker] = Json::objectValue;
+            response[jss::marker] = Json::ObjectValue;
             response[jss::marker][jss::ledger] = result.marker->ledgerSeq;
             response[jss::marker][jss::seq] = result.marker->txnSeq;
         }
@@ -387,7 +387,7 @@ Json::Value
 doAccountTx(RPC::JsonContext& context)
 {
     if (!context.app.config().useTxTables())
-        return rpcError(rpcNOT_ENABLED);
+        return rpcError(RpcNotEnabled);
 
     auto& params = context.params;
     AccountTxArgs args;
@@ -399,28 +399,28 @@ doAccountTx(RPC::JsonContext& context)
     // onwards only
     if (context.apiVersion > 1u && params.isMember(jss::binary) && !params[jss::binary].isBool())
     {
-        return RPC::invalid_field_error(jss::binary);
+        return RPC::invalidFieldError(jss::binary);
     }
     if (context.apiVersion > 1u && params.isMember(jss::forward) && !params[jss::forward].isBool())
     {
-        return RPC::invalid_field_error(jss::forward);
+        return RPC::invalidFieldError(jss::forward);
     }
 
-    if (auto const err = RPC::readLimitField(args.limit, RPC::Tuning::accountTx, context))
+    if (auto const err = RPC::readLimitField(args.limit, RPC::Tuning::kACCOUNT_TX, context))
         return *err;
 
     args.binary = params.isMember(jss::binary) && params[jss::binary].asBool();
     args.forward = params.isMember(jss::forward) && params[jss::forward].asBool();
 
     if (!params.isMember(jss::account))
-        return RPC::missing_field_error(jss::account);
+        return RPC::missingFieldError(jss::account);
 
     if (!params[jss::account].isString())
-        return RPC::invalid_field_error(jss::account);
+        return RPC::invalidFieldError(jss::account);
 
     auto const account = parseBase58<AccountID>(params[jss::account].asString());
     if (!account)
-        return rpcError(rpcACT_MALFORMED);
+        return rpcError(RpcActMalformed);
 
     args.account = *account;
 
@@ -436,11 +436,11 @@ doAccountTx(RPC::JsonContext& context)
     {
         auto& token = params[jss::marker];
         if (!token.isMember(jss::ledger) || !token.isMember(jss::seq) ||
-            !token[jss::ledger].isConvertibleTo(Json::ValueType::uintValue) ||
-            !token[jss::seq].isConvertibleTo(Json::ValueType::uintValue))
+            !token[jss::ledger].isConvertibleTo(Json::ValueType::UintValue) ||
+            !token[jss::seq].isConvertibleTo(Json::ValueType::UintValue))
         {
             RPC::Status const status{
-                rpcINVALID_PARAMS,
+                RpcInvalidParams,
                 "invalid marker. Provide ledger index via ledger field, and "
                 "transaction sequence number via seq field"};
             status.inject(response);

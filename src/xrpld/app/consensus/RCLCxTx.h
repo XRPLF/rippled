@@ -52,10 +52,10 @@ public:
     {
         friend class RCLTxSet;
         //! The SHAMap representing the transactions.
-        std::shared_ptr<SHAMap> map;
+        std::shared_ptr<SHAMap> map_;
 
     public:
-        MutableTxSet(RCLTxSet const& src) : map{src.map->snapShot(true)}
+        MutableTxSet(RCLTxSet const& src) : map_{src.map->snapShot(true)}
         {
         }
 
@@ -67,7 +67,7 @@ public:
         bool
         insert(Tx const& t)
         {
-            return map->addItem(SHAMapNodeType::tnTRANSACTION_NM, t.tx);
+            return map_->addItem(SHAMapNodeType::TnTransactionNm, t.tx);
         }
 
         /** Remove a transaction from the set.
@@ -78,7 +78,7 @@ public:
         bool
         erase(Tx::ID const& entry)
         {
-            return map->delItem(entry);
+            return map_->delItem(entry);
         }
     };
 
@@ -95,7 +95,7 @@ public:
 
         @param m MutableTxSet that will become fixed
      */
-    RCLTxSet(MutableTxSet const& m) : map{m.map->snapShot(false)}
+    RCLTxSet(MutableTxSet const& m) : map{m.map_->snapShot(false)}
     {
     }
 
@@ -131,7 +131,7 @@ public:
     [[nodiscard]] ID
     id() const
     {
-        return map->getHash().as_uint256();
+        return map->getHash().asUint256();
     }
 
     /** Find transactions not in common between this and another transaction

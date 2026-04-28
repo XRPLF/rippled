@@ -17,13 +17,13 @@ class CaseResults
 {
 public:
     /** Holds the result of evaluating one test condition. */
-    struct test
+    struct Test
     {
-        explicit test(bool pass_) : pass(pass_)
+        explicit Test(bool pass) : pass(pass)
         {
         }
 
-        test(bool pass_, std::string reason_) : pass(pass_), reason(std::move(reason_))
+        Test(bool pass, std::string reason) : pass(pass), reason(std::move(reason))
         {
         }
 
@@ -32,7 +32,7 @@ public:
     };
 
 private:
-    class TestsT : public detail::ConstContainer<std::vector<test>>
+    class TestsT : public detail::ConstContainer<std::vector<Test>>
     {
     private:
         std::size_t failed_{0};

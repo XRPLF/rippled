@@ -60,7 +60,7 @@ invalidAMMAsset(Asset const& asset, std::optional<std::pair<Asset, Asset>> const
 {
     auto const err = asset.visit(
         [](MPTIssue const& issue) -> std::optional<NotTEC> {
-            if (issue.getIssuer() == beast::zero)
+            if (issue.getIssuer() == beast::kZERO)
                 return temBAD_MPT;
             return std::nullopt;
         },
@@ -101,7 +101,7 @@ invalidAMMAmount(
 {
     if (auto const res = invalidAMMAsset(amount.asset(), pair))
         return res;
-    if (amount < beast::zero || (!validZero && amount == beast::zero))
+    if (amount < beast::kZERO || (!validZero && amount == beast::kZERO))
         return temBAD_AMOUNT;
     return tesSUCCESS;
 }
@@ -114,12 +114,12 @@ ammAuctionTimeSlot(std::uint64_t current, STObject const& auctionSlot)
     auto const expiration = auctionSlot[sfExpiration];
     XRPL_ASSERT(
         expiration >= TOTAL_TIME_SLOT_SECS, "xrpl::ammAuctionTimeSlot : minimum expiration");
-    if (expiration >= TOTAL_TIME_SLOT_SECS)
+    if (expiration >= kTOTAL_TIME_SLOT_SECS)
     {
-        if (auto const start = expiration - TOTAL_TIME_SLOT_SECS; current >= start)
+        if (auto const start = expiration - kTOTAL_TIME_SLOT_SECS; current >= start)
         {
-            if (auto const diff = current - start; diff < TOTAL_TIME_SLOT_SECS)
-                return diff / AUCTION_SLOT_INTERVAL_DURATION;
+            if (auto const diff = current - start; diff < kTOTAL_TIME_SLOT_SECS)
+                return diff / kAUCTION_SLOT_INTERVAL_DURATION;
         }
     }
     return std::nullopt;

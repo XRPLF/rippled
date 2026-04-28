@@ -59,7 +59,7 @@ static uint256
 ledgerHash(LedgerHeader const& info)
 {
     return xrpl::sha512Half(
-        HashPrefix::ledgerMaster,
+        HashPrefix::LedgerMaster,
         std::uint32_t(info.seq),
         std::uint64_t(info.drops.drops()),
         info.parentHash,
@@ -71,7 +71,7 @@ ledgerHash(LedgerHeader const& info)
         std::uint8_t(info.closeFlags));
 }
 
-class compression_test : public beast::unit_test::suite
+class compression_test : public beast::unit_test::Suite
 {
     using Compressed = compression::Compressed;
     using Algorithm = compression::Algorithm;
@@ -140,17 +140,17 @@ public:
         manifests->mutable_list()->Reserve(n);
         for (int i = 0; i < n; i++)
         {
-            auto master = randomKeyPair(KeyType::ed25519);
-            auto signing = randomKeyPair(KeyType::ed25519);
-            STObject st(sfGeneric);
+            auto master = randomKeyPair(KeyType::Ed25519);
+            auto signing = randomKeyPair(KeyType::Ed25519);
+            STObject st(kSF_GENERIC);
             st[sfSequence] = i;
             st[sfPublicKey] = std::get<0>(master);
             st[sfSigningPubKey] = std::get<0>(signing);
             st[sfDomain] =
                 makeSlice(std::string("example") + std::to_string(i) + std::string(".com"));
             sign(
-                st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
-            sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+                st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+            sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
             Serializer s;
             st.add(s);
             auto* manifest = manifests->add_list();
@@ -182,7 +182,7 @@ public:
         int const fund = 10000;
         auto const alice = Account("alice");
         auto const bob = Account("bob");
-        env.fund(XRP(fund), "alice", "bob");
+        env.fund(kXRP(fund), "alice", "bob");
         env.trust(bob["USD"](fund), alice);
         env.close();
 
@@ -206,7 +206,7 @@ public:
         auto transaction = std::make_shared<protocol::TMTransaction>();
         transaction->set_rawtransaction(usdTxBlob);
         transaction->set_status(protocol::tsNEW);
-        transaction->set_receivetimestamp(rand_int<std::uint64_t>());
+        transaction->set_receivetimestamp(randInt<std::uint64_t>());
         transaction->set_deferred(true);
 
         return transaction;
@@ -297,21 +297,21 @@ public:
     {
         auto list = std::make_shared<protocol::TMValidatorList>();
 
-        auto master = randomKeyPair(KeyType::ed25519);
-        auto signing = randomKeyPair(KeyType::ed25519);
-        STObject st(sfGeneric);
+        auto master = randomKeyPair(KeyType::Ed25519);
+        auto signing = randomKeyPair(KeyType::Ed25519);
+        STObject st(kSF_GENERIC);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
         st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
-        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
         Serializer s;
         st.add(s);
         list->set_manifest(s.data(), s.size());
         list->set_version(3);
         STObject const signature(sfSignature);
-        xrpl::sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        xrpl::sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
         Serializer s1;
         st.add(s1);
         list->set_signature(s1.data(), s1.size());
@@ -324,21 +324,21 @@ public:
     {
         auto list = std::make_shared<protocol::TMValidatorListCollection>();
 
-        auto master = randomKeyPair(KeyType::ed25519);
-        auto signing = randomKeyPair(KeyType::ed25519);
-        STObject st(sfGeneric);
+        auto master = randomKeyPair(KeyType::Ed25519);
+        auto signing = randomKeyPair(KeyType::Ed25519);
+        STObject st(kSF_GENERIC);
         st[sfSequence] = 0;
         st[sfPublicKey] = std::get<0>(master);
         st[sfSigningPubKey] = std::get<0>(signing);
         st[sfDomain] = makeSlice(std::string("example.com"));
-        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(master), sfMasterSignature);
-        sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(master), sfMasterSignature);
+        sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
         Serializer s;
         st.add(s);
         list->set_manifest(s.data(), s.size());
         list->set_version(4);
         STObject const signature(sfSignature);
-        xrpl::sign(st, HashPrefix::manifest, KeyType::ed25519, std::get<1>(signing));
+        xrpl::sign(st, HashPrefix::Manifest, KeyType::Ed25519, std::get<1>(signing));
         Serializer s1;
         st.add(s1);
         auto& blob = *list->add_blobs();
@@ -350,7 +350,7 @@ public:
     void
     testProtocol()
     {
-        auto thresh = beast::severities::Severity::kInfo;
+        auto thresh = beast::severities::Severity::KInfo;
         auto logs = std::make_unique<Logs>(thresh);
 
         protocol::TMManifests const manifests;

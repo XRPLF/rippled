@@ -140,10 +140,10 @@ public:
         if (iter == db_->table.end())
         {
             pObject->reset();
-            return notFound;
+            return NotFound;
         }
         *pObject = iter->second;
-        return ok;
+        return Ok;
     }
 
     std::pair<std::vector<std::shared_ptr<NodeObject>>, Status>
@@ -155,7 +155,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != ok)
+            if (status != Ok)
             {
                 results.push_back({});
             }
@@ -165,7 +165,7 @@ public:
             }
         }
 
-        return {results, ok};
+        return {results, Ok};
     }
 
     void

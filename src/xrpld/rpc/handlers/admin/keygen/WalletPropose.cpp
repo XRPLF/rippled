@@ -68,13 +68,13 @@ walletPropose(Json::Value const& params)
     {
         if (!params[jss::key_type].isString())
         {
-            return RPC::expected_field_error(jss::key_type, "string");
+            return RPC::expectedFieldError(jss::key_type, "string");
         }
 
         keyType = keyTypeFromString(params[jss::key_type].asString());
 
         if (!keyType)
-            return rpcError(rpcINVALID_PARAMS);
+            return rpcError(RpcInvalidParams);
     }
 
     // XrplLib encodes seed used to generate an Ed25519 wallet in a
@@ -96,10 +96,10 @@ walletPropose(Json::Value const& params)
 
             // If the user *explicitly* requests a key type other than
             // Ed25519 we return an error.
-            if (keyType.value_or(KeyType::ed25519) != KeyType::ed25519)
-                return rpcError(rpcBAD_SEED);
+            if (keyType.value_or(KeyType::Ed25519) != KeyType::Ed25519)
+                return rpcError(RpcBadSeed);
 
-            keyType = KeyType::ed25519;
+            keyType = KeyType::Ed25519;
         }
     }
 
@@ -122,11 +122,11 @@ walletPropose(Json::Value const& params)
     }
 
     if (!keyType)
-        keyType = KeyType::secp256k1;
+        keyType = KeyType::Secp256k1;
 
     auto const publicKey = generateKeyPair(*keyType, *seed).first;
 
-    Json::Value obj(Json::objectValue);
+    Json::Value obj(Json::ObjectValue);
 
     auto const seed1751 = seedAs1751(*seed);
     auto const seedHex = strHex(*seed);

@@ -65,16 +65,16 @@ namespace xrpl {
 namespace detail {
 
 template <class T>
-using test_hardened_unordered_set = std::unordered_set<T, hardened_hash<>>;
+using test_hardened_unordered_set = std::unordered_set<T, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_map = std::unordered_map<T, int, hardened_hash<>>;
+using test_hardened_unordered_map = std::unordered_map<T, int, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_multiset = std::unordered_multiset<T, hardened_hash<>>;
+using test_hardened_unordered_multiset = std::unordered_multiset<T, HardenedHash<>>;
 
 template <class T>
-using test_hardened_unordered_multimap = std::unordered_multimap<T, int, hardened_hash<>>;
+using test_hardened_unordered_multimap = std::unordered_multimap<T, int, HardenedHash<>>;
 
 }  // namespace detail
 
@@ -125,7 +125,7 @@ public:
 
     template <class Hasher>
     friend void
-    hashAppend(Hasher& h, UnsignedInteger const& a) noexcept
+    hash_append(Hasher& h, UnsignedInteger const& a) noexcept
     {
         using beast::hash_append;
         hash_append(h, a.vec_);
@@ -152,7 +152,7 @@ static_assert(sha256_t::kBITS == 256, "sha256_t must have 256 bits");
 
 namespace xrpl {
 
-class hardened_hash_test : public beast::unit_test::suite
+class hardened_hash_test : public beast::unit_test::Suite
 {
 public:
     template <class T>
@@ -160,7 +160,7 @@ public:
     check()
     {
         T t{};
-        hardened_hash<>()(t);
+        HardenedHash<>()(t);
         pass();
     }
 

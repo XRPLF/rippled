@@ -75,7 +75,7 @@ STNumber::add(Serializer& s) const
     auto const exponent = value.exponent();
 
     SField const& field = getFName();
-    if (field.shouldMeta(SField::sMD_NeedsAsset))
+    if (field.shouldMeta(SField::SMdNeedsAsset))
     {
         // asset is defined in the STTakesAsset base class
         if (asset_)
@@ -257,7 +257,7 @@ numberFromJson(SField const& field, Json::Value const& value)
     }
 
     return STNumber{
-        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::normalized{}}};
+        field, Number{parts.negative, parts.mantissa, parts.exponent, Number::Normalized{}}};
 }
 
 }  // namespace xrpl

@@ -12,7 +12,7 @@ namespace beast {
 class NullJournalSink : public Journal::Sink
 {
 public:
-    NullJournalSink() : Sink(severities::kDisabled, false)
+    NullJournalSink() : Sink(severities::KDisabled, false)
     {
     }
 
@@ -38,7 +38,7 @@ public:
     [[nodiscard]] severities::Severity
     threshold() const override
     {
-        return severities::kDisabled;
+        return severities::KDisabled;
     }
 
     void

@@ -23,7 +23,7 @@ public:
         While future versions of this code will never lower
         this limit, they may opt to raise it.
     */
-    static constexpr std::size_t maxPreimageLength = 128;
+    static constexpr std::size_t kMAX_PREIMAGE_LENGTH = 128;
 
     /** Parse the payload for a PreimageSha256 condition
 
@@ -49,25 +49,25 @@ public:
 
         if (!isPrimitive(p) || !isContextSpecific(p))
         {
-            ec = error::incorrect_encoding;
+            ec = Error::IncorrectEncoding;
             return {};
         }
 
         if (p.tag != 0)
         {
-            ec = error::unexpected_tag;
+            ec = Error::UnexpectedTag;
             return {};
         }
 
         if (s.size() != p.length)
         {
-            ec = error::trailing_garbage;
+            ec = Error::TrailingGarbage;
             return {};
         }
 
-        if (s.size() > maxPreimageLength)
+        if (s.size() > kMAX_PREIMAGE_LENGTH)
         {
-            ec = error::preimage_too_long;
+            ec = Error::PreimageTooLong;
             return {};
         }
 
@@ -93,7 +93,7 @@ public:
     [[nodiscard]] Type
     type() const override
     {
-        return Type::preimageSha256;
+        return Type::PreimageSha256;
     }
 
     [[nodiscard]] Buffer

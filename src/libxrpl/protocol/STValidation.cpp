@@ -38,26 +38,26 @@ STValidation::validationFormat()
     // guarantee the initialization order.
     // clang-format off
     static SOTemplate const kFORMAT{
-        {sfFlags,               soeREQUIRED},
-        {sfLedgerHash,          soeREQUIRED},
-        {sfLedgerSequence,      soeREQUIRED},
-        {sfCloseTime,           soeOPTIONAL},
-        {sfLoadFee,             soeOPTIONAL},
-        {sfAmendments,          soeOPTIONAL},
-        {sfBaseFee,             soeOPTIONAL},
-        {sfReserveBase,         soeOPTIONAL},
-        {sfReserveIncrement,    soeOPTIONAL},
-        {sfSigningTime,         soeREQUIRED},
-        {sfSigningPubKey,       soeREQUIRED},
-        {sfSignature,           soeREQUIRED},
-        {sfConsensusHash,       soeOPTIONAL},
-        {sfCookie,              soeDEFAULT},
-        {sfValidatedHash,       soeOPTIONAL},
-        {sfServerVersion,       soeOPTIONAL},
+        {sfFlags,               SoeRequired},
+        {sfLedgerHash,          SoeRequired},
+        {sfLedgerSequence,      SoeRequired},
+        {sfCloseTime,           SoeOptional},
+        {sfLoadFee,             SoeOptional},
+        {sfAmendments,          SoeOptional},
+        {sfBaseFee,             SoeOptional},
+        {sfReserveBase,         SoeOptional},
+        {sfReserveIncrement,    SoeOptional},
+        {sfSigningTime,         SoeRequired},
+        {sfSigningPubKey,       SoeRequired},
+        {sfSignature,           SoeRequired},
+        {sfConsensusHash,       SoeOptional},
+        {sfCookie,              SoeDefault},
+        {sfValidatedHash,       SoeOptional},
+        {sfServerVersion,       SoeOptional},
         // featureXRPFees
-        {sfBaseFeeDrops,          soeOPTIONAL},
-        {sfReserveBaseDrops,      soeOPTIONAL},
-        {sfReserveIncrementDrops, soeOPTIONAL},
+        {sfBaseFeeDrops,          SoeOptional},
+        {sfReserveBaseDrops,      SoeOptional},
+        {sfReserveIncrementDrops, SoeOptional},
     };
     // clang-format on
 
@@ -67,7 +67,7 @@ STValidation::validationFormat()
 uint256
 STValidation::getSigningHash() const
 {
-    return STObject::getSigningHash(HashPrefix::validation);
+    return STObject::getSigningHash(HashPrefix::Validation);
 }
 
 uint256
@@ -107,7 +107,7 @@ STValidation::isValid() const noexcept
             getSignerPublic(),
             getSigningHash(),
             makeSlice(getFieldVL(sfSignature)),
-            (getFlags() & vfFullyCanonicalSig) != 0u);
+            (getFlags() & kVF_FULLY_CANONICAL_SIG) != 0u);
     }
 
     return valid_.value();
@@ -116,7 +116,7 @@ STValidation::isValid() const noexcept
 bool
 STValidation::isFull() const noexcept
 {
-    return (getFlags() & vfFullValidation) != 0;
+    return (getFlags() & kVF_FULL_VALIDATION) != 0;
 }
 
 Blob

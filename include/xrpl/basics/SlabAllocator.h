@@ -42,7 +42,7 @@ class SlabAllocator
         std::uint8_t* l_ = nullptr;
 
         // The next memory block
-        SlabBlock* next_;
+        SlabBlock* next;
 
         // The underlying memory block:
         std::uint8_t const* const p_ = nullptr;
@@ -51,7 +51,7 @@ class SlabAllocator
         std::size_t const size_;
 
         SlabBlock(SlabBlock* next, std::uint8_t* data, std::size_t size, std::size_t item)
-            : next_(next), p_(data), size_(size)
+            : next(next), p_(data), size_(size)
         {
             // We don't need to grab the mutex here, since we're the only
             // ones with access at this moment.
@@ -92,7 +92,7 @@ class SlabAllocator
             std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::lock_guard const l(m_);
+                std::lock_guard const lock(m_);
 
                 ret = l_;
 
@@ -121,7 +121,7 @@ class SlabAllocator
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard const l(m_);
+            std::lock_guard const lock(m_);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
@@ -201,7 +201,7 @@ public:
             if (auto ret = slab->allocate())
                 return ret;
 
-            slab = slab->next_;
+            slab = slab->next;
         }
 
         // No slab can satisfy our request, so we attempt to allocate a new
@@ -242,7 +242,7 @@ public:
 
         // Link the new slab
         while (!slabs_.compare_exchange_weak(
-            slab->next_, slab, std::memory_order_release, std::memory_order_relaxed))
+            slab->next, slab, std::memory_order_release, std::memory_order_relaxed))
         {
             ;  // Nothing to do
         }
@@ -265,7 +265,7 @@ public:
             "xrpl::SlabAllocator::SlabAllocator::deallocate : non-null "
             "input");
 
-        for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next_)
+        for (auto slab = slabs_.load(); slab != nullptr; slab = slab->next)
         {
             if (slab->own(ptr))
             {
@@ -294,16 +294,16 @@ public:
         friend class SlabAllocatorSet;
 
     private:
-        std::size_t extra;
-        std::size_t alloc;
-        std::size_t align;
+        std::size_t extra_;
+        std::size_t alloc_;
+        std::size_t align_;
 
     public:
         constexpr SlabConfig(
-            std::size_t extra_,
-            std::size_t alloc_ = 0,
-            std::size_t align_ = alignof(Type))
-            : extra(extra_), alloc(alloc_), align(align_)
+            std::size_t extra,
+            std::size_t alloc = 0,
+            std::size_t align = alignof(Type))
+            : extra_(extra), alloc_(alloc), align_(align)
         {
         }
     };
@@ -313,22 +313,22 @@ public:
         // Ensure that the specified allocators are sorted from smallest to
         // largest by size:
         std::sort(std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
-            return a.extra < b.extra;
+            return a.extra_ < b.extra_;
         });
 
         // We should never have two slabs of the same size
         if (std::adjacent_find(
                 std::begin(cfg), std::end(cfg), [](SlabConfig const& a, SlabConfig const& b) {
-                    return a.extra == b.extra;
+                    return a.extra_ == b.extra_;
                 }) != cfg.end())
         {
             throw std::runtime_error(
-                "SlabAllocatorSet<" + beast::type_name<Type>() + ">: duplicate slab size");
+                "SlabAllocatorSet<" + beast::typeName<Type>() + ">: duplicate slab size");
         }
 
         for (auto const& c : cfg)
         {
-            auto& a = allocators_.emplace_back(c.extra, c.alloc, c.align);
+            auto& a = allocators_.emplace_back(c.extra_, c.alloc_, c.align_);
 
             if (a.size() > maxSize_)
                 maxSize_ = a.size();

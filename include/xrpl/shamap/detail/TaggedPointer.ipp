@@ -13,13 +13,13 @@ namespace {
 // Given n children, an array of size `*std::lower_bound(boundaries.begin(),
 // boundaries.end(), n);` is used to store the children. Note that the last
 // element must be the number of children in a dense array.
-constexpr std::array<std::uint8_t, 4> boundaries{2, 4, 6, SHAMapInnerNode::branchFactor};
+constexpr std::array<std::uint8_t, 4> boundaries{2, 4, 6, SHAMapInnerNode::kBRANCH_FACTOR};
 static_assert(
     boundaries.size() <= 4,
     "The hashesAndChildren member uses a tagged array format with two bits "
     "reserved for the tag. This supports at most 4 values.");
 static_assert(
-    boundaries.back() == SHAMapInnerNode::branchFactor,
+    boundaries.back() == SHAMapInnerNode::kBRANCH_FACTOR,
     "Last element of boundaries must be number of children in a dense array");
 
 // Terminology: A chunk is the memory being allocated from a block. A block
@@ -146,17 +146,17 @@ void
 TaggedPointer::iterChildren(std::uint16_t isBranch, F&& f) const
 {
     auto [numAllocated, hashes, _] = getHashesAndChildren();
-    if (numAllocated == SHAMapInnerNode::branchFactor)
+    if (numAllocated == SHAMapInnerNode::kBRANCH_FACTOR)
     {
         // dense case
-        for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
             f(hashes[i]);
     }
     else
     {
         // sparse case
         int curHashI = 0;
-        for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
         {
             if ((1 << i) & isBranch)
             {
@@ -174,10 +174,10 @@ template <class F>
 void
 TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
 {
-    if (capacity() == SHAMapInnerNode::branchFactor)
+    if (capacity() == SHAMapInnerNode::kBRANCH_FACTOR)
     {
         // dense case
-        for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
         {
             if ((1 << i) & isBranch)
             {
@@ -189,7 +189,7 @@ TaggedPointer::iterNonEmptyChildIndexes(std::uint16_t isBranch, F&& f) const
     {
         // sparse case
         int curHashI = 0;
-        for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
         {
             if ((1 << i) & isBranch)
             {
@@ -274,7 +274,7 @@ inline TaggedPointer::TaggedPointer(
         auto [srcDstNumAllocated, srcDstHashes, srcDstChildren] = getHashesAndChildren();
         bool const srcDstIsDense = isDense();
         int srcDstIndex = 0;
-        for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
         {
             auto const mask = (1 << i);
             bool const inSrc = (srcBranches & mask);
@@ -353,7 +353,7 @@ inline TaggedPointer::TaggedPointer(
         bool const srcIsDense = src.isDense();
         bool const dstIsDense = dst.isDense();
         int srcIndex = 0, dstIndex = 0;
-        for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
         {
             auto const mask = (1 << i);
             bool const inSrc = (srcBranches & mask);
@@ -439,7 +439,7 @@ inline TaggedPointer::TaggedPointer(
     std::tie(newNumAllocated, newHashes, newChildren) = newHashesAndChildren.getHashesAndChildren();
     std::tie(std::ignore, oldHashes, oldChildren) = getHashesAndChildren();
 
-    if (newNumAllocated == SHAMapInnerNode::branchFactor)
+    if (newNumAllocated == SHAMapInnerNode::kBRANCH_FACTOR)
     {
         // new arrays are dense, old arrays are sparse
         iterNonEmptyChildIndexes(isBranch, [&](auto branchNum, auto indexNum) {
@@ -448,7 +448,7 @@ inline TaggedPointer::TaggedPointer(
                 intr_ptr::SharedPtr<SHAMapTreeNode>{std::move(oldChildren[indexNum])};
         });
         // Run the constructors for the remaining elements
-        for (int i = 0; i < SHAMapInnerNode::branchFactor; ++i)
+        for (int i = 0; i < SHAMapInnerNode::kBRANCH_FACTOR; ++i)
         {
             if ((1 << i) & isBranch)
                 continue;
@@ -507,19 +507,19 @@ TaggedPointer::operator=(TaggedPointer&& other)
 [[nodiscard]] inline std::pair<std::uint8_t, void*>
 TaggedPointer::decode() const
 {
-    return {tp_ & tagMask, reinterpret_cast<void*>(tp_ & ptrMask)};
+    return {tp_ & kTAG_MASK, reinterpret_cast<void*>(tp_ & kPTR_MASK)};
 }
 
 [[nodiscard]] inline std::uint8_t
 TaggedPointer::capacity() const
 {
-    return boundaries[tp_ & tagMask];
+    return boundaries[tp_ & kTAG_MASK];
 }
 
 [[nodiscard]] inline bool
 TaggedPointer::isDense() const
 {
-    return (tp_ & tagMask) == boundaries.size() - 1;
+    return (tp_ & kTAG_MASK) == boundaries.size() - 1;
 }
 
 [[nodiscard]] inline std::tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
@@ -536,7 +536,7 @@ TaggedPointer::getHashesAndChildren() const
 [[nodiscard]] inline SHAMapHash*
 TaggedPointer::getHashes() const
 {
-    return reinterpret_cast<SHAMapHash*>(tp_ & ptrMask);
+    return reinterpret_cast<SHAMapHash*>(tp_ & kPTR_MASK);
 };
 
 [[nodiscard]] inline intr_ptr::SharedPtr<SHAMapTreeNode>*

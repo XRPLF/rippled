@@ -51,7 +51,7 @@ doLedgerData(RPC::JsonContext& context)
     {
         Json::Value const& jMarker = params[jss::marker];
         if (!(jMarker.isString() && key.parseHex(jMarker.asString())))
-            return RPC::expected_field_error(jss::marker, "valid");
+            return RPC::expectedFieldError(jss::marker, "valid");
     }
 
     bool const isBinary = params[jss::binary].asBool();
@@ -61,7 +61,7 @@ doLedgerData(RPC::JsonContext& context)
     {
         Json::Value const& jLimit = params[jss::limit];
         if (!jLimit.isIntegral())
-            return RPC::expected_field_error(jss::limit, "integer");
+            return RPC::expectedFieldError(jss::limit, "integer");
 
         limit = jLimit.asInt();
     }
@@ -88,13 +88,13 @@ doLedgerData(RPC::JsonContext& context)
         return jvResult;
     }
     Json::Value& nodes = jvResult[jss::state];
-    if (nodes.type() == Json::nullValue)
+    if (nodes.type() == Json::NullValue)
     {
-        nodes = Json::Value(Json::arrayValue);
+        nodes = Json::Value(Json::ArrayValue);
     }
 
     auto e = lpLedger->sles.end();
-    for (auto i = lpLedger->sles.upper_bound(key); i != e; ++i)
+    for (auto i = lpLedger->sles.upperBound(key); i != e; ++i)
     {
         auto sle = lpLedger->read(keylet::unchecked((*i)->key()));
         if (limit-- <= 0)
@@ -109,13 +109,13 @@ doLedgerData(RPC::JsonContext& context)
         {
             if (isBinary)
             {
-                Json::Value& entry = nodes.append(Json::objectValue);
+                Json::Value& entry = nodes.append(Json::ObjectValue);
                 entry[jss::data] = serializeHex(*sle);
                 entry[jss::index] = to_string(sle->key());
             }
             else
             {
-                Json::Value& entry = nodes.append(sle->getJson(JsonOptions::kNONE));
+                Json::Value& entry = nodes.append(sle->getJson(JsonOptions::KNone));
                 entry[jss::index] = to_string(sle->key());
             }
         }
@@ -135,7 +135,7 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
     if (auto status = RPC::ledgerFromRequest(ledger, context))
     {
         grpc::Status errorStatus;
-        if (status.toErrorCode() == rpcINVALID_PARAMS)
+        if (status.toErrorCode() == RpcInvalidParams)
         {
             errorStatus = grpc::Status(grpc::StatusCode::INVALID_ARGUMENT, status.message());
         }
@@ -168,12 +168,12 @@ doLedgerDataGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerDataRequest>& con
         if (*key < startKey)
             return {response, {grpc::StatusCode::INVALID_ARGUMENT, "end marker out of range"}};
 
-        e = ledger->sles.upper_bound(*key);
+        e = ledger->sles.upperBound(*key);
     }
 
     int maxLimit = RPC::Tuning::pageLength(true);
 
-    for (auto i = ledger->sles.upper_bound(startKey); i != e; ++i)
+    for (auto i = ledger->sles.upperBound(startKey); i != e; ++i)
     {
         auto sle = ledger->read(keylet::unchecked((*i)->key()));
         if (maxLimit-- <= 0)

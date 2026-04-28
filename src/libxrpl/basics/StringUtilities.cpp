@@ -34,7 +34,7 @@ sqlBlobLiteral(Blob const& blob)
 }
 
 bool
-parseUrl(parsedURL& pUrl, std::string const& strUrl)
+parseUrl(ParsedUrl& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
     static boost::regex const kRE_URL(
@@ -74,7 +74,7 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
     // We need to use Endpoint to parse the domain to
     // strip surrounding brackets from IPv6 addresses,
     // e.g. [::1] => ::1.
-    auto const result = beast::IP::Endpoint::from_string_checked(domain);
+    auto const result = beast::IP::Endpoint::fromStringChecked(domain);
     pUrl.domain = result ? result->address().to_string() : domain;
     std::string const port = smMatch[5];
     if (!port.empty())
@@ -94,14 +94,14 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
 }
 
 std::string
-trim_whitespace(std::string str)
+trimWhitespace(std::string str)
 {
     boost::trim(str);
     return str;
 }
 
 std::optional<std::uint64_t>
-to_uint64(std::string const& s)
+toUint64(std::string const& s)
 {
     std::uint64_t result = 0;
     if (beast::lexicalCastChecked(result, s))

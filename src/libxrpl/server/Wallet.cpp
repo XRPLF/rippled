@@ -151,13 +151,13 @@ getNodeIdentity(soci::session& session)
             auto const pk = parseBase58<PublicKey>(TokenType::NodePublic, pubKO.value_or(""));
 
             // Only use if the public and secret keys are a pair
-            if (sk && pk && (*pk == derivePublicKey(KeyType::secp256k1, *sk)))
+            if (sk && pk && (*pk == derivePublicKey(KeyType::Secp256k1, *sk)))
                 return {*pk, *sk};
         }
     }
 
     // If a valid identity wasn't found, we randomly generate a new one:
-    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::secp256k1);
+    auto [newpublicKey, newsecretKey] = randomKeyPair(KeyType::Secp256k1);
 
     session << str(
         boost::format(
@@ -169,10 +169,10 @@ getNodeIdentity(soci::session& session)
     return {newpublicKey, newsecretKey};
 }
 
-std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual>
+std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual>
 getPeerReservationTable(soci::session& session, beast::Journal j)
 {
-    std::unordered_set<PeerReservation, beast::uhash<>, KeyEqual> table;
+    std::unordered_set<PeerReservation, beast::Uhash<>, KeyEqual> table;
     // These values must be boost::optionals (not std) because SOCI expects
     // boost::optionals.
     boost::optional<std::string> valPubKey, valDesc;
@@ -259,7 +259,7 @@ readAmendments(
 {
     // lambda that converts the internally stored int to an AmendmentVote.
     auto intToVote = [](boost::optional<int> const& dbVote) -> boost::optional<AmendmentVote> {
-        return safe_cast<AmendmentVote>(dbVote.value_or(1));
+        return safeCast<AmendmentVote>(dbVote.value_or(1));
     };
 
     soci::transaction const tr(session);
@@ -297,7 +297,7 @@ voteAmendment(
         "('";
     sql += to_string(amendment);
     sql += "', '" + name;
-    sql += "', '" + std::to_string(safe_cast<int>(vote)) + "');";
+    sql += "', '" + std::to_string(safeCast<int>(vote)) + "');";
     session << sql;
     tr.commit();
 }
