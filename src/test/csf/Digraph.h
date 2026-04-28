@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission target use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_DIGRAPH_H_INCLUDED
-#define RIPPLE_TEST_CSF_DIGRAPH_H_INCLUDED
+#pragma once
 
 #include <boost/container/flat_map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -29,10 +9,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-namespace ripple {
-namespace test {
-namespace csf {
-
+namespace xrpl {
 namespace detail {
 // Dummy class when no edge data needed for graph
 struct NoEdgeData
@@ -40,6 +17,8 @@ struct NoEdgeData
 };
 
 }  // namespace detail
+
+namespace test::csf {
 
 /** Directed graph
 
@@ -115,7 +94,7 @@ public:
         @return optional<Edge> which is std::nullopt if no edge exists
 
     */
-    std::optional<EdgeData>
+    [[nodiscard]] std::optional<EdgeData>
     edge(Vertex source, Vertex target) const
     {
         auto it = graph_.find(source);
@@ -134,7 +113,7 @@ public:
         @param target The target vertex
         @return true if the source has an out edge to target
     */
-    bool
+    [[nodiscard]] bool
     connected(Vertex source, Vertex target) const
     {
         return edge(source, target) != std::nullopt;
@@ -145,12 +124,11 @@ public:
         @return A boost transformed range over the vertices with out edges in
        the graph
     */
-    auto
+    [[nodiscard]] auto
     outVertices() const
     {
         return boost::adaptors::transform(
-            graph_,
-            [](typename Graph::value_type const& v) { return v.first; });
+            graph_, [](typename Graph::value_type const& v) { return v.first; });
     }
 
     /** Range over target vertices
@@ -158,12 +136,10 @@ public:
         @param source The source vertex
         @return A boost transformed range over the target vertices of source.
      */
-    auto
+    [[nodiscard]] auto
     outVertices(Vertex source) const
     {
-        auto transform = [](typename Links::value_type const& link) {
-            return link.first;
-        };
+        auto transform = [](typename Links::value_type const& link) { return link.first; };
         auto it = graph_.find(source);
         if (it != graph_.end())
             return boost::adaptors::transform(it->second, transform);
@@ -186,7 +162,7 @@ public:
         @return A boost transformed range of Edge type for all out edges of
                 source.
     */
-    auto
+    [[nodiscard]] auto
     outEdges(Vertex source) const
     {
         auto transform = [source](typename Links::value_type const& link) {
@@ -205,7 +181,7 @@ public:
         @param source The source vertex
         @return The number of outgoing edges from source
     */
-    std::size_t
+    [[nodiscard]] std::size_t
     outDegree(Vertex source) const
     {
         auto it = graph_.find(source);
@@ -218,7 +194,7 @@ public:
 
         Save a GraphViz dot description of the graph
         @param fileName The output file (creates)
-        @param vertexName A invokable T vertexName(Vertex const &) that
+        @param vertexName A invocable T vertexName(Vertex const &) that
                           returns the name target use for the vertex in the file
                           T must be ostream-able
     */
@@ -248,7 +224,6 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-#endif
+}  // namespace test::csf
+
+}  // namespace xrpl

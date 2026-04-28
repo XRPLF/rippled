@@ -1,40 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_CORE_GRPCSERVER_H_INCLUDED
-#define RIPPLE_CORE_GRPCSERVER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/core/JobQueue.h>
-#include <xrpld/net/InfoSub.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 
+#include <xrpl/core/JobQueue.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <xrpl/resource/Charge.h>
+#include <xrpl/server/InfoSub.h>
 
 #include <grpcpp/grpcpp.h>
 
-namespace ripple {
+namespace xrpl {
 
 // Interface that CallData implements
 class Processor
@@ -87,6 +66,13 @@ private:
 
     std::vector<boost::asio::ip::address> secureGatewayIPs_;
 
+    // TLS certificate paths
+    std::optional<std::string> sslCertPath_;
+    std::optional<std::string> sslKeyPath_;
+    std::optional<std::string> sslCertChainPath_;  // Intermediate CA certs for server cert chain
+    std::optional<std::string>
+        sslClientCAPath_;  // CA cert for client certificate verification (mTLS)
+
     beast::Journal journal_;
 
     // typedef for function to bind a listener
@@ -105,8 +91,7 @@ private:
     // typedef for actual handler (that populates a response)
     // handlers are defined in rpc/GRPCHandlers.h
     template <class Request, class Response>
-    using Handler = std::function<std::pair<Response, grpc::Status>(
-        RPC::GRPCContext<Request>&)>;
+    using Handler = std::function<std::pair<Response, grpc::Status>(RPC::GRPCContext<Request>&)>;
     // This implementation is currently limited to v1 of the API
     static unsigned constexpr apiVersion = 1;
 
@@ -142,15 +127,18 @@ public:
     setupListeners();
 
     // Obtaining actually binded endpoint (if port 0 was used for server setup).
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:
-    // Class encompasing the state and logic needed to serve a request.
+    // Create server credentials (TLS or insecure) based on configuration
+    std::shared_ptr<grpc::ServerCredentials>
+    createServerCredentials();
+
+    // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
-    class CallData
-        : public Processor,
-          public std::enable_shared_from_this<CallData<Request, Response>>
+    class CallData : public Processor,
+                     public std::enable_shared_from_this<CallData<Request, Response>>
     {
     private:
         // The means of communication with the gRPC runtime for an asynchronous
@@ -198,7 +186,7 @@ private:
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
     public:
-        virtual ~CallData() = default;
+        ~CallData() override = default;
 
         // Take in the "service" instance (in this case representing an
         // asynchronous server) and the completion queue "cq" used for
@@ -219,10 +207,10 @@ private:
         CallData&
         operator=(CallData const&) = delete;
 
-        virtual void
+        void
         process() override;
 
-        virtual bool
+        bool
         isFinished() override;
 
         std::shared_ptr<Processor>
@@ -257,14 +245,14 @@ private:
         getClientEndpoint();
 
         // If the request was proxied through
-        // another rippled node, returns the ip of the originating client.
+        // another xrpld node, returns the ip of the originating client.
         // Empty optional if request was not proxied or there was an error
         // decoding the client ip
         std::optional<boost::asio::ip::address>
         getProxiedClientIpAddress();
 
         // If the request was proxied through
-        // another rippled node, returns the endpoint of the originating client.
+        // another xrpld node, returns the endpoint of the originating client.
         // Empty optional if request was not proxied or there was an error
         // decoding the client endpoint
         std::optional<boost::asio::ip::tcp::endpoint>
@@ -284,7 +272,7 @@ private:
         bool
         clientIsUnlimited();
 
-        // True if the request was proxied through another rippled node prior
+        // True if the request was proxied through another xrpld node prior
         // to arriving here
         bool
         wasForwarded();
@@ -317,7 +305,7 @@ public:
 
     ~GRPCServer();
 
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:
@@ -325,5 +313,4 @@ private:
     std::thread thread_;
     bool running_ = false;
 };
-}  // namespace ripple
-#endif
+}  // namespace xrpl

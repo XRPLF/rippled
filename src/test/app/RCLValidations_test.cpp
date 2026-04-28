@@ -1,32 +1,25 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright 2017 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 
 #include <xrpld/app/consensus/RCLValidations.h>
-#include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/consensus/LedgerTrie.h>
+#include <xrpld/core/Config.h>
 
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SecretKey.h>
 
-namespace ripple {
-namespace test {
+#include <memory>
+#include <vector>
+
+namespace xrpl::test {
 
 class RCLValidations_test : public beast::unit_test::suite
 {
@@ -36,7 +29,7 @@ class RCLValidations_test : public beast::unit_test::suite
         testcase("Change validation trusted status");
         auto keys = randomKeyPair(KeyType::secp256k1);
         auto v = std::make_shared<STValidation>(
-            ripple::NetClock::time_point{},
+            xrpl::NetClock::time_point{},
             keys.first,
             keys.second,
             calcNodeID(keys.first),
@@ -74,17 +67,17 @@ class RCLValidations_test : public beast::unit_test::suite
         std::vector<std::shared_ptr<Ledger const>> history;
 
         jtx::Env env(*this);
-        Config config;
+        Config const config;
         auto prev = std::make_shared<Ledger const>(
             create_genesis,
-            config,
+            Rules{config.features},
+            config.FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         history.push_back(prev);
-        for (auto i = 0; i < (2 * maxAncestors + 1); ++i)
+        for (auto i = 0; i < ((2 * maxAncestors) + 1); ++i)
         {
-            auto next = std::make_shared<Ledger>(
-                *prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             next->updateSkipList();
             history.push_back(next);
             prev = next;
@@ -101,8 +94,7 @@ class RCLValidations_test : public beast::unit_test::suite
         bool forceHash = true;
         while (altHistory.size() < history.size())
         {
-            auto next = std::make_shared<Ledger>(
-                *prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             // Force a different hash on the first iteration
             next->updateSkipList();
             BEAST_EXPECT(next->read(keylet::fees()));
@@ -120,7 +112,7 @@ class RCLValidations_test : public beast::unit_test::suite
 
         // Empty ledger
         {
-            RCLValidatedLedger a{RCLValidatedLedger::MakeGenesis{}};
+            RCLValidatedLedger const a{RCLValidatedLedger::MakeGenesis{}};
             BEAST_EXPECT(a.seq() == Seq{0});
             BEAST_EXPECT(a[Seq{0}] == ID{0});
             BEAST_EXPECT(a.minSeq() == Seq{0});
@@ -128,17 +120,21 @@ class RCLValidations_test : public beast::unit_test::suite
 
         // Full history ledgers
         {
-            std::shared_ptr<Ledger const> ledger = history.back();
-            RCLValidatedLedger a{ledger, env.journal};
-            BEAST_EXPECT(a.seq() == ledger->info().seq);
+            std::shared_ptr<Ledger const> const ledger = history.back();
+            RCLValidatedLedger const a{ledger, env.journal};
+            BEAST_EXPECT(a.seq() == ledger->header().seq);
             BEAST_EXPECT(a.minSeq() == a.seq() - maxAncestors);
             // Ensure the ancestral 256 ledgers have proper ID
             for (Seq s = a.seq(); s > 0; s--)
             {
                 if (s >= a.minSeq())
-                    BEAST_EXPECT(a[s] == history[s - 1]->info().hash);
+                {
+                    BEAST_EXPECT(a[s] == history[s - 1]->header().hash);
+                }
                 else
+                {
                     BEAST_EXPECT(a[s] == ID{0});
+                }
             }
         }
 
@@ -146,21 +142,21 @@ class RCLValidations_test : public beast::unit_test::suite
 
         // Empty with non-empty
         {
-            RCLValidatedLedger a{RCLValidatedLedger::MakeGenesis{}};
+            RCLValidatedLedger const a{RCLValidatedLedger::MakeGenesis{}};
 
-            for (auto ledger : {history.back(), history[maxAncestors - 1]})
+            for (auto const& ledger : {history.back(), history[maxAncestors - 1]})
             {
-                RCLValidatedLedger b{ledger, env.journal};
+                RCLValidatedLedger const b{ledger, env.journal};
                 BEAST_EXPECT(mismatch(a, b) == 1);
                 BEAST_EXPECT(mismatch(b, a) == 1);
             }
         }
         // Same chains, different seqs
         {
-            RCLValidatedLedger a{history.back(), env.journal};
+            RCLValidatedLedger const a{history.back(), env.journal};
             for (Seq s = a.seq(); s > 0; s--)
             {
-                RCLValidatedLedger b{history[s - 1], env.journal};
+                RCLValidatedLedger const b{history[s - 1], env.journal};
                 if (s >= a.minSeq())
                 {
                     BEAST_EXPECT(mismatch(a, b) == b.seq() + 1);
@@ -178,8 +174,8 @@ class RCLValidations_test : public beast::unit_test::suite
             // Alt history diverged at history.size()/2
             for (Seq s = 1; s < history.size(); ++s)
             {
-                RCLValidatedLedger a{history[s - 1], env.journal};
-                RCLValidatedLedger b{altHistory[s - 1], env.journal};
+                RCLValidatedLedger const a{history[s - 1], env.journal};
+                RCLValidatedLedger const b{altHistory[s - 1], env.journal};
 
                 BEAST_EXPECT(a.seq() == b.seq());
                 if (s <= diverge)
@@ -199,10 +195,10 @@ class RCLValidations_test : public beast::unit_test::suite
         // Different chains, different seqs
         {
             // Compare around the divergence point
-            RCLValidatedLedger a{history[diverge], env.journal};
+            RCLValidatedLedger const a{history[diverge], env.journal};
             for (Seq offset = diverge / 2; offset < 3 * diverge / 2; ++offset)
             {
-                RCLValidatedLedger b{altHistory[offset - 1], env.journal};
+                RCLValidatedLedger const b{altHistory[offset - 1], env.journal};
                 if (offset <= diverge)
                 {
                     BEAST_EXPECT(mismatch(a, b) == b.seq() + 1);
@@ -237,17 +233,17 @@ class RCLValidations_test : public beast::unit_test::suite
         // Generate a chain of 256 + 10 ledgers
         jtx::Env env(*this);
         auto& j = env.journal;
-        Config config;
+        Config const config;
         auto prev = std::make_shared<Ledger const>(
             create_genesis,
-            config,
+            Rules{config.features},
+            config.FEES.toFees(),
             std::vector<uint256>{},
             env.app().getNodeFamily());
         history.push_back(prev);
         for (auto i = 0; i < (maxAncestors + 10); ++i)
         {
-            auto next = std::make_shared<Ledger>(
-                *prev, env.app().timeKeeper().closeTime());
+            auto next = std::make_shared<Ledger>(*prev, env.app().getTimeKeeper().closeTime());
             next->updateSkipList();
             history.push_back(next);
             prev = next;
@@ -273,10 +269,10 @@ class RCLValidations_test : public beast::unit_test::suite
         BEAST_EXPECT(trie.branchSupport(ledg_258) == 4);
 
         // Move three of the s258 ledgers to s259, which splits the trie
-        // due to the 256 ancestory limit
+        // due to the 256 ancestry limit
         BEAST_EXPECT(trie.remove(ledg_258, 3));
         trie.insert(ledg_259, 3);
-        trie.getPreferred(1);
+        [[maybe_unused]] auto unused1 = trie.getPreferred(1);
         // trie.dump(std::cout);
         // 000000[0,1)(T:0,B:5)
         //                     |-AB868A..37C9[1,260)(T:3,B:3)
@@ -294,14 +290,13 @@ class RCLValidations_test : public beast::unit_test::suite
         // then verify the remove call works
         // past bug: remove had assumed the first child of a node in the trie
         //      which matches is the *only* child in the trie which matches.
-        //      This is **NOT** true with the limited 256 ledger ancestory
+        //      This is **NOT** true with the limited 256 ledger ancestry
         //      quirk of RCLValidation and prevents deleting the old support
         //      for ledger 257
 
-        BEAST_EXPECT(
-            trie.remove(RCLValidatedLedger{history[257], env.journal}, 1));
+        BEAST_EXPECT(trie.remove(RCLValidatedLedger{history[257], env.journal}, 1));
         trie.insert(RCLValidatedLedger{history[258], env.journal}, 1);
-        trie.getPreferred(1);
+        [[maybe_unused]] auto unused2 = trie.getPreferred(1);
         // trie.dump(std::cout);
         // 000000[0,1)(T:0,B:5)
         //                      |-AB868A..37C9[1,260)(T:4,B:4)
@@ -327,7 +322,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(RCLValidations, app, ripple);
+BEAST_DEFINE_TESTSUITE(RCLValidations, app, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

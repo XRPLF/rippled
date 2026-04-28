@@ -1,23 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2021, Howard Hinnant <howard.hinnant@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/beast/clock/basic_seconds_clock.h>
+
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <atomic>
@@ -35,7 +17,7 @@ class seconds_clock_thread
 {
     using Clock = basic_seconds_clock::Clock;
 
-    bool stop_;
+    bool stop_{false};
     std::mutex mut_;
     std::condition_variable cv_;
     std::thread thread_;
@@ -58,18 +40,16 @@ static_assert(std::atomic<std::chrono::steady_clock::rep>::is_always_lock_free);
 seconds_clock_thread::~seconds_clock_thread()
 {
     XRPL_ASSERT(
-        thread_.joinable(),
-        "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
+        thread_.joinable(), "beast::seconds_clock_thread::~seconds_clock_thread : thread joinable");
     {
-        std::lock_guard lock(mut_);
+        std::lock_guard const lock(mut_);
         stop_ = true;
     }  // publish stop_ asap so if waiting thread times-out, it will see it
     cv_.notify_one();
     thread_.join();
 }
 
-seconds_clock_thread::seconds_clock_thread()
-    : stop_{false}, tp_{Clock::now().time_since_epoch().count()}
+seconds_clock_thread::seconds_clock_thread() : tp_{Clock::now().time_since_epoch().count()}
 {
     thread_ = std::thread(&seconds_clock_thread::run, this);
 }

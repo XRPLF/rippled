@@ -1,30 +1,16 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx/Env.h>
 #include <test/jtx/acctdelete.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+#include <cstdint>
+
+namespace xrpl::test::jtx {
 
 // Delete account.  If successful transfer remaining XRP to dest.
 Json::Value
@@ -44,9 +30,7 @@ void
 incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
 {
     using namespace jtx;
-    auto openLedgerSeq = [](jtx::Env& env) -> std::uint32_t {
-        return env.current()->seq();
-    };
+    auto openLedgerSeq = [](jtx::Env& env) -> std::uint32_t { return env.current()->seq(); };
 
     int const delta = [&]() -> int {
         if (env.seq(acc) + 255 > openLedgerSeq(env))
@@ -59,6 +43,4 @@ incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
     env.test.BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx

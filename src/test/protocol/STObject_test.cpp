@@ -1,241 +1,36 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#include <test/jtx/Env.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/json/json_reader.h>
-#include <xrpl/json/to_string.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
 
 #include <array>
+#include <cstdint>
+#include <cstring>
+#include <exception>
 #include <memory>
+#include <optional>
+#include <ostream>
+#include <stdexcept>
 #include <type_traits>
+#include <utility>
+#include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class STObject_test : public beast::unit_test::suite
 {
 public:
-    bool
-    parseJSONString(std::string const& json, Json::Value& to)
-    {
-        Json::Reader reader;
-        return reader.parse(json, to) && to.isObject();
-    }
-
-    void
-    testParseJSONArrayWithInvalidChildrenObjects()
-    {
-        testcase("parse json array invalid children");
-        try
-        {
-            /*
-
-            STArray/STObject constructs don't really map perfectly to json
-            arrays/objects.
-
-            STObject is an associative container, mapping fields to value, but
-            an STObject may also have a Field as its name, stored outside the
-            associative structure. The name is important, so to maintain
-            fidelity, it will take TWO json objects to represent them.
-
-            */
-            std::string faulty(
-                "{\"Template\":[{"
-                "\"ModifiedNode\":{\"Sequence\":1}, "
-                "\"DeletedNode\":{\"Sequence\":1}"
-                "}]}");
-
-            std::unique_ptr<STObject> so;
-            Json::Value faultyJson;
-            bool parsedOK(parseJSONString(faulty, faultyJson));
-            unexpected(!parsedOK, "failed to parse");
-            STParsedJSONObject parsed("test", faultyJson);
-            BEAST_EXPECT(!parsed.object);
-        }
-        catch (std::runtime_error& e)
-        {
-            std::string what(e.what());
-            unexpected(what.find("First level children of `Template`") != 0);
-        }
-    }
-
-    void
-    testParseJSONArray()
-    {
-        testcase("parse json array");
-        std::string const json(
-            "{\"Template\":[{\"ModifiedNode\":{\"Sequence\":1}}]}");
-
-        Json::Value jsonObject;
-        bool parsedOK(parseJSONString(json, jsonObject));
-        if (parsedOK)
-        {
-            STParsedJSONObject parsed("test", jsonObject);
-            BEAST_EXPECT(parsed.object);
-            std::string const& serialized(
-                to_string(parsed.object->getJson(JsonOptions::none)));
-            BEAST_EXPECT(serialized == json);
-        }
-        else
-        {
-            fail("Couldn't parse json: " + json);
-        }
-    }
-
-    void
-    testParseJSONEdgeCases()
-    {
-        testcase("parse json object");
-
-        {
-            std::string const goodJson(R"({"CloseResolution":19,"Method":250,)"
-                                       R"("TransactionResult":"tecFROZEN"})");
-
-            Json::Value jv;
-            if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
-            {
-                STParsedJSONObject parsed("test", jv);
-                if (BEAST_EXPECT(parsed.object))
-                {
-                    std::string const& serialized(
-                        to_string(parsed.object->getJson(JsonOptions::none)));
-                    BEAST_EXPECT(serialized == goodJson);
-                }
-            }
-        }
-
-        {
-            std::string const goodJson(
-                R"({"CloseResolution":19,"Method":"250",)"
-                R"("TransactionResult":"tecFROZEN"})");
-            std::string const expectedJson(
-                R"({"CloseResolution":19,"Method":250,)"
-                R"("TransactionResult":"tecFROZEN"})");
-
-            Json::Value jv;
-            if (BEAST_EXPECT(parseJSONString(goodJson, jv)))
-            {
-                // Integer values are always parsed as int,
-                // unless they're too big. We want a small uint.
-                jv["CloseResolution"] = Json::UInt(19);
-                STParsedJSONObject parsed("test", jv);
-                if (BEAST_EXPECT(parsed.object))
-                {
-                    std::string const& serialized(
-                        to_string(parsed.object->getJson(JsonOptions::none)));
-                    BEAST_EXPECT(serialized == expectedJson);
-                }
-            }
-        }
-
-        {
-            std::string const json(R"({"CloseResolution":19,"Method":250,)"
-                                   R"("TransactionResult":"terQUEUED"})");
-
-            Json::Value jv;
-            if (BEAST_EXPECT(parseJSONString(json, jv)))
-            {
-                STParsedJSONObject parsed("test", jv);
-                BEAST_EXPECT(!parsed.object);
-                BEAST_EXPECT(parsed.error);
-                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.TransactionResult' is out of range.");
-            }
-        }
-
-        {
-            std::string const json(R"({"CloseResolution":19,"Method":"pony",)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
-
-            Json::Value jv;
-            if (BEAST_EXPECT(parseJSONString(json, jv)))
-            {
-                STParsedJSONObject parsed("test", jv);
-                BEAST_EXPECT(!parsed.object);
-                BEAST_EXPECT(parsed.error);
-                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.Method' has bad type.");
-            }
-        }
-
-        {
-            std::string const json(
-                R"({"CloseResolution":19,"Method":3294967296,)"
-                R"("TransactionResult":"tesSUCCESS"})");
-
-            Json::Value jv;
-            if (BEAST_EXPECT(parseJSONString(json, jv)))
-            {
-                STParsedJSONObject parsed("test", jv);
-                BEAST_EXPECT(!parsed.object);
-                BEAST_EXPECT(parsed.error);
-                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.Method' is out of range.");
-            }
-        }
-
-        {
-            std::string const json(R"({"CloseResolution":-10,"Method":42,)"
-                                   R"("TransactionResult":"tesSUCCESS"})");
-
-            Json::Value jv;
-            if (BEAST_EXPECT(parseJSONString(json, jv)))
-            {
-                STParsedJSONObject parsed("test", jv);
-                BEAST_EXPECT(!parsed.object);
-                BEAST_EXPECT(parsed.error);
-                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.CloseResolution' is out of range.");
-            }
-        }
-
-        {
-            std::string const json(
-                R"({"CloseResolution":19,"Method":3.141592653,)"
-                R"("TransactionResult":"tesSUCCESS"})");
-
-            Json::Value jv;
-            if (BEAST_EXPECT(parseJSONString(json, jv)))
-            {
-                STParsedJSONObject parsed("test", jv);
-                BEAST_EXPECT(!parsed.object);
-                BEAST_EXPECT(parsed.error);
-                BEAST_EXPECT(parsed.error[jss::error] == "invalidParams");
-                BEAST_EXPECT(
-                    parsed.error[jss::error_message] ==
-                    "Field 'test.Method' has bad type.");
-            }
-        }
-    }
-
     void
     testSerialization()
     {
@@ -245,7 +40,7 @@ public:
         {
             // Try to put sfGeneric in an SOTemplate.
             except<std::runtime_error>(
-                [&]() { SOTemplate elements{{sfGeneric, soeREQUIRED}}; });
+                [&]() { SOTemplate const elements{{sfGeneric, soeREQUIRED}}; });
         }
 
         unexpected(sfInvalid.isUseful(), "sfInvalid must not be useful");
@@ -264,12 +59,12 @@ public:
         {
             // Try to put sfInvalid in an SOTemplate.
             except<std::runtime_error>(
-                [&]() { SOTemplate elements{{sfInvalid, soeREQUIRED}}; });
+                [&]() { SOTemplate const elements{{sfInvalid, soeREQUIRED}}; });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
             except<std::runtime_error>([&]() {
-                SOTemplate elements{
+                SOTemplate const elements{
                     {sfAccount, soeREQUIRED},
                     {sfAccount, soeREQUIRED},
                 };
@@ -292,23 +87,19 @@ public:
         };
 
         STObject object1(elements, sfTestObject);
-        STObject object2(object1);
+        STObject const object2(object1);
+
+        unexpected(object1.getSerializer() != object2.getSerializer(), "STObject error 1");
 
         unexpected(
-            object1.getSerializer() != object2.getSerializer(),
-            "STObject error 1");
-
-        unexpected(
-            object1.isFieldPresent(sfTestH256) ||
-                !object1.isFieldPresent(sfTestVL),
+            object1.isFieldPresent(sfTestH256) || !object1.isFieldPresent(sfTestVL),
             "STObject error");
 
         object1.makeFieldPresent(sfTestH256);
 
         unexpected(!object1.isFieldPresent(sfTestH256), "STObject Error 2");
 
-        unexpected(
-            object1.getFieldH256(sfTestH256) != uint256(), "STObject error 3");
+        unexpected(object1.getFieldH256(sfTestH256) != uint256(), "STObject error 3");
 
         if (object1.getSerializer() == object2.getSerializer())
         {
@@ -327,9 +118,7 @@ public:
 
         unexpected(object1.getFlags() != 0, "STObject error 6");
 
-        unexpected(
-            object1.getSerializer() != object2.getSerializer(),
-            "STObject error 7");
+        unexpected(object1.getSerializer() != object2.getSerializer(), "STObject error 7");
 
         STObject copy(object1);
 
@@ -337,19 +126,15 @@ public:
 
         unexpected(copy.isFieldPresent(sfTestH256), "STObject error 9");
 
-        unexpected(
-            object1.getSerializer() != copy.getSerializer(),
-            "STObject error 10");
+        unexpected(object1.getSerializer() != copy.getSerializer(), "STObject error 10");
 
         copy.setFieldU32(sfTestU32, 1);
 
-        unexpected(
-            object1.getSerializer() == copy.getSerializer(),
-            "STObject error 11");
+        unexpected(object1.getSerializer() == copy.getSerializer(), "STObject error 11");
 
         for (int i = 0; i < 1000; i++)
         {
-            Blob j(i, 2);
+            Blob const j(i, 2);
 
             object1.setFieldVL(sfTestVL, j);
 
@@ -357,7 +142,7 @@ public:
             object1.add(s);
             SerialIter it(s.slice());
 
-            STObject object3(elements, it, sfTestObject);
+            STObject const object3(elements, it, sfTestObject);
 
             unexpected(object1.getFieldVL(sfTestVL) != j, "STObject error");
 
@@ -377,7 +162,7 @@ public:
             object1.add(s);
             SerialIter it(s.slice());
 
-            STObject object3(elements, it, sfTestObject);
+            STObject const object3(elements, it, sfTestObject);
 
             auto const& uints1 = object1.getFieldV256(sfTestV256);
             auto const& uints3 = object3.getFieldV256(sfTestV256);
@@ -412,8 +197,8 @@ public:
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(st[sf2Outer] == 2);
             except<STObject::FieldErr>([&]() { st[sf3Outer]; });
-            BEAST_EXPECT(*st[~sf1Outer] == 1);
-            BEAST_EXPECT(*st[~sf2Outer] == 2);
+            BEAST_EXPECT(*st[~sf1Outer] == 1);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf2Outer] == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(st[~sf3Outer] == std::nullopt);
             BEAST_EXPECT(!!st[~sf1Outer]);
             BEAST_EXPECT(!!st[~sf2Outer]);
@@ -443,9 +228,9 @@ public:
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(st[sf2Outer] == 2);
             BEAST_EXPECT(st[sf3Outer] == 0);
-            BEAST_EXPECT(*st[~sf1Outer] == 1);
-            BEAST_EXPECT(*st[~sf2Outer] == 2);
-            BEAST_EXPECT(*st[~sf3Outer] == 0);
+            BEAST_EXPECT(*st[~sf1Outer] == 1);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf2Outer] == 2);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf3Outer] == 0);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(!!st[~sf1Outer]);
             BEAST_EXPECT(!!st[~sf2Outer]);
             BEAST_EXPECT(!!st[~sf3Outer]);
@@ -571,10 +356,7 @@ public:
             STObject st(sfGeneric);
             auto const v = ~st[~sf1Outer];
             static_assert(
-                std::is_same<
-                    std::decay_t<decltype(v)>,
-                    std::optional<std::uint32_t>>::value,
-                "");
+                std::is_same_v<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>, "");
         }
 
         // UDT scalar fields
@@ -597,7 +379,7 @@ public:
                 Buffer b(1);
                 BEAST_EXPECT(!b.empty());
                 st[sf4] = std::move(b);
-                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(b.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(Slice(st[sf4]).size() == 1);
                 st[~sf4] = std::nullopt;
                 BEAST_EXPECT(!~st[~sf4]);
@@ -616,7 +398,7 @@ public:
                 BEAST_EXPECT(!!~st[~sf5]);
                 Buffer b(1);
                 st[sf5] = std::move(b);
-                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(b.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(Slice(st[sf5]).size() == 1);
                 st[~sf4] = std::nullopt;
                 BEAST_EXPECT(!~st[~sf4]);
@@ -628,8 +410,7 @@ public:
         {
             STObject st(sfGeneric);
             BEAST_EXPECT(!st[~sf5]);
-            auto const kp = generateKeyPair(
-                KeyType::secp256k1, generateSeed("masterpassphrase"));
+            auto const kp = generateKeyPair(KeyType::secp256k1, generateSeed("masterpassphrase"));
             st[sf5] = kp.first;
             st[~sf5] = std::nullopt;
         }
@@ -646,14 +427,11 @@ public:
             st[sf] = std::move(v);
             auto const& cst = st;
             BEAST_EXPECT(cst[sf].size() == 2);
-            BEAST_EXPECT(cst[~sf]->size() == 2);
+            BEAST_EXPECT(cst[~sf]->size() == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(cst[sf][0] == 1);
             BEAST_EXPECT(cst[sf][1] == 2);
             static_assert(
-                std::is_same<
-                    decltype(cst[sfIndexes]),
-                    std::vector<uint256> const&>::value,
-                "");
+                std::is_same_v<decltype(cst[sfIndexes]), std::vector<uint256> const&>, "");
         }
 
         // Default by reference field
@@ -670,9 +448,9 @@ public:
 
             STObject st(sot, sfGeneric);
             auto const& cst(st);
-            BEAST_EXPECT(cst[sf1].size() == 0);
+            BEAST_EXPECT(cst[sf1].empty());
             BEAST_EXPECT(!cst[~sf2]);
-            BEAST_EXPECT(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].empty());
             std::vector<uint256> v;
             v.emplace_back(1);
             st[sf1] = v;
@@ -687,9 +465,9 @@ public:
             BEAST_EXPECT(cst[sf3].size() == 1);
             BEAST_EXPECT(cst[sf3][0] == uint256{1});
             st[sf3] = std::vector<uint256>{};
-            BEAST_EXPECT(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].empty());
         }
-    }  // namespace ripple
+    }  // namespace xrpl
 
     void
     testMalformed()
@@ -698,8 +476,7 @@ public:
 
         try
         {
-            std::array<std::uint8_t, 7> const payload{
-                {0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc}};
+            std::array<std::uint8_t, 7> const payload{{0xe9, 0x12, 0xab, 0xcd, 0x12, 0xfe, 0xdc}};
             SerialIter sit{makeSlice(payload)};
             auto obj = std::make_shared<STArray>(sit, sfMetadata);
             BEAST_EXPECT(!obj);
@@ -726,17 +503,14 @@ public:
     run() override
     {
         // Instantiate a jtx::Env so debugLog writes are exercised.
-        test::jtx::Env env(*this);
+        test::jtx::Env const env(*this);
 
         testFields();
         testSerialization();
-        testParseJSONArray();
-        testParseJSONArrayWithInvalidChildrenObjects();
-        testParseJSONEdgeCases();
         testMalformed();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(STObject, protocol, ripple);
+BEAST_DEFINE_TESTSUITE(STObject, protocol, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

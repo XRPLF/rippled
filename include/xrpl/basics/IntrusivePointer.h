@@ -1,31 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_INTRUSIVEPOINTER_H_INCLUDED
-#define RIPPLE_BASICS_INTRUSIVEPOINTER_H_INCLUDED
+#pragma once
 
 #include <concepts>
 #include <cstdint>
 #include <type_traits>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 //------------------------------------------------------------------------------
 
@@ -77,9 +57,9 @@ concept CAdoptTag = std::is_same_v<T, SharedIntrusiveAdoptIncrementStrongTag> ||
     When the strong pointer count goes to zero, the "partialDestructor" is
     called. This can be used to destroy as much of the object as possible while
     still retaining the reference counts. For example, for SHAMapInnerNodes the
-    children may be reset in that function. Note that std::shared_poiner WILL
+    children may be reset in that function. Note that std::shared_pointer WILL
     run the destructor when the strong count reaches zero, but may not free the
-    memory used by the object until the weak count reaches zero. In rippled, we
+    memory used by the object until the weak count reaches zero. In xrpld, we
     typically allocate shared pointers with the `make_shared` function. When
     that is used, the memory is not reclaimed until the weak count reaches zero.
 */
@@ -104,7 +84,8 @@ public:
 
     template <class TT>
         requires std::convertible_to<TT*, T*>
-    SharedIntrusive(SharedIntrusive<TT>&& rhs);
+    SharedIntrusive(
+        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     SharedIntrusive&
     operator=(SharedIntrusive const& rhs);
@@ -126,7 +107,8 @@ public:
     template <class TT>
         requires std::convertible_to<TT*, T*>
     SharedIntrusive&
-    operator=(SharedIntrusive<TT>&& rhs);
+    operator=(
+        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     /** Adopt the raw pointer. The strong reference may or may not be
         incremented, depending on the TAdoptTag
@@ -141,9 +123,7 @@ public:
         controlled by the rhs param.
     */
     template <class TT>
-    SharedIntrusive(
-        StaticCastTagSharedIntrusive,
-        SharedIntrusive<TT> const& rhs);
+    SharedIntrusive(StaticCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs);
 
     /** Create a new SharedIntrusive by statically casting the pointer
        controlled by the rhs param.
@@ -155,9 +135,7 @@ public:
        controlled by the rhs param.
     */
     template <class TT>
-    SharedIntrusive(
-        DynamicCastTagSharedIntrusive,
-        SharedIntrusive<TT> const& rhs);
+    SharedIntrusive(DynamicCastTagSharedIntrusive, SharedIntrusive<TT> const& rhs);
 
     /** Create a new SharedIntrusive by dynamically casting the pointer
        controlled by the rhs param.
@@ -181,11 +159,11 @@ public:
     reset();
 
     /** Get the raw pointer */
-    T*
+    [[nodiscard]] T*
     get() const;
 
     /** Return the strong count */
-    std::size_t
+    [[nodiscard]] std::size_t
     use_count() const;
 
     template <class TT, class... Args>
@@ -203,7 +181,7 @@ public:
 
 private:
     /** Return the raw pointer held by this object. */
-    T*
+    [[nodiscard]] T*
     unsafeGetRawPtr() const;
 
     /** Exchange the current raw pointer held by this object with the given
@@ -282,7 +260,7 @@ public:
     lock() const;
 
     /** Return true if the strong count is zero. */
-    bool
+    [[nodiscard]] bool
     expired() const;
 
     /** Set the pointer to null and decrement the weak count.
@@ -323,9 +301,7 @@ class SharedWeakUnion
     // Tagged pointer. Low bit determines if this is a strong or a weak
     // pointer. The low bit must be masked to zero when converting back to a
     // pointer. If the low bit is '1', this is a weak pointer.
-    static_assert(
-        alignof(T) >= 2,
-        "Bad alignment: Combo pointer requires low bit to be zero");
+    static_assert(alignof(T) >= 2, "Bad alignment: Combo pointer requires low bit to be zero");
 
 public:
     SharedWeakUnion() = default;
@@ -340,7 +316,8 @@ public:
 
     template <class TT>
         requires std::convertible_to<TT*, T*>
-    SharedWeakUnion(SharedIntrusive<TT>&& rhs);
+    SharedWeakUnion(
+        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     SharedWeakUnion&
     operator=(SharedWeakUnion const& rhs);
@@ -353,7 +330,8 @@ public:
     template <class TT>
         requires std::convertible_to<TT*, T*>
     SharedWeakUnion&
-    operator=(SharedIntrusive<TT>&& rhs);
+    operator=(
+        SharedIntrusive<TT>&& rhs);  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
 
     ~SharedWeakUnion();
 
@@ -361,7 +339,7 @@ public:
        don't lock the weak pointer. Use the `lock` method if that's what's
        needed)
      */
-    SharedIntrusive<T>
+    [[nodiscard]] SharedIntrusive<T>
     getStrong() const;
 
     /** Return true if this is a strong pointer and the strong pointer is
@@ -379,31 +357,31 @@ public:
     /** If this is a strong pointer, return the raw pointer. Otherwise
        return null.
      */
-    T*
+    [[nodiscard]] T*
     get() const;
 
     /** If this is a strong pointer, return the strong count. Otherwise
      * return 0
      */
-    std::size_t
+    [[nodiscard]] std::size_t
     use_count() const;
 
     /** Return true if there is a non-zero strong count. */
-    bool
+    [[nodiscard]] bool
     expired() const;
 
     /** If this is a strong pointer, return the strong pointer. Otherwise
         attempt to lock the weak pointer.
      */
-    SharedIntrusive<T>
+    [[nodiscard]] SharedIntrusive<T>
     lock() const;
 
     /** Return true is this represents a strong pointer. */
-    bool
+    [[nodiscard]] bool
     isStrong() const;
 
     /** Return true is this represents a weak pointer. */
-    bool
+    [[nodiscard]] bool
     isWeak() const;
 
     /** If this is a weak pointer, attempt to convert it to a strong
@@ -434,7 +412,7 @@ private:
 private:
     /** Return the raw pointer held by this object.
      */
-    T*
+    [[nodiscard]] T*
     unsafeGetRawPtr() const;
 
     enum class RefStrength { strong, weak };
@@ -470,8 +448,7 @@ make_SharedIntrusive(Args&&... args)
 
     static_assert(
         noexcept(SharedIntrusive<TT>(
-            std::declval<TT*>(),
-            std::declval<SharedIntrusiveAdoptNoIncrementTag>())),
+            std::declval<TT*>(), std::declval<SharedIntrusiveAdoptNoIncrementTag>())),
         "SharedIntrusive constructor should not throw or this can leak "
         "memory");
 
@@ -511,5 +488,4 @@ dynamic_pointer_cast(TT const& v)
     return SharedPtr<T>(DynamicCastTagSharedIntrusive{}, v);
 }
 }  // namespace intr_ptr
-}  // namespace ripple
-#endif
+}  // namespace xrpl

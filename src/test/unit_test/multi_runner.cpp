@@ -1,36 +1,32 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/amount.h>
+#include <xrpl/beast/unit_test/suite_info.h>
 
+#include <boost/container/static_vector.hpp>
+#include <boost/interprocess/creation_tags.hpp>
+#include <boost/interprocess/detail/os_file_functions.hpp>
+#include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/lexical_cast.hpp>
 
 #include <algorithm>
+#include <cassert>
+#include <chrono>
+#include <cstddef>
+#include <cstdlib>
+#include <exception>
 #include <iomanip>
 #include <iostream>
+#include <memory>
+#include <mutex>
 #include <sstream>
+#include <string>
+#include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl {
 
 namespace detail {
 
@@ -68,6 +64,7 @@ results::add(suite_results const& r)
     auto const elapsed = clock_type::now() - r.start;
     if (elapsed >= std::chrono::seconds{1})
     {
+        // NOLINTNEXTLINE(modernize-use-ranges)
         auto const iter = std::lower_bound(
             top.begin(),
             top.end(),
@@ -81,25 +78,18 @@ results::add(suite_results const& r)
             if (top.size() == max_top && iter == top.end() - 1)
             {
                 // avoid invalidating the iterator
-                *iter = run_time{
-                    static_string{static_string::string_view_type{r.name}},
-                    elapsed};
+                *iter = run_time{static_string{static_string::string_view_type{r.name}}, elapsed};
             }
             else
             {
                 if (top.size() == max_top)
                     top.resize(top.size() - 1);
-                top.emplace(
-                    iter,
-                    static_string{static_string::string_view_type{r.name}},
-                    elapsed);
+                top.emplace(iter, static_string{static_string::string_view_type{r.name}}, elapsed);
             }
         }
         else if (top.size() < max_top)
         {
-            top.emplace_back(
-                static_string{static_string::string_view_type{r.name}},
-                elapsed);
+            top.emplace_back(static_string{static_string::string_view_type{r.name}}, elapsed);
         }
     }
 }
@@ -115,15 +105,9 @@ results::merge(results const& r)
     // combine the two top collections
     boost::container::static_vector<run_time, 2 * max_top> top_result;
     top_result.resize(top.size() + r.top.size());
-    std::merge(
-        top.begin(),
-        top.end(),
-        r.top.begin(),
-        r.top.end(),
-        top_result.begin(),
-        [](run_time const& t1, run_time const& t2) {
-            return t1.second > t2.second;
-        });
+    std::ranges::merge(top, r.top, top_result.begin(), [](run_time const& t1, run_time const& t2) {
+        return t1.second > t2.second;
+    });
 
     if (top_result.size() > max_top)
         top_result.resize(max_top);
@@ -137,7 +121,7 @@ results::print(S& s)
 {
     using namespace beast::unit_test;
 
-    if (top.size() > 0)
+    if (!top.empty())
     {
         s << "Longest suite times:\n";
         for (auto const& [name, dur] : top)
@@ -145,9 +129,8 @@ results::print(S& s)
     }
 
     auto const elapsed = clock_type::now() - start;
-    s << fmtdur(elapsed) << ", " << amount{suites, "suite"} << ", "
-      << amount{cases, "case"} << ", " << amount{total, "test"} << " total, "
-      << amount{failed, "failure"} << std::endl;
+    s << fmtdur(elapsed) << ", " << amount{suites, "suite"} << ", " << amount{cases, "case"} << ", "
+      << amount{total, "test"} << " total, " << amount{failed, "failure"} << std::endl;
 }
 
 //------------------------------------------------------------------------------
@@ -184,7 +167,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::tests() const
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     return results_.total;
 }
 
@@ -192,7 +175,7 @@ template <bool IsParent>
 std::size_t
 multi_runner_base<IsParent>::inner::suites() const
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     return results_.suites;
 }
 
@@ -214,7 +197,7 @@ template <bool IsParent>
 void
 multi_runner_base<IsParent>::inner::add(results const& r)
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     results_.merge(r);
 }
 
@@ -223,7 +206,7 @@ template <class S>
 void
 multi_runner_base<IsParent>::inner::print_results(S& s)
 {
-    std::lock_guard l{m_};
+    std::lock_guard const l{m_};
     results_.print(s);
 }
 
@@ -250,26 +233,27 @@ multi_runner_base<IsParent>::multi_runner_base()
         if (IsParent)
         {
             shared_mem_.truncate(sizeof(inner));
-            message_queue_ =
-                std::make_unique<boost::interprocess::message_queue>(
-                    boost::interprocess::create_only,
-                    message_queue_name_,
-                    /*max messages*/ 16,
-                    /*max message size*/ 1 << 20);
+            message_queue_ = std::make_unique<boost::interprocess::message_queue>(
+                boost::interprocess::create_only,
+                message_queue_name_,
+                /*max messages*/ 16,
+                /*max message size*/ 1 << 20);
         }
         else
         {
-            message_queue_ =
-                std::make_unique<boost::interprocess::message_queue>(
-                    boost::interprocess::open_only, message_queue_name_);
+            message_queue_ = std::make_unique<boost::interprocess::message_queue>(
+                boost::interprocess::open_only, message_queue_name_);
         }
 
-        region_ = boost::interprocess::mapped_region{
-            shared_mem_, boost::interprocess::read_write};
+        region_ = boost::interprocess::mapped_region{shared_mem_, boost::interprocess::read_write};
         if (IsParent)
+        {
             inner_ = new (region_.get_address()) inner{};
+        }
         else
+        {
             inner_ = reinterpret_cast<inner*>(region_.get_address());
+        }
     }
     catch (...)
     {
@@ -352,12 +336,10 @@ multi_runner_base<IsParent>::print_results(S& s)
 
 template <bool IsParent>
 void
-multi_runner_base<IsParent>::message_queue_send(
-    MessageType mt,
-    std::string const& s)
+multi_runner_base<IsParent>::message_queue_send(MessageType mt, std::string const& s)
 {
     // must use a mutex since the two "sends" must happen in order
-    std::lock_guard l{inner_->m_};
+    std::lock_guard const l{inner_->m_};
     message_queue_->send(&mt, sizeof(mt), /*priority*/ 0);
     message_queue_->send(s.c_str(), s.size(), /*priority*/ 0);
 }
@@ -388,14 +370,15 @@ multi_runner_base<IsParent>::add_failures(std::size_t failures)
 
 }  // namespace detail
 
+namespace test {
+
 //------------------------------------------------------------------------------
 
 multi_runner_parent::multi_runner_parent() : os_(std::cout)
 {
     message_queue_thread_ = std::thread([this] {
         std::vector<char> buf(1 << 20);
-        while (this->continue_message_queue_ ||
-               this->message_queue_->get_num_msg())
+        while (this->continue_message_queue_ || this->message_queue_->get_num_msg())
         {
             // let children know the parent is still alive
             this->inc_keep_alive_count();
@@ -412,15 +395,13 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
             {
                 std::size_t recvd_size = 0;
                 unsigned int priority = 0;
-                this->message_queue_->receive(
-                    buf.data(), buf.size(), recvd_size, priority);
+                this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
                 if (!recvd_size)
                     continue;
                 assert(recvd_size == 1);
-                MessageType mt{*reinterpret_cast<MessageType*>(buf.data())};
+                MessageType const mt{*reinterpret_cast<MessageType*>(buf.data())};
 
-                this->message_queue_->receive(
-                    buf.data(), buf.size(), recvd_size, priority);
+                this->message_queue_->receive(buf.data(), buf.size(), recvd_size, priority);
                 if (recvd_size)
                 {
                     std::string s{buf.data(), recvd_size};
@@ -443,8 +424,7 @@ multi_runner_parent::multi_runner_parent() : os_(std::cout)
             }
             catch (std::exception const& e)
             {
-                std::cerr << "Error: " << e.what()
-                          << " reading unit test message queue.\n";
+                std::cerr << "Error: " << e.what() << " reading unit test message queue.\n";
                 return;
             }
             catch (...)
@@ -463,12 +443,13 @@ multi_runner_parent::~multi_runner_parent()
     continue_message_queue_ = false;
     message_queue_thread_.join();
 
+    add_failures(running_suites_.size());
+
     print_results(os_);
 
     for (auto const& s : running_suites_)
     {
-        os_ << "\nSuite: " << s
-            << " failed to complete. The child process may have crashed.\n";
+        os_ << "\nSuite: " << s << " failed to complete. The child process may have crashed.\n";
     }
 }
 
@@ -498,10 +479,7 @@ multi_runner_parent::add_failures(std::size_t failures)
 
 //------------------------------------------------------------------------------
 
-multi_runner_child::multi_runner_child(
-    std::size_t num_jobs,
-    bool quiet,
-    bool print_log)
+multi_runner_child::multi_runner_child(std::size_t num_jobs, bool quiet, bool print_log)
     : job_index_{checkout_job_index()}
     , num_jobs_{num_jobs}
     , quiet_{quiet}
@@ -582,9 +560,8 @@ multi_runner_child::on_suite_end()
         std::stringstream s;
         if (num_jobs_ > 1)
             s << job_index_ << "> ";
-        s << (suite_results_.failed > 0 ? "failed: " : "")
-          << suite_results_.name << " had " << suite_results_.failed
-          << " failures." << std::endl;
+        s << (suite_results_.failed > 0 ? "failed: " : "") << suite_results_.name << " had "
+          << suite_results_.failed << " failures." << std::endl;
         message_queue_send(MessageType::log, s.str());
     }
     results_.add(suite_results_);
@@ -602,8 +579,8 @@ multi_runner_child::on_case_begin(std::string const& name)
     std::stringstream s;
     if (num_jobs_ > 1)
         s << job_index_ << "> ";
-    s << suite_results_.name
-      << (case_results_.name.empty() ? "" : (" " + case_results_.name)) << '\n';
+    s << suite_results_.name << (case_results_.name.empty() ? "" : (" " + case_results_.name))
+      << '\n';
     message_queue_send(MessageType::log, s.str());
 }
 
@@ -627,8 +604,7 @@ multi_runner_child::on_fail(std::string const& reason)
     std::stringstream s;
     if (num_jobs_ > 1)
         s << job_index_ << "> ";
-    s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ")
-      << reason << '\n';
+    s << "#" << case_results_.total << " failed" << (reason.empty() ? "" : ": ") << reason << '\n';
     message_queue_send(MessageType::log, s.str());
 }
 
@@ -645,10 +621,11 @@ multi_runner_child::on_log(std::string const& msg)
     message_queue_send(MessageType::log, s.str());
 }
 
+}  // namespace test
+
 namespace detail {
 template class multi_runner_base<true>;
 template class multi_runner_base<false>;
 }  // namespace detail
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl

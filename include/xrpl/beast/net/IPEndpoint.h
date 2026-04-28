@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_NET_IPENDPOINT_H_INCLUDED
-#define BEAST_NET_IPENDPOINT_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
@@ -28,8 +8,7 @@
 #include <optional>
 #include <string>
 
-namespace beast {
-namespace IP {
+namespace beast::IP {
 
 using Port = std::uint16_t;
 
@@ -41,7 +20,7 @@ public:
     Endpoint();
 
     /** Create an endpoint from the address and optional port. */
-    explicit Endpoint(Address const& addr, Port port = 0);
+    explicit Endpoint(Address addr, Port port = 0);
 
     /** Create an Endpoint from a string.
         If the port is omitted, the endpoint will have a zero port.
@@ -53,25 +32,25 @@ public:
     from_string(std::string const& s);
 
     /** Returns a string representing the endpoint. */
-    std::string
+    [[nodiscard]] std::string
     to_string() const;
 
     /** Returns the port number on the endpoint. */
-    Port
+    [[nodiscard]] Port
     port() const
     {
         return m_port;
     }
 
     /** Returns a new Endpoint with a different port. */
-    Endpoint
+    [[nodiscard]] Endpoint
     at_port(Port port) const
     {
         return Endpoint(m_addr, port);
     }
 
     /** Returns the address portion of this endpoint. */
-    Address const&
+    [[nodiscard]] Address const&
     address() const
     {
         return m_addr;
@@ -79,22 +58,22 @@ public:
 
     /** Convenience accessors for the address part. */
     /** @{ */
-    bool
+    [[nodiscard]] bool
     is_v4() const
     {
         return m_addr.is_v4();
     }
-    bool
+    [[nodiscard]] bool
     is_v6() const
     {
         return m_addr.is_v6();
     }
-    AddressV4 const
+    [[nodiscard]] AddressV4
     to_v4() const
     {
         return m_addr.to_v4();
     }
-    AddressV6 const
+    [[nodiscard]] AddressV6
     to_v6() const
     {
         return m_addr.to_v6();
@@ -204,8 +183,7 @@ operator<<(OutputStream& os, Endpoint const& endpoint)
 std::istream&
 operator>>(std::istream& is, Endpoint& endpoint);
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP
 
 //------------------------------------------------------------------------------
 
@@ -238,5 +216,3 @@ struct hash<::beast::IP::Endpoint>
     }
 };
 }  // namespace boost
-
-#endif

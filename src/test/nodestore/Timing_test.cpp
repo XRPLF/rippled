@@ -1,63 +1,54 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/nodestore/DummyScheduler.h>
-#include <xrpld/nodestore/Manager.h>
-
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/unit_test/thread.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 
+#include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <iterator>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iomanip>
+#include <ios>
+#include <memory>
+#include <ostream>
 #include <random>
 #include <sstream>
-#include <stdexcept>
-#include <type_traits>
+#include <string>
 #include <utility>
+#include <vector>
 
 #ifndef NODESTORE_TIMING_DO_VERIFY
 #define NODESTORE_TIMING_DO_VERIFY 0
 #endif
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 std::unique_ptr<Backend>
-make_Backend(
-    Section const& config,
-    Scheduler& scheduler,
-    beast::Journal journal)
+make_Backend(Section const& config, Scheduler& scheduler, beast::Journal journal)
 {
-    return Manager::instance().make_Backend(
-        config, megabytes(4), scheduler, journal);
+    return Manager::instance().make_Backend(config, megabytes(4), scheduler, journal);
 }
 
 // Fill memory with random bits
@@ -134,7 +125,7 @@ public:
     {
         b.clear();
         b.reserve(size);
-        while (size--)
+        while ((size--) != 0u)
             b.emplace_back(obj(n++));
     }
 };
@@ -170,8 +161,7 @@ public:
     {
         std::string s;
         for (auto iter = config.begin(); iter != config.end(); ++iter)
-            s += (iter != config.begin() ? "," : "") + iter->first + "=" +
-                iter->second;
+            s += (iter != config.begin() ? "," : "") + iter->first + "=" + iter->second;
         return s;
     }
 
@@ -205,8 +195,7 @@ public:
         std::atomic<std::size_t>& c_;
 
     public:
-        parallel_for_lambda(std::size_t n, std::atomic<std::size_t>& c)
-            : n_(n), c_(c)
+        parallel_for_lambda(std::size_t n, std::atomic<std::size_t>& c) : n_(n), c_(c)
         {
         }
 
@@ -233,13 +222,10 @@ public:
     */
     template <class Body, class... Args>
     void
-    parallel_for(
-        std::size_t const n,
-        std::size_t number_of_threads,
-        Args const&... args)
+    parallel_for(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
@@ -249,13 +235,10 @@ public:
 
     template <class Body, class... Args>
     void
-    parallel_for_id(
-        std::size_t const n,
-        std::size_t number_of_threads,
-        Args const&... args)
+    parallel_for_id(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
@@ -267,10 +250,7 @@ public:
 
     // Insert only
     void
-    do_insert(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_insert(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
         auto backend = make_Backend(config, scheduler, journal);
@@ -285,8 +265,7 @@ public:
             Sequence seq_;
 
         public:
-            explicit Body(suite& s, Backend& backend)
-                : suite_(s), backend_(backend), seq_(1)
+            explicit Body(suite& s, Backend& backend) : suite_(s), backend_(backend), seq_(1)
             {
             }
 
@@ -306,11 +285,7 @@ public:
 
         try
         {
-            parallel_for<Body>(
-                params.items,
-                params.threads,
-                std::ref(*this),
-                std::ref(*backend));
+            parallel_for<Body>(params.items, params.threads, std::ref(*this), std::ref(*backend));
         }
         catch (std::exception const&)
         {
@@ -324,10 +299,7 @@ public:
 
     // Fetch existing keys
     void
-    do_fetch(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_fetch(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
         auto backend = make_Backend(config, scheduler, journal);
@@ -344,16 +316,8 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
-                : suite_(s)
-                , backend_(backend)
-                , seq1_(1)
-                , gen_(id + 1)
-                , dist_(0, params.items - 1)
+            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
+                : suite_(s), backend_(backend), seq1_(1), gen_(id + 1), dist_(0, params.items - 1)
             {
             }
 
@@ -365,7 +329,7 @@ public:
                     std::shared_ptr<NodeObject> obj;
                     std::shared_ptr<NodeObject> result;
                     obj = seq1_.obj(dist_(gen_));
-                    backend_.fetch(obj->getHash().data(), &result);
+                    backend_.fetch(obj->getHash(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
                 catch (std::exception const& e)
@@ -395,10 +359,7 @@ public:
 
     // Perform lookups of non-existent keys
     void
-    do_missing(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_missing(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
         auto backend = make_Backend(config, scheduler, journal);
@@ -416,11 +377,7 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 //, params_ (params)
                 , backend_(backend)
@@ -435,9 +392,9 @@ public:
             {
                 try
                 {
-                    auto const key = seq2_.key(i);
+                    auto const hash = seq2_.key(i);
                     std::shared_ptr<NodeObject> result;
-                    backend_.fetch(key.data(), &result);
+                    backend_.fetch(hash, &result);
                     suite_.expect(!result);
                 }
                 catch (std::exception const& e)
@@ -468,10 +425,7 @@ public:
 
     // Fetch with present and missing keys
     void
-    do_mixed(
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_mixed(Section const& config, Params const& params, beast::Journal journal)
     {
         DummyScheduler scheduler;
         auto backend = make_Backend(config, scheduler, journal);
@@ -491,11 +445,7 @@ public:
             std::uniform_int_distribution<std::size_t> dist_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 //, params_ (params)
                 , backend_(backend)
@@ -514,9 +464,9 @@ public:
                 {
                     if (rand_(gen_) < missingNodePercent)
                     {
-                        auto const key = seq2_.key(dist_(gen_));
+                        auto const hash = seq2_.key(dist_(gen_));
                         std::shared_ptr<NodeObject> result;
-                        backend_.fetch(key.data(), &result);
+                        backend_.fetch(hash, &result);
                         suite_.expect(!result);
                     }
                     else
@@ -524,7 +474,7 @@ public:
                         std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
                         obj = seq1_.obj(dist_(gen_));
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result && isSame(result, obj));
                     }
                 }
@@ -554,7 +504,7 @@ public:
         backend->close();
     }
 
-    // Simulate a rippled workload:
+    // Simulate an xrpld workload:
     // Each thread randomly:
     //      inserts a new key
     //      fetches an old key
@@ -581,18 +531,14 @@ public:
             std::uniform_int_distribution<std::size_t> older_;
 
         public:
-            Body(
-                std::size_t id,
-                suite& s,
-                Params const& params,
-                Backend& backend)
+            Body(std::size_t id, suite& s, Params const& params, Backend& backend)
                 : suite_(s)
                 , params_(params)
                 , backend_(backend)
                 , seq1_(1)
                 , gen_(id + 1)
                 , rand_(0, 99)
-                , recent_(params.items, params.items * 2 - 1)
+                , recent_(params.items, (params.items * 2) - 1)
                 , older_(0, params.items - 1)
             {
             }
@@ -609,8 +555,7 @@ public:
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
                         obj = seq1_.obj(j);
-                        std::shared_ptr<NodeObject> result1;
-                        backend_.fetch(obj->getHash().data(), &result);
+                        backend_.fetch(obj->getHash(), &result);
                         suite_.expect(result != nullptr);
                         suite_.expect(isSame(result, obj));
                     }
@@ -620,6 +565,7 @@ public:
                     p[1] = 1 - p[0];
                     for (int q = 0; q < 2; ++q)
                     {
+                        // NOLINTNEXTLINE(bugprone-switch-missing-default-case)
                         switch (p[q])
                         {
                             case 0: {
@@ -628,7 +574,7 @@ public:
                                 std::shared_ptr<NodeObject> result;
                                 auto const j = recent_(gen_);
                                 obj = seq1_.obj(j);
-                                backend_.fetch(obj->getHash().data(), &result);
+                                backend_.fetch(obj->getHash(), &result);
                                 suite_.expect(!result || isSame(result, obj));
                                 break;
                             }
@@ -670,21 +616,15 @@ public:
 
     //--------------------------------------------------------------------------
 
-    using test_func =
-        void (Timing_test::*)(Section const&, Params const&, beast::Journal);
+    using test_func = void (Timing_test::*)(Section const&, Params const&, beast::Journal);
     using test_list = std::vector<std::pair<std::string, test_func>>;
 
     duration_type
-    do_test(
-        test_func f,
-        Section const& config,
-        Params const& params,
-        beast::Journal journal)
+    do_test(test_func f, Section const& config, Params const& params, beast::Journal journal)
     {
         auto const start = clock_type::now();
         (this->*f)(config, params, journal);
-        return std::chrono::duration_cast<duration_type>(
-            clock_type::now() - start);
+        return std::chrono::duration_cast<duration_type>(clock_type::now() - start);
     }
 
     void
@@ -696,10 +636,11 @@ public:
         using std::setw;
         int w = 8;
         for (auto const& test : tests)
-            if (w < test.first.size())
-                w = test.first.size();
-        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", "
-            << default_items << " Objects" << std::endl;
+        {
+            w = std::max<std::basic_string<char>::size_type>(w, test.first.size());
+        }
+        log << threads << " Thread" << (threads > 1 ? "s" : "") << ", " << default_items
+            << " Objects" << std::endl;
         {
             std::stringstream ss;
             ss << std::left << setw(10) << "Backend" << std::right;
@@ -713,21 +654,21 @@ public:
 
         for (auto const& config_string : config_strings)
         {
-            Params params;
+            Params params{};
             params.items = default_items;
             params.threads = threads;
-            for (auto i = default_repeat; i--;)
+            for (auto i = default_repeat; (i--) != 0u;)
             {
-                beast::temp_dir tempDir;
+                beast::temp_dir const tempDir;
                 Section config = parse(config_string);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
-                ss << std::left << setw(10)
-                   << get(config, "type", std::string()) << std::right;
+                ss << std::left << setw(10) << get(config, "type", std::string()) << std::right;
                 for (auto const& test : tests)
+                {
                     ss << " " << setw(w)
-                       << to_string(
-                              do_test(test.second, config, params, journal));
+                       << to_string(do_test(test.second, config, params, journal));
+                }
                 ss << "   " << to_string(config);
                 log << ss.str() << std::endl;
             }
@@ -745,9 +686,9 @@ public:
             items           Number of objects to create in the database
 
         */
-        std::string default_args =
+        std::string const default_args =
             "type=nudb"
-#if RIPPLE_ROCKSDB_AVAILABLE
+#if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
             "file_size_mb=8,file_size_mult=2"
 #endif
@@ -767,10 +708,16 @@ public:
         std::vector<std::string> config_strings;
         boost::split(config_strings, args, boost::algorithm::is_any_of(";"));
         for (auto iter = config_strings.begin(); iter != config_strings.end();)
+        {
             if (iter->empty())
+            {
                 iter = config_strings.erase(iter);
+            }
             else
+            {
                 ++iter;
+            }
+        }
 
         do_tests(1, tests, config_strings);
         do_tests(4, tests, config_strings);
@@ -779,7 +726,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, NodeStore, ripple, 1);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, xrpl, 1);
 
-}  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl::NodeStore

@@ -1,22 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
+#include <xrpl/beast/core/List.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
@@ -62,13 +44,11 @@ PropertyStream::Item::operator*() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Proxy::Proxy(Map const& map, std::string const& key)
-    : m_map(&map), m_key(key)
+PropertyStream::Proxy::Proxy(Map const& map, std::string key) : m_map(&map), m_key(std::move(key))
 {
 }
 
-PropertyStream::Proxy::Proxy(Proxy const& other)
-    : m_map(other.m_map), m_key(other.m_key)
+PropertyStream::Proxy::Proxy(Proxy const& other) : m_map(other.m_map), m_key(other.m_key)
 {
 }
 
@@ -100,14 +80,12 @@ PropertyStream::Map::Map(Set& parent) : m_stream(parent.stream())
     m_stream.map_begin();
 }
 
-PropertyStream::Map::Map(std::string const& key, Map& map)
-    : m_stream(map.stream())
+PropertyStream::Map::Map(std::string const& key, Map& map) : m_stream(map.stream())
 {
     m_stream.map_begin(key);
 }
 
-PropertyStream::Map::Map(std::string const& key, PropertyStream& stream)
-    : m_stream(stream)
+PropertyStream::Map::Map(std::string const& key, PropertyStream& stream) : m_stream(stream)
 {
     m_stream.map_begin(key);
 }
@@ -141,14 +119,12 @@ PropertyStream::Map::operator[](std::string const& key)
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Set::Set(std::string const& key, Map& map)
-    : m_stream(map.stream())
+PropertyStream::Set::Set(std::string const& key, Map& map) : m_stream(map.stream())
 {
     m_stream.array_begin(key);
 }
 
-PropertyStream::Set::Set(std::string const& key, PropertyStream& stream)
-    : m_stream(stream)
+PropertyStream::Set::Set(std::string const& key, PropertyStream& stream) : m_stream(stream)
 {
     m_stream.array_begin(key);
 }
@@ -176,14 +152,13 @@ PropertyStream::Set::stream() const
 //
 //------------------------------------------------------------------------------
 
-PropertyStream::Source::Source(std::string const& name)
-    : m_name(name), item_(this), parent_(nullptr)
+PropertyStream::Source::Source(std::string name) : m_name(std::move(name)), item_(this)
 {
 }
 
 PropertyStream::Source::~Source()
 {
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
     if (parent_ != nullptr)
         parent_->remove(*this);
     removeAll();
@@ -199,12 +174,11 @@ void
 PropertyStream::Source::add(Source& source)
 {
     std::lock(lock_, source.lock_);
-    std::lock_guard lk1(lock_, std::adopt_lock);
-    std::lock_guard lk2(source.lock_, std::adopt_lock);
+    std::lock_guard const lk1(lock_, std::adopt_lock);
+    std::lock_guard const lk2(source.lock_, std::adopt_lock);
 
     XRPL_ASSERT(
-        source.parent_ == nullptr,
-        "beast::PropertyStream::Source::add : null source parent");
+        source.parent_ == nullptr, "beast::PropertyStream::Source::add : null source parent");
     children_.push_back(source.item_);
     source.parent_ = this;
 }
@@ -213,12 +187,11 @@ void
 PropertyStream::Source::remove(Source& child)
 {
     std::lock(lock_, child.lock_);
-    std::lock_guard lk1(lock_, std::adopt_lock);
-    std::lock_guard lk2(child.lock_, std::adopt_lock);
+    std::lock_guard const lk1(lock_, std::adopt_lock);
+    std::lock_guard const lk2(child.lock_, std::adopt_lock);
 
     XRPL_ASSERT(
-        child.parent_ == this,
-        "beast::PropertyStream::Source::remove : child parent match");
+        child.parent_ == this, "beast::PropertyStream::Source::remove : child parent match");
     children_.erase(children_.iterator_to(child.item_));
     child.parent_ = nullptr;
 }
@@ -226,10 +199,10 @@ PropertyStream::Source::remove(Source& child)
 void
 PropertyStream::Source::removeAll()
 {
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
     for (auto iter = children_.begin(); iter != children_.end();)
     {
-        std::lock_guard _cl((*iter)->lock_);
+        std::lock_guard const _cl((*iter)->lock_);
         remove(*(*iter));
     }
 }
@@ -249,7 +222,7 @@ PropertyStream::Source::write(PropertyStream& stream)
     Map map(m_name, stream);
     onWrite(map);
 
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
 
     for (auto& child : children_)
         child.source().write(stream);
@@ -264,9 +237,13 @@ PropertyStream::Source::write(PropertyStream& stream, std::string const& path)
         return;
 
     if (result.second)
+    {
         result.first->write(stream);
+    }
     else
+    {
         result.first->write_one(stream);
+    }
 }
 
 std::pair<PropertyStream::Source*, bool>
@@ -322,15 +299,19 @@ PropertyStream::Source::peel_name(std::string* path)
     if (path->empty())
         return "";
 
-    std::string::const_iterator first = (*path).begin();
-    std::string::const_iterator last = (*path).end();
-    std::string::const_iterator pos = std::find(first, last, '/');
+    std::string::const_iterator const first = (*path).begin();
+    std::string::const_iterator const last = (*path).end();
+    std::string::const_iterator const pos = std::find(first, last, '/');
     std::string s(first, pos);
 
     if (pos != last)
+    {
         *path = std::string(pos + 1, last);
+    }
     else
+    {
         *path = std::string();
+    }
 
     return s;
 }
@@ -339,11 +320,11 @@ PropertyStream::Source::peel_name(std::string* path)
 PropertyStream::Source*
 PropertyStream::Source::find_one_deep(std::string const& name)
 {
-    Source* found = find_one(name);
+    Source* found = find_one(name);  // NOLINT(misc-const-correctness)
     if (found != nullptr)
         return found;
 
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
     for (auto& s : children_)
     {
         found = s.source().find_one_deep(name);
@@ -374,7 +355,7 @@ PropertyStream::Source::find_path(std::string path)
 PropertyStream::Source*
 PropertyStream::Source::find_one(std::string const& name)
 {
-    std::lock_guard _(lock_);
+    std::lock_guard const _(lock_);
     for (auto& s : children_)
     {
         if (s.source().m_name == name)
@@ -398,9 +379,13 @@ void
 PropertyStream::add(std::string const& key, bool value)
 {
     if (value)
+    {
         add(key, "true");
+    }
     else
+    {
         add(key, "false");
+    }
 }
 
 void
@@ -491,9 +476,13 @@ void
 PropertyStream::add(bool value)
 {
     if (value)
+    {
         add("true");
+    }
     else
+    {
         add("false");
+    }
 }
 
 void

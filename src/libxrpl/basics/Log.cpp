@@ -1,23 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpl/basics/Log.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -36,13 +18,10 @@
 #include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
-Logs::Sink::Sink(
-    std::string const& partition,
-    beast::severities::Severity thresh,
-    Logs& logs)
-    : beast::Journal::Sink(thresh, false), logs_(logs), partition_(partition)
+Logs::Sink::Sink(std::string partition, beast::severities::Severity thresh, Logs& logs)
+    : beast::Journal::Sink(thresh, false), logs_(logs), partition_(std::move(partition))
 {
 }
 
@@ -56,9 +35,7 @@ Logs::Sink::write(beast::severities::Severity level, std::string const& text)
 }
 
 void
-Logs::Sink::writeAlways(
-    beast::severities::Severity level,
-    std::string const& text)
+Logs::Sink::writeAlways(beast::severities::Severity level, std::string const& text)
 {
     logs_.write(level, partition_, text, console());
 }
@@ -83,8 +60,7 @@ Logs::File::open(boost::filesystem::path const& path)
     bool wasOpened = false;
 
     // VFALCO TODO Make this work with Unicode file paths
-    std::unique_ptr<std::ofstream> stream(
-        new std::ofstream(path.c_str(), std::fstream::app));
+    std::unique_ptr<std::ofstream> stream(new std::ofstream(path.c_str(), std::fstream::app));
 
     if (stream->good())
     {
@@ -131,8 +107,7 @@ Logs::File::writeln(char const* text)
 
 //------------------------------------------------------------------------------
 
-Logs::Logs(beast::severities::Severity thresh)
-    : thresh_(thresh)  // default severity
+Logs::Logs(beast::severities::Severity thresh) : thresh_(thresh)  // default severity
 {
 }
 
@@ -145,7 +120,7 @@ Logs::open(boost::filesystem::path const& pathToLogFile)
 beast::Journal::Sink&
 Logs::get(std::string const& name)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     auto const result = sinks_.emplace(name, makeSink(name, thresh_));
     return *result.first->second;
 }
@@ -171,7 +146,7 @@ Logs::threshold() const
 void
 Logs::threshold(beast::severities::Severity thresh)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     thresh_ = thresh;
     for (auto& sink : sinks_)
         sink.second->threshold(thresh);
@@ -181,7 +156,7 @@ std::vector<std::pair<std::string, std::string>>
 Logs::partition_severities() const
 {
     std::vector<std::pair<std::string, std::string>> list;
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     list.reserve(sinks_.size());
     for (auto const& [name, sink] : sinks_)
         list.emplace_back(name, toString(fromSeverity(sink->threshold())));
@@ -197,7 +172,7 @@ Logs::write(
 {
     std::string s;
     format(s, text, level, partition);
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     file_.writeln(s);
     if (!silent_)
         std::cerr << s << '\n';
@@ -209,7 +184,7 @@ Logs::write(
 std::string
 Logs::rotate()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     bool const wasOpened = file_.closeAndReopen();
     if (wasOpened)
         return "The log file was closed and reopened.";
@@ -239,9 +214,11 @@ Logs::fromSeverity(beast::severities::Severity level)
         case kError:
             return lsERROR;
 
+        // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::fromSeverity : invalid severity");
+            UNREACHABLE("xrpl::Logs::fromSeverity : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case kFatal:
             break;
     }
@@ -265,9 +242,11 @@ Logs::toSeverity(LogSeverity level)
             return kWarning;
         case lsERROR:
             return kError;
+        // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::toSeverity : invalid severity");
+            UNREACHABLE("xrpl::Logs::toSeverity : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case lsFATAL:
             break;
     }
@@ -292,9 +271,11 @@ Logs::toString(LogSeverity s)
             return "Error";
         case lsFATAL:
             return "Fatal";
+        // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::toString : invalid severity");
+            UNREACHABLE("xrpl::Logs::toString : invalid severity");
             return "Unknown";
+            // LCOV_EXCL_STOP
     }
 }
 
@@ -310,8 +291,7 @@ Logs::fromString(std::string const& s)
     if (boost::iequals(s, "info") || boost::iequals(s, "information"))
         return lsINFO;
 
-    if (boost::iequals(s, "warn") || boost::iequals(s, "warning") ||
-        boost::iequals(s, "warnings"))
+    if (boost::iequals(s, "warn") || boost::iequals(s, "warning") || boost::iequals(s, "warnings"))
         return lsWARNING;
 
     if (boost::iequals(s, "error") || boost::iequals(s, "errors"))
@@ -356,9 +336,11 @@ Logs::format(
         case kError:
             output += "ERR ";
             break;
+        // LCOV_EXCL_START
         default:
-            UNREACHABLE("ripple::Logs::format : invalid severity");
+            UNREACHABLE("xrpl::Logs::format : invalid severity");
             [[fallthrough]];
+        // LCOV_EXCL_STOP
         case kFatal:
             output += "FTL ";
             break;
@@ -430,15 +412,19 @@ public:
     std::unique_ptr<beast::Journal::Sink>
     set(std::unique_ptr<beast::Journal::Sink> sink)
     {
-        std::lock_guard _(m_);
+        std::lock_guard const _(m_);
 
         using std::swap;
         swap(holder_, sink);
 
         if (holder_)
+        {
             sink_ = *holder_;
+        }
         else
+        {
             sink_ = beast::Journal::getNullSink();
+        }
 
         return sink;
     }
@@ -446,7 +432,7 @@ public:
     beast::Journal::Sink&
     get()
     {
-        std::lock_guard _(m_);
+        std::lock_guard const _(m_);
         return sink_.get();
     }
 };
@@ -470,4 +456,4 @@ debugLog()
     return beast::Journal(debugSink().get());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

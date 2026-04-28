@@ -1,29 +1,16 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
 
+#include <test/jtx/amount.h>
+
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-namespace ripple {
-namespace test {
+#include <atomic>
+#include <map>
+#include <memory>
+#include <vector>
+
+namespace xrpl::test {
 
 std::atomic<bool> envUseIPv4{false};
 
@@ -106,6 +93,12 @@ secure_gateway_localnet(std::unique_ptr<Config> cfg)
     (*cfg)[PORT_WS].set("secure_gateway", "127.0.0.0/8");
     return cfg;
 }
+std::unique_ptr<Config>
+single_thread_io(std::unique_ptr<Config> cfg)
+{
+    cfg->IO_WORKERS = 1;
+    return cfg;
+}
 
 auto constexpr defaultseed = "shUwVw52ofnCUX5m7kPTKzJdr4HEH";
 
@@ -127,9 +120,7 @@ addGrpcConfig(std::unique_ptr<Config> cfg)
 }
 
 std::unique_ptr<Config>
-addGrpcConfigWithSecureGateway(
-    std::unique_ptr<Config> cfg,
-    std::string const& secureGateway)
+addGrpcConfigWithSecureGateway(std::unique_ptr<Config> cfg, std::string const& secureGateway)
 {
     (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
 
@@ -137,6 +128,49 @@ addGrpcConfigWithSecureGateway(
     // "ip_local_port_range" section for using 0 ports
     (*cfg)[SECTION_PORT_GRPC].set("port", "0");
     (*cfg)[SECTION_PORT_GRPC].set("secure_gateway", secureGateway);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLS(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndClientCA(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& clientCAPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_client_ca", clientCAPath);
+    return cfg;
+}
+
+std::unique_ptr<Config>
+addGrpcConfigWithTLSAndCertChain(
+    std::unique_ptr<Config> cfg,
+    std::string const& certPath,
+    std::string const& keyPath,
+    std::string const& certChainPath)
+{
+    (*cfg)[SECTION_PORT_GRPC].set("ip", getEnvLocalhostAddr());
+    (*cfg)[SECTION_PORT_GRPC].set("port", "0");
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert", certPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_key", keyPath);
+    (*cfg)[SECTION_PORT_GRPC].set("ssl_cert_chain", certChainPath);
     return cfg;
 }
 
@@ -174,5 +208,4 @@ makeConfig(
 }
 
 }  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

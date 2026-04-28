@@ -1,41 +1,46 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/app/ledger/InboundLedgers.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/core/JobQueue.h>
-#include <xrpld/perflog/PerfLog.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/beast/container/aged_map.h>
+#include <xrpl/beast/container/detail/aged_ordered_container.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/core/JobQueue.h>
+#include <xrpl/core/PerfLog.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <xrpl.pb.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
 #include <exception>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <set>
+#include <string>
+#include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 class InboundLedgersImp : public InboundLedgers
 {
@@ -57,7 +62,7 @@ public:
         std::unique_ptr<PeerSetBuilder> peerSetBuilder)
         : app_(app)
         , fetchRate_(clock.now())
-        , j_(app.journal("InboundLedger"))
+        , j_(app.getJournal("InboundLedger"))
         , m_clock(clock)
         , mRecentFailures(clock)
         , mCounter(collector->make_counter("ledger_fetches"))
@@ -67,19 +72,14 @@ public:
 
     /** @callgraph */
     std::shared_ptr<Ledger const>
-    acquire(
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::Reason reason) override
+    acquire(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
             XRPL_ASSERT(
-                hash.isNonZero(),
-                "ripple::InboundLedgersImp::acquire::doAcquire : nonzero hash");
+                hash.isNonZero(), "xrpl::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
             // probably not the right rule
-            if (app_.getOPs().isNeedNetworkLedger() &&
-                (reason != InboundLedger::Reason::GENERIC) &&
+            if (app_.getOPs().isNeedNetworkLedger() && (reason != InboundLedger::Reason::GENERIC) &&
                 (reason != InboundLedger::Reason::CONSENSUS))
                 return {};
 
@@ -101,12 +101,7 @@ public:
                 else
                 {
                     inbound = std::make_shared<InboundLedger>(
-                        app_,
-                        hash,
-                        seq,
-                        reason,
-                        std::ref(m_clock),
-                        mPeerSetBuilder->build());
+                        app_, hash, seq, reason, std::ref(m_clock), mPeerSetBuilder->build());
                     mLedgers.emplace(hash, inbound);
                     inbound->init(sl);
                     ++mCounter;
@@ -125,17 +120,14 @@ public:
             return inbound->getLedger();
         };
         using namespace std::chrono_literals;
-        std::shared_ptr<Ledger const> ledger = perf::measureDurationAndLog(
-            doAcquire, "InboundLedgersImp::acquire", 500ms, j_);
+        std::shared_ptr<Ledger const> ledger =
+            perf::measureDurationAndLog(doAcquire, "InboundLedgersImp::acquire", 500ms, j_);
 
         return ledger;
     }
 
     void
-    acquireAsync(
-        uint256 const& hash,
-        std::uint32_t seq,
-        InboundLedger::Reason reason) override
+    acquireAsync(uint256 const& hash, std::uint32_t seq, InboundLedger::Reason reason) override
     {
         std::unique_lock lock(acquiresMutex_);
         try
@@ -143,20 +135,17 @@ public:
             if (pendingAcquires_.contains(hash))
                 return;
             pendingAcquires_.insert(hash);
-            scope_unlock unlock(lock);
+            scope_unlock const unlock(lock);
             acquire(hash, seq, reason);
         }
         catch (std::exception const& e)
         {
-            JLOG(j_.warn())
-                << "Exception thrown for acquiring new inbound ledger " << hash
-                << ": " << e.what();
+            JLOG(j_.warn()) << "Exception thrown for acquiring new inbound ledger " << hash << ": "
+                            << e.what();
         }
         catch (...)
         {
-            JLOG(j_.warn())
-                << "Unknown exception thrown for acquiring new inbound ledger "
-                << hash;
+            JLOG(j_.warn()) << "Unknown exception thrown for acquiring new inbound ledger " << hash;
         }
         pendingAcquires_.erase(hash);
     }
@@ -164,14 +153,12 @@ public:
     std::shared_ptr<InboundLedger>
     find(uint256 const& hash) override
     {
-        XRPL_ASSERT(
-            hash.isNonZero(),
-            "ripple::InboundLedgersImp::find : nonzero input");
+        XRPL_ASSERT(hash.isNonZero(), "xrpl::InboundLedgersImp::find : nonzero input");
 
         std::shared_ptr<InboundLedger> ret;
 
         {
-            ScopedLockType sl(mLock);
+            ScopedLockType const sl(mLock);
 
             auto it = mLedgers.find(hash);
             if (it != mLedgers.end())
@@ -211,25 +198,22 @@ public:
             // Stash the data for later processing and see if we need to
             // dispatch
             if (ledger->gotData(std::weak_ptr<Peer>(peer), packet))
+            {
                 app_.getJobQueue().addJob(
-                    jtLEDGER_DATA, "processLedgerData", [ledger]() {
-                        ledger->runData();
-                    });
+                    jtLEDGER_DATA, "ProcessLData", [ledger]() { ledger->runData(); });
+            }
 
             return true;
         }
 
-        JLOG(j_.trace()) << "Got data for ledger " << hash
-                         << " which we're no longer acquiring";
+        JLOG(j_.trace()) << "Got data for ledger " << hash << " which we're no longer acquiring";
 
         // If it's state node data, stash it because it still might be
         // useful.
         if (packet->type() == protocol::liAS_NODE)
         {
             app_.getJobQueue().addJob(
-                jtLEDGER_DATA, "gotStaleData", [this, packet]() {
-                    gotStaleData(packet);
-                });
+                jtLEDGER_DATA, "GotStaleData", [this, packet]() { gotStaleData(packet); });
         }
 
         return false;
@@ -238,7 +222,7 @@ public:
     void
     logFailure(uint256 const& h, std::uint32_t seq) override
     {
-        ScopedLockType sl(mLock);
+        ScopedLockType const sl(mLock);
 
         mRecentFailures.emplace(h, seq);
     }
@@ -246,7 +230,7 @@ public:
     bool
     isFailure(uint256 const& h) override
     {
-        ScopedLockType sl(mLock);
+        ScopedLockType const sl(mLock);
 
         beast::expire(mRecentFailures, kReacquireInterval);
         return mRecentFailures.find(h) != mRecentFailures.end();
@@ -271,8 +255,7 @@ public:
                 if (!node.has_nodeid() || !node.has_nodedata())
                     return;
 
-                auto newNode =
-                    SHAMapTreeNode::makeFromWire(makeSlice(node.nodedata()));
+                auto newNode = SHAMapTreeNode::makeFromWire(makeSlice(node.nodedata()));
 
                 if (!newNode)
                     return;
@@ -281,11 +264,10 @@ public:
                 newNode->serializeWithPrefix(s);
 
                 app_.getLedgerMaster().addFetchPack(
-                    newNode->getHash().as_uint256(),
-                    std::make_shared<Blob>(s.begin(), s.end()));
+                    newNode->getHash().as_uint256(), std::make_shared<Blob>(s.begin(), s.end()));
             }
         }
-        catch (std::exception const&)
+        catch (std::exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
     }
@@ -293,7 +275,7 @@ public:
     void
     clearFailures() override
     {
-        ScopedLockType sl(mLock);
+        ScopedLockType const sl(mLock);
 
         mRecentFailures.clear();
         mLedgers.clear();
@@ -302,7 +284,7 @@ public:
     std::size_t
     fetchRate() override
     {
-        std::lock_guard lock(fetchRateMutex_);
+        std::lock_guard const lock(fetchRateMutex_);
         return 60 * fetchRate_.value(m_clock.now());
     }
 
@@ -311,7 +293,7 @@ public:
     void
     onLedgerFetched() override
     {
-        std::lock_guard lock(fetchRateMutex_);
+        std::lock_guard const lock(fetchRateMutex_);
         fetchRate_.add(1, m_clock.now());
     }
 
@@ -323,33 +305,39 @@ public:
         std::vector<std::pair<uint256, std::shared_ptr<InboundLedger>>> acqs;
 
         {
-            ScopedLockType sl(mLock);
+            ScopedLockType const sl(mLock);
 
             acqs.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                XRPL_ASSERT(
-                    it.second,
-                    "ripple::InboundLedgersImp::getInfo : non-null ledger");
-                acqs.push_back(it);
+                XRPL_ASSERT(it.second, "xrpl::InboundLedgersImp::getInfo : non-null ledger");
+                acqs.emplace_back(it);
             }
             for (auto const& it : mRecentFailures)
             {
                 if (it.second > 1)
+                {
                     ret[std::to_string(it.second)][jss::failed] = true;
+                }
                 else
+                {
                     ret[to_string(it.first)][jss::failed] = true;
+                }
             }
         }
 
         for (auto const& it : acqs)
         {
             // getJson is expensive, so call without the lock
-            std::uint32_t seq = it.second->getSeq();
+            std::uint32_t const seq = it.second->getSeq();
             if (seq > 1)
+            {
                 ret[std::to_string(seq)] = it.second->getJson(0);
+            }
             else
+            {
                 ret[to_string(it.first)] = it.second->getJson(0);
+            }
         }
 
         return ret;
@@ -360,14 +348,14 @@ public:
     {
         std::vector<std::shared_ptr<InboundLedger>> acquires;
         {
-            ScopedLockType sl(mLock);
+            ScopedLockType const sl(mLock);
 
             acquires.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
                 XRPL_ASSERT(
                     it.second,
-                    "ripple::InboundLedgersImp::gotFetchPack : non-null "
+                    "xrpl::InboundLedgersImp::gotFetchPack : non-null "
                     "ledger");
                 acquires.push_back(it.second);
             }
@@ -386,10 +374,10 @@ public:
 
         // Make a list of things to sweep, while holding the lock
         std::vector<MapType::mapped_type> stuffToSweep;
-        std::size_t total;
+        std::size_t total = 0;
 
         {
-            ScopedLockType sl(mLock);
+            ScopedLockType const sl(mLock);
             MapType::iterator it(mLedgers.begin());
             total = mLedgers.size();
 
@@ -423,16 +411,14 @@ public:
         JLOG(j_.debug())
             << "Swept " << stuffToSweep.size() << " out of " << total
             << " inbound ledgers. Duration: "
-            << std::chrono::duration_cast<std::chrono::milliseconds>(
-                   m_clock.now() - start)
-                   .count()
+            << std::chrono::duration_cast<std::chrono::milliseconds>(m_clock.now() - start).count()
             << "ms";
     }
 
     void
     stop() override
     {
-        ScopedLockType lock(mLock);
+        ScopedLockType const lock(mLock);
         stopping_ = true;
         mLedgers.clear();
         mRecentFailures.clear();
@@ -441,7 +427,7 @@ public:
     std::size_t
     cacheSize() override
     {
-        ScopedLockType lock(mLock);
+        ScopedLockType const lock(mLock);
         return mLedgers.size();
     }
 
@@ -473,8 +459,7 @@ make_InboundLedgers(
     InboundLedgers::clock_type& clock,
     beast::insight::Collector::ptr const& collector)
 {
-    return std::make_unique<InboundLedgersImp>(
-        app, clock, collector, make_PeerSetBuilder(app));
+    return std::make_unique<InboundLedgersImp>(app, clock, collector, make_PeerSetBuilder(app));
 }
 
-}  // namespace ripple
+}  // namespace xrpl

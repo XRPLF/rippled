@@ -1,43 +1,46 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/nodestore/detail/codec.h>
-#include <xrpld/unity/rocksdb.h>
-
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/nodestore/detail/codec.h>
 
 #include <boost/beast/core/string.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex.hpp>  // IWYU pragma: keep
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
-#include <nudb/create.hpp>
+#include <nudb/create.hpp>  // IWYU pragma: keep
+#include <nudb/detail/bucket.hpp>
+#include <nudb/detail/buffer.hpp>
+#include <nudb/detail/bulkio.hpp>
+#include <nudb/detail/field.hpp>
 #include <nudb/detail/format.hpp>
+#include <nudb/detail/stream.hpp>
+#include <nudb/error.hpp>
+#include <nudb/file.hpp>
+#include <nudb/native_file.hpp>
 #include <nudb/xxhasher.hpp>
+#include <rocksdb/db.h>
+#include <rocksdb/iterator.h>
+#include <rocksdb/options.h>
+#include <rocksdb/status.h>
 
 #include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <iomanip>
+#include <ios>
 #include <map>
+#include <memory>
+#include <ostream>
+#include <ratio>
 #include <sstream>
+#include <stdexcept>
+#include <string>
 
 /*
 
@@ -60,8 +63,7 @@ multi(32gb):
 
 */
 
-namespace ripple {
-namespace NodeStore {
+namespace xrpl {
 
 namespace detail {
 
@@ -83,10 +85,7 @@ public:
     save_stream_state&
     operator=(save_stream_state const&) = delete;
     explicit save_stream_state(std::ostream& os)
-        : os_(os)
-        , precision_(os.precision())
-        , flags_(os.flags())
-        , fill_(os.fill())
+        : os_(os), precision_(os.precision()), flags_(os.flags()), fill_(os.fill())
     {
     }
 };
@@ -95,7 +94,7 @@ template <class Rep, class Period>
 std::ostream&
 pretty_time(std::ostream& os, std::chrono::duration<Rep, Period> d)
 {
-    save_stream_state _(os);
+    save_stream_state const _(os);
     using namespace std::chrono;
     if (d < microseconds{1})
     {
@@ -191,6 +190,8 @@ fmtdur(std::chrono::duration<Period, Rep> const& d)
 
 }  // namespace detail
 
+namespace NodeStore {
+
 //------------------------------------------------------------------------------
 
 class progress
@@ -233,9 +234,9 @@ public:
         auto const rate = elapsed.count() / double(work);
         clock_type::duration const remain(
             static_cast<clock_type::duration::rep>((work_ - work) * rate));
-        log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of "
-            << work_ << " in " << detail::fmtdur(elapsed) << ", "
-            << (work - prev_) << " in " << detail::fmtdur(now - report_) << ")";
+        log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of " << work_ << " in "
+            << detail::fmtdur(elapsed) << ", " << (work - prev_) << " in "
+            << detail::fmtdur(now - report_) << ")";
         report_ = now;
         prev_ = work;
     }
@@ -254,7 +255,7 @@ parse_args(std::string const& s)
     // <key> '=' <value>
     static boost::regex const re1(
         "^"                        // start of line
-        "(?:\\s*)"                 // whitespace (optonal)
+        "(?:\\s*)"                 // whitespace (optional)
         "([a-zA-Z][_a-zA-Z0-9]*)"  // <key>
         "(?:\\s*)"                 // whitespace (optional)
         "(?:=)"                    // '='
@@ -279,7 +280,7 @@ parse_args(std::string const& s)
 
 //------------------------------------------------------------------------------
 
-#if RIPPLE_ROCKSDB_AVAILABLE
+#if XRPL_ROCKSDB_AVAILABLE
 
 class import_test : public beast::unit_test::suite
 {
@@ -354,16 +355,14 @@ public:
             options.create_if_missing = false;
             options.max_open_files = 2000;  // 5000?
             rocksdb::DB* pdb = nullptr;
-            rocksdb::Status status =
-                rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
-            if (!status.ok() || !pdb)
-                Throw<std::runtime_error>(
-                    "Can't open '" + from_path + "': " + status.ToString());
+            rocksdb::Status const status = rocksdb::DB::OpenForReadOnly(options, from_path, &pdb);
+            if (!status.ok() || (pdb == nullptr))
+                Throw<std::runtime_error>("Can't open '" + from_path + "': " + status.ToString());
             db.reset(pdb);
         }
         // Create data file with values
         std::size_t nitems = 0;
-        dat_file_header dh;
+        dat_file_header dh{};
         dh.version = currentVersion;
         dh.uid = make_uid();
         dh.appnum = 1;
@@ -391,24 +390,23 @@ public:
             for (it->SeekToFirst(); it->Valid(); it->Next())
             {
                 if (it->key().size() != 32)
+                {
                     Throw<std::runtime_error>(
-                        "Unexpected key size " +
-                        std::to_string(it->key().size()));
+                        "Unexpected key size " + std::to_string(it->key().size()));
+                }
                 void const* const key = it->key().data();
                 void const* const data = it->value().data();
                 auto const size = it->value().size();
-                std::unique_ptr<char[]> clean(new char[size]);
+                std::unique_ptr<char[]> const clean(new char[size]);
                 std::memcpy(clean.get(), data, size);
                 filter_inner(clean.get(), size);
                 auto const out = nodeobject_compress(clean.get(), size, buf);
                 // Verify codec correctness
                 {
                     buffer buf2;
-                    auto const check =
-                        nodeobject_decompress(out.first, out.second, buf2);
+                    auto const check = nodeobject_decompress(out.first, out.second, buf2);
                     BEAST_EXPECT(check.second == size);
-                    BEAST_EXPECT(
-                        std::memcmp(check.first, clean.get(), size) == 0);
+                    BEAST_EXPECT(std::memcmp(check.first, clean.get(), size) == 0);
                 }
                 // Data Record
                 auto os = dw.prepare(
@@ -428,13 +426,12 @@ public:
                 Throw<nudb::system_error>(ec);
         }
         db.reset();
-        log << "Import data: "
-            << detail::fmtdur(std::chrono::steady_clock::now() - start);
+        log << "Import data: " << detail::fmtdur(std::chrono::steady_clock::now() - start);
         auto const df_size = df.size(ec);
         if (ec)
             Throw<nudb::system_error>(ec);
         // Create key file
-        key_file_header kh;
+        key_file_header kh{};
         kh.version = currentVersion;
         kh.uid = dh.uid;
         kh.appnum = dh.appnum;
@@ -443,8 +440,7 @@ public:
         kh.pepper = pepper<hash_type>(kh.salt);
         kh.block_size = block_size(kp);
         kh.load_factor = std::min<std::size_t>(65536.0 * load_factor, 65535);
-        kh.buckets =
-            std::ceil(nitems / (bucket_capacity(kh.block_size) * load_factor));
+        kh.buckets = std::ceil(nitems / (bucket_capacity(kh.block_size) * load_factor));
         kh.modulus = ceil_pow2(kh.buckets);
         native_file kf;
         kf.create(file_mode::append, kp, ec);
@@ -462,8 +458,7 @@ public:
         // Build contiguous sequential sections of the
         // key file using multiple passes over the data.
         //
-        auto const buckets =
-            std::max<std::size_t>(1, buffer_size / kh.block_size);
+        auto const buckets = std::max<std::size_t>(1, buffer_size / kh.block_size);
         buf.reserve(buckets * kh.block_size);
         auto const passes = (kh.buckets + buckets - 1) / buckets;
         log << "items:   " << nitems
@@ -486,17 +481,16 @@ public:
             // Create empty buckets
             for (std::size_t i = 0; i < bn; ++i)
             {
-                bucket b(kh.block_size, buf.get() + i * kh.block_size, empty);
+                bucket const b(kh.block_size, buf.get() + (i * kh.block_size), empty);
             }
             // Insert all keys into buckets
             // Iterate Data File
-            bulk_reader<native_file> r(
-                df, dat_file_header::size, df_size, bulk_size);
+            bulk_reader<native_file> r(df, dat_file_header::size, df_size, bulk_size);
             while (!r.eof())
             {
                 auto const offset = r.offset();
                 // Data Record or Spill Record
-                std::size_t size;
+                std::size_t size = 0;
                 auto is = r.prepare(field<uint48_t>::size, ec);  // Size
                 if (ec)
                     Throw<nudb::system_error>(ec);
@@ -513,11 +507,10 @@ public:
                     std::uint8_t const* const key = is.data(dh.key_size);
                     auto const h = hash<hash_type>(key, kh.key_size, kh.salt);
                     auto const n = bucket_index(h, kh.buckets, kh.modulus);
-                    p(log, npass * df_size + r.offset());
+                    p(log, (npass * df_size) + r.offset());
                     if (n < b0 || n >= b1)
                         continue;
-                    bucket b(
-                        kh.block_size, buf.get() + (n - b0) * kh.block_size);
+                    bucket b(kh.block_size, buf.get() + ((n - b0) * kh.block_size));
                     maybe_spill(b, dw, ec);
                     if (ec)
                         Throw<nudb::system_error>(ec);
@@ -536,8 +529,7 @@ public:
                         Throw<nudb::system_error>(ec);
                 }
             }
-            kf.write(
-                (b0 + 1) * kh.block_size, buf.get(), bn * kh.block_size, ec);
+            kf.write((b0 + 1) * kh.block_size, buf.get(), bn * kh.block_size, ec);
             if (ec)
                 Throw<nudb::system_error>(ec);
             ++npass;
@@ -549,11 +541,11 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL(import, NodeStore, ripple);
+BEAST_DEFINE_TESTSUITE_MANUAL(import, nodestore, xrpl);
 
 #endif
 
 //------------------------------------------------------------------------------
 
 }  // namespace NodeStore
-}  // namespace ripple
+}  // namespace xrpl

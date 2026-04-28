@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STVAR_H_INCLUDED
-#define RIPPLE_PROTOCOL_STVAR_H_INCLUDED
+#pragma once
 
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
@@ -27,8 +7,7 @@
 #include <cstddef>
 #include <type_traits>
 
-namespace ripple {
-namespace detail {
+namespace xrpl::detail {
 
 struct defaultObject_t
 {
@@ -45,26 +24,20 @@ extern nonPresentObject_t nonPresentObject;
 
 // Concept to constrain STVar constructors, which
 // instantiate ST* types from SerializedTypeID
-// clang-format off
 template <typename... Args>
 concept ValidConstructSTArgs =
-    (std::is_same_v<
-         std::tuple<std::remove_cvref_t<Args>...>,
-         std::tuple<SField>> ||
-     std::is_same_v<
-         std::tuple<std::remove_cvref_t<Args>...>,
-         std::tuple<SerialIter, SField>>);
-// clang-format on
+    (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>> ||
+     std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SerialIter, SField>>);
 
 // "variant" that can hold any type of serialized object
 // and includes a small-object allocation optimization.
 class STVar
 {
 private:
-    // The largest "small object" we can accomodate
+    // The largest "small object" we can accommodate
     static std::size_t constexpr max_size = 72;
 
-    std::aligned_storage<max_size>::type d_;
+    std::aligned_storage<max_size>::type d_ = {};
     STBase* p_ = nullptr;
 
 public:
@@ -76,7 +49,7 @@ public:
     STVar&
     operator=(STVar&& rhs);
 
-    STVar(STBase&& t)
+    STVar(STBase&& t)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
     {
         p_ = t.move(max_size, &d_);
     }
@@ -105,7 +78,7 @@ public:
     {
         return &get();
     }
-    STBase const&
+    [[nodiscard]] STBase const&
     get() const
     {
         return *p_;
@@ -138,9 +111,13 @@ private:
     construct(Args&&... args)
     {
         if constexpr (sizeof(T) > max_size)
+        {
             p_ = new T(std::forward<Args>(args)...);
+        }
         else
+        {
             p_ = new (&d_) T(std::forward<Args>(args)...);
+        }
     }
 
     /** Construct requested Serializable Type according to id.
@@ -152,7 +129,7 @@ private:
     void
     constructST(SerializedTypeID id, int depth, Args&&... arg);
 
-    bool
+    [[nodiscard]] bool
     on_heap() const
     {
         return static_cast<void const*>(p_) != static_cast<void const*>(&d_);
@@ -180,7 +157,4 @@ operator!=(STVar const& lhs, STVar const& rhs)
     return !(lhs == rhs);
 }
 
-}  // namespace detail
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::detail

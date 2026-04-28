@@ -1,28 +1,12 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <chrono>
+#include <cstdint>
+#include <utility>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/consensus/LedgerTiming.h>
-
-#include <xrpl/beast/unit_test.h>
-
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 class LedgerTiming_test : public beast::unit_test::suite
 {
@@ -45,14 +29,20 @@ class LedgerTiming_test : public beast::unit_test::suite
                 std::uint32_t round = 0;
                 do
                 {
-                    nextCloseResolution = getNextLedgerTimeResolution(
-                        closeResolution, previousAgree, ++round);
+                    nextCloseResolution =
+                        getNextLedgerTimeResolution(closeResolution, previousAgree, ++round);
                     if (nextCloseResolution < closeResolution)
+                    {
                         ++res.decrease;
+                    }
                     else if (nextCloseResolution > closeResolution)
+                    {
                         ++res.increase;
+                    }
                     else
+                    {
                         ++res.equal;
+                    }
                     std::swap(nextCloseResolution, closeResolution);
                 } while (round < rounds);
                 return res;
@@ -80,7 +70,7 @@ class LedgerTiming_test : public beast::unit_test::suite
         using namespace std::chrono_literals;
         // A closeTime equal to the epoch is not modified
         using tp = NetClock::time_point;
-        tp def;
+        tp const def;
         BEAST_EXPECT(def == roundCloseTime(def, 30s));
 
         // Otherwise, the closeTime is rounded to the nearest
@@ -124,6 +114,5 @@ class LedgerTiming_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, ripple);
-}  // namespace test
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(LedgerTiming, consensus, xrpl);
+}  // namespace xrpl::test

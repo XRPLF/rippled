@@ -1,33 +1,26 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/paths.h>
 
-#include <xrpld/app/paths/Pathfinder.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
 
+#include <xrpld/rpc/detail/AssetCache.h>
+#include <xrpld/rpc/detail/Pathfinder.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
 
+#include <memory>
 #include <optional>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 void
 paths::operator()(Env& env, JTx& jt) const
@@ -49,12 +42,11 @@ paths::operator()(Env& env, JTx& jt) const
     }
 
     Pathfinder pf(
-        std::make_shared<RippleLineCache>(
-            env.current(), env.app().journal("RippleLineCache")),
+        std::make_shared<AssetCache>(env.current(), env.app().getJournal("AssetCache")),
         from,
         to,
-        in_.currency,
-        in_.account,
+        in_,
+        in_.getIssuer(),
         amount,
         std::nullopt,
         domain,
@@ -64,7 +56,7 @@ paths::operator()(Env& env, JTx& jt) const
 
     STPath fp;
     pf.computePathRanks(limit_);
-    auto const found = pf.getBestPaths(limit_, fp, {}, in_.account);
+    auto const found = pf.getBestPaths(limit_, fp, {}, in_.getIssuer());
 
     // VFALCO TODO API to allow caller to examine the STPathSet
     // VFALCO isDefault should be renamed to empty()
@@ -73,6 +65,11 @@ paths::operator()(Env& env, JTx& jt) const
 }
 
 //------------------------------------------------------------------------------
+
+path::path(STPath const& p)
+{
+    jv_ = p.getJson(JsonOptions::none);
+}
 
 Json::Value&
 path::create()
@@ -97,16 +94,20 @@ void
 path::append_one(IOU const& iou)
 {
     auto& jv = create();
-    jv["currency"] = to_string(iou.issue().currency);
-    jv["account"] = toBase58(iou.issue().account);
+    jv["currency"] = to_string(iou.currency);
+    jv["account"] = toBase58(iou.account);
 }
 
 void
 path::append_one(BookSpec const& book)
 {
     auto& jv = create();
-    jv["currency"] = to_string(book.currency);
-    jv["issuer"] = toBase58(book.account);
+    book.asset.visit(
+        [&](Issue const& issue) {
+            jv["currency"] = to_string(issue.currency);
+            jv["issuer"] = toBase58(issue.account);
+        },
+        [&](MPTIssue const& issue) { jv["mpt_issuance_id"] = to_string(issue.getMptID()); });
 }
 
 void
@@ -115,6 +116,4 @@ path::operator()(Env& env, JTx& jt) const
     jt.jv["Paths"].append(jv_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test::jtx

@@ -1,34 +1,22 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2015 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/setup_HashRouter.h>
 #include <xrpld/core/Config.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/HashRouter.h>
 
-namespace ripple {
-namespace test {
+#include <chrono>
+#include <cstdint>
+#include <exception>
+#include <optional>
+#include <set>
+#include <type_traits>
+
+namespace xrpl::test {
 
 class HashRouter_test : public beast::unit_test::suite
 {
-    HashRouter::Setup
+    static HashRouter::Setup
     getSetup(std::chrono::seconds hold, std::chrono::seconds relay)
     {
         HashRouter::Setup setup;
@@ -45,9 +33,9 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(2s, 1s), stopwatch);
 
-        HashRouterFlags key1(HashRouterFlags::PRIVATE1);
-        HashRouterFlags key2(HashRouterFlags::PRIVATE2);
-        HashRouterFlags key3(HashRouterFlags::PRIVATE3);
+        HashRouterFlags const key1(HashRouterFlags::PRIVATE1);
+        HashRouterFlags const key2(HashRouterFlags::PRIVATE2);
+        HashRouterFlags const key3(HashRouterFlags::PRIVATE3);
 
         auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
         auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
@@ -87,10 +75,10 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(2s, 1s), stopwatch);
 
-        HashRouterFlags key1(HashRouterFlags::PRIVATE1);
-        HashRouterFlags key2(HashRouterFlags::PRIVATE2);
-        HashRouterFlags key3(HashRouterFlags::PRIVATE3);
-        HashRouterFlags key4(HashRouterFlags::PRIVATE4);
+        HashRouterFlags const key1(HashRouterFlags::PRIVATE1);
+        HashRouterFlags const key2(HashRouterFlags::PRIVATE2);
+        HashRouterFlags const key3(HashRouterFlags::PRIVATE3);
+        HashRouterFlags const key4(HashRouterFlags::PRIVATE4);
 
         auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
         auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
@@ -249,7 +237,7 @@ class HashRouter_test : public beast::unit_test::suite
         ++stopwatch;
         // Confirm that peers list is empty.
         peers = router.shouldRelay(key1);
-        BEAST_EXPECT(peers && peers->size() == 0);
+        BEAST_EXPECT(peers && peers->empty());
     }
 
     void
@@ -260,8 +248,8 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(getSetup(5s, 1s), stopwatch);
         uint256 const key(1);
-        HashRouter::PeerShortID peer = 1;
-        HashRouterFlags flags;
+        HashRouter::PeerShortID const peer = 1;
+        HashRouterFlags flags = HashRouterFlags::UNDEFINED;
 
         BEAST_EXPECT(router.shouldProcess(key, peer, flags, 1s));
         BEAST_EXPECT(!router.shouldProcess(key, peer, flags, 1s));
@@ -277,7 +265,7 @@ class HashRouter_test : public beast::unit_test::suite
 
         using namespace std::chrono_literals;
         {
-            Config cfg;
+            Config const cfg;
             // default
             auto const setup = setup_HashRouter(cfg);
             BEAST_EXPECT(setup.holdTime == 300s);
@@ -316,7 +304,7 @@ class HashRouter_test : public beast::unit_test::suite
             }
             catch (std::exception const& e)
             {
-                std::string expected =
+                std::string const expected =
                     "HashRouter relay time must be less than or equal to hold "
                     "time";
                 BEAST_EXPECT(e.what() == expected);
@@ -335,7 +323,7 @@ class HashRouter_test : public beast::unit_test::suite
             }
             catch (std::exception const& e)
             {
-                std::string expected =
+                std::string const expected =
                     "HashRouter hold time must be at least 12 seconds (the "
                     "approximate validation time for three "
                     "ledgers).";
@@ -355,7 +343,7 @@ class HashRouter_test : public beast::unit_test::suite
             }
             catch (std::exception const& e)
             {
-                std::string expected =
+                std::string const expected =
                     "HashRouter relay time must be at least 8 seconds (the "
                     "approximate validation time for two ledgers).";
                 BEAST_EXPECT(e.what() == expected);
@@ -368,7 +356,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("hold_time", "alice");
             h.set("relay_time", "bob");
             auto const setup = setup_HashRouter(cfg);
-            // The set function ignores values that don't covert, so the
+            // The set function ignores values that don't convert, so the
             // defaults are left unchanged
             BEAST_EXPECT(setup.holdTime == 300s);
             BEAST_EXPECT(setup.relayTime == 30s);
@@ -383,19 +371,17 @@ class HashRouter_test : public beast::unit_test::suite
         using HF = HashRouterFlags;
         using UHF = std::underlying_type_t<HF>;
 
-        HF f1 = HF::BAD;
-        HF f2 = HF::SAVED;
-        HF combined = f1 | f2;
+        HF const f1 = HF::BAD;
+        HF const f2 = HF::SAVED;
+        HF const combined = f1 | f2;
 
-        BEAST_EXPECT(
-            static_cast<UHF>(combined) ==
-            (static_cast<UHF>(f1) | static_cast<UHF>(f2)));
+        BEAST_EXPECT(static_cast<UHF>(combined) == (static_cast<UHF>(f1) | static_cast<UHF>(f2)));
 
         HF temp = f1;
         temp |= f2;
         BEAST_EXPECT(temp == combined);
 
-        HF intersect = combined & f1;
+        HF const intersect = combined & f1;
         BEAST_EXPECT(intersect == f1);
 
         HF temp2 = combined;
@@ -423,7 +409,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(HashRouter, app, ripple);
+BEAST_DEFINE_TESTSUITE(HashRouter, app, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

@@ -1,29 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2011 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef RIPPLE_BASICS_BASE_UINT_H_INCLUDED
-#define RIPPLE_BASICS_BASE_UINT_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Slice.h>
@@ -42,7 +22,7 @@
 #include <cstring>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 namespace detail {
 
@@ -84,13 +64,9 @@ struct is_contiguous_container<Slice> : std::true_type
 template <std::size_t Bits, class Tag = void>
 class base_uint
 {
-    static_assert(
-        (Bits % 32) == 0,
-        "The length of a base_uint in bits must be a multiple of 32.");
+    static_assert((Bits % 32) == 0, "The length of a base_uint in bits must be a multiple of 32.");
 
-    static_assert(
-        Bits >= 64,
-        "The length of a base_uint in bits must be at least 64.");
+    static_assert(Bits >= 64, "The length of a base_uint in bits must be at least 64.");
 
     static constexpr std::size_t WIDTH = Bits / 32;
 
@@ -126,7 +102,7 @@ public:
     {
         return reinterpret_cast<pointer>(data_.data());
     }
-    const_pointer
+    [[nodiscard]] const_pointer
     data() const
     {
         return reinterpret_cast<const_pointer>(data_.data());
@@ -142,22 +118,22 @@ public:
     {
         return data() + bytes;
     }
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const
     {
         return data();
     }
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const
     {
         return data() + bytes;
     }
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const
     {
         return data();
     }
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const
     {
         return data() + bytes;
@@ -201,19 +177,23 @@ private:
     {
         // Local lambda that converts a single hex char to four bits and
         // ORs those bits into a uint32_t.
-        auto hexCharToUInt = [](char c,
-                                std::uint32_t shift,
-                                std::uint32_t& accum) -> ParseResult {
+        auto hexCharToUInt = [](char c, std::uint32_t shift, std::uint32_t& accum) -> ParseResult {
             std::uint32_t nibble = 0xFFu;
             if (c < '0' || c > 'f')
                 return ParseResult::badChar;
 
             if (c >= 'a')
+            {
                 nibble = static_cast<std::uint32_t>(c - 'a' + 0xA);
+            }
             else if (c >= 'A')
+            {
                 nibble = static_cast<std::uint32_t>(c - 'A' + 0xA);
+            }
             else if (c <= '9')
+            {
                 nibble = static_cast<std::uint32_t>(c - '0');
+            }
 
             if (nibble > 0xFu)
                 return ParseResult::badChar;
@@ -238,7 +218,7 @@ private:
         while (in != sv.end())
         {
             std::uint32_t accum = {};
-            for (std::uint32_t shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
+            for (std::uint32_t const shift : {4u, 0u, 12u, 8u, 20u, 16u, 28u, 24u})
             {
                 if (auto const result = hexCharToUInt(*in++, shift, accum);
                     result != ParseResult::okay)
@@ -289,25 +269,25 @@ public:
         class Container,
         class = std::enable_if_t<
             detail::is_contiguous_container<Container>::value &&
-            std::is_trivially_copyable<typename Container::value_type>::value>>
+            std::is_trivially_copyable_v<typename Container::value_type>>>
     explicit base_uint(Container const& c)
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "ripple::base_uint::base_uint(Container auto) : input size match");
+            "xrpl::base_uint::base_uint(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
     }
 
     template <class Container>
     std::enable_if_t<
         detail::is_contiguous_container<Container>::value &&
-            std::is_trivially_copyable<typename Container::value_type>::value,
+            std::is_trivially_copyable_v<typename Container::value_type>,
         base_uint&>
     operator=(Container const& c)
     {
         XRPL_ASSERT(
             c.size() * sizeof(typename Container::value_type) == size(),
-            "ripple::base_uint::operator=(Container auto) : input size match");
+            "xrpl::base_uint::operator=(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
         return *this;
     }
@@ -330,12 +310,14 @@ public:
         return fromVoid(from.data());
     }
 
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const
     {
         for (int i = 0; i < WIDTH; i++)
+        {
             if (data_[i] != 0)
                 return 1;
+        }
 
         return 0;
     }
@@ -361,11 +343,13 @@ public:
     operator=(std::uint64_t uHost)
     {
         *this = beast::zero;
+        // NOLINTBEGIN(cppcoreguidelines-pro-type-member-init)
         union
         {
             unsigned u[2];
             std::uint64_t ul;
         };
+        // NOLINTEND(cppcoreguidelines-pro-type-member-init)
         // Put in least significant bits.
         ul = boost::endian::native_to_big(uHost);
         data_[WIDTH - 2] = u[0];
@@ -406,8 +390,7 @@ public:
         // prefix operator
         for (int i = WIDTH - 1; i >= 0; --i)
         {
-            data_[i] = boost::endian::native_to_big(
-                boost::endian::big_to_native(data_[i]) + 1);
+            data_[i] = boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) + 1);
             if (data_[i] != 0)
                 break;
         }
@@ -415,7 +398,7 @@ public:
         return *this;
     }
 
-    base_uint const
+    base_uint
     operator++(int)
     {
         // postfix operator
@@ -431,8 +414,7 @@ public:
         for (int i = WIDTH - 1; i >= 0; --i)
         {
             auto prev = data_[i];
-            data_[i] = boost::endian::native_to_big(
-                boost::endian::big_to_native(data_[i]) - 1);
+            data_[i] = boost::endian::native_to_big(boost::endian::big_to_native(data_[i]) - 1);
 
             if (prev != 0)
                 break;
@@ -441,7 +423,7 @@ public:
         return *this;
     }
 
-    base_uint const
+    base_uint
     operator--(int)
     {
         // postfix operator
@@ -451,14 +433,14 @@ public:
         return ret;
     }
 
-    base_uint
+    [[nodiscard]] base_uint
     next() const
     {
         auto ret = *this;
         return ++ret;
     }
 
-    base_uint
+    [[nodiscard]] base_uint
     prev() const
     {
         auto ret = *this;
@@ -470,13 +452,12 @@ public:
     {
         std::uint64_t carry = 0;
 
-        for (int i = WIDTH; i--;)
+        for (int i = WIDTH - 1; i >= 0; i--)
         {
-            std::uint64_t n = carry + boost::endian::big_to_native(data_[i]) +
+            std::uint64_t const n = carry + boost::endian::big_to_native(data_[i]) +
                 boost::endian::big_to_native(b.data_[i]);
 
-            data_[i] =
-                boost::endian::native_to_big(static_cast<std::uint32_t>(n));
+            data_[i] = boost::endian::native_to_big(static_cast<std::uint32_t>(n));
             carry = n >> 32;
         }
 
@@ -536,12 +517,12 @@ public:
     }
 
     // Deprecated.
-    bool
+    [[nodiscard]] bool
     isZero() const
     {
         return *this == beast::zero;
     }
-    bool
+    [[nodiscard]] bool
     isNonZero() const
     {
         return *this != beast::zero;
@@ -559,13 +540,13 @@ using uint256 = base_uint<256>;
 using uint192 = base_uint<192>;
 
 template <std::size_t Bits, class Tag>
-[[nodiscard]] inline constexpr std::strong_ordering
+[[nodiscard]] constexpr std::strong_ordering
 operator<=>(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 {
     // This comparison might seem wrong on a casual inspection because it
     // compares data internally stored as std::uint32_t byte-by-byte. But
     // note that the underlying data is stored in big endian, even if the
-    // plaform is little endian. This makes the comparison correct.
+    // platform is little endian. This makes the comparison correct.
     //
     // FIXME: use std::lexicographical_compare_three_way once support is
     //        added to MacOS.
@@ -576,12 +557,11 @@ operator<=>(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
     if (ret.first == lhs.cend())
         return std::strong_ordering::equivalent;
 
-    return (*ret.first > *ret.second) ? std::strong_ordering::greater
-                                      : std::strong_ordering::less;
+    return (*ret.first > *ret.second) ? std::strong_ordering::greater : std::strong_ordering::less;
 }
 
 template <std::size_t Bits, typename Tag>
-[[nodiscard]] inline constexpr bool
+[[nodiscard]] constexpr bool
 operator==(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 {
     return (lhs <=> rhs) == 0;
@@ -589,7 +569,7 @@ operator==(base_uint<Bits, Tag> const& lhs, base_uint<Bits, Tag> const& rhs)
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline constexpr bool
+constexpr bool
 operator==(base_uint<Bits, Tag> const& a, std::uint64_t b)
 {
     return a == base_uint<Bits, Tag>(b);
@@ -597,28 +577,28 @@ operator==(base_uint<Bits, Tag> const& a, std::uint64_t b)
 
 //------------------------------------------------------------------------------
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator^(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) ^= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator&(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) &= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator|(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) |= b;
 }
 
 template <std::size_t Bits, class Tag>
-inline constexpr base_uint<Bits, Tag>
+constexpr base_uint<Bits, Tag>
 operator+(base_uint<Bits, Tag> const& a, base_uint<Bits, Tag> const& b)
 {
     return base_uint<Bits, Tag>(a) += b;
@@ -633,6 +613,14 @@ to_string(base_uint<Bits, Tag> const& a)
 }
 
 template <std::size_t Bits, class Tag>
+inline std::string
+to_short_string(base_uint<Bits, Tag> const& a)
+{
+    static_assert(base_uint<Bits, Tag>::bytes > 4, "For 4 bytes or less, use a native type");
+    return strHex(a.cbegin(), a.cbegin() + 4) + "...";
+}
+
+template <std::size_t Bits, class Tag>
 inline std::ostream&
 operator<<(std::ostream& out, base_uint<Bits, Tag> const& u)
 {
@@ -643,7 +631,7 @@ template <>
 inline std::size_t
 extract(uint256 const& key)
 {
-    std::size_t result;
+    std::size_t result = 0;
     // Use memcpy to avoid unaligned UB
     // (will optimize to equivalent code)
     std::memcpy(&result, key.data(), sizeof(std::size_t));
@@ -657,17 +645,14 @@ static_assert(sizeof(uint192) == 192 / 8, "There should be no padding bytes");
 static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
 #endif
 
-}  // namespace ripple
+}  // namespace xrpl
 
 namespace beast {
 
 template <std::size_t Bits, class Tag>
-struct is_uniquely_represented<ripple::base_uint<Bits, Tag>>
-    : public std::true_type
+struct is_uniquely_represented<xrpl::base_uint<Bits, Tag>> : public std::true_type
 {
     explicit is_uniquely_represented() = default;
 };
 
 }  // namespace beast
-
-#endif

@@ -1,37 +1,26 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2016 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/csf.h>
+#include <test/csf/PeerGroup.h>
+#include <test/csf/Sim.h>
+#include <test/csf/collectors.h>
+#include <test/csf/random.h>
+#include <test/csf/submitters.h>
+#include <test/csf/timers.h>
 
-#include <xrpl/beast/unit_test.h>
-
-#include <boost/algorithm/string/classification.hpp>
-#include <boost/algorithm/string/split.hpp>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
 #include <fstream>
+#include <iomanip>
+#include <ios>
+#include <ostream>
+#include <random>
 #include <sstream>
 #include <string>
-#include <utility>
+#include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 /** In progress simulations for diversifying and distributing validators
  */
@@ -54,8 +43,7 @@ class DistributedValidators_test : public beast::unit_test::suite
             ledgerLog(prefix + "_ledger.csv", std::ofstream::app);
 
         // title
-        log << prefix << "(" << numPeers << "," << delay.count() << ")"
-            << std::endl;
+        log << prefix << "(" << numPeers << "," << delay.count() << ")" << std::endl;
 
         // number of peers, UNLs, connections
         BEAST_EXPECT(numPeers >= 1);
@@ -78,20 +66,17 @@ class DistributedValidators_test : public beast::unit_test::suite
         // Initial round to set prior state
         sim.run(1);
 
-        // Run for 10 minues, submitting 100 tx/second
+        // Run for 10 minutes, submitting 100 tx/second
         std::chrono::nanoseconds const simDuration = 10min;
         std::chrono::nanoseconds const quiet = 10s;
-        Rate const rate{100, 1000ms};
+        Rate const rate{.count = 100, .duration = 1000ms};
 
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler);
 
         // txs, start/stop/step, target
-        auto peerSelector = makeSelector(
-            peers.begin(),
-            peers.end(),
-            std::vector<double>(numPeers, 1.),
-            sim.rng);
+        auto peerSelector =
+            makeSelector(peers.begin(), peers.end(), std::vector<double>(numPeers, 1.), sim.rng);
         auto txSubmitter = makeSubmitter(
             ConstantDistribution{rate.inv()},
             sim.scheduler.now() + quiet,
@@ -109,11 +94,10 @@ class DistributedValidators_test : public beast::unit_test::suite
 
         log << std::right;
         log << "| Peers: " << std::setw(2) << peers.size();
-        log << " | Duration: " << std::setw(6)
-            << duration_cast<milliseconds>(simDuration).count() << " ms";
+        log << " | Duration: " << std::setw(6) << duration_cast<milliseconds>(simDuration).count()
+            << " ms";
         log << " | Branches: " << std::setw(1) << sim.branches();
-        log << " | Synchronized: " << std::setw(1)
-            << (sim.synchronized() ? "Y" : "N");
+        log << " | Synchronized: " << std::setw(1) << (sim.synchronized() ? "Y" : "N");
         log << " |" << std::endl;
 
         txCollector.report(simDuration, log, true);
@@ -143,8 +127,7 @@ class DistributedValidators_test : public beast::unit_test::suite
             ledgerLog(prefix + "_ledger.csv", std::ofstream::app);
 
         // title
-        log << prefix << "(" << numPeers << "," << delay.count() << ")"
-            << std::endl;
+        log << prefix << "(" << numPeers << "," << delay.count() << ")" << std::endl;
 
         // number of peers, UNLs, connections
         int const numCNLs = std::max(int(1.00 * numPeers), 1);
@@ -152,9 +135,7 @@ class DistributedValidators_test : public beast::unit_test::suite
         int const maxCNLSize = std::max(int(0.50 * numCNLs), 1);
         BEAST_EXPECT(numPeers >= 1);
         BEAST_EXPECT(numCNLs >= 1);
-        BEAST_EXPECT(
-            1 <= minCNLSize && minCNLSize <= maxCNLSize &&
-            maxCNLSize <= numPeers);
+        BEAST_EXPECT(1 <= minCNLSize && minCNLSize <= maxCNLSize && maxCNLSize <= numPeers);
 
         Sim sim;
         PeerGroup peers = sim.createGroup(numPeers);
@@ -163,8 +144,7 @@ class DistributedValidators_test : public beast::unit_test::suite
         peers.trust(peers);
 
         // scale-free connect graph with fixed delay
-        std::vector<double> const ranks =
-            sample(peers.size(), PowerLawDistribution{1, 3}, sim.rng);
+        std::vector<double> const ranks = sample(peers.size(), PowerLawDistribution{1, 3}, sim.rng);
         randomRankedConnect(
             peers,
             ranks,
@@ -182,20 +162,17 @@ class DistributedValidators_test : public beast::unit_test::suite
         // Initial round to set prior state
         sim.run(1);
 
-        // Run for 10 minues, submitting 100 tx/second
-        std::chrono::nanoseconds simDuration = 10min;
-        std::chrono::nanoseconds quiet = 10s;
-        Rate rate{100, 1000ms};
+        // Run for 10 minutes, submitting 100 tx/second
+        std::chrono::nanoseconds const simDuration = 10min;
+        std::chrono::nanoseconds const quiet = 10s;
+        Rate const rate{.count = 100, .duration = 1000ms};
 
         // Initialize timers
         HeartbeatTimer heart(sim.scheduler);
 
         // txs, start/stop/step, target
-        auto peerSelector = makeSelector(
-            peers.begin(),
-            peers.end(),
-            std::vector<double>(numPeers, 1.),
-            sim.rng);
+        auto peerSelector =
+            makeSelector(peers.begin(), peers.end(), std::vector<double>(numPeers, 1.), sim.rng);
         auto txSubmitter = makeSubmitter(
             ConstantDistribution{rate.inv()},
             sim.scheduler.now() + quiet,
@@ -213,11 +190,10 @@ class DistributedValidators_test : public beast::unit_test::suite
 
         log << std::right;
         log << "| Peers: " << std::setw(2) << peers.size();
-        log << " | Duration: " << std::setw(6)
-            << duration_cast<milliseconds>(simDuration).count() << " ms";
+        log << " | Duration: " << std::setw(6) << duration_cast<milliseconds>(simDuration).count()
+            << " ms";
         log << " | Branches: " << std::setw(1) << sim.branches();
-        log << " | Synchronized: " << std::setw(1)
-            << (sim.synchronized() ? "Y" : "N");
+        log << " | Synchronized: " << std::setw(1) << (sim.synchronized() ? "Y" : "N");
         log << " |" << std::endl;
 
         txCollector.report(simDuration, log, true);
@@ -244,8 +220,7 @@ class DistributedValidators_test : public beast::unit_test::suite
 
         std::chrono::milliseconds const delay(delayCount);
 
-        log << "DistributedValidators: 1 to " << maxNumValidators << " Peers"
-            << std::endl;
+        log << "DistributedValidators: 1 to " << maxNumValidators << " Peers" << std::endl;
 
         /**
          * Simulate with N = 1 to N
@@ -273,7 +248,6 @@ class DistributedValidators_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DistributedValidators, consensus, ripple, 2);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DistributedValidators, consensus, xrpl, 2);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

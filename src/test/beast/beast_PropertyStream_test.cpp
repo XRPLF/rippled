@@ -1,24 +1,7 @@
-//------------------------------------------------------------------------------
-/*
-This file is part of rippled: https://github.com/ripple/rippled
-Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-Permission to use, copy, modify, and/or distribute this software for any
-purpose  with  or without fee is hereby granted, provided that the above
-copyright notice and this permission notice appear in all copies.
-
-THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+
+#include <string>
 
 namespace beast {
 
@@ -47,10 +30,7 @@ public:
     }
 
     void
-    test_peel_leading_slash(
-        std::string s,
-        std::string const& expected,
-        bool should_be_found)
+    test_peel_leading_slash(std::string s, std::string const& expected, bool should_be_found)
     {
         try
         {
@@ -89,7 +69,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one(name));
+            Source const* source(root.find_one(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -104,7 +84,7 @@ public:
     {
         try
         {
-            Source* source(root.find_path(path));
+            Source const* source(root.find_path(path));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -119,7 +99,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one_deep(name));
+            Source const* source(root.find_one_deep(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -130,11 +110,7 @@ public:
     }
 
     void
-    test_find(
-        Source& root,
-        std::string path,
-        Source* expected,
-        bool expected_star)
+    test_find(Source& root, std::string path, Source* expected, bool expected_star)
     {
         try
         {
@@ -238,5 +214,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(PropertyStream, utility, beast);
+BEAST_DEFINE_TESTSUITE(PropertyStream, beast, beast);
 }  // namespace beast

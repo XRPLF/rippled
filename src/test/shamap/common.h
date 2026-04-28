@@ -1,33 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
-#define RIPPLE_SHAMAP_TESTS_COMMON_H_INCLUDED
-
-#include <xrpld/nodestore/DummyScheduler.h>
-#include <xrpld/nodestore/Manager.h>
-#include <xrpld/shamap/Family.h>
+#pragma once
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/nodestore/DummyScheduler.h>
+#include <xrpl/nodestore/Manager.h>
+#include <xrpl/shamap/Family.h>
 
-namespace ripple {
-namespace tests {
+namespace xrpl::tests {
 
 class TestNodeFamily : public Family
 {
@@ -44,16 +22,14 @@ private:
 
 public:
     TestNodeFamily(beast::Journal j)
-        : fbCache_(std::make_shared<FullBelowCache>(
-              "App family full below cache",
-              clock_,
-              j))
-        , tnCache_(std::make_shared<TreeNodeCache>(
-              "App family tree node cache",
-              65536,
-              std::chrono::minutes{1},
-              clock_,
-              j))
+        : fbCache_(std::make_shared<FullBelowCache>("App family full below cache", clock_, j))
+        , tnCache_(
+              std::make_shared<TreeNodeCache>(
+                  "App family tree node cache",
+                  65536,
+                  std::chrono::minutes{1},
+                  clock_,
+                  j))
         , j_(j)
     {
         Section testSection;
@@ -69,7 +45,7 @@ public:
         return *db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return *db_;
@@ -101,15 +77,13 @@ public:
     }
 
     void
-    missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash)
-        override
+    missingNodeAcquireBySeq(std::uint32_t refNum, uint256 const& nodeHash) override
     {
         Throw<std::runtime_error>("missing node");
     }
 
     void
-    missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum)
-        override
+    missingNodeAcquireByHash(uint256 const& refHash, std::uint32_t refNum) override
     {
         Throw<std::runtime_error>("missing node");
     }
@@ -128,7 +102,4 @@ public:
     }
 };
 
-}  // namespace tests
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::tests

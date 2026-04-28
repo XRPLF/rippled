@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
-#define RIPPLE_PROTOCOL_INDEXES_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Book.h>
@@ -34,10 +14,10 @@
 #include <cstdint>
 #include <set>
 
-namespace ripple {
+namespace xrpl {
 
 class SeqProxy;
-/** Keylet computation funclets.
+/** Keylet computation functions.
 
     Entries in the ledger are located using 256-bit locators. The locators are
     calculated using a wide range of parameters specific to the entry whose
@@ -113,10 +93,7 @@ static book_t const book{};
 */
 /** @{ */
 Keylet
-line(
-    AccountID const& id0,
-    AccountID const& id1,
-    Currency const& currency) noexcept;
+line(AccountID const& id0, AccountID const& id1, Currency const& currency) noexcept;
 
 inline Keylet
 line(AccountID const& id, Issue const& issue) noexcept
@@ -221,8 +198,7 @@ page(uint256 const& root, std::uint64_t index = 0) noexcept;
 inline Keylet
 page(Keylet const& root, std::uint64_t index = 0) noexcept
 {
-    XRPL_ASSERT(
-        root.type == ltDIR_NODE, "ripple::keylet::page : valid root type");
+    XRPL_ASSERT(root.type == ltDIR_NODE, "xrpl::keylet::page : valid root type");
     return page(root.key, index);
 }
 /** @} */
@@ -287,9 +263,11 @@ delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
 Keylet
 bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
 
+// `seq` is stored as `sfXChainClaimID` in the object
 Keylet
 xChainClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
+// `seq` is stored as `sfXChainAccountCreateCount` in the object
 Keylet
 xChainCreateAccountClaimID(STXChainBridge const& bridge, std::uint64_t seq);
 
@@ -300,10 +278,7 @@ Keylet
 oracle(AccountID const& account, std::uint32_t const& documentID) noexcept;
 
 Keylet
-credential(
-    AccountID const& subject,
-    AccountID const& issuer,
-    Slice const& credType) noexcept;
+credential(AccountID const& subject, AccountID const& issuer, Slice const& credType) noexcept;
 
 inline Keylet
 credential(uint256 const& key) noexcept
@@ -345,6 +320,24 @@ vault(uint256 const& vaultKey)
 }
 
 Keylet
+loanbroker(AccountID const& owner, std::uint32_t seq) noexcept;
+
+inline Keylet
+loanbroker(uint256 const& key)
+{
+    return {ltLOAN_BROKER, key};
+}
+
+Keylet
+loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept;
+
+inline Keylet
+loan(uint256 const& key)
+{
+    return {ltLOAN, key};
+}
+
+Keylet
 permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
@@ -370,28 +363,27 @@ uint256
 getTicketIndex(AccountID const& account, SeqProxy ticketSeq);
 
 template <class... keyletParams>
+// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
 struct keyletDesc
 {
     std::function<Keylet(keyletParams...)> function;
     Json::StaticString expectedLEName;
-    bool includeInTests;
+    bool includeInTests{};
 };
 
 // This list should include all of the keylet functions that take a single
 // AccountID parameter.
 std::array<keyletDesc<AccountID const&>, 6> const directAccountKeylets{
-    {{&keylet::account, jss::AccountRoot, false},
-     {&keylet::ownerDir, jss::DirectoryNode, true},
-     {&keylet::signers, jss::SignerList, true},
+    {{.function = &keylet::account, .expectedLEName = jss::AccountRoot, .includeInTests = false},
+     {.function = &keylet::ownerDir, .expectedLEName = jss::DirectoryNode, .includeInTests = true},
+     {.function = &keylet::signers, .expectedLEName = jss::SignerList, .includeInTests = true},
      // It's normally impossible to create an item at nftpage_min, but
      // test it anyway, since the invariant checks for it.
-     {&keylet::nftpage_min, jss::NFTokenPage, true},
-     {&keylet::nftpage_max, jss::NFTokenPage, true},
-     {&keylet::did, jss::DID, true}}};
+     {.function = &keylet::nftpage_min, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
+     {.function = &keylet::nftpage_max, .expectedLEName = jss::NFTokenPage, .includeInTests = true},
+     {.function = &keylet::did, .expectedLEName = jss::DID, .includeInTests = true}}};
 
 MPTID
 makeMptID(std::uint32_t sequence, AccountID const& account);
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

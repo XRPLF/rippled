@@ -1,21 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/STAccount.h>
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/base_uint.h>
@@ -24,7 +7,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 
@@ -33,18 +15,17 @@
 #include <string>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
-STAccount::STAccount() : STBase(), value_(beast::zero), default_(true)
+STAccount::STAccount() : value_(beast::zero), default_(true)
 {
 }
 
-STAccount::STAccount(SField const& n)
-    : STBase(n), value_(beast::zero), default_(true)
+STAccount::STAccount(SField const& n) : STBase(n), value_(beast::zero), default_(true)
 {
 }
 
-STAccount::STAccount(SField const& n, Buffer&& v) : STAccount(n)
+STAccount::STAccount(SField const& n, Buffer const& v) : STAccount(n)
 {
     if (v.empty())
         return;  // Zero is a valid size for a defaulted STAccount.
@@ -61,13 +42,11 @@ STAccount::STAccount(SField const& n, Buffer&& v) : STAccount(n)
     memcpy(value_.begin(), v.data(), uint160::bytes);
 }
 
-STAccount::STAccount(SerialIter& sit, SField const& name)
-    : STAccount(name, sit.getVLBuffer())
+STAccount::STAccount(SerialIter& sit, SField const& name) : STAccount(name, sit.getVLBuffer())
 {
 }
 
-STAccount::STAccount(SField const& n, AccountID const& v)
-    : STBase(n), value_(v), default_(false)
+STAccount::STAccount(SField const& n, AccountID const& v) : STBase(n), value_(v), default_(false)
 {
 }
 
@@ -92,11 +71,8 @@ STAccount::getSType() const
 void
 STAccount::add(Serializer& s) const
 {
-    XRPL_ASSERT(
-        getFName().isBinary(), "ripple::STAccount::add : field is binary");
-    XRPL_ASSERT(
-        getFName().fieldType == STI_ACCOUNT,
-        "ripple::STAccount::add : valid field type");
+    XRPL_ASSERT(getFName().isBinary(), "xrpl::STAccount::add : field is binary");
+    XRPL_ASSERT(getFName().fieldType == STI_ACCOUNT, "xrpl::STAccount::add : valid field type");
 
     // Preserve the serialization behavior of an STBlob:
     //  o If we are default (all zeros) serialize as an empty blob.
@@ -109,7 +85,7 @@ bool
 STAccount::isEquivalent(STBase const& t) const
 {
     auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
-    return tPtr && (default_ == tPtr->default_) && (value_ == tPtr->value_);
+    return (tPtr != nullptr) && (default_ == tPtr->default_) && (value_ == tPtr->value_);
 }
 
 bool
@@ -126,4 +102,4 @@ STAccount::getText() const
     return toBase58(value());
 }
 
-}  // namespace ripple
+}  // namespace xrpl

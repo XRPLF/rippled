@@ -1,0 +1,179 @@
+# This workflow runs all workflows to check, build and test the project on
+# various Linux flavors, as well as on MacOS and Windows, on every push to a
+# user branch. However, it will not run if the pull request is a draft unless it
+# has the 'DraftRunCI' label. For commits to PRs that target a release branch,
+# it also uploads the libxrpl recipe to the Conan remote.
+name: PR
+
+on:
+  merge_group:
+    types:
+      - checks_requested
+  pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # This job determines whether the rest of the workflow should run. It runs
+  # when the PR is not a draft (which should also cover merge-group) or
+  # has the 'DraftRunCI' label.
+  should-run:
+    if: ${{ !github.event.pull_request.draft || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Determine changed files
+        # This step checks whether any files have changed that should
+        # cause the next jobs to run. We do it this way rather than
+        # using `paths` in the `on:` section, because all required
+        # checks must pass, even for changes that do not modify anything
+        # that affects those checks. We would therefore like to make the
+        # checks required only if the job runs, but GitHub does not
+        # support that directly. By always executing the workflow on new
+        # commits and by using the changed-files action below, we ensure
+        # that Github considers any skipped jobs to have passed, and in
+        # turn the required checks as well.
+        id: changes
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96 # v47.0.6
+        with:
+          files: |
+            # These paths are unique to `on-pr.yml`.
+            .github/scripts/levelization/**
+            .github/scripts/rename/**
+            .github/workflows/reusable-check-levelization.yml
+            .github/workflows/reusable-check-rename.yml
+            .github/workflows/on-pr.yml
+
+            # Keep the paths below in sync with those in `on-trigger.yml`.
+            .github/actions/build-deps/**
+            .github/actions/build-test/**
+            .github/actions/generate-version/**
+            .github/actions/setup-conan/**
+            .github/scripts/strategy-matrix/**
+            .github/workflows/reusable-build.yml
+            .github/workflows/reusable-build-test-config.yml
+            .github/workflows/reusable-build-test.yml
+            .github/workflows/reusable-clang-tidy.yml
+            .github/workflows/reusable-clang-tidy-files.yml
+            .github/workflows/reusable-strategy-matrix.yml
+            .github/workflows/reusable-test.yml
+            .github/workflows/reusable-upload-recipe.yml
+            .clang-tidy
+            .codecov.yml
+            cmake/**
+            conan/**
+            external/**
+            include/**
+            src/**
+            tests/**
+            CMakeLists.txt
+            conanfile.py
+            conan.lock
+      - name: Check whether to run
+        # This step determines whether the rest of the workflow should
+        # run. The rest of the workflow will run if this job runs AND at
+        # least one of:
+        # * Any of the files checked in the `changes` step were modified
+        # * The PR is NOT a draft and is labeled "Ready to merge"
+        # * The workflow is running from the merge queue
+        id: go
+        env:
+          FILES: ${{ steps.changes.outputs.any_changed }}
+          DRAFT: ${{ github.event.pull_request.draft }}
+          READY: ${{ contains(github.event.pull_request.labels.*.name, 'Ready to merge') }}
+          MERGE: ${{ github.event_name == 'merge_group' }}
+        run: |
+          echo "go=${{ (env.DRAFT != 'true' && env.READY == 'true') || env.FILES == 'true' || env.MERGE == 'true' }}" >> "${GITHUB_OUTPUT}"
+          cat "${GITHUB_OUTPUT}"
+    outputs:
+      go: ${{ steps.go.outputs.go == 'true' }}
+
+  check-levelization:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-levelization.yml
+
+  check-rename:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-check-rename.yml
+
+  clang-tidy:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-clang-tidy.yml
+    permissions:
+      issues: write
+      contents: read
+    with:
+      check_only_changed: true
+      create_issue_on_failure: false
+
+  build-test:
+    needs: should-run
+    if: ${{ needs.should-run.outputs.go == 'true' }}
+    uses: ./.github/workflows/reusable-build-test.yml
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, macos, windows]
+    with:
+      # Enable ccache only for events targeting the XRPLF repository, since
+      # other accounts will not have access to our remote cache storage.
+      ccache_enabled: ${{ github.repository_owner == 'XRPLF' }}
+      os: ${{ matrix.os }}
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
+  upload-recipe:
+    needs:
+      - should-run
+      - build-test
+    # Only run when committing to a PR that targets a release branch.
+    if: ${{ github.repository == 'XRPLF/rippled' && needs.should-run.outputs.go == 'true' && github.event_name == 'pull_request' && startsWith(github.event.pull_request.base.ref, 'release') }}
+    uses: ./.github/workflows/reusable-upload-recipe.yml
+    secrets:
+      remote_username: ${{ secrets.CONAN_REMOTE_USERNAME }}
+      remote_password: ${{ secrets.CONAN_REMOTE_PASSWORD }}
+
+  notify-clio:
+    needs: upload-recipe
+    runs-on: ubuntu-latest
+    steps:
+      # Notify the Clio repository about the newly proposed release version, so
+      # it can be checked for compatibility before the release is actually made.
+      - name: Notify Clio
+        env:
+          GH_TOKEN: ${{ secrets.CLIO_NOTIFY_TOKEN }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
+          /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
+          -F "client_payload[ref]=${{ needs.upload-recipe.outputs.recipe_ref }}" \
+          -F "client_payload[pr_url]=${PR_URL}"
+
+  passed:
+    if: failure() || cancelled()
+    needs:
+      - check-levelization
+      - check-rename
+      - clang-tidy
+      - build-test
+      - upload-recipe
+      - notify-clio
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail
+        run: false

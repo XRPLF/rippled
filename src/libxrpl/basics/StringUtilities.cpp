@@ -1,24 +1,6 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/basics/StringUtilities.h>
 
 #include <xrpl/basics/Blob.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 
@@ -27,7 +9,6 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/regex/v5/regbase.hpp>
 #include <boost/regex/v5/regex.hpp>
-#include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
 
 #include <cstdint>
@@ -36,14 +17,14 @@
 #include <string>
 #include <string_view>
 
-namespace ripple {
+namespace xrpl {
 
 std::string
 sqlBlobLiteral(Blob const& blob)
 {
     std::string j;
 
-    j.reserve(blob.size() * 2 + 3);
+    j.reserve((blob.size() * 2) + 3);
     j.push_back('X');
     j.push_back('\'');
     boost::algorithm::hex(blob.begin(), blob.end(), std::back_inserter(j));
@@ -56,7 +37,7 @@ bool
 parseUrl(parsedURL& pUrl, std::string const& strUrl)
 {
     // scheme://username:password@hostname:port/rest
-    static boost::regex reUrl(
+    static boost::regex const reUrl(
         "(?i)\\`\\s*"
         // required scheme
         "([[:alpha:]][-+.[:alpha:][:digit:]]*?):"
@@ -122,7 +103,7 @@ trim_whitespace(std::string str)
 std::optional<std::uint64_t>
 to_uint64(std::string const& s)
 {
-    std::uint64_t result;
+    std::uint64_t result = 0;
     if (beast::lexicalCastChecked(result, s))
         return result;
     return std::nullopt;
@@ -155,4 +136,4 @@ isProperlyFormedTomlDomain(std::string_view domain)
     return boost::regex_match(domain.begin(), domain.end(), re);
 }
 
-}  // namespace ripple
+}  // namespace xrpl

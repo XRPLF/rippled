@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STBASE_H_INCLUDED
-#define RIPPLE_PROTOCOL_STBASE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
@@ -30,7 +10,7 @@
 #include <typeinfo>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 /// Note, should be treated as flags that can be | and &
 struct JsonOptions
@@ -103,7 +83,7 @@ to_json(T const& t)
 
 namespace detail {
 class STVar;
-}
+}  // namespace detail
 
 // VFALCO TODO fix this restriction on copy assignment.
 //
@@ -157,24 +137,24 @@ public:
     D const&
     downcast() const;
 
-    virtual SerializedTypeID
+    [[nodiscard]] virtual SerializedTypeID
     getSType() const;
 
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getFullText() const;
 
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getText() const;
 
-    virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
+    [[nodiscard]] virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
 
     virtual void
     add(Serializer& s) const;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isEquivalent(STBase const& t) const;
 
-    virtual bool
+    [[nodiscard]] virtual bool
     isDefault() const;
 
     /** A STBase is a field.
@@ -183,7 +163,7 @@ public:
     void
     setFName(SField const& n);
 
-    SField const&
+    [[nodiscard]] SField const&
     getFName() const;
 
     void
@@ -219,7 +199,7 @@ STBase::downcast()
 }
 
 template <class D>
-D const&
+[[nodiscard]] D const&
 STBase::downcast() const
 {
     D const* ptr = dynamic_cast<D const*>(this);
@@ -238,6 +218,4 @@ STBase::emplace(std::size_t n, void* buf, T&& val)
     return new (buf) U(std::forward<T>(val));
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

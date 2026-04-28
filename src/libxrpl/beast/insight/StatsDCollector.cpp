@@ -1,21 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/beast/insight/StatsDCollector.h>
 
 #include <xrpl/beast/core/List.h>
 #include <xrpl/beast/insight/CounterImpl.h>
@@ -24,18 +7,21 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/MeterImpl.h>
-#include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/dispatch.hpp>
 #include <boost/asio/error.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/system/detail/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
 #include <chrono>
 #include <cstddef>
@@ -55,8 +41,7 @@
 #define BEAST_STATSDCOLLECTOR_TRACING_ENABLED 0
 #endif
 
-namespace beast {
-namespace insight {
+namespace beast::insight {
 
 namespace detail {
 
@@ -81,19 +66,17 @@ public:
 class StatsDHookImpl : public HookImpl, public StatsDMetricBase
 {
 public:
-    StatsDHookImpl(
-        HandlerType const& handler,
-        std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> const& impl);
 
     ~StatsDHookImpl() override;
 
     void
     do_process() override;
 
-private:
     StatsDHookImpl&
-    operator=(StatsDHookImpl const&);
+    operator=(StatsDHookImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> m_impl;
     HandlerType m_handler;
 };
@@ -103,9 +86,7 @@ private:
 class StatsDCounterImpl : public CounterImpl, public StatsDMetricBase
 {
 public:
-    StatsDCounterImpl(
-        std::string const& name,
-        std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDCounterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
 
     ~StatsDCounterImpl() override;
 
@@ -119,14 +100,14 @@ public:
     void
     do_process() override;
 
-private:
     StatsDCounterImpl&
-    operator=(StatsDCounterImpl const&);
+    operator=(StatsDCounterImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
-    CounterImpl::value_type m_value;
-    bool m_dirty;
+    CounterImpl::value_type m_value{0};
+    bool m_dirty{false};
 };
 
 //------------------------------------------------------------------------------
@@ -134,11 +115,9 @@ private:
 class StatsDEventImpl : public EventImpl
 {
 public:
-    StatsDEventImpl(
-        std::string const& name,
-        std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
 
-    ~StatsDEventImpl() = default;
+    ~StatsDEventImpl() override = default;
 
     void
     notify(EventImpl::value_type const& value) override;
@@ -161,9 +140,7 @@ private:
 class StatsDGaugeImpl : public GaugeImpl, public StatsDMetricBase
 {
 public:
-    StatsDGaugeImpl(
-        std::string const& name,
-        std::shared_ptr<StatsDCollectorImp> const& impl);
+    StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
 
     ~StatsDGaugeImpl() override;
 
@@ -181,15 +158,15 @@ public:
     void
     do_process() override;
 
-private:
     StatsDGaugeImpl&
-    operator=(StatsDGaugeImpl const&);
+    operator=(StatsDGaugeImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
-    GaugeImpl::value_type m_last_value;
-    GaugeImpl::value_type m_value;
-    bool m_dirty;
+    GaugeImpl::value_type m_last_value{0};
+    GaugeImpl::value_type m_value{0};
+    bool m_dirty{false};
 };
 
 //------------------------------------------------------------------------------
@@ -197,9 +174,7 @@ private:
 class StatsDMeterImpl : public MeterImpl, public StatsDMetricBase
 {
 public:
-    explicit StatsDMeterImpl(
-        std::string const& name,
-        std::shared_ptr<StatsDCollectorImp> const& impl);
+    explicit StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl);
 
     ~StatsDMeterImpl() override;
 
@@ -213,21 +188,20 @@ public:
     void
     do_process() override;
 
-private:
     StatsDMeterImpl&
-    operator=(StatsDMeterImpl const&);
+    operator=(StatsDMeterImpl const&) = delete;
 
+private:
     std::shared_ptr<StatsDCollectorImp> m_impl;
     std::string m_name;
-    MeterImpl::value_type m_value;
-    bool m_dirty;
+    MeterImpl::value_type m_value{0};
+    bool m_dirty{false};
 };
 
 //------------------------------------------------------------------------------
 
-class StatsDCollectorImp
-    : public StatsDCollector,
-      public std::enable_shared_from_this<StatsDCollectorImp>
+class StatsDCollectorImp : public StatsDCollector,
+                           public std::enable_shared_from_this<StatsDCollectorImp>
 {
 private:
     enum {
@@ -238,9 +212,9 @@ private:
     Journal m_journal;
     IP::Endpoint m_address;
     std::string m_prefix;
-    boost::asio::io_service m_io_service;
-    std::optional<boost::asio::io_service::work> m_work;
-    boost::asio::io_service::strand m_strand;
+    boost::asio::io_context m_io_context;
+    std::optional<boost::asio::executor_work_guard<boost::asio::io_context::executor_type>> m_work;
+    boost::asio::strand<boost::asio::io_context::executor_type> m_strand;
     boost::asio::basic_waitable_timer<std::chrono::steady_clock> m_timer;
     boost::asio::ip::udp::socket m_socket;
     std::deque<std::string> m_data;
@@ -257,25 +231,28 @@ private:
     }
 
 public:
-    StatsDCollectorImp(
-        IP::Endpoint const& address,
-        std::string const& prefix,
-        Journal journal)
+    StatsDCollectorImp(IP::Endpoint address, std::string prefix, Journal journal)
         : m_journal(journal)
-        , m_address(address)
-        , m_prefix(prefix)
-        , m_work(std::ref(m_io_service))
-        , m_strand(m_io_service)
-        , m_timer(m_io_service)
-        , m_socket(m_io_service)
+        , m_address(std::move(address))
+        , m_prefix(std::move(prefix))
+        , m_work(boost::asio::make_work_guard(m_io_context))
+        , m_strand(boost::asio::make_strand(m_io_context))
+        , m_timer(m_io_context)
+        , m_socket(m_io_context)
         , m_thread(&StatsDCollectorImp::run, this)
     {
     }
 
     ~StatsDCollectorImp() override
     {
-        boost::system::error_code ec;
-        m_timer.cancel(ec);
+        try
+        {
+            m_timer.cancel();
+        }
+        catch (boost::system::system_error const&)  // NOLINT(bugprone-empty-catch)
+        {
+            // ignored
+        }
 
         m_work.reset();
         m_thread.join();
@@ -284,36 +261,31 @@ public:
     Hook
     make_hook(HookImpl::HandlerType const& handler) override
     {
-        return Hook(std::make_shared<detail::StatsDHookImpl>(
-            handler, shared_from_this()));
+        return Hook(std::make_shared<detail::StatsDHookImpl>(handler, shared_from_this()));
     }
 
     Counter
     make_counter(std::string const& name) override
     {
-        return Counter(std::make_shared<detail::StatsDCounterImpl>(
-            name, shared_from_this()));
+        return Counter(std::make_shared<detail::StatsDCounterImpl>(name, shared_from_this()));
     }
 
     Event
     make_event(std::string const& name) override
     {
-        return Event(std::make_shared<detail::StatsDEventImpl>(
-            name, shared_from_this()));
+        return Event(std::make_shared<detail::StatsDEventImpl>(name, shared_from_this()));
     }
 
     Gauge
     make_gauge(std::string const& name) override
     {
-        return Gauge(std::make_shared<detail::StatsDGaugeImpl>(
-            name, shared_from_this()));
+        return Gauge(std::make_shared<detail::StatsDGaugeImpl>(name, shared_from_this()));
     }
 
     Meter
     make_meter(std::string const& name) override
     {
-        return Meter(std::make_shared<detail::StatsDMeterImpl>(
-            name, shared_from_this()));
+        return Meter(std::make_shared<detail::StatsDMeterImpl>(name, shared_from_this()));
     }
 
     //--------------------------------------------------------------------------
@@ -321,23 +293,23 @@ public:
     void
     add(StatsDMetricBase& metric)
     {
-        std::lock_guard _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
         metrics_.push_back(metric);
     }
 
     void
     remove(StatsDMetricBase& metric)
     {
-        std::lock_guard _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
         metrics_.erase(metrics_.iterator_to(metric));
     }
 
     //--------------------------------------------------------------------------
 
-    boost::asio::io_service&
-    get_io_service()
+    boost::asio::io_context&
+    get_io_context()
     {
-        return m_io_service;
+        return m_io_context;
     }
 
     std::string const&
@@ -355,8 +327,10 @@ public:
     void
     post_buffer(std::string&& buffer)
     {
-        m_io_service.dispatch(m_strand.wrap(std::bind(
-            &StatsDCollectorImp::do_post_buffer, this, std::move(buffer))));
+        boost::asio::dispatch(
+            m_io_context,
+            boost::asio::bind_executor(
+                m_strand, std::bind(&StatsDCollectorImp::do_post_buffer, this, std::move(buffer))));
     }
 
     // The keepAlive parameter makes sure the buffers sent to
@@ -378,16 +352,14 @@ public:
         }
     }
 
-    void
+    static void
     log(std::vector<boost::asio::const_buffer> const& buffers)
     {
         (void)buffers;
 #if BEAST_STATSDCOLLECTOR_TRACING_ENABLED
         for (auto const& buffer : buffers)
         {
-            std::string const s(
-                boost::asio::buffer_cast<char const*>(buffer),
-                boost::asio::buffer_size(buffer));
+            std::string const s(buffer.data(), boost::asio::buffer_size(buffer));
             std::cerr << s;
         }
         std::cerr << '\n';
@@ -408,8 +380,7 @@ public:
         buffers.reserve(m_data.size());
         std::size_t size(0);
 
-        auto keepAlive =
-            std::make_shared<std::deque<std::string>>(std::move(m_data));
+        auto keepAlive = std::make_shared<std::deque<std::string>>(std::move(m_data));
         m_data.clear();
 
         for (auto const& s : *keepAlive)
@@ -456,9 +427,8 @@ public:
     set_timer()
     {
         using namespace std::chrono_literals;
-        m_timer.expires_from_now(1s);
-        m_timer.async_wait(std::bind(
-            &StatsDCollectorImp::on_timer, this, std::placeholders::_1));
+        m_timer.expires_after(1s);
+        m_timer.async_wait(std::bind(&StatsDCollectorImp::on_timer, this, std::placeholders::_1));
     }
 
     void
@@ -474,7 +444,7 @@ public:
             return;
         }
 
-        std::lock_guard _(metricsLock_);
+        std::lock_guard const _(metricsLock_);
 
         for (auto& m : metrics_)
             m.do_process();
@@ -498,22 +468,21 @@ public:
 
         set_timer();
 
-        m_io_service.run();
+        m_io_context.run();
 
+        // NOLINTNEXTLINE(bugprone-unused-return-value)
         m_socket.shutdown(boost::asio::ip::udp::socket::shutdown_send, ec);
 
         m_socket.close();
 
-        m_io_service.poll();
+        m_io_context.poll();
     }
 };
 
 //------------------------------------------------------------------------------
 
-StatsDHookImpl::StatsDHookImpl(
-    HandlerType const& handler,
-    std::shared_ptr<StatsDCollectorImp> const& impl)
-    : m_impl(impl), m_handler(handler)
+StatsDHookImpl::StatsDHookImpl(HandlerType handler, std::shared_ptr<StatsDCollectorImp> const& impl)
+    : m_impl(impl), m_handler(std::move(handler))
 {
     m_impl->add(*this);
 }
@@ -532,9 +501,9 @@ StatsDHookImpl::do_process()
 //------------------------------------------------------------------------------
 
 StatsDCounterImpl::StatsDCounterImpl(
-    std::string const& name,
+    std::string name,
     std::shared_ptr<StatsDCollectorImp> const& impl)
-    : m_impl(impl), m_name(name), m_value(0), m_dirty(false)
+    : m_impl(impl), m_name(std::move(name))
 {
     m_impl->add(*this);
 }
@@ -547,10 +516,12 @@ StatsDCounterImpl::~StatsDCounterImpl()
 void
 StatsDCounterImpl::increment(CounterImpl::value_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDCounterImpl::do_increment,
-        std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
-        amount));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDCounterImpl::do_increment,
+            std::static_pointer_cast<StatsDCounterImpl>(shared_from_this()),
+            amount));
 }
 
 void
@@ -582,20 +553,20 @@ StatsDCounterImpl::do_process()
 
 //------------------------------------------------------------------------------
 
-StatsDEventImpl::StatsDEventImpl(
-    std::string const& name,
-    std::shared_ptr<StatsDCollectorImp> const& impl)
-    : m_impl(impl), m_name(name)
+StatsDEventImpl::StatsDEventImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
+    : m_impl(impl), m_name(std::move(name))
 {
 }
 
 void
 StatsDEventImpl::notify(EventImpl::value_type const& value)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDEventImpl::do_notify,
-        std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
-        value));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDEventImpl::do_notify,
+            std::static_pointer_cast<StatsDEventImpl>(shared_from_this()),
+            value));
 }
 
 void
@@ -609,10 +580,8 @@ StatsDEventImpl::do_notify(EventImpl::value_type const& value)
 
 //------------------------------------------------------------------------------
 
-StatsDGaugeImpl::StatsDGaugeImpl(
-    std::string const& name,
-    std::shared_ptr<StatsDCollectorImp> const& impl)
-    : m_impl(impl), m_name(name), m_last_value(0), m_value(0), m_dirty(false)
+StatsDGaugeImpl::StatsDGaugeImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
+    : m_impl(impl), m_name(std::move(name))
 {
     m_impl->add(*this);
 }
@@ -625,19 +594,23 @@ StatsDGaugeImpl::~StatsDGaugeImpl()
 void
 StatsDGaugeImpl::set(GaugeImpl::value_type value)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDGaugeImpl::do_set,
-        std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-        value));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDGaugeImpl::do_set,
+            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
+            value));
 }
 
 void
 StatsDGaugeImpl::increment(GaugeImpl::difference_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDGaugeImpl::do_increment,
-        std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
-        amount));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDGaugeImpl::do_increment,
+            std::static_pointer_cast<StatsDGaugeImpl>(shared_from_this()),
+            amount));
 }
 
 void
@@ -672,17 +645,14 @@ StatsDGaugeImpl::do_increment(GaugeImpl::difference_type amount)
 
     if (amount > 0)
     {
-        GaugeImpl::value_type const d(
-            static_cast<GaugeImpl::value_type>(amount));
-        value +=
-            (d >= std::numeric_limits<GaugeImpl::value_type>::max() - m_value)
+        GaugeImpl::value_type const d(static_cast<GaugeImpl::value_type>(amount));
+        value += (d >= std::numeric_limits<GaugeImpl::value_type>::max() - m_value)
             ? std::numeric_limits<GaugeImpl::value_type>::max() - m_value
             : d;
     }
     else if (amount < 0)
     {
-        GaugeImpl::value_type const d(
-            static_cast<GaugeImpl::value_type>(-amount));
+        GaugeImpl::value_type const d(static_cast<GaugeImpl::value_type>(-amount));
         value = (d >= value) ? 0 : value - d;
     }
 
@@ -697,10 +667,8 @@ StatsDGaugeImpl::do_process()
 
 //------------------------------------------------------------------------------
 
-StatsDMeterImpl::StatsDMeterImpl(
-    std::string const& name,
-    std::shared_ptr<StatsDCollectorImp> const& impl)
-    : m_impl(impl), m_name(name), m_value(0), m_dirty(false)
+StatsDMeterImpl::StatsDMeterImpl(std::string name, std::shared_ptr<StatsDCollectorImp> const& impl)
+    : m_impl(impl), m_name(std::move(name))
 {
     m_impl->add(*this);
 }
@@ -713,10 +681,12 @@ StatsDMeterImpl::~StatsDMeterImpl()
 void
 StatsDMeterImpl::increment(MeterImpl::value_type amount)
 {
-    m_impl->get_io_service().dispatch(std::bind(
-        &StatsDMeterImpl::do_increment,
-        std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
-        amount));
+    boost::asio::dispatch(
+        m_impl->get_io_context(),
+        std::bind(
+            &StatsDMeterImpl::do_increment,
+            std::static_pointer_cast<StatsDMeterImpl>(shared_from_this()),
+            amount));
 }
 
 void
@@ -751,14 +721,9 @@ StatsDMeterImpl::do_process()
 //------------------------------------------------------------------------------
 
 std::shared_ptr<StatsDCollector>
-StatsDCollector::New(
-    IP::Endpoint const& address,
-    std::string const& prefix,
-    Journal journal)
+StatsDCollector::New(IP::Endpoint const& address, std::string const& prefix, Journal journal)
 {
-    return std::make_shared<detail::StatsDCollectorImp>(
-        address, prefix, journal);
+    return std::make_shared<detail::StatsDCollectorImp>(address, prefix, journal);
 }
 
-}  // namespace insight
-}  // namespace beast
+}  // namespace beast::insight

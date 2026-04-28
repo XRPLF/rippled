@@ -1,40 +1,69 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/Env_ss.h>
+#include <test/jtx/JTx.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/memo.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/prop.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/require.h>
+#include <test/jtx/rpc.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/trust.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
-
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
 #include <xrpl/beast/hash/uhash.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/server/NetworkOPs.h>
 
 #include <boost/lexical_cast.hpp>
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <optional>
+#include <ostream>
+#include <set>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <unordered_set>
 #include <utility>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 class Env_test : public beast::unit_test::suite
 {
@@ -47,20 +76,20 @@ public:
     }
 
     // Declarations in Account.h
-    void
+    static void
     testAccount()
     {
         using namespace jtx;
         {
-            Account a("chenna");
+            Account a("chad");
             Account b(a);
             a = b;
             a = std::move(b);
-            Account c(std::move(a));
+            Account const c(std::move(a));
         }
-        Account("alice");
-        Account("alice", KeyType::secp256k1);
-        Account("alice", KeyType::ed25519);
+        Account("alice");                      // NOLINT(bugprone-unused-raii)
+        Account("alice", KeyType::secp256k1);  // NOLINT(bugprone-unused-raii)
+        Account("alice", KeyType::ed25519);    // NOLINT(bugprone-unused-raii)
         auto const gw = Account("gw");
         [](AccountID) {}(gw);
         auto const USD = gw["USD"];
@@ -75,23 +104,15 @@ public:
     {
         using namespace jtx;
 
-        PrettyAmount(0);
-        PrettyAmount(1);
-        PrettyAmount(0u);
-        PrettyAmount(1u);
-        PrettyAmount(-1);
-        static_assert(
-            !std::is_trivially_constructible<PrettyAmount, char>::value, "");
-        static_assert(
-            !std::is_trivially_constructible<PrettyAmount, unsigned char>::
-                value,
-            "");
-        static_assert(
-            !std::is_trivially_constructible<PrettyAmount, short>::value, "");
-        static_assert(
-            !std::is_trivially_constructible<PrettyAmount, unsigned short>::
-                value,
-            "");
+        PrettyAmount(0);   // NOLINT(bugprone-unused-raii)
+        PrettyAmount(1);   // NOLINT(bugprone-unused-raii)
+        PrettyAmount(0u);  // NOLINT(bugprone-unused-raii)
+        PrettyAmount(1u);  // NOLINT(bugprone-unused-raii)
+        PrettyAmount(-1);  // NOLINT(bugprone-unused-raii)
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, char>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned char>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, short>, "");
+        static_assert(!std::is_trivially_constructible_v<PrettyAmount, unsigned short>, "");
 
         try
         {
@@ -158,11 +179,7 @@ public:
         // unfunded
         {
             Env env(*this);
-            env(pay("alice", "bob", XRP(1000)),
-                seq(1),
-                fee(10),
-                sig("alice"),
-                ter(terNO_ACCOUNT));
+            env(pay("alice", "bob", XRP(1000)), seq(1), fee(10), sig("alice"), ter(terNO_ACCOUNT));
         }
 
         // fund
@@ -181,8 +198,8 @@ public:
             // flags
             env.fund(n, noripple("xavier"));
             env.require(nflags("xavier", asfDefaultRipple));
-            env.fund(n, "yana");
-            env.require(flags("yana", asfDefaultRipple));
+            env.fund(n, "zachary");
+            env.require(flags("zachary", asfDefaultRipple));
         }
 
         // trust
@@ -206,8 +223,7 @@ public:
             env.trust(USD(1000), alice);
             env(pay(gw, alice, USD(10)));
             BEAST_EXPECT(to_string(env.balance("alice", USD)) == "10/USD(gw)");
-            BEAST_EXPECT(
-                to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
+            BEAST_EXPECT(to_string(env.balance(gw, alice["USD"])) == "-10/USD(alice)");
         }
 
         // seq
@@ -253,10 +269,8 @@ public:
         env(pay(gw, "alice", USD(10)), require(balance("alice", USD(10))));
 
         env.require(nflags("alice", asfRequireDest));
-        env(fset("alice", asfRequireDest),
-            require(flags("alice", asfRequireDest)));
-        env(fclear("alice", asfRequireDest),
-            require(nflags("alice", asfRequireDest)));
+        env(fset("alice", asfRequireDest), require(flags("alice", asfRequireDest)));
+        env(fclear("alice", asfRequireDest), require(nflags("alice", asfRequireDest)));
     }
 
     // Signing with secp256k1 and ed25519 keys
@@ -265,7 +279,7 @@ public:
     {
         using namespace jtx;
 
-        Env env{*this, testable_amendments() | fixMasterKeyAsRegularKey};
+        Env env{*this, testable_amendments()};
         Account const alice("alice", KeyType::ed25519);
         Account const bob("bob", KeyType::secp256k1);
         Account const carol("carol");
@@ -275,9 +289,7 @@ public:
         env(noop(alice));
         env(noop(bob));
         env(noop(alice), sig("alice"), ter(tefBAD_AUTH));
-        env(noop(alice),
-            sig(Account("alice", KeyType::secp256k1)),
-            ter(tefBAD_AUTH));
+        env(noop(alice), sig(Account("alice", KeyType::secp256k1)), ter(tefBAD_AUTH));
         env(noop(bob), sig(Account("bob", KeyType::ed25519)), ter(tefBAD_AUTH));
         env(noop(alice), sig(carol), ter(tefBAD_AUTH));
 
@@ -292,9 +304,7 @@ public:
         env(noop(alice));
         env(noop(alice), sig(bob));
         env(noop(alice), sig(alice), ter(tefMASTER_DISABLED));
-        env(fclear(alice, asfDisableMaster),
-            sig(alice),
-            ter(tefMASTER_DISABLED));
+        env(fclear(alice, asfDisableMaster), sig(alice), ter(tefMASTER_DISABLED));
         env(fclear(alice, asfDisableMaster), sig(bob));
         env(noop(alice), sig(alice));
     }
@@ -333,10 +343,7 @@ public:
 
         env(offer("carol", XRP(50), USD(50)), require(owners("carol", 2)));
         env(pay("alice", "bob", any(USD(10))), ter(tecPATH_DRY));
-        env(pay("alice", "bob", any(USD(10))),
-            paths(XRP),
-            sendmax(XRP(10)),
-            ter(tecPATH_PARTIAL));
+        env(pay("alice", "bob", any(USD(10))), paths(XRP), sendmax(XRP(10)), ter(tecPATH_PARTIAL));
         env(pay("alice", "bob", any(USD(10))), paths(XRP), sendmax(XRP(20)));
         env.require(balance("bob", USD(10)));
         env.require(balance("carol", USD(39.5)));
@@ -348,9 +355,7 @@ public:
         env(noop("alice"), sig("eric"));
         env(noop("alice"), sig("bob"), ter(tefBAD_AUTH));
         env(fset("alice", asfDisableMaster), ter(tecNEED_MASTER_KEY));
-        env(fset("alice", asfDisableMaster),
-            sig("eric"),
-            ter(tecNEED_MASTER_KEY));
+        env(fset("alice", asfDisableMaster), sig("eric"), ter(tecNEED_MASTER_KEY));
         env.require(nflags("alice", asfDisableMaster));
         env(fset("alice", asfDisableMaster), sig("alice"));
         env.require(flags("alice", asfDisableMaster));
@@ -360,9 +365,7 @@ public:
         env(noop("alice"), sig("eric"));
         env(noop("alice"), sig("bob"), ter(tefBAD_AUTH));
         env(fclear("alice", asfDisableMaster), sig("bob"), ter(tefBAD_AUTH));
-        env(fclear("alice", asfDisableMaster),
-            sig("alice"),
-            ter(tefMASTER_DISABLED));
+        env(fclear("alice", asfDisableMaster), sig("alice"), ter(tefMASTER_DISABLED));
         env(fclear("alice", asfDisableMaster));
         env.require(nflags("alice", asfDisableMaster));
         env(regkey("alice", disabled));
@@ -385,8 +388,7 @@ public:
         env.fund(XRP(10000), alice);
 
         auto const localTxCnt = env.app().getOPs().getLocalTxCount();
-        auto const queueTxCount =
-            env.app().getTxQ().getMetrics(*env.current()).txCount;
+        auto const queueTxCount = env.app().getTxQ().getMetrics(*env.current()).txCount;
         auto const openTxCount = env.current()->txCount();
         BEAST_EXPECT(localTxCnt == 2 && queueTxCount == 0 && openTxCount == 2);
 
@@ -406,46 +408,35 @@ public:
         auto jr = applyTxn(noop(alice), fee(1));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "telINSUF_FEE_P");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop(alice), sig("bob"));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tefBAD_AUTH");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop(alice), seq(20));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "terPRE_SEQ");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(offer(alice, XRP(1000), USD(1000)));
 
-        BEAST_EXPECT(
-            jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(jr[jss::result][jss::engine_result] == "tecUNFUNDED_OFFER");
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
         jr = applyTxn(noop(alice), fee(drops(-10)));
 
         BEAST_EXPECT(jr[jss::result][jss::engine_result] == "temBAD_FEE");
-        BEAST_EXPECT(
-            env.app().getTxQ().getMetrics(*env.current()).txCount ==
-            queueTxCount);
+        BEAST_EXPECT(env.app().getTxQ().getMetrics(*env.current()).txCount == queueTxCount);
         BEAST_EXPECT(env.app().getOPs().getLocalTxCount() == localTxCnt);
         BEAST_EXPECT(env.current()->txCount() == openTxCount);
 
@@ -464,8 +455,7 @@ public:
 
         Env env(*this);
         env.fund(XRP(10000), "alice");
-        env(signers("alice", 1, {{"alice", 1}, {"bob", 2}}),
-            ter(temBAD_SIGNER));
+        env(signers("alice", 1, {{"alice", 1}, {"bob", 2}}), ter(temBAD_SIGNER));
         env(signers("alice", 1, {{"bob", 1}, {"carol", 2}}));
         env(noop("alice"));
 
@@ -491,10 +481,8 @@ public:
         {
             Env env(*this);
             env.fund(XRP(10000), "alice");
-            env(noop("alice"),
-                require(owners("alice", 0), tickets("alice", 0)));
-            env(ticket::create("alice", 1),
-                require(owners("alice", 1), tickets("alice", 1)));
+            env(noop("alice"), require(owners("alice", 0), tickets("alice", 0)));
+            env(ticket::create("alice", 1), require(owners("alice", 1), tickets("alice", 1)));
         }
     }
 
@@ -550,10 +538,7 @@ public:
         auto jt2 = env.jt(noop("alice"), prop<std::uint16_t>(-1));
         BEAST_EXPECT(jt2.get<std::uint16_t>());
         BEAST_EXPECT(*jt2.get<std::uint16_t>() == 65535);
-        auto jt3 = env.jt(
-            noop("alice"),
-            prop<std::string>("Hello, world!"),
-            prop<bool>(false));
+        auto jt3 = env.jt(noop("alice"), prop<std::string>("Hello, world!"), prop<bool>(false));
         BEAST_EXPECT(jt3.get<std::string>());
         BEAST_EXPECT(*jt3.get<std::string>() == "Hello, world!");
         BEAST_EXPECT(jt3.get<bool>());
@@ -596,14 +581,14 @@ public:
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());
         JTx jt2(std::move(jt1));
-        BEAST_EXPECT(!jt1.get<int>());
-        BEAST_EXPECT(!jt1.get<UDT>());
+        BEAST_EXPECT(!jt1.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt1.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt2.get<int>());
         BEAST_EXPECT(*jt2.get<int>() == 7);
         BEAST_EXPECT(!jt2.get<UDT>());
         jt1 = std::move(jt2);
-        BEAST_EXPECT(!jt2.get<int>());
-        BEAST_EXPECT(!jt2.get<UDT>());
+        BEAST_EXPECT(!jt2.get<int>());  // NOLINT(bugprone-use-after-move)
+        BEAST_EXPECT(!jt2.get<UDT>());  // NOLINT(bugprone-use-after-move)
         BEAST_EXPECT(jt1.get<int>());
         BEAST_EXPECT(*jt1.get<int>() == 7);
         BEAST_EXPECT(!jt1.get<UDT>());
@@ -615,16 +600,11 @@ public:
         using namespace jtx;
         Env env(*this);
         env.fund(XRP(10000), "alice");
-        env(noop("alice"), memodata("data"));
-        env(noop("alice"), memoformat("format"));
-        env(noop("alice"), memotype("type"));
-        env(noop("alice"), memondata("format", "type"));
-        env(noop("alice"), memonformat("data", "type"));
-        env(noop("alice"), memontype("data", "format"));
+        env(noop("alice"), memo_data("data"));
+        env(noop("alice"), memo_format("format"));
+        env(noop("alice"), memo_type("type"));
         env(noop("alice"), memo("data", "format", "type"));
-        env(noop("alice"),
-            memo("data1", "format1", "type1"),
-            memo("data2", "format2", "type2"));
+        env(noop("alice"), memo("data1", "format1", "type1"), memo("data2", "format2", "type2"));
     }
 
     void
@@ -636,12 +616,9 @@ public:
         memo("data", "format", "type")(env, jt);
 
         auto const& memo = jt.jv["Memos"][0u]["Memo"];
-        BEAST_EXPECT(
-            memo["MemoData"].asString() == strHex(std::string("data")));
-        BEAST_EXPECT(
-            memo["MemoFormat"].asString() == strHex(std::string("format")));
-        BEAST_EXPECT(
-            memo["MemoType"].asString() == strHex(std::string("type")));
+        BEAST_EXPECT(memo["MemoData"].asString() == strHex(std::string("data")));
+        BEAST_EXPECT(memo["MemoFormat"].asString() == strHex(std::string("format")));
+        BEAST_EXPECT(memo["MemoType"].asString() == strHex(std::string("type")));
     }
 
     void
@@ -706,10 +683,10 @@ public:
         std::uint32_t const aliceSeq = env.seq("alice");
 
         // Sign jsonNoop.
-        Json::Value jsonNoop =
+        Json::Value const jsonNoop =
             env.json(noop("alice"), fee(baseFee), seq(aliceSeq), sig("alice"));
         // Re-sign jsonNoop.
-        JTx jt = env.jt(jsonNoop);
+        JTx const jt = env.jt(jsonNoop);
         env(jt);
     }
 
@@ -756,15 +733,9 @@ public:
             params[jss::fee_mult_max] = 1;
             params[jss::fee_div_max] = 2;
 
-            auto const expectedErrorString = "Fee of " +
-                std::to_string(baseFee.drops()) +
-                " exceeds the requested tx limit of " +
-                std::to_string(baseFee.drops() / 2);
-            envs(
-                noop(alice),
-                fee(none),
-                seq(none),
-                rpc(rpcHIGH_FEE, expectedErrorString))(params);
+            auto const expectedErrorString = "Fee of " + std::to_string(baseFee.drops()) +
+                " exceeds the requested tx limit of " + std::to_string(baseFee.drops() / 2);
+            envs(noop(alice), fee(none), seq(none), rpc(rpcHIGH_FEE, expectedErrorString))(params);
 
             auto tx = env.tx();
             BEAST_EXPECT(!tx);
@@ -785,58 +756,52 @@ public:
         auto const neverSupportedFeat = [&]() -> std::optional<uint256> {
             auto const n = supported.size();
             for (size_t i = 0; i < n; ++i)
+            {
                 if (!supported[i])
                     return bitsetIndexToFeature(i);
+            }
 
             return std::nullopt;
         }();
 
         if (!neverSupportedFeat)
         {
-            log << "No unsupported features found - skipping test."
-                << std::endl;
+            log << "No unsupported features found - skipping test." << std::endl;
             pass();
             return;
         }
 
         auto hasFeature = [](Env& env, uint256 const& f) {
-            return (
-                env.app().config().features.find(f) !=
-                env.app().config().features.end());
+            return (env.app().config().features.contains(f));
         };
 
         {
             // default Env has all supported features
             Env env{*this};
-            BEAST_EXPECT(
-                supported.count() == env.app().config().features.size());
-            foreachFeature(supported, [&](uint256 const& f) {
-                this->BEAST_EXPECT(hasFeature(env, f));
-            });
+            BEAST_EXPECT(supported.count() == env.app().config().features.size());
+            foreachFeature(
+                supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
         }
 
         {
             // a Env FeatureBitset has *only* those features
-            Env env{*this, FeatureBitset(featureMultiSignReserve, featureFlow)};
+            Env env{*this, FeatureBitset{featureDynamicMPT | featureTokenEscrow}};
             BEAST_EXPECT(env.app().config().features.size() == 2);
             foreachFeature(supported, [&](uint256 const& f) {
-                bool const has =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
 
         auto const missingSomeFeatures =
-            testable_amendments() - featureMultiSignReserve - featureFlow;
+            testable_amendments() - featureDynamicMPT - featureTokenEscrow;
         BEAST_EXPECT(missingSomeFeatures.count() == (supported.count() - 2));
         {
             // a Env supported_features_except is missing *only* those features
             Env env{*this, missingSomeFeatures};
-            BEAST_EXPECT(
-                env.app().config().features.size() == (supported.count() - 2));
+            BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -847,9 +812,7 @@ public:
             // the unsupported feature should be enabled along with
             // the two supported ones
             Env env{
-                *this,
-                FeatureBitset(
-                    featureMultiSignReserve, featureFlow, *neverSupportedFeat)};
+                *this, FeatureBitset{featureDynamicMPT, featureTokenEscrow, *neverSupportedFeat}};
 
             // this app will have just 2 supported amendments and
             // one additional never supported feature flag
@@ -857,7 +820,7 @@ public:
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
 
             foreachFeature(supported, [&](uint256 const& f) {
-                bool has = (f == featureMultiSignReserve || f == featureFlow);
+                bool const has = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(has == hasFeature(env, f));
             });
         }
@@ -866,19 +829,14 @@ public:
             // add a feature that is NOT in the supported amendments list
             // and omit a few standard amendments
             // the unsupported features should be enabled
-            Env env{
-                *this,
-                missingSomeFeatures | FeatureBitset{*neverSupportedFeat}};
+            Env env{*this, missingSomeFeatures | FeatureBitset{*neverSupportedFeat}};
 
             // this app will have all supported amendments minus 2 and then the
             // one additional never supported feature flag
-            BEAST_EXPECT(
-                env.app().config().features.size() ==
-                (supported.count() - 2 + 1));
+            BEAST_EXPECT(env.app().config().features.size() == (supported.count() - 2 + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
             foreachFeature(supported, [&](uint256 const& f) {
-                bool hasnot =
-                    (f == featureMultiSignReserve || f == featureFlow);
+                bool const hasnot = (f == featureDynamicMPT || f == featureTokenEscrow);
                 this->BEAST_EXPECT(hasnot != hasFeature(env, f));
             });
         }
@@ -891,12 +849,10 @@ public:
 
             // this app will have all supported amendments and then the
             // one additional never supported feature flag
-            BEAST_EXPECT(
-                env.app().config().features.size() == (supported.count() + 1));
+            BEAST_EXPECT(env.app().config().features.size() == (supported.count() + 1));
             BEAST_EXPECT(hasFeature(env, *neverSupportedFeat));
-            foreachFeature(supported, [&](uint256 const& f) {
-                this->BEAST_EXPECT(hasFeature(env, f));
-            });
+            foreachFeature(
+                supported, [&](uint256 const& f) { this->BEAST_EXPECT(hasFeature(env, f)); });
         }
     }
 
@@ -904,7 +860,7 @@ public:
     testExceptionalShutdown()
     {
         except([this] {
-            jtx::Env env{
+            jtx::Env const env{
                 *this,
                 jtx::envconfig([](std::unique_ptr<Config> cfg) {
                     (*cfg).deprecatedClearSection("port_rpc");
@@ -944,7 +900,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Env, app, ripple);
+BEAST_DEFINE_TESTSUITE(Env, jtx, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

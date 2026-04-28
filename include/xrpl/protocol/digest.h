@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_DIGEST_H_INCLUDED
-#define RIPPLE_PROTOCOL_DIGEST_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/crypto/secure_erase.h>
@@ -27,7 +7,7 @@
 
 #include <array>
 
-namespace ripple {
+namespace xrpl {
 
 /** Message digest functions used in the codebase
 
@@ -60,7 +40,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[96];
+    char ctx_[96]{};
 };
 
 /** SHA-512 digest
@@ -83,7 +63,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[216];
+    char ctx_[216]{};
 };
 
 /** SHA-256 digest
@@ -106,7 +86,7 @@ public:
     operator result_type() noexcept;
 
 private:
-    char ctx_[112];
+    char ctx_[112]{};
 };
 
 //------------------------------------------------------------------------------
@@ -120,7 +100,7 @@ using sha512_hasher = openssl_sha512_hasher;
 /** Returns the RIPEMD-160 digest of the SHA256 hash of the message.
 
     This operation is used to compute the 160-bit identifier
-    representing a Ripple account, from a message. Typically the
+    representing an XRPL account, from a message. Typically the
     message is the public key of the account - which is not
     stored in the account root.
 
@@ -197,12 +177,12 @@ public:
     }
 
 private:
-    inline void
+    void
     erase(std::false_type)
     {
     }
 
-    inline void
+    void
     erase(std::true_type)
     {
         secure_erase(&h_, sizeof(h_));
@@ -245,6 +225,4 @@ sha512Half_s(Args const&... args)
     return static_cast<typename sha512_half_hasher_s::result_type>(h);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

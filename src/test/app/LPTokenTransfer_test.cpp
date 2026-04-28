@@ -1,28 +1,26 @@
-//------------------------------------------------------------------------------
-/*
-  This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2024 Ripple Labs Inc.
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose  with  or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-  MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/check.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/token.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
-namespace ripple {
-namespace test {
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+
+namespace xrpl::test {
 
 class LPTokenTransfer_test : public jtx::AMMTest
 {
@@ -37,18 +35,15 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
-        BEAST_EXPECT(
-            ammAlice.expectBalances(USD(20'000), BTC(0.5), IOUAmount{100, 0}));
+        BEAST_EXPECT(ammAlice.expectBalances(USD(20'000), BTC(0.5), IOUAmount{100, 0}));
 
         fund(env, gw, {carol}, {USD(4'000), BTC(1)}, Fund::Acct);
         ammAlice.deposit(carol, 10);
-        BEAST_EXPECT(
-            ammAlice.expectBalances(USD(22'000), BTC(0.55), IOUAmount{110, 0}));
+        BEAST_EXPECT(ammAlice.expectBalances(USD(22'000), BTC(0.55), IOUAmount{110, 0}));
 
         fund(env, gw, {bob}, {USD(4'000), BTC(1)}, Fund::Acct);
         ammAlice.deposit(bob, 10);
-        BEAST_EXPECT(
-            ammAlice.expectBalances(USD(24'000), BTC(0.60), IOUAmount{120, 0}));
+        BEAST_EXPECT(ammAlice.expectBalances(USD(24'000), BTC(0.60), IOUAmount{120, 0}));
 
         auto const lpIssue = ammAlice.lptIssue();
         env.trust(STAmount{lpIssue, 500}, alice);
@@ -68,8 +63,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         env.close();
 
         // cannot transfer to an amm account
-        env(pay(carol, lpIssue.getIssuer(), STAmount{lpIssue, 5}),
-            ter(tecNO_PERMISSION));
+        env(pay(carol, lpIssue.getIssuer(), STAmount{lpIssue, 5}), ter(tecNO_PERMISSION));
         env.close();
 
         if (features[fixFrozenLPTokenTransfer])
@@ -92,12 +86,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         using namespace jtx;
         Env env{*this, features};
 
-        fund(
-            env,
-            gw,
-            {alice, bob, carol},
-            {USD(10'000), EUR(10'000)},
-            Fund::All);
+        fund(env, gw, {alice, bob, carol}, {USD(10'000), EUR(10'000)}, Fund::All);
         AMM ammAlice(env, alice, USD(10'000), EUR(10'000));
         ammAlice.deposit(carol, 1'000);
         ammAlice.deposit(bob, 1'000);
@@ -162,8 +151,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         // even when carol's USD is frozen
         {
             // carol creates an offer to buy lptoken
-            env(offer(carol, STAmount{lpIssue, 10}, XRP(10)),
-                txflags(tfPassive));
+            env(offer(carol, STAmount{lpIssue, 10}, XRP(10)), txflags(tfPassive));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 1));
 
@@ -188,12 +176,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         using namespace jtx;
         Env env{*this, features};
 
-        fund(
-            env,
-            gw,
-            {alice, bob, carol},
-            {USD(10'000), EUR(10'000)},
-            Fund::All);
+        fund(env, gw, {alice, bob, carol}, {USD(10'000), EUR(10'000)}, Fund::All);
         AMM ammAlice(env, alice, USD(10'000), EUR(10'000));
         ammAlice.deposit(carol, 1'000);
         ammAlice.deposit(bob, 1'000);
@@ -223,16 +206,14 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // carol can create an offer to sell lptoken after USD is unfrozen
-            env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
-                txflags(tfPassive));
+            env(offer(carol, XRP(10), STAmount{lpIssue, 10}), txflags(tfPassive));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 1));
         }
         else
         {
             // without fixFrozenLPTokenTransfer, carol can create an offer
-            env(offer(carol, XRP(10), STAmount{lpIssue, 10}),
-                txflags(tfPassive));
+            env(offer(carol, XRP(10), STAmount{lpIssue, 10}), txflags(tfPassive));
             env.close();
             BEAST_EXPECT(expectOffers(env, carol, 1));
         }
@@ -260,7 +241,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         AMM ammAlice1(env, alice, XRP(10'000), USD(10'000));
         ammAlice1.deposit(carol, 10'000'000);
 
-        fund(env, gw, {alice, carol}, {EUR(10'000)}, Fund::IOUOnly);
+        fund(env, gw, {alice, carol}, {EUR(10'000)}, Fund::TokenOnly);
         AMM ammAlice2(env, alice, XRP(10'000), EUR(10'000));
         ammAlice2.deposit(carol, 10'000'000);
         auto const token1 = ammAlice1.lptIssue();
@@ -287,26 +268,24 @@ class LPTokenTransfer_test : public jtx::AMMTest
             // with fixFrozenLPTokenTransfer enabled, alice's offer can no
             // longer cross with carol's offer
             BEAST_EXPECT(
-                expectLine(env, alice, STAmount{token1, 10'000'000}) &&
-                expectLine(env, alice, STAmount{token2, 10'000'000}));
+                expectHolding(env, alice, STAmount{token1, 10'000'000}) &&
+                expectHolding(env, alice, STAmount{token2, 10'000'000}));
             BEAST_EXPECT(
-                expectLine(env, carol, STAmount{token2, 10'000'000}) &&
-                expectLine(env, carol, STAmount{token1, 10'000'000}));
-            BEAST_EXPECT(
-                expectOffers(env, alice, 1) && expectOffers(env, carol, 0));
+                expectHolding(env, carol, STAmount{token2, 10'000'000}) &&
+                expectHolding(env, carol, STAmount{token1, 10'000'000}));
+            BEAST_EXPECT(expectOffers(env, alice, 1) && expectOffers(env, carol, 0));
         }
         else
         {
             // alice's offer still crosses with carol's offer despite carol's
             // token1 is frozen
             BEAST_EXPECT(
-                expectLine(env, alice, STAmount{token1, 10'000'100}) &&
-                expectLine(env, alice, STAmount{token2, 9'999'900}));
+                expectHolding(env, alice, STAmount{token1, 10'000'100}) &&
+                expectHolding(env, alice, STAmount{token2, 9'999'900}));
             BEAST_EXPECT(
-                expectLine(env, carol, STAmount{token2, 10'000'100}) &&
-                expectLine(env, carol, STAmount{token1, 9'999'900}));
-            BEAST_EXPECT(
-                expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
+                expectHolding(env, carol, STAmount{token2, 10'000'100}) &&
+                expectHolding(env, carol, STAmount{token1, 9'999'900}));
+            BEAST_EXPECT(expectOffers(env, alice, 0) && expectOffers(env, carol, 0));
         }
     }
 
@@ -318,12 +297,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         using namespace jtx;
         Env env{*this, features};
 
-        fund(
-            env,
-            gw,
-            {alice, bob, carol},
-            {USD(10'000), EUR(10'000)},
-            Fund::All);
+        fund(env, gw, {alice, bob, carol}, {USD(10'000), EUR(10'000)}, Fund::All);
         AMM ammAlice(env, alice, USD(10'000), EUR(10'000));
         ammAlice.deposit(carol, 1'000);
         ammAlice.deposit(bob, 1'000);
@@ -342,10 +316,13 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // with fixFrozenLPTokenTransfer enabled, bob fails to cash the check
         if (features[fixFrozenLPTokenTransfer])
-            env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}),
-                ter(tecPATH_PARTIAL));
+        {
+            env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}), ter(tecPATH_PARTIAL));
+        }
         else
+        {
             env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}));
+        }
 
         env.close();
 
@@ -369,12 +346,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
         Env env{*this, features};
 
         // Setup AMM
-        fund(
-            env,
-            gw,
-            {alice, bob, carol},
-            {USD(10'000), EUR(10'000)},
-            Fund::All);
+        fund(env, gw, {alice, bob, carol}, {USD(10'000), EUR(10'000)}, Fund::All);
         AMM ammAlice(env, alice, USD(10'000), EUR(10'000));
         ammAlice.deposit(carol, 1'000);
         ammAlice.deposit(bob, 1'000);
@@ -388,8 +360,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // bob creates a sell offer for lptoken
         uint256 const sellOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
-        env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
-            txflags(tfSellNFToken));
+        env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}), txflags(tfSellNFToken));
         env.close();
 
         // gateway freezes carol's USD
@@ -405,8 +376,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
             // carol fails to accept bob's offer with lptoken because carol's
             // USD is frozen
-            env(token::acceptSellOffer(carol, sellOfferIndex),
-                ter(tecINSUFFICIENT_FUNDS));
+            env(token::acceptSellOffer(carol, sellOfferIndex), ter(tecINSUFFICIENT_FUNDS));
             env.close();
 
             // gateway unfreezes carol's USD
@@ -417,7 +387,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env(token::acceptSellOffer(carol, sellOfferIndex));
             env.close();
 
-            // gateway freezes bobs's USD
+            // gateway freezes bob's USD
             env(trust(gw, bob["USD"](0), tfSetFreeze));
             env.close();
 
@@ -433,8 +403,7 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // bob can now create a buy offer
-            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
-                token::owner(carol));
+            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}), token::owner(carol));
             env.close();
         }
         else
@@ -451,10 +420,8 @@ class LPTokenTransfer_test : public jtx::AMMTest
             env.close();
 
             // bob creates a buy offer with lptoken despite bob's USD is frozen
-            uint256 const buyOfferIndex =
-                keylet::nftoffer(bob, env.seq(bob)).key;
-            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}),
-                token::owner(carol));
+            uint256 const buyOfferIndex = keylet::nftoffer(bob, env.seq(bob)).key;
+            env(token::createOffer(bob, nftID, STAmount{lpIssue, 10}), token::owner(carol));
             env.close();
 
             // carol accepts bob's offer
@@ -481,6 +448,5 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, ripple);
-}  // namespace test
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(LPTokenTransfer, app, xrpl);
+}  // namespace xrpl::test

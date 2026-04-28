@@ -1,38 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_LEDGERMASTER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/ledger/AbstractFetchPackContainer.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerHistory.h>
 #include <xrpld/app/ledger/LedgerHolder.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/CanonicalTXSet.h>
+#include <xrpld/core/TimeKeeper.h>
 
 #include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/insight/Collector.h>
+#include <xrpl/ledger/CanonicalTXSet.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/messages.h>
@@ -40,7 +21,7 @@
 #include <mutex>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class Peer;
 class Transaction;
@@ -57,7 +38,7 @@ public:
         beast::insight::Collector::ptr const& collector,
         beast::Journal journal);
 
-    virtual ~LedgerMaster() = default;
+    ~LedgerMaster() override = default;
 
     LedgerIndex
     getCurrentLedgerIndex();
@@ -108,10 +89,7 @@ public:
     storeLedger(std::shared_ptr<Ledger const> ledger);
 
     void
-    setFullLedger(
-        std::shared_ptr<Ledger const> const& ledger,
-        bool isSynchronous,
-        bool isCurrent);
+    setFullLedger(std::shared_ptr<Ledger const> const& ledger, bool isSynchronous, bool isCurrent);
 
     /** Check the sequence number and parent close time of a
         ledger against our clock and last validated ledger to
@@ -357,8 +335,7 @@ private:
     int mPathFindThread{0};  // Pathfinder jobs dispatched
     bool mPathFindNewRequest{false};
 
-    std::atomic_flag mGotFetchPackThread =
-        ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
+    std::atomic_flag mGotFetchPackThread = ATOMIC_FLAG_INIT;  // GotFetchPack jobs dispatched
 
     std::atomic<std::uint32_t> mPubLedgerClose{0};
     std::atomic<LedgerIndex> mPubLedgerSeq{0};
@@ -386,20 +363,16 @@ private:
     LedgerIndex const max_ledger_difference_{1000000};
 
     // Time that the previous upgrade warning was issued.
-    TimeKeeper::time_point upgradeWarningPrevTime_{};
+    TimeKeeper::time_point upgradeWarningPrevTime_;
 
 private:
     struct Stats
     {
         template <class Handler>
-        Stats(
-            Handler const& handler,
-            beast::insight::Collector::ptr const& collector)
+        Stats(Handler const& handler, beast::insight::Collector::ptr const& collector)
             : hook(collector->make_hook(handler))
-            , validatedLedgerAge(
-                  collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
-            , publishedLedgerAge(
-                  collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
+            , validatedLedgerAge(collector->make_gauge("LedgerMaster", "Validated_Ledger_Age"))
+            , publishedLedgerAge(collector->make_gauge("LedgerMaster", "Published_Ledger_Age"))
         {
         }
 
@@ -414,12 +387,10 @@ private:
     void
     collect_metrics()
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard const lock(m_mutex);
         m_stats.validatedLedgerAge.set(getValidatedLedgerAge().count());
         m_stats.publishedLedgerAge.set(getPublishedLedgerAge().count());
     }
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

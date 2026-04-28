@@ -1,31 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
 
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/protocol/messages.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-namespace ripple {
+#include <xrpl.pb.h>
 
-namespace test {
+#include <algorithm>
+#include <cstdint>
+
+namespace xrpl::test {
 
 class traffic_count_test : public beast::unit_test::suite
 {
@@ -40,13 +22,12 @@ public:
         message.set_type(protocol::TMPing::ptPING);
 
         // a known message is categorized to a proper category
-        auto const known =
-            TrafficCount::categorize(message, protocol::mtPING, false);
+        auto const known = TrafficCount::categorize(message, protocol::mtPING, false);
         BEAST_EXPECT(known == TrafficCount::category::base);
 
         // an unknown message type is categorized as unknown
-        auto const unknown = TrafficCount::categorize(
-            message, static_cast<protocol::MessageType>(99), false);
+        auto const unknown =
+            TrafficCount::categorize(message, static_cast<protocol::MessageType>(99), false);
         BEAST_EXPECT(unknown == TrafficCount::category::unknown);
     }
 
@@ -70,24 +51,18 @@ public:
             TrafficCount m_traffic;
 
             auto const counts = m_traffic.getCounts();
-            std::for_each(counts.begin(), counts.end(), [&](auto const& pair) {
+            std::ranges::for_each(counts, [&](auto const& pair) {
                 for (auto i = 0; i < tc.messageCount; ++i)
                     m_traffic.addCount(pair.first, tc.inbound, tc.size);
             });
 
             auto const counts_new = m_traffic.getCounts();
-            std::for_each(
-                counts_new.begin(), counts_new.end(), [&](auto const& pair) {
-                    BEAST_EXPECT(
-                        pair.second.bytesIn.load() == tc.expectedBytesIn);
-                    BEAST_EXPECT(
-                        pair.second.bytesOut.load() == tc.expectedBytesOut);
-                    BEAST_EXPECT(
-                        pair.second.messagesIn.load() == tc.expectedMessagesIn);
-                    BEAST_EXPECT(
-                        pair.second.messagesOut.load() ==
-                        tc.expectedMessagesOut);
-                });
+            std::ranges::for_each(counts_new, [&](auto const& pair) {
+                BEAST_EXPECT(pair.second.bytesIn.load() == tc.expectedBytesIn);
+                BEAST_EXPECT(pair.second.bytesOut.load() == tc.expectedBytesOut);
+                BEAST_EXPECT(pair.second.messagesIn.load() == tc.expectedMessagesIn);
+                BEAST_EXPECT(pair.second.messagesOut.load() == tc.expectedMessagesOut);
+            });
         };
 
         auto const testcases = {
@@ -133,13 +108,11 @@ public:
         testcase("category-to-string");
 
         // known category returns known string value
-        BEAST_EXPECT(
-            TrafficCount::to_string(TrafficCount::category::total) == "total");
+        BEAST_EXPECT(TrafficCount::to_string(TrafficCount::category::total) == "total");
 
         // return "unknown" for unknown categories
         BEAST_EXPECT(
-            TrafficCount::to_string(
-                static_cast<TrafficCount::category>(1000)) == "unknown");
+            TrafficCount::to_string(static_cast<TrafficCount::category>(1000)) == "unknown");
     }
 
     void
@@ -151,7 +124,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(traffic_count, overlay, ripple);
+BEAST_DEFINE_TESTSUITE(traffic_count, overlay, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

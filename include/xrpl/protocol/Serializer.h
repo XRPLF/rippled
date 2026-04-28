@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
-#define RIPPLE_PROTOCOL_SERIALIZER_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
@@ -35,7 +15,7 @@
 #include <cstring>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 class Serializer
 {
@@ -53,28 +33,26 @@ public:
     {
         mData.resize(size);
 
-        if (size)
+        if (size != 0u)
         {
-            XRPL_ASSERT(
-                data,
-                "ripple::Serializer::Serializer(void const*) : non-null input");
+            XRPL_ASSERT(data, "xrpl::Serializer::Serializer(void const*) : non-null input");
             std::memcpy(mData.data(), data, size);
         }
     }
 
-    Slice
+    [[nodiscard]] Slice
     slice() const noexcept
     {
         return Slice(mData.data(), mData.size());
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const noexcept
     {
         return mData.size();
     }
 
-    void const*
+    [[nodiscard]] void const*
     data() const noexcept
     {
         return mData.data();
@@ -87,13 +65,11 @@ public:
     add16(std::uint16_t i);
 
     template <typename T>
-        requires(std::is_same_v<
-                 std::make_unsigned_t<std::remove_cv_t<T>>,
-                 std::uint32_t>)
+        requires(std::is_same_v<std::make_unsigned_t<std::remove_cv_t<T>>, std::uint32_t>)
     int
     add32(T i)
     {
-        int ret = mData.size();
+        int const ret = mData.size();
         mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
         mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
         mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
@@ -105,13 +81,11 @@ public:
     add32(HashPrefix p);
 
     template <typename T>
-        requires(std::is_same_v<
-                 std::make_unsigned_t<std::remove_cv_t<T>>,
-                 std::uint64_t>)
+        requires(std::is_same_v<std::make_unsigned_t<std::remove_cv_t<T>>, std::uint64_t>)
     int
     add64(T i)
     {
-        int ret = mData.size();
+        int const ret = mData.size();
         mData.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
         mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
         mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
@@ -194,16 +168,16 @@ public:
     }
 
     // DEPRECATED
-    uint256
+    [[nodiscard]] uint256
     getSHA512Half() const;
 
     // totality functions
-    Blob const&
+    [[nodiscard]] Blob const&
     peekData() const
     {
         return mData;
     }
-    Blob
+    [[nodiscard]] Blob
     getData() const
     {
         return mData;
@@ -214,12 +188,12 @@ public:
         return mData;
     }
 
-    int
+    [[nodiscard]] int
     getDataLength() const
     {
         return mData.size();
     }
-    void const*
+    [[nodiscard]] void const*
     getDataPtr() const
     {
         return mData.data();
@@ -229,12 +203,12 @@ public:
     {
         return mData.data();
     }
-    int
+    [[nodiscard]] int
     getLength() const
     {
         return mData.size();
     }
-    std::string
+    [[nodiscard]] std::string
     getString() const
     {
         return std::string(static_cast<char const*>(getDataPtr()), size());
@@ -258,12 +232,12 @@ public:
     {
         return mData.end();
     }
-    Blob ::const_iterator
+    [[nodiscard]] Blob ::const_iterator
     begin() const
     {
         return mData.begin();
     }
-    Blob ::const_iterator
+    [[nodiscard]] Blob ::const_iterator
     end() const
     {
         return mData.end();
@@ -278,7 +252,7 @@ public:
     {
         mData.resize(n);
     }
-    size_t
+    [[nodiscard]] size_t
     capacity() const
     {
         return mData.capacity();
@@ -325,7 +299,7 @@ template <class Iter>
 int
 Serializer::addVL(Iter begin, Iter end, int len)
 {
-    int ret = addEncoded(len);
+    int const ret = addEncoded(len);
     for (; begin != end; ++begin)
     {
         addRaw(begin->data(), begin->size());
@@ -333,8 +307,7 @@ Serializer::addVL(Iter begin, Iter end, int len)
         len -= begin->size();
 #endif
     }
-    XRPL_ASSERT(
-        len == 0, "ripple::Serializer::addVL : length matches distance");
+    XRPL_ASSERT(len == 0, "xrpl::Serializer::addVL : length matches distance");
     return ret;
 }
 
@@ -363,7 +336,7 @@ public:
         static_assert(N > 0, "");
     }
 
-    std::size_t
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return remain_ == 0;
@@ -372,7 +345,7 @@ public:
     void
     reset() noexcept;
 
-    int
+    [[nodiscard]] int
     getBytesLeft() const noexcept
     {
         return static_cast<int>(remain_);
@@ -472,6 +445,4 @@ SerialIter::getBitString()
     return base_uint<Bits, Tag>::fromVoid(x);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

@@ -1,21 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/detail/STVar.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -35,14 +18,12 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/detail/STVar.h>
 
 #include <stdexcept>
 #include <tuple>
 #include <type_traits>
 
-namespace ripple {
-namespace detail {
+namespace xrpl::detail {
 
 defaultObject_t defaultObject;
 nonPresentObject_t nonPresentObject;
@@ -79,10 +60,14 @@ STVar::operator=(STVar const& rhs)
     if (&rhs != this)
     {
         destroy();
-        if (rhs.p_)
+        if (rhs.p_ != nullptr)
+        {
             p_ = rhs.p_->copy(max_size, &d_);
+        }
         else
+        {
             p_ = nullptr;
+        }
     }
 
     return *this;
@@ -112,8 +97,7 @@ STVar::STVar(defaultObject_t, SField const& name) : STVar(name.fieldType, name)
 {
 }
 
-STVar::STVar(nonPresentObject_t, SField const& name)
-    : STVar(STI_NOTPRESENT, name)
+STVar::STVar(nonPresentObject_t, SField const& name) : STVar(STI_NOTPRESENT, name)
 {
 }
 
@@ -128,7 +112,7 @@ STVar::STVar(SerializedTypeID id, SField const& name)
 {
     XRPL_ASSERT(
         (id == STI_NOTPRESENT) || (id == name.fieldType),
-        "ripple::detail::STVar::STVar(SerializedTypeID) : valid type input");
+        "xrpl::detail::STVar::STVar(SerializedTypeID) : valid type input");
     constructST(id, 0, name);
 }
 
@@ -136,9 +120,13 @@ void
 STVar::destroy()
 {
     if (on_heap())
+    {
         delete p_;
+    }
     else
+    {
         p_->~STBase();
+    }
 
     p_ = nullptr;
 }
@@ -149,22 +137,19 @@ void
 STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
 {
     auto constructWithDepth = [&]<typename T>() {
-        if constexpr (std::is_same_v<
-                          std::tuple<std::remove_cvref_t<Args>...>,
-                          std::tuple<SField>>)
+        if constexpr (std::is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SField>>)
         {
             construct<T>(std::forward<Args>(args)...);
         }
-        else if constexpr (std::is_same_v<
-                               std::tuple<std::remove_cvref_t<Args>...>,
-                               std::tuple<SerialIter, SField>>)
+        else if constexpr (
+            std::
+                is_same_v<std::tuple<std::remove_cvref_t<Args>...>, std::tuple<SerialIter, SField>>)
         {
             construct<T>(std::forward<Args>(args)..., depth);
         }
         else
         {
-            constexpr bool alwaysFalse =
-                !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
+            constexpr bool alwaysFalse = !std::is_same_v<std::tuple<Args...>, std::tuple<Args...>>;
             static_assert(alwaysFalse, "Invalid STVar constructor arguments");
         }
     };
@@ -173,8 +158,7 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
     {
         case STI_NOTPRESENT: {
             // Last argument is always SField
-            SField const& field =
-                std::get<sizeof...(args) - 1>(std::forward_as_tuple(args...));
+            SField const& field = std::get<sizeof...(args) - 1>(std::forward_as_tuple(args...));
             construct<STBase>(field);
             return;
         }
@@ -208,6 +192,9 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         case STI_UINT256:
             construct<STUInt256>(std::forward<Args>(args)...);
             return;
+        case STI_INT32:
+            construct<STInt32>(std::forward<Args>(args)...);
+            return;
         case STI_VECTOR256:
             construct<STVector256>(std::forward<Args>(args)...);
             return;
@@ -240,5 +227,4 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
     }
 }
 
-}  // namespace detail
-}  // namespace ripple
+}  // namespace xrpl::detail

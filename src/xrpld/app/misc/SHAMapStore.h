@@ -1,31 +1,13 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
+#include <xrpld/app/main/Application.h>
 
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_SHAMAPSTORE_H_INCLUDED
-#define RIPPLE_APP_MISC_SHAMAPSTORE_H_INCLUDED
-
-#include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/nodestore/Manager.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Manager.h>
 
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 class TransactionMaster;
 
@@ -51,7 +33,7 @@ public:
     virtual void
     stop() = 0;
 
-    virtual std::uint32_t
+    [[nodiscard]] virtual std::uint32_t
     clampFetchDepth(std::uint32_t fetch_depth) const = 0;
 
     virtual std::unique_ptr<NodeStore::Database>
@@ -62,7 +44,7 @@ public:
     setCanDelete(LedgerIndex canDelete) = 0;
 
     /** Whether advisory delete is enabled. */
-    virtual bool
+    [[nodiscard]] virtual bool
     advisoryDelete() const = 0;
 
     /** Maximum ledger that has been deleted, or will be deleted if
@@ -76,7 +58,7 @@ public:
     getCanDelete() = 0;
 
     /** Returns the number of file descriptors that are needed. */
-    virtual int
+    [[nodiscard]] virtual int
     fdRequired() const = 0;
 
     /** The minimum ledger to try and maintain in our database.
@@ -95,17 +77,12 @@ public:
         @return The minimum ledger sequence to keep online based on the
             description above. If not set, then an unseated optional.
     */
-    virtual std::optional<LedgerIndex>
+    [[nodiscard]] virtual std::optional<LedgerIndex>
     minimumOnline() const = 0;
 };
 
 //------------------------------------------------------------------------------
 
 std::unique_ptr<SHAMapStore>
-make_SHAMapStore(
-    Application& app,
-    NodeStore::Scheduler& scheduler,
-    beast::Journal journal);
-}  // namespace ripple
-
-#endif
+make_SHAMapStore(Application& app, NodeStore::Scheduler& scheduler, beast::Journal journal);
+}  // namespace xrpl

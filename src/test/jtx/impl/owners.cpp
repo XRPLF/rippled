@@ -1,45 +1,34 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/jtx/owners.h>
 
-namespace ripple {
-namespace test {
-namespace jtx {
+#include <test/jtx/Env.h>
 
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+
+#include <cstdint>
+#include <memory>
+
+namespace xrpl {
 namespace detail {
 
 std::uint32_t
 owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type)
 {
     std::uint32_t count = 0;
-    forEachItem(
-        view, id, [&count, type](std::shared_ptr<SLE const> const& sle) {
-            if (sle->getType() == type)
-                ++count;
-        });
+    forEachItem(view, id, [&count, type](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == type)
+            ++count;
+    });
     return count;
 }
 
 void
 owned_count_helper(
-    Env& env,
+    test::jtx::Env& env,
     AccountID const& id,
     LedgerEntryType type,
     std::uint32_t value)
@@ -49,12 +38,14 @@ owned_count_helper(
 
 }  // namespace detail
 
+namespace test::jtx {
+
 void
 owners::operator()(Env& env) const
 {
     env.test.expect(env.le(account_)->getFieldU32(sfOwnerCount) == value_);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+}  // namespace test::jtx
+
+}  // namespace xrpl

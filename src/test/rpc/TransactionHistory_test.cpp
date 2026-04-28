@@ -1,33 +1,22 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/static_vector.hpp>
 
-#include <algorithm>
+#include <cstddef>
+#include <string>
+#include <unordered_map>
 
-namespace ripple {
+namespace xrpl {
 
 class TransactionHistory_test : public beast::unit_test::suite
 {
@@ -40,8 +29,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
         {
             // no params
-            auto const result =
-                env.client().invoke("tx_history", {})[jss::result];
+            auto const result = env.client().invoke("tx_history", {})[jss::result];
             BEAST_EXPECT(result[jss::error] == "invalidParams");
             BEAST_EXPECT(result[jss::status] == "error");
         }
@@ -50,8 +38,7 @@ class TransactionHistory_test : public beast::unit_test::suite
             // test at 1 greater than the allowed non-admin limit
             Json::Value params{Json::objectValue};
             params[jss::start] = 10001;  // limited to <= 10000 for non admin
-            auto const result =
-                env.client().invoke("tx_history", params)[jss::result];
+            auto const result = env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::error] == "noPermission");
             BEAST_EXPECT(result[jss::status] == "error");
         }
@@ -66,8 +53,7 @@ class TransactionHistory_test : public beast::unit_test::suite
 
         Json::Value params{Json::objectValue};
         params[jss::api_version] = 2;
-        auto const result =
-            env.client().invoke("tx_history", params)[jss::result];
+        auto const result = env.client().invoke("tx_history", params)[jss::result];
         BEAST_EXPECT(result[jss::error] == "unknownCmd");
         BEAST_EXPECT(result[jss::status] == "error");
     }
@@ -102,10 +88,8 @@ class TransactionHistory_test : public beast::unit_test::suite
             // is available in tx_history.
             Json::Value params{Json::objectValue};
             params[jss::start] = 0;
-            auto result =
-                env.client().invoke("tx_history", params)[jss::result];
-            if (!BEAST_EXPECT(
-                    result[jss::txs].isArray() && result[jss::txs].size() > 0))
+            auto result = env.client().invoke("tx_history", params)[jss::result];
+            if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
                 return;
 
             // search for a tx in history matching the last offer
@@ -131,10 +115,8 @@ class TransactionHistory_test : public beast::unit_test::suite
         {
             Json::Value params{Json::objectValue};
             params[jss::start] = start;
-            auto result =
-                env.client().invoke("tx_history", params)[jss::result];
-            if (!BEAST_EXPECT(
-                    result[jss::txs].isArray() && result[jss::txs].size() > 0))
+            auto result = env.client().invoke("tx_history", params)[jss::result];
+            if (!BEAST_EXPECT(result[jss::txs].isArray() && result[jss::txs].size() > 0))
                 break;
             total += result[jss::txs].size();
             start += 20;
@@ -153,8 +135,7 @@ class TransactionHistory_test : public beast::unit_test::suite
         {
             Json::Value params{Json::objectValue};
             params[jss::start] = 10000;  // limited to <= 10000 for non admin
-            auto const result =
-                env.client().invoke("tx_history", params)[jss::result];
+            auto const result = env.client().invoke("tx_history", params)[jss::result];
             BEAST_EXPECT(result[jss::status] == "success");
             BEAST_EXPECT(result[jss::index] == 10000);
         }
@@ -170,6 +151,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(TransactionHistory, rpc, ripple);
+BEAST_DEFINE_TESTSUITE(TransactionHistory, rpc, xrpl);
 
-}  // namespace ripple
+}  // namespace xrpl

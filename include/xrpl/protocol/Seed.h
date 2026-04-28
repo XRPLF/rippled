@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_SEED_H_INCLUDED
-#define RIPPLE_PROTOCOL_SEED_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
@@ -27,13 +7,13 @@
 #include <array>
 #include <optional>
 
-namespace ripple {
+namespace xrpl {
 
 /** Seeds are used to generate deterministic secret keys. */
 class Seed
 {
 private:
-    std::array<uint8_t, 16> buf_;
+    std::array<uint8_t, 16> buf_{};
 
 public:
     using const_iterator = std::array<uint8_t, 16>::const_iterator;
@@ -55,37 +35,37 @@ public:
     explicit Seed(uint128 const& seed);
     /** @} */
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const
     {
         return buf_.data();
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return buf_.size();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return buf_.begin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return buf_.cbegin();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return buf_.end();
     }
 
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return buf_.cend();
@@ -100,7 +80,7 @@ randomSeed();
 
 /** Generate a seed deterministically.
 
-    The algorithm is specific to Ripple:
+    The algorithm is specific to the XRPL:
 
         The seed is calculated as the first 128 bits
         of the SHA512-Half of the string text excluding
@@ -136,6 +116,4 @@ toBase58(Seed const& seed)
     return encodeBase58Token(TokenType::FamilySeed, seed.data(), seed.size());
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

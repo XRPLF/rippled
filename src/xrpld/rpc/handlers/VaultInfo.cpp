@@ -1,33 +1,19 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2025 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/serialize.h>
 
-namespace ripple {
+#include <memory>
+#include <optional>
+
+namespace xrpl {
 
 static std::optional<uint256>
 parseVault(Json::Value const& params, Json::Value& jvResult)
@@ -54,8 +40,7 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
             RPC::inject_error(rpcACT_MALFORMED, jvResult);
             return std::nullopt;
         }
-        else if (
-            !(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
+        if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
             params[jss::seq].asDouble() > double(Json::Value::maxUInt))
         {
@@ -84,8 +69,7 @@ doVaultInfo(RPC::JsonContext& context)
     if (!lpLedger)
         return jvResult;
 
-    auto const uNodeIndex =
-        parseVault(context.params, jvResult).value_or(beast::zero);
+    auto const uNodeIndex = parseVault(context.params, jvResult).value_or(beast::zero);
     if (uNodeIndex == beast::zero)
     {
         jvResult[jss::error] = "malformedRequest";
@@ -111,4 +95,4 @@ doVaultInfo(RPC::JsonContext& context)
     return jvResult;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

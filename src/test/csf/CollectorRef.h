@@ -1,33 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_COLLECTOREF_H_INCLUDED
-#define RIPPLE_TEST_CSF_COLLECTOREF_H_INCLUDED
+#pragma once
 
 #include <test/csf/SimTime.h>
 #include <test/csf/events.h>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
-/** Holds a type-erased reference to an arbitray collector.
+/** Holds a type-erased reference to an arbitrary collector.
 
     A collector is any class that implements
 
@@ -159,31 +137,31 @@ class CollectorRef
         Any&
         operator=(Any&&) = default;
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Tx> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Share<Proposal> const& e) override
         {
             t_.on(node, when, e);
@@ -195,25 +173,25 @@ class CollectorRef
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Receive<Proposal> const& e) override
         {
             t_.on(node, when, e);
@@ -225,61 +203,61 @@ class CollectorRef
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<TxSet> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Validation> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Ledger> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, Relay<Proposal> const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, SubmitTx const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, StartRound const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, CloseLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, AcceptLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, WrongPrevLedger const& e) override
         {
             t_.on(node, when, e);
         }
 
-        virtual void
+        void
         on(PeerID node, tp when, FullyValidateLedger const& e) override
         {
             t_.on(node, when, e);
@@ -344,8 +322,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
-#define RIPPLE_PROTOCOL_KNOWNFORMATS_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/type_name.h>
@@ -29,7 +9,7 @@
 #include <algorithm>
 #include <forward_list>
 
-namespace ripple {
+namespace xrpl {
 
 /** Manages a list of known formats.
 
@@ -50,20 +30,21 @@ public:
         Item(
             char const* name,
             KeyType type,
-            std::initializer_list<SOElement> uniqueFields,
-            std::initializer_list<SOElement> commonFields)
-            : soTemplate_(uniqueFields, commonFields), name_(name), type_(type)
+            std::vector<SOElement> uniqueFields,
+            std::vector<SOElement> commonFields)
+            : soTemplate_(std::move(uniqueFields), std::move(commonFields))
+            , name_(name)
+            , type_(type)
         {
             // Verify that KeyType is appropriate.
             static_assert(
-                std::is_enum<KeyType>::value ||
-                    std::is_integral<KeyType>::value,
+                std::is_enum_v<KeyType> || std::is_integral_v<KeyType>,
                 "KnownFormats KeyType must be integral or enum.");
         }
 
         /** Retrieve the name of the format.
          */
-        std::string const&
+        [[nodiscard]] std::string const&
         getName() const
         {
             return name_;
@@ -71,13 +52,13 @@ public:
 
         /** Retrieve the transaction type this format represents.
          */
-        KeyType
+        [[nodiscard]] KeyType
         getType() const
         {
             return type_;
         }
 
-        SOTemplate const&
+        [[nodiscard]] SOTemplate const&
         getSOTemplate() const
         {
             return soTemplate_;
@@ -93,10 +74,12 @@ public:
 
         Derived classes will load the object with all the known formats.
     */
+private:
     KnownFormats() : name_(beast::type_name<Derived>())
     {
     }
 
+public:
     /** Destroy the known formats object.
 
         The defined formats are deleted.
@@ -113,7 +96,7 @@ public:
         @param  name The name of the type.
         @return      The type.
     */
-    KeyType
+    [[nodiscard]] KeyType
     findTypeByName(std::string const& name) const
     {
         if (auto const result = findByName(name))
@@ -125,7 +108,7 @@ public:
 
     /** Retrieve a format based on its type.
      */
-    Item const*
+    [[nodiscard]] Item const*
     findByType(KeyType type) const
     {
         auto const itr = types_.find(type);
@@ -135,13 +118,13 @@ public:
     }
 
     // begin() and end() are provided for testing purposes.
-    typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] typename std::forward_list<Item>::const_iterator
     begin() const
     {
         return formats_.begin();
     }
 
-    typename std::forward_list<Item>::const_iterator
+    [[nodiscard]] typename std::forward_list<Item>::const_iterator
     end() const
     {
         return formats_.end();
@@ -150,7 +133,7 @@ public:
 protected:
     /** Retrieve a format based on its name.
      */
-    Item const*
+    [[nodiscard]] Item const*
     findByName(std::string const& name) const
     {
         auto const itr = names_.find(name);
@@ -163,25 +146,25 @@ protected:
 
         @param name The name of this format.
         @param type The type of this format.
-        @param uniqueFields An std::initializer_list of unique fields
-        @param commonFields An std::initializer_list of common fields
+        @param uniqueFields A std::vector of unique fields
+        @param commonFields A std::vector of common fields
 
         @return The created format.
     */
     Item const&
     add(char const* name,
         KeyType type,
-        std::initializer_list<SOElement> uniqueFields,
-        std::initializer_list<SOElement> commonFields = {})
+        std::vector<SOElement> uniqueFields,
+        std::vector<SOElement> commonFields = {})
     {
         if (auto const item = findByType(type))
         {
             LogicError(
-                std::string("Duplicate key for item '") + name +
-                "': already maps to " + item->getName());
+                std::string("Duplicate key for item '") + name + "': already maps to " +
+                item->getName());
         }
 
-        formats_.emplace_front(name, type, uniqueFields, commonFields);
+        formats_.emplace_front(name, type, std::move(uniqueFields), std::move(commonFields));
         Item const& item{formats_.front()};
 
         names_[name] = &item;
@@ -196,12 +179,11 @@ private:
     // One of the situations where a std::forward_list is useful.  We want to
     // store each Item in a place where its address won't change.  So a node-
     // based container is appropriate.  But we don't need searchability.
-    std::forward_list<Item> formats_;
+    std::forward_list<Item> formats_{};
 
-    boost::container::flat_map<std::string, Item const*> names_;
-    boost::container::flat_map<KeyType, Item const*> types_;
+    boost::container::flat_map<std::string, Item const*> names_{};
+    boost::container::flat_map<KeyType, Item const*> types_{};
+    friend Derived;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

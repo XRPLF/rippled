@@ -1,32 +1,30 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+#include <exception>
+#include <optional>
+#include <string>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
-namespace ripple {
-namespace test {
+namespace xrpl::test {
 
 class AMMInfo_test : public jtx::AMMTestBase
 {
@@ -40,22 +38,24 @@ public:
 
         Account const bogie("bogie");
         enum TestAccount { None, Alice, Bogie };
-        auto accountId = [&](AMM const& ammAlice,
-                             TestAccount v) -> std::optional<AccountID> {
+        auto accountId = [&](AMM const& ammAlice, TestAccount v) -> std::optional<AccountID> {
             if (v == Alice)
+            {
                 return ammAlice.ammAccount();
-            else if (v == Bogie)
+            }
+            if (v == Bogie)
+            {
                 return bogie;
-            else
-                return std::nullopt;
+            }
+
+            return std::nullopt;
         };
 
         // Invalid tokens pair
         testAMM([&](AMM& ammAlice, Env&) {
             Account const gw("gw");
             auto const USD = gw["USD"];
-            auto const jv =
-                ammAlice.ammRpcInfo({}, {}, USD.issue(), USD.issue());
+            auto const jv = ammAlice.ammRpcInfo({}, {}, USD, USD);
             BEAST_EXPECT(jv[jss::error_message] == "Account not found.");
         });
 
@@ -65,17 +65,14 @@ public:
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
 
-        std::vector<std::tuple<
-            std::optional<Issue>,
-            std::optional<Issue>,
-            TestAccount,
-            bool>> const invalidParams = {
-            {xrpIssue(), std::nullopt, None, false},
-            {std::nullopt, USD.issue(), None, false},
-            {xrpIssue(), std::nullopt, Alice, false},
-            {std::nullopt, USD.issue(), Alice, false},
-            {xrpIssue(), USD.issue(), Alice, false},
-            {std::nullopt, std::nullopt, None, true}};
+        std::vector<std::tuple<std::optional<Issue>, std::optional<Issue>, TestAccount, bool>> const
+            invalidParams = {
+                {xrpIssue(), std::nullopt, None, false},
+                {std::nullopt, USD, None, false},
+                {xrpIssue(), std::nullopt, Alice, false},
+                {std::nullopt, USD, Alice, false},
+                {xrpIssue(), USD, Alice, false},
+                {std::nullopt, std::nullopt, None, true}};
 
         // Invalid parameters
         testAMM([&](AMM& ammAlice, Env&) {
@@ -126,30 +123,22 @@ public:
         // Invalid AMM account id
         testAMM([&](AMM& ammAlice, Env&) {
             auto const jv = ammAlice.ammRpcInfo(
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                std::nullopt,
-                bogie.id());
+                std::nullopt, std::nullopt, std::nullopt, std::nullopt, bogie.id());
             BEAST_EXPECT(jv[jss::error_message] == "Account malformed.");
         });
 
-        std::vector<std::tuple<
-            std::optional<Issue>,
-            std::optional<Issue>,
-            TestAccount,
-            bool>> const invalidParamsBadAccount = {
-            {xrpIssue(), std::nullopt, None, false},
-            {std::nullopt, USD.issue(), None, false},
-            {xrpIssue(), std::nullopt, Bogie, false},
-            {std::nullopt, USD.issue(), Bogie, false},
-            {xrpIssue(), USD.issue(), Bogie, false},
-            {std::nullopt, std::nullopt, None, true}};
+        std::vector<std::tuple<std::optional<Issue>, std::optional<Issue>, TestAccount, bool>> const
+            invalidParamsBadAccount = {
+                {xrpIssue(), std::nullopt, None, false},
+                {std::nullopt, USD, None, false},
+                {xrpIssue(), std::nullopt, Bogie, false},
+                {std::nullopt, USD, Bogie, false},
+                {xrpIssue(), USD, Bogie, false},
+                {std::nullopt, std::nullopt, None, true}};
 
         // Invalid parameters *and* invalid AMM account, default API version
         testAMM([&](AMM& ammAlice, Env&) {
-            for (auto const& [iss1, iss2, acct, ignoreParams] :
-                 invalidParamsBadAccount)
+            for (auto const& [iss1, iss2, acct, ignoreParams] : invalidParamsBadAccount)
             {
                 auto const jv = ammAlice.ammRpcInfo(
                     std::nullopt,
@@ -164,8 +153,7 @@ public:
 
         // Invalid parameters *and* invalid AMM account, API version 3
         testAMM([&](AMM& ammAlice, Env&) {
-            for (auto const& [iss1, iss2, acct, ignoreParams] :
-                 invalidParamsBadAccount)
+            for (auto const& [iss1, iss2, acct, ignoreParams] : invalidParamsBadAccount)
             {
                 auto const jv = ammAlice.ammRpcInfo(
                     std::nullopt,
@@ -191,8 +179,6 @@ public:
         using namespace jtx;
         testAMM([&](AMM& ammAlice, Env&) {
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                XRP(10000), USD(10000), IOUAmount{10000000, 0}));
-            BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000),
                 USD(10000),
                 IOUAmount{10000000, 0},
@@ -200,6 +186,32 @@ public:
                 std::nullopt,
                 ammAlice.ammAccount()));
         });
+
+        {
+            Env env{*this};
+            env.fund(XRP(1'000), gw);
+            MPTTester mpt(env, gw, {.fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            MPTTester mpt1(env, gw, {.fund = false});
+            mpt1.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            auto const MPT = mpt["MPT"];
+            auto const MPT1 = mpt1["MPT"];
+            std::vector<std::tuple<PrettyAmount, PrettyAmount, IOUAmount>> pools = {
+                {XRP(100), MPT(100), IOUAmount{100'000}},
+                {USD(100), MPT(100), IOUAmount{100}},
+                {MPT(100), MPT1(100), IOUAmount{100}}};
+            for (auto& pool : pools)
+            {
+                AMM const amm(env, gw, std::get<0>(pool), std::get<1>(pool));
+                BEAST_EXPECT(amm.expectAmmRpcInfo(
+                    std::get<0>(pool),
+                    std::get<1>(pool),
+                    std::get<2>(pool),
+                    std::nullopt,
+                    std::nullopt,
+                    amm.ammAccount()));
+            }
+        }
     }
 
     void
@@ -210,8 +222,8 @@ public:
         using namespace jtx;
         testAMM(
             [&](AMM& ammAlice, Env& env) {
-                BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
-                    XRP(10000), USD(10000), IOUAmount{10000000, 0}));
+                BEAST_EXPECT(
+                    ammAlice.expectAmmRpcInfo(XRP(10000), USD(10000), IOUAmount{10000000, 0}));
                 std::unordered_map<std::string, std::uint16_t> votes;
                 votes.insert({alice.human(), 0});
                 for (int i = 0; i < 7; ++i)
@@ -219,9 +231,13 @@ public:
                     Account a(std::to_string(i));
                     votes.insert({a.human(), 50 * (i + 1)});
                     if (!features[fixAMMv1_3])
+                    {
                         fund(env, gw, {a}, {USD(10000)}, Fund::Acct);
+                    }
                     else
+                    {
                         fund(env, gw, {a}, {USD(10001)}, Fund::Acct);
+                    }
                     ammAlice.deposit(a, 10000000);
                     ammAlice.vote(a, 50 * (i + 1));
                 }
@@ -229,9 +245,9 @@ public:
                 Account ed("ed");
                 Account bill("bill");
                 env.fund(XRP(1000), bob, ed, bill);
-                env(ammAlice.bid(
-                    {.bidMin = 100, .authAccounts = {carol, bob, ed, bill}}));
+                env(ammAlice.bid({.bidMin = 100, .authAccounts = {carol, bob, ed, bill}}));
                 if (!features[fixAMMv1_3])
+                {
                     BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                         XRP(80000),
                         USD(80000),
@@ -239,7 +255,9 @@ public:
                         std::nullopt,
                         std::nullopt,
                         ammAlice.ammAccount()));
+                }
                 else
+                {
                     BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                         XRPAmount(80000000005),
                         STAmount{USD, UINT64_C(80'000'00000000005), -11},
@@ -247,6 +265,7 @@ public:
                         std::nullopt,
                         std::nullopt,
                         ammAlice.ammAccount()));
+                }
                 for (auto i = 0; i < 2; ++i)
                 {
                     std::unordered_set<std::string> authAccounts = {
@@ -267,12 +286,9 @@ public:
                         for (std::uint8_t i = 0; i < 8; ++i)
                         {
                             if (!BEAST_EXPECT(
-                                    votes[voteSlots[i][jss::account]
-                                              .asString()] ==
-                                        voteSlots[i][jss::trading_fee]
-                                            .asUInt() &&
-                                    voteSlots[i][jss::vote_weight].asUInt() ==
-                                        12500))
+                                    votes[voteSlots[i][jss::account].asString()] ==
+                                        voteSlots[i][jss::trading_fee].asUInt() &&
+                                    voteSlots[i][jss::vote_weight].asUInt() == 12500))
                                 return;
                             votes.erase(voteSlots[i][jss::account].asString());
                         }
@@ -285,22 +301,17 @@ public:
                         for (std::uint8_t i = 0; i < 4; ++i)
                         {
                             if (!BEAST_EXPECT(authAccounts.contains(
-                                    auctionSlot[jss::auth_accounts][i]
-                                               [jss::account]
-                                                   .asString())))
+                                    auctionSlot[jss::auth_accounts][i][jss::account].asString())))
                                 return;
                             authAccounts.erase(
-                                auctionSlot[jss::auth_accounts][i][jss::account]
-                                    .asString());
+                                auctionSlot[jss::auth_accounts][i][jss::account].asString());
                         }
                         if (!BEAST_EXPECT(authAccounts.empty()))
                             return;
                         BEAST_EXPECT(
-                            auctionSlot[jss::account].asString() ==
-                                alice.human() &&
+                            auctionSlot[jss::account].asString() == alice.human() &&
                             auctionSlot[jss::discounted_fee].asUInt() == 17 &&
-                            auctionSlot[jss::price][jss::value].asString() ==
-                                "5600" &&
+                            auctionSlot[jss::price][jss::value].asString() == "5600" &&
                             auctionSlot[jss::price][jss::currency].asString() ==
                                 to_string(ammAlice.lptIssue().currency) &&
                             auctionSlot[jss::price][jss::issuer].asString() ==
@@ -327,8 +338,7 @@ public:
             env.close();
             auto test = [&](bool freeze) {
                 auto const info = ammAlice.ammRpcInfo();
-                BEAST_EXPECT(
-                    info[jss::amm][jss::asset2_frozen].asBool() == freeze);
+                BEAST_EXPECT(info[jss::amm][jss::asset2_frozen].asBool() == freeze);
             };
             test(true);
             env(fclear(gw, asfGlobalFreeze));
@@ -345,13 +355,8 @@ public:
 
         testAMM([&](AMM& amm, Env&) {
             auto const resp = amm.ammRpcInfo(
-                std::nullopt,
-                jss::validated.c_str(),
-                std::nullopt,
-                std::nullopt,
-                gw);
-            BEAST_EXPECT(
-                resp.isMember("error") && resp["error"] == "actNotFound");
+                std::nullopt, jss::validated.c_str(), std::nullopt, std::nullopt, gw);
+            BEAST_EXPECT(resp.isMember("error") && resp["error"] == "actNotFound");
         });
     }
 
@@ -369,7 +374,6 @@ public:
     }
 };
 
-BEAST_DEFINE_TESTSUITE(AMMInfo, app, ripple);
+BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace ripple
+}  // namespace xrpl::test

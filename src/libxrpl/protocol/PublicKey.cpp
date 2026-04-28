@@ -1,34 +1,15 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/PublicKey.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
 
-#include <boost/multiprecision/fwd.hpp>
 #include <boost/multiprecision/number.hpp>
 
 #include <ed25519.h>
@@ -41,7 +22,7 @@
 #include <ostream>
 #include <string>
 
-namespace ripple {
+namespace xrpl {
 
 std::ostream&
 operator<<(std::ostream& os, PublicKey const& pk)
@@ -95,7 +76,7 @@ static std::string
 sliceToHex(Slice const& slice)
 {
     std::string s;
-    if (slice[0] & 0x80)
+    if ((slice[0] & 0x80) != 0)
     {
         s.reserve(2 * (slice.size() + 2));
         s = "0x00";
@@ -129,16 +110,14 @@ sliceToHex(Slice const& slice)
 std::optional<ECDSACanonicality>
 ecdsaCanonicality(Slice const& sig)
 {
-    using uint264 =
-        boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
-            264,
-            264,
-            boost::multiprecision::signed_magnitude,
-            boost::multiprecision::unchecked,
-            void>>;
+    using uint264 = boost::multiprecision::number<boost::multiprecision::cpp_int_backend<
+        264,
+        264,
+        boost::multiprecision::signed_magnitude,
+        boost::multiprecision::unchecked,
+        void>>;
 
-    static uint264 const G(
-        "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
+    static uint264 const G("0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141");
 
     // The format of a signature should be:
     // <30> <len> [ <02> <lenR> <R> ] [ <02> <lenS> <S> ]
@@ -152,11 +131,11 @@ ecdsaCanonicality(Slice const& sig)
     if (!r || !s || !p.empty())
         return std::nullopt;
 
-    uint264 R(sliceToHex(*r));
+    uint264 const R(sliceToHex(*r));
     if (R >= G)
         return std::nullopt;
 
-    uint264 S(sliceToHex(*s));
+    uint264 const S(sliceToHex(*s));
     if (S >= G)
         return std::nullopt;
 
@@ -193,9 +172,11 @@ ed25519Canonical(Slice const& sig)
 PublicKey::PublicKey(Slice const& slice)
 {
     if (slice.size() < size_)
+    {
         LogicError(
             "PublicKey::PublicKey - Input slice cannot be an undersized "
             "buffer");
+    }
 
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
@@ -247,8 +228,7 @@ verifyDigest(
     auto const canonicality = ecdsaCanonicality(sig);
     if (!canonicality)
         return false;
-    if (mustBeFullyCanonical &&
-        (*canonicality != ECDSACanonicality::fullyCanonical))
+    if (mustBeFullyCanonical && (*canonicality != ECDSACanonicality::fullyCanonical))
         return false;
 
     secp256k1_pubkey pubkey_imp;
@@ -269,8 +249,7 @@ verifyDigest(
     if (*canonicality != ECDSACanonicality::fullyCanonical)
     {
         secp256k1_ecdsa_signature sig_norm;
-        if (secp256k1_ecdsa_signature_normalize(
-                secp256k1Context(), &sig_norm, &sig_imp) != 1)
+        if (secp256k1_ecdsa_signature_normalize(secp256k1Context(), &sig_norm, &sig_imp) != 1)
             return false;
         return secp256k1_ecdsa_verify(
                    secp256k1Context(),
@@ -286,20 +265,15 @@ verifyDigest(
 }
 
 bool
-verify(
-    PublicKey const& publicKey,
-    Slice const& m,
-    Slice const& sig,
-    bool mustBeFullyCanonical) noexcept
+verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
 {
     if (auto const type = publicKeyType(publicKey))
     {
         if (*type == KeyType::secp256k1)
         {
-            return verifyDigest(
-                publicKey, sha512Half(m), sig, mustBeFullyCanonical);
+            return verifyDigest(publicKey, sha512Half(m), sig);
         }
-        else if (*type == KeyType::ed25519)
+        if (*type == KeyType::ed25519)
         {
             if (!ed25519Canonical(sig))
                 return false;
@@ -308,9 +282,7 @@ verify(
             // byte to distinguish them from secp256k1 keys
             // so when verifying the signature, we need to
             // first strip that prefix.
-            return ed25519_sign_open(
-                       m.data(), m.size(), publicKey.data() + 1, sig.data()) ==
-                0;
+            return ed25519_sign_open(m.data(), m.size(), publicKey.data() + 1, sig.data()) == 0;
         }
     }
     return false;
@@ -326,4 +298,4 @@ calcNodeID(PublicKey const& pk)
     return NodeID{static_cast<ripesha_hasher::result_type>(h)};
 }
 
-}  // namespace ripple
+}  // namespace xrpl

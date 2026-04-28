@@ -1,31 +1,11 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
-#define RIPPLE_PEERFINDER_STORESQDB_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/rdb/PeerFinder.h>
-#include <xrpld/core/SociDB.h>
 #include <xrpld/peerfinder/detail/Store.h>
 
-namespace ripple {
-namespace PeerFinder {
+#include <xrpl/rdb/SociDB.h>
+
+namespace xrpl::PeerFinder {
 
 /** Database persistence for PeerFinder using SQLite */
 class StoreSqdb : public Store
@@ -40,15 +20,12 @@ public:
         currentSchemaVersion = 4
     };
 
-    explicit StoreSqdb(
-        beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
+    explicit StoreSqdb(beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
         : m_journal(journal)
     {
     }
 
-    ~StoreSqdb()
-    {
-    }
+    ~StoreSqdb() override = default;
 
     void
     open(BasicConfig const& config)
@@ -65,8 +42,7 @@ public:
         std::size_t n(0);
 
         readPeerFinderDB(m_sqlDb, [&](std::string const& s, int valence) {
-            beast::IP::Endpoint const endpoint(
-                beast::IP::Endpoint::from_string(s));
+            beast::IP::Endpoint const endpoint(beast::IP::Endpoint::from_string(s));
 
             if (!is_unspecified(endpoint))
             {
@@ -75,8 +51,7 @@ public:
             }
             else
             {
-                JLOG(m_journal.error())
-                    << "Bad address string '" << s << "' in Bootcache table";
+                JLOG(m_journal.error()) << "Bad address string '" << s << "' in Bootcache table";
             }
         });
 
@@ -107,7 +82,4 @@ private:
     }
 };
 
-}  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::PeerFinder

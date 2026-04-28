@@ -1,34 +1,29 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
-#include <xrpld/shamap/SHAMap.h>
-
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapInnerNode.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapLeafNode.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-namespace ripple {
-namespace tests {
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace xrpl::tests {
 
 #ifndef __INTELLISENSE__
 static_assert(std::is_nothrow_destructible<SHAMap>{}, "");
@@ -130,23 +125,22 @@ public:
     run(bool backed, beast::Journal const& journal)
     {
         if (backed)
+        {
             testcase("add/traverse backed");
+        }
         else
+        {
             testcase("add/traverse unbacked");
+        }
 
         tests::TestNodeFamily f(journal);
 
         // h3 and h4 differ only in the leaf, same terminal node (level 19)
-        constexpr uint256 h1(
-            "092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
-        constexpr uint256 h2(
-            "436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
-        constexpr uint256 h3(
-            "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 h4(
-            "b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
-        constexpr uint256 h5(
-            "a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 h1("092891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
+        constexpr uint256 h2("436ccbac3347baa1f1e53baeef1f43334da88f1f6d70d963b833afd6dfa289fe");
+        constexpr uint256 h3("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 h4("b92891fe4ef6cee585fdc6fda2e09eb4d386363158ec3321b8123e5a772c6ca8");
+        constexpr uint256 h5("a92891fe4ef6cee585fdc6fda0e09eb4d386363158ec3321b8123e5a772c6ca7");
 
         SHAMap sMap(SHAMapType::FREE, f);
         sMap.invariants();
@@ -159,15 +153,9 @@ public:
         auto i4 = make_shamapitem(h4, IntToVUC(4));
         auto i5 = make_shamapitem(h5, IntToVUC(5));
 
-        unexpected(
-            !sMap.addItem(
-                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i2)),
-            "no add");
+        unexpected(!sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i2)), "no add");
         sMap.invariants();
-        unexpected(
-            !sMap.addItem(
-                SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i1)),
-            "no add");
+        unexpected(!sMap.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(*i1)), "no add");
         sMap.invariants();
 
         auto i = sMap.begin();
@@ -194,12 +182,16 @@ public:
         unexpected(i != e, "bad traverse");
 
         if (backed)
+        {
             testcase("snapshot backed");
+        }
         else
+        {
             testcase("snapshot unbacked");
+        }
 
-        SHAMapHash mapHash = sMap.getHash();
-        std::shared_ptr<SHAMap> map2 = sMap.snapShot(false);
+        SHAMapHash const mapHash = sMap.getHash();
+        std::shared_ptr<SHAMap> const map2 = sMap.snapShot(false);
         map2->invariants();
         unexpected(sMap.getHash() != mapHash, "bad snapshot");
         unexpected(map2->getHash() != mapHash, "bad snapshot");
@@ -222,45 +214,65 @@ public:
         sMap.dump();
 
         if (backed)
+        {
             testcase("build/tear backed");
+        }
         else
+        {
             testcase("build/tear unbacked");
+        }
         {
             constexpr std::array keys{
-                uint256("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8")};
+                uint256(
+                    "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8")};
 
             constexpr std::array hashes{
-                uint256("B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C"
-                        "64B6281F7F"),
-                uint256("FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A883184546"
-                        "7FB2ECE266"),
-                uint256("4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51A"
-                        "E756795B75"),
-                uint256("7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC"
-                        "6C74F93E07"),
-                uint256("395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596"
-                        "462B0E3A3E"),
-                uint256("D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D9"
-                        "8A84D9DDE4"),
-                uint256("76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF9"
-                        "4361143615"),
-                uint256("DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA0"
-                        "2BBE7230E5")};
+                uint256(
+                    "B7387CFEA0465759ADC718E8C42B52D2309D179B326E239EB5075C"
+                    "64B6281F7F"),
+                uint256(
+                    "FBC195A9592A54AB44010274163CB6BA95F497EC5BA0A883184546"
+                    "7FB2ECE266"),
+                uint256(
+                    "4E7D2684B65DFD48937FFB775E20175C43AF0C94066F7D5679F51A"
+                    "E756795B75"),
+                uint256(
+                    "7A2F312EB203695FFD164E038E281839EEF06A1B99BFC263F3CECC"
+                    "6C74F93E07"),
+                uint256(
+                    "395A6691A372387A703FB0F2C6D2C405DAF307D0817F8F0E207596"
+                    "462B0E3A3E"),
+                uint256(
+                    "D044C0A696DE3169CC70AE216A1564D69DE96582865796142CE7D9"
+                    "8A84D9DDE4"),
+                uint256(
+                    "76DCC77C4027309B5A91AD164083264D70B77B5E43E08AEDA5EBF9"
+                    "4361143615"),
+                uint256(
+                    "DF4220E93ADC6F5569063A01B4DC79F8DB9553B6A3222ADE23DEA0"
+                    "2BBE7230E5")};
 
             SHAMap map(SHAMapType::FREE, f);
             if (!backed)
@@ -270,8 +282,7 @@ public:
             for (int k = 0; k < keys.size(); ++k)
             {
                 BEAST_EXPECT(map.addItem(
-                    SHAMapNodeType::tnTRANSACTION_NM,
-                    make_shamapitem(keys[k], IntToVUC(k))));
+                    SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(keys[k], IntToVUC(k))));
                 BEAST_EXPECT(map.getHash().as_uint256() == hashes[k]);
                 map.invariants();
             }
@@ -285,28 +296,40 @@ public:
         }
 
         if (backed)
+        {
             testcase("iterate backed");
+        }
         else
+        {
             testcase("iterate unbacked");
+        }
 
         {
             constexpr std::array keys{
-                uint256("f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8"),
-                uint256("292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
-                        "5a772c6ca8")};
+                uint256(
+                    "f22891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b99891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92881fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92791fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b92691fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "b91891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8"),
+                uint256(
+                    "292891fe4ef6cee585fdc6fda1e09eb4d386363158ec3321b8123e"
+                    "5a772c6ca8")};
 
             tests::TestNodeFamily tf{journal};
             SHAMap map{SHAMapType::FREE, tf};
@@ -314,9 +337,7 @@ public:
                 map.setUnbacked();
             for (auto const& k : keys)
             {
-                map.addItem(
-                    SHAMapNodeType::tnTRANSACTION_NM,
-                    make_shamapitem(k, IntToVUC(0)));
+                map.addItem(SHAMapNodeType::tnTRANSACTION_NM, make_shamapitem(k, IntToVUC(0)));
                 map.invariants();
             }
 
@@ -349,8 +370,7 @@ class SHAMapPathProof_test : public beast::unit_test::suite
         {
             uint256 k(c);
             map.addItem(
-                SHAMapNodeType::tnACCOUNT_STATE,
-                make_shamapitem(k, Slice{k.data(), k.size()}));
+                SHAMapNodeType::tnACCOUNT_STATE, make_shamapitem(k, Slice{k.data(), k.size()}));
             map.invariants();
 
             auto root = map.getHash().as_uint256();
@@ -365,7 +385,7 @@ class SHAMapPathProof_test : public beast::unit_test::suite
                 path->insert(path->begin(), path->front());
                 BEAST_EXPECT(!map.verifyProofPath(root, k, *path));
                 // wrong key
-                uint256 wrongKey(c + 1);
+                uint256 const wrongKey(c + 1);
                 BEAST_EXPECT(!map.getProofPath(wrongKey));
             }
             if (c == 99)
@@ -402,7 +422,6 @@ class SHAMapPathProof_test : public beast::unit_test::suite
     }
 };
 
-BEAST_DEFINE_TESTSUITE(SHAMap, ripple_app, ripple);
-BEAST_DEFINE_TESTSUITE(SHAMapPathProof, ripple_app, ripple);
-}  // namespace tests
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(SHAMap, shamap, xrpl);
+BEAST_DEFINE_TESTSUITE(SHAMapPathProof, shamap, xrpl);
+}  // namespace xrpl::tests

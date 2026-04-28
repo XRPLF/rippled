@@ -1,26 +1,5 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2015 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_MISC_VALIDATORLIST_H_INCLUDED
-#define RIPPLE_APP_MISC_VALIDATORLIST_H_INCLUDED
-
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Message.h>
 
@@ -29,6 +8,7 @@
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/server/Manifest.h>
 
 #include <boost/thread/shared_mutex.hpp>
 
@@ -40,7 +20,7 @@ class TMValidatorList;
 class TMValidatorListCollection;
 }  // namespace protocol
 
-namespace ripple {
+namespace xrpl {
 
 class Overlay;
 class HashRouter;
@@ -128,11 +108,11 @@ struct ValidatorBlobInfo
     Trusted Validators List
     -----------------------
 
-    Rippled accepts ledger proposals and validations from trusted validator
+    Xrpld accepts ledger proposals and validations from trusted validator
     nodes. A ledger is considered fully-validated once the number of received
     trusted validations for a ledger meets or exceeds a quorum value.
 
-    This class manages the set of validation public keys the local rippled node
+    This class manages the set of validation public keys the local xrpld node
     trusts. The list of trusted keys is populated using the keys listed in the
     configuration file as well as lists signed by trusted publishers. The
     trusted publisher public keys are specified in the config.
@@ -141,9 +121,9 @@ struct ValidatorBlobInfo
 
     @li @c "blob": Base64-encoded JSON string containing a @c "sequence", @c
         "validFrom", @c "validUntil", and @c "validators" field. @c "validFrom"
-        contains the Ripple timestamp (seconds since January 1st, 2000 (00:00
+        contains the XRPL timestamp (seconds since January 1st, 2000 (00:00
         UTC)) for when the list becomes valid. @c "validUntil" contains the
-        Ripple timestamp for when the list expires. @c "validators" contains
+        XRPL timestamp for when the list expires. @c "validators" contains
         an array of objects with a @c "validation_public_key" and optional
         @c "manifest" field. @c "validation_public_key" should be the
         hex-encoded master public key. @c "manifest" should be the
@@ -177,7 +157,7 @@ class ValidatorList
 
         std::vector<PublicKey> list;
         std::vector<std::string> manifests;
-        std::size_t sequence;
+        std::size_t sequence{};
         TimeKeeper::time_point validFrom;
         TimeKeeper::time_point validUntil;
         std::string siteUri;
@@ -193,7 +173,7 @@ class ValidatorList
 
     struct PublisherListCollection
     {
-        PublisherStatus status;
+        PublisherStatus status = PublisherStatus::unavailable;
         /*
         The `current` VL is the one which
          1. Has the largest sequence number that
@@ -243,7 +223,7 @@ class ValidatorList
     hash_set<PublicKey> trustedMasterKeys_;
 
     // Minimum number of lists on which a trusted validator must appear on
-    std::size_t listThreshold_;
+    std::size_t listThreshold_{1};
 
     // The current list of trusted signing keys. For those validators using
     // a manifest, the signing key is the ephemeral key. For the ones using
@@ -256,7 +236,7 @@ class ValidatorList
     // config file under the title of SECTION_VALIDATORS or [validators].
     // This list is not associated with the masterKey of any publisher.
 
-    // Appropos PublisherListCollection fields, localPublisherList does not
+    // Apropos PublisherListCollection fields, localPublisherList does not
     // have any "remaining" manifests. It is assumed to be perennially
     // "available". The "validUntil" field is set to the highest possible
     // value of the field, hence this list is always valid.
@@ -292,15 +272,11 @@ public:
     {
         explicit PublisherListStats() = default;
         explicit PublisherListStats(ListDisposition d);
-        PublisherListStats(
-            ListDisposition d,
-            PublicKey key,
-            PublisherStatus stat,
-            std::size_t seq);
+        PublisherListStats(ListDisposition d, PublicKey key, PublisherStatus stat, std::size_t seq);
 
-        ListDisposition
+        [[nodiscard]] ListDisposition
         bestDisposition() const;
-        ListDisposition
+        [[nodiscard]] ListDisposition
         worstDisposition() const;
         void
         mergeDispositions(PublisherListStats const& src);
@@ -384,7 +360,7 @@ public:
         std::string const& rawManifest,
         std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
         std::vector<MessageWithHash>& messages,
-        std::size_t maxSize = maximiumMessageSize);
+        std::size_t maxSize = maximumMessageSize);
 
     /** Apply multiple published lists of public keys, then broadcast it to all
         peers that have not seen it or sent it.
@@ -636,9 +612,7 @@ public:
         if available, as a Json object.
     */
     std::optional<Json::Value>
-    getAvailable(
-        std::string_view pubKey,
-        std::optional<std::uint32_t> forceVersion = {});
+    getAvailable(std::string_view pubKey, std::optional<std::uint32_t> forceVersion = {});
 
     /** Return the number of configured validator list sites. */
     std::size_t
@@ -672,7 +646,7 @@ public:
     QuorumKeys
     getQuorumKeys() const
     {
-        shared_lock read_lock{mutex_};
+        shared_lock const read_lock{mutex_};
         return {quorum_, trustedSigningKeys_};
     }
 
@@ -711,8 +685,7 @@ public:
      * @return a filtered copy of the validations
      */
     std::vector<std::shared_ptr<STValidation>>
-    negativeUNLFilter(
-        std::vector<std::shared_ptr<STValidation>>&& validations) const;
+    negativeUNLFilter(std::vector<std::shared_ptr<STValidation>>&& validations) const;
 
 private:
     /** Return the number of configured validator list sites. */
@@ -877,7 +850,7 @@ private:
     verify(
         lock_guard const&,
         Json::Value& list,
-        std::string const& manifest,
+        Manifest manifest,
         std::string const& blob,
         std::string const& signature);
 
@@ -892,10 +865,7 @@ private:
         Calling public member function is expected to lock mutex
     */
     bool
-    removePublisherList(
-        lock_guard const&,
-        PublicKey const& publisherKey,
-        PublisherStatus reason);
+    removePublisherList(lock_guard const&, PublicKey const& publisherKey, PublisherStatus reason);
 
     /** Return quorum for trusted validator set
 
@@ -908,10 +878,7 @@ private:
         recently received validations
     */
     std::size_t
-    calculateQuorum(
-        std::size_t unlSize,
-        std::size_t effectiveUnlSize,
-        std::size_t seenSize);
+    calculateQuorum(std::size_t unlSize, std::size_t effectiveUnlSize, std::size_t seenSize);
 };
 
 // hashing helpers
@@ -946,7 +913,7 @@ hash_append(Hasher& h, std::map<std::size_t, ValidatorBlobInfo> const& blobs)
     }
 }
 
-}  // namespace ripple
+}  // namespace xrpl
 
 namespace protocol {
 
@@ -963,13 +930,7 @@ void
 hash_append(Hasher& h, TMValidatorListCollection const& msg)
 {
     using beast::hash_append;
-    hash_append(
-        h,
-        msg.manifest(),
-        ripple::ValidatorList::parseBlobs(msg),
-        msg.version());
+    hash_append(h, msg.manifest(), xrpl::ValidatorList::parseBlobs(msg), msg.version());
 }
 
 }  // namespace protocol
-
-#endif

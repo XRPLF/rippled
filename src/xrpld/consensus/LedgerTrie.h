@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2017 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
-#define RIPPLE_APP_CONSENSUS_LEDGERS_TRIE_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/ToString.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -30,9 +10,10 @@
 #include <optional>
 #include <sstream>
 #include <stack>
+#include <utility>
 #include <vector>
 
-namespace ripple {
+namespace xrpl {
 
 /** The tip of a span of ledger ancestry
  */
@@ -43,8 +24,7 @@ public:
     using Seq = typename Ledger::Seq;
     using ID = typename Ledger::ID;
 
-    SpanTip(Seq s, ID i, Ledger const lgr)
-        : seq{s}, id{i}, ledger{std::move(lgr)}
+    SpanTip(Seq s, ID i, Ledger const lgr) : seq{s}, id{i}, ledger{std::move(lgr)}
     {
     }
 
@@ -61,10 +41,10 @@ public:
         @note s must be less than or equal to the sequence number of the
               tip ledger
     */
-    ID
+    [[nodiscard]] ID
     ancestor(Seq const& s) const
     {
-        XRPL_ASSERT(s <= seq, "ripple::SpanTip::ancestor : valid input");
+        XRPL_ASSERT(s <= seq, "xrpl::SpanTip::ancestor : valid input");
         return ledger[s];
     }
 
@@ -90,12 +70,10 @@ public:
     Span() : ledger_{typename Ledger::MakeGenesis{}}
     {
         // Require default ledger to be genesis seq
-        XRPL_ASSERT(
-            ledger_.seq() == start_, "ripple::Span::Span : ledger is genesis");
+        XRPL_ASSERT(ledger_.seq() == start_, "xrpl::Span::Span : ledger is genesis");
     }
 
-    Span(Ledger ledger)
-        : start_{0}, end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
+    Span(Ledger ledger) : end_{ledger.seq() + Seq{1}}, ledger_{std::move(ledger)}
     {
     }
 
@@ -106,34 +84,34 @@ public:
     Span&
     operator=(Span&&) = default;
 
-    Seq
+    [[nodiscard]] Seq
     start() const
     {
         return start_;
     }
 
-    Seq
+    [[nodiscard]] Seq
     end() const
     {
         return end_;
     }
 
     // Return the Span from [spot,end_) or none if no such valid span
-    std::optional<Span>
+    [[nodiscard]] std::optional<Span>
     from(Seq spot) const
     {
         return sub(spot, end_);
     }
 
     // Return the Span from [start_,spot) or none if no such valid span
-    std::optional<Span>
+    [[nodiscard]] std::optional<Span>
     before(Seq spot) const
     {
         return sub(start_, spot);
     }
 
     // Return the ID of the ledger that starts this span
-    ID
+    [[nodiscard]] ID
     startID() const
     {
         return ledger_[start_];
@@ -141,40 +119,39 @@ public:
 
     // Return the ledger sequence number of the first possible difference
     // between this span and a given ledger.
-    Seq
+    [[nodiscard]] Seq
     diff(Ledger const& o) const
     {
         return clamp(mismatch(ledger_, o));
     }
 
     //  The tip of this span
-    SpanTip<Ledger>
+    [[nodiscard]] SpanTip<Ledger>
     tip() const
     {
-        Seq tipSeq{end_ - Seq{1}};
+        Seq const tipSeq{end_ - Seq{1}};
         return SpanTip<Ledger>{tipSeq, ledger_[tipSeq], ledger_};
     }
 
 private:
-    Span(Seq start, Seq end, Ledger const& l)
-        : start_{start}, end_{end}, ledger_{l}
+    Span(Seq start, Seq end, Ledger l) : start_{start}, end_{end}, ledger_{std::move(l)}
     {
         // Spans cannot be empty
-        XRPL_ASSERT(start < end, "ripple::Span::Span : non-empty span input");
+        XRPL_ASSERT(start < end, "xrpl::Span::Span : non-empty span input");
     }
 
-    Seq
+    [[nodiscard]] Seq
     clamp(Seq val) const
     {
         return std::min(std::max(start_, val), end_);
     }
 
     // Return a span of this over the half-open interval [from,to)
-    std::optional<Span>
+    [[nodiscard]] std::optional<Span>
     sub(Seq from, Seq to) const
     {
-        Seq newFrom = clamp(from);
-        Seq newTo = clamp(to);
+        Seq const newFrom = clamp(from);
+        Seq const newTo = clamp(to);
         if (newFrom < newTo)
             return Span(newFrom, newTo, ledger_);
         return std::nullopt;
@@ -228,12 +205,10 @@ struct Node
     erase(Node const* child)
     {
         auto it = std::find_if(
-            children.begin(),
-            children.end(),
-            [child](std::unique_ptr<Node> const& curr) {
+            children.begin(), children.end(), [child](std::unique_ptr<Node> const& curr) {
                 return curr.get() == child;
             });
-        XRPL_ASSERT(it != children.end(), "ripple::Node::erase : valid input");
+        XRPL_ASSERT(it != children.end(), "xrpl::Node::erase : valid input");
         std::swap(*it, children.back());
         children.pop_back();
     }
@@ -241,11 +216,10 @@ struct Node
     friend std::ostream&
     operator<<(std::ostream& o, Node const& s)
     {
-        return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport
-                 << ")";
+        return o << s.span << "(T:" << s.tipSupport << ",B:" << s.branchSupport << ")";
     }
 
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const
     {
         Json::Value res;
@@ -368,13 +342,14 @@ class LedgerTrie
         @return Pair of the found node and the sequence number of the first
                 ledger difference.
     */
-    std::pair<Node*, Seq>
+    [[nodiscard]] std::pair<Node*, Seq>
     find(Ledger const& ledger) const
     {
+        // NOLINTNEXTLINE(misc-const-correctness)
         Node* curr = root.get();
 
         // Root is always defined and is in common with all ledgers
-        XRPL_ASSERT(curr, "ripple::LedgerTrie::find : non-null root");
+        XRPL_ASSERT(curr, "xrpl::LedgerTrie::find : non-null root");
         Seq pos = curr->span.diff(ledger);
 
         bool done = false;
@@ -409,7 +384,7 @@ class LedgerTrie
     Node*
     findByLedgerID(Ledger const& ledger, Node* parent = nullptr) const
     {
-        if (!parent)
+        if (parent == nullptr)
             parent = root.get();
         if (ledger.id() == parent->span.tip().id)
             return parent;
@@ -423,8 +398,7 @@ class LedgerTrie
     }
 
     void
-    dumpImpl(std::ostream& o, std::unique_ptr<Node> const& curr, int offset)
-        const
+    dumpImpl(std::ostream& o, std::unique_ptr<Node> const& curr, int offset) const
     {
         if (curr)
         {
@@ -455,7 +429,7 @@ public:
         auto const [loc, diffSeq] = find(ledger);
 
         // There is always a place to insert
-        XRPL_ASSERT(loc, "ripple::LedgerTrie::insert : valid input ledger");
+        XRPL_ASSERT(loc, "xrpl::LedgerTrie::insert : valid input ledger");
 
         // Node from which to start incrementing branchSupport
         Node* incNode = loc;
@@ -490,15 +464,13 @@ public:
             newNode->tipSupport = loc->tipSupport;
             newNode->branchSupport = loc->branchSupport;
             newNode->children = std::move(loc->children);
-            XRPL_ASSERT(
-                loc->children.empty(),
-                "ripple::LedgerTrie::insert : moved-from children");
+            XRPL_ASSERT(loc->children.empty(), "xrpl::LedgerTrie::insert : moved-from children");
             for (std::unique_ptr<Node>& child : newNode->children)
                 child->parent = newNode.get();
 
             // Loc truncates to prefix and newNode is its child
-            XRPL_ASSERT(prefix, "ripple::LedgerTrie::insert : prefix is set");
-            loc->span = *prefix;
+            XRPL_ASSERT(prefix, "xrpl::LedgerTrie::insert : prefix is set");
+            loc->span = *prefix;  // NOLINT(bugprone-unchecked-optional-access) assert above
             newNode->parent = loc;
             loc->children.emplace_back(std::move(newNode));
             loc->tipSupport = 0;
@@ -542,7 +514,7 @@ public:
     {
         Node* loc = findByLedgerID(ledger);
         // Must be exact match with tip support
-        if (!loc || loc->tipSupport == 0)
+        if ((loc == nullptr) || loc->tipSupport == 0)
             return false;
 
         // found our node, remove it
@@ -552,7 +524,7 @@ public:
         auto const it = seqSupport.find(ledger.seq());
         XRPL_ASSERT(
             it != seqSupport.end() && it->second >= count,
-            "ripple::LedgerTrie::remove : valid input ledger");
+            "xrpl::LedgerTrie::remove : valid input ledger");
         it->second -= count;
         if (it->second == 0)
             seqSupport.erase(it->first);
@@ -582,7 +554,9 @@ public:
                 parent->erase(loc);
             }
             else
+            {
                 break;
+            }
             loc = parent;
         }
         return true;
@@ -593,7 +567,7 @@ public:
         @param ledger The ledger to lookup
         @return The number of entries in the trie for this *exact* ledger
      */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     tipSupport(Ledger const& ledger) const
     {
         if (auto const* loc = findByLedgerID(ledger))
@@ -607,11 +581,11 @@ public:
         @return The number of entries in the trie for this ledger or a
                 descendant
      */
-    std::uint32_t
+    [[nodiscard]] std::uint32_t
     branchSupport(Ledger const& ledger) const
     {
         Node const* loc = findByLedgerID(ledger);
-        if (!loc)
+        if (loc == nullptr)
         {
             Seq diffSeq;
             std::tie(loc, diffSeq) = find(ledger);
@@ -681,7 +655,7 @@ public:
         @return Pair with the sequence number and ID of the preferred ledger or
                 std::nullopt if no preferred ledger exists
     */
-    std::optional<SpanTip<Ledger>>
+    [[nodiscard]] std::optional<SpanTip<Ledger>>
     getPreferred(Seq const largestIssued) const
     {
         if (empty())
@@ -711,8 +685,7 @@ public:
                 }
 
                 // Advance nextSeq along the span
-                while (nextSeq < curr->span.end() &&
-                       curr->branchSupport > uncommitted)
+                while (nextSeq < curr->span.end() && curr->branchSupport > uncommitted)
                 {
                     // Jump to the next seqSupport change
                     if (uncommittedIt != seqSupport.end() &&
@@ -722,13 +695,19 @@ public:
                         uncommitted += uncommittedIt->second;
                         uncommittedIt++;
                     }
-                    else  // otherwise we jump to the end of the span
+                    else
+                    {  // otherwise we jump to the end of the span
                         nextSeq = curr->span.end();
+                    }
                 }
                 // We did not consume the entire span, so we have found the
                 // preferred ledger
                 if (nextSeq < curr->span.end())
+                {
+                    // nextSeq within span guarantees before() is set
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                     return curr->span.before(nextSeq)->tip();
+                }
             }
 
             // We have reached the end of the current span, so we need to
@@ -748,17 +727,13 @@ public:
                     curr->children.begin(),
                     curr->children.begin() + 2,
                     curr->children.end(),
-                    [](std::unique_ptr<Node> const& a,
-                       std::unique_ptr<Node> const& b) {
-                        return std::make_tuple(
-                                   a->branchSupport, a->span.startID()) >
-                            std::make_tuple(
-                                   b->branchSupport, b->span.startID());
+                    [](std::unique_ptr<Node> const& a, std::unique_ptr<Node> const& b) {
+                        return std::make_tuple(a->branchSupport, a->span.startID()) >
+                            std::make_tuple(b->branchSupport, b->span.startID());
                     });
 
                 best = curr->children[0].get();
-                margin = curr->children[0]->branchSupport -
-                    curr->children[1]->branchSupport;
+                margin = curr->children[0]->branchSupport - curr->children[1]->branchSupport;
 
                 // If best holds the tie-breaker, gets one larger margin
                 // since the second best needs additional branchSupport
@@ -770,16 +745,20 @@ public:
             // If the best child has margin exceeding the uncommitted support,
             // continue from that child, otherwise we are done
             if (best && ((margin > uncommitted) || (uncommitted == 0)))
+            {
                 curr = best;
-            else  // current is the best
+            }
+            else
+            {  // current is the best
                 done = true;
+            }
         }
         return curr->span.tip();
     }
 
     /** Return whether the trie is tracking any ledgers
      */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return !root || root->branchSupport == 0;
@@ -795,7 +774,7 @@ public:
 
     /** Dump JSON representation of trie state
      */
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const
     {
         Json::Value res;
@@ -808,7 +787,7 @@ public:
 
     /** Check the compressed trie and support invariants.
      */
-    bool
+    [[nodiscard]] bool
     checkInvariants() const
     {
         std::map<Seq, std::uint32_t> expectedSeqSupport;
@@ -819,20 +798,18 @@ public:
         {
             Node const* curr = nodes.top();
             nodes.pop();
-            if (!curr)
+            if (curr == nullptr)
                 continue;
 
             // Node with 0 tip support must have multiple children
             // unless it is the root node
-            if (curr != root.get() && curr->tipSupport == 0 &&
-                curr->children.size() < 2)
+            if (curr != root.get() && curr->tipSupport == 0 && curr->children.size() < 2)
                 return false;
 
             // branchSupport = tipSupport + sum(child->branchSupport)
             std::size_t support = curr->tipSupport;
             if (curr->tipSupport != 0)
-                expectedSeqSupport[curr->span.end() - Seq{1}] +=
-                    curr->tipSupport;
+                expectedSeqSupport[curr->span.end() - Seq{1}] += curr->tipSupport;
 
             for (auto const& child : curr->children)
             {
@@ -849,5 +826,4 @@ public:
     }
 };
 
-}  // namespace ripple
-#endif
+}  // namespace xrpl

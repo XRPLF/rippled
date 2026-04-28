@@ -1,28 +1,14 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
+#include <xrpl/protocol/LedgerHeader.h>
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>
 
-namespace ripple {
+#include <cstdint>
+
+namespace xrpl {
 
 void
 addRaw(LedgerHeader const& info, Serializer& s, bool includeHash)
@@ -53,8 +39,7 @@ deserializeHeader(Slice data, bool hasHash)
     header.parentHash = sit.get256();
     header.txHash = sit.get256();
     header.accountHash = sit.get256();
-    header.parentCloseTime =
-        NetClock::time_point{NetClock::duration{sit.get32()}};
+    header.parentCloseTime = NetClock::time_point{NetClock::duration{sit.get32()}};
     header.closeTime = NetClock::time_point{NetClock::duration{sit.get32()}};
     header.closeTimeResolution = NetClock::duration{sit.get8()};
     header.closeFlags = sit.get8();
@@ -71,4 +56,21 @@ deserializePrefixedHeader(Slice data, bool hasHash)
     return deserializeHeader(data + 4, hasHash);
 }
 
-}  // namespace ripple
+uint256
+calculateLedgerHash(LedgerHeader const& info)
+{
+    // VFALCO This has to match addRaw in View.h.
+    return sha512Half(
+        HashPrefix::ledgerMaster,
+        std::uint32_t(info.seq),
+        std::uint64_t(info.drops.drops()),
+        info.parentHash,
+        info.txHash,
+        info.accountHash,
+        std::uint32_t(info.parentCloseTime.time_since_epoch().count()),
+        std::uint32_t(info.closeTime.time_since_epoch().count()),
+        std::uint8_t(info.closeTimeResolution.count()),
+        std::uint8_t(info.closeFlags));
+}
+
+}  // namespace xrpl

@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of Beast: https://github.com/vinniefalco/Beast
-    Copyright 2013, Vinnie Falco <vinnie.falco@gmail.com>
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef BEAST_INTRUSIVE_LIST_H_INCLUDED
-#define BEAST_INTRUSIVE_LIST_H_INCLUDED
+#pragma once
 
 #include <iterator>
 
@@ -36,7 +16,7 @@ struct CopyConst
 {
     explicit CopyConst() = default;
 
-    using type = typename std::remove_const<U>::type;
+    using type = std::remove_const_t<U>;
 };
 
 template <typename T, typename U>
@@ -55,16 +35,18 @@ struct CopyConst<T const, U>
 template <typename T, typename Tag>
 class ListNode
 {
-private:
+    ListNode() = default;
+
     using value_type = T;
 
+    friend T;
     friend class List<T, Tag>;
 
     template <typename>
     friend class ListIterator;
 
-    ListNode* m_next;
-    ListNode* m_prev;
+    ListNode* m_next = nullptr;
+    ListNode* m_prev = nullptr;
 };
 
 //------------------------------------------------------------------------------
@@ -74,8 +56,7 @@ class ListIterator
 {
 public:
     using iterator_category = std::bidirectional_iterator_tag;
-    using value_type =
-        typename beast::detail::CopyConst<N, typename N::value_type>::type;
+    using value_type = typename beast::detail::CopyConst<N, typename N::value_type>::type;
     using difference_type = std::ptrdiff_t;
     using pointer = value_type*;
     using reference = value_type&;
@@ -147,7 +128,7 @@ public:
     }
 
 private:
-    reference
+    [[nodiscard]] reference
     dereference() const noexcept
     {
         return static_cast<reference>(*m_node);
@@ -306,14 +287,14 @@ public:
     /** Determine if the list is empty.
         @return `true` if the list is empty.
     */
-    bool
+    [[nodiscard]] bool
     empty() const noexcept
     {
         return size() == 0;
     }
 
     /** Returns the number of elements in the list. */
-    size_type
+    [[nodiscard]] size_type
     size() const noexcept
     {
         return m_size;
@@ -333,7 +314,7 @@ public:
         @invariant The list may not be empty.
         @return A const reference to the first element.
     */
-    const_reference
+    [[nodiscard]] const_reference
     front() const noexcept
     {
         return element_from(m_head.m_next);
@@ -353,7 +334,7 @@ public:
         @invariant The list may not be empty.
         @return A const reference to the last element.
     */
-    const_reference
+    [[nodiscard]] const_reference
     back() const noexcept
     {
         return element_from(m_tail.m_prev);
@@ -371,7 +352,7 @@ public:
     /** Obtain a const iterator to the beginning of the list.
         @return A const iterator pointing to the beginning of the list.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const noexcept
     {
         return const_iterator(m_head.m_next);
@@ -380,7 +361,7 @@ public:
     /** Obtain a const iterator to the beginning of the list.
         @return A const iterator pointing to the beginning of the list.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     cbegin() const noexcept
     {
         return const_iterator(m_head.m_next);
@@ -398,7 +379,7 @@ public:
     /** Obtain a const iterator to the end of the list.
         @return A constiterator pointing to the end of the list.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const noexcept
     {
         return const_iterator(&m_tail);
@@ -407,7 +388,7 @@ public:
     /** Obtain a const iterator to the end of the list
         @return A constiterator pointing to the end of the list.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     cend() const noexcept
     {
         return const_iterator(&m_tail);
@@ -470,7 +451,7 @@ public:
     iterator
     erase(iterator pos) noexcept
     {
-        Node* node = &*pos;
+        Node const* node = &*pos;
         ++pos;
         node->m_next->m_prev = node->m_prev;
         node->m_prev->m_next = node->m_next;
@@ -568,7 +549,7 @@ public:
         @param element The element to obtain an iterator for.
         @return A const iterator to the element.
     */
-    const_iterator
+    [[nodiscard]] const_iterator
     const_iterator_to(T const& element) const noexcept
     {
         return const_iterator(static_cast<Node const*>(&element));
@@ -588,11 +569,9 @@ private:
     }
 
 private:
-    size_type m_size;
+    size_type m_size = 0u;
     Node m_head;
     Node m_tail;
 };
 
 }  // namespace beast
-
-#endif

@@ -1,37 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+#pragma once
 
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
-#define RIPPLE_APP_LEDGER_INBOUNDLEDGER_H_INCLUDED
-
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/ledger/Ledger.h>
 
 #include <mutex>
 #include <set>
 #include <utility>
 
-namespace ripple {
+namespace xrpl {
 
 // A ledger we are trying to acquire
 class InboundLedger final : public TimeoutCounter,
@@ -56,7 +36,7 @@ public:
         clock_type&,
         std::unique_ptr<PeerSet> peerSet);
 
-    ~InboundLedger();
+    ~InboundLedger() override;
 
     // Called when another attempt is made to fetch this same ledger
     void
@@ -94,12 +74,9 @@ public:
     init(ScopedLockType& collectionLock);
 
     bool
-    gotData(
-        std::weak_ptr<Peer>,
-        std::shared_ptr<protocol::TMLedgerData> const&);
+    gotData(std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData> const&);
 
-    using neededHash_t =
-        std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
+    using neededHash_t = std::pair<protocol::TMGetObjectByHash::ObjectType, uint256>;
 
     /** Return a Json::objectValue. */
     Json::Value
@@ -124,9 +101,7 @@ private:
     enum class TriggerReason { added, reply, timeout };
 
     void
-    filterNodes(
-        std::vector<std::pair<SHAMapNodeID, uint256>>& nodes,
-        TriggerReason reason);
+    filterNodes(std::vector<std::pair<SHAMapNodeID, uint256>>& nodes, TriggerReason reason);
 
     void
     trigger(std::shared_ptr<Peer> const&, TriggerReason);
@@ -177,11 +152,11 @@ private:
     clock_type::time_point mLastAction;
 
     std::shared_ptr<Ledger> mLedger;
-    bool mHaveHeader;
-    bool mHaveState;
-    bool mHaveTransactions;
-    bool mSignaled;
-    bool mByHash;
+    bool mHaveHeader{false};
+    bool mHaveState{false};
+    bool mHaveTransactions{false};
+    bool mSignaled{false};
+    bool mByHash{true};
     std::uint32_t mSeq;
     Reason const mReason;
 
@@ -191,13 +166,10 @@ private:
 
     // Data we have received from peers
     std::mutex mReceivedDataLock;
-    std::vector<
-        std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
+    std::vector<std::pair<std::weak_ptr<Peer>, std::shared_ptr<protocol::TMLedgerData>>>
         mReceivedData;
-    bool mReceiveDispatched;
+    bool mReceiveDispatched{false};
     std::unique_ptr<PeerSet> mPeerSet;
 };
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

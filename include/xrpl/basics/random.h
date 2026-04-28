@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_BASICS_RANDOM_H_INCLUDED
-#define RIPPLE_BASICS_RANDOM_H_INCLUDED
+#pragma once
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/xor_shift_engine.h>
@@ -30,18 +10,20 @@
 #include <random>
 #include <type_traits>
 
-namespace ripple {
+namespace xrpl {
 
 #ifndef __INTELLISENSE__
 static_assert(
-    std::is_integral<beast::xor_shift_engine::result_type>::value &&
-        std::is_unsigned<beast::xor_shift_engine::result_type>::value,
-    "The Ripple default PRNG engine must return an unsigned integral type.");
+    // NOLINTNEXTLINE(misc-redundant-expression)
+    std::is_integral_v<beast::xor_shift_engine::result_type> &&
+        std::is_unsigned_v<beast::xor_shift_engine::result_type>,
+    "The XRPL default PRNG engine must return an unsigned integral type.");
 
 static_assert(
+    // NOLINTNEXTLINE(misc-redundant-expression)
     std::numeric_limits<beast::xor_shift_engine::result_type>::max() >=
         std::numeric_limits<std::uint64_t>::max(),
-    "The Ripple default PRNG engine return must be at least 64 bits wide.");
+    "The XRPL default PRNG engine return must be at least 64 bits wide.");
 #endif
 
 namespace detail {
@@ -76,9 +58,9 @@ default_prng()
 
     // The thread-specific PRNGs:
     thread_local beast::xor_shift_engine engine = [] {
-        std::uint64_t seed;
+        std::uint64_t seed = 0;
         {
-            std::lock_guard lk(m);
+            std::lock_guard const lk(m);
             std::uniform_int_distribution<std::uint64_t> distribution{1};
             seed = distribution(seeder);
         }
@@ -109,12 +91,10 @@ default_prng()
 */
 /** @{ */
 template <class Engine, class Integral>
-std::enable_if_t<
-    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
-    Integral>
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine, Integral min, Integral max)
 {
-    XRPL_ASSERT(max > min, "ripple::rand_int : max over min inputs");
+    XRPL_ASSERT(max > min, "xrpl::rand_int : max over min inputs");
 
     // This should have no state and constructing it should
     // be very cheap. If that turns out not to be the case
@@ -123,39 +103,35 @@ rand_int(Engine& engine, Integral min, Integral max)
 }
 
 template <class Integral>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
 rand_int(Integral min, Integral max)
 {
     return rand_int(default_prng(), min, max);
 }
 
 template <class Engine, class Integral>
-std::enable_if_t<
-    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
-    Integral>
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine, Integral max)
 {
     return rand_int(engine, Integral(0), max);
 }
 
 template <class Integral>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
 rand_int(Integral max)
 {
     return rand_int(default_prng(), max);
 }
 
 template <class Integral, class Engine>
-std::enable_if_t<
-    std::is_integral<Integral>::value && detail::is_engine<Engine>::value,
-    Integral>
+std::enable_if_t<std::is_integral_v<Integral> && detail::is_engine<Engine>::value, Integral>
 rand_int(Engine& engine)
 {
     return rand_int(engine, std::numeric_limits<Integral>::max());
 }
 
 template <class Integral = int>
-std::enable_if_t<std::is_integral<Integral>::value, Integral>
+std::enable_if_t<std::is_integral_v<Integral>, Integral>
 rand_int()
 {
     return rand_int(default_prng(), std::numeric_limits<Integral>::max());
@@ -166,23 +142,17 @@ rand_int()
 /** @{ */
 template <class Byte, class Engine>
 std::enable_if_t<
-    (std::is_same<Byte, unsigned char>::value ||
-     std::is_same<Byte, std::uint8_t>::value) &&
+    (std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>) &&
         detail::is_engine<Engine>::value,
     Byte>
 rand_byte(Engine& engine)
 {
     return static_cast<Byte>(rand_int<Engine, std::uint32_t>(
-        engine,
-        std::numeric_limits<Byte>::min(),
-        std::numeric_limits<Byte>::max()));
+        engine, std::numeric_limits<Byte>::min(), std::numeric_limits<Byte>::max()));
 }
 
 template <class Byte = std::uint8_t>
-std::enable_if_t<
-    (std::is_same<Byte, unsigned char>::value ||
-     std::is_same<Byte, std::uint8_t>::value),
-    Byte>
+std::enable_if_t<(std::is_same_v<Byte, unsigned char> || std::is_same_v<Byte, std::uint8_t>), Byte>
 rand_byte()
 {
     return rand_byte<Byte>(default_prng());
@@ -205,6 +175,4 @@ rand_bool()
 }
 /** @} */
 
-}  // namespace ripple
-
-#endif  // RIPPLE_BASICS_RANDOM_H_INCLUDED
+}  // namespace xrpl

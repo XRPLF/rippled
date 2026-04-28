@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_RPC_MPTOKENISSUANCEID_H_INCLUDED
-#define RIPPLE_RPC_MPTOKENISSUANCEID_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_forwards.h>
@@ -28,9 +8,7 @@
 #include <memory>
 #include <optional>
 
-namespace ripple {
-
-namespace RPC {
+namespace xrpl::RPC {
 
 /**
    Add a `mpt_issuance_id` field to the `meta` input/output parameter.
@@ -45,7 +23,7 @@ canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta);
 
-std::optional<uint192>
+std::optional<MPTID>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta);
 
 void
@@ -55,7 +33,4 @@ insertMPTokenIssuanceID(
     TxMeta const& transactionMeta);
 /** @} */
 
-}  // namespace RPC
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::RPC

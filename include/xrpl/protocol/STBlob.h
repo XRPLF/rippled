@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
-#define RIPPLE_PROTOCOL_STBLOB_H_INCLUDED
+#pragma once
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/CountedObject.h>
@@ -28,7 +8,7 @@
 
 #include <cstring>
 
-namespace ripple {
+namespace xrpl {
 
 // variable length byte string
 class STBlob : public STBase, public CountedObject<STBlob>
@@ -46,31 +26,31 @@ public:
     STBlob(SField const& n);
     STBlob(SerialIter&, SField const& name = sfGeneric);
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
-    std::uint8_t const*
+    [[nodiscard]] std::uint8_t const*
     data() const;
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     STBlob&
     operator=(Slice const& slice);
 
-    value_type
+    [[nodiscard]] value_type
     value() const noexcept;
 
     STBlob&
@@ -98,8 +78,7 @@ inline STBlob::STBlob(SField const& f, void const* data, std::size_t size)
 {
 }
 
-inline STBlob::STBlob(SField const& f, Buffer&& b)
-    : STBase(f), value_(std::move(b))
+inline STBlob::STBlob(SField const& f, Buffer&& b) : STBase(f), value_(std::move(b))
 {
 }
 
@@ -116,7 +95,7 @@ STBlob::size() const
 inline std::uint8_t const*
 STBlob::data() const
 {
-    return reinterpret_cast<std::uint8_t const*>(value_.data());
+    return value_.data();
 }
 
 inline STBlob&
@@ -145,6 +124,4 @@ STBlob::setValue(Buffer&& b)
     value_ = std::move(b);
 }
 
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl

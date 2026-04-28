@@ -1,35 +1,17 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
-#define RIPPLE_PEERFINDER_MANAGER_H_INCLUDED
+#pragma once
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 
 #include <boost/asio/ip/tcp.hpp>
 
-namespace ripple {
-namespace PeerFinder {
+#include <string_view>
+
+namespace xrpl::PeerFinder {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
@@ -45,7 +27,7 @@ struct Config
         This includes both inbound and outbound, but does not include
         fixed peers.
     */
-    std::size_t maxPeers;
+    std::size_t maxPeers{Tuning::defaultMaxPeers};
 
     /** The number of automatic outbound connections to maintain.
         Outbound connections are only maintained if autoConnect
@@ -57,25 +39,25 @@ struct Config
         Inbound connections are only maintained if wantIncoming
         is `true`.
     */
-    std::size_t inPeers;
+    std::size_t inPeers{0};
 
     /** `true` if we want our IP address kept private. */
     bool peerPrivate = true;
 
     /** `true` if we want to accept incoming connections. */
-    bool wantIncoming;
+    bool wantIncoming{true};
 
     /** `true` if we want to establish connections automatically */
-    bool autoConnect;
+    bool autoConnect{true};
 
     /** The listening port number. */
-    std::uint16_t listeningPort;
+    std::uint16_t listeningPort{0};
 
     /** The set of features we advertise. */
     std::string features;
 
     /** Limit how many incoming connections we allow per IP */
-    int ipLimit;
+    int ipLimit{0};
 
     //--------------------------------------------------------------------------
 
@@ -83,7 +65,7 @@ struct Config
     Config();
 
     /** Returns a suitable value for outPeers according to the rules. */
-    std::size_t
+    [[nodiscard]] std::size_t
     calcOutPeers() const;
 
     /** Adjusts the values so they follow the business rules. */
@@ -92,7 +74,7 @@ struct Config
 
     /** Write the configuration into a property stream */
     void
-    onWrite(beast::PropertyStream::Map& map);
+    onWrite(beast::PropertyStream::Map& map) const;
 
     /** Make PeerFinder::Config from configuration parameters
      * @param config server's configuration
@@ -103,20 +85,23 @@ struct Config
      */
     static Config
     makeConfig(
-        ripple::Config const& config,
+        xrpl::Config const& config,
         std::uint16_t port,
         bool validationPublicKey,
         int ipLimit);
+
+    friend bool
+    operator==(Config const& lhs, Config const& rhs);
 };
 
 //------------------------------------------------------------------------------
 
-/** Describes a connectible peer address along with some metadata. */
+/** Describes a connectable peer address along with some metadata. */
 struct Endpoint
 {
     Endpoint() = default;
 
-    Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_);
+    Endpoint(beast::IP::Endpoint ep, std::uint32_t hops_);
 
     std::uint32_t hops = 0;
     beast::IP::Endpoint address;
@@ -134,7 +119,41 @@ using Endpoints = std::vector<Endpoint>;
 //------------------------------------------------------------------------------
 
 /** Possible results from activating a slot. */
-enum class Result { duplicate, full, success };
+enum class Result { inboundDisabled, duplicatePeer, ipLimitExceeded, full, success };
+
+/**
+ * @brief Converts a `Result` enum value to its string representation.
+ *
+ * This function provides a human-readable string for a given `Result` enum,
+ * which is useful for logging, debugging, or displaying status messages.
+ *
+ * @param result The `Result` enum value to convert.
+ * @return A `std::string_view` representing the enum value. Returns "unknown"
+ * if the enum value is not explicitly handled.
+ *
+ * @note This function returns a `std::string_view` for performance.
+ * A `std::string` would need to allocate memory on the heap and copy the
+ * string literal into it every time the function is called.
+ */
+inline std::string_view
+to_string(Result result) noexcept
+{
+    switch (result)
+    {
+        case Result::inboundDisabled:
+            return "inbound disabled";
+        case Result::duplicatePeer:
+            return "peer already connected";
+        case Result::ipLimitExceeded:
+            return "ip limit exceeded";
+        case Result::full:
+            return "slots full";
+        case Result::success:
+            return "success";
+    }
+
+    return "unknown";
+}
 
 /** Maintains a set of IP addresses used for getting into the network. */
 class Manager : public beast::PropertyStream::Source
@@ -148,7 +167,7 @@ public:
         There may be some listener calls made before the
         destructor returns.
     */
-    virtual ~Manager() = default;
+    ~Manager() override = default;
 
     /** Set the configuration for the manager.
         The new settings will be applied asynchronously.
@@ -176,17 +195,13 @@ public:
         file, along with the set of corresponding IP addresses.
     */
     virtual void
-    addFixedPeer(
-        std::string const& name,
-        std::vector<beast::IP::Endpoint> const& addresses) = 0;
+    addFixedPeer(std::string const& name, std::vector<beast::IP::Endpoint> const& addresses) = 0;
 
     /** Add a set of strings as fallback IP::Endpoint sources.
         @param name A label used for diagnostics.
     */
     virtual void
-    addFallbackStrings(
-        std::string const& name,
-        std::vector<std::string> const& strings) = 0;
+    addFallbackStrings(std::string const& name, std::vector<std::string> const& strings) = 0;
 
     /** Add a URL as a fallback location to obtain IP::Endpoint sources.
         @param name A label used for diagnostics.
@@ -202,7 +217,7 @@ public:
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a detected self-connection.
     */
-    virtual std::shared_ptr<Slot>
+    virtual std::pair<std::shared_ptr<Slot>, Result>
     new_inbound_slot(
         beast::IP::Endpoint const& local_endpoint,
         beast::IP::Endpoint const& remote_endpoint) = 0;
@@ -211,14 +226,12 @@ public:
         If nullptr is returned, then the slot could not be assigned.
         Usually this is because of a duplicate connection.
     */
-    virtual std::shared_ptr<Slot>
+    virtual std::pair<std::shared_ptr<Slot>, Result>
     new_outbound_slot(beast::IP::Endpoint const& remote_endpoint) = 0;
 
     /** Called when mtENDPOINTS is received. */
     virtual void
-    on_endpoints(
-        std::shared_ptr<Slot> const& slot,
-        Endpoints const& endpoints) = 0;
+    on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) = 0;
 
     /** Called when the slot is closed.
         This always happens when the socket is closed, unless the socket
@@ -247,16 +260,11 @@ public:
         @return `true` if the connection should be kept
     */
     virtual bool
-    onConnected(
-        std::shared_ptr<Slot> const& slot,
-        beast::IP::Endpoint const& local_endpoint) = 0;
+    onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint) = 0;
 
     /** Request an active slot type. */
     virtual Result
-    activate(
-        std::shared_ptr<Slot> const& slot,
-        PublicKey const& key,
-        bool reserved) = 0;
+    activate(std::shared_ptr<Slot> const& slot, PublicKey const& key, bool reserved) = 0;
 
     /** Returns a set of endpoints suitable for redirection. */
     virtual std::vector<Endpoint>
@@ -276,7 +284,4 @@ public:
     once_per_second() = 0;
 };
 
-}  // namespace PeerFinder
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::PeerFinder

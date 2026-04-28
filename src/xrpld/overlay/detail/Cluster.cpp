@@ -1,34 +1,26 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#include <xrpld/core/Config.h>
-#include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Cluster.h>
+
 #include <xrpld/overlay/ClusterNode.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/tokens.h>
 
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
 
-namespace ripple {
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <mutex>
+#include <optional>
+#include <string>
+
+namespace xrpl {
 
 Cluster::Cluster(beast::Journal j) : j_(j)
 {
@@ -37,7 +29,7 @@ Cluster::Cluster(beast::Journal j) : j_(j)
 std::optional<std::string>
 Cluster::member(PublicKey const& identity) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto iter = nodes_.find(identity);
     if (iter == nodes_.end())
@@ -48,7 +40,7 @@ Cluster::member(PublicKey const& identity) const
 std::size_t
 Cluster::size() const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return nodes_.size();
 }
@@ -60,7 +52,7 @@ Cluster::update(
     std::uint32_t loadFee,
     NetClock::time_point reportTime)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     auto iter = nodes_.find(identity);
 
@@ -82,7 +74,7 @@ Cluster::update(
 void
 Cluster::for_each(std::function<void(ClusterNode const&)> func) const
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     for (auto const& ni : nodes_)
         func(ni);
 }
@@ -112,8 +104,7 @@ Cluster::load(Section const& nodes)
             return false;
         }
 
-        auto const id =
-            parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
+        auto const id = parseBase58<PublicKey>(TokenType::NodePublic, match[1].str());
 
         if (!id)
         {
@@ -133,4 +124,4 @@ Cluster::load(Section const& nodes)
     return true;
 }
 
-}  // namespace ripple
+}  // namespace xrpl

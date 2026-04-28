@@ -1,24 +1,4 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_SIM_H_INCLUDED
-#define RIPPLE_TEST_CSF_SIM_H_INCLUDED
+#pragma once
 
 #include <test/csf/BasicNetwork.h>
 #include <test/csf/CollectorRef.h>
@@ -33,9 +13,7 @@
 #include <iostream>
 #include <random>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Sink that prepends simulation time to messages */
 class BasicSink : public beast::Journal::Sink
@@ -54,16 +32,13 @@ public:
         if (level < threshold())
             return;
 
-        std::cout << clock_.now().time_since_epoch().count() << " " << text
-                  << std::endl;
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
 
     void
-    writeAlways(beast::severities::Severity level, std::string const& text)
-        override
+    writeAlways(beast::severities::Severity level, std::string const& text) override
     {
-        std::cout << clock_.now().time_since_epoch().count() << " " << text
-                  << std::endl;
+        std::cout << clock_.now().time_since_epoch().count() << " " << text << std::endl;
     }
 };
 
@@ -152,8 +127,8 @@ public:
         Nodes in the group are synchronized if they share the same last
         fully validated and last generated ledger.
     */
-    bool
-    synchronized(PeerGroup const& g) const;
+    static bool
+    synchronized(PeerGroup const& g);
 
     /** Check whether all peers in the network are synchronized
      */
@@ -174,8 +149,4 @@ public:
     branches() const;
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

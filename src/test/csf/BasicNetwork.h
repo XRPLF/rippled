@@ -1,31 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_BASICNETWORK_H_INCLUDED
-#define RIPPLE_TEST_CSF_BASICNETWORK_H_INCLUDED
+#pragma once
 
 #include <test/csf/Digraph.h>
 #include <test/csf/Scheduler.h>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 /** Peer to peer network simulator.
 
     The network is formed from a set of Peer objects representing
@@ -94,7 +72,7 @@ class BasicNetwork
     {
         bool inbound = false;
         duration delay{};
-        time_point established{};
+        time_point established;
         link_type() = default;
         link_type(bool inbound_, duration delay_, time_point established_)
             : inbound(inbound_), delay(delay_), established(established_)
@@ -135,10 +113,7 @@ public:
         @return `true` if a new connection was established
     */
     bool
-    connect(
-        Peer const& from,
-        Peer const& to,
-        duration const& delay = std::chrono::seconds{0});
+    connect(Peer const& from, Peer const& to, duration const& delay = std::chrono::seconds{0});
 
     /** Break a link.
 
@@ -189,7 +164,7 @@ public:
 
     /** Return the underlying digraph
      */
-    Digraph<Peer, link_type> const&
+    [[nodiscard]] Digraph<Peer, link_type> const&
     graph() const
     {
         return links_;
@@ -203,10 +178,7 @@ BasicNetwork<Peer>::BasicNetwork(Scheduler& s) : scheduler(s)
 
 template <class Peer>
 inline bool
-BasicNetwork<Peer>::connect(
-    Peer const& from,
-    Peer const& to,
-    duration const& delay)
+BasicNetwork<Peer>::connect(Peer const& from, Peer const& to, duration const& delay)
 {
     if (to == from)
         return false;
@@ -225,7 +197,7 @@ BasicNetwork<Peer>::disconnect(Peer const& peer1, Peer const& peer2)
 {
     if (!links_.disconnect(peer1, peer2))
         return false;
-    bool r = links_.disconnect(peer2, peer1);
+    bool const r = links_.disconnect(peer2, peer1);
     (void)r;
     assert(r);
     return true;
@@ -240,19 +212,14 @@ BasicNetwork<Peer>::send(Peer const& from, Peer const& to, Function&& f)
     if (!link)
         return;
     time_point const sent = scheduler.now();
-    scheduler.in(
-        link->delay, [from, to, sent, f = std::forward<Function>(f), this] {
-            // only process if still connected and connection was
-            // not broken since the message was sent
-            if (auto l = links_.edge(from, to); l && l->established <= sent)
-            {
-                f();
-            }
-        });
+    scheduler.in(link->delay, [from, to, sent, f = std::forward<Function>(f), this] {
+        // only process if still connected and connection was
+        // not broken since the message was sent
+        if (auto l = links_.edge(from, to); l && l->established <= sent)
+        {
+            f();
+        }
+    });
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

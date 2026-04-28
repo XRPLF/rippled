@@ -1,31 +1,9 @@
-//------------------------------------------------------------------------------
-/*
-    This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012-2017 Ripple Labs Inc
-
-    Permission to use, copy, modify, and/or distribute this software for any
-    purpose  with  or without fee is hereby granted, provided that the above
-    copyright notice and this permission notice appear in all copies.
-
-    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
-    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
-    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-//==============================================================================
-
-#ifndef RIPPLE_TEST_CSF_RANDOM_H_INCLUDED
-#define RIPPLE_TEST_CSF_RANDOM_H_INCLUDED
+#pragma once
 
 #include <random>
 #include <vector>
 
-namespace ripple {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Return a randomly shuffled copy of vector based on weights w.
 
@@ -45,7 +23,7 @@ random_weighted_shuffle(std::vector<T> v, std::vector<double> w, G& g)
     for (int i = 0; i < v.size() - 1; ++i)
     {
         // pick a random item weighted by w
-        std::discrete_distribution<> dd(w.begin() + i, w.end());
+        std::discrete_distribution<> dd(w.begin() + i, w.end());  // NOLINT(misc-const-correctness)
         auto idx = dd(g);
         std::swap(v[i], v[idx]);
         std::swap(w[i], w[idx]);
@@ -91,16 +69,12 @@ public:
         @param w Vector of weights of size list-first
         @param g the pseudo-random number generator
     */
-    Selector(
-        RAIter first,
-        RAIter last,
-        std::vector<double> const& w,
-        Generator& g)
+    Selector(RAIter first, RAIter last, std::vector<double> const& w, Generator& g)
         : first_{first}, last_{last}, dd_{w.begin(), w.end()}, g_{g}
     {
         using tag = typename std::iterator_traits<RAIter>::iterator_category;
         static_assert(
-            std::is_same<tag, std::random_access_iterator_tag>::value,
+            std::is_same_v<tag, std::random_access_iterator_tag>,
             "Selector only supports random access iterators.");
         // TODO: Allow for forward iterators
     }
@@ -135,7 +109,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator&)
     {
         return t_;
@@ -164,7 +138,7 @@ public:
     }
 
     template <class Generator>
-    inline double
+    double
     operator()(Generator& g)
     {
         // use inverse transform of CDF to sample
@@ -173,8 +147,4 @@ public:
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace ripple
-
-#endif
+}  // namespace xrpl::test::csf

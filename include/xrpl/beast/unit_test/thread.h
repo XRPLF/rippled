@@ -1,12 +1,8 @@
-//
-// Copyright (c) 2013-2017 Vinnie Falco (vinnie dot falco at gmail dot com)
-//
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 
-#ifndef BEAST_UNIT_TEST_THREAD_HPP
-#define BEAST_UNIT_TEST_THREAD_HPP
+#pragma once
 
 #include <xrpl/beast/unit_test/suite.h>
 
@@ -14,11 +10,10 @@
 #include <thread>
 #include <utility>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Replacement for std::thread that handles exceptions in unit tests. */
-class thread
+class Thread
 {
 private:
     suite* s_ = nullptr;
@@ -28,17 +23,17 @@ public:
     using id = std::thread::id;
     using native_handle_type = std::thread::native_handle_type;
 
-    thread() = default;
-    thread(thread const&) = delete;
-    thread&
-    operator=(thread const&) = delete;
+    Thread() = default;
+    Thread(Thread const&) = delete;
+    Thread&
+    operator=(Thread const&) = delete;
 
-    thread(thread&& other) : s_(other.s_), t_(std::move(other.t_))
+    Thread(Thread&& other) : s_(other.s_), t_(std::move(other.t_))
     {
     }
 
-    thread&
-    operator=(thread&& other)
+    Thread&
+    operator=(Thread&& other)
     {
         s_ = other.s_;
         t_ = std::move(other.t_);
@@ -46,20 +41,19 @@ public:
     }
 
     template <class F, class... Args>
-    explicit thread(suite& s, F&& f, Args&&... args) : s_(&s)
+    explicit Thread(suite& s, F&& f, Args&&... args) : s_(&s)
     {
-        std::function<void(void)> b =
-            std::bind(std::forward<F>(f), std::forward<Args>(args)...);
-        t_ = std::thread(&thread::run, this, std::move(b));
+        std::function<void(void)> b = std::bind(std::forward<F>(f), std::forward<Args>(args)...);
+        t_ = std::thread(&Thread::run, this, std::move(b));
     }
 
-    bool
+    [[nodiscard]] bool
     joinable() const
     {
         return t_.joinable();
     }
 
-    std::thread::id
+    [[nodiscard]] std::thread::id
     get_id() const
     {
         return t_.get_id();
@@ -85,7 +79,7 @@ public:
     }
 
     void
-    swap(thread& other)
+    swap(Thread& other)
     {
         std::swap(s_, other.s_);
         std::swap(t_, other.t_);
@@ -99,7 +93,7 @@ private:
         {
             f();
         }
-        catch (suite::abort_exception const&)
+        catch (suite::abort_exception const&)  // NOLINT(bugprone-empty-catch)
         {
         }
         catch (std::exception const& e)
@@ -113,7 +107,4 @@ private:
     }
 };
 
-}  // namespace unit_test
-}  // namespace beast
-
-#endif
+}  // namespace beast::unit_test
