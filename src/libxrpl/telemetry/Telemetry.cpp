@@ -15,10 +15,11 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
+#include <xrpl/telemetry/Telemetry.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanNames.h>
-#include <xrpl/telemetry/Telemetry.h>
 
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_factory.h>
 #include <opentelemetry/exporters/otlp/otlp_http_exporter_options.h>
