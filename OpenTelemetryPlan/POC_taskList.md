@@ -6,16 +6,16 @@
 
 ### Related Plan Documents
 
-| Document                                                         | Relevance to POC                                                                                                                                          |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Core concepts: traces, spans, context propagation, sampling                                                                                               |
-| [01-architecture-analysis.md](./01-architecture-analysis.md)     | RPC request flow (§1.5), key trace points (§1.6), instrumentation priority (§1.7)                                                                         |
-| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection (§2.1), exporter config (§2.2), span naming (§2.3), attribute schema (§2.4), coexistence with PerfLog/Insight (§2.6)                        |
-| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure (§3.1), key principles (§3.2), performance overhead (§3.3-3.6), conditional compilation (§3.7.3), code intrusiveness (§3.9)           |
-| [04-code-samples.md](./04-code-samples.md)                       | Telemetry interface (§4.1), SpanGuard factory methods (§4.2-4.3), RPC instrumentation (§4.5.3)                                                            |
-| [05-configuration-reference.md](./05-configuration-reference.md) | xrpld config (§5.1), config parser (§5.2), Application integration (§5.3), CMake (§5.4), Collector config (§5.5), Docker Compose (§5.6), Grafana (§5.8)  |
-| [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 1 core tasks (§6.2), Phase 2 RPC tasks (§6.3), quick wins (§6.10), definition of done (§6.11)                                                       |
-| [07-observability-backends.md](./07-observability-backends.md)   | Tempo dev setup (§7.1), Grafana dashboards (§7.6), alert rules (§7.6.3)                                                                                   |
+| Document                                                         | Relevance to POC                                                                                                                                        |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Core concepts: traces, spans, context propagation, sampling                                                                                             |
+| [01-architecture-analysis.md](./01-architecture-analysis.md)     | RPC request flow (§1.5), key trace points (§1.6), instrumentation priority (§1.7)                                                                       |
+| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection (§2.1), exporter config (§2.2), span naming (§2.3), attribute schema (§2.4), coexistence with PerfLog/Insight (§2.6)                      |
+| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure (§3.1), key principles (§3.2), performance overhead (§3.3-3.6), conditional compilation (§3.7.3), code intrusiveness (§3.9)         |
+| [04-code-samples.md](./04-code-samples.md)                       | Telemetry interface (§4.1), SpanGuard factory methods (§4.2-4.3), RPC instrumentation (§4.5.3)                                                          |
+| [05-configuration-reference.md](./05-configuration-reference.md) | xrpld config (§5.1), config parser (§5.2), Application integration (§5.3), CMake (§5.4), Collector config (§5.5), Docker Compose (§5.6), Grafana (§5.8) |
+| [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 1 core tasks (§6.2), Phase 2 RPC tasks (§6.3), quick wins (§6.10), definition of done (§6.11)                                                     |
+| [07-observability-backends.md](./07-observability-backends.md)   | Tempo dev setup (§7.1), Grafana dashboards (§7.6), alert rules (§7.6.3)                                                                                 |
 
 ---
 
