@@ -807,7 +807,7 @@ ValidClawback::finalize(
                     return accountHolds(view, holder, issue.currency, issuer, fhIGNORE_FREEZE, j);
                 },
                 [&](MPTIssue const& issue) {
-                    return accountHolds(view, issuer, issue, fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
+                    return accountHolds(view, holder, issue, fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
                 });
 
             if (holderBalance.signum() < 0)
