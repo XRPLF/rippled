@@ -14,13 +14,13 @@ class cryptoconditions_error_category : public std::error_category
 public:
     explicit cryptoconditions_error_category() = default;
 
-    char const*
+    [[nodiscard]] char const*
     name() const noexcept override
     {
         return "cryptoconditions";
     }
 
-    std::string
+    [[nodiscard]] std::string
     message(int ev) const override
     {
         switch (safe_cast<error>(ev))
@@ -79,19 +79,19 @@ public:
         }
     }
 
-    std::error_condition
+    [[nodiscard]] std::error_condition
     default_error_condition(int ev) const noexcept override
     {
         return std::error_condition{ev, *this};
     }
 
-    bool
+    [[nodiscard]] bool
     equivalent(int ev, std::error_condition const& condition) const noexcept override
     {
         return &condition.category() == this && condition.value() == ev;
     }
 
-    bool
+    [[nodiscard]] bool
     equivalent(std::error_code const& error, int ev) const noexcept override
     {
         return &error.category() == this && error.value() == ev;

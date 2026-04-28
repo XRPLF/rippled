@@ -16,7 +16,7 @@ public:
     virtual ~Factory() = default;
 
     /** Retrieve the name of this factory. */
-    virtual std::string
+    [[nodiscard]] virtual std::string
     getName() const = 0;
 
     /** Create an instance of this factory's backend.

@@ -264,7 +264,7 @@ public:
     }
 
     /** Return the sign of the amount */
-    constexpr int
+    [[nodiscard]] constexpr int
     signum() const noexcept
     {
         if (value_ < 0)
@@ -274,14 +274,14 @@ public:
 
     /** Returns the number of drops */
     // TODO: Move this to a new class, maybe with the old "TaggedFee" name
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     fee() const
     {
         return value_;
     }
 
     template <class Other>
-    constexpr double
+    [[nodiscard]] constexpr double
     decimalFromReference(ValueUnit<unit_type, Other> reference) const
     {
         return static_cast<double>(value_) / reference.value();
@@ -291,7 +291,7 @@ public:
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    Json::Value
+    [[nodiscard]] Json::Value
     jsonClipped() const
         requires Usable<ValueUnit>
     {
@@ -319,7 +319,7 @@ public:
         function unless the type has been abstracted away,
         e.g. in a templated function.
     */
-    constexpr value_type
+    [[nodiscard]] constexpr value_type
     value() const
     {
         return value_;

@@ -120,19 +120,19 @@ struct SEnv
         return *this;
     }
 
-    TER
+    [[nodiscard]] TER
     ter() const
     {
         return env_.ter();
     }
 
-    STAmount
+    [[nodiscard]] STAmount
     balance(jtx::Account const& account) const
     {
         return env_.balance(account).value();
     }
 
-    STAmount
+    [[nodiscard]] STAmount
     balance(jtx::Account const& account, Issue const& issue) const
     {
         return env_.balance(account, issue).value();
@@ -250,7 +250,7 @@ struct Balance
         startAmount = env_.balance(account_);
     }
 
-    STAmount
+    [[nodiscard]] STAmount
     diff() const
     {
         return env_.balance(account_) - startAmount;
@@ -303,7 +303,7 @@ struct BalanceTransfer
     {
     }
 
-    bool
+    [[nodiscard]] bool
     payees_received(STAmount const& reward) const
     {
         return std::all_of(reward_accounts.begin(), reward_accounts.end(), [&](balance const& b) {
@@ -3954,7 +3954,7 @@ private:
             spend(acct, tx_fee, times);
         }
 
-        bool
+        [[nodiscard]] bool
         verify() const
         {
             for (auto const& [acct, state] : accounts)
@@ -4001,7 +4001,7 @@ private:
         {
         }
 
-        bool
+        [[nodiscard]] bool
         verify() const
         {
             return a_.verify() && b_.verify();
@@ -4091,7 +4091,7 @@ private:
         {
         }
 
-        bool
+        [[nodiscard]] bool
         a2b() const
         {
             return cr.a2b;
@@ -4218,7 +4218,7 @@ private:
         {
         }
 
-        bool
+        [[nodiscard]] bool
         a2b() const
         {
             return xfer.a2b;

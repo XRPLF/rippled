@@ -641,7 +641,6 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         return {tecEXPIRED, true};
     }
 
-    bool const bOpenLedger = sb.open();
     bool crossed = false;
 
     if (isTesSuccess(result))
@@ -730,7 +729,7 @@ OfferCreate::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << format_amount(place_offer.out);
         }
 
-        if (result == tecFAILED_PROCESSING && bOpenLedger)
+        if (result == tecFAILED_PROCESSING && sb.open())
             result = telFAILED_PROCESSING;
 
         if (!isTesSuccess(result))
@@ -964,6 +963,20 @@ OfferCreate::doApply()
         sbCancel.apply(ctx_.rawView());
     }
     return result.first;
+}
+
+void
+OfferCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+OfferCreate::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

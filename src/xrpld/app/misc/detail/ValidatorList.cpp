@@ -1,6 +1,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 
 #include <xrpld/core/TimeKeeper.h>
+#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
 
@@ -947,8 +948,12 @@ ValidatorList::applyListsAndBroadcast(
     // in the config file (Note: Keys specified in the local config file are
     // stored in ValidatorList::localPublisherList data member).
     if (broadcast && result.status <= PublisherStatus::expired && result.publisherKey &&
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) publisherKey checked in condition
+        // above
         publisherLists_[*result.publisherKey].maxSequence)
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) publisherKey and maxSequence checked in
+        // condition above
         auto const& pubCollection = publisherLists_[*result.publisherKey];
 
         broadcastBlobs(
@@ -959,6 +964,7 @@ ValidatorList::applyListsAndBroadcast(
             overlay,
             hashRouter,
             j_);
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return result;
@@ -1009,6 +1015,7 @@ ValidatorList::applyLists(
     // inconsistent
     if (result.publisherKey && publisherLists_.contains(*result.publisherKey))
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) publisherKey checked in condition above
         auto& pubCollection = publisherLists_[*result.publisherKey];
         auto& remaining = pubCollection.remaining;
         auto const& current = pubCollection.current;
@@ -1034,6 +1041,7 @@ ValidatorList::applyLists(
         pubCollection.fullHash = sha512Half(pubCollection);
 
         result.sequence = *pubCollection.maxSequence;
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return result;
@@ -1798,9 +1806,11 @@ ValidatorList::calculateQuorum(
     // Use quorum if specified via command line.
     if (minimumQuorum_ > 0)
     {
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) minimumQuorum_ > 0 implies it has a value
         JLOG(j_.warn()) << "Using potentially unsafe quorum of " << *minimumQuorum_
                         << " as specified on the command line";
         return *minimumQuorum_;
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     if (!publisherLists_.empty())
@@ -2011,7 +2021,8 @@ ValidatorList::updateTrusted(
         {
             std::optional<PublicKey> const signingKey = validatorManifests_.getSigningKey(k);
             XRPL_ASSERT(signingKey, "xrpl::ValidatorList::updateTrusted : found signing key");
-            trustedSigningKeys_.insert(*signingKey);
+            trustedSigningKeys_.insert(
+                *signingKey);  // NOLINT(bugprone-unchecked-optional-access) assert above
         }
     }
 

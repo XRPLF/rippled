@@ -7,6 +7,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/LendingHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
@@ -18,13 +19,15 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTakesAsset.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/lending/LendingHelpers.h>
 
+#include <memory>
 #include <optional>
 #include <variant>
 
@@ -33,7 +36,7 @@ namespace xrpl {
 bool
 LoanBrokerCoverClawback::checkExtraFeatures(PreflightContext const& ctx)
 {
-    return checkLendingProtocolDependencies(ctx);
+    return checkLendingProtocolDependencies(ctx.rules, ctx.tx);
 }
 
 NotTEC
@@ -350,6 +353,25 @@ LoanBrokerCoverClawback::doApply()
 
     // Transfer assets from pseudo-account to depositor.
     return accountSend(view(), brokerPseudoID, account, clawAmount, j_, WaiveTransferFee::Yes);
+}
+
+void
+LoanBrokerCoverClawback::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+LoanBrokerCoverClawback::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 //------------------------------------------------------------------------------

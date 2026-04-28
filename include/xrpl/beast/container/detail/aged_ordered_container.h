@@ -186,7 +186,7 @@ private:
             return *this;
         }
 
-        Compare const&
+        [[nodiscard]] Compare const&
         compare() const
         {
             return *this;
@@ -295,7 +295,7 @@ private:
             return KeyValueCompare::compare();
         }
 
-        Compare const&
+        [[nodiscard]] Compare const&
         compare() const
         {
             return KeyValueCompare::compare();
@@ -307,7 +307,7 @@ private:
             return *this;
         }
 
-        KeyValueCompare const&
+        [[nodiscard]] KeyValueCompare const&
         key_compare() const
         {
             return *this;
@@ -319,7 +319,7 @@ private:
             return beast::detail::empty_base_optimization<ElementAllocator>::member();
         }
 
-        ElementAllocator const&
+        [[nodiscard]] ElementAllocator const&
         alloc() const
         {
             return beast::detail::empty_base_optimization<ElementAllocator>::member();

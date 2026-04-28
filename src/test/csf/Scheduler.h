@@ -104,7 +104,7 @@ private:
 
         ~queue_type();
 
-        bool
+        [[nodiscard]] bool
         empty() const;
 
         iterator

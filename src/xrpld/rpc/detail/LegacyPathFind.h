@@ -14,7 +14,7 @@ public:
     LegacyPathFind(bool isAdmin, Application& app);
     ~LegacyPathFind();
 
-    bool
+    [[nodiscard]] bool
     isOk() const
     {
         return m_isOk;

@@ -72,7 +72,7 @@ private:
     {
     private:
         ClosureCounter& counter_;
-        std::remove_reference_t<Closure> closure_;
+        std::remove_reference_t<Closure> closure_{};
 
         static_assert(
             std::is_same_v<decltype(closure_(std::declval<Args_t>()...)), Ret_t>,

@@ -102,11 +102,11 @@ struct Manifest
     operator=(Manifest&& other) = default;
 
     /// Returns `true` if manifest signature is valid
-    bool
+    [[nodiscard]] bool
     verify() const;
 
     /// Returns hash of serialized manifest data
-    uint256
+    [[nodiscard]] uint256
     hash() const;
 
     /// Returns `true` if manifest revokes master key
@@ -116,15 +116,15 @@ struct Manifest
     revoked(std::uint32_t sequence);
 
     /// Returns `true` if manifest revokes master key
-    bool
+    [[nodiscard]] bool
     revoked() const;
 
     /// Returns manifest signature
-    std::optional<Blob>
+    [[nodiscard]] std::optional<Blob>
     getSignature() const;
 
     /// Returns manifest master key signature
-    Blob
+    [[nodiscard]] Blob
     getMasterSignature() const;
 };
 
