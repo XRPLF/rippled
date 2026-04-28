@@ -5,7 +5,7 @@
 
 ---
 
-## 5.1 rippled Configuration
+## 5.1 xrpld Configuration
 
 > **OTLP** = OpenTelemetry Protocol | **TxQ** = Transaction Queue
 
@@ -62,7 +62,7 @@ Add to `cfg/xrpld-example.cfg`:
 # trace_amendment=0        # Amendment voting (very low volume)
 #
 # # Service identification (automatically detected if not specified)
-# # service_name=rippled
+# # service_name=xrpld
 # # service_instance_id=<node_public_key>
 
 [telemetry]
@@ -91,7 +91,7 @@ enabled=0
 | `trace_txq`           | bool   | `true`           | Enable transaction queue tracing          |
 | `trace_validator`     | bool   | `false`          | Enable validator list/manifest tracing    |
 | `trace_amendment`     | bool   | `false`          | Enable amendment voting tracing           |
-| `service_name`        | string | `"rippled"`      | Service name for traces                   |
+| `service_name`        | string | `"xrpld"`        | Service name for traces                   |
 | `service_instance_id` | string | `<node_pubkey>`  | Instance identifier                       |
 
 ---
@@ -119,7 +119,7 @@ setup_Telemetry(
 
     // Basic settings
     setup.enabled = section.value_or("enabled", false);
-    setup.serviceName = section.value_or("service_name", "rippled");
+    setup.serviceName = section.value_or("service_name", "xrpld");
     setup.serviceVersion = version;
     setup.serviceInstanceId = section.value_or(
         "service_instance_id", nodePublicKey);
@@ -592,7 +592,7 @@ services:
 
 networks:
   default:
-    name: rippled-telemetry
+    name: xrpld-telemetry
 ```
 
 ---
@@ -645,7 +645,7 @@ flowchart TB
 - **Configuration Sources**: `xrpld.cfg` provides runtime settings (endpoint, sampling) while the CMake flag controls whether telemetry is compiled in at all.
 - **Initialization**: `setup_Telemetry()` parses config values, then `make_Telemetry()` constructs the provider, processor, and exporter objects.
 - **Runtime Components**: The `TracerProvider` creates spans, the `BatchProcessor` buffers them, and the `OTLP Exporter` serializes and sends them over the wire.
-- **OTLP arrow to Collector**: Trace data leaves the rippled process via OTLP (gRPC or HTTP) and enters the external Collector pipeline.
+- **OTLP arrow to Collector**: Trace data leaves the xrpld process via OTLP (gRPC or HTTP) and enters the external Collector pipeline.
 - **Collector Pipeline**: `Receivers` ingest OTLP data, `Processors` apply sampling/filtering/enrichment, and `Exporters` forward traces to storage backends (Tempo, etc.).
 
 ---
@@ -654,7 +654,7 @@ flowchart TB
 
 > **APM** = Application Performance Monitoring
 
-Step-by-step instructions for integrating rippled traces with Grafana.
+Step-by-step instructions for integrating xrpld traces with Grafana.
 
 ### 5.8.1 Data Source Configuration
 
@@ -713,10 +713,10 @@ datasources:
 apiVersion: 1
 
 providers:
-  - name: "rippled-dashboards"
+  - name: "xrpld-dashboards"
     orgId: 1
-    folder: "rippled"
-    folderUid: "rippled"
+    folder: "xrpld"
+    folderUid: "xrpld"
     type: file
     disableDeletion: false
     updateIntervalSeconds: 30
@@ -728,8 +728,8 @@ providers:
 
 ```json
 {
-  "title": "rippled RPC Performance",
-  "uid": "rippled-rpc-performance",
+  "title": "xrpld RPC Performance",
+  "uid": "xrpld-rpc-performance",
   "panels": [
     {
       "title": "RPC Latency by Command",
@@ -738,7 +738,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && span.xrpl.rpc.command != \"\"} | histogram_over_time(duration) by (span.xrpl.rpc.command)"
+          "query": "{resource.service.name=\"xrpld\" && span.xrpl.rpc.command != \"\"} | histogram_over_time(duration) by (span.xrpl.rpc.command)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 }
@@ -750,7 +750,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && status.code=error} | rate() by (span.xrpl.rpc.command)"
+          "query": "{resource.service.name=\"xrpld\" && status.code=error} | rate() by (span.xrpl.rpc.command)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 }
@@ -762,7 +762,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && span.xrpl.rpc.command != \"\"} | avg(duration) by (span.xrpl.rpc.command) | topk(10)"
+          "query": "{resource.service.name=\"xrpld\" && span.xrpl.rpc.command != \"\"} | avg(duration) by (span.xrpl.rpc.command) | topk(10)"
         }
       ],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 8 }
@@ -774,7 +774,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\"}"
+          "query": "{resource.service.name=\"xrpld\"}"
         }
       ],
       "gridPos": { "h": 8, "w": 24, "x": 0, "y": 16 }
@@ -787,8 +787,8 @@ providers:
 
 ```json
 {
-  "title": "rippled Transaction Tracing",
-  "uid": "rippled-tx-tracing",
+  "title": "xrpld Transaction Tracing",
+  "uid": "xrpld-tx-tracing",
   "panels": [
     {
       "title": "Transaction Throughput",
@@ -797,7 +797,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"tx.receive\"} | rate()"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.receive\"} | rate()"
         }
       ],
       "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 }
@@ -809,7 +809,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"tx.relay\"} | avg(span.xrpl.tx.relay_count)"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.relay\"} | avg(span.xrpl.tx.relay_count)"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 }
@@ -821,7 +821,7 @@ providers:
       "targets": [
         {
           "queryType": "traceql",
-          "query": "{resource.service.name=\"rippled\" && name=\"tx.validate\" && status.code=error}"
+          "query": "{resource.service.name=\"xrpld\" && name=\"tx.validate\" && status.code=error}"
         }
       ],
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 }
@@ -832,26 +832,26 @@ providers:
 
 ### 5.8.5 TraceQL Query Examples
 
-Common queries for rippled traces:
+Common queries for xrpld traces:
 
 ```
 # Find all traces for a specific transaction hash
-{resource.service.name="rippled" && span.xrpl.tx.hash="ABC123..."}
+{resource.service.name="xrpld" && span.xrpl.tx.hash="ABC123..."}
 
 # Find slow RPC commands (>100ms)
-{resource.service.name="rippled" && name=~"rpc.command.*"} | duration > 100ms
+{resource.service.name="xrpld" && name=~"rpc.command.*"} | duration > 100ms
 
 # Find consensus rounds taking >5 seconds
-{resource.service.name="rippled" && name="consensus.round"} | duration > 5s
+{resource.service.name="xrpld" && name="consensus.round"} | duration > 5s
 
 # Find failed transactions with error details
-{resource.service.name="rippled" && name="tx.validate" && status.code=error}
+{resource.service.name="xrpld" && name="tx.validate" && status.code=error}
 
 # Find transactions relayed to many peers
-{resource.service.name="rippled" && name="tx.relay"} | span.xrpl.tx.relay_count > 10
+{resource.service.name="xrpld" && name="tx.relay"} | span.xrpl.tx.relay_count > 10
 
 # Compare latency across nodes
-{resource.service.name="rippled" && name="rpc.command.account_info"} | avg(duration) by (resource.service.instance.id)
+{resource.service.name="xrpld" && name="rpc.command.account_info"} | avg(duration) by (resource.service.instance.id)
 ```
 
 ### 5.8.6 Correlation with PerfLog
@@ -863,12 +863,12 @@ To correlate OpenTelemetry traces with existing PerfLog data:
 ```yaml
 # promtail-config.yaml
 scrape_configs:
-  - job_name: rippled-perflog
+  - job_name: xrpld-perflog
     static_configs:
       - targets:
           - localhost
         labels:
-          job: rippled
+          job: xrpld
           __path__: /var/log/rippled/perf*.log
     pipeline_stages:
       - json:
@@ -922,7 +922,7 @@ To correlate traces with existing Beast Insight metrics:
 ```yaml
 # prometheus.yaml
 scrape_configs:
-  - job_name: "rippled-statsd"
+  - job_name: "xrpld-statsd"
     static_configs:
       - targets: ["statsd-exporter:9102"]
 ```
@@ -950,7 +950,7 @@ jsonData:
   "datasource": "Prometheus",
   "targets": [
     {
-      "expr": "histogram_quantile(0.99, rate(rippled_rpc_duration_seconds_bucket[5m]))",
+      "expr": "histogram_quantile(0.99, rate(xrpld_rpc_duration_seconds_bucket[5m]))",
       "exemplar": true
     }
   ]

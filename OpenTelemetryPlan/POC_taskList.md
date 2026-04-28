@@ -1,21 +1,21 @@
 # OpenTelemetry POC Task List
 
-> **Goal**: Build a minimal end-to-end proof of concept that demonstrates distributed tracing in rippled. A successful POC will show RPC request traces flowing from rippled through an OTel Collector into Tempo, viewable in Grafana.
+> **Goal**: Build a minimal end-to-end proof of concept that demonstrates distributed tracing in xrpld. A successful POC will show RPC request traces flowing from xrpld through an OTel Collector into Tempo, viewable in Grafana.
 >
 > **Scope**: RPC tracing only (highest value, lowest risk per the [CRAWL phase](./06-implementation-phases.md#6102-quick-wins-immediate-value) in the implementation phases). No cross-node P2P context propagation or consensus tracing in the POC.
 
 ### Related Plan Documents
 
-| Document                                                         | Relevance to POC                                                                                                                                          |
-| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Core concepts: traces, spans, context propagation, sampling                                                                                               |
-| [01-architecture-analysis.md](./01-architecture-analysis.md)     | RPC request flow (§1.5), key trace points (§1.6), instrumentation priority (§1.7)                                                                         |
-| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection (§2.1), exporter config (§2.2), span naming (§2.3), attribute schema (§2.4), coexistence with PerfLog/Insight (§2.6)                        |
-| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure (§3.1), key principles (§3.2), performance overhead (§3.3-3.6), conditional compilation (§3.7.3), code intrusiveness (§3.9)           |
-| [04-code-samples.md](./04-code-samples.md)                       | Telemetry interface (§4.1), SpanGuard (§4.2), macros (§4.3), RPC instrumentation (§4.5.3)                                                                 |
-| [05-configuration-reference.md](./05-configuration-reference.md) | rippled config (§5.1), config parser (§5.2), Application integration (§5.3), CMake (§5.4), Collector config (§5.5), Docker Compose (§5.6), Grafana (§5.8) |
-| [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 1 core tasks (§6.2), Phase 2 RPC tasks (§6.3), quick wins (§6.10), definition of done (§6.11)                                                       |
-| [07-observability-backends.md](./07-observability-backends.md)   | Tempo dev setup (§7.1), Grafana dashboards (§7.6), alert rules (§7.6.3)                                                                                   |
+| Document                                                         | Relevance to POC                                                                                                                                        |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [00-tracing-fundamentals.md](./00-tracing-fundamentals.md)       | Core concepts: traces, spans, context propagation, sampling                                                                                             |
+| [01-architecture-analysis.md](./01-architecture-analysis.md)     | RPC request flow (§1.5), key trace points (§1.6), instrumentation priority (§1.7)                                                                       |
+| [02-design-decisions.md](./02-design-decisions.md)               | SDK selection (§2.1), exporter config (§2.2), span naming (§2.3), attribute schema (§2.4), coexistence with PerfLog/Insight (§2.6)                      |
+| [03-implementation-strategy.md](./03-implementation-strategy.md) | Directory structure (§3.1), key principles (§3.2), performance overhead (§3.3-3.6), conditional compilation (§3.7.3), code intrusiveness (§3.9)         |
+| [04-code-samples.md](./04-code-samples.md)                       | Telemetry interface (§4.1), SpanGuard (§4.2), macros (§4.3), RPC instrumentation (§4.5.3)                                                               |
+| [05-configuration-reference.md](./05-configuration-reference.md) | xrpld config (§5.1), config parser (§5.2), Application integration (§5.3), CMake (§5.4), Collector config (§5.5), Docker Compose (§5.6), Grafana (§5.8) |
+| [06-implementation-phases.md](./06-implementation-phases.md)     | Phase 1 core tasks (§6.2), Phase 2 RPC tasks (§6.3), quick wins (§6.10), definition of done (§6.11)                                                     |
+| [07-observability-backends.md](./07-observability-backends.md)   | Tempo dev setup (§7.1), Grafana dashboards (§7.6), alert rules (§7.6.3)                                                                                 |
 
 ---
 
@@ -137,7 +137,7 @@
     - `virtual void start() = 0;`
     - `virtual void stop() = 0;`
     - `virtual bool isEnabled() const = 0;`
-    - `virtual nostd::shared_ptr<Tracer> getTracer(string_view name = "rippled") = 0;`
+    - `virtual nostd::shared_ptr<Tracer> getTracer(string_view name = "xrpld") = 0;`
     - `virtual nostd::shared_ptr<Span> startSpan(string_view name, SpanKind kind = kInternal) = 0;`
     - `virtual nostd::shared_ptr<Span> startSpan(string_view name, Context const& parentContext, SpanKind kind = kInternal) = 0;`
     - `virtual bool shouldTraceRpc() const = 0;`
@@ -418,7 +418,7 @@
 
 > **OTLP** = OpenTelemetry Protocol
 
-**Objective**: Prove the full pipeline works: rippled emits traces -> OTel Collector receives them -> Tempo stores them for Grafana visualization.
+**Objective**: Prove the full pipeline works: xrpld emits traces -> OTel Collector receives them -> Tempo stores them for Grafana visualization.
 
 **What to do**:
 
@@ -430,7 +430,7 @@
 
    Verify Collector health: `curl http://localhost:13133`
 
-2. **Build rippled with telemetry**:
+2. **Build xrpld with telemetry**:
 
    ```bash
    # Adjust for your actual build workflow
@@ -439,8 +439,8 @@
    cmake --build --preset default
    ```
 
-3. **Configure rippled**:
-   Add to `rippled.cfg` (or your local test config):
+3. **Configure xrpld**:
+   Add to `xrpld.cfg` (or your local test config):
 
    ```ini
    [telemetry]
@@ -450,10 +450,10 @@
    trace_rpc=1
    ```
 
-4. **Start rippled** in standalone mode:
+4. **Start xrpld** in standalone mode:
 
    ```bash
-   ./rippled --conf rippled.cfg -a --start
+   ./rippled --conf xrpld.cfg -a --start
    ```
 
 5. **Generate RPC traffic**:
@@ -478,21 +478,21 @@
 6. **Verify in Grafana (Tempo)**:
    - Open `http://localhost:3000`
    - Navigate to Explore → select Tempo datasource
-   - Search for service `rippled`
+   - Search for service `xrpld`
    - Confirm you see traces with spans: `rpc.request` -> `rpc.process` -> `rpc.command.server_info`
    - Click into a trace and verify attributes: `xrpl.rpc.command`, `xrpl.rpc.status`, `xrpl.rpc.version`
 
 7. **Verify zero-overhead when disabled**:
    - Rebuild with `XRPL_ENABLE_TELEMETRY=OFF`, or set `enabled=0` in config
    - Run the same RPC calls
-   - Confirm no new traces appear and no errors in rippled logs
+   - Confirm no new traces appear and no errors in xrpld logs
 
 **Verification Checklist**:
 
 - [ ] Docker stack starts without errors
-- [ ] rippled builds with `-DXRPL_ENABLE_TELEMETRY=ON`
-- [ ] rippled starts and connects to OTel Collector (check rippled logs for telemetry messages)
-- [ ] Traces appear in Grafana/Tempo under service "rippled"
+- [ ] xrpld builds with `-DXRPL_ENABLE_TELEMETRY=ON`
+- [ ] xrpld starts and connects to OTel Collector (check xrpld logs for telemetry messages)
+- [ ] Traces appear in Grafana/Tempo under service "xrpld"
 - [ ] Span hierarchy is correct (parent-child relationships)
 - [ ] Span attributes are populated (`xrpl.rpc.command`, `xrpl.rpc.status`, etc.)
 - [ ] Error spans show error status and message
@@ -518,13 +518,13 @@
 **What to do**:
 
 - Take screenshots of Grafana/Tempo showing:
-  - The service list with "rippled"
+  - The service list with "xrpld"
   - A trace with the full span tree
   - Span detail view showing attributes
 - Document any issues encountered (build issues, SDK quirks, missing attributes)
 - Note performance observations (build time impact, any noticeable runtime overhead)
 - Write a short summary of what the POC proves and what it doesn't cover yet:
-  - **Proves**: OTel SDK integrates with rippled, OTLP export works, RPC traces visible
+  - **Proves**: OTel SDK integrates with xrpld, OTLP export works, RPC traces visible
   - **Doesn't cover**: Cross-node P2P context propagation, consensus tracing, protobuf trace context, W3C traceparent header extraction, tail-based sampling, production deployment
 - Outline next steps (mapping to the full plan phases):
   - [Phase 2](./06-implementation-phases.md) completion: [W3C header extraction](./02-design-decisions.md) (§2.5), WebSocket tracing, all [RPC handlers](./01-architecture-analysis.md) (§1.6)

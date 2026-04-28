@@ -30,7 +30,7 @@ namespace telemetry {
 /**
  * Main telemetry interface for OpenTelemetry integration.
  *
- * This class provides the primary API for distributed tracing in rippled.
+ * This class provides the primary API for distributed tracing in xrpld.
  * It manages the OpenTelemetry SDK lifecycle and provides convenience
  * methods for creating spans and propagating context.
  */
@@ -43,7 +43,7 @@ public:
     struct Setup
     {
         bool enabled = false;
-        std::string serviceName = "rippled";
+        std::string serviceName = "xrpld";
         std::string serviceVersion;
         std::string serviceInstanceId;  // Node public key
 
@@ -98,7 +98,7 @@ public:
 
     /** Get the tracer for creating spans */
     virtual opentelemetry::nostd::shared_ptr<opentelemetry::trace::Tracer>
-    getTracer(std::string_view name = "rippled") = 0;
+    getTracer(std::string_view name = "xrpld") = 0;
 
     // ═══════════════════════════════════════════════════════════════════════
     // SPAN CREATION (Convenience Methods)
@@ -457,7 +457,7 @@ namespace telemetry {
 Add to `src/xrpld/overlay/detail/ripple.proto`:
 
 ```protobuf
-// Note: rippled uses proto2 syntax. The 'optional' keyword below is valid
+// Note: xrpld uses proto2 syntax. The 'optional' keyword below is valid
 // in proto2 (it is the default field rule) and is included for clarity.
 
 // Trace context for distributed tracing across nodes
@@ -1062,7 +1062,7 @@ flowchart TB
         submit["Submit TX"]
     end
 
-    subgraph NodeA["rippled Node A"]
+    subgraph NodeA["xrpld Node A"]
         rpcA["rpc.request"]
         cmdA["rpc.command.submit"]
         txRecvA["tx.receive"]
@@ -1070,13 +1070,13 @@ flowchart TB
         txRelayA["tx.relay"]
     end
 
-    subgraph NodeB["rippled Node B"]
+    subgraph NodeB["xrpld Node B"]
         txRecvB["tx.receive"]
         txValB["tx.validate"]
         txRelayB["tx.relay"]
     end
 
-    subgraph NodeC["rippled Node C"]
+    subgraph NodeC["xrpld Node C"]
         txRecvC["tx.receive"]
         consensusC["consensus.round"]
         phaseC["consensus.phase.establish"]

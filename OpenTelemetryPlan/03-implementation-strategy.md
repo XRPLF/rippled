@@ -7,7 +7,7 @@
 
 ## 3.1 Directory Structure
 
-The telemetry implementation follows rippled's existing code organization pattern:
+The telemetry implementation follows xrpld's existing code organization pattern:
 
 ```
 include/xrpl/
@@ -344,7 +344,7 @@ if (telemetry.shouldTracePeer())
 
 > **TxQ** = Transaction Queue
 
-This section provides a detailed assessment of how intrusive the OpenTelemetry integration is to the existing rippled codebase.
+This section provides a detailed assessment of how intrusive the OpenTelemetry integration is to the existing xrpld codebase.
 
 ### 3.9.1 Files Modified Summary
 
@@ -390,7 +390,7 @@ pie title Code Changes by Component
 | `src/libxrpl/telemetry/TelemetryConfig.cpp`    | ~60   | Config parsing       |
 | `src/libxrpl/telemetry/NullTelemetry.cpp`      | ~40   | No-op implementation |
 
-#### Modified Files (Existing Rippled Code)
+#### Modified Files (Existing Xrpld Code)
 
 | File                                              | Lines Added | Lines Changed | Risk Level |
 | ------------------------------------------------- | ----------- | ------------- | ---------- |

@@ -25,10 +25,10 @@
 
 **Manual Instrumentation** (recommended):
 
-| Approach   | Pros                                                              | Cons                                                    |
-| ---------- | ----------------------------------------------------------------- | ------------------------------------------------------- |
-| **Manual** | Precise control, optimized placement, rippled-specific attributes | More development effort                                 |
-| **Auto**   | Less code, automatic coverage                                     | Less control, potential overhead, limited customization |
+| Approach   | Pros                                                            | Cons                                                    |
+| ---------- | --------------------------------------------------------------- | ------------------------------------------------------- |
+| **Manual** | Precise control, optimized placement, xrpld-specific attributes | More development effort                                 |
+| **Auto**   | Less code, automatic coverage                                   | Less control, potential overhead, limited customization |
 
 ---
 
@@ -38,10 +38,10 @@
 
 ```mermaid
 flowchart TB
-    subgraph nodes["rippled Nodes"]
-        node1["rippled<br/>Node 1"]
-        node2["rippled<br/>Node 2"]
-        node3["rippled<br/>Node 3"]
+    subgraph nodes["xrpld Nodes"]
+        node1["xrpld<br/>Node 1"]
+        node2["xrpld<br/>Node 2"]
+        node3["xrpld<br/>Node 3"]
     end
 
     collector["OpenTelemetry<br/>Collector<br/>(sidecar or standalone)"]
@@ -65,7 +65,7 @@ flowchart TB
 
 **Reading the diagram:**
 
-- **rippled Nodes (blue)**: The source of telemetry data. Each rippled node exports spans via OTLP/gRPC on port 4317.
+- **xrpld Nodes (blue)**: The source of telemetry data. Each xrpld node exports spans via OTLP/gRPC on port 4317.
 - **OpenTelemetry Collector (red)**: The central aggregation point that receives spans from all nodes. Can run as a sidecar (per-node) or standalone (shared). Handles batching, filtering, and routing.
 - **Observability Backends (green)**: The storage and visualization destinations. Tempo is the recommended backend for both development and production, and Elastic APM is an alternative. The Collector routes to one or more backends.
 - **Arrows (nodes to collector to backends)**: The data pipeline -- spans flow from nodes to the Collector over gRPC, then the Collector fans out to the configured backends.
@@ -203,11 +203,11 @@ job:
 
 ```cpp
 // Standard OpenTelemetry semantic conventions
-resource::SemanticConventions::SERVICE_NAME        = "rippled"
+resource::SemanticConventions::SERVICE_NAME        = "xrpld"
 resource::SemanticConventions::SERVICE_VERSION     = BuildInfo::getVersionString()
 resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 
-// Custom rippled attributes
+// Custom xrpld attributes
 "xrpl.network.id"      = <network_id>           // e.g., 0 for mainnet
 "xrpl.network.type"    = "mainnet" | "testnet" | "devnet" | "standalone"
 "xrpl.node.type"       = "validator" | "stock" | "reporting"
@@ -390,7 +390,7 @@ processors:
 
 #### Configuration Options for Privacy
 
-In `rippled.cfg`, operators can control data collection granularity:
+In `xrpld.cfg`, operators can control data collection granularity:
 
 ```ini
 [telemetry]
@@ -407,7 +407,7 @@ redact_account=1      # Hash account addresses before export
 redact_peer_address=1 # Remove peer IP addresses
 ```
 
-> **Note**: The `redact_account` configuration in `rippled.cfg` controls SDK-level redaction before export, while collector-level filtering (see [Collector-Level Data Protection](#collector-level-data-protection) above) provides an additional defense-in-depth layer. Both can operate independently.
+> **Note**: The `redact_account` configuration in `xrpld.cfg` controls SDK-level redaction before export, while collector-level filtering (see [Collector-Level Data Protection](#collector-level-data-protection) above) provides an additional defense-in-depth layer. Both can operate independently.
 
 > **Key Principle**: Telemetry collects **operational metadata** (timing, counts, hashes) — never **sensitive content** (keys, balances, amounts, raw payloads).
 
@@ -422,7 +422,7 @@ redact_peer_address=1 # Remove peer IP addresses
 ```mermaid
 flowchart TB
     subgraph http["HTTP/WebSocket (RPC)"]
-        w3c["W3C Trace Context Headers:<br/>traceparent:<br/>00-trace_id-span_id-flags<br/>tracestate: rippled=..."]
+        w3c["W3C Trace Context Headers:<br/>traceparent:<br/>00-trace_id-span_id-flags<br/>tracestate: xrpld=..."]
     end
 
     subgraph protobuf["Protocol Buffers (P2P)"]
@@ -441,7 +441,7 @@ flowchart TB
 **Reading the diagram:**
 
 - **HTTP/WebSocket - RPC (blue)**: For client-facing RPC requests, trace context is propagated using the W3C `traceparent` header. This is the standard approach and works with any OTel-compatible client.
-- **Protocol Buffers - P2P (green)**: For peer-to-peer messages between rippled nodes, trace context is embedded as a protobuf `TraceContext` message carrying trace_id, span_id, flags, and optional trace_state.
+- **Protocol Buffers - P2P (green)**: For peer-to-peer messages between xrpld nodes, trace context is embedded as a protobuf `TraceContext` message carrying trace_id, span_id, flags, and optional trace_state.
 - **JobQueue - Internal Async (red)**: For asynchronous work within a single node, the OTel context is captured when a job is created and restored when the job executes on a worker thread. This bridges the async gap so spans remain linked.
 
 ---
@@ -452,7 +452,7 @@ flowchart TB
 
 ### 2.6.1 Existing Frameworks Comparison
 
-rippled already has two observability mechanisms. OpenTelemetry complements (not replaces) them:
+xrpld already has two observability mechanisms. OpenTelemetry complements (not replaces) them:
 
 | Aspect                | PerfLog                       | Beast Insight (StatsD)       | OpenTelemetry             |
 | --------------------- | ----------------------------- | ---------------------------- | ------------------------- |
@@ -501,7 +501,7 @@ rippled already has two observability mechanisms. OpenTelemetry complements (not
   - Single-node perspective
 
 ```cpp
-// Example StatsD usage in rippled
+// Example StatsD usage in xrpld
 insight.increment("rpc.submit.count");
 insight.gauge("ledger.age", age);
 insight.timing("consensus.round", duration);
@@ -542,7 +542,7 @@ span->SetAttribute("peer.id", peerId);
 
 ```mermaid
 flowchart TB
-    subgraph rippled["rippled Process"]
+    subgraph xrpld["xrpld Process"]
         perflog["PerfLog<br/>(JSON to file)"]
         insight["Beast Insight<br/>(StatsD)"]
         otel["OpenTelemetry<br/>(Tracing)"]
@@ -556,13 +556,13 @@ flowchart TB
     statsd --> grafana
     collector --> grafana
 
-    style rippled fill:#212121,stroke:#0a0a0a,color:#ffffff
+    style xrpld fill:#212121,stroke:#0a0a0a,color:#ffffff
     style grafana fill:#bf360c,stroke:#8c2809,color:#ffffff
 ```
 
 **Reading the diagram:**
 
-- **rippled Process (dark gray)**: The single rippled node running all three observability frameworks side by side. Each framework operates independently with no interference.
+- **xrpld Process (dark gray)**: The single xrpld node running all three observability frameworks side by side. Each framework operates independently with no interference.
 - **PerfLog to perf.log**: PerfLog writes JSON-formatted event logs to a local file. Grafana can ingest these via Loki or a file-based datasource.
 - **Beast Insight to StatsD Server**: Insight sends aggregated metrics (counters, gauges) over UDP to a StatsD server. Grafana reads from StatsD-compatible backends like Graphite or Prometheus (via StatsD exporter).
 - **OpenTelemetry to OTLP Collector**: OTel exports spans over OTLP/gRPC to a Collector, which then forwards to a trace backend (Tempo).
