@@ -108,6 +108,8 @@
 #include <boost/system/detail/error_code.hpp>
 #include <boost/system/system_error.hpp>
 
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <date/date.h>
 
 #include <algorithm>

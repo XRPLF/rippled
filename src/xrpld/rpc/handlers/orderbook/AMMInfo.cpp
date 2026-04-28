@@ -23,6 +23,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <xrpl/protocol/Feature.h>
 #include <date/date.h>
 
 #include <chrono>

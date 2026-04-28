@@ -3,8 +3,10 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/beast/utility/Zero.h>
 
 #include <cstdint>
+#include <limits>
 
 namespace xrpl {
 

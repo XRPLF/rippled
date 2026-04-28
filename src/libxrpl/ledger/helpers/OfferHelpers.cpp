@@ -10,6 +10,7 @@
 #include <xrpl/protocol/STArray.h>  // IWYU pragma: keep
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/LedgerFormats.h>
 
 #include <memory>
 

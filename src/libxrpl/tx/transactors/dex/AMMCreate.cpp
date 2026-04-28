@@ -308,7 +308,7 @@ applyCreate(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::J
                 auto const& mptIssue = issue;
                 auto const& mptID = mptIssue.getMptID();
                 // Implicitly authorize MPT asset for AMM pseudo-account.
-                std::uint32_t flags = lsfMPTAMM | lsfMPTAuthorized;
+                std::uint32_t const flags = lsfMPTAMM | lsfMPTAuthorized;
                 if (auto const err = requireAuth(sb, mptIssue, accountId, AuthType::WeakAuth);
                     !isTesSuccess(err))
                 {
