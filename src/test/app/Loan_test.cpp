@@ -7198,6 +7198,85 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
+    // An overpayment whose residual amount is NOT rounded to loanScale fires the isRounded(asset,
+    // overpayment, loanScale) and "interest paid agrees" assertions in computeOverpaymentComponents
+    // .
+    void
+    testBugOverpayUnroundedAmount()
+    {
+        testcase("bug: computeOverpaymentComponents isRounded assertion");
+
+        using namespace jtx;
+        Env env(*this, all);
+
+        Account const issuer{"issuer"};
+        Account const vaultOwner{"vaultOwner"};
+        Account const depositor{"depositor"};
+        Account const borrower{"borrower"};
+
+        env.fund(XRP(1'000'000), issuer, vaultOwner, depositor, borrower);
+        env.close();
+        env(fset(issuer, asfDefaultRipple));
+        env.close();
+
+        PrettyAsset const iouAsset = issuer["USD"];
+        STAmount const iouLimit{iouAsset.raw(), Number{9'999'999'999'999'999LL}};
+        env(trust(vaultOwner, iouLimit));
+        env(trust(depositor, iouLimit));
+        env(trust(borrower, iouLimit));
+        env.close();
+        env(pay(issuer, vaultOwner, iouAsset(1'000'000)));
+        env(pay(issuer, depositor, iouAsset(1'000'000)));
+        env(pay(issuer, borrower, iouAsset(1'000'000)));
+        env.close();
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = vaultOwner, .asset = iouAsset});
+        vaultTx[sfScale] = 1;
+        env(vaultTx);
+        env.close();
+        env(vault.deposit(
+            {.depositor = depositor, .id = vaultKeylet.key, .amount = iouAsset(100'000)}));
+        env.close();
+
+        auto const brokerKeylet = keylet::loanbroker(vaultOwner.id(), env.seq(vaultOwner));
+        {
+            using namespace loanBroker;
+            env(set(vaultOwner, vaultKeylet.key),
+                managementFeeRate(TenthBips16{1000}),
+                debtMaximum(Number{5000}),
+                fee(env.current()->fees().base * 2));
+        }
+        env.close();
+
+        auto const brokerStateBefore = env.le(brokerKeylet);
+        auto const loanSequence = brokerStateBefore->at(sfLoanSequence);
+        auto const loanKeylet = keylet::loan(brokerKeylet.key, loanSequence);
+
+        using namespace loan;
+        auto createJson = env.json(
+            set(borrower, brokerKeylet.key, Number{1000}, tfLoanOverpayment),
+            fee(env.current()->fees().base * 2),
+            json(sfCounterpartySignature, Json::objectValue));
+
+        createJson["InterestRate"] = 10000;
+        createJson["PaymentTotal"] = 12;
+        createJson["PaymentInterval"] = 60;
+        createJson["GracePeriod"] = 60;
+        createJson["OverpaymentFee"] = 1000;
+        createJson["OverpaymentInterestRate"] = 1000;
+        createJson = env.json(createJson, sig(sfCounterpartySignature, vaultOwner));
+        env(createJson, ter(tesSUCCESS));
+        env.close();
+
+        // periodic * 1.5 at 15-sig-digit precision: 125.000154585042. This
+        // has too many digits to round cleanly to loanScale=-10, so the
+        // overpayment residual fails the isRounded check.
+        STAmount const payAmount{iouAsset.raw(), Number{125'000'154'585'042LL, -12}};
+        env(pay(borrower, loanKeylet.key, payAmount), txflags(tfLoanOverpayment), ter(tesSUCCESS));
+        env.close();
+    }
+
 public:
     void
     run() override
@@ -7206,6 +7285,8 @@ public:
         testLoanPayLateFullPaymentBypassesPenalties();
         testLoanCoverMinimumRoundingExploit();
 #endif
+        testBugOverpayUnroundedAmount();
+
         testWithdrawReflectsUnrealizedLoss();
         testInvalidLoanSet();
 

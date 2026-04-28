@@ -644,9 +644,6 @@ doOverpayment(
         "xrpl::detail::doOverpayment",
         "principal change agrees");
 
-    // I'm not 100% sure the following asserts are correct. If in doubt, and
-    // everything else works, remove any that cause trouble.
-
     JLOG(j.debug()) << "valueChange: " << loanPaymentParts.valueChange
                     << ", totalValue before: " << *totalValueOutstandingProxy
                     << ", totalValue after: " << newRoundedLoanState.valueOutstanding
@@ -658,11 +655,28 @@ doOverpayment(
                     << overpaymentComponents.trackedPrincipalDelta -
             (totalValueOutstandingProxy - newRoundedLoanState.valueOutstanding);
 
+    // The valueChange returned by tryOverpayment satisfies
+    //   valueChange = (newInterestDue - oldInterestDue) + untrackedInterest.
+    // Using the loan-state identity v = p + i + m and the adjacent
+    // `principal change agrees` assertion (dp = oldP - newP), this
+    // rearranges into three independently-computable terms:
+    //
+    //   1. TVO change beyond what principal repayment alone explains:
+    //        newTVO - (oldTVO - dp)
+    //   2. Management fee released by re-amortization (positive when
+    //      mfee decreased; zero when managementFeeRate == 0):
+    //        oldMfee - newMfee
+    //   3. The overpayment's penalty interest part (= untrackedInterest
+    //      for the overpayment path; see computeOverpaymentComponents):
+    //        trackedInterestPart()
+    [[maybe_unused]] Number const tvoChange = newRoundedLoanState.valueOutstanding -
+        (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta);
+    [[maybe_unused]] Number const mfeeReleased =
+        managementFeeOutstandingProxy - newRoundedLoanState.managementFeeDue;
+    [[maybe_unused]] Number const interestPart = overpaymentComponents.trackedInterestPart();
+
     XRPL_ASSERT_PARTS(
-        loanPaymentParts.valueChange ==
-            newRoundedLoanState.valueOutstanding -
-                (totalValueOutstandingProxy - overpaymentComponents.trackedPrincipalDelta) +
-                overpaymentComponents.trackedInterestPart(),
+        loanPaymentParts.valueChange == tvoChange + mfeeReleased + interestPart,
         "xrpl::detail::doOverpayment",
         "interest paid agrees");
 
@@ -1867,7 +1881,11 @@ loanMakePayment(
         // It shouldn't be possible for the overpayment to be greater than
         // totalValueOutstanding, because that would have been processed as
         // another normal payment. But cap it just in case.
-        Number const overpayment = std::min(amount - totalPaid, *totalValueOutstandingProxy);
+        Number const overpayment = roundToAsset(
+            asset,
+            std::min(amount - totalPaid, *totalValueOutstandingProxy),
+            loanScale,
+            Number::downward);
 
         detail::ExtendedPaymentComponents const overpaymentComponents =
             detail::computeOverpaymentComponents(
