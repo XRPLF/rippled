@@ -8,9 +8,12 @@ add_custom_target(xrpl.tests)
 
 # Test helpers
 add_library(xrpl.helpers.test STATIC)
-target_sources(xrpl.helpers.test PRIVATE helpers/TestSink.cpp)
+target_sources(
+    xrpl.helpers.test
+    PRIVATE helpers/Account.cpp helpers/TestSink.cpp helpers/TxTest.cpp
+)
 target_include_directories(xrpl.helpers.test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(xrpl.helpers.test PRIVATE xrpl.libxrpl)
+target_link_libraries(xrpl.helpers.test PUBLIC xrpl.libxrpl gtest::gtest)
 
 # Common library dependencies for the rest of the tests.
 add_library(xrpl.imports.test INTERFACE)
@@ -31,6 +34,10 @@ add_dependencies(xrpl.tests xrpl.test.crypto)
 xrpl_add_test(json)
 target_link_libraries(xrpl.test.json PRIVATE xrpl.imports.test)
 add_dependencies(xrpl.tests xrpl.test.json)
+
+xrpl_add_test(tx)
+target_link_libraries(xrpl.test.tx PRIVATE xrpl.imports.test)
+add_dependencies(xrpl.tests xrpl.test.tx)
 
 xrpl_add_test(protocol_autogen)
 target_link_libraries(xrpl.test.protocol_autogen PRIVATE xrpl.imports.test)

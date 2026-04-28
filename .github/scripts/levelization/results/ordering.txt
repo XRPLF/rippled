@@ -188,10 +188,16 @@ test.toplevel > xrpl.json
 test.unit_test > xrpl.basics
 test.unit_test > xrpl.protocol
 tests.libxrpl > xrpl.basics
+tests.libxrpl > xrpl.core
 tests.libxrpl > xrpl.json
+tests.libxrpl > xrpl.ledger
 tests.libxrpl > xrpl.net
+tests.libxrpl > xrpl.nodestore
 tests.libxrpl > xrpl.protocol
 tests.libxrpl > xrpl.protocol_autogen
+tests.libxrpl > xrpl.server
+tests.libxrpl > xrpl.shamap
+tests.libxrpl > xrpl.tx
 xrpl.conditions > xrpl.basics
 xrpl.conditions > xrpl.protocol
 xrpl.core > xrpl.basics
