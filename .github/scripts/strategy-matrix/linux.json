@@ -121,7 +121,7 @@
       "compiler_name": "gcc",
       "compiler_version": "12",
       "image_sha": "ab4d1f0",
-      "packaging": ["rpm"]
+      "package": true
     },
     {
       "distro_name": "rhel",
@@ -164,7 +164,7 @@
       "compiler_name": "gcc",
       "compiler_version": "12",
       "image_sha": "ab4d1f0",
-      "packaging": ["deb"]
+      "package": true
     },
     {
       "distro_name": "ubuntu",

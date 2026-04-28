@@ -1,26 +1,16 @@
-# Build a Linux package (DEB or RPM) from a pre-built binary artifact.
+# Build Linux packages (DEB and RPM) from pre-built binary artifacts.
+# Discovers which configurations to package from linux.json (entries with
+# "package": true) and fans out one job per entry.
 name: Package
 
 on:
   workflow_call:
     inputs:
-      artifact_name:
-        description: "Name of the GitHub pre-built binary artifact to download (e.g. xrpld-ubuntu-jammy-gcc-12-amd64-release)."
-        required: true
-        type: string
-      container_image:
-        description: "Container image to use for packaging."
-        required: true
-        type: string
       pkg_release:
         description: "Package release number. Increment when repackaging the same executable."
         required: false
         type: string
         default: "1"
-      pkg_type:
-        description: "Package type to build: deb or rpm."
-        required: true
-        type: string
       version:
         description: "Version string used for naming the output artifact."
         required: true
@@ -34,12 +24,35 @@ env:
   BUILD_DIR: build
 
 jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate.outputs.matrix }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: 3.13
+
+      - name: Generate packaging matrix
+        id: generate
+        working-directory: .github/scripts/strategy-matrix
+        run: |
+          ./generate.py --packaging --config=linux.json >> "${GITHUB_OUTPUT}"
+
   package:
-    name: "${{ inputs.pkg_type }} (${{ inputs.version }})"
+    needs: generate-matrix
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    name: "${{ matrix.artifact_name }}"
     permissions:
       contents: read
     runs-on: ["self-hosted", "Linux", "X64", "heavy"]
-    container: ${{ inputs.container_image }}
+    container: ${{ matrix.container_image }}
     timeout-minutes: 30
 
     steps:
@@ -53,7 +66,7 @@ jobs:
       - name: Download pre-built binary
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
-          name: ${{ inputs.artifact_name }}
+          name: ${{ matrix.artifact_name }}
           path: ${{ env.BUILD_DIR }}
 
       - name: Make binary executable
@@ -61,17 +74,16 @@ jobs:
 
       - name: Build package
         env:
-          PKG_TYPE: ${{ inputs.pkg_type }}
           PKG_VERSION: ${{ inputs.version }}
           PKG_RELEASE: ${{ inputs.pkg_release }}
           SOURCE_DATE_EPOCH: ${{ env.SOURCE_DATE_EPOCH }}
         run: |
-          ./package/build_pkg.sh "$PKG_TYPE" . "$BUILD_DIR" "$PKG_VERSION" "$PKG_RELEASE"
+          ./package/build_pkg.sh . "$BUILD_DIR" "$PKG_VERSION" "$PKG_RELEASE"
 
       - name: Upload package artifact
         uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
         with:
-          name: xrpld-${{ inputs.pkg_type }}-${{ inputs.version }}
+          name: ${{ matrix.artifact_name }}-pkg-${{ inputs.version }}
           path: |
             ${{ env.BUILD_DIR }}/debbuild/*.deb
             ${{ env.BUILD_DIR }}/debbuild/*.ddeb

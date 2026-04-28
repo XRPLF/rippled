@@ -16,37 +16,22 @@ if(NOT DEFINED pkg_release)
 endif()
 
 find_program(RPMBUILD_EXECUTABLE rpmbuild)
-if(RPMBUILD_EXECUTABLE)
-    add_custom_target(
-        package-rpm
-        COMMAND
-            ${CMAKE_SOURCE_DIR}/package/build_pkg.sh rpm ${CMAKE_SOURCE_DIR}
-            ${CMAKE_BINARY_DIR} "${xrpld_version}" ${pkg_release}
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
-        DEPENDS xrpld
-        COMMENT "Building RPM package"
-        VERBATIM
-    )
-else()
-    message(STATUS "rpmbuild not found; 'package-rpm' target not available")
-endif()
-
 find_program(DPKG_BUILDPACKAGE_EXECUTABLE dpkg-buildpackage)
-if(DPKG_BUILDPACKAGE_EXECUTABLE)
+if(RPMBUILD_EXECUTABLE OR DPKG_BUILDPACKAGE_EXECUTABLE)
     add_custom_target(
-        package-deb
+        package
         COMMAND
-            ${CMAKE_SOURCE_DIR}/package/build_pkg.sh deb ${CMAKE_SOURCE_DIR}
+            ${CMAKE_SOURCE_DIR}/package/build_pkg.sh ${CMAKE_SOURCE_DIR}
             ${CMAKE_BINARY_DIR} "${xrpld_version}" ${pkg_release}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
         DEPENDS xrpld
-        COMMENT "Building Debian package"
+        COMMENT "Building Linux package (deb/rpm inferred from host tooling)"
         VERBATIM
     )
 else()
     message(
         STATUS
-        "dpkg-buildpackage not found; 'package-deb' target not available"
+        "Neither rpmbuild nor dpkg-buildpackage found; 'package' target not available"
     )
 endif()
 
@@ -67,7 +52,17 @@ set(RPM_TEST_IMAGE
     "geerlingguy/docker-rockylinux9-ansible@sha256:790c2db9add93c0daa903ace816f352c9c04abb046ecfa12c581e8d4c59f41d6"
 )
 
-foreach(PKG deb rpm)
+# Only register install-test fixtures for package formats the host can build,
+# since the smoketest needs a corresponding .deb/.rpm artifact in build/.
+set(PKG_TYPES "")
+if(DPKG_BUILDPACKAGE_EXECUTABLE)
+    list(APPEND PKG_TYPES deb)
+endif()
+if(RPMBUILD_EXECUTABLE)
+    list(APPEND PKG_TYPES rpm)
+endif()
+
+foreach(PKG IN LISTS PKG_TYPES)
     if(PKG STREQUAL "deb")
         set(IMAGE ${DEB_TEST_IMAGE})
     else()
@@ -85,11 +80,8 @@ foreach(PKG deb rpm)
             --cgroupns host \
             --volume '${CMAKE_SOURCE_DIR}:/root:ro' \
             --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
-            --tmpfs /tmp \
-            --tmpfs /run \
             --tmpfs /run/lock \
-            ${IMAGE} \
-            /usr/sbin/init"
+            ${IMAGE}"
     )
     set_tests_properties(
         ${PKG}_container_start

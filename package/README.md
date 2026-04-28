@@ -9,8 +9,7 @@ package/
   build_pkg.sh      Staging and build script (called by CMake targets and CI)
   rpm/
     xrpld.spec      RPM spec (xrpld_version/pkg_release passed via rpmbuild --define)
-  deb/
-    debian/         Debian control files (control, rules, install, links, conffiles, ...)
+  debian/           Debian control files (control, rules, install, links, conffiles, ...)
   shared/
     xrpld.service       systemd unit file (used by both RPM and DEB)
     xrpld.sysusers      sysusers.d config (used by both RPM and DEB)
@@ -27,8 +26,10 @@ package/
 
 Packaging targets and their container images are declared in
 [`.github/scripts/strategy-matrix/linux.json`](../.github/scripts/strategy-matrix/linux.json)
-via a `"packaging"` field on specific os entries. The image tag is composed
-as `ghcr.io/xrplf/ci/{distro}-{version}:{compiler}-{cver}-sha-{image_sha}` —
+via a `"package": true` field on specific os entries. The package format
+(deb or rpm) is inferred at build time from the container's package manager
+(`apt-get` -> deb, `dnf`/`yum` -> rpm). The image tag is composed as
+`ghcr.io/xrplf/ci/{distro}-{version}:{compiler}-{cver}-sha-{image_sha}` —
 the same scheme used by `reusable-build-test.yml`. Bump `image_sha` in
 `linux.json` and both CI and local builds pick up the new image with no
 workflow edits.
@@ -50,10 +51,11 @@ To print the exact image tags for the current `linux.json`:
 
 Caller workflows (`on-pr.yml`, `on-tag.yml`, `on-trigger.yml`) call
 `reusable-strategy-matrix.yml` with `mode: packaging` to generate the matrix of
-`{pkg_type, artifact_name, container_image}` entries, then fan out to
+`{artifact_name, container_image}` entries, then fan out to
 `reusable-package.yml` per entry. That workflow downloads the pre-built `xrpld`
-binary artifact and calls `build_pkg.sh` directly — no CMake configure or
-build step is needed inside the packaging job.
+binary artifact, detects the package format from the container, and calls
+`build_pkg.sh` directly — no CMake configure or build step is needed inside
+the packaging job.
 
 ### Locally (mirrors CI)
 
@@ -62,23 +64,22 @@ inside the same container CI uses. The image tag is derived from `linux.json`
 so you don't need to hardcode a SHA.
 
 ```bash
-# From the repo root.
-PKG_TYPE=deb                # or rpm
-VERSION=2.4.0-local
-PKG_RELEASE=1
-
-# Derive the correct image for this package type from linux.json.
-IMAGE=$(jq -r --arg pkg "$PKG_TYPE" '
-  .os[] | select((.packaging // []) | index($pkg)) |
+# From the repo root. Pick any image flagged with `"package": true` in
+# linux.json; the package format is inferred from the container's package
+# manager. Example for the rpm-producing image:
+IMAGE=$(jq -r '
+  .os | map(select(.package == true))[0] |
   "ghcr.io/xrplf/ci/\(.distro_name)-\(.distro_version):\(.compiler_name)-\(.compiler_version)-sha-\(.image_sha)"
 ' .github/scripts/strategy-matrix/linux.json)
 
-# Run the packaging in the container.
+VERSION=2.4.0-local
+PKG_RELEASE=1
+
 docker run --rm \
   -v "$(pwd):/src" \
   -w /src \
   "$IMAGE" \
-  ./package/build_pkg.sh "$PKG_TYPE" . build "$VERSION" "$PKG_RELEASE"
+  ./package/build_pkg.sh . build "$VERSION" "$PKG_RELEASE"
 
 # Output:
 #   build/debbuild/*.deb         (DEB + dbgsym .ddeb)
@@ -88,7 +89,7 @@ docker run --rm \
 ### Via CMake (host-side target)
 
 If you run CMake configure on a host that has `rpmbuild` or `dpkg-buildpackage`
-installed natively, you can use the CMake targets directly — no container
+installed natively, you can use the CMake target directly — no container
 needed, but the host toolchain replaces the pinned CI image:
 
 ```bash
@@ -99,22 +100,23 @@ cmake \
   -Dtests=OFF \
   ..
 
-cmake --build . --target package-rpm    # requires rpmbuild
-cmake --build . --target package-deb    # requires dpkg-buildpackage
+cmake --build . --target package       # deb on Debian/Ubuntu, rpm on RHEL
 ```
 
-The `cmake/XrplPackaging.cmake` module gates each target on whether the
-required tool is present at configure time, so configuring on a host that
-lacks one simply omits the corresponding target. `CMAKE_INSTALL_PREFIX` must
+The `cmake/XrplPackaging.cmake` module defines the target only if at least one
+of `rpmbuild` / `dpkg-buildpackage` is present; `build_pkg.sh` then infers the
+package format from the host's package manager. `CMAKE_INSTALL_PREFIX` must
 be `/opt/xrpld`; if it is not, both targets are skipped with a `STATUS`
 message.
 
 ## How `build_pkg.sh` works
 
-`build_pkg.sh <pkg_type> <src_dir> <build_dir> [version] [pkg_release]` stages
+`build_pkg.sh <src_dir> <build_dir> [version] [pkg_release]` stages
 all files and invokes the platform build tool. It resolves `src_dir` and
 `build_dir` to absolute paths, then calls `stage_common()` to copy the binary,
-config files, and shared support files into the staging area.
+config files, and shared support files into the staging area. The package
+format is taken from the `PKG_TYPE` env var if set; otherwise it is inferred
+from the available package manager (`apt-get` -> deb, `dnf`/`yum` -> rpm).
 
 ### RPM
 

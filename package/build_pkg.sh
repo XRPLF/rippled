@@ -3,18 +3,30 @@ set -euo pipefail
 
 # Build an RPM or Debian package from a pre-built xrpld binary.
 #
-# Usage: build_pkg.sh <pkg_type> <src_dir> <build_dir> [version] [pkg_release]
-#   pkg_type    : rpm | deb
+# Usage: build_pkg.sh <src_dir> <build_dir> [version] [pkg_release]
 #   src_dir     : path to repository root
 #   build_dir   : directory containing the pre-built xrpld binary
 #   version     : package version string (e.g. 3.2.0-b1)
 #   pkg_release : package release number (default: 1)
+#
+# The package format is taken from the PKG_TYPE env var if set; otherwise it
+# is inferred from the available package manager (apt-get -> deb, dnf/yum -> rpm).
 
-PKG_TYPE="${1:?pkg_type required}"
-SRC_DIR="$(cd "${2:?src_dir required}" && pwd)"
-BUILD_DIR="$(cd "${3:?build_dir required}" && pwd)"
-VERSION="${4:-$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3}')}"
-PKG_RELEASE="${5:-1}"
+SRC_DIR="$(cd "${1:?src_dir required}" && pwd)"
+BUILD_DIR="$(cd "${2:?build_dir required}" && pwd)"
+VERSION="${3:-$("${BUILD_DIR}/xrpld" --version | awk 'NR==1 {print $3}')}"
+PKG_RELEASE="${4:-1}"
+
+if [[ -z "${PKG_TYPE:-}" ]]; then
+    if command -v apt-get >/dev/null 2>&1; then
+        PKG_TYPE=deb
+    elif command -v dnf >/dev/null 2>&1 || command -v yum >/dev/null 2>&1; then
+        PKG_TYPE=rpm
+    else
+        echo "Cannot infer PKG_TYPE: no apt-get, dnf, or yum on PATH." >&2
+        exit 1
+    fi
+fi
 
 if [[ -z "${SOURCE_DATE_EPOCH:-}" ]]; then
     if git -C "$SRC_DIR" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -119,11 +131,4 @@ EOF
     ( cd "${staging}" && dpkg-buildpackage -b --no-sign -d )
 }
 
-case "${PKG_TYPE}" in
-    rpm) build_rpm ;;
-    deb) build_deb ;;
-    *)
-        echo "Unknown package type: ${PKG_TYPE}" >&2
-        exit 1
-        ;;
-esac
+"build_${PKG_TYPE}"

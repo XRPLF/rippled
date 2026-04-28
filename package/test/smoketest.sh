@@ -39,7 +39,7 @@ if [ "${pkgtype}" = "dpkg" ] ; then
         echo "No .deb files found"
         exit 1
     fi
-    dpkg --no-debsig -i "${debs[@]}" || apt-get -y install -f
+    dpkg --no-debsig -i "${debs[@]}" || apt-get -y install -f || { echo "DEB install failed"; exit 1; }
 elif [ "${pkgtype}" = "rpm" ] ; then
     # Find .rpm files — check both possible output locations
     mapfile -t rpms < <(find build/rpmbuild/RPMS/ build/rpm/packages/ -name '*.rpm' \
@@ -52,7 +52,10 @@ elif [ "${pkgtype}" = "rpm" ] ; then
 fi
 
 # Verify installed version
-VERSION_OUTPUT=$(/opt/xrpld/bin/xrpld --version)
+if ! VERSION_OUTPUT=$(/opt/xrpld/bin/xrpld --version); then
+    echo "xrpld --version failed; binary not installed correctly"
+    exit 1
+fi
 INSTALLED=$(echo "$VERSION_OUTPUT" | head -1 | awk '{print $NF}')
 echo "Installed version: ${INSTALLED}"
 

@@ -158,24 +158,12 @@ jobs:
         id: version
         uses: ./.github/actions/generate-version
 
-  generate-packaging-matrix:
-    needs: should-run
-    if: ${{ needs.should-run.outputs.go == 'true' }}
-    uses: ./.github/workflows/reusable-strategy-matrix.yml
-    with:
-      mode: packaging
-
   package:
-    needs: [should-run, build-test, generate-version, generate-packaging-matrix]
-    strategy:
-      fail-fast: false
-      matrix: ${{ fromJson(needs.generate-packaging-matrix.outputs.matrix) }}
+    needs: [should-run, build-test, generate-version]
+    if: ${{ needs.should-run.outputs.go == 'true' }}
     uses: ./.github/workflows/reusable-package.yml
     with:
-      pkg_type: ${{ matrix.pkg_type }}
-      artifact_name: ${{ matrix.artifact_name }}
       version: ${{ needs.generate-version.outputs.version }}
-      container_image: ${{ matrix.container_image }}
 
   upload-recipe:
     needs:

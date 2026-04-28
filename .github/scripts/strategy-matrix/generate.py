@@ -4,14 +4,15 @@ import itertools
 import json
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 THIS_DIR = Path(__file__).parent.resolve()
 
 
 @dataclass
 class Config:
-    architecture: list[dict]
-    os: list[dict]
+    architecture: list[dict[str, Any]]
+    os: list[dict[str, Any]]
     build_type: list[str]
     cmake_args: list[str]
 
@@ -32,30 +33,29 @@ We will further set additional CMake arguments as follows:
 """
 
 
-def build_config_name(os_entry: dict, architecture: dict, build_type: str) -> str:
-    name = os_entry["distro_name"]
-    if (n := os_entry["distro_version"]) != "":
-        name += f"-{n}"
-    if (n := os_entry["compiler_name"]) != "":
-        name += f"-{n}"
-    if (n := os_entry["compiler_version"]) != "":
-        name += f"-{n}"
+def build_config_name(
+    os_entry: dict[str, Any], architecture: dict[str, Any], build_type: str
+) -> str:
+    parts = [os_entry["distro_name"]]
+    for key in ("distro_version", "compiler_name", "compiler_version"):
+        if value := os_entry[key]:
+            parts.append(value)
     platform = architecture["platform"]
-    name += f"-{platform[platform.find('/') + 1:]}"
-    name += f"-{build_type.lower()}"
-    return name
+    parts.append(platform[platform.find("/") + 1 :])
+    parts.append(build_type.lower())
+    return "-".join(parts)
 
 
-def build_container_image(os_entry: dict) -> str:
-    return (
-        f"ghcr.io/xrplf/ci/{os_entry['distro_name']}-{os_entry['distro_version']}:"
-        f"{os_entry['compiler_name']}-{os_entry['compiler_version']}-sha-{os_entry['image_sha']}"
-    )
+def build_container_image(os_entry: dict[str, Any]) -> str:
+    image = f"ghcr.io/xrplf/ci/{os_entry['distro_name']}-{os_entry['distro_version']}"
+    tag = f"{os_entry['compiler_name']}-{os_entry['compiler_version']}-sha-{os_entry['image_sha']}"
+    return f"{image}:{tag}"
 
 
-def generate_packaging_matrix(config: Config) -> list:
-    """Emit packaging entries for each os entry with a 'packaging' field.
-    Packaging always uses Release build on linux/amd64.
+def generate_packaging_matrix(config: Config) -> list[dict[str, str]]:
+    """Emit packaging entries for each os entry with `package: true`.
+    Packaging always uses Release build on linux/amd64. The package format
+    (deb or rpm) is inferred at runtime from the container's package manager.
     """
     architecture = next(
         (a for a in config.architecture if a["platform"] == "linux/amd64"),
@@ -66,19 +66,19 @@ def generate_packaging_matrix(config: Config) -> list:
 
     entries = []
     for os_entry in config.os:
-        for pkg_type in os_entry.get("packaging", []):
-            config_name = build_config_name(os_entry, architecture, "Release")
-            entries.append(
-                {
-                    "pkg_type": pkg_type,
-                    "artifact_name": f"xrpld-{config_name}",
-                    "container_image": build_container_image(os_entry),
-                }
-            )
+        if not os_entry.get("package", False):
+            continue
+        config_name = build_config_name(os_entry, architecture, "Release")
+        entries.append(
+            {
+                "artifact_name": f"xrpld-{config_name}",
+                "container_image": build_container_image(os_entry),
+            }
+        )
     return entries
 
 
-def generate_strategy_matrix(all: bool, config: Config) -> list:
+def generate_strategy_matrix(all: bool, config: Config) -> list[dict[str, Any]]:
     configurations = []
     for architecture, os, build_type, cmake_args in itertools.product(
         config.architecture, config.os, config.build_type, config.cmake_args
@@ -377,7 +377,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "-p",
         "--packaging",
-        help="Emit the packaging matrix (derived from the 'packaging' field on os entries) instead of the build/test matrix.",
+        help="Emit the packaging matrix (derived from the 'package' field on os entries) instead of the build/test matrix.",
         action="store_true",
     )
     args = parser.parse_args()
