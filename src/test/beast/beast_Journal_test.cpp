@@ -1,5 +1,7 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
+
+#include <string>
 
 namespace beast {
 
@@ -16,7 +18,7 @@ public:
         {
         }
 
-        int
+        [[nodiscard]] int
         count() const
         {
             return m_count;

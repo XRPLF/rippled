@@ -40,13 +40,13 @@ public:
     }
 
     void
-    updateHash() final override
+    updateHash() final
     {
         hash_ = SHAMapHash{sha512Half(HashPrefix::txNode, item_->slice(), item_->key())};
     }
 
     void
-    serializeForWire(Serializer& s) const final override
+    serializeForWire(Serializer& s) const final
     {
         s.addRaw(item_->slice());
         s.addBitString(item_->key());
@@ -54,7 +54,7 @@ public:
     }
 
     void
-    serializeWithPrefix(Serializer& s) const final override
+    serializeWithPrefix(Serializer& s) const final
     {
         s.add32(HashPrefix::txNode);
         s.addRaw(item_->slice());

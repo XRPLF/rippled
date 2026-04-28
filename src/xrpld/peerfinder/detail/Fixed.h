@@ -2,8 +2,7 @@
 
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 /** Metadata for a Fixed slot. */
 class Fixed
@@ -16,7 +15,7 @@ public:
     Fixed(Fixed const&) = default;
 
     /** Returns the time after which we should allow a connection attempt. */
-    clock_type::time_point const&
+    [[nodiscard]] clock_type::time_point const&
     when() const
     {
         return m_when;
@@ -43,5 +42,4 @@ private:
     std::size_t m_failures{0};
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

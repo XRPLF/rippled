@@ -63,19 +63,19 @@ public:
         init(fieldName);
     }
 
-    SField const&
+    [[nodiscard]] SField const&
     sField() const
     {
         return sField_.get();
     }
 
-    SOEStyle
+    [[nodiscard]] SOEStyle
     style() const
     {
         return style_;
     }
 
-    SOETxMPTIssue
+    [[nodiscard]] SOETxMPTIssue
     supportMPT() const
     {
         return supportMpt_;
@@ -110,42 +110,42 @@ public:
         std::initializer_list<SOElement> commonFields = {});
 
     /* Provide for the enumeration of fields */
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     begin() const
     {
         return elements_.cbegin();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     cbegin() const
     {
         return begin();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     end() const
     {
         return elements_.cend();
     }
 
-    std::vector<SOElement>::const_iterator
+    [[nodiscard]] std::vector<SOElement>::const_iterator
     cend() const
     {
         return end();
     }
 
     /** The number of entries in this template */
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return elements_.size();
     }
 
     /** Retrieve the position of a named field. */
-    int
+    [[nodiscard]] int
     getIndex(SField const&) const;
 
-    SOEStyle
+    [[nodiscard]] SOEStyle
     style(SField const& sf) const
     {
         return elements_[indices_[sf.getNum()]].style();

@@ -7,8 +7,13 @@
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
+// Include only the specific Boost.Coroutine2 headers actually used here.
+// Avoid `boost/coroutine2/all.hpp` because it transitively pulls in
+// `boost/context/pooled_fixedsize_stack.hpp`, whose `.malloc()` / `.free()`
+// member calls on `boost::pool` collide with MSVC's `_CRTDBG_MAP_ALLOC` macros
+// in Debug builds (see cmake/XrplCompiler.cmake).
 #include <boost/context/protected_fixedsize_stack.hpp>
-#include <boost/coroutine2/all.hpp>
+#include <boost/coroutine2/coroutine.hpp>
 
 #include <set>
 
@@ -128,7 +133,7 @@ public:
         beast::Journal journal,
         Logs& logs,
         perf::PerfLog& perfLog);
-    ~JobQueue();
+    ~JobQueue() override;
 
     /** Adds a job to the JobQueue.
 
@@ -141,8 +146,7 @@ public:
     */
     template <
         typename JobHandler,
-        typename =
-            std::enable_if_t<std::is_same<decltype(std::declval<JobHandler&&>()()), void>::value>>
+        typename = std::enable_if_t<std::is_same_v<decltype(std::declval<JobHandler&&>()()), void>>>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
     {

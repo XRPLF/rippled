@@ -23,6 +23,7 @@
 #include <functional>
 #include <memory>
 #include <mutex>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -93,7 +94,7 @@ public:
         endpoint_type remote_address,
         ConstBufferSequence const& buffers);
 
-    virtual ~BaseHTTPPeer();
+    ~BaseHTTPPeer() override;
 
     Session&
     session()
@@ -195,7 +196,7 @@ BaseHTTPPeer<Handler, Impl>::BaseHTTPPeer(
     , handler_(handler)
     , work_(boost::asio::make_work_guard(executor))
     , strand_(boost::asio::make_strand(executor))
-    , remote_address_(remote_address)
+    , remote_address_(std::move(remote_address))
     , journal_(journal)
 {
     read_buf_.commit(
@@ -219,10 +220,12 @@ void
 BaseHTTPPeer<Handler, Impl>::close()
 {
     if (!strand_.running_in_this_thread())
+    {
         return post(
             strand_,
             std::bind(
                 (void (BaseHTTPPeer::*)(void))&BaseHTTPPeer::close, impl().shared_from_this()));
+    }
     boost::beast::get_lowest_layer(impl().stream_).close();
 }
 
@@ -398,11 +401,12 @@ BaseHTTPPeer<Handler, Impl>::write(void const* buf, std::size_t bytes)
         }())
     {
         if (!strand_.running_in_this_thread())
+        {
             return post(
                 strand_,
                 std::bind(&BaseHTTPPeer::on_write, impl().shared_from_this(), error_code{}, 0));
-        else
-            return on_write(error_code{}, 0);
+        }
+        return on_write(error_code{}, 0);
     }
 }
 
@@ -436,8 +440,10 @@ void
 BaseHTTPPeer<Handler, Impl>::complete()
 {
     if (!strand_.running_in_this_thread())
+    {
         return post(
             strand_, std::bind(&BaseHTTPPeer<Handler, Impl>::complete, impl().shared_from_this()));
+    }
 
     message_ = {};
     complete_ = true;
@@ -464,12 +470,14 @@ void
 BaseHTTPPeer<Handler, Impl>::close(bool graceful)
 {
     if (!strand_.running_in_this_thread())
+    {
         return post(
             strand_,
             std::bind(
                 (void (BaseHTTPPeer::*)(bool))&BaseHTTPPeer<Handler, Impl>::close,
                 impl().shared_from_this(),
                 graceful));
+    }
 
     complete_ = true;
     if (graceful)

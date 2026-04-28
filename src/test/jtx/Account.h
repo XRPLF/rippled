@@ -8,9 +8,7 @@
 #include <string>
 #include <unordered_map>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+namespace xrpl::test::jtx {
 
 class IOU;
 
@@ -59,21 +57,21 @@ public:
     Account(AcctStringType stringType, std::string base58SeedStr);
 
     /** Return the name */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
     /** Return the public key. */
-    PublicKey const&
+    [[nodiscard]] PublicKey const&
     pk() const
     {
         return pk_;
     }
 
     /** Return the secret key. */
-    SecretKey const&
+    [[nodiscard]] SecretKey const&
     sk() const
     {
         return sk_;
@@ -83,14 +81,14 @@ public:
 
         The Account ID is the uint160 hash of the public key.
     */
-    AccountID
+    [[nodiscard]] AccountID
     id() const
     {
         return id_;
     }
 
     /** Returns the human readable public key. */
-    std::string const&
+    [[nodiscard]] std::string const&
     human() const
     {
         return human_;
@@ -143,6 +141,4 @@ operator<=>(Account const& lhs, Account const& rhs) noexcept
     return lhs.id() <=> rhs.id();
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

@@ -37,7 +37,7 @@ public:
     bool
     Skip(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] google::protobuf::int64
     ByteCount() const override
     {
         return count_;
@@ -124,7 +124,7 @@ private:
 public:
     explicit ZeroCopyOutputStream(Streambuf& streambuf, std::size_t blockSize);
 
-    ~ZeroCopyOutputStream();
+    ~ZeroCopyOutputStream() override;
 
     bool
     Next(void** data, int* size) override;
@@ -132,7 +132,7 @@ public:
     void
     BackUp(int count) override;
 
-    google::protobuf::int64
+    [[nodiscard]] google::protobuf::int64
     ByteCount() const override
     {
         return count_;

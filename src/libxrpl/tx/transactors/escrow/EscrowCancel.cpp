@@ -1,3 +1,5 @@
+#include <xrpl/tx/transactors/escrow/EscrowCancel.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
@@ -5,10 +7,24 @@
 #include <xrpl/ledger/helpers/EscrowHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/tx/transactors/escrow/EscrowCancel.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <memory>
+#include <variant>
 
 namespace xrpl {
 
@@ -32,13 +48,13 @@ escrowCancelPreclaimHelper<Issue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID const issuer = amount.getIssuer();
+    AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account); !isTesSuccess(ter))
+    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), account); !isTesSuccess(ter))
         return ter;
 
     return tesSUCCESS;
@@ -203,4 +219,22 @@ EscrowCancel::doApply()
     return tesSUCCESS;
 }
 
+void
+EscrowCancel::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+EscrowCancel::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
 }  // namespace xrpl

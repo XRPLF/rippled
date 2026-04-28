@@ -1,5 +1,6 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_errors.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
@@ -7,10 +8,15 @@
 #include <gtest/gtest.h>
 
 #include <algorithm>
-#include <cmath>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <limits>
+#include <numbers>
 #include <regex>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -654,8 +660,8 @@ TEST(json_value, edge_cases)
 
     {
         Json::Value intString{std::to_string(overflow)};
-        EXPECT_THROW(intString.asUInt(), beast::BadLexicalCast);
-        EXPECT_THROW(intString.asAbsUInt(), Json::error);
+        EXPECT_THROW([&] { return intString.asUInt(); }(), beast::BadLexicalCast);
+        EXPECT_THROW([&] { return intString.asAbsUInt(); }(), Json::error);
 
         intString = "4294967295";
         EXPECT_EQ(intString.asUInt(), 4294967295u);
@@ -666,17 +672,17 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(intString.asAbsUInt(), 0);
 
         intString = "-1";
-        EXPECT_THROW(intString.asUInt(), beast::BadLexicalCast);
+        EXPECT_THROW([&] { return intString.asUInt(); }(), beast::BadLexicalCast);
         EXPECT_EQ(intString.asAbsUInt(), 1);
 
         intString = "-4294967295";
         EXPECT_EQ(intString.asAbsUInt(), 4294967295);
 
         intString = "-4294967296";
-        EXPECT_THROW(intString.asAbsUInt(), Json::error);
+        EXPECT_THROW([&] { return intString.asAbsUInt(); }(), Json::error);
 
         intString = "2147483648";
-        EXPECT_THROW(intString.asInt(), beast::BadLexicalCast);
+        EXPECT_THROW([&] { return intString.asInt(); }(), beast::BadLexicalCast);
         EXPECT_EQ(intString.asAbsUInt(), 2147483648);
 
         intString = "2147483647";
@@ -688,14 +694,14 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(intString.asAbsUInt(), 2147483648LL);
 
         intString = "-2147483649";
-        EXPECT_THROW(intString.asInt(), beast::BadLexicalCast);
+        EXPECT_THROW([&] { return intString.asInt(); }(), beast::BadLexicalCast);
         EXPECT_EQ(intString.asAbsUInt(), 2147483649);
     }
 
     {
         Json::Value intReal{4294967297.0};
-        EXPECT_THROW(intReal.asUInt(), Json::error);
-        EXPECT_THROW(intReal.asAbsUInt(), Json::error);
+        EXPECT_THROW([&] { return intReal.asUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return intReal.asAbsUInt(); }(), Json::error);
 
         intReal = 4294967295.0;
         EXPECT_EQ(intReal.asUInt(), 4294967295u);
@@ -706,17 +712,17 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(intReal.asAbsUInt(), 0);
 
         intReal = -1.0;
-        EXPECT_THROW(intReal.asUInt(), Json::error);
+        EXPECT_THROW([&] { return intReal.asUInt(); }(), Json::error);
         EXPECT_EQ(intReal.asAbsUInt(), 1);
 
         intReal = -4294967295.0;
         EXPECT_EQ(intReal.asAbsUInt(), 4294967295);
 
         intReal = -4294967296.0;
-        EXPECT_THROW(intReal.asAbsUInt(), Json::error);
+        EXPECT_THROW([&] { return intReal.asAbsUInt(); }(), Json::error);
 
         intReal = 2147483648.0;
-        EXPECT_THROW(intReal.asInt(), Json::error);
+        EXPECT_THROW([&] { return intReal.asInt(); }(), Json::error);
         EXPECT_EQ(intReal.asAbsUInt(), 2147483648);
 
         intReal = 2147483647.0;
@@ -728,7 +734,7 @@ TEST(json_value, edge_cases)
         EXPECT_EQ(intReal.asAbsUInt(), 2147483648LL);
 
         intReal = -2147483649.0;
-        EXPECT_THROW(intReal.asInt(), Json::error);
+        EXPECT_THROW([&] { return intReal.asInt(); }(), Json::error);
         EXPECT_EQ(intReal.asAbsUInt(), 2147483649);
     }
 }
@@ -885,7 +891,7 @@ TEST(json_value, conversions)
         // val.asCString() should trigger an assertion failure
         EXPECT_EQ(val.asString(), "-1234");
         EXPECT_EQ(val.asInt(), -1234);
-        EXPECT_THROW(val.asUInt(), Json::error);
+        EXPECT_THROW([&] { return val.asUInt(); }(), Json::error);
         EXPECT_EQ(val.asAbsUInt(), 1234u);
         EXPECT_EQ(val.asDouble(), -1234.0);
         EXPECT_TRUE(val.asBool());
@@ -950,7 +956,7 @@ TEST(json_value, conversions)
         EXPECT_EQ(val.asInt(), 54321);
         EXPECT_EQ(val.asUInt(), 54321u);
         EXPECT_EQ(val.asAbsUInt(), 54321);
-        EXPECT_THROW(val.asDouble(), Json::error);
+        EXPECT_THROW([&] { return val.asDouble(); }(), Json::error);
         EXPECT_TRUE(val.asBool());
 
         EXPECT_FALSE(val.isConvertibleTo(Json::nullValue));
@@ -968,10 +974,10 @@ TEST(json_value, conversions)
         EXPECT_TRUE(val.isString());
         EXPECT_EQ(val.asCString(), nullptr);
         EXPECT_EQ(val.asString(), "");
-        EXPECT_THROW(val.asInt(), std::exception);
-        EXPECT_THROW(val.asUInt(), std::exception);
-        EXPECT_THROW(val.asAbsUInt(), std::exception);
-        EXPECT_THROW(val.asDouble(), std::exception);
+        EXPECT_THROW([&] { return val.asInt(); }(), std::exception);
+        EXPECT_THROW([&] { return val.asUInt(); }(), std::exception);
+        EXPECT_THROW([&] { return val.asAbsUInt(); }(), std::exception);
+        EXPECT_THROW([&] { return val.asDouble(); }(), std::exception);
         EXPECT_TRUE(val.asBool() == false);
 
         EXPECT_TRUE(val.isConvertibleTo(Json::nullValue));
@@ -1030,11 +1036,11 @@ TEST(json_value, conversions)
         Json::Value const val(Json::arrayValue);
         EXPECT_TRUE(val.isArray());
         // val.asCString should trigger an assertion failure
-        EXPECT_THROW(val.asString(), Json::error);
-        EXPECT_THROW(val.asInt(), Json::error);
-        EXPECT_THROW(val.asUInt(), Json::error);
-        EXPECT_THROW(val.asAbsUInt(), Json::error);
-        EXPECT_THROW(val.asDouble(), Json::error);
+        EXPECT_THROW([&] { return val.asString(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asInt(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asAbsUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asDouble(); }(), Json::error);
         EXPECT_FALSE(val.asBool());  // empty or not
 
         EXPECT_TRUE(val.isConvertibleTo(Json::nullValue));
@@ -1051,11 +1057,11 @@ TEST(json_value, conversions)
         Json::Value const val(Json::objectValue);
         EXPECT_TRUE(val.isObject());
         // val.asCString should trigger an assertion failure
-        EXPECT_THROW(val.asString(), Json::error);
-        EXPECT_THROW(val.asInt(), Json::error);
-        EXPECT_THROW(val.asUInt(), Json::error);
-        EXPECT_THROW(val.asAbsUInt(), Json::error);
-        EXPECT_THROW(val.asDouble(), Json::error);
+        EXPECT_THROW([&] { return val.asString(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asInt(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asAbsUInt(); }(), Json::error);
+        EXPECT_THROW([&] { return val.asDouble(); }(), Json::error);
         EXPECT_FALSE(val.asBool());  // empty or not
 
         EXPECT_TRUE(val.isConvertibleTo(Json::nullValue));
@@ -1099,7 +1105,7 @@ TEST(json_value, access_members)
     EXPECT_FALSE(val.isValidIndex(0));
     EXPECT_FALSE(val.isMember("key"));
 
-    val = 3.14159;
+    val = std::numbers::pi;
     EXPECT_EQ(val.type(), Json::realValue);
     EXPECT_EQ(val.size(), 0);
     EXPECT_FALSE(val.isValidIndex(0));

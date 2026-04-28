@@ -274,9 +274,9 @@ public:
         explicit PublisherListStats(ListDisposition d);
         PublisherListStats(ListDisposition d, PublicKey key, PublisherStatus stat, std::size_t seq);
 
-        ListDisposition
+        [[nodiscard]] ListDisposition
         bestDisposition() const;
-        ListDisposition
+        [[nodiscard]] ListDisposition
         worstDisposition() const;
         void
         mergeDispositions(PublisherListStats const& src);
