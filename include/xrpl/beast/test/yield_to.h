@@ -43,8 +43,10 @@ public:
         : work_(boost::asio::make_work_guard(ios_))
     {
         threads_.reserve(concurrency);
-        while ((concurrency--) != 0u)
+        for (std::size_t i = 0; i < concurrency; ++i)
+        {
             threads_.emplace_back([&] { ios_.run(); });
+        }
     }
 
     ~enable_yield_to()
