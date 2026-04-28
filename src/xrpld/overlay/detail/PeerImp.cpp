@@ -1,6 +1,5 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 
-#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -10,6 +9,7 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxSpanNames.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/Validations.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
@@ -1963,6 +1963,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         telemetry::seg::consensus,
         telemetry::cons_span::op::proposalReceive));
     span->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
+    span->setAttribute(telemetry::cons_span::attr::round, static_cast<int64_t>(set.proposeseq()));
 
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(

@@ -31,7 +31,7 @@
  *    +-- consensus.establish                     [main thread, child]
  *    |     Created: Consensus::startEstablishTracing()
  *    |     Ended:   Consensus::phaseEstablish() on accept
- *    |     Attrs:   converge_percent, tx_count, disputes_count
+ *    |     Attrs:   converge_percent, establish_count, proposers
  *    |
  *    +-- consensus.update_positions              [main thread]
  *    |     Created: Consensus::updateOurPositions()
@@ -166,9 +166,6 @@ inline constexpr auto resolutionDirection = join(xrplConsensus, makeStr("resolut
 inline constexpr auto convergePercent = join(xrplConsensus, makeStr("converge_percent"));
 /// "xrpl.consensus.establish_count"
 inline constexpr auto establishCount = join(xrplConsensus, makeStr("establish_count"));
-/// "xrpl.consensus.proposers_agreed"
-inline constexpr auto proposersAgreed = join(xrplConsensus, makeStr("proposers_agreed"));
-
 // Avalanche threshold attributes
 /// "xrpl.consensus.avalanche_threshold"
 inline constexpr auto avalancheThreshold = join(xrplConsensus, makeStr("avalanche_threshold"));
@@ -189,8 +186,6 @@ inline constexpr auto thresholdPercent = join(xrplConsensus, makeStr("threshold_
 inline constexpr auto result = join(xrplConsensus, makeStr("result"));
 /// "xrpl.consensus.quorum"
 inline constexpr auto quorum = join(xrplConsensus, makeStr("quorum"));
-/// "xrpl.consensus.validation_count"
-inline constexpr auto validationCount = join(xrplConsensus, makeStr("validation_count"));
 
 // Trace strategy attribute
 /// "xrpl.consensus.trace_strategy"

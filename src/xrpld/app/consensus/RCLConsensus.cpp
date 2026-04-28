@@ -1,6 +1,5 @@
 #include <xrpld/app/consensus/RCLConsensus.h>
 
-#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
 #include <xrpld/app/consensus/RCLCxLedger.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
@@ -19,6 +18,7 @@
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
@@ -495,7 +495,8 @@ RCLConsensus::Adaptor::makeAcceptSpan(Result const& result)
     span->setAttribute(
         telemetry::cons_span::attr::roundTimeMs,
         static_cast<int64_t>(result.roundTime.read().count()));
-    span->setAttribute(telemetry::cons_span::attr::quorum, static_cast<int64_t>(result.proposers));
+    span->setAttribute(
+        telemetry::cons_span::attr::quorum, static_cast<int64_t>(app_.getValidators().quorum()));
     return span;
 }
 
