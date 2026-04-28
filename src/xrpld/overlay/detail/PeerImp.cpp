@@ -1,5 +1,6 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 
+#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
@@ -1945,6 +1946,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         }
     }
 
+    {
+        using namespace telemetry;
+        auto span = SpanGuard::span(
+            TraceCategory::Consensus, seg::consensus, cons_span::op::proposalReceive);
+        span.setAttribute(cons_span::attr::trusted, isTrusted);
+    }
+
     JLOG(p_journal_.trace()) << "Proposal: " << (isTrusted ? "trusted" : "untrusted");
 
     auto proposal = RCLCxPeerPos(
@@ -2547,11 +2555,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // Create a receive span that links to the sender's trace context
         // (if propagated). shared_ptr keeps it alive across the job boundary.
         auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
-        span->setAttribute("xrpl.consensus.trusted", isTrusted);
+        span->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
         if (val->isFieldPresent(sfLedgerSequence))
         {
             span->setAttribute(
-                "xrpl.consensus.ledger.seq",
+                telemetry::cons_span::attr::ledgerSeq,
                 static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
         }
 
