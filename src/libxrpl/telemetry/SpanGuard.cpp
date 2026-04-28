@@ -20,8 +20,9 @@
 
 #ifdef XRPL_ENABLE_TELEMETRY
 
-#include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanGuard.h>
+
+#include <xrpl/telemetry/DiscardFlag.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
 
