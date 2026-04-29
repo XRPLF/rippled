@@ -1,6 +1,6 @@
 # Observability Data Collection Reference
 
-> **Audience**: Developers and operators. This is the single source of truth for all telemetry data collected by rippled's observability stack.
+> **Audience**: Developers and operators. This is the single source of truth for all telemetry data collected by xrpld's observability stack.
 >
 > **Related docs**: [docs/telemetry-runbook.md](../docs/telemetry-runbook.md) (operator runbook with alerting and troubleshooting) | [03-implementation-strategy.md](./03-implementation-strategy.md) (code structure and performance optimization) | [04-code-samples.md](./04-code-samples.md) (C++ instrumentation examples)
 
@@ -8,7 +8,7 @@
 
 ```mermaid
 graph LR
-    subgraph rippledNode["rippled Node"]
+    subgraph xrpldNode["xrpld Node"]
         A["Trace Macros<br/>XRPL_TRACE_SPAN<br/>(OTLP/HTTP exporter)"]
         B["beast::insight<br/>StatsD metrics<br/>(UDP sender)"]
     end
@@ -42,7 +42,7 @@ graph LR
     BP -->|"OTLP/gRPC :4317"| D
 
     SM -->|"span_calls_total<br/>span_duration_ms<br/>(6 dimension labels)"| E
-    R2 -->|"rippled_* gauges<br/>rippled_* counters<br/>rippled_* summaries"| E
+    R2 -->|"xrpld_* gauges<br/>xrpld_* counters<br/>xrpld_* summaries"| E
 
     E -->|"Prometheus<br/>data source"| F
     D -->|"Tempo<br/>data source"| F
@@ -56,7 +56,7 @@ graph LR
     style D fill:#f0ad4e,color:#000,stroke:#c78c2e
     style E fill:#f0ad4e,color:#000,stroke:#c78c2e
     style F fill:#5bc0de,color:#000,stroke:#3aa8c1
-    style rippledNode fill:#1a2633,color:#ccc,stroke:#4a90d9
+    style xrpldNode fill:#1a2633,color:#ccc,stroke:#4a90d9
     style collector fill:#1a3320,color:#ccc,stroke:#5cb85c
     style backends fill:#332a1a,color:#ccc,stroke:#f0ad4e
     style metrics fill:#332a1a,color:#ccc,stroke:#f0ad4e
@@ -94,9 +94,9 @@ Controlled by `trace_rpc=1` in `[telemetry]` config.
 | `rpc.ws_upgrade`     | —                  | ServerHandler.cpp | WebSocket upgrade handshake (error path)                                 |
 | `rpc.command.<name>` | `rpc.process`      | RPCHandler.cpp    | Per-command span (e.g., `rpc.command.server_info`, `rpc.command.ledger`) |
 
-**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"rpc.http_request|rpc.command.*"}`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"rpc.http_request|rpc.command.*"}`
 
-**Grafana dashboard**: _RPC Performance_ (`rippled-rpc-perf`)
+**Grafana dashboard**: _RPC Performance_ (`xrpld-rpc-perf`)
 
 #### Transaction Spans
 
@@ -108,9 +108,9 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 | `tx.receive` | —              | PeerImp.cpp     | Raw transaction received from peer overlay (before deduplication) |
 | `tx.apply`   | `ledger.build` | BuildLedger.cpp | Transaction set applied to new ledger during consensus            |
 
-**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"tx.process|tx.receive"}`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"tx.process|tx.receive"}`
 
-**Grafana dashboard**: _Transaction Overview_ (`rippled-transactions`)
+**Grafana dashboard**: _Transaction Overview_ (`xrpld-transactions`)
 
 #### PathFind Spans
 
@@ -124,9 +124,9 @@ Controlled by `trace_rpc=1` in `[telemetry]` config (pathfinding spans fire with
 | `pathfind.discover`   | `pathfind.compute` | Pathfinder.cpp   | Graph exploration phase (Pathfinder::find)               |
 | `pathfind.rank`       | `pathfind.compute` | Pathfinder.cpp   | Path ranking and selection phase                         |
 
-**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"pathfind.*"}`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"pathfind.*"}`
 
-**Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`rippled-statsd-rpc`) for StatsD timers; span-derived metrics via _RPC Performance_ (`rippled-rpc-perf`)
+**Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`xrpld-statsd-rpc`) for StatsD timers; span-derived metrics via _RPC Performance_ (`xrpld-rpc-perf`)
 
 #### TxQ Spans
 
@@ -141,9 +141,9 @@ Controlled by `trace_transactions=1` in `[telemetry]` config.
 | `txq.accept.tx`    | `txq.accept`  | TxQ.cpp     | Per-transaction apply within accept loop             |
 | `txq.cleanup`      | —             | TxQ.cpp     | Post-close cleanup (expire old transactions)         |
 
-**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"txq.*"}`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"txq.*"}`
 
-**Grafana dashboard**: _Transaction Overview_ (`rippled-transactions`)
+**Grafana dashboard**: _Transaction Overview_ (`xrpld-transactions`)
 
 #### gRPC Spans
 
@@ -153,7 +153,7 @@ Controlled by `trace_rpc=1` in `[telemetry]` config.
 | -------------- | ------ | -------------- | ----------------------------------------------------------------------------- |
 | `grpc.request` | —      | GRPCServer.cpp | Single gRPC request (GetLedger, GetLedgerData, GetLedgerDiff, GetLedgerEntry) |
 
-**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name="grpc.request"}`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name="grpc.request"}`
 
 #### Consensus Spans
 
@@ -174,9 +174,9 @@ Controlled by `trace_consensus=1` in `[telemetry]` config.
 
 > **Note**: `toDisplayString(ConsensusMode)` (in `ConsensusTypes.h`) provides Title Case display names for mode attribute values: `"Proposing"`, `"Observing"`, `"Wrong Ledger"`, `"Switched Ledger"`. This is separate from `to_string()` which returns stable log-format strings.
 
-**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"consensus.*"}`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"consensus.*"}`
 
-**Grafana dashboard**: _Consensus Health_ (`rippled-consensus`)
+**Grafana dashboard**: _Consensus Health_ (`xrpld-consensus`)
 
 #### Ledger Spans
 
@@ -188,9 +188,9 @@ Controlled by `trace_ledger=1` in `[telemetry]` config.
 | `ledger.validate` | —      | LedgerMaster.cpp | Ledger promoted to validated status            |
 | `ledger.store`    | —      | LedgerMaster.cpp | Ledger stored to database/history              |
 
-**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"ledger.*"}`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"ledger.*"}`
 
-**Grafana dashboard**: _Ledger Operations_ (`rippled-ledger-ops`)
+**Grafana dashboard**: _Ledger Operations_ (`xrpld-ledger-ops`)
 
 #### Peer Spans
 
@@ -201,9 +201,9 @@ Controlled by `trace_peer=1` in `[telemetry]` config. **Disabled by default** (h
 | `peer.proposal.receive`   | —      | PeerImp.cpp | Consensus proposal received from peer |
 | `peer.validation.receive` | —      | PeerImp.cpp | Validation message received from peer |
 
-**Where to find**: Tempo → TraceQL: `{resource.service.name="rippled" && name=~"peer.*"}`
+**Where to find**: Tempo → TraceQL: `{resource.service.name="xrpld" && name=~"peer.*"}`
 
-**Grafana dashboard**: _Peer Network_ (`rippled-peer-net`)
+**Grafana dashboard**: _Peer Network_ (`xrpld-peer-net`)
 
 ---
 
@@ -362,7 +362,7 @@ Every span can carry key-value attributes that provide context for filtering and
 
 > **See also**: [01-architecture-analysis.md](./01-architecture-analysis.md) §1.8.2 for how span-derived metrics map to operational insights.
 
-The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Errors, Duration) metrics from every span. No custom metrics code in rippled is needed.
+The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Errors, Duration) metrics from every span. No custom metrics code in xrpld is needed.
 
 | Prometheus Metric                                  | Type      | Description                                                                    |
 | -------------------------------------------------- | --------- | ------------------------------------------------------------------------------ |
@@ -392,7 +392,7 @@ The OTel Collector's SpanMetrics connector automatically generates RED (Rate, Er
 
 > **See also**: [02-design-decisions.md](./02-design-decisions.md) for the beast::insight coexistence design. [06-implementation-phases.md](./06-implementation-phases.md) for the Phase 6 metric inventory.
 
-These are system-level metrics emitted by rippled's `beast::insight` framework via StatsD UDP. They cover operational data that doesn't map to individual trace spans.
+These are system-level metrics emitted by xrpld's `beast::insight` framework via StatsD UDP. They cover operational data that doesn't map to individual trace spans.
 
 ### Configuration
 
@@ -400,56 +400,56 @@ These are system-level metrics emitted by rippled's `beast::insight` framework v
 [insight]
 server=statsd
 address=127.0.0.1:8125
-prefix=rippled
+prefix=xrpld
 ```
 
 ### 2.1 Gauges
 
-| Prometheus Metric                                   | Source File           | Description                               | Typical Range                   |
-| --------------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
-| `rippled_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
-| `rippled_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
-| `rippled_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
-| `rippled_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
-| `rippled_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
-| `rippled_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
-| `rippled_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
-| `rippled_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
-| `rippled_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
-| `rippled_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
-| `rippled_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
-| `rippled_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
-| `rippled_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
-| `rippled_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
-| `rippled_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
-| `rippled_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
-| `rippled_job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
+| Prometheus Metric                                 | Source File           | Description                               | Typical Range                   |
+| ------------------------------------------------- | --------------------- | ----------------------------------------- | ------------------------------- |
+| `xrpld_LedgerMaster_Validated_Ledger_Age`         | LedgerMaster.h        | Seconds since last validated ledger       | 0–10 (healthy), >30 (stale)     |
+| `xrpld_LedgerMaster_Published_Ledger_Age`         | LedgerMaster.h        | Seconds since last published ledger       | 0–10 (healthy)                  |
+| `xrpld_State_Accounting_Disconnected_duration`    | NetworkOPs.cpp        | Cumulative seconds in Disconnected state  | Monotonic                       |
+| `xrpld_State_Accounting_Connected_duration`       | NetworkOPs.cpp        | Cumulative seconds in Connected state     | Monotonic                       |
+| `xrpld_State_Accounting_Syncing_duration`         | NetworkOPs.cpp        | Cumulative seconds in Syncing state       | Monotonic                       |
+| `xrpld_State_Accounting_Tracking_duration`        | NetworkOPs.cpp        | Cumulative seconds in Tracking state      | Monotonic                       |
+| `xrpld_State_Accounting_Full_duration`            | NetworkOPs.cpp        | Cumulative seconds in Full state          | Monotonic (should dominate)     |
+| `xrpld_State_Accounting_Disconnected_transitions` | NetworkOPs.cpp        | Count of transitions to Disconnected      | Low                             |
+| `xrpld_State_Accounting_Connected_transitions`    | NetworkOPs.cpp        | Count of transitions to Connected         | Low                             |
+| `xrpld_State_Accounting_Syncing_transitions`      | NetworkOPs.cpp        | Count of transitions to Syncing           | Low                             |
+| `xrpld_State_Accounting_Tracking_transitions`     | NetworkOPs.cpp        | Count of transitions to Tracking          | Low                             |
+| `xrpld_State_Accounting_Full_transitions`         | NetworkOPs.cpp        | Count of transitions to Full              | Low (should be 1 after startup) |
+| `xrpld_Peer_Finder_Active_Inbound_Peers`          | PeerfinderManager.cpp | Active inbound peer connections           | 0–85                            |
+| `xrpld_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections          | 10–21                           |
+| `xrpld_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count       | Low growth                      |
+| `xrpld_Overlay_Peer_Disconnects_Charges`          | OverlayImpl.cpp       | Disconnects due to resource limit charges | Low growth (subset of above)    |
+| `xrpld_job_count`                                 | JobQueue.cpp          | Current job queue depth                   | 0–100 (healthy)                 |
 
-**Grafana dashboard**: _Node Health (StatsD)_ (`rippled-statsd-node-health`)
+**Grafana dashboard**: _Node Health (StatsD)_ (`xrpld-statsd-node-health`)
 
 ### 2.2 Counters
 
-| Prometheus Metric                 | Source File        | Description                                   |
-| --------------------------------- | ------------------ | --------------------------------------------- |
-| `rippled_rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
-| `rippled_ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
-| `rippled_ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
-| `rippled_warn`                    | Logic.h            | Resource manager warnings issued              |
-| `rippled_drop`                    | Logic.h            | Resource manager drops (connections rejected) |
+| Prometheus Metric               | Source File        | Description                                   |
+| ------------------------------- | ------------------ | --------------------------------------------- |
+| `xrpld_rpc_requests`            | ServerHandler.cpp  | Total RPC requests received                   |
+| `xrpld_ledger_fetches`          | InboundLedgers.cpp | Inbound ledger fetch attempts                 |
+| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp  | Ledger hash mismatches detected               |
+| `xrpld_warn`                    | Logic.h            | Resource manager warnings issued              |
+| `xrpld_drop`                    | Logic.h            | Resource manager drops (connections rejected) |
 
-**Note**: `rippled_warn` and `rippled_drop` use non-standard StatsD meter type (`|m`). The OTel StatsD receiver only recognizes `|c`, `|g`, `|ms`, `|h`, `|s` — these metrics may be silently dropped. See Known Issues below.
+**Note**: `xrpld_warn` and `xrpld_drop` use non-standard StatsD meter type (`|m`). The OTel StatsD receiver only recognizes `|c`, `|g`, `|ms`, `|h`, `|s` — these metrics may be silently dropped. See Known Issues below.
 
-**Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`rippled-statsd-rpc`)
+**Grafana dashboard**: _RPC & Pathfinding (StatsD)_ (`xrpld-statsd-rpc`)
 
 ### 2.3 Histograms (from StatsD timers)
 
-| Prometheus Metric       | Source File       | Unit  | Description                    |
-| ----------------------- | ----------------- | ----- | ------------------------------ |
-| `rippled_rpc_time`      | ServerHandler.cpp | ms    | RPC response time distribution |
-| `rippled_rpc_size`      | ServerHandler.cpp | bytes | RPC response size distribution |
-| `rippled_ios_latency`   | Application.cpp   | ms    | I/O service loop latency       |
-| `rippled_pathfind_fast` | PathRequests.h    | ms    | Fast pathfinding duration      |
-| `rippled_pathfind_full` | PathRequests.h    | ms    | Full pathfinding duration      |
+| Prometheus Metric     | Source File       | Unit  | Description                    |
+| --------------------- | ----------------- | ----- | ------------------------------ |
+| `xrpld_rpc_time`      | ServerHandler.cpp | ms    | RPC response time distribution |
+| `xrpld_rpc_size`      | ServerHandler.cpp | bytes | RPC response size distribution |
+| `xrpld_ios_latency`   | Application.cpp   | ms    | I/O service loop latency       |
+| `xrpld_pathfind_fast` | PathRequests.h    | ms    | Fast pathfinding duration      |
+| `xrpld_pathfind_full` | PathRequests.h    | ms    | Full pathfinding duration      |
 
 Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
@@ -459,10 +459,10 @@ Quantiles collected: 0th, 50th, 90th, 95th, 99th, 100th percentile.
 
 For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), four gauges are emitted:
 
-- `rippled_{category}_Bytes_In`
-- `rippled_{category}_Bytes_Out`
-- `rippled_{category}_Messages_In`
-- `rippled_{category}_Messages_Out`
+- `xrpld_{category}_Bytes_In`
+- `xrpld_{category}_Bytes_Out`
+- `xrpld_{category}_Messages_In`
+- `xrpld_{category}_Messages_Out`
 
 **Key categories**:
 
@@ -481,7 +481,7 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 | `ping` / `status`                                                 | Keepalive and status       |
 | `set_get`                                                         | Set requests               |
 
-**Grafana dashboards**: _Network Traffic_ (`rippled-statsd-network`), _Overlay Traffic Detail_ (`rippled-statsd-overlay-detail`), _Ledger Data & Sync_ (`rippled-statsd-ledger-sync`)
+**Grafana dashboards**: _Network Traffic_ (`xrpld-statsd-network`), _Overlay Traffic Detail_ (`xrpld-statsd-overlay-detail`), _Ledger Data & Sync_ (`xrpld-statsd-ledger-sync`)
 
 ---
 
@@ -491,23 +491,23 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 
 ### 3.1 Span-Derived Dashboards (5)
 
-| Dashboard            | UID                    | Data Source              | Key Panels                                                                                                                                                                                               |
-| -------------------- | ---------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| RPC Performance      | `rippled-rpc-perf`     | Prometheus (SpanMetrics) | Request rate by command, p95 latency by command, error rate, heatmap, top commands                                                                                                                       |
-| Transaction Overview | `rippled-transactions` | Prometheus (SpanMetrics) | Processing rate, latency p95/p50, local vs relay split, apply duration, heatmap                                                                                                                          |
-| Consensus Health     | `rippled-consensus`    | Prometheus (SpanMetrics) | Round duration p95/p50, proposals rate, close duration, mode timeline, heatmap, close time correctness, resolution direction, close time drift, resolution change timeline, close time vote distribution |
-| Ledger Operations    | `rippled-ledger-ops`   | Prometheus (SpanMetrics) | Build rate, build duration, validation rate, store rate, build vs close comparison                                                                                                                       |
-| Peer Network         | `rippled-peer-net`     | Prometheus (SpanMetrics) | Proposal receive rate, validation receive rate, trusted vs untrusted breakdown                                                                                                                           |
+| Dashboard            | UID                  | Data Source              | Key Panels                                                                                                                                                                                               |
+| -------------------- | -------------------- | ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| RPC Performance      | `xrpld-rpc-perf`     | Prometheus (SpanMetrics) | Request rate by command, p95 latency by command, error rate, heatmap, top commands                                                                                                                       |
+| Transaction Overview | `xrpld-transactions` | Prometheus (SpanMetrics) | Processing rate, latency p95/p50, local vs relay split, apply duration, heatmap                                                                                                                          |
+| Consensus Health     | `xrpld-consensus`    | Prometheus (SpanMetrics) | Round duration p95/p50, proposals rate, close duration, mode timeline, heatmap, close time correctness, resolution direction, close time drift, resolution change timeline, close time vote distribution |
+| Ledger Operations    | `xrpld-ledger-ops`   | Prometheus (SpanMetrics) | Build rate, build duration, validation rate, store rate, build vs close comparison                                                                                                                       |
+| Peer Network         | `xrpld-peer-net`     | Prometheus (SpanMetrics) | Proposal receive rate, validation receive rate, trusted vs untrusted breakdown                                                                                                                           |
 
 ### 3.2 StatsD Dashboards (5)
 
-| Dashboard              | UID                             | Data Source         | Key Panels                                                                        |
-| ---------------------- | ------------------------------- | ------------------- | --------------------------------------------------------------------------------- |
-| Node Health            | `rippled-statsd-node-health`    | Prometheus (StatsD) | Ledger age, operating mode, I/O latency, job queue, fetch rate                    |
-| Network Traffic        | `rippled-statsd-network`        | Prometheus (StatsD) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category     |
-| RPC & Pathfinding      | `rippled-statsd-rpc`            | Prometheus (StatsD) | RPC rate, response time/size, pathfinding duration, resource warnings/drops       |
-| Overlay Traffic Detail | `rippled-statsd-overlay-detail` | Prometheus (StatsD) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
-| Ledger Data & Sync     | `rippled-statsd-ledger-sync`    | Prometheus (StatsD) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
+| Dashboard              | UID                           | Data Source         | Key Panels                                                                        |
+| ---------------------- | ----------------------------- | ------------------- | --------------------------------------------------------------------------------- |
+| Node Health            | `xrpld-statsd-node-health`    | Prometheus (StatsD) | Ledger age, operating mode, I/O latency, job queue, fetch rate                    |
+| Network Traffic        | `xrpld-statsd-network`        | Prometheus (StatsD) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category     |
+| RPC & Pathfinding      | `xrpld-statsd-rpc`            | Prometheus (StatsD) | RPC rate, response time/size, pathfinding duration, resource warnings/drops       |
+| Overlay Traffic Detail | `xrpld-statsd-overlay-detail` | Prometheus (StatsD) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
+| Ledger Data & Sync     | `xrpld-statsd-ledger-sync`    | Prometheus (StatsD) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
 
 ### 3.3 Consensus Close-Time Panels
 
@@ -525,14 +525,14 @@ The Consensus Health dashboard includes 5 close-time panels added in Phase 4:
 
 | Variable                | Source Attribute                      | Description                                                              |
 | ----------------------- | ------------------------------------- | ------------------------------------------------------------------------ |
-| `$node`                 | `exported_instance`                   | Filter by rippled node instance                                          |
+| `$node`                 | `exported_instance`                   | Filter by xrpld node instance                                            |
 | `$close_time_correct`   | `xrpl_consensus_close_time_correct`   | Filter by close time correctness (`true` / `false`)                      |
 | `$resolution_direction` | `xrpl_consensus_resolution_direction` | Filter by resolution direction (`increased` / `decreased` / `unchanged`) |
 
 ### 3.4 Accessing the Dashboards
 
 1. Open Grafana at **http://localhost:3000**
-2. Navigate to **Dashboards → rippled** folder
+2. Navigate to **Dashboards → xrpld** folder
 3. All 10 dashboards are auto-provisioned from `docker/telemetry/grafana/dashboards/`
 
 ---
@@ -543,18 +543,18 @@ The Consensus Health dashboard includes 5 close-time panels added in Phase 4:
 
 ### Finding Traces by Type
 
-| What to Find             | Tempo TraceQL Query                                                              |
-| ------------------------ | -------------------------------------------------------------------------------- |
-| All RPC calls            | `{resource.service.name="rippled" && name="rpc.http_request"}`                   |
-| Specific RPC command     | `{resource.service.name="rippled" && name="rpc.command.server_info"}`            |
-| Slow RPC calls           | `{resource.service.name="rippled" && name=~"rpc.command.*"} \| duration > 100ms` |
-| Failed RPC calls         | `{span.xrpl.rpc.status="error"}`                                                 |
-| Specific transaction     | `{span.xrpl.tx.hash="<hex_hash>"}`                                               |
-| Local transactions only  | `{span.xrpl.tx.local=true}`                                                      |
-| Consensus rounds         | `{resource.service.name="rippled" && name="consensus.accept"}`                   |
-| Rounds by mode           | `{span.xrpl.consensus.mode="proposing"}`                                         |
-| Specific ledger          | `{span.xrpl.ledger.seq=12345}`                                                   |
-| Peer proposals (trusted) | `{span.xrpl.peer.proposal.trusted=true}`                                         |
+| What to Find             | Tempo TraceQL Query                                                            |
+| ------------------------ | ------------------------------------------------------------------------------ |
+| All RPC calls            | `{resource.service.name="xrpld" && name="rpc.http_request"}`                   |
+| Specific RPC command     | `{resource.service.name="xrpld" && name="rpc.command.server_info"}`            |
+| Slow RPC calls           | `{resource.service.name="xrpld" && name=~"rpc.command.*"} \| duration > 100ms` |
+| Failed RPC calls         | `{span.xrpl.rpc.status="error"}`                                               |
+| Specific transaction     | `{span.xrpl.tx.hash="<hex_hash>"}`                                             |
+| Local transactions only  | `{span.xrpl.tx.local=true}`                                                    |
+| Consensus rounds         | `{resource.service.name="xrpld" && name="consensus.accept"}`                   |
+| Rounds by mode           | `{span.xrpl.consensus.mode="proposing"}`                                       |
+| Specific ledger          | `{span.xrpl.ledger.seq=12345}`                                                 |
+| Peer proposals (trusted) | `{span.xrpl.peer.proposal.trusted=true}`                                       |
 
 ### Trace Structure
 
@@ -614,19 +614,19 @@ sum by (xrpl_peer_proposal_trusted) (rate(traces_span_metrics_calls_total{span_n
 
 ```promql
 # Validated ledger age (should be < 10s)
-rippled_LedgerMaster_Validated_Ledger_Age
+xrpld_LedgerMaster_Validated_Ledger_Age
 
 # Active peer count
-rippled_Peer_Finder_Active_Inbound_Peers + rippled_Peer_Finder_Active_Outbound_Peers
+xrpld_Peer_Finder_Active_Inbound_Peers + xrpld_Peer_Finder_Active_Outbound_Peers
 
 # RPC response time p95
-histogram_quantile(0.95, rippled_rpc_time_bucket)
+histogram_quantile(0.95, xrpld_rpc_time_bucket)
 
 # Total network bytes in (rate)
-rate(rippled_total_Bytes_In[5m])
+rate(xrpld_total_Bytes_In[5m])
 
 # Operating mode (should be "Full" after startup)
-rippled_State_Accounting_Full_duration
+xrpld_State_Accounting_Full_duration
 ```
 
 ---
@@ -655,8 +655,8 @@ All span names and attributes are defined as compile-time constants in colocated
 | Issue                                                              | Impact                                           | Status                                                               |
 | ------------------------------------------------------------------ | ------------------------------------------------ | -------------------------------------------------------------------- |
 | `warn` and `drop` metrics use non-standard StatsD `\|m` meter type | Metrics silently dropped by OTel StatsD receiver | Phase 6 Task 6.1 — needs `\|m` → `\|c` change in StatsDCollector.cpp |
-| `rippled_job_count` may not emit in standalone mode                | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
-| `rippled_rpc_requests` depends on `[insight]` config               | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
+| `xrpld_job_count` may not emit in standalone mode                  | Missing from Prometheus in some test configs     | Requires active job queue activity                                   |
+| `xrpld_rpc_requests` depends on `[insight]` config                 | Zero series if StatsD not configured             | Requires `[insight] server=statsd` in xrpld.cfg                      |
 | Peer tracing disabled by default                                   | No `peer.*` spans unless `trace_peer=1`          | Intentional — high volume on mainnet                                 |
 
 ---
@@ -688,7 +688,7 @@ enabled=1
 [insight]
 server=statsd
 address=127.0.0.1:8125
-prefix=rippled
+prefix=xrpld
 ```
 
 ### Production Setup
@@ -705,7 +705,7 @@ max_queue_size=4096
 [insight]
 server=statsd
 address=otel-collector:8125
-prefix=rippled
+prefix=xrpld
 ```
 
 ### Trace Category Toggle

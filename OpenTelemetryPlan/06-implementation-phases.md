@@ -309,11 +309,11 @@ See [Phase4_taskList.md § Phase 4b](./Phase4_taskList.md) for full design.
 
 ## 6.7 Phase 6: StatsD Metrics Integration (Week 10)
 
-**Objective**: Bridge rippled's existing `beast::insight` StatsD metrics into the OpenTelemetry collection pipeline, exposing 300+ pre-existing metrics alongside span-derived RED metrics in Prometheus/Grafana.
+**Objective**: Bridge xrpld's existing `beast::insight` StatsD metrics into the OpenTelemetry collection pipeline, exposing 300+ pre-existing metrics alongside span-derived RED metrics in Prometheus/Grafana.
 
 ### Background
 
-rippled has a mature metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These metrics cover node health, peer networking, RPC performance, job queue, and overlay traffic — data that **does not** overlap with the span-based instrumentation from Phases 1-5. By adding a StatsD receiver to the OTel Collector, both metric sources converge in Prometheus.
+xrpld has a mature metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These metrics cover node health, peer networking, RPC performance, job queue, and overlay traffic — data that **does not** overlap with the span-based instrumentation from Phases 1-5. By adding a StatsD receiver to the OTel Collector, both metric sources converge in Prometheus.
 
 ### Metric Inventory
 
@@ -357,21 +357,21 @@ The `StatsDMeterImpl` in `StatsDCollector.cpp:706` sends metrics with `|m` suffi
 
 ### New Grafana Dashboards
 
-**Node Health** (`statsd-node-health.json`, uid: `rippled-statsd-node-health`):
+**Node Health** (`statsd-node-health.json`, uid: `xrpld-statsd-node-health`):
 
 - Validated/Published Ledger Age, Operating Mode Duration/Transitions, I/O Latency, Job Queue Depth, Ledger Fetch Rate, Ledger History Mismatches
 
-**Network Traffic** (`statsd-network-traffic.json`, uid: `rippled-statsd-network`):
+**Network Traffic** (`statsd-network-traffic.json`, uid: `xrpld-statsd-network`):
 
 - Active Inbound/Outbound Peers, Peer Disconnects, Total Bytes/Messages In/Out, Transaction/Proposal/Validation Traffic, Top Traffic Categories
 
-**RPC & Pathfinding (StatsD)** (`statsd-rpc-pathfinding.json`, uid: `rippled-statsd-rpc`):
+**RPC & Pathfinding (StatsD)** (`statsd-rpc-pathfinding.json`, uid: `xrpld-statsd-rpc`):
 
 - RPC Request Rate, Response Time p95/p50, Response Size p95/p50, Pathfinding Fast/Full Duration, Resource Warnings/Drops, Response Time Heatmap
 
 ### Exit Criteria
 
-- [ ] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=rippled_LedgerMaster_Validated_Ledger_Age`)
+- [ ] StatsD metrics visible in Prometheus (`curl localhost:9090/api/v1/query?query=xrpld_LedgerMaster_Validated_Ledger_Age`)
 - [ ] All 3 new Grafana dashboards load without errors
 - [ ] Integration test verifies at least core StatsD metrics (ledger age, peer counts, RPC requests)
 - [ ] ~~Meter metrics (`warn`, `drop`) flow correctly after `|m` → `|c` fix~~ — DEFERRED (breaking change, tracked separately)
