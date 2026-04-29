@@ -240,7 +240,7 @@ PeerImp::run()
         fail("Malformed handshake data (3)");
 
     {
-        std::lock_guard<std::mutex> const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
         if (closed)
             closedLedgerHash_ = *closed;
         if (previous)
@@ -408,8 +408,8 @@ PeerImp::removeTxQueue(uint256 const& hash)
 void
 PeerImp::charge(Resource::Charge const& fee, std::string const& context)
 {
-    if ((usage_.charge(fee, context) == Resource::drop) && usage_.disconnect(p_journal_) &&
-        strand_.running_in_this_thread())
+    if ((usage_.charge(fee, context) == Resource::Disposition::drop) &&
+        usage_.disconnect(p_journal_) && strand_.running_in_this_thread())
     {
         // Sever the connection
         overlay_.incPeerDisconnectCharges();
@@ -478,7 +478,7 @@ PeerImp::json()
     ret[jss::protocol] = to_string(protocol_);
 
     {
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
         if (latency_)
             ret[jss::latency] = static_cast<Json::UInt>(latency_->count());
     }
@@ -510,7 +510,7 @@ PeerImp::json()
     uint256 closedLedgerHash;
     protocol::TMStatusChange last_status;
     {
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
         closedLedgerHash = closedLedgerHash_;
         last_status = last_status_;
     }
@@ -577,7 +577,7 @@ bool
 PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
 {
     {
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
         if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
             (tracking_.load() == Tracking::converged))
             return true;
@@ -590,7 +590,7 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
 void
 PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
 {
-    std::lock_guard const sl(recentLock_);
+    std::scoped_lock const sl(recentLock_);
 
     minSeq = minLedger_;
     maxSeq = maxLedger_;
@@ -599,7 +599,7 @@ PeerImp::ledgerRange(std::uint32_t& minSeq, std::uint32_t& maxSeq) const
 bool
 PeerImp::hasTxSet(uint256 const& hash) const
 {
-    std::lock_guard const sl(recentLock_);
+    std::scoped_lock const sl(recentLock_);
     return std::ranges::find(recentTxSets_, hash) != recentTxSets_.end();
 }
 
@@ -608,7 +608,7 @@ PeerImp::cycleStatus()
 {
     // Operations on closedLedgerHash_ and previousLedgerHash_ must be
     // guarded by recentLock_.
-    std::lock_guard const sl(recentLock_);
+    std::scoped_lock const sl(recentLock_);
     previousLedgerHash_ = closedLedgerHash_;
     closedLedgerHash_.zero();
 }
@@ -616,7 +616,7 @@ PeerImp::cycleStatus()
 bool
 PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 {
-    std::lock_guard const sl(recentLock_);
+    std::scoped_lock const sl(recentLock_);
     return (tracking_ != Tracking::diverged) && (uMin >= minLedger_) && (uMax <= maxLedger_);
 }
 
@@ -813,7 +813,7 @@ PeerImp::onTimer(error_code const& ec)
         clock_type::duration duration;
 
         {
-            std::lock_guard const sl(recentLock_);
+            std::scoped_lock const sl(recentLock_);
             duration = clock_type::now() - trackingTime_;
         }
 
@@ -1267,7 +1267,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
             auto const rtt =
                 std::chrono::round<std::chrono::milliseconds>(clock_type::now() - lastPingTime_);
 
-            std::lock_guard const sl(recentLock_);
+            std::scoped_lock const sl(recentLock_);
 
             if (latency_)
             {
@@ -1964,7 +1964,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         m->set_networktime(app_.getTimeKeeper().now().time_since_epoch().count());
 
     {
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
         if (!last_status_.has_newstatus() || m->has_newstatus())
         {
             last_status_ = *m;
@@ -1984,7 +1984,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         {
             // Operations on closedLedgerHash_ and previousLedgerHash_ must be
             // guarded by recentLock_.
-            std::lock_guard const sl(recentLock_);
+            std::scoped_lock const sl(recentLock_);
             if (!closedLedgerHash_.isZero())
             {
                 outOfSync = true;
@@ -2006,7 +2006,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         {
             // Operations on closedLedgerHash_ and previousLedgerHash_ must be
             // guarded by recentLock_.
-            std::lock_guard const sl(recentLock_);
+            std::scoped_lock const sl(recentLock_);
             if (peerChangedLedgers)
             {
                 closedLedgerHash_ = m->ledgerhash();
@@ -2040,7 +2040,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 
     if (m->has_firstseq() && m->has_lastseq())
     {
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
 
         minLedger_ = m->firstseq();
         maxLedger_ = m->lastseq();
@@ -2107,7 +2107,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
         {
             uint256 closedLedgerHash{};
             {
-                std::lock_guard const sl(recentLock_);
+                std::scoped_lock const sl(recentLock_);
                 closedLedgerHash = closedLedgerHash_;
             }
             j[jss::ledger_hash] = to_string(closedLedgerHash);
@@ -2135,7 +2135,7 @@ PeerImp::checkTracking(std::uint32_t validationSeq)
     {
         // Extract the sequence number of the highest
         // ledger this peer has
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
 
         serverSeq = maxLedger_;
     }
@@ -2161,7 +2161,7 @@ PeerImp::checkTracking(std::uint32_t seq1, std::uint32_t seq2)
     if ((diff > Tuning::divergedLedgerLimit) && (tracking_.load() != Tracking::diverged))
     {
         // The peer's ledger sequence is way off the validation's
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
 
         tracking_ = Tracking::diverged;
         trackingTime_ = clock_type::now();
@@ -2181,7 +2181,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
 
     if (m->status() == protocol::tsHAVE)
     {
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
 
         if (std::ranges::find(recentTxSets_, hash) != recentTxSets_.end())
         {
@@ -2248,7 +2248,7 @@ PeerImp::onValidatorListMessage(
         case ListDisposition::expired:
         // Future list
         case ListDisposition::pending: {
-            std::lock_guard<std::mutex> const sl(recentLock_);
+            std::scoped_lock const sl(recentLock_);
 
             XRPL_ASSERT(
                 applyResult.publisherKey,
@@ -2272,7 +2272,7 @@ PeerImp::onValidatorListMessage(
         case ListDisposition::known_sequence:
 #ifndef NDEBUG
         {
-            std::lock_guard<std::mutex> const sl(recentLock_);
+            std::scoped_lock<std::mutex> const sl(recentLock_);
             XRPL_ASSERT(
                 applyResult.sequence && applyResult.publisherKey,
                 "xrpl::PeerImp::onValidatorListMessage : nonzero sequence "
@@ -2838,7 +2838,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 //--------------------------------------------------------------------------
 
 void
-PeerImp::addLedger(uint256 const& hash, std::lock_guard<std::mutex> const& lockedRecentLock)
+PeerImp::addLedger(uint256 const& hash, std::scoped_lock<std::mutex> const& lockedRecentLock)
 {
     // lockedRecentLock is passed as a reminder that recentLock_ must be
     // locked by the caller.
@@ -2925,7 +2925,8 @@ PeerImp::doTransactions(std::shared_ptr<protocol::TMGetObjectByHash> const& pack
         auto sttx = txn->getSTransaction();
         sttx->add(s);
         tx->set_rawtransaction(s.data(), s.size());
-        tx->set_status(txn->getStatus() == INCLUDED ? protocol::tsCURRENT : protocol::tsNEW);
+        tx->set_status(
+            txn->getStatus() == TransStatus::INCLUDED ? protocol::tsCURRENT : protocol::tsNEW);
         tx->set_receivetimestamp(app_.getTimeKeeper().now().time_since_epoch().count());
         tx->set_deferred(txn->getSubmitResult().queued);
     }
@@ -2989,10 +2990,10 @@ PeerImp::checkTransaction(
             std::string reason;
             auto tx = std::make_shared<Transaction>(stx, reason, app_);
             XRPL_ASSERT(
-                tx->getStatus() == NEW,
+                tx->getStatus() == TransStatus::NEW,
                 "xrpl::PeerImp::checkTransaction Transaction created "
                 "correctly");
-            if (tx->getStatus() == NEW)
+            if (tx->getStatus() == TransStatus::NEW)
             {
                 JLOG(p_journal_.debug()) << "Processing " << (batch ? "batch" : "unsolicited")
                                          << " pseudo-transaction tx " << tx->getID();
@@ -3044,7 +3045,7 @@ PeerImp::checkTransaction(
         std::string reason;
         auto tx = std::make_shared<Transaction>(stx, reason, app_);
 
-        if (tx->getStatus() == INVALID)
+        if (tx->getStatus() == TransStatus::INVALID)
         {
             if (!reason.empty())
             {
@@ -3557,7 +3558,7 @@ PeerImp::getScore(bool haveItem) const
 
     std::optional<std::chrono::milliseconds> latency;
     {
-        std::lock_guard const sl(recentLock_);
+        std::scoped_lock const sl(recentLock_);
         latency = latency_;
     }
 
@@ -3576,7 +3577,7 @@ PeerImp::getScore(bool haveItem) const
 bool
 PeerImp::isHighLatency() const
 {
-    std::lock_guard const sl(recentLock_);
+    std::scoped_lock const sl(recentLock_);
     return latency_ >= peerHighLatency;
 }
 

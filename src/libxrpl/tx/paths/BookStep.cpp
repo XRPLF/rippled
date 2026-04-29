@@ -1492,7 +1492,7 @@ make_BookStepHelper(StrandContext const& ctx, Asset const& in, Asset const& out)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing)
+    if (ctx.offerCrossing != OfferCrossing::no)
     {
         auto offerCrossingStep = std::make_unique<BookOfferCrossingStep<TIn, TOut>>(ctx, in, out);
         ter = offerCrossingStep->check(ctx);
