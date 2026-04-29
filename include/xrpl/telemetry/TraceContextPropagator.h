@@ -4,15 +4,14 @@
 
     Provides serialization/deserialization of OTel trace context to/from
     Protocol Buffer TraceContext messages (P2P cross-node propagation).
+    Wired into the P2P message flow via PropagationHelpers.h for
+    TMTransaction, TMProposeSet, and TMValidation messages.
 
     Only compiled when XRPL_ENABLE_TELEMETRY is defined.
 
-    TODO: These utilities are not yet wired into the P2P message flow.
-    To enable cross-node distributed traces, call injectToProtobuf() in
-    PeerImp when sending TMTransaction/TMProposeSet messages, and call
-    extractFromProtobuf() in the corresponding message handlers to
-    reconstruct the parent span context before starting a child span.
-    This was deferred to validate single-node tracing performance first.
+    @see PropagationHelpers.h (high-level inject helpers),
+         TxTracing.h (transaction receive-side extraction),
+         ConsensusReceiveTracing.h (proposal/validation receive-side).
 */
 
 #ifdef XRPL_ENABLE_TELEMETRY
