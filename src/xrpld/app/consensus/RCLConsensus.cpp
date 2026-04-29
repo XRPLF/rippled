@@ -62,7 +62,7 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
-#include <xrpl/telemetry/TraceContextPropagator.h>
+#include <xrpl/telemetry/TraceContextPropagator.h>  // IWYU pragma: keep
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 

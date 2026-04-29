@@ -6,6 +6,7 @@
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -30,7 +31,6 @@
 #include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/st.h>
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/tx/apply.h>
 #include <xrpl/tx/applySteps.h>
@@ -532,7 +532,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     beast::Journal j)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(
+    [[maybe_unused]] auto span = SpanGuard::span(
         TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::batchClear);
 
     SeqProxy const tSeqProx{tx.getSeqProxy()};
@@ -1681,7 +1681,7 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(
+    [[maybe_unused]] auto span = SpanGuard::span(
         TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
 
     auto const account = (*tx)[sfAccount];
