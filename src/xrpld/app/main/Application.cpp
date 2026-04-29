@@ -1661,6 +1661,10 @@ ApplicationImp::run()
     ledgerCleaner_->stop();
     m_nodeStore->stop();
     perfLog_->stop();
+    // Telemetry must stop last among trace-producing components.
+    // serverHandler_, overlay_, and jobQueue_ are already stopped above,
+    // so no threads should be calling startSpan() at this point.
+    // See TODO in TelemetryImpl::stop() re: thread-safety of sdkProvider_.
     telemetry_->stop();
 
     JLOG(m_journal.info()) << "Done.";
