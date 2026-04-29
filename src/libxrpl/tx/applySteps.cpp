@@ -84,7 +84,7 @@ withTxnType(Rules const& rules, TxType txnType, F&& f)
     else
     {
         // Without those features enabled, always use the old number rules.
-        mantissaScaleGuard.emplace(MantissaRange::Small);
+        mantissaScaleGuard.emplace(MantissaRange::MantissaScale::Small);
     }
 
     switch (txnType)
@@ -130,7 +130,7 @@ template <class T>
 TxConsequences
 consequencesHelper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx, TxConsequences::Blocker);
+    return TxConsequences(ctx.tx, TxConsequences::Category::Blocker);
 };
 
 // For Transactor::Custom
@@ -279,7 +279,7 @@ TxConsequences::TxConsequences(STTx const& tx)
 
 TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
-    isBlocker_ = (category == Blocker);
+    isBlocker_ = (category == TxConsequences::Category::Blocker);
 }
 
 TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)

@@ -167,7 +167,7 @@ LoanManage::defaultLoan(
     TenthBips32 const coverRateLiquidation{brokerSle->at(sfCoverRateLiquidation)};
     auto const defaultCovered = [&]() {
         // Always round the minimum required up.
-        NumberRoundModeGuard const mg(Number::Upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         auto const minimumCover = tenthBipsOfValue(brokerDebtTotalProxy.value(), coverRateMinimum);
         // Round the liquidation amount up, too
         auto const covered = roundToAsset(
@@ -206,8 +206,8 @@ LoanManage::defaultLoan(
             // LCOV_EXCL_STOP
         }
 
-        auto const vaultDefaultRounded =
-            roundToAsset(vaultAsset, vaultDefaultAmount, vaultScale, Number::Downward);
+        auto const vaultDefaultRounded = roundToAsset(
+            vaultAsset, vaultDefaultAmount, vaultScale, Number::RoundingMode::Downward);
         vaultTotalProxy -= vaultDefaultRounded;
         // Increase the Asset Available of the Vault by liquidated First-Loss
         // Capital and any unclaimed funds amount:

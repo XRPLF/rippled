@@ -154,7 +154,7 @@ protected:
         [[nodiscard]] Number
         maxCoveredLoanValue(Number const& currentDebt) const
         {
-            NumberRoundModeGuard const mg(Number::Downward);
+            NumberRoundModeGuard const mg(Number::RoundingMode::Downward);
             auto debtLimit = coverDeposit * kTENTH_BIPS_PER_UNITY.value() / coverRateMin.value();
 
             return debtLimit - currentDebt;
@@ -590,7 +590,7 @@ protected:
                  : std::max(broker.vaultScale(env), state.principalOutstanding.exponent())));
         BEAST_EXPECT(state.paymentInterval == 600);
         {
-            NumberRoundModeGuard const mg(Number::Upward);
+            NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
             BEAST_EXPECT(
                 state.totalValue ==
                 roundToAsset(
@@ -913,8 +913,8 @@ protected:
         }
 
         // Include the service fee
-        STAmount const totalDue =
-            roundToScale(roundedPeriodicPayment + serviceFee, state.loanScale, Number::Upward);
+        STAmount const totalDue = roundToScale(
+            roundedPeriodicPayment + serviceFee, state.loanScale, Number::RoundingMode::Upward);
 
         auto currentRoundedState = constructLoanState(
             state.totalValue, state.principalOutstanding, state.managementFeeOutstanding);
@@ -2013,7 +2013,7 @@ protected:
                          ? 0
                          : std::max(
                                broker.vaultScale(env), state.principalOutstanding.exponent())));
-                NumberRoundModeGuard const mg(Number::Upward);
+                NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
                 auto const defaultAmount = roundToAsset(
                     broker.asset,
                     std::min(
@@ -2318,7 +2318,7 @@ protected:
                     // service fee is 2
                     auto const startingPayments = state.paymentRemaining;
                     STAmount const payoffAmount = [&]() {
-                        NumberRoundModeGuard const mg(Number::Upward);
+                        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
                         auto const rawPayoff =
                             startingPayments * (state.periodicPayment + broker.asset(2).value());
                         STAmount payoffAmount{broker.asset, rawPayoff};
@@ -2520,21 +2520,25 @@ protected:
                 BEAST_EXPECT(
                     roundedPeriodicPayment ==
                     roundToScale(
-                        broker.asset(Number(8333457002039338267, -17), Number::Upward),
+                        broker.asset(
+                            Number(8333457002039338267, -17), Number::RoundingMode::Upward),
                         state.loanScale,
-                        Number::Upward));
+                        Number::RoundingMode::Upward));
                 // 83334570.01162141
                 // Include the service fee
                 STAmount const totalDue = roundToScale(
-                    roundedPeriodicPayment + serviceFee, state.loanScale, Number::Upward);
+                    roundedPeriodicPayment + serviceFee,
+                    state.loanScale,
+                    Number::RoundingMode::Upward);
                 // Only check the first payment since the rounding
                 // may drift as payments are made
                 BEAST_EXPECT(
                     totalDue ==
                     roundToScale(
-                        broker.asset(Number(8533457002039338267, -17), Number::Upward),
+                        broker.asset(
+                            Number(8533457002039338267, -17), Number::RoundingMode::Upward),
                         state.loanScale,
-                        Number::Upward));
+                        Number::RoundingMode::Upward));
 
                 {
                     auto const raw = computeTheoreticalLoanState(
@@ -2562,9 +2566,9 @@ protected:
                 BEAST_EXPECT(
                     transactionAmount ==
                     roundToScale(
-                        broker.asset(Number(9533457002039400, -14), Number::Upward),
+                        broker.asset(Number(9533457002039400, -14), Number::RoundingMode::Upward),
                         state.loanScale,
-                        Number::Upward));
+                        Number::RoundingMode::Upward));
 
                 auto const initialState = state;
                 xrpl::detail::PaymentComponents totalPaid{
@@ -2652,11 +2656,15 @@ protected:
                     BEAST_EXPECT(
                         state.paymentRemaining < 12 ||
                         roundToAsset(
-                            broker.asset, deltas.principal, state.loanScale, Number::Upward) ==
+                            broker.asset,
+                            deltas.principal,
+                            state.loanScale,
+                            Number::RoundingMode::Upward) ==
                             roundToScale(
-                                broker.asset(Number(8333228691531218890, -17), Number::Upward),
+                                broker.asset(
+                                    Number(8333228691531218890, -17), Number::RoundingMode::Upward),
                                 state.loanScale,
-                                Number::Upward));
+                                Number::RoundingMode::Upward));
                     BEAST_EXPECT(
                         paymentComponents.trackedPrincipalDelta >= beast::kZERO &&
                         paymentComponents.trackedPrincipalDelta <= state.principalOutstanding);
@@ -5248,7 +5256,7 @@ protected:
 
             // pay all but the last payment
             {
-                NumberRoundModeGuard const mg{Number::Upward};
+                NumberRoundModeGuard const mg{Number::RoundingMode::Upward};
                 Number const payment = beforeState.periodicPayment * (total - 1);
                 XRPAmount const payFee{
                     baseFee * ((total - 1) / kLOAN_PAYMENTS_PER_FEE_INCREMENT + 1)};

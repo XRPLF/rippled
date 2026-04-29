@@ -987,7 +987,7 @@ STObject::isFree() const
 inline void
 STObject::addWithoutSigningFields(Serializer& s) const
 {
-    add(s, OmitSigningFields);
+    add(s, WhichFields::OmitSigningFields);
 }
 
 // VFALCO NOTE does this return an expensive copy of an object with a
@@ -997,7 +997,7 @@ inline Serializer
 STObject::getSerializer() const
 {
     Serializer s;
-    add(s, WithAllFields);
+    add(s, WhichFields::WithAllFields);
     return s;
 }
 

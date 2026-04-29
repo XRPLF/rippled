@@ -369,7 +369,7 @@ private:
     LedgerIndex ledgerIndex_ = 0;
     std::optional<uint32_t> txnSeq_;
     std::optional<uint32_t> networkID_;
-    TransStatus status_ = INVALID;
+    TransStatus status_ = TransStatus::INVALID;
     TER result_ = temUNCERTAIN;
     /* Note that all access to applying_ are made by NetworkOPsImp,
         and must be done under that class's lock. This avoids the overhead of

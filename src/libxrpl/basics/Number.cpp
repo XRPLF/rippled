@@ -27,7 +27,7 @@ using int128_t = __int128_t;
 
 namespace xrpl {
 
-thread_local Number::RoundingMode Number::mode = Number::ToNearest;
+thread_local Number::RoundingMode Number::mode = Number::RoundingMode::ToNearest;
 thread_local std::reference_wrapper<MantissaRange const> Number::kRANGE = kLARGE_RANGE;
 
 Number::RoundingMode
@@ -51,9 +51,10 @@ Number::getMantissaScale()
 void
 Number::setMantissaScale(MantissaRange::MantissaScale scale)
 {
-    if (scale != MantissaRange::Small && scale != MantissaRange::Large)
+    if (scale != MantissaRange::MantissaScale::Small &&
+        scale != MantissaRange::MantissaScale::Large)
         logicError("Unknown mantissa scale");
-    kRANGE = scale == MantissaRange::Small ? kSMALL_RANGE : kLARGE_RANGE;
+    kRANGE = scale == MantissaRange::MantissaScale::Small ? kSMALL_RANGE : kLARGE_RANGE;
 }
 
 // Guard
@@ -176,10 +177,10 @@ Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
-    if (mode == TowardsZero)
+    if (mode == RoundingMode::TowardsZero)
         return -1;
 
-    if (mode == Downward)
+    if (mode == RoundingMode::Downward)
     {
         if (sbit_)
         {
@@ -189,7 +190,7 @@ Number::Guard::round() const noexcept
         return -1;
     }
 
-    if (mode == Upward)
+    if (mode == RoundingMode::Upward)
     {
         if (sbit_)
             return -1;
@@ -729,7 +730,7 @@ Number::operator/=(Number const& y)
     // f can be up to 10^(38-19) = 10^19 safely
     static_assert(kSMALL_RANGE.log == 15);
     static_assert(kLARGE_RANGE.log == 18);
-    bool const small = Number::getMantissaScale() == MantissaRange::Small;
+    bool const small = Number::getMantissaScale() == MantissaRange::MantissaScale::Small;
     uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
     XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
 

@@ -233,6 +233,7 @@ private:
     void
     adjust(Slot const& s, CountAdjustment const dir)
     {
+        int const n = static_cast<int>(dir);
         if (s.fixed())
             fixed_ += n;
 

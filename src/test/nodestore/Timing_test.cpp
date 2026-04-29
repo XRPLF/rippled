@@ -681,7 +681,7 @@ public:
     void
     run() override
     {
-        testcase("Timing", beast::unit_test::AbortOnFail);
+        testcase("Timing", beast::unit_test::AbortT::AbortOnFail);
 
         /*  Parameters:
 

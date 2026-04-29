@@ -1336,7 +1336,7 @@ ValidatorList::loadLists()
 // contain the default-constructed public keys
 std::pair<ListDisposition, std::optional<PublicKey>>
 ValidatorList::verify(
-    ValidatorList::lock_guard const& lock,
+    ValidatorList::scoped_lock const& lock,
     json::Value& list,
     Manifest manifest,
     std::string const& blob,

@@ -137,7 +137,7 @@ AMMTestBase::testAMM(std::function<void(jtx::AMM&, jtx::Env&)> const& cb, TestAM
     for (auto const& features : arg.features)
     {
         // Use small Number mantissas for the life of this test.
-        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::Small};
+        NumberMantissaScaleGuard const sg{xrpl::MantissaRange::MantissaScale::Small};
 
         // For now, just disable SAV entirely, which locks in the small Number
         // mantissas

@@ -124,7 +124,7 @@ LoanDelete::doApply()
                     vaultSle->at(sfAsset),
                     debtTotalProxy,
                     getAssetsTotalScale(vaultSle),
-                    Number::TowardsZero) == beast::kZERO,
+                    Number::RoundingMode::TowardsZero) == beast::kZERO,
                 "xrpl::LoanDelete::doApply",
                 "last loan, remaining debt rounds to zero");
             debtTotalProxy = 0;

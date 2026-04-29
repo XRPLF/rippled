@@ -213,7 +213,7 @@ public:
         std::ranges::for_each(v, [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
-                selectors_.emplace_back(beast::unit_test::Selector::Automatch, s);
+                selectors_.emplace_back(beast::unit_test::Selector::ModeT::Automatch, s);
         });
     }
 

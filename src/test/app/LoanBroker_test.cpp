@@ -1793,7 +1793,7 @@ class LoanBroker_test : public beast::unit_test::Suite
                 Ter(std::ignore));
 
             // Shouldn't fail if at MaximumAmount since no new tokens are issued
-            TER const err = mptState == ReachedMAX ? TER(tesSUCCESS) : tecNO_AUTH;
+            TER const err = mptState == MPTState::ReachedMAX ? TER(tesSUCCESS) : tecNO_AUTH;
             BEAST_EXPECT(env.ter() == err);
             env.close();
 

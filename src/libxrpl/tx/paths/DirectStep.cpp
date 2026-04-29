@@ -930,7 +930,7 @@ makeDirectStepI(
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing != OfferCrossing::no)
+    if (ctx.offerCrossing != OfferCrossing::No)
     {
         auto offerCrossingStep = std::make_unique<DirectIOfferCrossingStep>(ctx, src, dst, c);
         ter = offerCrossingStep->check(ctx);

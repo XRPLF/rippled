@@ -178,7 +178,8 @@ public:
             auto const all = testableAmendments();
             for (auto const& feats : {all - featureSingleAssetVault - featureLendingProtocol, all})
             {
-                for (auto const mantissaSize : {MantissaRange::Small, MantissaRange::Large})
+                for (auto const mantissaSize :
+                     {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
                 {
                     // Regardless of the features enabled, RPC is controlled by
                     // the global mantissa size. And since it's a thread-local,

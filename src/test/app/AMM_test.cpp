@@ -73,7 +73,7 @@ namespace xrpl::test {
 struct AMM_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg{xrpl::MantissaRange::Small};
+    NumberMantissaScaleGuard const sg{xrpl::MantissaRange::MantissaScale::Small};
 
 private:
     static FeatureBitset
@@ -5809,7 +5809,7 @@ private:
         Env const env(*this, features, std::make_unique<CaptureLogs>(&logs));
         auto rules = env.current()->rules();
         CurrentTransactionRulesGuard const rg(rules);
-        NumberMantissaScaleGuard const sg(MantissaRange::Small);
+        NumberMantissaScaleGuard const sg(MantissaRange::MantissaScale::Small);
 
         for (auto const& t : tests)
         {
@@ -6799,8 +6799,9 @@ private:
     {
         auto const [amount, amount2, lptBalance] = amm.balances(GBP, EUR);
 
-        NumberMantissaScaleGuard const sg(MantissaRange::Small);
-        NumberRoundModeGuard const g(env.enabled(fixAMMv1_3) ? Number::Upward : Number::getround());
+        NumberMantissaScaleGuard const sg(MantissaRange::MantissaScale::Small);
+        NumberRoundModeGuard const g(
+            env.enabled(fixAMMv1_3) ? Number::RoundingMode::Upward : Number::getround());
         auto const res = root2(amount * amount2);
 
         if (shouldFail)

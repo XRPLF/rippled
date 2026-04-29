@@ -1861,7 +1861,7 @@ class Delegate_test : public beast::unit_test::Suite
 #undef TRANSACTION
 
 #define TRANSACTION(tag, value, name, txDelegable, ...) \
-    if (txDelegable == xrpl::delegable)                 \
+    if (txDelegable == xrpl::Delegable)                 \
     {                                                   \
         delegableCount++;                               \
     }

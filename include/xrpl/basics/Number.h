@@ -445,14 +445,14 @@ private:
     static thread_local RoundingMode mode;
     // The available ranges for mantissa
 
-    constexpr static MantissaRange kSMALL_RANGE{MantissaRange::MantissaRange::Small};
+    constexpr static MantissaRange kSMALL_RANGE{MantissaRange::MantissaScale::Small};
     static_assert(isPowerOfTen(kSMALL_RANGE.min));
     static_assert(kSMALL_RANGE.min == 1'000'000'000'000'000LL);
     static_assert(kSMALL_RANGE.max == 9'999'999'999'999'999LL);
     static_assert(kSMALL_RANGE.log == 15);
     static_assert(kSMALL_RANGE.min < kMAX_REP);
     static_assert(kSMALL_RANGE.max < kMAX_REP);
-    constexpr static MantissaRange kLARGE_RANGE{MantissaRange::MantissaRange::Large};
+    constexpr static MantissaRange kLARGE_RANGE{MantissaRange::MantissaScale::Large};
     static_assert(isPowerOfTen(kLARGE_RANGE.min));
     static_assert(kLARGE_RANGE.min == 1'000'000'000'000'000'000ULL);
     static_assert(kLARGE_RANGE.max == internalrep(9'999'999'999'999'999'999ULL));

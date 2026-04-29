@@ -396,7 +396,7 @@ makeXrpEndpointStep(StrandContext const& ctx, AccountID const& acc)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
-    if (ctx.offerCrossing != OfferCrossing::no)
+    if (ctx.offerCrossing != OfferCrossing::No)
     {
         auto offerCrossingStep = std::make_unique<XRPEndpointOfferCrossingStep>(ctx, acc);
         ter = offerCrossingStep->check(ctx);

@@ -93,8 +93,8 @@ loanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
 bool
 isRounded(Asset const& asset, Number const& value, std::int32_t scale)
 {
-    return roundToAsset(asset, value, scale, Number::Downward) ==
-        roundToAsset(asset, value, scale, Number::Upward);
+    return roundToAsset(asset, value, scale, Number::RoundingMode::Downward) ==
+        roundToAsset(asset, value, scale, Number::RoundingMode::Upward);
 }
 
 namespace detail {
@@ -458,7 +458,11 @@ tryOverpayment(
     // preserved rounding errors. This ensures the loan's tracked state remains
     // consistent with its payment history.
     auto const principalOutstanding = std::clamp(
-        roundToAsset(asset, newTheoreticalState.principalOutstanding, loanScale, Number::Upward),
+        roundToAsset(
+            asset,
+            newTheoreticalState.principalOutstanding,
+            loanScale,
+            Number::RoundingMode::Upward),
         kNUM_ZERO,
         roundedOldState.principalOutstanding);
     auto const totalValueOutstanding = std::clamp(
@@ -466,7 +470,7 @@ tryOverpayment(
             asset,
             principalOutstanding + newTheoreticalState.interestOutstanding(),
             loanScale,
-            Number::Upward),
+            Number::RoundingMode::Upward),
         kNUM_ZERO,
         roundedOldState.valueOutstanding);
     auto const managementFeeOutstanding = std::clamp(
@@ -836,7 +840,8 @@ computeFullPayment(
     // Split the full payment interest into net interest (to vault) and
     // management fee (to broker), applying proper rounding.
     auto const [roundedFullInterest, roundedFullManagementFee] = [&]() {
-        auto const interest = roundToAsset(asset, fullPaymentInterest, loanScale, Number::Downward);
+        auto const interest =
+            roundToAsset(asset, fullPaymentInterest, loanScale, Number::RoundingMode::Downward);
         return computeInterestAndFeeParts(asset, interest, managementFeeRate, loanScale);
     }();
 
@@ -1290,7 +1295,7 @@ checkLoanGuards(
     // loan can't be amortized in the specified number of payments, raise an
     // error
     {
-        NumberRoundModeGuard const mg(Number::Upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
 
         if (std::int64_t const computedPayments{
                 properties.loanState.valueOutstanding / roundedPayment};
@@ -1469,7 +1474,8 @@ computeManagementFee(
     TenthBips32 managementFeeRate,
     std::int32_t scale)
 {
-    return roundToAsset(asset, tenthBipsOfValue(value, managementFeeRate), scale, Number::Downward);
+    return roundToAsset(
+        asset, tenthBipsOfValue(value, managementFeeRate), scale, Number::RoundingMode::Downward);
 }
 
 /*
@@ -1523,7 +1529,8 @@ computeLoanProperties(
 
     auto const [totalValueOutstanding, loanScale] = [&]() {
         // only round up if there should be interest
-        NumberRoundModeGuard const mg(periodicRate == 0 ? Number::ToNearest : Number::Upward);
+        NumberRoundModeGuard const mg(
+            periodicRate == 0 ? Number::RoundingMode::ToNearest : Number::RoundingMode::Upward);
         // Use STAmount's internal rounding instead of roundToAsset, because
         // we're going to use this result to determine the scale for all the
         // other rounding.
@@ -1552,7 +1559,7 @@ computeLoanProperties(
     // validate that the principal fits in it, so to allow this function to
     // succeed, round it here, and let the caller do the validation.
     auto const roundedPrincipalOutstanding =
-        roundToAsset(asset, principalOutstanding, loanScale, Number::ToNearest);
+        roundToAsset(asset, principalOutstanding, loanScale, Number::RoundingMode::ToNearest);
 
     // Equation (31) from XLS-66 spec, Section A-2 Equation Glossary
     auto const totalInterestOutstanding = totalValueOutstanding - roundedPrincipalOutstanding;

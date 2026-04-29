@@ -48,7 +48,7 @@ Transaction::Transaction(
         return;
     }
 
-    status_ = NEW;
+    status_ = TransStatus::NEW;
 }
 
 //
@@ -78,15 +78,15 @@ Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
     switch (static_cast<TxnSql>(c))
     {
         case TxnSql::TxnSqlNew:
-            return NEW;
+            return TransStatus::NEW;
         case TxnSql::TxnSqlConflict:
-            return CONFLICTED;
+            return TransStatus::CONFLICTED;
         case TxnSql::TxnSqlHeld:
-            return HELD;
+            return TransStatus::HELD;
         case TxnSql::TxnSqlValidated:
-            return COMMITTED;
+            return TransStatus::COMMITTED;
         case TxnSql::TxnSqlIncluded:
-            return INCLUDED;
+            return TransStatus::INCLUDED;
         default:
             XRPL_ASSERT(
                 c == TxnSql::TxnSqlUnknown,

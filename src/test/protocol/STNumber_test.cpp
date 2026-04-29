@@ -101,12 +101,12 @@ struct STNumber_test : public beast::unit_test::Suite
             BEAST_EXPECT(numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
 
             {
-                NumberRoundModeGuard const mg(Number::TowardsZero);
+                NumberRoundModeGuard const mg(Number::RoundingMode::TowardsZero);
                 // maxint64 9,223,372,036,854,775,807
                 auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
                 // minint64 -9,223,372,036,854,775,808
                 auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
-                if (Number::getMantissaScale() == MantissaRange::Small)
+                if (Number::getMantissaScale() == MantissaRange::MantissaScale::Small)
                 {
                     BEAST_EXPECT(
                         numberFromJson(sfNumber, maxInt) ==
@@ -280,7 +280,8 @@ struct STNumber_test : public beast::unit_test::Suite
     {
         static_assert(!std::is_convertible_v<STNumber*, Number*>);
 
-        for (auto const scale : {MantissaRange::Small, MantissaRange::Large})
+        for (auto const scale :
+             {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
         {
             NumberMantissaScaleGuard const sg(scale);
             testcase << to_string(Number::getMantissaScale());

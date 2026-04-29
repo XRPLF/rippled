@@ -1262,7 +1262,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     {
         // cached bad
         JLOG(journal_.warn()) << transaction->getID() << ": cached bad!\n";
-        transaction->setStatus(INVALID);
+        transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         return false;
     }
@@ -1293,7 +1293,7 @@ NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
     if (validity == Validity::SigBad)
     {
         JLOG(journal_.info()) << "Transaction has bad signature: " << reason;
-        transaction->setStatus(INVALID);
+        transaction->setStatus(TransStatus::INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         registry_.get().getHashRouter().setFlags(transaction->getID(), HashRouterFlags::BAD);
         return false;
@@ -1560,7 +1560,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             if (isTesSuccess(e.result))
             {
                 JLOG(journal_.debug()) << "Transaction is now included in open ledger";
-                e.transaction->setStatus(INCLUDED);
+                e.transaction->setStatus(TransStatus::INCLUDED);
 
                 // Pop as many "reasonable" transactions for this account as
                 // possible. "Reasonable" means they have sequential sequence
@@ -1589,7 +1589,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 // duplicate or conflict
                 JLOG(journal_.info()) << "Transaction is obsolete";
-                e.transaction->setStatus(OBSOLETE);
+                e.transaction->setStatus(TransStatus::OBSOLETE);
             }
             else if (e.result == terQUEUED)
             {
@@ -1635,7 +1635,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     {
                         // transaction should be held
                         JLOG(journal_.debug()) << "Transaction should be held: " << e.result;
-                        e.transaction->setStatus(HELD);
+                        e.transaction->setStatus(TransStatus::HELD);
                         ledgerMaster_.addHeldTransaction(e.transaction);
                         e.transaction->setKept();
                     }
@@ -1650,7 +1650,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             else
             {
                 JLOG(journal_.debug()) << "Status other than success " << e.result;
-                e.transaction->setStatus(INVALID);
+                e.transaction->setStatus(TransStatus::INVALID);
             }
 
             auto const enforceFailHard = e.failType == FailHard::Yes && !isTesSuccess(e.result);

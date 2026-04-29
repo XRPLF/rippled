@@ -138,12 +138,14 @@ LoanPay::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // If making an overpayment, count it as a full payment because it will do
     // about the same amount of work, if not more.
-    NumberRoundModeGuard const mg(tx.isFlag(tfLoanOverpayment) ? Number::Upward : Number::Downward);
+    NumberRoundModeGuard const mg(
+        tx.isFlag(tfLoanOverpayment) ? Number::RoundingMode::Upward
+                                     : Number::RoundingMode::Downward);
     // Estimate how many payments will be made
     Number const numPaymentEstimate = static_cast<std::int64_t>(amount / regularPayment);
 
     // Charge one base fee per paymentsPerFeeIncrement payments, rounding up.
-    Number::setround(Number::Upward);
+    Number::setround(Number::RoundingMode::Upward);
     auto const feeIncrements = std::max(
         std::int64_t(1),
         static_cast<std::int64_t>(numPaymentEstimate / kLOAN_PAYMENTS_PER_FEE_INCREMENT));
@@ -298,7 +300,7 @@ LoanPay::doApply()
         // Round the minimum required cover up to be conservative. This ensures
         // CoverAvailable never drops below the theoretical minimum, protecting
         // the broker's solvency.
-        NumberRoundModeGuard const mg(Number::Upward);
+        NumberRoundModeGuard const mg(Number::RoundingMode::Upward);
         return coverAvailableProxy >=
             roundToAsset(
                    asset, tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum), loanScale) &&
@@ -404,7 +406,7 @@ LoanPay::doApply()
 
     auto const totalPaidToVaultRaw = paymentParts->principalPaid + paymentParts->interestPaid;
     auto const totalPaidToVaultRounded =
-        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::Downward);
+        roundToAsset(asset, totalPaidToVaultRaw, vaultScale, Number::RoundingMode::Downward);
     XRPL_ASSERT_PARTS(
         !asset.integral() || totalPaidToVaultRaw == totalPaidToVaultRounded,
         "xrpl::LoanPay::doApply",

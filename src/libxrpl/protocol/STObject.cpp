@@ -119,7 +119,7 @@ STObject::isDefault() const
 void
 STObject::add(Serializer& s) const
 {
-    add(s, WithAllFields);  // just inner elements
+    add(s, WhichFields::WithAllFields);  // just inner elements
 }
 
 STObject&
@@ -258,7 +258,7 @@ STObject::set(SerialIter& sit, int depth)
 
     // We want to ensure that the deserialized object does not contain any
     // duplicate fields. This is a key invariant:
-    auto const sf = getSortedFields(*this, WithAllFields);
+    auto const sf = getSortedFields(*this, WhichFields::WithAllFields);
 
     auto const dup = std::ranges::adjacent_find(sf, [](STBase const* lhs, STBase const* rhs) {
         return lhs->getFName() == rhs->getFName();
@@ -353,8 +353,8 @@ STObject::isEquivalent(STBase const& t) const
             });
     }
 
-    auto const sf1 = getSortedFields(*this, WithAllFields);
-    auto const sf2 = getSortedFields(*v, WithAllFields);
+    auto const sf1 = getSortedFields(*this, WhichFields::WithAllFields);
+    auto const sf2 = getSortedFields(*v, WhichFields::WithAllFields);
 
     return std::ranges::equal(sf1, sf2, [](STBase const* st1, STBase const* st2) {
         return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
@@ -366,7 +366,7 @@ STObject::getHash(HashPrefix prefix) const
 {
     Serializer s;
     s.add32(prefix);
-    add(s, WithAllFields);
+    add(s, WhichFields::WithAllFields);
     return s.getSHA512Half();
 }
 
@@ -375,7 +375,7 @@ STObject::getSigningHash(HashPrefix prefix) const
 {
     Serializer s;
     s.add32(prefix);
-    add(s, OmitSigningFields);
+    add(s, WhichFields::OmitSigningFields);
     return s.getSHA512Half();
 }
 

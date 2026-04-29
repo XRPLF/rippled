@@ -848,7 +848,7 @@ private:
     */
     std::pair<ListDisposition, std::optional<PublicKey>>
     verify(
-        lock_guard const&,
+        scoped_lock const&,
         json::Value& list,
         Manifest manifest,
         std::string const& blob,

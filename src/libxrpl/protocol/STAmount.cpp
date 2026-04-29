@@ -1613,7 +1613,7 @@ mulRoundImpl(STAmount const& v1, STAmount const& v2, Asset const& asset, bool ro
     STAmount result = [&]() {
         // If appropriate, tell Number to round down.  This gives the desired
         // result from STAmount::canonicalize.
-        MightSaveRound const savedRound(Number::TowardsZero);
+        MightSaveRound const savedRound(Number::RoundingMode::TowardsZero);
         return STAmount(asset, amount, offset, resultNegative);
     }();
 

@@ -164,11 +164,11 @@ determineClawAmount(
 {
     auto const maxClawAmount = [&]() {
         // Always round the minimum required up
-        NumberRoundModeGuard const mg1(Number::Upward);
+        NumberRoundModeGuard const mg1(Number::RoundingMode::Upward);
         auto const minRequiredCover =
             tenthBipsOfValue(sleBroker[sfDebtTotal], TenthBips32(sleBroker[sfCoverRateMinimum]));
         // The subtraction probably won't round, but round down if it does.
-        NumberRoundModeGuard const mg2(Number::Downward);
+        NumberRoundModeGuard const mg2(Number::RoundingMode::Downward);
         return sleBroker[sfCoverAvailable] - minRequiredCover;
     }();
     if (maxClawAmount <= beast::kZERO)

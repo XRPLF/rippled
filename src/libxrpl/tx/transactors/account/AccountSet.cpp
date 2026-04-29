@@ -39,19 +39,19 @@ AccountSet::makeTxConsequences(PreflightContext const& ctx)
     auto getTxConsequencesCategory = [](STTx const& tx) {
         if (std::uint32_t const uTxFlags = tx.getFlags();
             uTxFlags & (tfRequireAuth | tfOptionalAuth))
-            return TxConsequences::Blocker;
+            return TxConsequences::Category::Blocker;
 
         if (auto const uSetFlag = tx[~sfSetFlag]; uSetFlag &&
             (*uSetFlag == asfRequireAuth || *uSetFlag == asfDisableMaster ||
              *uSetFlag == asfAccountTxnID))
-            return TxConsequences::Blocker;
+            return TxConsequences::Category::Blocker;
 
         if (auto const uClearFlag = tx[~sfClearFlag]; uClearFlag &&
             (*uClearFlag == asfRequireAuth || *uClearFlag == asfDisableMaster ||
              *uClearFlag == asfAccountTxnID))
-            return TxConsequences::Blocker;
+            return TxConsequences::Category::Blocker;
 
-        return TxConsequences::Normal;
+        return TxConsequences::Category::Normal;
     };
 
     return TxConsequences{ctx.tx, getTxConsequencesCategory(ctx.tx)};
