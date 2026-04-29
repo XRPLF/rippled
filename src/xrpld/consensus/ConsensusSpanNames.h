@@ -78,9 +78,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl {
-namespace telemetry {
-namespace cons_span {
+namespace xrpl::telemetry::cons_span {
 
 // ===== Span name segments ====================================================
 
@@ -240,6 +238,4 @@ inline constexpr auto decreased = makeStr("decreased");
 inline constexpr auto unchanged = makeStr("unchanged");
 }  // namespace val
 
-}  // namespace cons_span
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry::cons_span

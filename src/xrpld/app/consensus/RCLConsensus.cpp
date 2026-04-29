@@ -63,6 +63,8 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/SpanGuard.h>
+#include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
 #include <xrpl/telemetry/TraceContextPropagator.h>
 
@@ -357,7 +359,7 @@ RCLConsensus::Adaptor::onClose(
         telemetry::cons_span::op::ledgerClose);
     span.setAttribute(
         telemetry::cons_span::attr::ledgerSeq,
-        static_cast<int64_t>(ledger.ledger_->header().seq + 1));
+        static_cast<int64_t>(ledger.ledger_->header().seq) + 1);
     span.setAttribute(telemetry::cons_span::attr::mode, toDisplayString(mode).c_str());
 
     bool const wrongLCL = mode == ConsensusMode::wrongLedger;
@@ -556,7 +558,7 @@ RCLConsensus::Adaptor::doAccept(
         ? acceptSpan->childSpan(telemetry::cons_span::acceptApply)
         : telemetry::SpanGuard::childSpan(telemetry::cons_span::acceptApply, roundSpanContext_);
     doAcceptSpan.setAttribute(
-        telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq() + 1));
+        telemetry::cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLedger.seq()) + 1);
     doAcceptSpan.setAttribute(
         telemetry::cons_span::attr::closeTime,
         static_cast<int64_t>(consensusCloseTime.time_since_epoch().count()));
@@ -582,9 +584,17 @@ RCLConsensus::Adaptor::doAccept(
         static_cast<int64_t>(rawCloseTimes.peers.size()));
     {
         auto const prevRes = prevLedger.closeTimeResolution();
-        std::string dir = (closeResolution > prevRes) ? "increased"
-            : (closeResolution < prevRes)             ? "decreased"
-                                                      : "unchanged";
+        auto const dir = [&]() -> std::string {
+            if (closeResolution > prevRes)
+            {
+                return "increased";
+            }
+            if (closeResolution < prevRes)
+            {
+                return "decreased";
+            }
+            return "unchanged";
+        }();
         doAcceptSpan.setAttribute(telemetry::cons_span::attr::resolutionDirection, std::move(dir));
     }
 
@@ -1218,10 +1228,10 @@ RCLConsensus::Adaptor::startRoundTracing(RCLCxLedger const& prevLgr)
         return;
 
     roundSpan_->setAttribute(cons_span::attr::ledgerId, to_string(prevLgr.id()).c_str());
-    roundSpan_->setAttribute(cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq() + 1));
+    roundSpan_->setAttribute(cons_span::attr::ledgerSeq, static_cast<int64_t>(prevLgr.seq()) + 1);
     roundSpan_->setAttribute(cons_span::attr::mode, toDisplayString(mode_.load()).c_str());
     roundSpan_->setAttribute(cons_span::attr::traceStrategy, strategy.c_str());
-    roundSpan_->setAttribute(cons_span::attr::roundId, static_cast<int64_t>(prevLgr.seq() + 1));
+    roundSpan_->setAttribute(cons_span::attr::roundId, static_cast<int64_t>(prevLgr.seq()) + 1);
 
     roundSpanContext_ = roundSpan_->captureContext();
 }
