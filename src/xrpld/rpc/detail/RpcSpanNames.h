@@ -37,6 +37,7 @@ inline constexpr auto command = join(seg::rpc, makeStr("command"));
 
 namespace op {
 inline constexpr auto wsMessage = makeStr("ws_message");
+inline constexpr auto wsUpgrade = makeStr("ws_upgrade");
 inline constexpr auto httpRequest = makeStr("http_request");
 inline constexpr auto process = makeStr("process");
 }  // namespace op
@@ -65,6 +66,7 @@ using telemetry::attr_val::error;
 using telemetry::attr_val::success;
 inline constexpr auto admin = makeStr("admin");
 inline constexpr auto user = makeStr("user");
+inline constexpr auto unknownCommand = makeStr("unknown_command");
 }  // namespace val
 
 }  // namespace rpc_span

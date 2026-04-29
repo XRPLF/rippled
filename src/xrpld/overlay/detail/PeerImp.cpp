@@ -9,6 +9,7 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxSpanNames.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/Validations.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/ClusterNode.h>
@@ -1442,11 +1443,11 @@ PeerImp::handleTransaction(
         uint256 const txID = stx->getTransactionID();
 
         using namespace telemetry;
-        auto span = txReceiveSpan(txID, *m);
-        span.setAttribute(tx_span::attr::hash, to_string(txID).c_str());
-        span.setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
+        auto span = std::make_shared<SpanGuard>(txReceiveSpan(txID, *m));
+        span->setAttribute(tx_span::attr::hash, to_string(txID).c_str());
+        span->setAttribute(tx_span::attr::peerId, static_cast<int64_t>(id_));
         if (auto const version = getVersion(); !version.empty())
-            span.setAttribute(tx_span::attr::peerVersion, version.c_str());
+            span->setAttribute(tx_span::attr::peerVersion, version.c_str());
 
         // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
         // LCOV_EXCL_START
@@ -1480,11 +1481,11 @@ PeerImp::handleTransaction(
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
         {
-            span.setAttribute(tx_span::attr::suppressed, true);
+            span->setAttribute(tx_span::attr::suppressed, true);
             // we have seen this transaction recently
             if (any(flags & HashRouterFlags::BAD))
             {
-                span.setAttribute(tx_span::attr::status, tx_span::val::knownBad);
+                span->setAttribute(tx_span::attr::status, tx_span::val::knownBad);
                 fee_.update(Resource::feeUselessData, "known bad");
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
             }
@@ -1542,7 +1543,8 @@ PeerImp::handleTransaction(
                  flags,
                  checkSignature,
                  batch,
-                 stx]() {
+                 stx,
+                 sp = std::move(span)]() {
                     if (auto peer = weak.lock())
                         peer->checkTransaction(flags, checkSignature, stx, batch);
                 });
@@ -1957,9 +1959,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
+    auto span = std::make_shared<telemetry::SpanGuard>(telemetry::SpanGuard::span(
+        telemetry::TraceCategory::Consensus,
+        telemetry::seg::consensus,
+        telemetry::cons_span::op::proposalReceive));
+    span->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
+    span->setAttribute(telemetry::cons_span::attr::round, static_cast<int64_t>(set.proposeseq()));
+
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
-        isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "checkPropose", [weak, isTrusted, m, proposal]() {
+        isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
+        "checkPropose",
+        [weak, isTrusted, m, proposal, sp = std::move(span)]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
         });
@@ -2534,6 +2545,18 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
+        auto span = std::make_shared<telemetry::SpanGuard>(telemetry::SpanGuard::span(
+            telemetry::TraceCategory::Consensus,
+            telemetry::seg::consensus,
+            telemetry::cons_span::op::validationReceive));
+        span->setAttribute(telemetry::cons_span::attr::trusted, isTrusted);
+        if (val->isFieldPresent(sfLedgerSequence))
+        {
+            span->setAttribute(
+                telemetry::cons_span::attr::ledgerSeq,
+                static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
+        }
+
         if (!isTrusted && (tracking_.load() == Tracking::diverged))
         {
             JLOG(p_journal_.debug()) << "Dropping untrusted validation from diverged peer";
@@ -2544,7 +2567,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
             std::weak_ptr<PeerImp> const weak = shared_from_this();
             app_.getJobQueue().addJob(
-                isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, name, [weak, val, m, key]() {
+                isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
+                name,
+                [weak, val, m, key, sp = std::move(span)]() {
                     if (auto peer = weak.lock())
                         peer->checkValidation(val, key, m);
                 });

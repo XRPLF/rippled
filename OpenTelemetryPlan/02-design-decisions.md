@@ -251,8 +251,8 @@ resource::SemanticConventions::SERVICE_INSTANCE_ID = <node_public_key_base58>
 "xrpl.consensus.proposers_total"   = int64    // Total peer positions
 "xrpl.consensus.agree_count"       = int64    // Peers that agree (haveConsensus)
 "xrpl.consensus.disagree_count"    = int64    // Peers that disagree
-"xrpl.consensus.threshold_percent" = int64    // Current threshold (50/65/70/95)
-"xrpl.consensus.result"            = string   // "yes", "no", "moved_on"
+"xrpl.consensus.threshold_percent" = int64    // Close-time consensus threshold (avCT_CONSENSUS_PCT = 75%)
+"xrpl.consensus.result"            = string   // "yes", "no", "moved_on", "expired"
 "xrpl.consensus.mode.old"          = string   // Previous consensus mode
 "xrpl.consensus.mode.new"          = string   // New consensus mode
 ```

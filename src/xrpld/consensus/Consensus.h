@@ -1,8 +1,8 @@
 #pragma once
 
-#include <xrpld/app/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpld/consensus/ConsensusProposal.h>
+#include <xrpld/consensus/ConsensusSpanNames.h>
 #include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/consensus/DisputedTx.h>
 
@@ -609,6 +609,11 @@ private:
      */
     std::optional<xrpl::telemetry::SpanGuard> establishSpan_;
 
+    /** Span for the open phase of consensus.
+     *  Created in startRoundInternal(); cleared (ended) in closeLedger().
+     */
+    std::optional<xrpl::telemetry::SpanGuard> openSpan_;
+
     /** Create the establish-phase span if not yet active.
      *  Called on each phaseEstablish() invocation; no-op while span is live.
      */
@@ -695,6 +700,11 @@ Consensus<Adaptor>::startRoundInternal(
     CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::open, "
                   "previous ledgerID: "
                << prevLedgerID << ", seq: " << prevLedger.seq() << ". ";
+    openSpan_.emplace(
+        telemetry::SpanGuard::span(
+            telemetry::TraceCategory::Consensus,
+            telemetry::seg::consensus,
+            telemetry::cons_span::op::phaseOpen));
     mode_.set(mode, adaptor_);
     now_ = now;
     prevLedgerID_ = prevLedgerID;
@@ -1420,6 +1430,7 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
     // We should not be closing if we already have a position
     XRPL_ASSERT(!result_, "xrpl::Consensus::closeLedger : result is not set");
 
+    openSpan_.reset();
     phase_ = ConsensusPhase::establish;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
     rawCloseTimes_.self = now_;
@@ -1477,9 +1488,12 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
     XRPL_ASSERT(result_, "xrpl::Consensus::updateOurPositions : result is set");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, "update_positions");
+    auto span =
+        SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::updatePositions);
     span.setAttribute(cons_span::attr::convergePercent, static_cast<int64_t>(convergePercent_));
     span.setAttribute(cons_span::attr::proposers, static_cast<int64_t>(currPeerPositions_.size()));
+    span.setAttribute(
+        cons_span::attr::disputesCount, static_cast<int64_t>(result_->disputes.size()));
     ConsensusParms const& parms = adaptor_.parms();
 
     // Compute a cutoff time
@@ -1540,10 +1554,14 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
                     mutableSet->erase(txId);
                 }
 
+                auto const yaysStr = std::to_string(dispute.getYays());
+                auto const naysStr = std::to_string(dispute.getNays());
                 span.addEvent(
-                    "dispute.resolve",
+                    cons_span::event::disputeResolve,
                     {{cons_span::attr::txId, to_string(txId)},
-                     {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"}});
+                     {cons_span::attr::disputeOurVote, dispute.getOurVote() ? "yes" : "no"},
+                     {cons_span::attr::disputeYays, yaysStr},
+                     {cons_span::attr::disputeNays, naysStr}});
             }
         }
 
@@ -1568,6 +1586,7 @@ Consensus<Adaptor>::updateOurPositions(std::unique_ptr<std::stringstream> const&
         if (newState)
             closeTimeAvalancheState_ = *newState;
         CLOG(clog) << "neededWeight " << neededWeight << ". ";
+        span.setAttribute(cons_span::attr::avalancheThreshold, static_cast<int64_t>(neededWeight));
 
         int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::proposing)
@@ -1672,7 +1691,7 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
     XRPL_ASSERT(result_, "xrpl::Consensus::haveConsensus : has result");
     // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     using namespace telemetry;
-    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, "check");
+    auto span = SpanGuard::span(TraceCategory::Consensus, seg::consensus, cons_span::op::check);
 
     // CHECKME: should possibly count unacquired TX sets as disagreeing
     int agree = 0, disagree = 0;
@@ -1785,6 +1804,8 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
         stateStr = "yes";
     else if (result_->state == ConsensusState::MovedOn)
         stateStr = "moved_on";
+    else if (result_->state == ConsensusState::Expired)
+        stateStr = "expired";
     span.setAttribute(cons_span::attr::result, stateStr);
 
     CLOG(clog) << "Consensus has been reached. ";
@@ -1916,7 +1937,9 @@ Consensus<Adaptor>::startEstablishTracing()
         return;
     establishSpan_.emplace(
         telemetry::SpanGuard::span(
-            telemetry::TraceCategory::Consensus, telemetry::seg::consensus, "establish"));
+            telemetry::TraceCategory::Consensus,
+            telemetry::seg::consensus,
+            telemetry::cons_span::op::establish));
 }
 
 template <class Adaptor>
