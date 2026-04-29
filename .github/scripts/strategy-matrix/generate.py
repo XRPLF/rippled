@@ -73,7 +73,7 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
                     if (
                         f"{os['compiler_name']}-{os['compiler_version']}" == "gcc-15"
                         and build_type == "Debug"
-                        and architecture["platform"] in ["linux/amd64", "linux/arm64"]
+                        and architecture["platform"] == "linux/amd64"
                     ):
                         skip = False
                     if (
@@ -231,10 +231,6 @@ def generate_strategy_matrix(all: bool, config: Config) -> list:
             config_name += "-coverage"
         if "-Dunity=ON" in cmake_args:
             config_name += "-unity"
-
-        # TEMP: Only run ARM64 sanitizer configs for build fix validation.
-        if config_name != "debian-bookworm-gcc-15-arm64-debug":
-            continue
 
         # Add the configuration to the list, with the most unique fields first,
         # so that they are easier to identify in the GitHub Actions UI, as long
