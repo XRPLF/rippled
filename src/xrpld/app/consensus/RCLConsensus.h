@@ -12,12 +12,7 @@
 #include <xrpl/core/JobQueue.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/shamap/SHAMap.h>
-
-#ifdef XRPL_ENABLE_TELEMETRY
 #include <xrpl/telemetry/SpanGuard.h>
-
-#include <opentelemetry/context/context.h>
-#endif
 
 #include <atomic>
 #include <memory>
@@ -33,10 +28,6 @@ class InboundTransactions;
 class LocalTxs;
 class LedgerMaster;
 class ValidatorKeys;
-
-namespace telemetry {
-class Telemetry;
-}  // namespace telemetry
 
 /** Manages the generic consensus algorithm for use by the RCL.
  */
@@ -79,23 +70,14 @@ class RCLConsensus
         RCLCensorshipDetector<TxID, LedgerIndex> censorshipDetector_;
         NegativeUNLVote nUnlVote_;
 
-#ifdef XRPL_ENABLE_TELEMETRY
         /** Span for the current consensus round.
          *
          *  Created in preStartRound(), ended (via reset()) when the next
-         *  round begins.  When consensusTraceStrategy is "deterministic",
+         *  round begins. When consensusTraceStrategy is "deterministic",
          *  the trace_id is derived from previousLedger.id() so that all
          *  validators in the same round share the same trace_id.
          */
         std::optional<telemetry::SpanGuard> roundSpan_;
-
-        /** Context captured from the previous consensus round.
-         *
-         *  Used to create span links (follows-from) between consecutive
-         *  rounds, establishing a causal chain in the trace backend.
-         *  Default-constructed (empty) until the first round completes.
-         */
-        opentelemetry::context::Context prevRoundContext_;
 
         /** SpanContext snapshot of the current round span.
          *
@@ -104,8 +86,7 @@ class RCLConsensus
          *  worker thread — can build span links without accessing roundSpan_
          *  across threads.
          */
-        std::optional<opentelemetry::trace::SpanContext> roundSpanContext_;
-#endif
+        telemetry::SpanContext roundSpanContext_;
 
     public:
         using Ledger_t = RCLCxLedger;
@@ -195,50 +176,26 @@ class RCLConsensus
             return parms_;
         }
 
-#ifdef XRPL_ENABLE_TELEMETRY
-        /** Provide access to the telemetry subsystem for consensus tracing.
-         *
-         * Called by Consensus.h template methods (phaseEstablish,
-         * updateOurPositions, haveConsensus) to create child spans under the
-         * consensus round.  When XRPL_ENABLE_TELEMETRY is not defined, the
-         * macros in Consensus.h expand to no-ops and this method is never
-         * called.
-         *
-         * @return Reference to the application's Telemetry instance.
-         */
-        telemetry::Telemetry&
-        getTelemetry();
-
         /** Set up the consensus round span and link it to the previous round.
          *
-         * Extracted from preStartRound() to keep business logic free of
-         * telemetry details.  Saves the previous round's OTel context for
-         * span-link construction, ends the old round span, and creates a
-         * new "consensus.round" span.  Depending on the configured trace
-         * strategy the trace_id is either deterministic (derived from
-         * @p prevLgr hash) or random.
+         * Saves the previous round's context for span-link construction,
+         * ends the old round span, and creates a new "consensus.round" span.
+         * Depending on the configured trace strategy the trace_id is either
+         * deterministic (derived from prevLgr hash) or random.
          *
          * @param prevLgr  The ledger that will be the prior ledger for the
-         *                 new round — used to derive deterministic trace IDs
-         *                 and to set standard span attributes.
+         *                 new round.
          */
         void
         startRoundTracing(RCLCxLedger const& prevLgr);
 
-        /** Create the "consensus.validation.send" span with a link to the
-         *  current round span.
-         *
-         * Extracted from validate() to keep the validation business logic
-         * free of span-construction boilerplate.  The returned SpanGuard
-         * must be assigned to a local `_xrpl_guard_` so that subsequent
-         * XRPL_TRACE_SET_ATTR calls in the caller can reference it.
+        /** Create the "consensus.validation.send" span linked to the round.
          *
          * @return An engaged optional SpanGuard if tracing is active,
          *         std::nullopt otherwise.
          */
         std::optional<telemetry::SpanGuard>
         createValidationSpan();
-#endif
 
     private:
         //---------------------------------------------------------------------
@@ -410,8 +367,17 @@ class RCLConsensus
         void
         notify(protocol::NodeEvent ne, RCLCxLedger const& ledger, bool haveCorrectLCL);
 
+        /** Create a consensus.accept span as a child of the round span.
+            Returned via shared_ptr so it can be captured into the
+            jtACCEPT lambda and live until doAccept completes.
+         */
+        std::shared_ptr<telemetry::SpanGuard>
+        makeAcceptSpan(Result const& result);
+
         /** Accept a new ledger based on the given transactions.
 
+            @param acceptSpan  Parent span created by makeAcceptSpan();
+                               accept.apply is created as its child.
             @ref onAccept
          */
         void
@@ -421,7 +387,8 @@ class RCLConsensus
             NetClock::duration closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            Json::Value&& consensusJson,
+            std::shared_ptr<telemetry::SpanGuard> acceptSpan);
 
         /** Build the new last closed ledger.
 
@@ -556,7 +523,7 @@ public:
     RCLCxLedger::ID
     prevLedgerID() const
     {
-        std::lock_guard _{mutex_};
+        std::lock_guard const _{mutex_};
         return consensus_.prevLedgerID();
     }
 

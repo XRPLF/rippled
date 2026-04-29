@@ -1,41 +1,80 @@
+#include <xrpld/rpc/ServerHandler.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
-#include <xrpld/rpc/ServerHandler.h>
+#include <xrpld/rpc/detail/RpcSpanNames.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/detail/WSInfoSub.h>
-#include <xrpld/rpc/json_body.h>
-#include <xrpld/telemetry/TracingInstrumentation.h>
+#include <xrpld/rpc/json_body.h>  // IWYU pragma: keep
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ApiVersion.h>
+#include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/resource/Charge.h>
+#include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/InfoSub.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/server/Port.h>
 #include <xrpl/server/Server.h>
+#include <xrpl/server/Session.h>
 #include <xrpl/server/SimpleWriter.h>
+#include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
+#include <xrpl/telemetry/SpanGuard.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/buffer.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/fields.hpp>
+#include <boost/beast/http/status.hpp>
 #include <boost/beast/http/string_body.hpp>
+#include <boost/beast/http/verb.hpp>
+#include <boost/beast/websocket/impl/rfc6455.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <algorithm>
+#include <cctype>
+#include <chrono>
+#include <exception>
+#include <map>
 #include <memory>
-#include <stdexcept>
+#include <mutex>
+#include <ostream>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
+using namespace telemetry;
 
 class Peer;
 class LedgerMaster;
@@ -75,16 +114,16 @@ authorized(Port const& port, std::map<std::string, std::string> const& h)
         return true;
 
     auto const it = h.find("authorization");
-    if ((it == h.end()) || (it->second.substr(0, 6) != "Basic "))
+    if ((it == h.end()) || (!it->second.starts_with("Basic ")))
         return false;
     std::string strUserPass64 = it->second.substr(6);
     boost::trim(strUserPass64);
-    std::string strUserPass = base64_decode(strUserPass64);
-    std::string::size_type nColon = strUserPass.find(":");
+    std::string const strUserPass = base64_decode(strUserPass64);
+    std::string::size_type const nColon = strUserPass.find(':');
     if (nColon == std::string::npos)
         return false;
-    std::string strUser = strUserPass.substr(0, nColon);
-    std::string strPassword = strUserPass.substr(nColon + 1);
+    std::string const strUser = strUserPass.substr(0, nColon);
+    std::string const strPassword = strUserPass.substr(nColon + 1);
     return strUser == port.user && strPassword == port.password;
 }
 
@@ -159,7 +198,7 @@ ServerHandler::onAccept(Session& session, boost::asio::ip::tcp::endpoint endpoin
     auto const& port = session.port();
 
     auto const c = [this, &port]() {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         return ++count_[port];
     }();
 
@@ -189,13 +228,17 @@ ServerHandler::onHandoff(
         if (!is_ws)
             return statusRequestResponse(request, http::status::unauthorized);
 
+        auto span =
+            SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsUpgrade);
         std::shared_ptr<WSSession> ws;
         try
         {
             ws = session.websocketUpgrade();
+            span.setOk();
         }
         catch (std::exception const& e)
         {
+            span.recordException(e);
             JLOG(m_journal.error()) << "Exception upgrading websocket: " << e.what() << "\n";
             return statusRequestResponse(request, http::status::internal_server_error);
         }
@@ -242,9 +285,8 @@ build_map(boost::beast::http::fields const& h)
         // key cannot be a std::string_view because it needs to be used in
         // map and along with iterators
         std::string key(e.name_string());
-        std::transform(key.begin(), key.end(), key.begin(), [](auto kc) {
-            return std::tolower(static_cast<unsigned char>(kc));
-        });
+        std::ranges::transform(
+            key, key.begin(), [](auto kc) { return std::tolower(static_cast<unsigned char>(kc)); });
         c[key] = e.value();
     }
     return c;
@@ -267,8 +309,6 @@ buffers_to_string(ConstBufferSequence const& bs)
 void
 ServerHandler::onRequest(Session& session)
 {
-    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.request");
-
     // Make sure RPC is enabled on the port
     if (session.port().protocol.count("http") == 0 && session.port().protocol.count("https") == 0)
     {
@@ -285,7 +325,7 @@ ServerHandler::onRequest(Session& session)
         return;
     }
 
-    std::shared_ptr<Session> detachedSession = session.detach();
+    std::shared_ptr<Session> const detachedSession = session.detach();
     auto const postResult = m_jobQueue.postCoro(
         jtCLIENT_RPC, "RPC-Client", [this, detachedSession](std::shared_ptr<JobQueue::Coro> coro) {
             processSession(detachedSession, coro);
@@ -308,6 +348,10 @@ ServerHandler::onWSMessage(
     auto const size = boost::asio::buffer_size(buffers);
     if (size > RPC::Tuning::maxRequestSize || !Json::Reader{}.parse(jv, buffers) || !jv.isObject())
     {
+        auto span =
+            SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
+        span.setError("invalid_json");
+
         Json::Value jvResult(Json::objectValue);
         jvResult[jss::type] = jss::error;
         jvResult[jss::error] = "jsonInvalid";
@@ -346,14 +390,14 @@ ServerHandler::onWSMessage(
 void
 ServerHandler::onClose(Session& session, boost::system::error_code const&)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     --count_[session.port()];
 }
 
 void
 ServerHandler::onStopped(Server&)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     stopped_ = true;
     condition_.notify_one();
 }
@@ -384,7 +428,7 @@ ServerHandler::processSession(
     std::shared_ptr<JobQueue::Coro> const& coro,
     Json::Value const& jv)
 {
-    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.ws_message");
+    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::wsMessage);
     auto is = std::static_pointer_cast<WSInfoSub>(session->appDefined);
     if (is->getConsumer().disconnect(m_journal))
     {
@@ -443,18 +487,18 @@ ServerHandler::processSession(
         else
         {
             RPC::JsonContext context{
-                {app_.getJournal("RPCHandler"),
-                 app_,
-                 loadType,
-                 app_.getOPs(),
-                 app_.getLedgerMaster(),
-                 is->getConsumer(),
-                 role,
-                 coro,
-                 is,
-                 apiVersion},
+                {.j = app_.getJournal("RPCHandler"),
+                 .app = app_,
+                 .loadType = loadType,
+                 .netOps = app_.getOPs(),
+                 .ledgerMaster = app_.getLedgerMaster(),
+                 .consumer = is->getConsumer(),
+                 .role = role,
+                 .coro = coro,
+                 .infoSub = is,
+                 .apiVersion = apiVersion},
                 jv,
-                {is->user(), is->forwarded_for()}};
+                {.user = is->user(), .forwardedFor = is->forwarded_for()}};
 
             auto start = std::chrono::system_clock::now();
             RPC::doCommand(context, jr[jss::result]);
@@ -468,6 +512,8 @@ ServerHandler::processSession(
         jr[jss::result] = RPC::make_error(rpcINTERNAL);
         JLOG(m_journal.error()) << "Exception while processing WS: " << ex.what() << "\n"
                                 << "Input JSON: " << Json::Compact{Json::Value{jv}};
+        span.recordException(ex);
+        span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
         // LCOV_EXCL_STOP
     }
 
@@ -527,6 +573,9 @@ ServerHandler::processSession(
     std::shared_ptr<Session> const& session,
     std::shared_ptr<JobQueue::Coro> coro)
 {
+    [[maybe_unused]] auto span =
+        SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::httpRequest);
+
     processRequest(
         session->port(),
         buffers_to_string(session->request().body().data()),
@@ -577,7 +626,7 @@ ServerHandler::processRequest(
     std::string_view forwardedFor,
     std::string_view user)
 {
-    XRPL_TRACE_RPC(app_.getTelemetry(), "rpc.process");
+    auto span = SpanGuard::span(TraceCategory::Rpc, rpc_span::prefix::rpc, rpc_span::op::process);
     auto rpcJ = app_.getJournal("RPC");
 
     Json::Value jsonOrig;
@@ -737,7 +786,7 @@ ServerHandler::processRequest(
             continue;
         }
 
-        std::string strMethod = method.asString();
+        std::string const strMethod = method.asString();
         if (strMethod.empty())
         {
             usage.charge(Resource::feeMalformedRPC);
@@ -827,18 +876,18 @@ ServerHandler::processRequest(
         Resource::Charge loadType = Resource::feeReferenceRPC;
 
         RPC::JsonContext context{
-            {m_journal,
-             app_,
-             loadType,
-             m_networkOPs,
-             app_.getLedgerMaster(),
-             usage,
-             role,
-             coro,
-             InfoSub::pointer(),
-             apiVersion},
+            {.j = m_journal,
+             .app = app_,
+             .loadType = loadType,
+             .netOps = m_networkOPs,
+             .ledgerMaster = app_.getLedgerMaster(),
+             .consumer = usage,
+             .role = role,
+             .coro = coro,
+             .infoSub = InfoSub::pointer(),
+             .apiVersion = apiVersion},
             params,
-            {user, forwardedFor}};
+            {.user = user, .forwardedFor = forwardedFor}};
         Json::Value result;
 
         auto start = std::chrono::system_clock::now();
@@ -854,6 +903,8 @@ ServerHandler::processRequest(
             JLOG(m_journal.error())
                 << "Internal error : " << ex.what()
                 << " when processing request: " << Json::Compact{Json::Value{params}};
+            span.recordException(ex);
+            span.setAttribute(rpc_span::attr::status, rpc_span::val::error);
             // LCOV_EXCL_STOP
         }
 
@@ -1201,9 +1252,8 @@ setup_Client(ServerHandler::Setup& setup)
 static void
 setup_Overlay(ServerHandler::Setup& setup)
 {
-    auto const iter = std::find_if(setup.ports.cbegin(), setup.ports.cend(), [](Port const& port) {
-        return port.protocol.count("peer") != 0;
-    });
+    auto const iter = std::ranges::find_if(
+        setup.ports, [](Port const& port) { return port.protocol.count("peer") != 0; });
     if (iter == setup.ports.cend())
     {
         setup.overlay = {};

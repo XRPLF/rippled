@@ -7,10 +7,10 @@
 #include <xrpl/beast/unit_test/detail/const_container.h>
 
 #include <string>
+#include <utility>
 #include <vector>
 
-namespace beast {
-namespace unit_test {
+namespace beast::unit_test {
 
 /** Holds a set of test condition outcomes in a testcase. */
 class case_results
@@ -23,7 +23,7 @@ public:
         {
         }
 
-        test(bool pass_, std::string const& reason_) : pass(pass_), reason(reason_)
+        test(bool pass_, std::string reason_) : pass(pass_), reason(std::move(reason_))
         {
         }
 
@@ -35,22 +35,20 @@ private:
     class tests_t : public detail::const_container<std::vector<test>>
     {
     private:
-        std::size_t failed_;
+        std::size_t failed_{0};
 
     public:
-        tests_t() : failed_(0)
-        {
-        }
+        tests_t() = default;
 
         /** Returns the total number of test conditions. */
-        std::size_t
+        [[nodiscard]] std::size_t
         total() const
         {
             return cont().size();
         }
 
         /** Returns the number of failed test conditions. */
-        std::size_t
+        [[nodiscard]] std::size_t
         failed() const
         {
             return failed_;
@@ -86,12 +84,12 @@ private:
     std::string name_;
 
 public:
-    explicit case_results(std::string const& name = "") : name_(name)
+    explicit case_results(std::string name = "") : name_(std::move(name))
     {
     }
 
     /** Returns the name of this testcase. */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
@@ -115,26 +113,26 @@ private:
     std::size_t failed_ = 0;
 
 public:
-    explicit suite_results(std::string const& name = "") : name_(name)
+    explicit suite_results(std::string name = "") : name_(std::move(name))
     {
     }
 
     /** Returns the name of this suite. */
-    std::string const&
+    [[nodiscard]] std::string const&
     name() const
     {
         return name_;
     }
 
     /** Returns the total number of test conditions. */
-    std::size_t
+    [[nodiscard]] std::size_t
     total() const
     {
         return total_;
     }
 
     /** Returns the number of failures. */
-    std::size_t
+    [[nodiscard]] std::size_t
     failed() const
     {
         return failed_;
@@ -145,9 +143,9 @@ public:
     void
     insert(case_results&& r)
     {
-        cont().emplace_back(std::move(r));
         total_ += r.tests.total();
         failed_ += r.tests.failed();
+        cont().emplace_back(std::move(r));
     }
 
     void
@@ -167,31 +165,29 @@ public:
 class results : public detail::const_container<std::vector<suite_results>>
 {
 private:
-    std::size_t m_cases;
-    std::size_t total_;
-    std::size_t failed_;
+    std::size_t m_cases{0};
+    std::size_t total_{0};
+    std::size_t failed_{0};
 
 public:
-    results() : m_cases(0), total_(0), failed_(0)
-    {
-    }
+    results() = default;
 
     /** Returns the total number of test cases. */
-    std::size_t
+    [[nodiscard]] std::size_t
     cases() const
     {
         return m_cases;
     }
 
     /** Returns the total number of test conditions. */
-    std::size_t
+    [[nodiscard]] std::size_t
     total() const
     {
         return total_;
     }
 
     /** Returns the number of failures. */
-    std::size_t
+    [[nodiscard]] std::size_t
     failed() const
     {
         return failed_;
@@ -219,5 +215,4 @@ public:
     /** @} */
 };
 
-}  // namespace unit_test
-}  // namespace beast
+}  // namespace beast::unit_test

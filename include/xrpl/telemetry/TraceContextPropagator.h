@@ -4,15 +4,14 @@
 
     Provides serialization/deserialization of OTel trace context to/from
     Protocol Buffer TraceContext messages (P2P cross-node propagation).
+    Wired into the P2P message flow via PropagationHelpers.h for
+    TMTransaction, TMProposeSet, and TMValidation messages.
 
     Only compiled when XRPL_ENABLE_TELEMETRY is defined.
 
-    TODO: These utilities are not yet wired into the P2P message flow.
-    To enable cross-node distributed traces, call injectToProtobuf() in
-    PeerImp when sending TMTransaction/TMProposeSet messages, and call
-    extractFromProtobuf() in the corresponding message handlers to
-    reconstruct the parent span context before starting a child span.
-    This was deferred to validate single-node tracing performance first.
+    @see PropagationHelpers.h (high-level inject helpers),
+         TxTracing.h (transaction receive-side extraction),
+         ConsensusReceiveTracing.h (proposal/validation receive-side).
 */
 
 #ifdef XRPL_ENABLE_TELEMETRY
@@ -50,15 +49,14 @@ extractFromProtobuf(protocol::TraceContext const& proto)
 
     auto const* rawTraceId = reinterpret_cast<std::uint8_t const*>(proto.trace_id().data());
     auto const* rawSpanId = reinterpret_cast<std::uint8_t const*>(proto.span_id().data());
-    trace::TraceId traceId(opentelemetry::nostd::span<std::uint8_t const, 16>(rawTraceId, 16));
-    trace::SpanId spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(rawSpanId, 8));
-    // Default to not-sampled (0x00) per W3C Trace Context spec when
-    // the trace_flags field is absent.
-    trace::TraceFlags flags(
+    trace::TraceId const traceId(
+        opentelemetry::nostd::span<std::uint8_t const, 16>(rawTraceId, 16));
+    trace::SpanId const spanId(opentelemetry::nostd::span<std::uint8_t const, 8>(rawSpanId, 8));
+    trace::TraceFlags const flags(
         proto.has_trace_flags() ? static_cast<std::uint8_t>(proto.trace_flags())
                                 : static_cast<std::uint8_t>(0));
 
-    trace::SpanContext spanCtx(traceId, spanId, flags, /* remote = */ true);
+    trace::SpanContext const spanCtx(traceId, spanId, flags, /* remote = */ true);
 
     return opentelemetry::context::Context{}.SetValue(
         trace::kSpanKey,
@@ -75,7 +73,7 @@ injectToProtobuf(opentelemetry::context::Context const& ctx, protocol::TraceCont
 {
     namespace trace = opentelemetry::trace;
 
-    auto span = trace::GetSpan(ctx);
+    auto const span = trace::GetSpan(ctx);
     if (!span)
         return;
 

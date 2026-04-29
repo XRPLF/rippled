@@ -1,22 +1,60 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/domain.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/permissioned_dex.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/token.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpld/app/main/LoadManager.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/core/NetworkIDService.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
 
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <initializer_list>
+#include <iterator>
+#include <memory>
+#include <optional>
+#include <string>
 #include <tuple>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class Subscribe_test : public beast::unit_test::suite
 {
@@ -461,7 +499,7 @@ public:
                 if (!jv.isMember(jss::validated_hash))
                     return false;
 
-                uint32_t netID = env.app().getNetworkIDService().getNetworkID();
+                uint32_t const netID = env.app().getNetworkIDService().getNetworkID();
                 if (!jv.isMember(jss::network_id) || jv[jss::network_id] != netID)
                     return false;
 
@@ -783,10 +821,10 @@ public:
         using namespace jtx;
         using IdxHashVec = std::vector<std::tuple<int, std::string, bool, int>>;
 
-        Account alice("alice");
-        Account bob("bob");
-        Account carol("carol");
-        Account david("david");
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const david("david");
         ///////////////////////////////////////////////////////////////////
 
         /*
@@ -820,8 +858,8 @@ public:
                         idx = r[jss::account_history_tx_index].asInt();
                     if (r.isMember(jss::account_history_tx_first))
                         first_flag = true;
-                    bool boundary = r.isMember(jss::account_history_boundary);
-                    int ledger_idx = r[jss::ledger_index].asInt();
+                    bool const boundary = r.isMember(jss::account_history_boundary);
+                    int const ledger_idx = r[jss::ledger_index].asInt();
                     if (r.isMember(jss::transaction) && r[jss::transaction].isMember(jss::hash))
                     {
                         auto t{r[jss::transaction]};
@@ -932,7 +970,7 @@ public:
         // (-10, "E5B8B...", true, 4
 
         auto checkBoundary = [](IdxHashVec const& vec, bool /* forward */) {
-            size_t num_tx = vec.size();
+            size_t const num_tx = vec.size();
             for (size_t i = 0; i < num_tx; ++i)
             {
                 auto [idx, hash, boundary, ledger] = vec[i];
@@ -1075,7 +1113,7 @@ public:
             auto wscAccount = makeWSClient(env.app().config());
             auto wscTxHistory = makeWSClient(env.app().config());
 
-            std::array<Account, 2> accounts = {alice, bob};
+            std::array<Account, 2> const accounts = {alice, bob};
             env.fund(XRP(222222), accounts);
             BEAST_EXPECT(env.syncClose());
 
@@ -1143,7 +1181,7 @@ public:
             Env env(*this, single_thread_io(envconfig()));
             auto const USD_a = alice["USD"];
 
-            std::array<Account, 2> accounts = {alice, carol};
+            std::array<Account, 2> const accounts = {alice, carol};
             env.fund(XRP(333333), accounts);
             env.trust(USD_a(20000), carol);
             BEAST_EXPECT(env.syncClose());
@@ -1180,7 +1218,7 @@ public:
              * long transaction history
              */
             Env env(*this, single_thread_io(envconfig()));
-            std::array<Account, 2> accounts = {alice, carol};
+            std::array<Account, 2> const accounts = {alice, carol};
             env.fund(XRP(444444), accounts);
             BEAST_EXPECT(env.syncClose());
 
@@ -1234,7 +1272,7 @@ public:
             featurePermissionedDEX};
 
         Env env(*this, single_thread_io(envconfig()), all);
-        PermissionedDEX permDex(env);
+        PermissionedDEX const permDex(env);
         auto const alice = permDex.alice;
         auto const bob = permDex.bob;
         auto const carol = permDex.carol;
@@ -1331,8 +1369,8 @@ public:
                         return nftID;
                     });
                 // Sort both array to prepare for comparison
-                std::sort(metaIDs.begin(), metaIDs.end());
-                std::sort(actualNftIDs.begin(), actualNftIDs.end());
+                std::ranges::sort(metaIDs);
+                std::ranges::sort(actualNftIDs);
 
                 // Make sure the expect number of NFTs is correct
                 BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
@@ -1493,5 +1531,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Subscribe, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

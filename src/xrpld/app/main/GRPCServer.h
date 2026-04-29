@@ -13,6 +13,8 @@
 
 #include <grpcpp/grpcpp.h>
 
+#include <string_view>
+
 namespace xrpl {
 
 // Interface that CallData implements
@@ -65,6 +67,13 @@ private:
     std::uint16_t serverPort_ = 0;
 
     std::vector<boost::asio::ip::address> secureGatewayIPs_;
+
+    // TLS certificate paths
+    std::optional<std::string> sslCertPath_;
+    std::optional<std::string> sslKeyPath_;
+    std::optional<std::string> sslCertChainPath_;  // Intermediate CA certs for server cert chain
+    std::optional<std::string>
+        sslClientCAPath_;  // CA cert for client certificate verification (mTLS)
 
     beast::Journal journal_;
 
@@ -120,10 +129,14 @@ public:
     setupListeners();
 
     // Obtaining actually binded endpoint (if port 0 was used for server setup).
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:
+    // Create server credentials (TLS or insecure) based on configuration
+    std::shared_ptr<grpc::ServerCredentials>
+    createServerCredentials();
+
     // Class encompassing the state and logic needed to serve a request.
     template <class Request, class Response>
     class CallData : public Processor,
@@ -174,8 +187,11 @@ private:
 
         std::vector<boost::asio::ip::address> const& secureGatewayIPs_;
 
+        /// Human-readable name for telemetry spans (e.g. "GetLedger").
+        std::string_view name_;
+
     public:
-        virtual ~CallData() = default;
+        ~CallData() override = default;
 
         // Take in the "service" instance (in this case representing an
         // asynchronous server) and the completion queue "cq" used for
@@ -189,17 +205,18 @@ private:
             Forward<Request, Response> forward,
             RPC::Condition requiredCondition,
             Resource::Charge loadType,
-            std::vector<boost::asio::ip::address> const& secureGatewayIPs);
+            std::vector<boost::asio::ip::address> const& secureGatewayIPs,
+            std::string_view name = "");
 
         CallData(CallData const&) = delete;
 
         CallData&
         operator=(CallData const&) = delete;
 
-        virtual void
+        void
         process() override;
 
-        virtual bool
+        bool
         isFinished() override;
 
         std::shared_ptr<Processor>
@@ -234,14 +251,14 @@ private:
         getClientEndpoint();
 
         // If the request was proxied through
-        // another rippled node, returns the ip of the originating client.
+        // another xrpld node, returns the ip of the originating client.
         // Empty optional if request was not proxied or there was an error
         // decoding the client ip
         std::optional<boost::asio::ip::address>
         getProxiedClientIpAddress();
 
         // If the request was proxied through
-        // another rippled node, returns the endpoint of the originating client.
+        // another xrpld node, returns the endpoint of the originating client.
         // Empty optional if request was not proxied or there was an error
         // decoding the client endpoint
         std::optional<boost::asio::ip::tcp::endpoint>
@@ -261,7 +278,7 @@ private:
         bool
         clientIsUnlimited();
 
-        // True if the request was proxied through another rippled node prior
+        // True if the request was proxied through another xrpld node prior
         // to arriving here
         bool
         wasForwarded();
@@ -294,7 +311,7 @@ public:
 
     ~GRPCServer();
 
-    boost::asio::ip::tcp::endpoint
+    [[nodiscard]] boost::asio::ip::tcp::endpoint
     getEndpoint() const;
 
 private:

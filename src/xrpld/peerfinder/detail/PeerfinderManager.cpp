@@ -1,17 +1,34 @@
 #include <xrpld/peerfinder/PeerfinderManager.h>
+
+#include <xrpld/peerfinder/Slot.h>
 #include <xrpld/peerfinder/detail/Checker.h>
 #include <xrpld/peerfinder/detail/Logic.h>
+#include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 #include <xrpld/peerfinder/detail/StoreSqdb.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Gauge.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/protocol/PublicKey.h>
+
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
 
+#include <functional>
 #include <memory>
+#include <mutex>
 #include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 class ManagerImp : public Manager
 {
@@ -117,21 +134,21 @@ public:
     void
     on_endpoints(std::shared_ptr<Slot> const& slot, Endpoints const& endpoints) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         m_logic.on_endpoints(impl, endpoints);
     }
 
     void
     on_closed(std::shared_ptr<Slot> const& slot) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         m_logic.on_closed(impl);
     }
 
     void
     on_failure(std::shared_ptr<Slot> const& slot) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         m_logic.on_failure(impl);
     }
 
@@ -149,21 +166,21 @@ public:
     onConnected(std::shared_ptr<Slot> const& slot, beast::IP::Endpoint const& local_endpoint)
         override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.onConnected(impl, local_endpoint);
     }
 
     Result
     activate(std::shared_ptr<Slot> const& slot, PublicKey const& key, bool reserved) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.activate(impl, key, reserved);
     }
 
     std::vector<Endpoint>
     redirect(std::shared_ptr<Slot> const& slot) override
     {
-        SlotImp::ptr impl(std::dynamic_pointer_cast<SlotImp>(slot));
+        SlotImp::ptr const impl(std::dynamic_pointer_cast<SlotImp>(slot));
         return m_logic.redirect(impl);
     }
 
@@ -226,7 +243,7 @@ private:
     void
     collect_metrics()
     {
-        std::lock_guard lock(m_statsMutex);
+        std::lock_guard const lock(m_statsMutex);
         m_stats.activeInboundPeers = m_logic.counts_.inboundActive();
         m_stats.activeOutboundPeers = m_logic.counts_.out_active();
     }
@@ -249,5 +266,4 @@ make_Manager(
     return std::make_unique<ManagerImp>(io_context, clock, journal, config, collector);
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

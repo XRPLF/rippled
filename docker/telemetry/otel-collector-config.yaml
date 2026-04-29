@@ -1,15 +1,15 @@
-# OpenTelemetry Collector configuration for rippled development.
+# OpenTelemetry Collector configuration for xrpld development.
 #
 # Pipelines:
 #   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
 #   metrics: OTLP + StatsD receivers + spanmetrics connector -> Prometheus exporter
 #   logs:   filelog receiver -> batch processor -> otlphttp/Loki (Phase 8)
 #
-# rippled sends traces via OTLP/HTTP to port 4318. The collector batches
+# xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
 # them, forwards to Tempo, and derives RED metrics via the
 # spanmetrics connector, which Prometheus scrapes on port 8889.
 #
-# rippled sends beast::insight metrics natively via OTLP/HTTP to port 4318
+# xrpld sends beast::insight metrics natively via OTLP/HTTP to port 4318
 # (same endpoint as traces). The OTLP receiver feeds both the traces and
 # metrics pipelines. Metrics are exported to Prometheus alongside
 # span-derived metrics.
@@ -17,8 +17,8 @@
 # The StatsD receiver accepts beast::insight metrics from xrpld nodes
 # configured with server=statsd in [insight]. It listens on UDP port 8125.
 #
-# Phase 8: The filelog receiver tails rippled's debug.log files under
-# /var/log/rippled/ (mounted from the host). A regex_parser operator
+# Phase 8: The filelog receiver tails xrpld's debug.log files under
+# /var/log/xrpld/ (mounted from the host). A regex_parser operator
 # extracts timestamp, partition, severity, and optional trace_id/span_id
 # fields injected by Logs::format(). Parsed logs are exported to Grafana
 # Loki for log-trace correlation.
@@ -50,12 +50,12 @@ receivers:
         observer_type: "summary"
         summary:
           percentiles: [0, 50, 90, 95, 99, 100]
-  # Phase 8: Filelog receiver tails rippled debug.log files for log-trace
+  # Phase 8: Filelog receiver tails xrpld debug.log files for log-trace
   # correlation. Extracts structured fields (timestamp, partition, severity,
   # trace_id, span_id, message) via regex. The trace_id and span_id are
   # optional — only present when the log was emitted within an active span.
   filelog:
-    include: [/var/log/rippled/*/debug.log]
+    include: [/var/log/xrpld/*/debug.log]
     operators:
       - type: regex_parser
         regex: '^(?P<timestamp>\S+)\s+(?P<partition>\S+):(?P<severity>\S+)\s+(?:trace_id=(?P<trace_id>[a-f0-9]+)\s+span_id=(?P<span_id>[a-f0-9]+)\s+)?(?P<message>.*)$'
@@ -81,7 +81,9 @@ connectors:
       - name: xrpl.rpc.command
       - name: xrpl.rpc.status
       - name: xrpl.consensus.mode
+      - name: xrpl.consensus.close_time_correct
       - name: xrpl.tx.local
+      - name: xrpl.tx.suppressed
       - name: xrpl.peer.proposal.trusted
       - name: xrpl.peer.validation.trusted
 
@@ -111,7 +113,7 @@ service:
       receivers: [otlp, spanmetrics, statsd]
       processors: [batch]
       exporters: [prometheus]
-    # Phase 8: Log pipeline ingests rippled debug.log via filelog receiver,
+    # Phase 8: Log pipeline ingests xrpld debug.log via filelog receiver,
     # batches entries, and exports to Loki for log-trace correlation.
     logs:
       receivers: [filelog]

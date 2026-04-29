@@ -38,7 +38,7 @@ public:
         beast::insight::Collector::ptr const& collector,
         beast::Journal journal);
 
-    virtual ~LedgerMaster() = default;
+    ~LedgerMaster() override = default;
 
     LedgerIndex
     getCurrentLedgerIndex();
@@ -363,7 +363,7 @@ private:
     LedgerIndex const max_ledger_difference_{1000000};
 
     // Time that the previous upgrade warning was issued.
-    TimeKeeper::time_point upgradeWarningPrevTime_{};
+    TimeKeeper::time_point upgradeWarningPrevTime_;
 
 private:
     struct Stats
@@ -387,7 +387,7 @@ private:
     void
     collect_metrics()
     {
-        std::lock_guard lock(m_mutex);
+        std::lock_guard const lock(m_mutex);
         m_stats.validatedLedgerAge.set(getValidatedLedgerAge().count());
         m_stats.publishedLedgerAge.set(getPublishedLedgerAge().count());
     }

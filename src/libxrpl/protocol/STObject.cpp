@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STObject.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
@@ -22,7 +24,6 @@
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STNumber.h>
-#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
@@ -156,7 +157,7 @@ STObject::applyTemplate(SOTemplate const& type)
     auto throwFieldErr = [](std::string const& field, char const* description) {
         std::stringstream ss;
         ss << "Field '" << field << "' " << description;
-        std::string text{ss.str()};
+        std::string const text{ss.str()};
         JLOG(debugLog().error()) << "STObject::applyTemplate failed: " << text;
         Throw<FieldErr>(text);
     };
@@ -166,9 +167,8 @@ STObject::applyTemplate(SOTemplate const& type)
     v.reserve(type.size());
     for (auto const& e : type)
     {
-        auto const iter = std::find_if(v_.begin(), v_.end(), [&](detail::STVar const& b) {
-            return b.get().getFName() == e.sField();
-        });
+        auto const iter = std::ranges::find_if(
+            v_, [&](detail::STVar const& b) { return b.get().getFName() == e.sField(); });
         if (iter != v_.end())
         {
             if ((e.style() == soeDEFAULT) && iter->get().isDefault())
@@ -260,10 +260,9 @@ STObject::set(SerialIter& sit, int depth)
     // duplicate fields. This is a key invariant:
     auto const sf = getSortedFields(*this, withAllFields);
 
-    auto const dup =
-        std::adjacent_find(sf.cbegin(), sf.cend(), [](STBase const* lhs, STBase const* rhs) {
-            return lhs->getFName() == rhs->getFName();
-        });
+    auto const dup = std::ranges::adjacent_find(sf, [](STBase const* lhs, STBase const* rhs) {
+        return lhs->getFName() == rhs->getFName();
+    });
 
     if (dup != sf.cend())
         Throw<std::runtime_error>("Duplicate field detected");
@@ -348,7 +347,7 @@ STObject::isEquivalent(STBase const& t) const
 
     if (mType != nullptr && v->mType == mType)
     {
-        return std::equal(
+        return std::ranges::equal(
             begin(), end(), v->begin(), v->end(), [](STBase const& st1, STBase const& st2) {
                 return (st1.getSType() == st2.getSType()) && st1.isEquivalent(st2);
             });
@@ -357,10 +356,9 @@ STObject::isEquivalent(STBase const& t) const
     auto const sf1 = getSortedFields(*this, withAllFields);
     auto const sf2 = getSortedFields(*v, withAllFields);
 
-    return std::equal(
-        sf1.begin(), sf1.end(), sf2.begin(), sf2.end(), [](STBase const* st1, STBase const* st2) {
-            return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
-        });
+    return std::ranges::equal(sf1, sf2, [](STBase const* st1, STBase const* st2) {
+        return (st1->getSType() == st2->getSType()) && st1->isEquivalent(*st2);
+    });
 }
 
 uint256
@@ -400,7 +398,7 @@ STObject::getFieldIndex(SField const& field) const
 STBase const&
 STObject::peekAtField(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -411,7 +409,7 @@ STObject::peekAtField(SField const& field) const
 STBase&
 STObject::getField(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -428,7 +426,7 @@ STObject::getFieldSType(int index) const
 STBase const*
 STObject::peekAtPField(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return nullptr;
@@ -439,7 +437,7 @@ STObject::peekAtPField(SField const& field) const
 STBase*
 STObject::getPField(SField const& field, bool createOkay)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
     {
@@ -455,7 +453,7 @@ STObject::getPField(SField const& field, bool createOkay)
 bool
 STObject::isFieldPresent(SField const& field) const
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return false;
@@ -519,7 +517,7 @@ STObject::getFlags(void) const
 STBase*
 STObject::makeFieldPresent(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
     {
@@ -529,7 +527,7 @@ STObject::makeFieldPresent(SField const& field)
         return getPIndex(emplace_back(detail::nonPresentObject, field));
     }
 
-    STBase* f = getPIndex(index);
+    STBase* f = getPIndex(index);  // NOLINT(misc-const-correctness)
 
     if (f->getSType() != STI_NOTPRESENT)
         return f;
@@ -541,7 +539,7 @@ STObject::makeFieldPresent(SField const& field)
 void
 STObject::makeFieldAbsent(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         throwFieldNotFound(field);
@@ -556,7 +554,7 @@ STObject::makeFieldAbsent(SField const& field)
 bool
 STObject::delField(SField const& field)
 {
-    int index = getFieldIndex(field);
+    int const index = getFieldIndex(field);
 
     if (index == -1)
         return false;
@@ -640,7 +638,7 @@ STObject::getAccountID(SField const& field) const
 Blob
 STObject::getFieldVL(SField const& field) const
 {
-    STBlob empty;
+    STBlob const empty;
     STBlob const& b = getFieldByConstRef<STBlob>(field, empty);
     return Blob(b.data(), b.data() + b.size());
 }
@@ -747,6 +745,12 @@ void
 STObject::setFieldH128(SField const& field, uint128 const& v)
 {
     setFieldUsingSetValue<STUInt128>(field, v);
+}
+
+void
+STObject::setFieldH192(SField const& field, uint192 const& v)
+{
+    setFieldUsingSetValue<STUInt192>(field, v);
 }
 
 void
@@ -922,7 +926,7 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     }
 
     // Sort the fields by fieldCode.
-    std::sort(sf.begin(), sf.end(), [](STBase const* lhs, STBase const* rhs) {
+    std::ranges::sort(sf, [](STBase const* lhs, STBase const* rhs) {
         return lhs->getFName().fieldCode < rhs->getFName().fieldCode;
     });
 

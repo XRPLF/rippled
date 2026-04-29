@@ -7,8 +7,13 @@
 #include <xrpl/core/detail/Workers.h>
 #include <xrpl/json/json_value.h>
 
+// Include only the specific Boost.Coroutine2 headers actually used here.
+// Avoid `boost/coroutine2/all.hpp` because it transitively pulls in
+// `boost/context/pooled_fixedsize_stack.hpp`, whose `.malloc()` / `.free()`
+// member calls on `boost::pool` collide with MSVC's `_CRTDBG_MAP_ALLOC` macros
+// in Debug builds (see cmake/XrplCompiler.cmake).
 #include <boost/context/protected_fixedsize_stack.hpp>
-#include <boost/coroutine2/all.hpp>
+#include <boost/coroutine2/coroutine.hpp>
 
 #include <set>
 
@@ -16,7 +21,7 @@ namespace xrpl {
 
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 
 class Logs;
 struct Coro_create_t
@@ -45,7 +50,7 @@ public:
         JobQueue& jq_;
         JobType type_;
         std::string name_;
-        bool running_;
+        bool running_{false};
         std::mutex mutex_;
         std::mutex mutex_run_;
         std::condition_variable cv_;
@@ -128,7 +133,7 @@ public:
         beast::Journal journal,
         Logs& logs,
         perf::PerfLog& perfLog);
-    ~JobQueue();
+    ~JobQueue() override;
 
     /** Adds a job to the JobQueue.
 
@@ -141,8 +146,7 @@ public:
     */
     template <
         typename JobHandler,
-        typename =
-            std::enable_if_t<std::is_same<decltype(std::declval<JobHandler&&>()()), void>::value>>
+        typename = std::enable_if_t<std::is_same_v<decltype(std::declval<JobHandler&&>()()), void>>>
     bool
     addJob(JobType type, std::string const& name, JobHandler&& jobHandler)
     {
@@ -224,7 +228,7 @@ private:
 
     beast::Journal m_journal;
     mutable std::mutex m_mutex;
-    std::uint64_t m_lastJob;
+    std::uint64_t m_lastJob{0};
     std::set<Job> m_jobSet;
     JobCounter jobCounter_;
     std::atomic_bool stopping_{false};
@@ -233,7 +237,7 @@ private:
     JobTypeData m_invalidJobData;
 
     // The number of jobs currently in processTask()
-    int m_processCount;
+    int m_processCount{0};
 
     // The number of suspended coroutines
     int nSuspend_ = 0;

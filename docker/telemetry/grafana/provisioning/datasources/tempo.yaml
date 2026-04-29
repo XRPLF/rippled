@@ -1,7 +1,7 @@
 # Grafana datasource provisioning for Grafana Tempo.
 # Auto-configures Tempo as a trace data source on Grafana startup.
 # Access Grafana at http://localhost:3000, then use Explore -> Tempo
-# to browse rippled traces using TraceQL.
+# to browse xrpld traces using TraceQL.
 #
 # Search filters provide pre-configured dropdowns in the Explore UI.
 # Each phase adds filters for the span attributes it introduces.
@@ -21,6 +21,9 @@ datasources:
     jsonData:
       nodeGraph:
         enabled: true
+      # Service map and traces-to-metrics require a Prometheus datasource
+      # (not included in this stack). These features are inactive until a
+      # Prometheus service is added to docker-compose.yml.
       serviceMap:
         datasourceUid: prometheus
       # Phase 8: Trace-to-log correlation — enables one-click navigation
@@ -38,7 +41,7 @@ datasources:
       search:
         filters:
           # --- Node identification filters ---
-          # service.name: logical service name (default: "rippled").
+          # service.name: logical service name (default: "xrpld").
           #   Useful when running multiple service types in the same collector.
           - id: service-name
             tag: service.name
@@ -53,7 +56,7 @@ datasources:
             operator: "="
             scope: resource
             type: static
-          # service.version: rippled build version (e.g., "2.4.0-b1").
+          # service.version: xrpld build version (e.g., "2.4.0-b1").
           #   Filter traces from specific software releases.
           - id: node-version
             tag: service.version
@@ -62,29 +65,36 @@ datasources:
             type: dynamic
           # xrpl.network.id: numeric network identifier
           #   (0 = mainnet, 1 = testnet, 2 = devnet, etc.).
+          #   Derived from the [network_id] config section.
           - id: network-id
             tag: xrpl.network.id
             operator: "="
             scope: resource
             type: dynamic
-          # xrpl.network.type: human-readable network name
-          #   ("mainnet", "testnet", "devnet", "standalone").
+          # xrpl.network.type: human-readable network name derived from
+          #   network ID ("mainnet", "testnet", "devnet", "unknown").
           - id: network-type
             tag: xrpl.network.type
             operator: "="
             scope: resource
             type: static
           # --- Span intrinsic filters ---
+          # name: the span operation name (e.g., "rpc.command.server_info").
+          #   Use to find traces for a specific RPC command or subsystem.
           - id: span-name
             tag: name
             operator: "="
             scope: intrinsic
             type: static
+          # status: span completion status ("ok", "error", "unset").
+          #   Filter for failed operations to diagnose errors.
           - id: span-status
             tag: status
             operator: "="
             scope: intrinsic
             type: static
+          # duration: span wall-clock duration. Use with ">" operator
+          #   to find slow operations (e.g., duration > 500ms).
           - id: span-duration
             tag: duration
             operator: ">"
@@ -103,6 +113,17 @@ datasources:
             type: dynamic
           - id: rpc-role
             tag: xrpl.rpc.role
+            operator: "="
+            scope: span
+            type: dynamic
+          # Phase 2: Node health filters (Task 2.8)
+          - id: node-amendment-blocked
+            tag: xrpl.node.amendment_blocked
+            operator: "="
+            scope: span
+            type: static
+          - id: node-server-state
+            tag: xrpl.node.server_state
             operator: "="
             scope: span
             type: dynamic
@@ -150,6 +171,57 @@ datasources:
             type: dynamic
           - id: consensus-close-resolution
             tag: xrpl.consensus.close_resolution_ms
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-proposers
+            tag: xrpl.consensus.proposers
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-result
+            tag: xrpl.consensus.result
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-mode-old
+            tag: xrpl.consensus.mode.old
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-mode-new
+            tag: xrpl.consensus.mode.new
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: consensus-ledger-id
+            tag: xrpl.consensus.ledger_id
+            operator: "="
+            scope: span
+            type: static
+          # Phase 3/4: Additional transaction and queue filters
+          - id: tx-path
+            tag: xrpl.tx.path
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: tx-suppressed
+            tag: xrpl.tx.suppressed
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: peer-version
+            tag: xrpl.peer.version
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: txq-status
+            tag: xrpl.txq.status
+            operator: "="
+            scope: span
+            type: dynamic
+          - id: txq-ter-code
+            tag: xrpl.txq.ter_code
             operator: "="
             scope: span
             type: dynamic

@@ -1,6 +1,6 @@
 #pragma once
 
-/** Central OTel Metrics Registry for rippled.
+/** Central OTel Metrics Registry for xrpld.
 
     Owns all OpenTelemetry metric instruments (counters, histograms,
     observable gauges) that are NOT already covered by the beast::insight
@@ -23,20 +23,20 @@
                     |       +-- OtlpHttpMetricExporter
                     |
                     +-- Counters / Histograms   (synchronous instruments)
-                    |       +-- rippled_rpc_method_started_total
-                    |       +-- rippled_rpc_method_finished_total
-                    |       +-- rippled_rpc_method_errored_total
-                    |       +-- rippled_rpc_method_duration_us (Histogram)
-                    |       +-- rippled_job_queued_total
-                    |       +-- rippled_job_started_total
-                    |       +-- rippled_job_finished_total
-                    |       +-- rippled_job_queued_duration_us (Histogram)
-                    |       +-- rippled_job_running_duration_us (Histogram)
-                    |       +-- rippled_ledgers_closed_total
-                    |       +-- rippled_validations_sent_total
-                    |       +-- rippled_validations_checked_total
-                    |       +-- rippled_state_changes_total
-                    |       +-- rippled_jq_trans_overflow_total
+                    |       +-- xrpld_rpc_method_started_total
+                    |       +-- xrpld_rpc_method_finished_total
+                    |       +-- xrpld_rpc_method_errored_total
+                    |       +-- xrpld_rpc_method_duration_us (Histogram)
+                    |       +-- xrpld_job_queued_total
+                    |       +-- xrpld_job_started_total
+                    |       +-- xrpld_job_finished_total
+                    |       +-- xrpld_job_queued_duration_us (Histogram)
+                    |       +-- xrpld_job_running_duration_us (Histogram)
+                    |       +-- xrpld_ledgers_closed_total
+                    |       +-- xrpld_validations_sent_total
+                    |       +-- xrpld_validations_checked_total
+                    |       +-- xrpld_state_changes_total
+                    |       +-- xrpld_jq_trans_overflow_total
                     |
                     +-- ValidationTracker  (validation agreement tracker)
                     |
@@ -382,27 +382,27 @@ private:
         validationAgreementGauge_;
 
     // --- External dashboard parity counters (Task 7.14) ---
-    /// Counter: rippled_ledgers_closed_total — incremented each consensus round.
+    /// Counter: xrpld_ledgers_closed_total — incremented each consensus round.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         ledgersClosedCounter_;
-    /// Counter: rippled_validations_sent_total — incremented when this node sends a validation.
+    /// Counter: xrpld_validations_sent_total — incremented when this node sends a validation.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationsSentCounter_;
-    /// Counter: rippled_validations_checked_total — incremented for each network validation
+    /// Counter: xrpld_validations_checked_total — incremented for each network validation
     /// received.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationsCheckedCounter_;
-    /// Counter: rippled_state_changes_total — incremented on operating mode transitions.
+    /// Counter: xrpld_state_changes_total — incremented on operating mode transitions.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         stateChangesCounter_;
-    /// Counter: rippled_jq_trans_overflow_total — incremented on job queue transaction overflows.
+    /// Counter: xrpld_jq_trans_overflow_total — incremented on job queue transaction overflows.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         jqTransOverflowCounter_;
-    /// Counter: rippled_validation_agreements_total — incremented by ValidationTracker on
+    /// Counter: xrpld_validation_agreements_total — incremented by ValidationTracker on
     /// agreement.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationAgreementsCounter_;
-    /// Counter: rippled_validation_missed_total — incremented by ValidationTracker on miss.
+    /// Counter: xrpld_validation_missed_total — incremented by ValidationTracker on miss.
     opentelemetry::nostd::unique_ptr<opentelemetry::metrics::Counter<uint64_t>>
         validationMissedCounter_;
 

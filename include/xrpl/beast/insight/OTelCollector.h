@@ -73,7 +73,7 @@ public:
      * @param endpoint    OTLP/HTTP metrics endpoint URL
      *                    (e.g. "http://localhost:4318/v1/metrics").
      * @param prefix      Prefix prepended to all metric names
-     *                    (e.g. "rippled").
+     *                    (e.g. "xrpld").
      * @param instanceId  Unique identifier for this node instance,
      *                    emitted as the `service.instance.id` OTel
      *                    resource attribute. Defaults to empty string

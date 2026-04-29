@@ -3,6 +3,7 @@
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 
@@ -16,7 +17,7 @@ class QualityFunction;
  * methods for use in generic BookStep methods. AMMOffer amounts
  * are changed indirectly in BookStep limiting steps.
  */
-template <typename TIn, typename TOut>
+template <StepAmount TIn, StepAmount TOut>
 class AMMOffer
 {
 private:
@@ -37,7 +38,7 @@ private:
     // else the amounts quality
     Quality const quality_;
     // AMM offer can be consumed once at a given iteration
-    bool consumed_;
+    bool consumed_{false};
 
 public:
     AMMOffer(
@@ -46,31 +47,34 @@ public:
         TAmounts<TIn, TOut> const& balances,
         Quality const& quality);
 
-    Quality
+    [[nodiscard]] Quality
     quality() const noexcept
     {
         return quality_;
     }
 
-    Issue const&
-    issueIn() const;
+    [[nodiscard]] Asset const&
+    assetIn() const;
 
-    AccountID const&
+    [[nodiscard]] Asset const&
+    assetOut() const;
+
+    [[nodiscard]] AccountID const&
     owner() const;
 
-    std::optional<uint256>
+    [[nodiscard]] std::optional<uint256>
     key() const
     {
         return std::nullopt;
     }
 
-    TAmounts<TIn, TOut> const&
+    [[nodiscard]] TAmounts<TIn, TOut> const&
     amount() const;
 
     void
     consume(ApplyView& view, TAmounts<TIn, TOut> const& consumed);
 
-    bool
+    [[nodiscard]] bool
     fully_consumed() const
     {
         return consumed_;
@@ -80,17 +84,17 @@ public:
      * using current balances. If multi-path then ceil_out using
      * current quality.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
 
     /** Limit in of the provided offer. If one-path then swapIn
      * using current balances. If multi-path then ceil_in using
      * current quality.
      */
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
 
-    QualityFunction
+    [[nodiscard]] QualityFunction
     getQualityFunc() const;
 
     /** Send funds without incurring the transfer fee
@@ -99,10 +103,11 @@ public:
     static TER
     send(Args&&... args)
     {
-        return accountSend(std::forward<Args>(args)..., WaiveTransferFee::Yes);
+        return accountSend(
+            std::forward<Args>(args)..., WaiveTransferFee::Yes, AllowMPTOverflow::Yes);
     }
 
-    bool
+    [[nodiscard]] bool
     isFunded() const
     {
         // AMM offer is fully funded by the pool
@@ -119,7 +124,7 @@ public:
     /** Check the new pool product is greater or equal to the old pool
      * product or if decreases then within some threshold.
      */
-    bool
+    [[nodiscard]] bool
     checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const;
 };
 

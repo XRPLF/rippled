@@ -1,10 +1,10 @@
-# [OpenTelemetry](00-tracing-fundamentals.md) Distributed Tracing Implementation Plan for rippled (xrpld)
+# [OpenTelemetry](00-tracing-fundamentals.md) Distributed Tracing Implementation Plan for xrpld (xrpld)
 
 ## Executive Summary
 
 > **OTLP** = OpenTelemetry Protocol
 
-This document provides a comprehensive implementation plan for integrating OpenTelemetry distributed tracing into the rippled XRP Ledger node software. The plan addresses the unique challenges of a decentralized peer-to-peer system where trace context must propagate across network boundaries between independent nodes.
+This document provides a comprehensive implementation plan for integrating OpenTelemetry distributed tracing into the xrpld XRP Ledger node software. The plan addresses the unique challenges of a decentralized peer-to-peer system where trace context must propagate across network boundaries between independent nodes.
 
 ### Key Benefits
 
@@ -101,11 +101,11 @@ flowchart TB
 | Section | Document                                                       | Description                                                            |
 | ------- | -------------------------------------------------------------- | ---------------------------------------------------------------------- |
 | **0**   | [Tracing Fundamentals](./00-tracing-fundamentals.md)           | Distributed tracing concepts, span relationships, context propagation  |
-| **1**   | [Architecture Analysis](./01-architecture-analysis.md)         | rippled component analysis, trace points, instrumentation priorities   |
+| **1**   | [Architecture Analysis](./01-architecture-analysis.md)         | xrpld component analysis, trace points, instrumentation priorities     |
 | **2**   | [Design Decisions](./02-design-decisions.md)                   | SDK selection, exporters, span naming, attributes, context propagation |
 | **3**   | [Implementation Strategy](./03-implementation-strategy.md)     | Directory structure, key principles, performance optimization          |
 | **4**   | [Code Samples](./04-code-samples.md)                           | C++ implementation examples for core infrastructure and key modules    |
-| **5**   | [Configuration Reference](./05-configuration-reference.md)     | rippled config, CMake integration, Collector configurations            |
+| **5**   | [Configuration Reference](./05-configuration-reference.md)     | xrpld config, CMake integration, Collector configurations              |
 | **6**   | [Implementation Phases](./06-implementation-phases.md)         | 5-phase timeline, tasks, risks, success metrics                        |
 | **7**   | [Observability Backends](./07-observability-backends.md)       | Backend selection guide and production architecture                    |
 | **8**   | [Appendix](./08-appendix.md)                                   | Glossary, references, version history                                  |
@@ -116,7 +116,7 @@ flowchart TB
 
 ## 0. Tracing Fundamentals
 
-This document introduces distributed tracing concepts for readers unfamiliar with the domain. It covers what traces and spans are, how parent-child and follows-from relationships model causality, how context propagates across service boundaries, and how sampling controls data volume. It also maps these concepts to rippled-specific scenarios like transaction relay and consensus.
+This document introduces distributed tracing concepts for readers unfamiliar with the domain. It covers what traces and spans are, how parent-child and follows-from relationships model causality, how context propagates across service boundaries, and how sampling controls data volume. It also maps these concepts to xrpld-specific scenarios like transaction relay and consensus.
 
 ➡️ **[Read Tracing Fundamentals](./00-tracing-fundamentals.md)**
 
@@ -126,7 +126,7 @@ This document introduces distributed tracing concepts for readers unfamiliar wit
 
 > **WS** = WebSocket | **TxQ** = Transaction Queue
 
-The rippled node consists of several key components that require instrumentation for comprehensive distributed tracing. The main areas include the RPC server (HTTP/WebSocket), Overlay P2P network, Consensus mechanism (RCLConsensus), JobQueue for async task execution, PathFinding, Transaction Queue (TxQ), fee escalation (LoadManager), ledger acquisition, validator management, and existing observability infrastructure (PerfLog, Insight/StatsD, Journal logging).
+The xrpld node consists of several key components that require instrumentation for comprehensive distributed tracing. The main areas include the RPC server (HTTP/WebSocket), Overlay P2P network, Consensus mechanism (RCLConsensus), JobQueue for async task execution, PathFinding, Transaction Queue (TxQ), fee escalation (LoadManager), ledger acquisition, validator management, and existing observability infrastructure (PerfLog, Insight/StatsD, Journal logging).
 
 Key trace points span across transaction submission via RPC, peer-to-peer message propagation, consensus round execution, ledger building, path computation, transaction queue behavior, fee escalation, and validator health. The implementation prioritizes high-value, low-risk components first: RPC handlers provide immediate value with minimal risk, while consensus tracing requires careful implementation to avoid timing impacts.
 
@@ -150,7 +150,7 @@ Span naming follows a hierarchical `<component>.<operation>` convention (e.g., `
 
 ## 3. Implementation Strategy
 
-The telemetry code is organized under `include/xrpl/telemetry/` for headers and `src/libxrpl/telemetry/` for implementation. Key principles include RAII-based span management via `SpanGuard`, conditional compilation with `XRPL_ENABLE_TELEMETRY`, and minimal runtime overhead through batch processing and efficient sampling.
+The telemetry code is organized under `include/xrpl/telemetry/` for headers and `src/libxrpl/telemetry/` for implementation. Key principles include RAII-based span management via `SpanGuard` (with `discard()` for dropping unwanted spans), a `FilteringSpanProcessor` that intercepts `OnEnd()` to prevent discarded spans from entering the export pipeline, conditional compilation with `XRPL_ENABLE_TELEMETRY`, and minimal runtime overhead through batch processing and efficient sampling.
 
 Performance optimization strategies include probabilistic head sampling (10% default), tail-based sampling at the collector for errors and slow traces, batch export to reduce network overhead, and conditional instrumentation that compiles to no-ops when disabled.
 
@@ -163,8 +163,9 @@ Performance optimization strategies include probabilistic head sampling (10% def
 C++ implementation examples are provided for the core telemetry infrastructure and key modules:
 
 - `Telemetry.h` - Core interface for tracer access and span creation
-- `SpanGuard.h` - RAII wrapper for automatic span lifecycle management
-- `TracingInstrumentation.h` - Macros for conditional instrumentation
+- `SpanGuard.h` - RAII wrapper for automatic span lifecycle management with `discard()` support
+- `DiscardFlag.h` - Thread-local flag for span discard signaling between SpanGuard and FilteringSpanProcessor
+- `SpanGuard.cpp` - Pimpl implementation confining all OTel SDK types
 - Protocol Buffer extensions for trace context propagation
 - Module-specific instrumentation (RPC, Consensus, P2P, JobQueue)
 - Remaining modules (PathFinding, TxQ, Validator, etc.) follow the same patterns
@@ -220,7 +221,7 @@ The recommended production architecture uses a gateway collector pattern with re
 
 ## 8. Appendix
 
-The appendix contains a glossary of OpenTelemetry and rippled-specific terms, references to external documentation and specifications, version history for this implementation plan, and a complete document index.
+The appendix contains a glossary of OpenTelemetry and xrpld-specific terms, references to external documentation and specifications, version history for this implementation plan, and a complete document index.
 
 ➡️ **[View Appendix](./08-appendix.md)**
 
@@ -228,7 +229,7 @@ The appendix contains a glossary of OpenTelemetry and rippled-specific terms, re
 
 ## 9. Data Collection Reference
 
-A single-source-of-truth reference documenting every piece of telemetry data collected by rippled. Covers all 16 OpenTelemetry spans with their 22 attributes, all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 8 Grafana dashboards. Includes Tempo search guides and Prometheus query examples.
+A single-source-of-truth reference documenting every piece of telemetry data collected by xrpld. Covers all 16 OpenTelemetry spans with their 22 attributes, all StatsD metrics (gauges, counters, histograms, overlay traffic), SpanMetrics-derived Prometheus metrics, and all 10 Grafana dashboards. Includes Tempo search guides and Prometheus query examples.
 
 ➡️ **[View Data Collection Reference](./09-data-collection-reference.md)**
 
@@ -236,10 +237,10 @@ A single-source-of-truth reference documenting every piece of telemetry data col
 
 ## POC Task List
 
-A step-by-step task list for building a minimal end-to-end proof of concept that demonstrates distributed tracing in rippled. The POC scope is limited to RPC tracing — showing request traces flowing from rippled through an OpenTelemetry Collector into Tempo, viewable in Grafana.
+A step-by-step task list for building a minimal end-to-end proof of concept that demonstrates distributed tracing in xrpld. The POC scope is limited to RPC tracing — showing request traces flowing from xrpld through an OpenTelemetry Collector into Tempo, viewable in Grafana.
 
 ➡️ **[View POC Task List](./POC_taskList.md)**
 
 ---
 
-_This document provides a comprehensive implementation plan for integrating OpenTelemetry distributed tracing into the rippled XRP Ledger node software. For detailed information on any section, follow the links to the corresponding sub-documents._
+_This document provides a comprehensive implementation plan for integrating OpenTelemetry distributed tracing into the xrpld XRP Ledger node software. For detailed information on any section, follow the links to the corresponding sub-documents._

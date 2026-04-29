@@ -1,8 +1,8 @@
-# rippled Telemetry Operator Runbook
+# xrpld Telemetry Operator Runbook
 
 ## Overview
 
-rippled supports OpenTelemetry distributed tracing to provide visibility into RPC requests, transaction processing, and consensus rounds.
+xrpld supports OpenTelemetry distributed tracing to provide visibility into RPC requests, transaction processing, and consensus rounds.
 
 ## Quick Start
 
@@ -20,7 +20,7 @@ This starts:
 - **Loki** on http://localhost:3100 (log aggregation)
 - **Grafana** on http://localhost:3000
 
-### 2. Enable telemetry in rippled
+### 2. Enable telemetry in xrpld
 
 Add to your `xrpld.cfg`:
 
@@ -40,26 +40,28 @@ cmake --build --preset default
 
 ## Configuration Reference
 
-| Option               | Default                           | Description                               |
-| -------------------- | --------------------------------- | ----------------------------------------- |
-| `enabled`            | `0`                               | Master switch for telemetry               |
-| `endpoint`           | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                        |
-| `exporter`           | `otlp_http`                       | Exporter type                             |
-| `sampling_ratio`     | `1.0`                             | Head-based sampling ratio (0.0–1.0)       |
-| `trace_rpc`          | `1`                               | Enable RPC request tracing                |
-| `trace_transactions` | `1`                               | Enable transaction tracing                |
-| `trace_consensus`    | `1`                               | Enable consensus tracing                  |
-| `trace_peer`         | `0`                               | Enable peer message tracing (high volume) |
-| `trace_ledger`       | `1`                               | Enable ledger tracing                     |
-| `batch_size`         | `512`                             | Max spans per batch export                |
-| `batch_delay_ms`     | `5000`                            | Delay between batch exports               |
-| `max_queue_size`     | `2048`                            | Max spans queued before dropping          |
-| `use_tls`            | `0`                               | Use TLS for exporter connection           |
-| `tls_ca_cert`        | (empty)                           | Path to CA certificate bundle             |
+| Option                     | Default                           | Description                                               |
+| -------------------------- | --------------------------------- | --------------------------------------------------------- |
+| `enabled`                  | `0`                               | Master switch for telemetry                               |
+| `endpoint`                 | `http://localhost:4318/v1/traces` | OTLP/HTTP endpoint                                        |
+| `service_name`             | `xrpld`                           | OpenTelemetry service name resource attribute             |
+| `service_instance_id`      | node public key                   | OpenTelemetry service instance ID resource attribute      |
+| `sampling_ratio`           | `1.0`                             | Head-based sampling ratio (0.0--1.0)                      |
+| `trace_rpc`                | `1`                               | Enable RPC request tracing                                |
+| `trace_transactions`       | `1`                               | Enable transaction tracing                                |
+| `trace_consensus`          | `1`                               | Enable consensus tracing                                  |
+| `trace_peer`               | `0`                               | Enable peer message tracing (high volume)                 |
+| `trace_ledger`             | `1`                               | Enable ledger tracing                                     |
+| `consensus_trace_strategy` | `deterministic`                   | Consensus trace ID strategy (`deterministic` or `random`) |
+| `batch_size`               | `512`                             | Max spans per batch export                                |
+| `batch_delay_ms`           | `5000`                            | Delay between batch exports                               |
+| `max_queue_size`           | `2048`                            | Max spans queued before dropping                          |
+| `use_tls`                  | `0`                               | Use TLS for exporter connection                           |
+| `tls_ca_cert`              | (empty)                           | Path to CA certificate bundle                             |
 
 ## Span Reference
 
-All spans instrumented in rippled, grouped by subsystem:
+All spans instrumented in xrpld, grouped by subsystem:
 
 ### RPC Spans (Phase 2)
 
@@ -72,21 +74,47 @@ All spans instrumented in rippled, grouped by subsystem:
 
 ### Transaction Spans (Phase 3)
 
-| Span Name    | Source File         | Attributes                                                             | Description                           |
-| ------------ | ------------------- | ---------------------------------------------------------------------- | ------------------------------------- |
-| `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                        | Transaction submission and processing |
-| `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`, `xrpl.tx.hash`, `xrpl.tx.suppressed`, `xrpl.tx.status` | Transaction received from peer relay  |
-| `tx.apply`   | BuildLedger.cpp:88  | `xrpl.ledger.seq`, `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`     | Transaction set applied per ledger    |
+| Span Name    | Source File         | Attributes                                                                                  | Description                           |
+| ------------ | ------------------- | ------------------------------------------------------------------------------------------- | ------------------------------------- |
+| `tx.process` | NetworkOPs.cpp:1227 | `xrpl.tx.hash`, `xrpl.tx.local`, `xrpl.tx.path`                                             | Transaction submission and processing |
+| `tx.receive` | PeerImp.cpp:1273    | `xrpl.peer.id`, `xrpl.tx.hash`, `xrpl.peer.version`, `xrpl.tx.suppressed`, `xrpl.tx.status` | Transaction received from peer relay  |
+| `tx.apply`   | BuildLedger.cpp:88  | `xrpl.ledger.seq`, `xrpl.ledger.tx_count`, `xrpl.ledger.tx_failed`                          | Transaction set applied per ledger    |
+
+### Transaction Queue Spans (Phase 3)
+
+| Span Name          | Source File | Attributes                                                            | Description                                        |
+| ------------------ | ----------- | --------------------------------------------------------------------- | -------------------------------------------------- |
+| `txq.enqueue`      | TxQ.cpp     | `xrpl.txq.tx_hash`                                                    | Transaction enqueue decision (child of tx.process) |
+| `txq.apply_direct` | TxQ.cpp     | --                                                                    | Direct apply attempt (bypassing queue)             |
+| `txq.batch_clear`  | TxQ.cpp     | --                                                                    | Batch clear of queued transactions for an account  |
+| `txq.accept`       | TxQ.cpp     | `xrpl.txq.queue_size`                                                 | Ledger-close accept loop over queued transactions  |
+| `txq.accept_tx`    | TxQ.cpp     | `xrpl.txq.tx_hash`, `xrpl.txq.retries_remaining`, `xrpl.txq.ter_code` | Per-transaction apply during accept                |
+| `txq.cleanup`      | TxQ.cpp     | `xrpl.txq.ledger_seq`                                                 | Post-close cleanup of expired queue entries        |
 
 ### Consensus Spans (Phase 4)
 
-| Span Name                   | Source File          | Attributes                                                                                                                    | Description                                |
-| --------------------------- | -------------------- | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| `consensus.proposal.send`   | RCLConsensus.cpp:177 | `xrpl.consensus.round`                                                                                                        | Consensus proposal broadcast               |
-| `consensus.ledger_close`    | RCLConsensus.cpp:282 | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                            | Ledger close event                         |
-| `consensus.accept`          | RCLConsensus.cpp:395 | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`                                                                    | Ledger accepted by consensus               |
-| `consensus.validation.send` | RCLConsensus.cpp:753 | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                                                       | Validation sent after accept               |
-| `consensus.accept.apply`    | RCLConsensus.cpp:453 | `xrpl.consensus.close_time`, `close_time_correct`, `close_resolution_ms`, `state`, `proposing`, `round_time_ms`, `ledger.seq` | Ledger application with close time details |
+| Span Name                      | Source File      | Attributes                                                                                                                                                                                                                                                                                                                                                                                             | Description                                                                                                                           |
+| ------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `consensus.round`              | RCLConsensus.cpp | `xrpl.consensus.ledger_id`, `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`, `xrpl.consensus.trace_strategy`, `xrpl.consensus.round_id`                                                                                                                                                                                                                                                             | Root span for a consensus round (deterministic or random trace ID)                                                                    |
+| `consensus.phase.open`         | Consensus.h      | --                                                                                                                                                                                                                                                                                                                                                                                                     | Open phase duration (child of round)                                                                                                  |
+| `consensus.proposal.send`      | RCLConsensus.cpp | `xrpl.consensus.round`                                                                                                                                                                                                                                                                                                                                                                                 | Consensus proposal broadcast                                                                                                          |
+| `consensus.ledger_close`       | RCLConsensus.cpp | `xrpl.consensus.ledger.seq`, `xrpl.consensus.mode`                                                                                                                                                                                                                                                                                                                                                     | Ledger close event                                                                                                                    |
+| `consensus.establish`          | Consensus.h      | `xrpl.consensus.converge_percent`, `xrpl.consensus.establish_count`, `xrpl.consensus.proposers`                                                                                                                                                                                                                                                                                                        | Establish phase duration (child of round)                                                                                             |
+| `consensus.update_positions`   | Consensus.h      | `xrpl.consensus.converge_percent`, `xrpl.consensus.proposers`, `xrpl.consensus.disputes_count`                                                                                                                                                                                                                                                                                                         | Position update and dispute resolution (see Events below)                                                                             |
+| `consensus.check`              | Consensus.h      | `xrpl.consensus.agree_count`, `xrpl.consensus.disagree_count`, `xrpl.consensus.converge_percent`, `xrpl.consensus.have_close_time_consensus`, `xrpl.consensus.threshold_percent`, `xrpl.consensus.result`                                                                                                                                                                                              | Consensus threshold check                                                                                                             |
+| `consensus.accept`             | RCLConsensus.cpp | `xrpl.consensus.proposers`, `xrpl.consensus.round_time_ms`, `xrpl.consensus.quorum`                                                                                                                                                                                                                                                                                                                    | Ledger accepted by consensus                                                                                                          |
+| `consensus.accept.apply`       | RCLConsensus.cpp | `xrpl.consensus.ledger.seq`, `xrpl.consensus.close_time`, `xrpl.consensus.close_time_correct`, `xrpl.consensus.close_resolution_ms`, `xrpl.consensus.state`, `xrpl.consensus.proposing`, `xrpl.consensus.round_time_ms`, `xrpl.consensus.parent_close_time`, `xrpl.consensus.close_time_self`, `xrpl.consensus.close_time_vote_bins`, `xrpl.consensus.resolution_direction`, `xrpl.consensus.tx_count` | Ledger application with close time details (see Events below)                                                                         |
+| `consensus.validation.send`    | RCLConsensus.cpp | `xrpl.consensus.ledger.seq`, `xrpl.consensus.proposing`                                                                                                                                                                                                                                                                                                                                                | Validation sent after accept (follows-from link)                                                                                      |
+| `consensus.mode_change`        | RCLConsensus.cpp | `xrpl.consensus.mode.old`, `xrpl.consensus.mode.new`                                                                                                                                                                                                                                                                                                                                                   | Consensus mode transition                                                                                                             |
+| `consensus.proposal.receive`   | PeerImp.cpp      | `xrpl.consensus.trusted`, `xrpl.consensus.round`                                                                                                                                                                                                                                                                                                                                                       | Proposal received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers)   |
+| `consensus.validation.receive` | PeerImp.cpp      | `xrpl.consensus.trusted`, `xrpl.consensus.ledger.seq`                                                                                                                                                                                                                                                                                                                                                  | Validation received from peer (extracts parent context from TraceContext when present; falls back to standalone span for older peers) |
+
+#### Consensus Span Events
+
+| Parent Span                  | Event Name        | Event Attributes                                                                | Description                                             |
+| ---------------------------- | ----------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `consensus.update_positions` | `dispute.resolve` | `xrpl.tx.id`, `xrpl.dispute.our_vote`, `xrpl.dispute.yays`, `xrpl.dispute.nays` | Emitted per dispute when votes are tallied              |
+| `consensus.accept.apply`     | `tx.included`     | `xrpl.tx.id`                                                                    | Emitted per transaction included in the accepted ledger |
 
 #### Close Time Queries (Tempo TraceQL)
 
@@ -102,6 +130,12 @@ All spans instrumented in rippled, grouped by subsystem:
 
 # Find specific ledger's consensus details
 {name="consensus.accept.apply"} | xrpl.consensus.ledger.seq = 92345678
+
+# Find all spans in a consensus round (deterministic trace strategy)
+{name="consensus.round"} | xrpl.consensus.round_id = "<round_id>"
+
+# Find dispute resolutions
+{name="consensus.update_positions"} >> {event:name="dispute.resolve"}
 ```
 
 ### Ledger Spans (Phase 5)
@@ -119,9 +153,90 @@ All spans instrumented in rippled, grouped by subsystem:
 | `peer.proposal.receive`   | PeerImp.cpp:1667 | `xrpl.peer.id`, `xrpl.peer.proposal.trusted`   | Proposal received from peer   |
 | `peer.validation.receive` | PeerImp.cpp:2264 | `xrpl.peer.id`, `xrpl.peer.validation.trusted` | Validation received from peer |
 
+## Cross-Node Trace Propagation
+
+xrpld propagates trace context across nodes via protobuf `TraceContext` fields
+embedded in peer-to-peer messages. When Node A sends a transaction, proposal,
+or validation, it injects its active span's trace/span IDs into the protobuf
+message. Node B extracts that context on receipt and creates a child span,
+linking the two nodes into a single distributed trace.
+
+### How It Works
+
+```
+Node A (sender)                          Node B (receiver)
++-----------------------------+          +-------------------------------+
+| tx.process / consensus.*    |          | PeerImp::onMessage()          |
+|   |                         |          |   |                           |
+|   v                         |          |   v                           |
+| SpanGuard::getTraceBytes()  |          | extract TraceContext from      |
+|   |                         |          | protobuf message               |
+|   v                         |   send   |   |                           |
+| injectSpanContext() --------|--------->|   v                           |
+| sets TraceContext fields    |  proto   | txReceiveSpan()               |
+| (trace_id, span_id, flags) |  msg     | proposalReceiveSpan()         |
++-----------------------------+          | validationReceiveSpan()       |
+                                         |   |                           |
+                                         |   v                           |
+                                         | child span with parent link   |
+                                         +-------------------------------+
+```
+
+### Send-Side Injection
+
+| Message Type  | Injection Point            | Mechanism                                  |
+| ------------- | -------------------------- | ------------------------------------------ |
+| TMTransaction | `NetworkOPs::apply()`      | Injects `tx.process` span into relay msg   |
+| TMProposeSet  | `RCLConsensus::propose()`  | Injects active context into proposal msg   |
+| TMValidation  | `RCLConsensus::validate()` | Injects active context into validation msg |
+
+### Receive-Side Extraction
+
+| Message Type  | Extraction Point                    | Helper Function                                    |
+| ------------- | ----------------------------------- | -------------------------------------------------- |
+| TMTransaction | `PeerImp::onMessage(TMTransaction)` | `TxTracing::txReceiveSpan()`                       |
+| TMProposeSet  | `PeerImp::onMessage(TMProposeSet)`  | `ConsensusReceiveTracing::proposalReceiveSpan()`   |
+| TMValidation  | `PeerImp::onMessage(TMValidation)`  | `ConsensusReceiveTracing::validationReceiveSpan()` |
+
+### Key Files
+
+| File                                              | Role                                            |
+| ------------------------------------------------- | ----------------------------------------------- |
+| `src/xrpld/telemetry/PropagationHelpers.h`        | `injectSpanContext()` — SpanGuard to protobuf   |
+| `include/xrpl/telemetry/TraceContextPropagator.h` | OTel context <-> protobuf conversion primitives |
+| `src/xrpld/telemetry/ConsensusReceiveTracing.h`   | Proposal/validation receive span factories      |
+| `src/xrpld/telemetry/TxTracing.h`                 | Transaction receive span factory                |
+
+### Backwards Compatibility
+
+Older peers that do not populate `TraceContext` fields in their messages will
+simply produce empty trace bytes on the receive side. The extraction helpers
+detect this and create standalone (root) spans instead of child spans. No
+errors are logged and no data is lost — the receive span is still created with
+all its normal attributes, it just lacks a cross-node parent link.
+
+### Example Tempo Queries
+
+```
+# Find cross-node transaction traces (tx.process -> tx.receive across nodes)
+{name="tx.receive"} && status != error
+
+# Find proposals received with cross-node parent context
+{name="consensus.proposal.receive"} && nestedSetParent > 0
+
+# Trace a transaction across the network by its hash
+{name=~"tx\\..*"} | xrpl.tx.hash = "<hash>"
+
+# Find all spans in a cross-node consensus trace
+{rootServiceName="xrpld"} | xrpl.consensus.round_id = "<round_id>"
+
+# Compare latency between sender and receiver for validations
+{name="consensus.validation.send" || name="consensus.validation.receive"}
+```
+
 ## Prometheus Metrics (Spanmetrics)
 
-The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in rippled.
+The OTel Collector's spanmetrics connector automatically derives RED (Rate, Errors, Duration) metrics from every span. No custom metrics code is needed in xrpld.
 
 ### Generated Metric Names
 
@@ -140,7 +255,7 @@ Every metric carries these standard labels:
 | -------------- | ------------------ | ---------------------------------------- |
 | `span_name`    | Span name          | `rpc.command.server_info`                |
 | `status_code`  | Span status        | `STATUS_CODE_UNSET`, `STATUS_CODE_ERROR` |
-| `service_name` | Resource attribute | `rippled`                                |
+| `service_name` | Resource attribute | `xrpld`                                  |
 | `span_kind`    | Span kind          | `SPAN_KIND_INTERNAL`                     |
 
 Additionally, span attributes configured as dimensions in the collector become metric labels (dots → underscores):
@@ -162,9 +277,9 @@ Configured in `otel-collector-config.yaml`:
 1ms, 5ms, 10ms, 25ms, 50ms, 100ms, 250ms, 500ms, 1s, 5s
 ```
 
-## System Metrics (beast::insight via OTel native)
+## StatsD Metrics (beast::insight)
 
-rippled has a built-in metrics framework (`beast::insight`) that exports metrics natively via OTLP/HTTP. These complement the span-derived RED metrics by providing system-level gauges, counters, and timers that don't map to individual trace spans.
+xrpld has a built-in metrics framework (`beast::insight`) that emits StatsD-format metrics over UDP. These complement the span-derived RED metrics by providing system-level gauges, counters, and timers that don't map to individual trace spans.
 
 ### Configuration
 
@@ -172,94 +287,81 @@ Add to `xrpld.cfg`:
 
 ```ini
 [insight]
-server=otel
-endpoint=http://localhost:4318/v1/metrics
-prefix=rippled
-```
-
-The OTel Collector receives these via the OTLP receiver (same endpoint as traces, port 4318) and exports them to Prometheus alongside spanmetrics.
-
-#### StatsD fallback (backward compatibility)
-
-The legacy StatsD backend is still available:
-
-```ini
-[insight]
 server=statsd
 address=127.0.0.1:8125
-prefix=rippled
+prefix=xrpld
 ```
 
-When using StatsD, uncomment the `statsd` receiver in `otel-collector-config.yaml` and add port `8125:8125/udp` to the docker-compose otel-collector service.
+The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and exports them to Prometheus alongside spanmetrics.
 
 ### Metric Reference
 
 #### Gauges
 
-| Prometheus Metric                             | Source                    | Description                                                                |
-| --------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
-| `rippled_LedgerMaster_Validated_Ledger_Age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
-| `rippled_LedgerMaster_Published_Ledger_Age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
-| `rippled_State_Accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
-| `rippled_State_Accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
-| `rippled_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
-| `rippled_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
-| `rippled_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
-| `rippled_job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
-| `rippled_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
-| `rippled_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
+| Prometheus Metric                           | Source                    | Description                                                                |
+| ------------------------------------------- | ------------------------- | -------------------------------------------------------------------------- |
+| `xrpld_LedgerMaster_Validated_Ledger_Age`   | LedgerMaster.h:373        | Age of validated ledger (seconds)                                          |
+| `xrpld_LedgerMaster_Published_Ledger_Age`   | LedgerMaster.h:374        | Age of published ledger (seconds)                                          |
+| `xrpld_State_Accounting_{Mode}_duration`    | NetworkOPs.cpp:774        | Time in each operating mode (Disconnected/Connected/Syncing/Tracking/Full) |
+| `xrpld_State_Accounting_{Mode}_transitions` | NetworkOPs.cpp:780        | Transition count per mode                                                  |
+| `xrpld_Peer_Finder_Active_Inbound_Peers`    | PeerfinderManager.cpp:214 | Active inbound peer connections                                            |
+| `xrpld_Peer_Finder_Active_Outbound_Peers`   | PeerfinderManager.cpp:215 | Active outbound peer connections                                           |
+| `xrpld_Overlay_Peer_Disconnects`            | OverlayImpl.h:557         | Peer disconnect count                                                      |
+| `xrpld_job_count`                           | JobQueue.cpp:26           | Current job queue depth                                                    |
+| `xrpld_{category}_Bytes_In/Out`             | OverlayImpl.h:535         | Overlay traffic bytes per category (57 categories)                         |
+| `xrpld_{category}_Messages_In/Out`          | OverlayImpl.h:535         | Overlay traffic messages per category                                      |
 
 #### OTel MetricsRegistry Gauges (Phase 9)
 
 These gauges are exported via the OTel Metrics SDK `PeriodicMetricReader` (10s interval), NOT through beast::insight.
 
-| Prometheus Metric                                           | Source              | Description                                  |
-| ----------------------------------------------------------- | ------------------- | -------------------------------------------- |
-| `rippled_server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)    |
-| `rippled_server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                   |
-| `rippled_server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                        |
-| `rippled_server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number             |
-| `rippled_server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                 |
-| `rippled_server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects |
-| `rippled_server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round               |
-| `rippled_server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)             |
-| `rippled_build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                 |
-| `rippled_complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs        |
-| `rippled_db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                     |
-| `rippled_db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                    |
-| `rippled_db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)               |
-| `rippled_db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute         |
-| `rippled_cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                    |
-| `rippled_nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)          |
-| `rippled_nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                    |
-| `rippled_nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                          |
-| `rippled_nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                |
+| Prometheus Metric                                         | Source              | Description                                  |
+| --------------------------------------------------------- | ------------------- | -------------------------------------------- |
+| `xrpld_server_info{metric="server_state"}`                | MetricsRegistry.cpp | Operating mode (0=DISCONNECTED .. 4=FULL)    |
+| `xrpld_server_info{metric="uptime"}`                      | MetricsRegistry.cpp | Seconds since server start                   |
+| `xrpld_server_info{metric="peers"}`                       | MetricsRegistry.cpp | Total connected peers                        |
+| `xrpld_server_info{metric="validated_ledger_seq"}`        | MetricsRegistry.cpp | Validated ledger sequence number             |
+| `xrpld_server_info{metric="ledger_current_index"}`        | MetricsRegistry.cpp | Current open ledger sequence                 |
+| `xrpld_server_info{metric="peer_disconnects_resources"}`  | MetricsRegistry.cpp | Cumulative resource-related peer disconnects |
+| `xrpld_server_info{metric="last_close_proposers"}`        | MetricsRegistry.cpp | Proposers in last closed round               |
+| `xrpld_server_info{metric="last_close_converge_time_ms"}` | MetricsRegistry.cpp | Last close convergence time (ms)             |
+| `xrpld_build_info{version="<ver>"}`                       | MetricsRegistry.cpp | Info-style metric (always 1)                 |
+| `xrpld_complete_ledgers{bound="start\|end",index="<N>"}`  | MetricsRegistry.cpp | Complete ledger range start/end pairs        |
+| `xrpld_db_metrics{metric="db_kb_total"}`                  | MetricsRegistry.cpp | Total database size (KB)                     |
+| `xrpld_db_metrics{metric="db_kb_ledger"}`                 | MetricsRegistry.cpp | Ledger database size (KB)                    |
+| `xrpld_db_metrics{metric="db_kb_transaction"}`            | MetricsRegistry.cpp | Transaction database size (KB)               |
+| `xrpld_db_metrics{metric="historical_perminute"}`         | MetricsRegistry.cpp | Historical ledger fetches per minute         |
+| `xrpld_cache_metrics{metric="AL_size"}`                   | MetricsRegistry.cpp | AcceptedLedger cache size                    |
+| `xrpld_nodestore_state{metric="node_reads_duration_us"}`  | MetricsRegistry.cpp | Cumulative read time (microseconds)          |
+| `xrpld_nodestore_state{metric="read_request_bundle"}`     | MetricsRegistry.cpp | Read request bundle count                    |
+| `xrpld_nodestore_state{metric="read_threads_running"}`    | MetricsRegistry.cpp | Active read threads                          |
+| `xrpld_nodestore_state{metric="read_threads_total"}`      | MetricsRegistry.cpp | Total read threads configured                |
 
 #### Counters
 
-| Prometheus Metric                 | Source                | Description                    |
-| --------------------------------- | --------------------- | ------------------------------ |
-| `rippled_rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
-| `rippled_ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
-| `rippled_ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
-| `rippled_warn`                    | Logic.h:33            | Resource manager warning count |
-| `rippled_drop`                    | Logic.h:34            | Resource manager drop count    |
+| Prometheus Metric               | Source                | Description                    |
+| ------------------------------- | --------------------- | ------------------------------ |
+| `xrpld_rpc_requests`            | ServerHandler.cpp:108 | Total RPC request count        |
+| `xrpld_ledger_fetches`          | InboundLedgers.cpp:44 | Ledger fetch request count     |
+| `xrpld_ledger_history_mismatch` | LedgerHistory.cpp:16  | Ledger hash mismatch count     |
+| `xrpld_warn`                    | Logic.h:33            | Resource manager warning count |
+| `xrpld_drop`                    | Logic.h:34            | Resource manager drop count    |
 
 #### Histograms (from StatsD timers)
 
-| Prometheus Metric       | Source                | Description                    |
-| ----------------------- | --------------------- | ------------------------------ |
-| `rippled_rpc_time`      | ServerHandler.cpp:110 | RPC response time (ms)         |
-| `rippled_rpc_size`      | ServerHandler.cpp:109 | RPC response size (bytes)      |
-| `rippled_ios_latency`   | Application.cpp:438   | I/O service loop latency (ms)  |
-| `rippled_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
-| `rippled_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
+| Prometheus Metric     | Source                | Description                    |
+| --------------------- | --------------------- | ------------------------------ |
+| `xrpld_rpc_time`      | ServerHandler.cpp:110 | RPC response time (ms)         |
+| `xrpld_rpc_size`      | ServerHandler.cpp:109 | RPC response size (bytes)      |
+| `xrpld_ios_latency`   | Application.cpp:438   | I/O service loop latency (ms)  |
+| `xrpld_pathfind_fast` | PathRequests.h:23     | Fast pathfinding duration (ms) |
+| `xrpld_pathfind_full` | PathRequests.h:24     | Full pathfinding duration (ms) |
 
 ## Grafana Dashboards
 
-Eight dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
+Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
-### RPC Performance (`rippled-rpc-perf`)
+### RPC Performance (`xrpld-rpc-perf`)
 
 | Panel                       | Type       | PromQL                                                                                                                                             | Labels Used                       |
 | --------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------- |
@@ -272,7 +374,7 @@ Eight dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Top Commands by Volume      | bargauge   | `topk(10, ...)` by `xrpl_rpc_command`                                                                                                              | `xrpl_rpc_command`                |
 | WebSocket Message Rate      | stat       | `rpc.ws_message` rate                                                                                                                              | —                                 |
 
-### Transaction Overview (`rippled-transactions`)
+### Transaction Overview (`xrpld-transactions`)
 
 | Panel                             | Type       | PromQL                                                                                       | Labels Used     |
 | --------------------------------- | ---------- | -------------------------------------------------------------------------------------------- | --------------- |
@@ -285,7 +387,7 @@ Eight dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Peer TX Receive Rate              | timeseries | `tx.receive` rate                                                                            | —               |
 | TX Apply Failed Rate              | stat       | `tx.apply` with `STATUS_CODE_ERROR`                                                          | `status_code`   |
 
-### Consensus Health (`rippled-consensus`)
+### Consensus Health (`xrpld-consensus`)
 
 | Panel                         | Type       | PromQL                                                                             | Labels Used           |
 | ----------------------------- | ---------- | ---------------------------------------------------------------------------------- | --------------------- |
@@ -300,7 +402,7 @@ Eight dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Validation vs Close Rate      | timeseries | `consensus.validation.send` vs `consensus.ledger_close`                            | —                     |
 | Accept Duration Heatmap       | heatmap    | `consensus.accept` histogram buckets                                               | `le`                  |
 
-### Ledger Operations (`rippled-ledger-ops`)
+### Ledger Operations (`xrpld-ledger-ops`)
 
 | Panel                   | Type       | PromQL                                         | Labels Used |
 | ----------------------- | ---------- | ---------------------------------------------- | ----------- |
@@ -313,7 +415,7 @@ Eight dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 | Ledger Store Rate       | stat       | `ledger.store` call rate                       | —           |
 | Build vs Close Duration | timeseries | p95 `ledger.build` vs `consensus.ledger_close` | —           |
 
-### Peer Network (`rippled-peer-net`)
+### Peer Network (`xrpld-peer-net`)
 
 Requires `trace_peer=1` in the `[telemetry]` config section.
 
@@ -324,78 +426,102 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Proposals Trusted vs Untrusted   | piechart   | by `xrpl_peer_proposal_trusted`   | `xrpl_peer_proposal_trusted`   |
 | Validations Trusted vs Untrusted | piechart   | by `xrpl_peer_validation_trusted` | `xrpl_peer_validation_trusted` |
 
-### Node Health — System Metrics (`rippled-system-node-health`)
+### Node Health -- StatsD (`xrpld-statsd-node-health`)
 
-| Panel                      | Type       | PromQL                                                 | Labels Used      |
-| -------------------------- | ---------- | ------------------------------------------------------ | ---------------- |
-| Validated Ledger Age       | stat       | `rippled_LedgerMaster_Validated_Ledger_Age`            | —                |
-| Published Ledger Age       | stat       | `rippled_LedgerMaster_Published_Ledger_Age`            | —                |
-| Operating Mode Duration    | timeseries | `rippled_State_Accounting_*_duration`                  | —                |
-| Operating Mode Transitions | timeseries | `rippled_State_Accounting_*_transitions`               | —                |
-| I/O Latency                | timeseries | `histogram_quantile(0.95, rippled_ios_latency_bucket)` | —                |
-| Job Queue Depth            | timeseries | `rippled_job_count`                                    | —                |
-| Ledger Fetch Rate          | stat       | `rate(rippled_ledger_fetches[5m])`                     | —                |
-| Ledger History Mismatches  | stat       | `rate(rippled_ledger_history_mismatch[5m])`            | —                |
-| Server State               | stat       | `rippled_server_info{metric="server_state"}`           | `metric`         |
-| Uptime                     | stat       | `rippled_server_info{metric="uptime"}`                 | `metric`         |
-| Peer Count                 | stat       | `rippled_server_info{metric="peers"}`                  | `metric`         |
-| Validated Ledger Seq       | stat       | `rippled_server_info{metric="validated_ledger_seq"}`   | `metric`         |
-| Build Version              | stat       | `rippled_build_info`                                   | `version`        |
-| Complete Ledger Ranges     | table      | `rippled_complete_ledgers`                             | `bound`, `index` |
-| Database Sizes             | timeseries | `rippled_db_metrics{metric=~"db_kb_.*"}`               | `metric`         |
-| Historical Fetch Rate      | stat       | `rippled_db_metrics{metric="historical_perminute"}`    | `metric`         |
+| Panel                                  | Type       | PromQL                                                          | Labels Used      |
+| -------------------------------------- | ---------- | --------------------------------------------------------------- | ---------------- |
+| Validated Ledger Age                   | stat       | `xrpld_LedgerMaster_Validated_Ledger_Age`                       | —                |
+| Published Ledger Age                   | stat       | `xrpld_LedgerMaster_Published_Ledger_Age`                       | —                |
+| Operating Mode Duration                | timeseries | `xrpld_State_Accounting_*_duration`                             | —                |
+| Operating Mode Transitions             | timeseries | `xrpld_State_Accounting_*_transitions`                          | —                |
+| I/O Latency                            | timeseries | `histogram_quantile(0.95, xrpld_ios_latency_bucket)`            | —                |
+| Job Queue Depth                        | timeseries | `xrpld_job_count`                                               | —                |
+| Ledger Fetch Rate                      | stat       | `rate(xrpld_ledger_fetches[5m])`                                | —                |
+| Ledger History Mismatches              | stat       | `rate(xrpld_ledger_history_mismatch[5m])`                       | —                |
+| Key Jobs Execution Time                | timeseries | `xrpld_acceptLedger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`       |
+| Key Jobs Dequeue Wait Time             | timeseries | `xrpld_acceptLedger_q{quantile="$quantile"}` (+ 10 more)        | `quantile`       |
+| FullBelowCache Size                    | timeseries | `xrpld_Node_family_full_below_cache_size`                       | —                |
+| FullBelowCache Hit Rate                | gauge      | `xrpld_Node_family_full_below_cache_hit_rate`                   | —                |
+| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                   | —                |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(xrpld_State_Accounting_Full_duration[5m]) / 1000000`      | —                |
+| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"xrpld_<all_jobs>", quantile="$quantile"}`          | `quantile`       |
+| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"xrpld_<all_jobs>_q", quantile="$quantile"}`        | `quantile`       |
+| Server State                           | stat       | `xrpld_server_info{metric="server_state"}`                      | `metric`         |
+| Uptime                                 | stat       | `xrpld_server_info{metric="uptime"}`                            | `metric`         |
+| Peer Count                             | stat       | `xrpld_server_info{metric="peers"}`                             | `metric`         |
+| Validated Ledger Seq                   | stat       | `xrpld_server_info{metric="validated_ledger_seq"}`              | `metric`         |
+| Build Version                          | stat       | `xrpld_build_info`                                              | `version`        |
+| Complete Ledger Ranges                 | table      | `xrpld_complete_ledgers`                                        | `bound`, `index` |
+| Database Sizes                         | timeseries | `xrpld_db_metrics{metric=~"db_kb_.*"}`                          | `metric`         |
+| Historical Fetch Rate                  | stat       | `xrpld_db_metrics{metric="historical_perminute"}`               | `metric`         |
 
-### Network Traffic — System Metrics (`rippled-system-network`)
+### Network Traffic -- StatsD (`xrpld-statsd-network`)
 
-| Panel                  | Type       | PromQL                                 | Labels Used |
-| ---------------------- | ---------- | -------------------------------------- | ----------- |
-| Active Peers           | timeseries | `rippled_Peer_Finder_Active_*_Peers`   | —           |
-| Peer Disconnects       | timeseries | `rippled_Overlay_Peer_Disconnects`     | —           |
-| Total Network Bytes    | timeseries | `rippled_total_Bytes_In/Out`           | —           |
-| Total Network Messages | timeseries | `rippled_total_Messages_In/Out`        | —           |
-| Transaction Traffic    | timeseries | `rippled_transactions_Messages_In/Out` | —           |
-| Proposal Traffic       | timeseries | `rippled_proposals_Messages_In/Out`    | —           |
-| Validation Traffic     | timeseries | `rippled_validations_Messages_In/Out`  | —           |
-| Traffic by Category    | bargauge   | `topk(10, rippled_*_Bytes_In)`         | —           |
+| Panel                                | Type       | PromQL                                     | Labels Used |
+| ------------------------------------ | ---------- | ------------------------------------------ | ----------- |
+| Active Peers                         | timeseries | `xrpld_Peer_Finder_Active_*_Peers`         | —           |
+| Peer Disconnects                     | timeseries | `xrpld_Overlay_Peer_Disconnects`           | —           |
+| Total Network Bytes                  | timeseries | `rate(xrpld_total_Bytes_In/Out[5m])`       | —           |
+| Total Network Messages               | timeseries | `xrpld_total_Messages_In/Out`              | —           |
+| Transaction Traffic                  | timeseries | `xrpld_transactions_Messages_In/Out`       | —           |
+| Proposal Traffic                     | timeseries | `xrpld_proposals_Messages_In/Out`          | —           |
+| Validation Traffic                   | timeseries | `xrpld_validations_Messages_In/Out`        | —           |
+| Traffic by Category                  | bargauge   | `topk(10, xrpld_*_Bytes_In)`               | —           |
+| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(xrpld_*_duplicate_Bytes_In/Out[5m])` | —           |
+| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(xrpld_*_Bytes_In[5m]))`     | —           |
 
-### RPC & Pathfinding — System Metrics (`rippled-system-rpc`)
+### RPC & Pathfinding -- StatsD (`xrpld-statsd-rpc`)
 
-| Panel                     | Type       | PromQL                                                   | Labels Used |
-| ------------------------- | ---------- | -------------------------------------------------------- | ----------- |
-| RPC Request Rate          | stat       | `rate(rippled_rpc_requests[5m])`                         | —           |
-| RPC Response Time         | timeseries | `histogram_quantile(0.95, rippled_rpc_time_bucket)`      | —           |
-| RPC Response Size         | timeseries | `histogram_quantile(0.95, rippled_rpc_size_bucket)`      | —           |
-| RPC Response Time Heatmap | heatmap    | `rippled_rpc_time_bucket`                                | —           |
-| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, rippled_pathfind_fast_bucket)` | —           |
-| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, rippled_pathfind_full_bucket)` | —           |
-| Resource Warnings Rate    | stat       | `rate(rippled_warn[5m])`                                 | —           |
-| Resource Drops Rate       | stat       | `rate(rippled_drop[5m])`                                 | —           |
+| Panel                     | Type       | PromQL                                                 | Labels Used |
+| ------------------------- | ---------- | ------------------------------------------------------ | ----------- |
+| RPC Request Rate          | stat       | `rate(xrpld_rpc_requests[5m])`                         | —           |
+| RPC Response Time         | timeseries | `histogram_quantile(0.95, xrpld_rpc_time_bucket)`      | —           |
+| RPC Response Size         | timeseries | `histogram_quantile(0.95, xrpld_rpc_size_bucket)`      | —           |
+| RPC Response Time Heatmap | heatmap    | `xrpld_rpc_time_bucket`                                | —           |
+| Pathfinding Fast Duration | timeseries | `histogram_quantile(0.95, xrpld_pathfind_fast_bucket)` | —           |
+| Pathfinding Full Duration | timeseries | `histogram_quantile(0.95, xrpld_pathfind_full_bucket)` | —           |
+| Resource Warnings Rate    | stat       | `rate(xrpld_warn[5m])`                                 | —           |
+| Resource Drops Rate       | stat       | `rate(xrpld_drop[5m])`                                 | —           |
 
 ### Span → Metric → Dashboard Summary
 
-| Span Name                   | Prometheus Metric Filter                  | Grafana Dashboard                             |
-| --------------------------- | ----------------------------------------- | --------------------------------------------- |
-| `rpc.request`               | `{span_name="rpc.request"}`               | RPC Performance (Overall Throughput)          |
-| `rpc.process`               | `{span_name="rpc.process"}`               | RPC Performance (Overall Throughput)          |
-| `rpc.ws_message`            | `{span_name="rpc.ws_message"}`            | RPC Performance (WebSocket Rate)              |
-| `rpc.command.*`             | `{span_name=~"rpc.command.*"}`            | RPC Performance (Rate, Latency, Error, Top)   |
-| `tx.process`                | `{span_name="tx.process"}`                | Transaction Overview (Rate, Latency, Heatmap) |
-| `tx.receive`                | `{span_name="tx.receive"}`                | Transaction Overview (Rate, Receive)          |
-| `tx.apply`                  | `{span_name="tx.apply"}`                  | Transaction Overview + Ledger Ops (Apply)     |
-| `consensus.accept`          | `{span_name="consensus.accept"}`          | Consensus Health (Duration, Rate, Heatmap)    |
-| `consensus.proposal.send`   | `{span_name="consensus.proposal.send"}`   | Consensus Health (Proposals Rate)             |
-| `consensus.ledger_close`    | `{span_name="consensus.ledger_close"}`    | Consensus Health (Close, Mode)                |
-| `consensus.validation.send` | `{span_name="consensus.validation.send"}` | Consensus Health (Validation Rate)            |
-| `consensus.accept.apply`    | `{span_name="consensus.accept.apply"}`    | Consensus Health (Apply Duration, Close Time) |
-| `ledger.build`              | `{span_name="ledger.build"}`              | Ledger Ops (Build Rate, Duration, Heatmap)    |
-| `ledger.validate`           | `{span_name="ledger.validate"}`           | Ledger Ops (Validation Rate)                  |
-| `ledger.store`              | `{span_name="ledger.store"}`              | Ledger Ops (Store Rate)                       |
-| `peer.proposal.receive`     | `{span_name="peer.proposal.receive"}`     | Peer Network (Rate, Trusted/Untrusted)        |
-| `peer.validation.receive`   | `{span_name="peer.validation.receive"}`   | Peer Network (Rate, Trusted/Untrusted)        |
+| Span Name                      | Prometheus Metric Filter                     | Grafana Dashboard                             |
+| ------------------------------ | -------------------------------------------- | --------------------------------------------- |
+| `rpc.request`                  | `{span_name="rpc.request"}`                  | RPC Performance (Overall Throughput)          |
+| `rpc.process`                  | `{span_name="rpc.process"}`                  | RPC Performance (Overall Throughput)          |
+| `rpc.ws_message`               | `{span_name="rpc.ws_message"}`               | RPC Performance (WebSocket Rate)              |
+| `rpc.command.*`                | `{span_name=~"rpc.command.*"}`               | RPC Performance (Rate, Latency, Error, Top)   |
+| `tx.process`                   | `{span_name="tx.process"}`                   | Transaction Overview (Rate, Latency, Heatmap) |
+| `tx.receive`                   | `{span_name="tx.receive"}`                   | Transaction Overview (Rate, Receive)          |
+| `tx.apply`                     | `{span_name="tx.apply"}`                     | Transaction Overview + Ledger Ops (Apply)     |
+| `txq.enqueue`                  | `{span_name="txq.enqueue"}`                  | -- (available but not paneled)                |
+| `txq.apply_direct`             | `{span_name="txq.apply_direct"}`             | -- (available but not paneled)                |
+| `txq.batch_clear`              | `{span_name="txq.batch_clear"}`              | -- (available but not paneled)                |
+| `txq.accept`                   | `{span_name="txq.accept"}`                   | -- (available but not paneled)                |
+| `txq.accept_tx`                | `{span_name="txq.accept_tx"}`                | -- (available but not paneled)                |
+| `txq.cleanup`                  | `{span_name="txq.cleanup"}`                  | -- (available but not paneled)                |
+| `consensus.round`              | `{span_name="consensus.round"}`              | -- (available but not paneled)                |
+| `consensus.phase.open`         | `{span_name="consensus.phase.open"}`         | -- (available but not paneled)                |
+| `consensus.establish`          | `{span_name="consensus.establish"}`          | -- (available but not paneled)                |
+| `consensus.update_positions`   | `{span_name="consensus.update_positions"}`   | -- (available but not paneled)                |
+| `consensus.check`              | `{span_name="consensus.check"}`              | -- (available but not paneled)                |
+| `consensus.accept`             | `{span_name="consensus.accept"}`             | Consensus Health (Duration, Rate, Heatmap)    |
+| `consensus.proposal.send`      | `{span_name="consensus.proposal.send"}`      | Consensus Health (Proposals Rate)             |
+| `consensus.ledger_close`       | `{span_name="consensus.ledger_close"}`       | Consensus Health (Close, Mode)                |
+| `consensus.validation.send`    | `{span_name="consensus.validation.send"}`    | Consensus Health (Validation Rate)            |
+| `consensus.accept.apply`       | `{span_name="consensus.accept.apply"}`       | Consensus Health (Apply Duration, Close Time) |
+| `consensus.mode_change`        | `{span_name="consensus.mode_change"}`        | -- (available but not paneled)                |
+| `consensus.proposal.receive`   | `{span_name="consensus.proposal.receive"}`   | -- (available but not paneled)                |
+| `consensus.validation.receive` | `{span_name="consensus.validation.receive"}` | -- (available but not paneled)                |
+| `ledger.build`                 | `{span_name="ledger.build"}`                 | Ledger Ops (Build Rate, Duration, Heatmap)    |
+| `ledger.validate`              | `{span_name="ledger.validate"}`              | Ledger Ops (Validation Rate)                  |
+| `ledger.store`                 | `{span_name="ledger.store"}`                 | Ledger Ops (Store Rate)                       |
+| `peer.proposal.receive`        | `{span_name="peer.proposal.receive"}`        | Peer Network (Rate, Trusted/Untrusted)        |
+| `peer.validation.receive`      | `{span_name="peer.validation.receive"}`      | Peer Network (Rate, Trusted/Untrusted)        |
 
 ## Log-Trace Correlation (Phase 8)
 
-When rippled is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
+When xrpld is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
 2024-01-15T10:30:45.123Z LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
@@ -414,45 +540,39 @@ Log files are ingested by the OTel Collector's `filelog` receiver, which tails `
 
 ```logql
 # Find all logs for a specific trace
-{job="rippled"} |= "trace_id=abc123def456789012345678abcdef01"
+{job="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
 # Error logs with trace context (log lines with ERR severity that have a trace_id)
-{job="rippled"} |= "ERR" |= "trace_id="
+{job="xrpld"} |= "ERR" |= "trace_id="
 
 # All logs from a specific partition that were emitted during a span
-{job="rippled"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+{job="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
 
 # Logs from the last hour containing trace context
-{job="rippled"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
+{job="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
 
 # Count of traced vs untraced log lines
-count_over_time({job="rippled"} |= "trace_id=" [5m])
+count_over_time({job="xrpld"} |= "trace_id=" [5m])
 ```
 
 ### Verifying Log Correlation
 
-1. Start the observability stack and rippled with telemetry enabled.
+1. Start the observability stack and xrpld with telemetry enabled.
 2. Send an RPC request: `curl http://localhost:5005 -d '{"method":"server_info"}'`
 3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
-4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{job="rippled"} |= "trace_id="`.
+4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{job="xrpld"} |= "trace_id="`.
 5. Click the TraceID link to navigate to the corresponding trace in Tempo.
 
 ## Troubleshooting
 
 ### No traces appearing in Tempo
 
-1. Check rippled logs for `Telemetry starting` message
+1. Check xrpld logs for `Telemetry starting` message
 2. Verify `enabled=1` in the `[telemetry]` config section
 3. Test collector connectivity: `curl -v http://localhost:4318/v1/traces`
-4. Check collector logs: `docker compose logs otel-collector`
-
-### No system metrics in Prometheus
-
-1. Check rippled logs for `OTelCollector starting` message
-2. Verify `server=otel` in the `[insight]` config section
-3. Verify the endpoint in `[insight]` points to the OTLP/HTTP port (default: `http://localhost:4318/v1/metrics`)
-4. Check that the `otlp` receiver is in the metrics pipeline receivers in `otel-collector-config.yaml`
-5. Query Prometheus directly: `curl 'http://localhost:9090/api/v1/query?query=rippled_job_count'`
+4. Check collector logs: `docker compose -f docker/telemetry/docker-compose.yml logs otel-collector`
+5. Verify Tempo is receiving data: open Grafana → Explore → select Tempo datasource → search by `service.name = xrpld`
+6. Check Tempo logs: `docker compose -f docker/telemetry/docker-compose.yml logs tempo`
 
 ### Server info gauge shows server_state=0
 
@@ -479,14 +599,14 @@ The `getKBUsed*()` methods require SQLite databases to exist. If running with
 
 ### No trace_id in log output
 
-- Verify rippled was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
+- Verify xrpld was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
 - Verify `enabled=1` in the `[telemetry]` config section
 - Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
 - Check that the specific trace category is enabled (e.g., `trace_rpc=1`)
 
 ### No logs in Loki
 
-- Verify the log file mount in docker-compose.yml points to the correct rippled log directory
+- Verify the log file mount in docker-compose.yml points to the correct xrpld log directory
 - Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
 - Verify Loki is running: `curl http://localhost:3100/ready`
 - Check the filelog receiver glob pattern matches your log file paths

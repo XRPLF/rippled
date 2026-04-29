@@ -1,8 +1,8 @@
-# Docker Compose stack for rippled OpenTelemetry observability.
+# Docker Compose stack for xrpld OpenTelemetry observability.
 #
 # Provides services for local development:
-#   - otel-collector: receives OTLP traces from rippled, batches and
-#     forwards them to Tempo. Also tails rippled log files
+#   - otel-collector: receives OTLP traces from xrpld, batches and
+#     forwards them to Tempo. Also tails xrpld log files
 #     via filelog receiver and exports to Loki. Listens on ports
 #     4317 (gRPC), 4318 (HTTP), and 8125 (StatsD UDP).
 #   - tempo: Grafana Tempo tracing backend, queryable via Grafana Explore
@@ -15,26 +15,25 @@
 # Usage:
 #   docker compose -f docker/telemetry/docker-compose.yml up -d
 #
-# Configure rippled to export traces by adding to xrpld.cfg:
+# Configure xrpld to export traces by adding to xrpld.cfg:
 #   [telemetry]
 #   enabled=1
 #   endpoint=http://localhost:4318/v1/traces
 
-version: "3.8"
-
 services:
+  # OpenTelemetry Collector: receives spans from xrpld via OTLP protocol,
+  # batches them for efficiency, and forwards to Tempo for storage.
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:latest
+    image: otel/opentelemetry-collector-contrib:0.121.0
     command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
       - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP (traces + native OTel metrics)
-      - "8889:8889" # Prometheus metrics (spanmetrics + OTLP)
+      - "4318:4318" # OTLP HTTP
+      - "8125:8125/udp" # StatsD UDP (beast::insight metrics)
+      - "8889:8889" # Prometheus metrics (spanmetrics + statsd)
       - "13133:13133" # Health check
-      # StatsD UDP port removed — beast::insight now uses native OTLP.
-      # Uncomment if using server=statsd fallback:
-      # - "8125:8125/udp"
     volumes:
+      # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
       # Phase 8: Mount rippled log directory for filelog receiver.
       # The integration test writes logs to /tmp/xrpld-integration/;
@@ -44,18 +43,22 @@ services:
       - tempo
       - loki
     networks:
-      - rippled-telemetry
+      - xrpld-telemetry
 
+  # Grafana Tempo: distributed tracing backend that stores and indexes
+  # spans. Queryable via TraceQL in Grafana Explore.
   tempo:
     image: grafana/tempo:2.7.2
     command: ["-config.file=/etc/tempo.yaml"]
     ports:
-      - "3200:3200" # Tempo HTTP API (health, query)
+      - "3200:3200" # Tempo HTTP API (health check, query)
     volumes:
+      # Mount Tempo storage and ingestion config
       - ./tempo.yaml:/etc/tempo.yaml:ro
+      # Persistent volume for trace data (WAL + blocks)
       - tempo-data:/var/tempo
     networks:
-      - rippled-telemetry
+      - xrpld-telemetry
 
   # Phase 8: Grafana Loki for centralized log ingestion and log-trace
   # correlation. Loki 3.x supports native OTLP ingestion, so the OTel
@@ -81,16 +84,19 @@ services:
     depends_on:
       - otel-collector
     networks:
-      - rippled-telemetry
+      - xrpld-telemetry
 
+  # Grafana: visualization UI with Tempo pre-configured as a datasource.
+  # Anonymous admin access enabled for local development convenience.
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.5.2
     environment:
-      - GF_AUTH_ANONYMOUS_ENABLED=true
-      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_ANONYMOUS_ENABLED=true # No login required for local dev
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin # Full access without auth
     ports:
-      - "3000:3000"
+      - "3000:3000" # Grafana web UI
     volumes:
+      # Auto-provision Tempo datasource and search filters on startup
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
       - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
@@ -98,13 +104,18 @@ services:
       - prometheus
       - loki
     networks:
-      - rippled-telemetry
+      - xrpld-telemetry
 
+# Named volume for Tempo trace storage (WAL and compacted blocks).
+# Data persists across container restarts. Remove with:
+#   docker compose -f docker/telemetry/docker-compose.yml down -v
 volumes:
   tempo-data:
   prometheus-data:
   loki-data:
 
+# Isolated bridge network so services communicate by container name
+# (e.g., the collector reaches Tempo at http://tempo:4317).
 networks:
-  rippled-telemetry:
+  xrpld-telemetry:
     driver: bridge

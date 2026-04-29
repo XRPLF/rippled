@@ -1,16 +1,38 @@
 #include <xrpld/app/ledger/OpenLedger.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/core/TimeKeeper.h>
-#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
-#include <xrpl/ledger/CachedView.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/shamap/SHAMap.h>
 #include <xrpl/tx/apply.h>
 
 #include <boost/range/adaptor/transformed.hpp>
+
+#include <xrpl.pb.h>
+
+#include <exception>
+#include <memory>
+#include <mutex>
+#include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -25,26 +47,26 @@ OpenLedger::OpenLedger(
 bool
 OpenLedger::empty() const
 {
-    std::lock_guard lock(modify_mutex_);
+    std::lock_guard const lock(modify_mutex_);
     return current_->txCount() == 0;
 }
 
 std::shared_ptr<OpenView const>
 OpenLedger::current() const
 {
-    std::lock_guard lock(current_mutex_);
+    std::lock_guard const lock(current_mutex_);
     return current_;
 }
 
 bool
 OpenLedger::modify(modify_type const& f)
 {
-    std::lock_guard lock1(modify_mutex_);
+    std::lock_guard const lock1(modify_mutex_);
     auto next = std::make_shared<OpenView>(*current_);
     auto const changed = f(*next, j_);
     if (changed)
     {
-        std::lock_guard lock2(current_mutex_);
+        std::lock_guard const lock2(current_mutex_);
         current_ = std::move(next);
     }
     return changed;
@@ -73,7 +95,7 @@ OpenLedger::accept(
     // Block calls to modify, otherwise
     // new tx going into the open ledger
     // would get lost.
-    std::lock_guard lock1(modify_mutex_);
+    std::lock_guard const lock1(modify_mutex_);
     // Apply tx from the current open view
     if (!current_->txs.empty())
     {
@@ -131,7 +153,7 @@ OpenLedger::accept(
     }
 
     // Switch to the new open view
-    std::lock_guard lock2(current_mutex_);
+    std::lock_guard const lock2(current_mutex_);
     current_ = std::move(next);
 }
 

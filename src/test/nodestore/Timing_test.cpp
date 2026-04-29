@@ -2,34 +2,48 @@
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/unit_test/thread.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/DummyScheduler.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
 
 #include <algorithm>
 #include <atomic>
 #include <chrono>
-#include <iterator>
-#include <limits>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
+#include <iomanip>
+#include <ios>
+#include <memory>
+#include <ostream>
 #include <random>
 #include <sstream>
-#include <stdexcept>
-#include <type_traits>
+#include <string>
 #include <utility>
+#include <vector>
 
 #ifndef NODESTORE_TIMING_DO_VERIFY
 #define NODESTORE_TIMING_DO_VERIFY 0
 #endif
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 std::unique_ptr<Backend>
 make_Backend(Section const& config, Scheduler& scheduler, beast::Journal journal)
@@ -211,7 +225,7 @@ public:
     parallel_for(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), args...);
@@ -224,7 +238,7 @@ public:
     parallel_for_id(std::size_t const n, std::size_t number_of_threads, Args const&... args)
     {
         std::atomic<std::size_t> c(0);
-        std::vector<beast::unit_test::thread> t;
+        std::vector<beast::unit_test::Thread> t;
         t.reserve(number_of_threads);
         for (std::size_t id = 0; id < number_of_threads; ++id)
             t.emplace_back(*this, parallel_for_lambda<Body>(n, c), id, args...);
@@ -490,7 +504,7 @@ public:
         backend->close();
     }
 
-    // Simulate a rippled workload:
+    // Simulate an xrpld workload:
     // Each thread randomly:
     //      inserts a new key
     //      fetches an old key
@@ -646,7 +660,7 @@ public:
             params.threads = threads;
             for (auto i = default_repeat; (i--) != 0u;)
             {
-                beast::temp_dir tempDir;
+                beast::temp_dir const tempDir;
                 Section config = parse(config_string);
                 config.set("path", tempDir.path());
                 std::stringstream ss;
@@ -673,7 +687,7 @@ public:
             items           Number of objects to create in the database
 
         */
-        std::string default_args =
+        std::string const default_args =
             "type=nudb"
 #if XRPL_ROCKSDB_AVAILABLE
             ";type=rocksdb,open_files=2000,filter_bits=12,cache_mb=256,"
@@ -715,5 +729,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Timing, nodestore, xrpl, 1);
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

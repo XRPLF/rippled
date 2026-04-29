@@ -117,22 +117,32 @@ from_string(RangeSet<T>& rs, std::string const& s)
             case 1: {
                 T front;
                 if (!beast::lexicalCastChecked(front, intervals.front()))
+                {
                     result = false;
+                }
                 else
+                {
                     rs.insert(front);
+                }
                 break;
             }
             case 2: {
                 T front;
                 if (!beast::lexicalCastChecked(front, intervals.front()))
+                {
                     result = false;
+                }
                 else
                 {
                     T back;
                     if (!beast::lexicalCastChecked(back, intervals.back()))
+                    {
                         result = false;
+                    }
                     else
+                    {
                         rs.insert(range(front, back));
+                    }
                 }
                 break;
             }

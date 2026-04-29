@@ -1,32 +1,56 @@
 #include <xrpld/rpc/RPCCall.h>
+
+#include <xrpld/core/Config.h>
 #include <xrpld/rpc/ServerHandler.h>
 
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/net/HTTPClient.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+#include <boost/system/detail/error_code.hpp>
 
+#include <algorithm>
 #include <array>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <functional>
 #include <iostream>
-#include <type_traits>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -104,21 +128,21 @@ private:
         // optionally followed by a forward slash and some other characters
         // (the issuer).
         // https://www.boost.org/doc/libs/1_82_0/libs/regex/doc/html/boost_regex/syntax/perl_syntax.html
-        static boost::regex reCurIss("\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
+        static boost::regex const reCurIss("\\`([][:alnum:]<>(){}[|?!@#$%^&*]{3})(?:/(.+))?\\'");
 
         boost::smatch smMatch;
 
         if (boost::regex_match(strCurrencyIssuer, smMatch, reCurIss))
         {
             Json::Value jvResult(Json::objectValue);
-            std::string strCurrency = smMatch[1];
-            std::string strIssuer = smMatch[2];
+            std::string const strCurrency = smMatch[1];
+            std::string const strIssuer = smMatch[2];
 
             jvResult[jss::currency] = strCurrency;
 
             if (!strIssuer.empty())
             {
-                // Could confirm issuer is a valid Ripple address.
+                // Could confirm issuer is a valid XRPL address.
                 jvResult[jss::issuer] = strIssuer;
             }
 
@@ -203,7 +227,7 @@ private:
     parseFetchInfo(Json::Value const& jvParams)
     {
         Json::Value jvRequest(Json::objectValue);
-        unsigned int iParams = jvParams.size();
+        unsigned int const iParams = jvParams.size();
 
         if (iParams != 0)
             jvRequest[jvParams[0u].asString()] = true;
@@ -262,8 +286,8 @@ private:
         }
         else
         {
-            std::int64_t uLedgerMin = jvParams[1u].asInt();
-            std::int64_t uLedgerMax = jvParams[2u].asInt();
+            std::int64_t const uLedgerMin = jvParams[1u].asInt();
+            std::int64_t const uLedgerMax = jvParams[2u].asInt();
 
             if (uLedgerMax != -1 && uLedgerMax < uLedgerMin)
             {
@@ -324,7 +348,7 @@ private:
         {
             try
             {
-                int iLimit = jvParams[4u].asInt();
+                int const iLimit = jvParams[4u].asInt();
 
                 if (iLimit > 0)
                     jvRequest[jss::limit] = iLimit;
@@ -339,7 +363,7 @@ private:
         {
             try
             {
-                int bProof = jvParams[5u].asInt();
+                int const bProof = jvParams[5u].asInt();
                 if (bProof != 0)
                     jvRequest[jss::proof] = true;
             }
@@ -365,7 +389,7 @@ private:
         if (jvParams.size() == 0u)
             return jvRequest;
 
-        std::string input = jvParams[0u].asString();
+        std::string const input = jvParams[0u].asString();
         if (input.find_first_not_of("0123456789") == std::string::npos)
         {
             jvRequest["can_delete"] = jvParams[0u].asUInt();
@@ -395,7 +419,7 @@ private:
         // handle case where there is one argument of the form ip:port
         if (std::count(ip.begin(), ip.end(), ':') == 1)
         {
-            std::size_t colon = ip.find_last_of(":");
+            std::size_t const colon = ip.find_last_of(':');
             jvRequest[jss::ip] = std::string{ip, 0, colon};
             jvRequest[jss::port] = Json::Value{std::string{ip, colon + 1}}.asUInt();
             return jvRequest;
@@ -571,7 +595,7 @@ private:
     {
         Json::Reader reader;
         Json::Value jv;
-        bool valid_parse = reader.parse(jvParams[0u].asString(), jv);
+        bool const valid_parse = reader.parse(jvParams[0u].asString(), jv);
         if (valid_parse && isValidJson2(jv))
         {
             if (jv.isObject())
@@ -653,7 +677,7 @@ private:
     {
         Json::Value jvRequest(Json::objectValue);
 
-        std::string strLedger = jvParams[0u].asString();
+        std::string const strLedger = jvParams[0u].asString();
 
         if (strLedger.length() == 64)
         {
@@ -817,7 +841,8 @@ private:
         Json::Value jvRequest(Json::objectValue);
         for (auto i = 0; i < nParams; ++i)
         {
-            std::string strParam = jvParams[i].asString();
+            // This was non-const. see comment below
+            std::string const strParam = jvParams[i].asString();
 
             if (i == 1 && strParam.empty())
                 continue;
@@ -827,7 +852,10 @@ private:
             {
                 if (parseBase58<AccountID>(strParam))
                 {
-                    jvRequest[accFields[i]] = std::move(strParam);
+                    // TODO: this was std::move'd before but it does not work in practice.
+                    // We would need a Value(std::string&&) for it to work.
+                    // See https://github.com/XRPLF/rippled/issues/6677
+                    jvRequest[accFields[i]] = strParam;
                 }
                 else
                 {
@@ -850,8 +878,8 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseAccountRaw1(Json::Value const& jvParams)
     {
-        std::string strIdent = jvParams[0u].asString();
-        unsigned int iCursor = jvParams.size();
+        std::string const strIdent = jvParams[0u].asString();
+        unsigned int const iCursor = jvParams.size();
 
         if (!parseBase58<AccountID>(strIdent))
             return rpcError(rpcACT_MALFORMED);
@@ -871,7 +899,7 @@ private:
     // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     parseVault(Json::Value const& jvParams)
     {
-        std::string strVaultID = jvParams[0u].asString();
+        std::string const strVaultID = jvParams[0u].asString();
         uint256 id = beast::zero;
         if (!id.parseHex(strVaultID))
             return rpcError(rpcINVALID_PARAMS);
@@ -915,7 +943,7 @@ private:
     {
         Json::Reader reader;
         Json::Value jvRequest{Json::objectValue};
-        bool bLedger = 2 == jvParams.size();
+        bool const bLedger = 2 == jvParams.size();
 
         JLOG(j_.trace()) << "RPC json: " << jvParams[0u];
 
@@ -981,7 +1009,7 @@ private:
                 return std::nullopt;
             if (jvParams.size() < 4 && bOffline)
                 return std::nullopt;
-            Json::UInt index = bOffline ? 3u : 2u;
+            Json::UInt const index = bOffline ? 3u : 2u;
             return jvParams[index].asString();
         }();
 
@@ -1245,74 +1273,212 @@ public:
             // Request-response methods
             // - Returns an error, or the request.
             // - To modify the method, provide a new method in the request.
-            {"account_currencies", &RPCParser::parseAccountCurrencies, 1, 3},
-            {"account_info", &RPCParser::parseAccountItems, 1, 3},
-            {"account_lines", &RPCParser::parseAccountLines, 1, 5},
-            {"account_channels", &RPCParser::parseAccountChannels, 1, 3},
-            {"account_nfts", &RPCParser::parseAccountItems, 1, 5},
-            {"account_objects", &RPCParser::parseAccountItems, 1, 5},
-            {"account_offers", &RPCParser::parseAccountItems, 1, 4},
-            {"account_tx", &RPCParser::parseAccountTransactions, 1, 8},
-            {"amm_info", &RPCParser::parseAsIs, 1, 2},
-            {"vault_info", &RPCParser::parseVault, 1, 2},
-            {"book_changes", &RPCParser::parseLedgerId, 1, 1},
-            {"book_offers", &RPCParser::parseBookOffers, 2, 7},
-            {"can_delete", &RPCParser::parseCanDelete, 0, 1},
-            {"channel_authorize", &RPCParser::parseChannelAuthorize, 3, 4},
-            {"channel_verify", &RPCParser::parseChannelVerify, 4, 4},
-            {"connect", &RPCParser::parseConnect, 1, 2},
-            {"consensus_info", &RPCParser::parseAsIs, 0, 0},
-            {"deposit_authorized", &RPCParser::parseDepositAuthorized, 2, 11},
-            {"feature", &RPCParser::parseFeature, 0, 2},
-            {"fetch_info", &RPCParser::parseFetchInfo, 0, 1},
-            {"gateway_balances", &RPCParser::parseGatewayBalances, 1, -1},
-            {"get_counts", &RPCParser::parseGetCounts, 0, 1},
-            {"json", &RPCParser::parseJson, 2, 2},
-            {"json2", &RPCParser::parseJson2, 1, 1},
-            {"ledger", &RPCParser::parseLedger, 0, 2},
-            {"ledger_accept", &RPCParser::parseAsIs, 0, 0},
-            {"ledger_closed", &RPCParser::parseAsIs, 0, 0},
-            {"ledger_current", &RPCParser::parseAsIs, 0, 0},
-            {"ledger_entry", &RPCParser::parseLedgerEntry, 1, 2},
-            {"ledger_header", &RPCParser::parseLedgerId, 1, 1},
-            {"ledger_request", &RPCParser::parseLedgerId, 1, 1},
-            {"log_level", &RPCParser::parseLogLevel, 0, 2},
-            {"logrotate", &RPCParser::parseAsIs, 0, 0},
-            {"manifest", &RPCParser::parseManifest, 1, 1},
-            {"owner_info", &RPCParser::parseAccountItems, 1, 3},
-            {"peers", &RPCParser::parseAsIs, 0, 0},
-            {"ping", &RPCParser::parseAsIs, 0, 0},
-            {"print", &RPCParser::parseAsIs, 0, 1},
+            {.name = "account_currencies",
+             .parse = &RPCParser::parseAccountCurrencies,
+             .minParams = 1,
+             .maxParams = 3},
+            {.name = "account_info",
+             .parse = &RPCParser::parseAccountItems,
+             .minParams = 1,
+             .maxParams = 3},
+            {.name = "account_lines",
+             .parse = &RPCParser::parseAccountLines,
+             .minParams = 1,
+             .maxParams = 5},
+            {.name = "account_channels",
+             .parse = &RPCParser::parseAccountChannels,
+             .minParams = 1,
+             .maxParams = 3},
+            {.name = "account_nfts",
+             .parse = &RPCParser::parseAccountItems,
+             .minParams = 1,
+             .maxParams = 5},
+            {.name = "account_objects",
+             .parse = &RPCParser::parseAccountItems,
+             .minParams = 1,
+             .maxParams = 5},
+            {.name = "account_offers",
+             .parse = &RPCParser::parseAccountItems,
+             .minParams = 1,
+             .maxParams = 4},
+            {.name = "account_tx",
+             .parse = &RPCParser::parseAccountTransactions,
+             .minParams = 1,
+             .maxParams = 8},
+            {.name = "amm_info", .parse = &RPCParser::parseAsIs, .minParams = 1, .maxParams = 2},
+            {.name = "vault_info", .parse = &RPCParser::parseVault, .minParams = 1, .maxParams = 2},
+            {.name = "book_changes",
+             .parse = &RPCParser::parseLedgerId,
+             .minParams = 1,
+             .maxParams = 1},
+            {.name = "book_offers",
+             .parse = &RPCParser::parseBookOffers,
+             .minParams = 2,
+             .maxParams = 7},
+            {.name = "can_delete",
+             .parse = &RPCParser::parseCanDelete,
+             .minParams = 0,
+             .maxParams = 1},
+            {.name = "channel_authorize",
+             .parse = &RPCParser::parseChannelAuthorize,
+             .minParams = 3,
+             .maxParams = 4},
+            {.name = "channel_verify",
+             .parse = &RPCParser::parseChannelVerify,
+             .minParams = 4,
+             .maxParams = 4},
+            {.name = "connect", .parse = &RPCParser::parseConnect, .minParams = 1, .maxParams = 2},
+            {.name = "consensus_info",
+             .parse = &RPCParser::parseAsIs,
+             .minParams = 0,
+             .maxParams = 0},
+            {.name = "deposit_authorized",
+             .parse = &RPCParser::parseDepositAuthorized,
+             .minParams = 2,
+             .maxParams = 11},
+            {.name = "feature", .parse = &RPCParser::parseFeature, .minParams = 0, .maxParams = 2},
+            {.name = "fetch_info",
+             .parse = &RPCParser::parseFetchInfo,
+             .minParams = 0,
+             .maxParams = 1},
+            {.name = "gateway_balances",
+             .parse = &RPCParser::parseGatewayBalances,
+             .minParams = 1,
+             .maxParams = -1},
+            {.name = "get_counts",
+             .parse = &RPCParser::parseGetCounts,
+             .minParams = 0,
+             .maxParams = 1},
+            {.name = "json", .parse = &RPCParser::parseJson, .minParams = 2, .maxParams = 2},
+            {.name = "json2", .parse = &RPCParser::parseJson2, .minParams = 1, .maxParams = 1},
+            {.name = "ledger", .parse = &RPCParser::parseLedger, .minParams = 0, .maxParams = 2},
+            {.name = "ledger_accept",
+             .parse = &RPCParser::parseAsIs,
+             .minParams = 0,
+             .maxParams = 0},
+            {.name = "ledger_closed",
+             .parse = &RPCParser::parseAsIs,
+             .minParams = 0,
+             .maxParams = 0},
+            {.name = "ledger_current",
+             .parse = &RPCParser::parseAsIs,
+             .minParams = 0,
+             .maxParams = 0},
+            {.name = "ledger_entry",
+             .parse = &RPCParser::parseLedgerEntry,
+             .minParams = 1,
+             .maxParams = 2},
+            {.name = "ledger_header",
+             .parse = &RPCParser::parseLedgerId,
+             .minParams = 1,
+             .maxParams = 1},
+            {.name = "ledger_request",
+             .parse = &RPCParser::parseLedgerId,
+             .minParams = 1,
+             .maxParams = 1},
+            {.name = "log_level",
+             .parse = &RPCParser::parseLogLevel,
+             .minParams = 0,
+             .maxParams = 2},
+            {.name = "logrotate", .parse = &RPCParser::parseAsIs, .minParams = 0, .maxParams = 0},
+            {.name = "manifest",
+             .parse = &RPCParser::parseManifest,
+             .minParams = 1,
+             .maxParams = 1},
+            {.name = "owner_info",
+             .parse = &RPCParser::parseAccountItems,
+             .minParams = 1,
+             .maxParams = 3},
+            {.name = "peers", .parse = &RPCParser::parseAsIs, .minParams = 0, .maxParams = 0},
+            {.name = "ping", .parse = &RPCParser::parseAsIs, .minParams = 0, .maxParams = 0},
+            {.name = "print", .parse = &RPCParser::parseAsIs, .minParams = 0, .maxParams = 1},
             //      {   "profile",              &RPCParser::parseProfile, 1,  9
             //      },
-            {"random", &RPCParser::parseAsIs, 0, 0},
-            {"peer_reservations_add", &RPCParser::parsePeerReservationsAdd, 1, 2},
-            {"peer_reservations_del", &RPCParser::parsePeerReservationsDel, 1, 1},
-            {"peer_reservations_list", &RPCParser::parseAsIs, 0, 0},
-            {"ripple_path_find", &RPCParser::parseRipplePathFind, 1, 2},
-            {"server_definitions", &RPCParser::parseServerDefinitions, 0, 1},
-            {"server_info", &RPCParser::parseServerInfo, 0, 1},
-            {"server_state", &RPCParser::parseServerInfo, 0, 1},
-            {"sign", &RPCParser::parseSignSubmit, 2, 4},
-            {"sign_for", &RPCParser::parseSignFor, 3, 4},
-            {"stop", &RPCParser::parseAsIs, 0, 0},
-            {"simulate", &RPCParser::parseSimulate, 1, 2},
-            {"submit", &RPCParser::parseSignSubmit, 1, 4},
-            {"submit_multisigned", &RPCParser::parseSubmitMultiSigned, 1, 1},
-            {"transaction_entry", &RPCParser::parseTransactionEntry, 2, 2},
-            {"tx", &RPCParser::parseTx, 1, 4},
-            {"tx_history", &RPCParser::parseTxHistory, 1, 1},
-            {"unl_list", &RPCParser::parseAsIs, 0, 0},
-            {"validation_create", &RPCParser::parseValidationCreate, 0, 1},
-            {"validator_info", &RPCParser::parseAsIs, 0, 0},
-            {"version", &RPCParser::parseAsIs, 0, 0},
-            {"wallet_propose", &RPCParser::parseWalletPropose, 0, 1},
-            {"internal", &RPCParser::parseInternal, 1, -1},
+            {.name = "random", .parse = &RPCParser::parseAsIs, .minParams = 0, .maxParams = 0},
+            {.name = "peer_reservations_add",
+             .parse = &RPCParser::parsePeerReservationsAdd,
+             .minParams = 1,
+             .maxParams = 2},
+            {.name = "peer_reservations_del",
+             .parse = &RPCParser::parsePeerReservationsDel,
+             .minParams = 1,
+             .maxParams = 1},
+            {.name = "peer_reservations_list",
+             .parse = &RPCParser::parseAsIs,
+             .minParams = 0,
+             .maxParams = 0},
+            {.name = "ripple_path_find",
+             .parse = &RPCParser::parseRipplePathFind,
+             .minParams = 1,
+             .maxParams = 2},
+            {.name = "server_definitions",
+             .parse = &RPCParser::parseServerDefinitions,
+             .minParams = 0,
+             .maxParams = 1},
+            {.name = "server_info",
+             .parse = &RPCParser::parseServerInfo,
+             .minParams = 0,
+             .maxParams = 1},
+            {.name = "server_state",
+             .parse = &RPCParser::parseServerInfo,
+             .minParams = 0,
+             .maxParams = 1},
+            {.name = "sign", .parse = &RPCParser::parseSignSubmit, .minParams = 2, .maxParams = 4},
+            {.name = "sign_for", .parse = &RPCParser::parseSignFor, .minParams = 3, .maxParams = 4},
+            {.name = "stop", .parse = &RPCParser::parseAsIs, .minParams = 0, .maxParams = 0},
+            {.name = "simulate",
+             .parse = &RPCParser::parseSimulate,
+             .minParams = 1,
+             .maxParams = 2},
+            {.name = "submit",
+             .parse = &RPCParser::parseSignSubmit,
+             .minParams = 1,
+             .maxParams = 4},
+            {.name = "submit_multisigned",
+             .parse = &RPCParser::parseSubmitMultiSigned,
+             .minParams = 1,
+             .maxParams = 1},
+            {.name = "transaction_entry",
+             .parse = &RPCParser::parseTransactionEntry,
+             .minParams = 2,
+             .maxParams = 2},
+            {.name = "tx", .parse = &RPCParser::parseTx, .minParams = 1, .maxParams = 4},
+            {.name = "tx_history",
+             .parse = &RPCParser::parseTxHistory,
+             .minParams = 1,
+             .maxParams = 1},
+            {.name = "unl_list", .parse = &RPCParser::parseAsIs, .minParams = 0, .maxParams = 0},
+            {.name = "validation_create",
+             .parse = &RPCParser::parseValidationCreate,
+             .minParams = 0,
+             .maxParams = 1},
+            {.name = "validator_info",
+             .parse = &RPCParser::parseAsIs,
+             .minParams = 0,
+             .maxParams = 0},
+            {.name = "version", .parse = &RPCParser::parseAsIs, .minParams = 0, .maxParams = 0},
+            {.name = "wallet_propose",
+             .parse = &RPCParser::parseWalletPropose,
+             .minParams = 0,
+             .maxParams = 1},
+            {.name = "internal",
+             .parse = &RPCParser::parseInternal,
+             .minParams = 1,
+             .maxParams = -1},
 
             // Event methods
-            {"path_find", &RPCParser::parseEvented, -1, -1},
-            {"subscribe", &RPCParser::parseEvented, -1, -1},
-            {"unsubscribe", &RPCParser::parseEvented, -1, -1},
+            {.name = "path_find",
+             .parse = &RPCParser::parseEvented,
+             .minParams = -1,
+             .maxParams = -1},
+            {.name = "subscribe",
+             .parse = &RPCParser::parseEvented,
+             .minParams = -1,
+             .maxParams = -1},
+            {.name = "unsubscribe",
+             .parse = &RPCParser::parseEvented,
+             .minParams = -1,
+             .maxParams = -1},
         };
 
         auto const count = jvParams.size();
@@ -1402,14 +1568,14 @@ struct RPCCallImp
             {
                 Throw<std::runtime_error>(
                     "no response from server. Please "
-                    "ensure that the rippled server is running in another "
+                    "ensure that the xrpld server is running in another "
                     "process.");
             }
 
             // Parse reply
             JLOG(j.debug()) << "RPC reply: " << strData << std::endl;
-            if (strData.find("Unable to parse request") == 0 ||
-                strData.find(jss::invalid_API_version.c_str()) == 0)
+            if (strData.starts_with("Unable to parse request") ||
+                strData.starts_with(jss::invalid_API_version.c_str()))
                 Throw<RequestNotParsable>(strData);
             Json::Reader reader;
             Json::Value jvReply;
@@ -1486,6 +1652,7 @@ rpcCmdToJson(
     }
     else if (jvRequest.isArray())
     {
+        // NOLINTNEXTLINE(modernize-use-ranges)
         std::for_each(jvRequest.begin(), jvRequest.end(), insert_api_version);
     }
 
@@ -1594,7 +1761,7 @@ rpcClient(
             else
             {
                 // Transport error.
-                Json::Value jvRpcError = jvOutput;
+                Json::Value const jvRpcError = jvOutput;
 
                 jvOutput = rpcError(rpcJSON_RPC);
                 jvOutput["result"] = jvRpcError;
@@ -1628,7 +1795,7 @@ rpcClient(
         // YYY We could have a command line flag for single line output for
         // scripts. YYY We would intercept output here and simplify it.
     }
-    catch (RequestNotParsable& e)
+    catch (RequestNotParsable const& e)
     {
         jvOutput = rpcError(rpcINVALID_PARAMS);
         jvOutput["error_what"] = e.what();

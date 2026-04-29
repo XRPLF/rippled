@@ -43,14 +43,14 @@ public:
     explicit STNumber(SField const& field, Number const& value = Number());
     STNumber(SerialIter& sit, SField const& field);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
     void
     add(Serializer& s) const override;
 
-    Number const&
+    [[nodiscard]] Number const&
     value() const;
     void
     setValue(Number const& v);
@@ -62,9 +62,9 @@ public:
         return *this;
     }
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
     void

@@ -1,11 +1,12 @@
+#include <xrpl/json/Writer.h>
+
 #include <xrpl/basics/ToString.h>
 #include <xrpl/json/Output.h>
-#include <xrpl/json/Writer.h>
 
 #include <cstddef>
 #include <map>
 #include <memory>
-#include <set>
+#include <set>  // IWYU pragma: keep
 #include <stack>
 #include <string>
 #include <utility>
@@ -62,7 +63,7 @@ lengthWithoutTrailingZeros(std::string const& s)
 class Writer::Impl
 {
 public:
-    explicit Impl(Output const& output) : output_(output)
+    explicit Impl(Output output) : output_(std::move(output))
     {
     }
     ~Impl() = default;
@@ -71,7 +72,7 @@ public:
     Impl&
     operator=(Impl&&) = delete;
 
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return stack_.empty();
@@ -80,10 +81,9 @@ public:
     void
     start(CollectionType ct)
     {
-        char ch = (ct == array) ? openBracket : openBrace;
+        char const ch = (ct == array) ? openBracket : openBrace;
         output({&ch, 1});
-        stack_.push(Collection());
-        stack_.top().type = ct;
+        stack_.emplace(Collection{.type = ct});
     }
 
     void
@@ -160,7 +160,7 @@ public:
         output_({&colon, 1});
     }
 
-    bool
+    [[nodiscard]] bool
     isFinished() const
     {
         return isStarted_ && empty();
@@ -187,7 +187,7 @@ public:
         }
     }
 
-    Output const&
+    [[nodiscard]] Output const&
     getOutput() const
     {
         return output_;
@@ -197,8 +197,6 @@ private:
     // JSON collections are either arrays, or objects.
     struct Collection
     {
-        explicit Collection() = default;
-
         /** What type of collection are we in? */
         Writer::CollectionType type = Writer::CollectionType::array;
 
@@ -208,7 +206,7 @@ private:
 
 #ifndef NDEBUG
         /** What tags have we already seen in this collection? */
-        std::set<std::string> tags;
+        std::set<std::string> tags{};  // NOLINT(readability-redundant-member-init)
 #endif
     };
 
