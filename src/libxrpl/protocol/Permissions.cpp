@@ -106,8 +106,10 @@ Permission::getPermissionName(std::uint32_t const value) const
 
     // not a granular permission, check if it maps to a transaction type
     if (auto const txType = permissionToTxType(value))
+    {
         if (auto const* item = TxFormats::getInstance().findByType(*txType); item != nullptr)
             return item->getName();
+    }
 
     return std::nullopt;
 }
