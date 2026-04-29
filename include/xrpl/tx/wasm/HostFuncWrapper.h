@@ -281,17 +281,9 @@ using floatToMantissaAndExponent_proto =
 wasm_trap_t*
 floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
-using floatNegate_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
+using floatFromMantissaAndExponent_proto = int32_t(int32_t, int64_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
-floatNegate_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatAbs_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
-wasm_trap_t*
-floatAbs_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatSet_proto = int32_t(int32_t, int64_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+floatFromMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
 using floatCompare_proto = int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t);
 wasm_trap_t*
@@ -324,9 +316,5 @@ floatRoot_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 using floatPower_proto = int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t, int32_t);
 wasm_trap_t*
 floatPower_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using floatLog_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t, int32_t);
-wasm_trap_t*
-floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
 }  // namespace xrpl

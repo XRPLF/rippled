@@ -368,7 +368,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
     if (importTypes.empty())
         return {};
     if (imports.empty())
-        throw std::runtime_error("Missing imports");
+        Throw<std::runtime_error>("Empty imports");
 
     WasmExternVec wimports(importTypes.size());
 
@@ -385,7 +385,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
         wasm_externkind_t const itype = wasm_externtype_kind(wasm_importtype_type(importType));
         if ((itype) != WASM_EXTERN_FUNC)
         {
-            throw std::runtime_error(
+            Throw<std::runtime_error>(
                 "Invalid import type " + std::to_string(itype));  // LCOV_EXCL_LINE
         }
 
@@ -393,46 +393,39 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
         // if ((W_ENV != modName) && (W_HOST_LIB != modName))
         //     continue;
 
-        bool impSet = false;
-        for (auto const& obj : imports)
-        {
-            auto const& imp = obj.second;
-            if (imp.name != fieldName)
-                continue;
-
-            WasmValtypeVec params(makeImpParams(imp));
-            WasmValtypeVec results(makeImpReturn(imp));
-
-            std::unique_ptr<wasm_functype_t, decltype(&wasm_functype_delete)> const ftype(
-                wasm_functype_new(params.get(), results.get()), &wasm_functype_delete);
-
-            params.release();
-            results.release();
-
-            wasm_func_t* func = wasm_func_new_with_env(
-                s.get(),
-                ftype.get(),
-                reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap),
-                (void*)&obj,
-                nullptr);
-            if (func == nullptr)
-            {
-                // LCOV_EXCL_START
-                throw std::runtime_error("can't create import function " + imp.name);
-                // LCOV_EXCL_STOP
-            }
-
-            wimports[i] = wasm_func_as_extern(func);
-            ++impCnt;
-            impSet = true;
-
-            break;
-        }
-
-        if (!impSet)
+        auto const it = imports.find(fieldName);
+        if (it == imports.end())
         {
             print_wasm_error("Import not found: " + std::string(fieldName), nullptr, j_);
+            continue;  // print all missed import
         }
+
+        auto const& obj = it->second;
+        auto const& imp = obj.second;
+
+        WasmValtypeVec params(makeImpParams(imp));
+        WasmValtypeVec results(makeImpReturn(imp));
+
+        std::unique_ptr<wasm_functype_t, decltype(&wasm_functype_delete)> const ftype(
+            wasm_functype_new(params.get(), results.get()), &wasm_functype_delete);
+
+        params.release();
+        results.release();
+
+        wasm_func_t* func = wasm_func_new_with_env(
+            s.get(),
+            ftype.get(),
+            reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap),
+            (void*)&obj,
+            nullptr);
+        if (func == nullptr)
+        {
+            Throw<std::runtime_error>(
+                "can't create import function " + std::string(imp.name));  // LCOV_EXCL_LINE
+        }
+
+        wimports[i] = wasm_func_as_extern(func);
+        ++impCnt;
     }
 
     if (impCnt != importTypes.size())
@@ -442,7 +435,7 @@ ModuleWrapper::buildImports(StorePtr& s, ImportVec const& imports) const
                 std::to_string(importTypes.size()),
             nullptr,
             j_);
-        throw std::runtime_error("Missing imports");
+        Throw<std::runtime_error>("Missing imports");
     }
 
     return wimports;
@@ -741,7 +734,7 @@ checkImports(ImportVec const& imports, HostFunctions* hfs)
 {
     for (auto const& obj : imports)
     {
-        if (hfs != obj.first)
+        if (hfs != obj.second.first)
             Throw<std::runtime_error>("Imports hf unsync");
     }
 }

@@ -1785,41 +1785,7 @@ floatToMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_va
 }
 
 wasm_trap_t*
-floatNegate_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
-
-    int i = 0;
-    auto const x = getDataSlice(runtime, params, i);
-    if (!x)
-        return hfResult(results, x.error());
-
-    i = 2;
-    return returnResult(runtime, params, results, hf->floatNegate(*x), i);
-}
-
-wasm_trap_t*
-floatAbs_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
-
-    int i = 0;
-    auto const x = getDataSlice(runtime, params, i);
-    if (!x)
-        return hfResult(results, x.error());
-
-    i = 2;
-    return returnResult(runtime, params, results, hf->floatAbs(*x), i);
-}
-
-wasm_trap_t*
-floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+floatFromMantissaAndExponent_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     if (auto g = checkGas(env); !g)
         return g.error();  // LCOV_EXCL_LINE
@@ -1841,7 +1807,8 @@ floatSet_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
         return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
 
     i = 2;
-    return returnResult(runtime, params, results, hf->floatSet(*mant, *exp, *rounding), i);
+    return returnResult(
+        runtime, params, results, hf->floatFromMantissaAndExponent(*mant, *exp, *rounding), i);
 }
 
 wasm_trap_t*
@@ -2018,28 +1985,6 @@ floatPower_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results
 
     i = 3;
     return returnResult(runtime, params, results, hf->floatPower(*x, *n, *rounding), i);
-}
-
-wasm_trap_t*
-floatLog_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    if (auto g = checkGas(env); !g)
-        return g.error();  // LCOV_EXCL_LINE
-    auto* hf = getHF(env);
-    auto* runtime = reinterpret_cast<WasmRuntimeWrapper*>(hf->getRT());
-
-    int i = 0;
-    auto const x = getDataSlice(runtime, params, i);
-    if (!x)
-        return hfResult(results, x.error());
-
-    i = 4;
-    auto const rounding = getDataInt32(runtime, params, i);
-    if (!rounding)
-        return hfResult(results, rounding.error());  // LCOV_EXCL_LINE
-
-    i = 2;
-    return returnResult(runtime, params, results, hf->floatLog(*x, *rounding), i);
 }
 
 // LCOV_EXCL_START

@@ -80,9 +80,7 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, floatFromSTNumber, "float_from_stnumber", hfs,                                        150);
     WASM_IMPORT_FUNC2(i, floatToInt, "float_to_int", hfs,                                                      130);
     WASM_IMPORT_FUNC2(i, floatToMantissaAndExponent, "float_to_mantissa_and_exponent", hfs,                    130);
-    WASM_IMPORT_FUNC2(i, floatNegate, "float_negate", hfs,                                                     150);
-    WASM_IMPORT_FUNC2(i, floatAbs, "float_abs", hfs,                                                           150);
-    WASM_IMPORT_FUNC2(i, floatSet, "float_set", hfs,                                                           100);
+    WASM_IMPORT_FUNC2(i, floatFromMantissaAndExponent, "float_from_mantissa_and_exponent", hfs,                100);
     WASM_IMPORT_FUNC2(i, floatCompare, "float_compare", hfs,                                                    80);
     WASM_IMPORT_FUNC2(i, floatAdd, "float_add", hfs,                                                           160);
     WASM_IMPORT_FUNC2(i, floatSubtract, "float_subtract", hfs,                                                 160);
@@ -90,7 +88,6 @@ setCommonHostFunctions(HostFunctions* hfs, ImportVec& i)
     WASM_IMPORT_FUNC2(i, floatDivide, "float_divide", hfs,                                                     300);
     WASM_IMPORT_FUNC2(i, floatRoot, "float_root", hfs,                                                       5'500);
     WASM_IMPORT_FUNC2(i, floatPower, "float_pow", hfs,                                                       5'500);
-    WASM_IMPORT_FUNC2(i, floatLog, "float_log", hfs,                                                        12'000);
     // clang-format on
 }
 

@@ -154,7 +154,7 @@ struct Wasm_test : public beast::unit_test::suite
     void
     testWasmLib()
     {
-        testcase("wasmtime lib test");
+        testcase("wasm lib test");
         // clang-format off
         /* The WASM module buffer. */
         Bytes const wasm = {/* WASM header */
@@ -369,7 +369,7 @@ struct Wasm_test : public beast::unit_test::suite
             TestHostFunctions hfs(env, 0);
             auto imp = createWasmImport(hfs);
             for (auto& i : imp)
-                i.second.gas = 0;
+                i.second.second.gas = 0;
 
             auto re = engine.run(
                 allHostFuncWasm, hfs, 1'000'000, ESCROW_FUNCTION_NAME, {}, imp, env.journal);
@@ -498,6 +498,8 @@ struct Wasm_test : public beast::unit_test::suite
             checkResult(re, -201, 28'965);
         }
 
+// This test use log output, so DEBUG_OUTPUT  must be disabled.
+#ifndef DEBUG_OUTPUT
         {  // fail because recursion too deep
 
             auto const deepWasm = hexToBytes(deepRecursionHex);
@@ -525,6 +527,7 @@ struct Wasm_test : public beast::unit_test::suite
             BEAST_EXPECT(countSubstr(s, "WASMI Error: failure to call func") == 1);
             BEAST_EXPECT(countSubstr(s, "exception: <finish> failure") > 0);
         }
+#endif
 
         {  // infinite loop
             auto const infiniteLoopWasm = hexToBytes(infiniteLoopWasmHex);
@@ -560,7 +563,7 @@ struct Wasm_test : public beast::unit_test::suite
             TestLedgerDataProvider hfs(env);
             ImportVec imports;
             WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", &hfs);
-            imports[0].first = nullptr;
+            imports["get_ledger_sqn"].first = nullptr;
 
             auto& engine = WasmEngine::instance();
 
@@ -599,7 +602,7 @@ struct Wasm_test : public beast::unit_test::suite
 
             TestHostFunctions hfs(env, 0);
             auto re = runEscrowWasm(floatTestWasm, hfs, 200'000, funcName, {});
-            checkResult(re, 1, 167'965);
+            checkResult(re, 1, 144'054);
             env.close();
         }
 
@@ -625,7 +628,7 @@ struct Wasm_test : public beast::unit_test::suite
         auto const codecovWasm = hexToBytes(codecovTestsWasmHex);
         TestHostFunctions hfs(env, 0);
 
-        auto const allowance = 202'724;
+        auto const allowance = 208'169;
         auto re = runEscrowWasm(codecovWasm, hfs, allowance, ESCROW_FUNCTION_NAME, {});
 
         checkResult(re, 1, allowance);

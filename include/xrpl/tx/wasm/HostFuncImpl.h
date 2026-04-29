@@ -269,13 +269,7 @@ public:
     floatToMantissaAndExponent(Slice const& x) const override;
 
     Expected<Bytes, HostFunctionError>
-    floatNegate(Slice const& x) const override;
-
-    Expected<Bytes, HostFunctionError>
-    floatAbs(Slice const& x) const override;
-
-    Expected<Bytes, HostFunctionError>
-    floatSet(int64_t mantissa, int32_t exponent, int32_t mode) const override;
+    floatFromMantissaAndExponent(int64_t mantissa, int32_t exponent, int32_t mode) const override;
 
     Expected<int32_t, HostFunctionError>
     floatCompare(Slice const& x, Slice const& y) const override;
@@ -297,9 +291,6 @@ public:
 
     Expected<Bytes, HostFunctionError>
     floatPower(Slice const& x, int32_t n, int32_t mode) const override;
-
-    Expected<Bytes, HostFunctionError>
-    floatLog(Slice const& x, int32_t mode) const override;
 };
 
 }  // namespace xrpl
