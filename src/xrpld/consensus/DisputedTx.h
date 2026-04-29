@@ -191,14 +191,14 @@ public:
     getJson() const;
 
     //! Number of peers voting yes.
-    int
+    [[nodiscard]] int
     getYays() const
     {
         return yays_;
     }
 
     //! Number of peers voting no.
-    int
+    [[nodiscard]] int
     getNays() const
     {
         return nays_;

@@ -16,8 +16,7 @@
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 /** Create a "tx.receive" span for a transaction received from a peer.
  *  trace_id is derived from txID[0:16]. If the incoming message carries
@@ -59,5 +58,4 @@ txProcessSpan(uint256 const& txID)
         TraceCategory::Transactions, tx_span::process, txID.data(), txID.bytes);
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry

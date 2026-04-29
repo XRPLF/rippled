@@ -1801,11 +1801,17 @@ Consensus<Adaptor>::haveConsensus(std::unique_ptr<std::stringstream> const& clog
 
     char const* stateStr = "no";
     if (result_->state == ConsensusState::Yes)
+    {
         stateStr = "yes";
+    }
     else if (result_->state == ConsensusState::MovedOn)
+    {
         stateStr = "moved_on";
+    }
     else if (result_->state == ConsensusState::Expired)
+    {
         stateStr = "expired";
+    }
     span.setAttribute(cons_span::attr::result, stateStr);
 
     CLOG(clog) << "Consensus has been reached. ";

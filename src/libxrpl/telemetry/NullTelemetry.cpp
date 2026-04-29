@@ -18,6 +18,7 @@
 #endif
 
 #include <memory>
+#include <string>
 #include <utility>
 
 namespace xrpl::telemetry {
@@ -87,7 +88,7 @@ public:
         return false;
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     getConsensusTraceStrategy() const override
     {
         return setup_.consensusTraceStrategy;
