@@ -6139,6 +6139,141 @@ class Vault_test : public beast::unit_test::suite
         runTest(amendments);
     }
 
+    // Issuer mutates the underlying MPT's lsfMPTCanTransfer / lsfMPTCanTrade
+    // flags after holders have already deposited into a vault. Demonstrates:
+    //
+    //   - VaultDeposit and VaultWithdraw both go through `canTransfer`,
+    //     so clearing lsfMPTCanTransfer freezes every holder's funds in
+    //     the vault until the issuer re-enables the flag (`tecNO_AUTH`).
+    //
+    //   - The issuer is exempt: `canTransfer` short-circuits when either
+    //     side of the transfer is the issuer, so the issuer can still
+    //     deposit and withdraw.
+    //
+    //   - lsfMPTCanTrade is *not* checked by VaultDeposit/VaultWithdraw at
+    //     all — clearing it has no effect on vault I/O. (It only gates
+    //     DEX/AMM operations via `canTrade`.)
+    void
+    testMutateCanTransferAfterDeposit()
+    {
+        using namespace test::jtx;
+        testcase("MPT vault: clearing CanTransfer/CanTrade after deposit");
+
+        Env env{*this, testable_amendments() | featureSingleAssetVault};
+
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(1'000), issuer, alice, bob);
+        env.close();
+
+        // MPT is transferable, tradable, lockable, and clawback-capable. Both
+        // CanTransfer and CanTrade are mutable so the issuer can flip them
+        // later via MPTokenIssuanceSet.
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create(
+            {.flags = tfMPTCanTransfer | tfMPTCanTrade | tfMPTCanLock | tfMPTCanClawback,
+             .mutableFlags = tmfMPTCanMutateCanTransfer | tmfMPTCanMutateCanTrade});
+        PrettyAsset const asset = mptt.issuanceID();
+
+        mptt.authorize({.account = alice});
+        mptt.authorize({.account = bob});
+        env(pay(issuer, alice, asset(100'000)));
+        env(pay(issuer, bob, asset(100'000)));
+        env.close();
+
+        Vault vault{env};
+        auto [createTx, vaultKeylet] = vault.create({.owner = alice, .asset = asset});
+        env(createTx);
+        env.close();
+        BEAST_EXPECT(env.le(vaultKeylet));
+
+        // Both holders deposit. Issuer also deposits (issuer can be a
+        // depositor too) so we can later confirm the issuer-exempt path.
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(50'000)}));
+        env(vault.deposit({.depositor = bob, .id = vaultKeylet.key, .amount = asset(30'000)}));
+        env(vault.deposit({.depositor = issuer, .id = vaultKeylet.key, .amount = asset(20'000)}));
+        env.close();
+
+        // -- 1. Issuer clears lsfMPTCanTransfer ---------------------------
+        mptt.set({.mutableFlags = tmfMPTClearCanTransfer});
+        env.close();
+
+        {
+            auto const sle = env.le(keylet::mptIssuance(asset.raw().get<MPTIssue>().getMptID()));
+            BEAST_EXPECT(sle && !sle->isFlag(lsfMPTCanTransfer));
+            BEAST_EXPECT(sle && sle->isFlag(lsfMPTCanTrade));
+        }
+
+        // 2. Holder deposits and withdrawals are blocked: vault pseudo-
+        //    account is neither sender nor receiver = issuer, so
+        //    canTransfer returns tecNO_AUTH.
+        env(vault.deposit({.depositor = alice, .id = vaultKeylet.key, .amount = asset(1'000)}),
+            ter(tecNO_AUTH));
+        env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = asset(1'000)}),
+            ter(tecNO_AUTH));
+        env(vault.withdraw({.depositor = bob, .id = vaultKeylet.key, .amount = asset(1'000)}),
+            ter(tecNO_AUTH));
+        env.close();
+
+        // 3. Issuer-as-depositor is exempt — `canTransfer` short-circuits
+        //    on the issuer side. Both deposit and withdraw succeed.
+        env(vault.deposit({.depositor = issuer, .id = vaultKeylet.key, .amount = asset(5'000)}));
+        env(vault.withdraw({.depositor = issuer, .id = vaultKeylet.key, .amount = asset(5'000)}));
+        env.close();
+
+        // 3b. A holder can also escape by withdrawing *to the issuer* via
+        //     sfDestination. `canTransfer`'s issuer short-circuit fires on
+        //     `to == issuer`, so the withdrawal succeeds even though
+        //     CanTransfer is cleared. The holder's shares are burned and
+        //     the underlying MPT lands at the issuer (presumably part of
+        //     an off-ledger redemption arrangement).
+        auto const aliceMptBefore = env.balance(alice, asset);
+        auto withdrawToIssuer =
+            vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = asset(2'000)});
+        withdrawToIssuer[sfDestination] = issuer.human();
+        env(withdrawToIssuer);
+        env.close();
+        // Alice's MPT balance is unchanged — the asset went to the issuer,
+        // not back to her — but her share holding was burned.
+        BEAST_EXPECT(env.balance(alice, asset) == aliceMptBefore);
+
+        // -- 4. Also clear lsfMPTCanTrade. Vault paths don't consult
+        //       CanTrade, so this changes nothing for vault I/O. ----------
+        mptt.set({.mutableFlags = tmfMPTClearCanTrade});
+        env.close();
+
+        {
+            auto const sle = env.le(keylet::mptIssuance(asset.raw().get<MPTIssue>().getMptID()));
+            BEAST_EXPECT(sle && !sle->isFlag(lsfMPTCanTrade));
+        }
+
+        // Holder ops still fail the same way (CanTransfer-driven), and the
+        // issuer is still exempt.
+        env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = asset(1'000)}),
+            ter(tecNO_AUTH));
+        env(vault.deposit({.depositor = issuer, .id = vaultKeylet.key, .amount = asset(1'000)}));
+        env.close();
+
+        // -- 5. Re-enable CanTransfer; leave CanTrade cleared. ------------
+        mptt.set({.mutableFlags = tmfMPTSetCanTransfer});
+        env.close();
+
+        // Holders can now withdraw all their stake — confirms CanTrade is
+        // not consulted by the vault transactors. Alice already redeemed
+        // 2,000 to the issuer, so only 48,000 remains for her.
+        env(vault.withdraw({.depositor = alice, .id = vaultKeylet.key, .amount = asset(48'000)}));
+        env(vault.withdraw({.depositor = bob, .id = vaultKeylet.key, .amount = asset(30'000)}));
+        env.close();
+
+        {
+            auto const sle = env.le(keylet::mptIssuance(asset.raw().get<MPTIssue>().getMptID()));
+            BEAST_EXPECT(sle && sle->isFlag(lsfMPTCanTransfer));
+            BEAST_EXPECT(sle && !sle->isFlag(lsfMPTCanTrade));
+        }
+    }
+
 public:
     void
     run() override
@@ -6162,6 +6297,7 @@ public:
         testAssetsMaximum();
         testBug6_LimitBypassWithShares();
         testRemoveEmptyHoldingLockedAmount();
+        testMutateCanTransferAfterDeposit();
     }
 };
 

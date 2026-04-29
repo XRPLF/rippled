@@ -8,6 +8,7 @@
 #include <test/jtx/escrow.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
@@ -19,6 +20,7 @@
 #include <test/jtx/ter.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
@@ -7060,10 +7062,200 @@ private:
             {all});
     }
 
+    // Create a single-asset vault, deposit assets so the depositor receives
+    // shares (an MPT issued by the vault pseudo-account), then pair those
+    // shares with XRP in an AMM. Finally do a single-asset deposit of more
+    // shares into the AMM.
+    void
+    testVaultSharesAMM()
+    {
+        testcase("Vault Shares paired with XRP in AMM");
+
+        using namespace jtx;
+
+        // Vaults rely on featureSingleAssetVault (which the AMM_test class
+        // strips by default). MPT-AMM pairs require featureMPTokensV2.
+        FeatureBitset const features{
+            jtx::testable_amendments() | featureSingleAssetVault | featureMPTokensV2};
+
+        Env env{*this, features};
+
+        Account const owner{"vaultOwner"};
+        env.fund(XRP(1'000'000), owner);
+        env.close();
+
+        // Use XRP as the vault asset for simplicity.
+        PrettyAsset const asset{xrpIssue(), 1'000'000};
+
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+        env(vaultTx);
+        env.close();
+        if (!BEAST_EXPECT(env.le(vaultKeylet)))
+            return;
+
+        // Deposit 10,000 XRP into the vault. Owner receives shares (MPT)
+        // issued by the vault's pseudo-account.
+        env(vault.deposit(
+            {.depositor = owner, .id = vaultKeylet.key, .amount = asset(10'000).value()}));
+        env.close();
+
+        auto const vaultSle = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        MPTID const shareMptID = vaultSle->at(sfShareMPTID);
+        MPTIssue const shareIssue{shareMptID};
+        // The share MPT is issued by the vault's pseudo-account. Memoize so
+        // env.balance() can format share amounts.
+        env.memoize(Account{"vaultPseudo", vaultSle->at(sfAccount)});
+
+        // XRP vaults use scale=6, so a 10,000 XRP deposit yields
+        // 10,000 * 1e6 = 10^10 share units (raw MPT amount).
+        STAmount const sharesHeld = env.balance(owner, shareIssue);
+        BEAST_EXPECT(sharesHeld.mantissa() == 10'000'000'000ull);
+        BEAST_EXPECT(sharesHeld.asset() == shareIssue);
+
+        // Seed the AMM with half the shares + 5,000 XRP.
+        STAmount const halfShares(shareIssue, std::uint64_t{5'000'000'000});
+        AMM ammOwner(env, owner, halfShares, XRP(5'000));
+        BEAST_EXPECT(ammOwner.ammExists());
+
+        // Single-asset deposit: add 2,500,000,000 more shares (a quarter of
+        // the original holding) to the share side of the pool.
+        STAmount const extraShares(shareIssue, std::uint64_t{2'500'000'000});
+        ammOwner.deposit(owner, extraShares);
+
+        // The share-side pool should now equal halfShares + extraShares,
+        // while the XRP-side balance is unchanged at 5,000 XRP.
+        auto const [shareBalance, xrpBalance, lpt] = ammOwner.balances(shareIssue, xrpIssue());
+        BEAST_EXPECT(shareBalance == halfShares + extraShares);
+        BEAST_EXPECT(xrpBalance == XRP(5'000));
+        // Owner now holds the original 10B shares minus what was put into the
+        // AMM (5B seed + 2.5B single-asset deposit) = 2.5B.
+        STAmount const expectedOwnerShares(shareIssue, std::uint64_t{2'500'000'000});
+        BEAST_EXPECT(env.balance(owner, shareIssue) == expectedOwnerShares);
+    }
+
+    // Create a Vault whose underlying asset is a lockable / clawback-able
+    // MPT. Pair the vault shares with XRP in an AMM. Transfer half of the
+    // owner's LP tokens to a second account, then issuer-lock the
+    // underlying MPT, then try to transfer LP tokens / cash out again.
+    //
+    // Locking the underlying MPT cascades up via
+    // `isVaultPseudoAccountFrozen`: the vault-share MPT is treated as
+    // frozen because its underlying is locked. So:
+    //   - LP-token Payment after lock fails (`tecPATH_DRY`).
+    //   - AMM withdrawal of LP tokens fails (`tecFROZEN`).
+    // The LP tokens are effectively stuck for as long as the underlying
+    // MPT remains locked.
+    void
+    testLockedVaultMPTCashOut()
+    {
+        testcase("Cash out LP Tokens after vault MPT locked");
+
+        using namespace jtx;
+
+        FeatureBitset const features{
+            jtx::testable_amendments() | featureSingleAssetVault | featureMPTokensV2};
+
+        Env env{*this, features};
+
+        Account const issuer{"issuer"};
+        Account const owner{"vaultOwner"};
+        Account const trader{"trader"};
+
+        env.fund(XRP(1'000'000), issuer, owner, trader);
+        env.close();
+
+        // Underlying MPT supports lock + clawback. MPTDEXFlags adds
+        // CanTransfer + CanTrade so the vault and AMM can route it.
+        MPTTester mpt(
+            {.env = env,
+             .issuer = issuer,
+             .holders = {owner},
+             .pay = 100'000,
+             .flags = tfMPTCanLock | tfMPTCanClawback | MPTDEXFlags});
+        PrettyAsset const asset = MPT(mpt);
+
+        // Create the vault.
+        Vault const vault{env};
+        auto [vaultTx, vaultKeylet] = vault.create({.owner = owner, .asset = asset});
+        env(vaultTx);
+        env.close();
+        if (!BEAST_EXPECT(env.le(vaultKeylet)))
+            return;
+
+        // Deposit 50,000 of the underlying MPT.
+        env(vault.deposit(
+            {.depositor = owner, .id = vaultKeylet.key, .amount = asset(50'000).value()}));
+        env.close();
+
+        auto const vaultSle = env.le(vaultKeylet);
+        if (!BEAST_EXPECT(vaultSle))
+            return;
+        MPTID const shareMptID = vaultSle->at(sfShareMPTID);
+        MPTIssue const shareIssue{shareMptID};
+        env.memoize(Account{"vaultPseudo", vaultSle->at(sfAccount)});
+
+        // MPT vaults use scale=0, so 50,000 deposit -> 50,000 share units.
+        STAmount const sharesHeld = env.balance(owner, shareIssue);
+        BEAST_EXPECT(sharesHeld.mantissa() == 50'000);
+
+        // Create the AMM: 25,000 vault shares + 1,000 XRP.
+        STAmount const seedShares(shareIssue, std::uint64_t{25'000});
+        AMM ammOwner(env, owner, seedShares, XRP(1'000));
+        BEAST_EXPECT(ammOwner.ammExists());
+
+        // The AMM pseudo-account issues the LP tokens; memoize so
+        // env.balance() can format LP-token amounts.
+        env.memoize(Account{"ammPseudo", ammOwner.ammAccount()});
+
+        // Owner's LP token balance after AMM creation.
+        auto const lptIssue = ammOwner.lptIssue();
+        STAmount const lptOwner0 = env.balance(owner, lptIssue);
+        STAmount const lptZero(lptIssue, std::uint32_t{0});
+        BEAST_EXPECT(lptOwner0 != lptZero);
+
+        // Trader needs a trust line to receive LP tokens.
+        STAmount const lptTrustLimit(lptIssue, std::uint64_t{1'000'000'000});
+        env(trust(trader, lptTrustLimit));
+        env.close();
+
+        // Step 1: transfer half the LP tokens from owner -> trader.
+        STAmount const halfLpt(lptIssue, lptOwner0.mantissa() / 2, lptOwner0.exponent());
+        env(pay(owner, trader, halfLpt));
+        env.close();
+        BEAST_EXPECT(env.balance(trader, lptIssue) == halfLpt);
+
+        // Step 2: issuer locks the underlying MPT.
+        mpt.set({.flags = tfMPTLock});
+        env.close();
+
+        // Step 3: transfer LP tokens again. The lock on the underlying MPT
+        // cascades through the vault-share issuance via
+        // isVaultPseudoAccountFrozen, so the AMM-routed Payment fails.
+        STAmount const quarterLpt(lptIssue, lptOwner0.mantissa() / 4, lptOwner0.exponent());
+        env(pay(owner, trader, quarterLpt), ter(tecPATH_DRY));
+        env.close();
+        // Trader's balance is still just the half from before the lock.
+        BEAST_EXPECT(env.balance(trader, lptIssue) == halfLpt);
+
+        // Step 4: try to cash out the LP tokens. The AMM withdrawal must
+        // touch the vault-share side, which is now treated as frozen
+        // because its underlying is locked, so the withdrawal fails.
+        ammOwner.withdrawAll(trader, std::nullopt, ter(tecFROZEN));
+        env.close();
+        // Trader still holds the LP tokens; nothing was redeemed.
+        BEAST_EXPECT(env.balance(trader, lptIssue) == halfLpt);
+        BEAST_EXPECT(env.balance(trader, shareIssue) == STAmount(shareIssue, std::uint64_t{0}));
+    }
+
     void
     run() override
     {
         FeatureBitset const all{testable_amendments()};
+        testVaultSharesAMM();
+        testLockedVaultMPTCashOut();
         testInvalidInstance();
         testInstanceCreate();
         testInvalidDeposit(all);
