@@ -105,8 +105,10 @@ start_cluster() {
         local node_dir="$WORKDIR/node$i"
         mkdir -p "$node_dir/nudb" "$node_dir/db"
 
-        local rpc_port=$((RPC_PORT_BASE + i - 1))
-        local peer_port=$((PEER_PORT_BASE + i - 1))
+        local rpc_port
+        rpc_port=$((RPC_PORT_BASE + i - 1))
+        local peer_port
+        peer_port=$((PEER_PORT_BASE + i - 1))
         local seed
         seed=$(jq -r ".[$((i-1))].seed" "$WORKDIR/validator-keys.json")
 
@@ -203,7 +205,8 @@ EOCFG
     for attempt in $(seq 1 120); do
         local ready=0
         for i in $(seq 1 "$NUM_NODES"); do
-            local port=$((RPC_PORT_BASE + i - 1))
+            local port
+            port=$((RPC_PORT_BASE + i - 1))
             local state
             state=$(curl -sf "http://localhost:$port" \
                 -d '{"method":"server_info"}' 2>/dev/null \
@@ -293,7 +296,7 @@ RPC_DELTA=$(echo "scale=2; $TELE_RPC - $BASE_RPC" | bc 2>/dev/null || echo "0")
 
 BASE_TPS=$(read_metric "$BASELINE_FILE" "tps")
 TELE_TPS=$(read_metric "$TELEMETRY_FILE" "tps")
-if [ "$(echo "$BASE_TPS > 0" | bc 2>/dev/null)" = "1" ]; then
+if [[ "$(echo "$BASE_TPS > 0" | bc 2>/dev/null)" = "1" ]]; then
     TPS_IMPACT=$(echo "scale=2; ($BASE_TPS - $TELE_TPS) / $BASE_TPS * 100" | bc 2>/dev/null || echo "0")
 else
     TPS_IMPACT="0"
@@ -301,7 +304,7 @@ fi
 
 BASE_CONS=$(read_metric "$BASELINE_FILE" "consensus_round_p95_ms")
 TELE_CONS=$(read_metric "$TELEMETRY_FILE" "consensus_round_p95_ms")
-if [ "$(echo "$BASE_CONS > 0" | bc 2>/dev/null)" = "1" ]; then
+if [[ "$(echo "$BASE_CONS > 0" | bc 2>/dev/null)" = "1" ]]; then
     CONS_IMPACT=$(echo "scale=2; ($TELE_CONS - $BASE_CONS) / $BASE_CONS * 100" | bc 2>/dev/null || echo "0")
 else
     CONS_IMPACT="0"
@@ -320,7 +323,7 @@ check_threshold() {
     local unit="$4"
 
     # Compare: actual <= threshold
-    if [ "$(echo "$actual <= $threshold" | bc 2>/dev/null)" = "1" ]; then
+    if [[ "$(echo "$actual <= $threshold" | bc 2>/dev/null)" = "1" ]]; then
         ok "$name: ${actual}${unit} <= ${threshold}${unit} PASS"
         PASS_COUNT=$((PASS_COUNT + 1))
         echo "PASS"
