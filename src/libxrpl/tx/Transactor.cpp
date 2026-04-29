@@ -167,19 +167,9 @@ preflightCheckSimulateKeys(ApplyFlags flags, STObject const& sigObject, beast::J
 
 }  // namespace detail
 
-/** Performs early sanity checks on the account and fee fields */
-NotTEC
-Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
+static NotTEC
+preflight1Sponsor(PreflightContext const& ctx, AccountID const& id)
 {
-    if (ctx.tx.isFieldPresent(sfDelegate))
-    {
-        if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
-            return temDISABLED;
-
-        if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
-            return temBAD_SIGNER;
-    }
-
     bool const hasSponsor = ctx.tx.isFieldPresent(sfSponsor);
     bool const hasSponsorFlags = ctx.tx.isFieldPresent(sfSponsorFlags);
     bool const hasSponsorSig = ctx.tx.isFieldPresent(sfSponsorSignature);
@@ -223,6 +213,29 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return temINVALID_FLAG;
     }
 
+    if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == id)
+    {
+        JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the "
+                               "same as the transaction originator";
+        return temMALFORMED;
+    }
+
+    return tesSUCCESS;
+}
+
+/** Performs early sanity checks on the account and fee fields */
+NotTEC
+Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
+{
+    if (ctx.tx.isFieldPresent(sfDelegate))
+    {
+        if (!ctx.rules.enabled(featurePermissionDelegationV1_1))
+            return temDISABLED;
+
+        if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
+            return temBAD_SIGNER;
+    }
+
     if (auto const ret = preflight0(ctx, flagMask))
         return ret;
 
@@ -261,13 +274,8 @@ Transactor::preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
             !ctx.rules.enabled(featureBatch),
         "Inner batch transaction must have a parent batch ID.");
 
-    // Sponsor checks
-    if (hasSponsor && ctx.tx.getAccountID(sfSponsor) == id)
-    {
-        JLOG(ctx.j.debug()) << "preflight1: Sponsor account cannot be the "
-                               "same as the transaction originator";
-        return temMALFORMED;
-    }
+    if (auto const ter = preflight1Sponsor(ctx, id); !isTesSuccess(ter))
+        return ter;
 
     return tesSUCCESS;
 }

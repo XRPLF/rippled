@@ -88,7 +88,7 @@ confineOwnerCount(
 static std::uint32_t
 ownerCountHlp(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     std::int32_t adjustment,
     bool reportConfine,
     beast::Journal j)
@@ -129,7 +129,7 @@ ownerCountHlp(
 }
 
 static std::uint32_t
-reserveCountHlp(std::shared_ptr<SLE const> const& sle, std::int32_t adjustment, beast::Journal j)
+reserveCountHlp(SLE::const_ref sle, std::int32_t adjustment, beast::Journal j)
 {
     bool const isSponsored = sle->isFieldPresent(sfSponsor);
     std::uint32_t const sponsoringCount = sle->getFieldU32(sfSponsoringAccountCount);
@@ -167,7 +167,7 @@ baseReserveHlp(ReadView const& view, std::uint32_t ownerCount, std::uint32_t res
 static XRPAmount
 reserveHlp(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     std::uint32_t ownerCount,
     std::uint32_t reserveCount)
 {
@@ -180,11 +180,7 @@ reserveHlp(
 }
 
 std::uint32_t
-ownerCount(
-    ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
-    beast::Journal j,
-    std::int32_t adjustment)
+ownerCount(ReadView const& view, SLE::const_ref sle, beast::Journal j, std::int32_t adjustment)
 {
     return ownerCountHlp(view, sle, adjustment, true, j);
 }
@@ -278,10 +274,10 @@ adjustOwnerCount(
     adjustSponsorOwnerCountHlp(view, accountSle, sfOwnerCount, accountID, adjustment, j);
 }
 
-[[nodiscard]] XRPAmount
+XRPAmount
 accountReserve(
     ReadView const& view,
-    std::shared_ptr<SLE const> const& sle,
+    SLE::const_ref sle,
     beast::Journal j,
     std::int32_t ownerCountAdj,
     std::int32_t reserveCountAdj)
