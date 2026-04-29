@@ -66,6 +66,26 @@ to_string(ConsensusMode m)
     }
 }
 
+/// Title Case display name for telemetry attributes and dashboards.
+/// Separate from to_string() which is used in logs and must remain stable.
+inline std::string
+toDisplayString(ConsensusMode m)
+{
+    switch (m)
+    {
+        case ConsensusMode::proposing:
+            return "Proposing";
+        case ConsensusMode::observing:
+            return "Observing";
+        case ConsensusMode::wrongLedger:
+            return "Wrong Ledger";
+        case ConsensusMode::switchedLedger:
+            return "Switched Ledger";
+        default:
+            return "Unknown";
+    }
+}
+
 /** Phases of consensus for a single ledger round.
 
     @code
