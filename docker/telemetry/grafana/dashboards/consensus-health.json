@@ -29,14 +29,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept\"}[5m])))",
           "legendFormat": "P95 Round Duration [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept\"}[5m])))",
           "legendFormat": "P50 Round Duration [{{exported_instance}}]"
         }
       ],
@@ -75,7 +75,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.proposal.send\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_consensus_mode=~\"$consensus_mode\", span_name=\"consensus.proposal.send\"}[5m]))",
           "legendFormat": "Proposals / Sec [{{exported_instance}}]"
         }
       ],
@@ -114,7 +114,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.ledger_close\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_consensus_mode=~\"$consensus_mode\", span_name=\"consensus.ledger_close\"}[5m])))",
           "legendFormat": "P95 Close Duration [{{exported_instance}}]"
         }
       ],
@@ -153,7 +153,7 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.validation.send\"}[5m]))",
+          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", xrpl_consensus_mode=~\"$consensus_mode\", span_name=\"consensus.validation.send\"}[5m]))",
           "legendFormat": "Validations / Sec [{{exported_instance}}]"
         }
       ],
@@ -179,14 +179,14 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m])))",
+          "expr": "histogram_quantile(0.95, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept.apply\"}[5m])))",
           "legendFormat": "P95 Apply Duration [{{exported_instance}}]"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m])))",
+          "expr": "histogram_quantile(0.50, sum by (le, exported_instance) (rate(traces_span_metrics_duration_milliseconds_bucket{exported_instance=~\"$node\", xrpl_consensus_mode=~\"$consensus_mode\", span_name=\"consensus.accept.apply\"}[5m])))",
           "legendFormat": "P50 Apply Duration [{{exported_instance}}]"
         }
       ],
@@ -219,8 +219,8 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "sum by (exported_instance) (rate(traces_span_metrics_calls_total{exported_instance=~\"$node\", span_name=\"consensus.accept.apply\"}[5m]))",
-          "legendFormat": "Total Rounds / Sec [{{exported_instance}}]"
+          "expr": "sum by (xrpl_consensus_close_time_correct, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"consensus.accept.apply\", xrpl_consensus_mode=~\"$consensus_mode\", exported_instance=~\"$node\"}[$__rate_interval]))",
+          "legendFormat": "close_time_correct={{xrpl_consensus_close_time_correct}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {

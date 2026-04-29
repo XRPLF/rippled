@@ -1,11 +1,11 @@
 ## Renaming ripple(d) to xrpl(d)
 
 In the initial phases of development of the XRPL, the open source codebase was
-called "rippled" and it remains with that name even today. Today, over 1000
+called "xrpld" and it remains with that name even today. Today, over 1000
 nodes run the application, and code contributions have been submitted by
 developers located around the world. The XRPL community is larger than ever.
 In light of the decentralized and diversified nature of XRPL, we will rename any
-references to `ripple` and `rippled` to `xrpl` and `xrpld`, when appropriate.
+references to `ripple` and `xrpld` to `xrpl` and `xrpld`, when appropriate.
 
 See [here](https://xls.xrpl.org/xls/XLS-0095-rename-rippled-to-xrpld.html) for
 more information.
@@ -22,17 +22,17 @@ run from the repository root.
 2. `.github/scripts/rename/copyright.sh`: This script will remove superfluous
    copyright notices.
 3. `.github/scripts/rename/cmake.sh`: This script will rename all CMake files
-   from `RippleXXX.cmake` or `RippledXXX.cmake` to `XrplXXX.cmake`, and any
-   references to `ripple` and `rippled` (with or without capital letters) to
+   from `RippleXXX.cmake` or `XrpldXXX.cmake` to `XrplXXX.cmake`, and any
+   references to `ripple` and `xrpld` (with or without capital letters) to
    `xrpl` and `xrpld`, respectively. The name of the binary will remain as-is,
    and will only be renamed to `xrpld` by a later script.
 4. `.github/scripts/rename/binary.sh`: This script will rename the binary from
-   `rippled` to `xrpld`, and reverses the symlink so that `rippled` points to
+   `xrpld` to `xrpld`, and reverses the symlink so that `xrpld` points to
    the `xrpld` binary.
 5. `.github/scripts/rename/namespace.sh`: This script will rename the C++
    namespaces from `ripple` to `xrpl`.
 6. `.github/scripts/rename/config.sh`: This script will rename the config from
-   `rippled.cfg` to `xrpld.cfg`, and updating the code accordingly. The old
+   `xrpld.cfg` to `xrpld.cfg`, and updating the code accordingly. The old
    filename will still be accepted.
 7. `.github/scripts/rename/docs.sh`: This script will rename any lingering
    references of `ripple(d)` to `xrpl(d)` in code, comments, and documentation.

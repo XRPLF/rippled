@@ -34,7 +34,9 @@ connectors:
       - name: xrpl.rpc.command
       - name: xrpl.rpc.status
       - name: xrpl.consensus.mode
+      - name: xrpl.consensus.close_time_correct
       - name: xrpl.tx.local
+      - name: xrpl.tx.suppressed
       - name: xrpl.peer.proposal.trusted
       - name: xrpl.peer.validation.trusted
 
