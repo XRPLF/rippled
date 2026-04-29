@@ -62,8 +62,13 @@
 #include <xrpl/shamap/SHAMapItem.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapTreeNode.h>
+#include <xrpl/telemetry/TraceContextPropagator.h>
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#ifdef XRPL_ENABLE_TELEMETRY
+#include <opentelemetry/context/runtime_context.h>
+#endif
 
 #include <xrpl.pb.h>
 
@@ -260,6 +265,16 @@ RCLConsensus::Adaptor::propose(RCLCxPeerPos::Proposal const& proposal)
         sig);
 
     app_.getHashRouter().addSuppression(suppression);
+
+    // Inject the current thread's active span context (e.g. the
+    // consensus round span from Phase 4) so receiving peers can link
+    // their proposal.receive span as a child of this trace.
+#ifdef XRPL_ENABLE_TELEMETRY
+    {
+        auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+        telemetry::injectToProtobuf(ctx, *prop.mutable_trace_context());
+    }
+#endif
 
     app_.getOverlay().broadcast(prop);
 }
@@ -881,6 +896,14 @@ RCLConsensus::Adaptor::validate(RCLCxLedger const& ledger, RCLTxSet const& txns,
     // Broadcast to all our peers:
     protocol::TMValidation val;
     val.set_validation(serialized.data(), serialized.size());
+    // Inject the current thread's active span context so receiving
+    // peers can link their validation.receive span as a child.
+#ifdef XRPL_ENABLE_TELEMETRY
+    {
+        auto ctx = opentelemetry::context::RuntimeContext::GetCurrent();
+        telemetry::injectToProtobuf(ctx, *val.mutable_trace_context());
+    }
+#endif
     app_.getOverlay().broadcast(val);
 
     // Publish to all our subscribers:

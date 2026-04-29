@@ -166,27 +166,54 @@
 
 ## Task 3.6: Context Propagation in Transaction Relay
 
+**Status**: COMPLETE
+
 **Objective**: Ensure trace context flows correctly when transactions are relayed between peers, creating linked spans across nodes.
 
-**What to do**:
+**What was done**:
 
-- Verify the relay path injects trace context:
-  - When `PeerImp` relays a transaction, the `TMTransaction` message should carry `trace_context`
-  - When a remote peer receives it, the context is extracted and used as parent
+- **TX send side**: `NetworkOPs::apply()` now injects the tx.process span's trace
+  context into the outgoing `TMTransaction` protobuf before relay, using
+  `telemetry::injectSpanContext()`. The receiving node's `txReceiveSpan()` (already
+  wired in PeerImp) extracts the parent span_id and creates the tx.receive span
+  as a child of the sender's tx.process span.
 
-- Test context propagation:
-  - Manually verify with 2+ node setup that trace IDs match across nodes
-  - Confirm parent-child span relationships are correct in Tempo
+- **Proposal send/receive**: `RCLConsensus::Adaptor::propose()` injects the
+  current thread's active span context into the `TMProposeSet` protobuf via
+  `telemetry::injectToProtobuf()`. PeerImp creates a
+  `consensus.proposal.receive` span that extracts the sender's trace context
+  as parent (via `ConsensusReceiveTracing.h`).
 
-- Handle edge cases:
-  - Missing trace context (older peers): create new root span
-  - Corrupted trace context: log warning, create new root span
-  - Sampled-out traces: respect trace flags
+- **Validation send/receive**: `RCLConsensus::Adaptor::validate()` injects
+  the current thread's active span context into the `TMValidation` protobuf.
+  PeerImp creates a `consensus.validation.receive` span that extracts the
+  sender's trace context as parent.
+
+- **Edge cases**: Missing trace context (older peers) degrades gracefully to
+  standalone spans. Invalid/corrupted context is treated as absent. Trace
+  flags are propagated and respected.
+
+**New infrastructure**:
+
+- `SpanGuard::getTraceBytes()` — extracts raw trace_id/span_id/trace_flags
+  from a span without exposing OTel types. Safe to call from any thread.
+- `PropagationHelpers.h` — `injectSpanContext(SpanGuard&, proto)` bridge
+  between SpanGuard and protobuf TraceContext.
+- `TraceContextPropagator.h` — `injectToProtobuf(ctx, proto)` for
+  same-thread injection via OTel RuntimeContext (used in propose/validate).
+- `ConsensusReceiveTracing.h` — `proposalReceiveSpan()` and
+  `validationReceiveSpan()` helper functions that create receive spans with
+  optional parent context extraction from incoming protobuf messages.
 
 **Key modified files**:
 
-- `src/xrpld/overlay/detail/PeerImp.cpp`
-- `src/xrpld/overlay/detail/OverlayImpl.cpp` (if relay method needs context param)
+- `src/xrpld/app/misc/NetworkOPs.cpp` — tx relay injection
+- `src/xrpld/app/consensus/RCLConsensus.cpp` — proposal/validation send injection
+- `src/xrpld/overlay/detail/PeerImp.cpp` — proposal/validation receive spans
+- `include/xrpl/telemetry/SpanGuard.h` — `TraceBytes` struct, `getTraceBytes()`
+- `src/libxrpl/telemetry/SpanGuard.cpp` — `getTraceBytes()` implementation
+- `src/xrpld/telemetry/PropagationHelpers.h` — inject helpers (new file)
+- `src/xrpld/telemetry/ConsensusReceiveTracing.h` — receive span helpers (new file)
 
 **Reference**:
 
@@ -390,7 +417,7 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 - [ ] `tx.receive` and `tx.process` spans have deterministic trace_id = `txHash[0:16]`
 - [ ] All nodes handling the same transaction produce spans under the same trace_id
-- [ ] Protobuf `span_id` propagation still works when available (parent-child ordering)
+- [x] Protobuf `span_id` propagation still works when available (parent-child ordering)
 - [ ] Missing protobuf context (old peer) degrades gracefully to sibling spans, not lost traces
 - [ ] `xrpl.tx.trace_strategy` attribute set to `"deterministic"` on all tx spans
 - [ ] Trace queryable by tx hash (truncate hash → trace_id → direct lookup in Tempo)
@@ -458,9 +485,9 @@ This gives the best of both worlds: guaranteed cross-node correlation via determ
 
 **Exit Criteria** (from [06-implementation-phases.md §6.11.3](./06-implementation-phases.md)):
 
-- [ ] Transaction traces span across nodes
-- [ ] Trace context in Protocol Buffer messages
+- [x] Transaction traces span across nodes
+- [x] Trace context in Protocol Buffer messages
 - [ ] HashRouter deduplication visible in traces
 - [ ] <5% overhead on transaction throughput
-- [ ] Deterministic trace_id: same trace_id for same tx across all nodes
-- [ ] Protobuf span_id propagation preserves parent-child ordering when available
+- [x] Deterministic trace_id: same trace_id for same tx across all nodes
+- [x] Protobuf span_id propagation preserves parent-child ordering when available

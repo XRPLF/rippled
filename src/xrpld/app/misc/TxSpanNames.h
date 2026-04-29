@@ -5,14 +5,14 @@
  *  Used by PeerImp (overlay) and NetworkOPs (app) for transaction
  *  lifecycle spans. Built on StaticStr/join() from SpanNames.h.
  *
- *  Span hierarchy:
+ *  Span hierarchy (cross-node propagation):
  *
- *    Node A (sender)                 Node B (receiver)
- *    +------------------+            +------------------+
- *    | tx.process       |  protobuf  | tx.receive       |
- *    |   injectTo       | ---------> |   extractFrom    |
- *    |   Protobuf()     | trace_ctx  |   Protobuf()     |
- *    +------------------+            +------------------+
+ *    Node A (sender)                    Node B (receiver)
+ *    +---------------------+            +---------------------+
+ *    | tx.process          |  protobuf  | tx.receive          |
+ *    |  injectSpanContext  | ---------> |  txReceiveSpan()    |
+ *    |  (PropagationHelp.) | trace_ctx  |  extracts parent    |
+ *    +---------------------+            +---------------------+
  */
 
 #include <xrpl/telemetry/SpanNames.h>
