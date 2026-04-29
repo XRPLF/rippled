@@ -22,6 +22,7 @@
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/telemetry/ConsensusReceiveTracing.h>
 #include <xrpld/telemetry/TxTracing.h>
 
 #include <xrpl/basics/Log.h>
@@ -1958,9 +1959,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             app_.getTimeKeeper().closeTime(),
             calcNodeID(app_.getValidatorManifests().getMasterKey(publicKey))});
 
+    // Create a receive span that links to the sender's trace context
+    // (if propagated). shared_ptr keeps it alive across the job boundary.
+    auto span = std::make_shared<telemetry::SpanGuard>(telemetry::proposalReceiveSpan(set));
+    span->setAttribute("xrpl.consensus.trusted", isTrusted);
+    span->setAttribute("xrpl.consensus.round", static_cast<int64_t>(set.proposeseq()));
+
     std::weak_ptr<PeerImp> const weak = shared_from_this();
     app_.getJobQueue().addJob(
-        isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut, "checkPropose", [weak, isTrusted, m, proposal]() {
+        isTrusted ? jtPROPOSAL_t : jtPROPOSAL_ut,
+        "checkPropose",
+        [weak, isTrusted, m, proposal, sp = std::move(span)]() {
             if (auto peer = weak.lock())
                 peer->checkPropose(isTrusted, m, proposal);
         });
@@ -2535,6 +2544,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return;
         }
 
+        // Create a receive span that links to the sender's trace context
+        // (if propagated). shared_ptr keeps it alive across the job boundary.
+        auto span = std::make_shared<telemetry::SpanGuard>(telemetry::validationReceiveSpan(*m));
+        span->setAttribute("xrpl.consensus.trusted", isTrusted);
+        if (val->isFieldPresent(sfLedgerSequence))
+        {
+            span->setAttribute(
+                "xrpl.consensus.ledger.seq",
+                static_cast<int64_t>(val->getFieldU32(sfLedgerSequence)));
+        }
+
         if (!isTrusted && (tracking_.load() == Tracking::diverged))
         {
             JLOG(p_journal_.debug()) << "Dropping untrusted validation from diverged peer";
@@ -2545,7 +2565,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
             std::weak_ptr<PeerImp> const weak = shared_from_this();
             app_.getJobQueue().addJob(
-                isTrusted ? jtVALIDATION_t : jtVALIDATION_ut, name, [weak, val, m, key]() {
+                isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
+                name,
+                [weak, val, m, key, sp = std::move(span)]() {
                     if (auto peer = weak.lock())
                         peer->checkValidation(val, key, m);
                 });
