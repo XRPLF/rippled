@@ -314,8 +314,8 @@ trace_peer=1
 trace_ledger=1
 
 [insight]
-server=statsd
-address=127.0.0.1:8125
+server=otel
+endpoint=http://localhost:4318/v1/metrics
 prefix=rippled
 
 [rpc_startup]
@@ -532,42 +532,52 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# Step 10b: Verify StatsD metrics in Prometheus
+# Step 10b: Verify native OTel metrics in Prometheus (beast::insight)
 # ---------------------------------------------------------------------------
 log ""
-log "--- Phase 6: StatsD Metrics (beast::insight) ---"
-log "Waiting 20s for StatsD aggregation + Prometheus scrape..."
+log "--- Phase 7: Native OTel Metrics (beast::insight via OTLP) ---"
+log "Waiting 20s for OTLP metric export + Prometheus scrape..."
 sleep 20
 
-check_statsd_metric() {
+check_otel_metric() {
     local metric_name="$1"
     local result
     result=$(curl -sf "$PROM/api/v1/query?query=$metric_name" \
         | jq '.data.result | length' 2>/dev/null || echo 0)
     if [ "$result" -gt 0 ]; then
-        ok "StatsD: $metric_name ($result series)"
+        ok "OTel: $metric_name ($result series)"
     else
-        fail "StatsD: $metric_name (0 series)"
+        fail "OTel: $metric_name (0 series)"
     fi
 }
 
-# Node health gauges
-check_statsd_metric "rippled_LedgerMaster_Validated_Ledger_Age"
-check_statsd_metric "rippled_LedgerMaster_Published_Ledger_Age"
-check_statsd_metric "rippled_job_count"
+# Node health gauges (ObservableGauge — no _total suffix)
+check_otel_metric "rippled_LedgerMaster_Validated_Ledger_Age"
+check_otel_metric "rippled_LedgerMaster_Published_Ledger_Age"
+check_otel_metric "rippled_job_count"
 
 # State accounting
-check_statsd_metric "rippled_State_Accounting_Full_duration"
+check_otel_metric "rippled_State_Accounting_Full_duration"
 
 # Peer finder
-check_statsd_metric "rippled_Peer_Finder_Active_Inbound_Peers"
-check_statsd_metric "rippled_Peer_Finder_Active_Outbound_Peers"
+check_otel_metric "rippled_Peer_Finder_Active_Inbound_Peers"
+check_otel_metric "rippled_Peer_Finder_Active_Outbound_Peers"
 
-# RPC counters (only if RPC was exercised — should be true from Steps 5-8)
-check_statsd_metric "rippled_rpc_requests"
+# RPC counters (Counter — Prometheus adds _total suffix automatically)
+check_otel_metric "rippled_rpc_requests_total"
 
 # Overlay traffic
-check_statsd_metric "rippled_total_Bytes_In"
+check_otel_metric "rippled_total_Bytes_In"
+
+# Verify StatsD receiver is NOT required (no statsd receiver in pipeline)
+log ""
+log "--- Verify StatsD receiver is not required ---"
+statsd_port_check=$(curl -sf "http://localhost:8125" 2>&1 || echo "refused")
+if echo "$statsd_port_check" | grep -qi "refused\|error\|connection"; then
+    ok "StatsD port 8125 is not listening (not required)"
+else
+    fail "StatsD port 8125 appears to be listening (should not be needed)"
+fi
 
 # ---------------------------------------------------------------------------
 # Step 11: Summary

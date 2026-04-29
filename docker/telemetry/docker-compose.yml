@@ -25,10 +25,12 @@ services:
     command: ["--config=/etc/otel-collector-config.yaml"]
     ports:
       - "4317:4317" # OTLP gRPC
-      - "4318:4318" # OTLP HTTP
-      - "8125:8125/udp" # StatsD UDP (beast::insight metrics)
-      - "8889:8889" # Prometheus metrics (spanmetrics + statsd)
+      - "4318:4318" # OTLP HTTP (traces + native OTel metrics)
+      - "8889:8889" # Prometheus metrics (spanmetrics + OTLP)
       - "13133:13133" # Health check
+      # StatsD UDP port removed — beast::insight now uses native OTLP.
+      # Uncomment if using server=statsd fallback:
+      # - "8125:8125/udp"
     volumes:
       # Mount collector pipeline config (receivers → processors → exporters)
       - ./otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
