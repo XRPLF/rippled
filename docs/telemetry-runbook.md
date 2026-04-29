@@ -487,7 +487,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ## Log-Trace Correlation (Phase 8)
 
-When rippled is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
+When xrpld is built with `telemetry=ON`, log lines emitted within an active OpenTelemetry span automatically include `trace_id` and `span_id` fields:
 
 ```
 2024-01-15T10:30:45.123Z LedgerMaster:NFO trace_id=abc123def456789012345678abcdef01 span_id=0123456789abcdef Validated ledger 42
@@ -506,27 +506,27 @@ Log files are ingested by the OTel Collector's `filelog` receiver, which tails `
 
 ```logql
 # Find all logs for a specific trace
-{job="rippled"} |= "trace_id=abc123def456789012345678abcdef01"
+{job="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
 # Error logs with trace context (log lines with ERR severity that have a trace_id)
-{job="rippled"} |= "ERR" |= "trace_id="
+{job="xrpld"} |= "ERR" |= "trace_id="
 
 # All logs from a specific partition that were emitted during a span
-{job="rippled"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+{job="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
 
 # Logs from the last hour containing trace context
-{job="rippled"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
+{job="xrpld"} |= "trace_id=" | regexp `(?P<partition>\S+):(?P<sev>\S+)\s+trace_id=(?P<tid>[a-f0-9]+)`
 
 # Count of traced vs untraced log lines
-count_over_time({job="rippled"} |= "trace_id=" [5m])
+count_over_time({job="xrpld"} |= "trace_id=" [5m])
 ```
 
 ### Verifying Log Correlation
 
-1. Start the observability stack and rippled with telemetry enabled.
+1. Start the observability stack and xrpld with telemetry enabled.
 2. Send an RPC request: `curl http://localhost:5005 -d '{"method":"server_info"}'`
 3. Check the debug.log for `trace_id=` entries: `grep trace_id= /path/to/debug.log`
-4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{job="rippled"} |= "trace_id="`.
+4. Open Grafana at http://localhost:3000 -> Explore -> Loki and search for `{job="xrpld"} |= "trace_id="`.
 5. Click the TraceID link to navigate to the corresponding trace in Tempo.
 
 ## Troubleshooting
@@ -554,14 +554,14 @@ count_over_time({job="rippled"} |= "trace_id=" [5m])
 
 ### No trace_id in log output
 
-- Verify rippled was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
+- Verify xrpld was built with `telemetry=ON` (the `XRPL_ENABLE_TELEMETRY` preprocessor flag)
 - Verify `enabled=1` in the `[telemetry]` config section
 - Log lines only contain `trace_id`/`span_id` when emitted inside an active span — background logs outside of RPC/consensus/transaction processing will not have trace context
 - Check that the specific trace category is enabled (e.g., `trace_rpc=1`)
 
 ### No logs in Loki
 
-- Verify the log file mount in docker-compose.yml points to the correct rippled log directory
+- Verify the log file mount in docker-compose.yml points to the correct xrpld log directory
 - Check OTel Collector logs for filelog receiver errors: `docker compose logs otel-collector`
 - Verify Loki is running: `curl http://localhost:3100/ready`
 - Check the filelog receiver glob pattern matches your log file paths

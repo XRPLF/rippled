@@ -391,14 +391,14 @@ The `StatsDMeterImpl` in `StatsDCollector.cpp:706` sends metrics with `|m` suffi
 
 ### Motivation
 
-rippled's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Jaeger/Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
+xrpld's `beast::Journal` logs and OpenTelemetry traces are currently two disjoint observability signals. When investigating an issue, operators must manually correlate timestamps between log files and Jaeger/Tempo traces. Phase 8 bridges this gap by injecting trace context (`trace_id`, `span_id`) into every log line emitted within an active span, and ingesting those logs into Grafana Loki via the OTel Collector's filelog receiver.
 
 #### Gains
 
 1. **One-click trace-to-log navigation** — Click a trace in Tempo/Jaeger and immediately see the corresponding log lines in Loki, filtered by `trace_id`.
 2. **Reverse lookup (log-to-trace)** — Loki derived fields make `trace_id` values clickable links back to Tempo.
 3. **Unified observability** — All three pillars (traces, metrics, logs) flow through the same OTel Collector pipeline and are visible in a single Grafana instance.
-4. **Zero new dependencies in rippled** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
+4. **Zero new dependencies in xrpld** — Uses existing OTel SDK headers (`GetSpan`, `GetContext`) already linked in Phase 1.
 5. **Negligible overhead** — `GetSpan()` + `GetContext()` are thread-local reads (<10ns/call). At ~1000 JLOG calls/min, this adds <10us/min.
 
 #### Losses / Risks
@@ -416,13 +416,13 @@ The correlation value far outweighs the risks. The log format change is backward
 Phase 8 has two independent sub-phases that can be developed in parallel:
 
 - **Phase 8a (code change)**: Modify `Logs::format()` in `src/libxrpl/basics/Log.cpp` to append `trace_id=<hex32> span_id=<hex16>` when the current thread has an active OTel span. Guarded by `#ifdef XRPL_ENABLE_TELEMETRY`.
-- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `filelog` receiver to tail rippled's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
+- **Phase 8b (infra only)**: Add Loki to the Docker Compose stack, configure the OTel Collector's `filelog` receiver to tail xrpld's log file, parse out structured fields (timestamp, partition, severity, trace_id, span_id, message), and export to Loki via OTLP. Configure Grafana Tempo↔Loki bidirectional linking.
 
 #### Trace ID Injection Flow
 
 ```mermaid
 flowchart LR
-    subgraph rippled["rippled process"]
+    subgraph xrpld["xrpld process"]
         JLOG["JLOG(j.info())"]
         Format["Logs::format()"]
         OTelCtx["OTel Context<br/>(thread-local)"]
@@ -436,7 +436,7 @@ flowchart LR
 
     Format --> LogLine
 
-    style rippled fill:#1a237e,stroke:#0d1642,color:#fff
+    style xrpld fill:#1a237e,stroke:#0d1642,color:#fff
     style output fill:#1b5e20,stroke:#0d3d14,color:#fff
     style JLOG fill:#283593,stroke:#1a237e,color:#fff
     style Format fill:#283593,stroke:#1a237e,color:#fff
@@ -456,7 +456,7 @@ flowchart LR
         FR --> RP --> BP --> LE
     end
 
-    LogFile["rippled<br/>debug.log"] --> FR
+    LogFile["xrpld<br/>debug.log"] --> FR
     LE --> Loki["Grafana Loki<br/>:3100"]
     Loki <-->|"derivedFields ↔<br/>tracesToLogs"| Tempo["Grafana Tempo"]
 
@@ -487,7 +487,7 @@ flowchart LR
 
 - [ ] Log lines within active spans contain `trace_id=<hex> span_id=<hex>`
 - [ ] Log lines outside spans have no trace context (no empty fields)
-- [ ] Loki ingests rippled logs via OTel Collector filelog receiver
+- [ ] Loki ingests xrpld logs via OTel Collector filelog receiver
 - [ ] Grafana Tempo → Loki one-click correlation works
 - [ ] Grafana Loki → Tempo reverse lookup works via derived field
 - [ ] Integration test verifies trace_id presence in logs

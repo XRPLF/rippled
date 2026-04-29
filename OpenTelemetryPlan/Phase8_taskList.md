@@ -1,6 +1,6 @@
 # Phase 8: Log-Trace Correlation and Centralized Log Ingestion — Task List
 
-> **Goal**: Inject trace context (trace_id, span_id) into rippled's Journal log output for log-trace correlation, and add OTel Collector filelog receiver to ingest logs into Grafana Loki for unified observability.
+> **Goal**: Inject trace context (trace_id, span_id) into xrpld's Journal log output for log-trace correlation, and add OTel Collector filelog receiver to ingest logs into Grafana Loki for unified observability.
 >
 > **Scope**: Two independent sub-phases — 8a (code change: trace_id in logs) and 8b (infra only: filelog receiver to Loki). No changes to the `beast::Journal` public API.
 >
@@ -89,7 +89,7 @@
 
 ## Task 8.3: Add Filelog Receiver to OTel Collector
 
-**Objective**: Configure the OTel Collector to tail rippled's log file and export to Loki.
+**Objective**: Configure the OTel Collector to tail xrpld's log file and export to Loki.
 
 **What to do**:
 
@@ -124,7 +124,7 @@
           insecure: true
     ```
 
-- Mount rippled's log directory into the collector container via docker-compose volume
+- Mount xrpld's log directory into the collector container via docker-compose volume
 
 **Key modified files**:
 
@@ -172,7 +172,7 @@
 **What to do**:
 
 - Edit `docker/telemetry/integration-test.sh`:
-  - After sending RPC requests (which create spans), grep rippled's log output for `trace_id=`
+  - After sending RPC requests (which create spans), grep xrpld's log output for `trace_id=`
   - Verify trace_id matches a trace visible in Tempo
   - Optionally: query Loki via API to confirm log ingestion
 
@@ -225,7 +225,7 @@
 
 - [ ] Log lines within active spans contain `trace_id=<hex> span_id=<hex>`
 - [ ] Log lines outside spans have no trace context (no empty fields)
-- [ ] Loki ingests rippled logs via OTel Collector filelog receiver
+- [ ] Loki ingests xrpld logs via OTel Collector filelog receiver
 - [ ] Grafana Tempo -> Loki one-click correlation works
 - [ ] Grafana Loki -> Tempo reverse lookup works via derived field
 - [ ] Integration test verifies trace_id presence in logs

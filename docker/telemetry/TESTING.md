@@ -469,14 +469,14 @@ Pre-configured datasources:
 
 ## Test 3: Log-Trace Correlation (Phase 8)
 
-Phase 8 injects `trace_id` and `span_id` into rippled's log output when
+Phase 8 injects `trace_id` and `span_id` into xrpld's log output when
 a log line is emitted within an active OTel span. This test verifies the
 end-to-end log-trace correlation pipeline.
 
 ### Step 1: Verify trace_id in log output
 
 After running Test 1 or Test 2 (which generate RPC spans), check the
-rippled debug.log for trace context:
+xrpld debug.log for trace context:
 
 ```bash
 grep 'trace_id=[a-f0-9]\{32\} span_id=[a-f0-9]\{16\}' /path/to/debug.log
@@ -506,13 +506,13 @@ Expected result: `1` (the trace exists in Jaeger).
 
 ### Step 3: Verify Loki log ingestion
 
-The OTel Collector's filelog receiver tails rippled's debug.log and
+The OTel Collector's filelog receiver tails xrpld's debug.log and
 exports parsed entries to Loki. Verify Loki has received entries:
 
 ```bash
-# Query Loki for any rippled logs
+# Query Loki for any xrpld logs
 curl -sG "http://localhost:3100/loki/api/v1/query" \
-  --data-urlencode 'query={job="rippled"}' \
+  --data-urlencode 'query={job="xrpld"}' \
   --data-urlencode 'limit=5' | jq '.data.result | length'
 ```
 
@@ -529,7 +529,7 @@ Expected: > 0 results.
 ### Step 5: Verify Grafana Loki-to-Tempo correlation
 
 1. In Grafana **Explore**, select **Loki** datasource
-2. Query: `{job="rippled"} |= "trace_id="`
+2. Query: `{job="xrpld"} |= "trace_id="`
 3. In the log results, click the **TraceID** derived field link
 4. Verify it navigates to the full trace in Tempo
 
@@ -588,7 +588,7 @@ Expected: > 0 results.
 
 ### No trace_id in log output (Phase 8)
 
-1. Verify rippled was built with `telemetry=ON` (`-Dtelemetry=ON` in CMake)
+1. Verify xrpld was built with `telemetry=ON` (`-Dtelemetry=ON` in CMake)
 2. Verify `enabled=1` in the `[telemetry]` config section
 3. Log lines only contain trace context when emitted inside an active span.
    Background logs (startup, periodic tasks outside spans) will not have

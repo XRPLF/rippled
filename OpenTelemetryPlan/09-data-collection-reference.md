@@ -495,7 +495,7 @@ xrpld_State_Accounting_Full_duration
 > **Plan details**: [06-implementation-phases.md §6.8.1](./06-implementation-phases.md) — motivation, architecture, Mermaid diagrams
 > **Task breakdown**: [Phase8_taskList.md](./Phase8_taskList.md) — per-task implementation details
 
-Phase 8 injects OTel trace context into rippled's `Logs::format()` output, enabling log-trace correlation. When a log line is emitted within an active OTel span, the trace and span identifiers are automatically appended after the severity field:
+Phase 8 injects OTel trace context into xrpld's `Logs::format()` output, enabling log-trace correlation. When a log line is emitted within an active OTel span, the trace and span identifiers are automatically appended after the severity field:
 
 ### Log Format
 
@@ -520,7 +520,7 @@ The trace context injection is implemented in `Logs::format()` (`src/libxrpl/bas
 ### Log Ingestion Pipeline
 
 ```
-rippled debug.log -> OTel Collector filelog receiver -> regex_parser -> Loki exporter -> Grafana Loki
+xrpld debug.log -> OTel Collector filelog receiver -> regex_parser -> Loki exporter -> Grafana Loki
 ```
 
 The OTel Collector's `filelog` receiver tails `debug.log` files and uses a `regex_parser` operator to extract structured fields:
@@ -549,16 +549,16 @@ Grafana Loki (v2.9.0) serves as the log storage backend. It receives log entries
 
 ```logql
 # Find all logs for a specific trace
-{job="rippled"} |= "trace_id=abc123def456789012345678abcdef01"
+{job="xrpld"} |= "trace_id=abc123def456789012345678abcdef01"
 
 # Error logs with trace context
-{job="rippled"} |= "ERR" |= "trace_id="
+{job="xrpld"} |= "ERR" |= "trace_id="
 
 # Logs from a specific partition with trace context
-{job="rippled"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
+{job="xrpld"} |= "LedgerMaster" | regexp `trace_id=(?P<trace_id>[a-f0-9]+)` | trace_id != ""
 
 # Count traced log lines over time
-count_over_time({job="rippled"} |= "trace_id=" [5m])
+count_over_time({job="xrpld"} |= "trace_id=" [5m])
 ```
 
 ---
