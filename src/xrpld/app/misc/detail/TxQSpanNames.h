@@ -48,9 +48,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl {
-namespace telemetry {
-namespace txq_span {
+namespace xrpl::telemetry::txq_span {
 
 // ===== Span prefixes =======================================================
 
@@ -110,6 +108,4 @@ inline constexpr auto failed = makeStr("failed");
 inline constexpr auto retried = makeStr("retried");
 }  // namespace val
 
-}  // namespace txq_span
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry::txq_span

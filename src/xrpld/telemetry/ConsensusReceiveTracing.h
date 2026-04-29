@@ -39,8 +39,7 @@
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 // Inline span name constants for consensus receive spans.
 // Phase 4 will provide these via ConsensusSpanNames.h; these are
@@ -123,5 +122,4 @@ validationReceiveSpan([[maybe_unused]] protocol::TMValidation const& msg)
     return SpanGuard::span(TraceCategory::Consensus, "consensus", "validation.receive");
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
