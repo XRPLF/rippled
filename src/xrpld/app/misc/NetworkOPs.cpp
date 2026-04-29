@@ -3678,7 +3678,7 @@ NetworkOPsImp::pubMPTTransaction(
     auto const& stTxn = transaction.getTxn();
 
     {
-        std::lock_guard const sl(mSubLock);
+        std::scoped_lock const sl(mSubLock);
 
         if (mSubMPT.empty())
             return;
@@ -3696,7 +3696,7 @@ NetworkOPsImp::pubMPTTransaction(
                 auto it = simiIt->second.begin();
                 while (it != simiIt->second.end())
                 {
-                    InfoSub::pointer p = it->second.lock();
+                    InfoSub::pointer const p = it->second.lock();
 
                     if (p)
                     {
@@ -3704,7 +3704,9 @@ NetworkOPsImp::pubMPTTransaction(
                         ++it;
                     }
                     else
+                    {
                         it = simiIt->second.erase(it);
+                    }
                 }
             }
         }
@@ -3736,7 +3738,7 @@ NetworkOPsImp::subMPT(InfoSub::ref isrListener, hash_set<MPTID> const& mptIDs)
         isrListener->insertSubMPTInfo(mptID);
     }
 
-    std::lock_guard sl(mSubLock);
+    std::scoped_lock const sl(mSubLock);
 
     for (auto const& mptID : mptIDs)
     {
@@ -3772,7 +3774,7 @@ NetworkOPsImp::unsubMPT(InfoSub::ref isrListener, hash_set<MPTID> const& mptIDs)
 void
 NetworkOPsImp::unsubMPTInternal(std::uint64_t uSeq, hash_set<MPTID> const& mptIDs)
 {
-    std::lock_guard sl(mSubLock);
+    std::scoped_lock const sl(mSubLock);
 
     for (auto const& mptID : mptIDs)
     {

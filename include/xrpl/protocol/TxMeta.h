@@ -104,7 +104,7 @@ public:
         parentBatchID_ = id;
     }
 
-    boost::container::flat_set<MPTID>
+    [[nodiscard]] boost::container::flat_set<MPTID>
     getAffectedMPTs() const;
 
 private:

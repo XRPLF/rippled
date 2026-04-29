@@ -13,6 +13,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -152,19 +153,19 @@ TxMeta::getAffectedMPTs() const
 
     for (auto const& it : nodes_)
     {
-        int index =
+        int const index =
             it.getFieldIndex((it.getFName() == sfCreatedNode) ? sfNewFields : sfFinalFields);
 
         if (index != -1)
         {
             auto inner = dynamic_cast<STObject const*>(&it.peekAtIndex(index));
             XRPL_ASSERT(inner, "xrpl::getAffectedMPTs : STObject type cast succeeded");
-            if (inner)
+            if (inner != nullptr)
             {
                 for (auto const& field : *inner)
                 {
                     if (auto mptID = dynamic_cast<STBitString<192> const*>(&field);
-                        field.getFName() == sfMPTokenIssuanceID && mptID)
+                        field.getFName() == sfMPTokenIssuanceID && (mptID != nullptr))
                     {
                         list.insert(mptID->value());
                     }

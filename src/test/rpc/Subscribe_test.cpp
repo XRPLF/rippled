@@ -32,6 +32,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>

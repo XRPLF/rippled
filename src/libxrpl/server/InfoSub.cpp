@@ -2,6 +2,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/resource/Consumer.h>
 
 #include <cstdint>
@@ -151,7 +152,7 @@ InfoSub::getApiVersion() const noexcept
 void
 InfoSub::insertSubMPTInfo(MPTID const& mptID)
 {
-    std::lock_guard const sl(mLock);
+    std::scoped_lock const sl(mLock);
 
     mptSubscriptions_.insert(mptID);
 }
@@ -159,7 +160,7 @@ InfoSub::insertSubMPTInfo(MPTID const& mptID)
 void
 InfoSub::deleteSubMPTInfo(MPTID const& mptID)
 {
-    std::lock_guard const sl(mLock);
+    std::scoped_lock const sl(mLock);
 
     mptSubscriptions_.erase(mptID);
 }
