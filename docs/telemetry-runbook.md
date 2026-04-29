@@ -251,7 +251,7 @@ The OTel Collector receives these via a `statsd` receiver on UDP port 8125 and e
 
 ## Grafana Dashboards
 
-Eight dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
+Ten dashboards are pre-provisioned in `docker/telemetry/grafana/dashboards/`:
 
 ### RPC Performance (`xrpld-rpc-perf`)
 
@@ -320,29 +320,39 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 
 ### Node Health — StatsD (`xrpld-statsd-node-health`)
 
-| Panel                      | Type       | PromQL                                                 | Labels Used |
-| -------------------------- | ---------- | ------------------------------------------------------ | ----------- |
-| Validated Ledger Age       | stat       | `rippled_LedgerMaster_Validated_Ledger_Age`            | —           |
-| Published Ledger Age       | stat       | `rippled_LedgerMaster_Published_Ledger_Age`            | —           |
-| Operating Mode Duration    | timeseries | `rippled_State_Accounting_*_duration`                  | —           |
-| Operating Mode Transitions | timeseries | `rippled_State_Accounting_*_transitions`               | —           |
-| I/O Latency                | timeseries | `histogram_quantile(0.95, rippled_ios_latency_bucket)` | —           |
-| Job Queue Depth            | timeseries | `rippled_job_count`                                    | —           |
-| Ledger Fetch Rate          | stat       | `rate(rippled_ledger_fetches[5m])`                     | —           |
-| Ledger History Mismatches  | stat       | `rate(rippled_ledger_history_mismatch[5m])`            | —           |
+| Panel                                  | Type       | PromQL                                                            | Labels Used |
+| -------------------------------------- | ---------- | ----------------------------------------------------------------- | ----------- |
+| Validated Ledger Age                   | stat       | `rippled_LedgerMaster_Validated_Ledger_Age`                       | —           |
+| Published Ledger Age                   | stat       | `rippled_LedgerMaster_Published_Ledger_Age`                       | —           |
+| Operating Mode Duration                | timeseries | `rippled_State_Accounting_*_duration`                             | —           |
+| Operating Mode Transitions             | timeseries | `rippled_State_Accounting_*_transitions`                          | —           |
+| I/O Latency                            | timeseries | `histogram_quantile(0.95, rippled_ios_latency_bucket)`            | —           |
+| Job Queue Depth                        | timeseries | `rippled_job_count`                                               | —           |
+| Ledger Fetch Rate                      | stat       | `rate(rippled_ledger_fetches[5m])`                                | —           |
+| Ledger History Mismatches              | stat       | `rate(rippled_ledger_history_mismatch[5m])`                       | —           |
+| Key Jobs Execution Time                | timeseries | `rippled_acceptLedger{quantile="$quantile"}` (+ 10 more key jobs) | `quantile`  |
+| Key Jobs Dequeue Wait Time             | timeseries | `rippled_acceptLedger_q{quantile="$quantile"}` (+ 10 more)        | `quantile`  |
+| FullBelowCache Size                    | timeseries | `rippled_Node_family_full_below_cache_size`                       | —           |
+| FullBelowCache Hit Rate                | gauge      | `rippled_Node_family_full_below_cache_hit_rate`                   | —           |
+| Ledger Publish Gap                     | stat       | `Published_Ledger_Age - Validated_Ledger_Age`                     | —           |
+| State Duration Rate (Full vs Tracking) | timeseries | `rate(rippled_State_Accounting_Full_duration[5m]) / 1000000`      | —           |
+| All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"rippled_<all_jobs>", quantile="$quantile"}`          | `quantile`  |
+| All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"rippled_<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
 
 ### Network Traffic — StatsD (`xrpld-statsd-network`)
 
-| Panel                  | Type       | PromQL                                 | Labels Used |
-| ---------------------- | ---------- | -------------------------------------- | ----------- |
-| Active Peers           | timeseries | `rippled_Peer_Finder_Active_*_Peers`   | —           |
-| Peer Disconnects       | timeseries | `rippled_Overlay_Peer_Disconnects`     | —           |
-| Total Network Bytes    | timeseries | `rippled_total_Bytes_In/Out`           | —           |
-| Total Network Messages | timeseries | `rippled_total_Messages_In/Out`        | —           |
-| Transaction Traffic    | timeseries | `rippled_transactions_Messages_In/Out` | —           |
-| Proposal Traffic       | timeseries | `rippled_proposals_Messages_In/Out`    | —           |
-| Validation Traffic     | timeseries | `rippled_validations_Messages_In/Out`  | —           |
-| Traffic by Category    | bargauge   | `topk(10, rippled_*_Bytes_In)`         | —           |
+| Panel                                | Type       | PromQL                                       | Labels Used |
+| ------------------------------------ | ---------- | -------------------------------------------- | ----------- |
+| Active Peers                         | timeseries | `rippled_Peer_Finder_Active_*_Peers`         | —           |
+| Peer Disconnects                     | timeseries | `rippled_Overlay_Peer_Disconnects`           | —           |
+| Total Network Bytes                  | timeseries | `rate(rippled_total_Bytes_In/Out[5m])`       | —           |
+| Total Network Messages               | timeseries | `rippled_total_Messages_In/Out`              | —           |
+| Transaction Traffic                  | timeseries | `rippled_transactions_Messages_In/Out`       | —           |
+| Proposal Traffic                     | timeseries | `rippled_proposals_Messages_In/Out`          | —           |
+| Validation Traffic                   | timeseries | `rippled_validations_Messages_In/Out`        | —           |
+| Traffic by Category                  | bargauge   | `topk(10, rippled_*_Bytes_In)`               | —           |
+| Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(rippled_*_duplicate_Bytes_In/Out[5m])` | —           |
+| All Traffic Categories (Detail)      | timeseries | `topk(15, rate(rippled_*_Bytes_In[5m]))`     | —           |
 
 ### RPC & Pathfinding — StatsD (`xrpld-statsd-rpc`)
 

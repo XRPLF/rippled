@@ -96,7 +96,7 @@
     },
     {
       "title": "Total Network Bytes",
-      "description": "Total bytes sent and received across all peer connections. Sourced from the total.Bytes_In and total.Bytes_Out traffic category gauges (OverlayImpl.h:535-548). Provides a high-level view of network bandwidth consumption.",
+      "description": "Rate of total bytes sent and received across all peer connections. Sourced from the total.Bytes_In and total.Bytes_Out traffic category gauges (OverlayImpl.h:535-548). Wrapped in rate() to show throughput rather than cumulative counter values.",
       "type": "timeseries",
       "gridPos": {
         "h": 8,
@@ -115,22 +115,22 @@
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Bytes_In",
+          "expr": "rate(rippled_total_Bytes_In[5m])",
           "legendFormat": "Bytes In"
         },
         {
           "datasource": {
             "type": "prometheus"
           },
-          "expr": "rippled_total_Bytes_Out",
+          "expr": "rate(rippled_total_Bytes_Out[5m])",
           "legendFormat": "Bytes Out"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "unit": "decbytes",
+          "unit": "Bps",
           "custom": {
-            "axisLabel": "Bytes",
+            "axisLabel": "Throughput",
             "spanNulls": true,
             "insertNulls": false,
             "showPoints": "auto",
@@ -654,6 +654,119 @@
             ]
           }
         ]
+      }
+    },
+    {
+      "title": "Duplicate Traffic (Wasted Bandwidth)",
+      "description": "Rate of duplicate overlay traffic across transaction, proposal, and validation categories. Duplicate messages are messages the node has already seen and discards. High duplicate rates indicate inefficient message routing or network topology issues causing redundant relays.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_transactions_duplicate_Bytes_In[5m])",
+          "legendFormat": "TX Duplicate In"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_transactions_duplicate_Bytes_Out[5m])",
+          "legendFormat": "TX Duplicate Out"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_proposals_duplicate_Bytes_In[5m])",
+          "legendFormat": "Proposals Duplicate In"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_proposals_duplicate_Bytes_Out[5m])",
+          "legendFormat": "Proposals Duplicate Out"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_validations_duplicate_Bytes_In[5m])",
+          "legendFormat": "Validations Duplicate In"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_validations_duplicate_Bytes_Out[5m])",
+          "legendFormat": "Validations Duplicate Out"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "axisLabel": "Throughput",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "All Traffic Categories (Detail)",
+      "description": "Top 15 traffic categories by inbound byte rate, excluding the total aggregate. Provides a detailed timeseries view of which overlay message types are consuming the most bandwidth over time. Complements the bar gauge snapshot view in the Overlay Traffic panel.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "topk(15, rate({__name__=~\"rippled_.*_Bytes_In\", __name__!~\"rippled_total_.*\"}[5m]))",
+          "legendFormat": "{{__name__}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "custom": {
+            "axisLabel": "Throughput",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
       }
     }
   ],

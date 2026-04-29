@@ -187,6 +187,7 @@ words:
   - nixfmt
   - nixos
   - nixpkgs
+  - NETOP
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp

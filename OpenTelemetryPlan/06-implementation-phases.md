@@ -343,8 +343,8 @@ xrpld has a mature metrics framework (`beast::insight`) that emits StatsD-format
 | 6.2  | Add `statsd` receiver to OTel Collector config                                                                  |
 | 6.3  | Expose UDP port 8125 in docker-compose.yml                                                                      |
 | 6.4  | Add `[insight]` config to integration test node configs                                                         |
-| 6.5  | Create "Node Health" Grafana dashboard (8 panels)                                                               |
-| 6.6  | Create "Network Traffic" Grafana dashboard (8 panels)                                                           |
+| 6.5  | Create "Node Health" Grafana dashboard (16 panels)                                                              |
+| 6.6  | Create "Network Traffic" Grafana dashboard (10 panels)                                                          |
 | 6.7  | Create "RPC & Pathfinding (StatsD)" Grafana dashboard (8 panels)                                                |
 | 6.8  | Update integration test to verify StatsD metrics in Prometheus                                                  |
 | 6.9  | Update TESTING.md and telemetry-runbook.md                                                                      |
@@ -359,11 +359,11 @@ The `StatsDMeterImpl` in `StatsDCollector.cpp:706` sends metrics with `|m` suffi
 
 **Node Health** (`statsd-node-health.json`, uid: `xrpld-statsd-node-health`):
 
-- Validated/Published Ledger Age, Operating Mode Duration/Transitions, I/O Latency, Job Queue Depth, Ledger Fetch Rate, Ledger History Mismatches
+- Validated/Published Ledger Age, Operating Mode Duration/Transitions, I/O Latency, Job Queue Depth, Ledger Fetch Rate, Ledger History Mismatches, Key Jobs Execution/Dequeue Time, FullBelowCache Size/Hit Rate, Ledger Publish Gap, State Duration Rate, All Jobs Detail
 
 **Network Traffic** (`statsd-network-traffic.json`, uid: `xrpld-statsd-network`):
 
-- Active Inbound/Outbound Peers, Peer Disconnects, Total Bytes/Messages In/Out, Transaction/Proposal/Validation Traffic, Top Traffic Categories
+- Active Inbound/Outbound Peers, Peer Disconnects, Total Bytes/Messages In/Out, Transaction/Proposal/Validation Traffic, Top Traffic Categories, Duplicate Traffic, All Traffic Categories Detail
 
 **RPC & Pathfinding (StatsD)** (`statsd-rpc-pathfinding.json`, uid: `xrpld-statsd-rpc`):
 

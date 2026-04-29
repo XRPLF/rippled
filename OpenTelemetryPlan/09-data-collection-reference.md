@@ -425,6 +425,8 @@ prefix=rippled
 | `rippled_Peer_Finder_Active_Outbound_Peers`         | PeerfinderManager.cpp | Active outbound peer connections         | 10–21                           |
 | `rippled_Overlay_Peer_Disconnects`                  | OverlayImpl.cpp       | Cumulative peer disconnection count      | Low growth                      |
 | `rippled_job_count`                                 | JobQueue.cpp          | Current job queue depth                  | 0–100 (healthy)                 |
+| `rippled_Node_family_full_below_cache_size`         | TaggedCache.h         | FullBelowCache entry count               | Varies                          |
+| `rippled_Node_family_full_below_cache_hit_rate`     | TaggedCache.h         | FullBelowCache hit rate percentage       | 0–100                           |
 
 **Grafana dashboard**: _Node Health (StatsD)_ (`xrpld-statsd-node-health`)
 
@@ -484,6 +486,35 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 
 **Grafana dashboards**: _Network Traffic_ (`xrpld-statsd-network`), _Overlay Traffic Detail_ (`xrpld-statsd-overlay-detail`), _Ledger Data & Sync_ (`xrpld-statsd-ledger-sync`)
 
+### 2.5 Per-Job Timer Events
+
+For each of the 36 non-special job types (defined in `JobTypes.h`), two StatsD timer events are emitted:
+
+- `rippled_{jobName}` — execution duration
+- `rippled_{jobName}_q` — dequeue wait time
+
+These produce summary metrics with quantiles (0th, 50th, 90th, 95th, 99th, 100th).
+
+**Key job types** (most operationally relevant):
+
+| Job Name            | Source Enum      | Description                   |
+| ------------------- | ---------------- | ----------------------------- |
+| `acceptLedger`      | `jtACCEPT`       | Consensus round acceptance    |
+| `advanceLedger`     | `jtADVANCE`      | Ledger advancement            |
+| `transaction`       | `jtTRANSACTION`  | Transaction processing        |
+| `writeObjects`      | `jtWRITE`        | Database object writes        |
+| `publishNewLedger`  | `jtPUBLEDGER`    | New ledger publication        |
+| `trustedValidation` | `jtVALIDATION_t` | Trusted validation processing |
+| `trustedProposal`   | `jtPROPOSAL_t`   | Trusted proposal processing   |
+| `clientRPC`         | `jtCLIENT_RPC`   | Client RPC request handling   |
+| `heartbeat`         | `jtNETOP_TIMER`  | Network heartbeat timer       |
+| `sweep`             | `jtSWEEP`        | Cache sweep / cleanup         |
+| `ledgerData`        | `jtLEDGER_DATA`  | Ledger data processing        |
+
+Special job types (`limit=0`: `peerCommand`, `diskAccess`, `processTransaction`, `orderBookSetup`, `pathFind`, `nodeRead`, `nodeWrite`, `generic`, `SyncReadNode`, `AsyncReadNode`, `WriteNode`) do **not** emit timer events.
+
+**Grafana dashboard**: _Node Health (StatsD)_ (`xrpld-statsd-node-health`) — Key Jobs and All Jobs panels
+
 ---
 
 ## 3. Grafana Dashboard Reference
@@ -502,13 +533,13 @@ For each of the 45+ overlay traffic categories (defined in `TrafficCount.h`), fo
 
 ### 3.2 StatsD Dashboards (5)
 
-| Dashboard              | UID                           | Data Source         | Key Panels                                                                        |
-| ---------------------- | ----------------------------- | ------------------- | --------------------------------------------------------------------------------- |
-| Node Health            | `xrpld-statsd-node-health`    | Prometheus (StatsD) | Ledger age, operating mode, I/O latency, job queue, fetch rate                    |
-| Network Traffic        | `xrpld-statsd-network`        | Prometheus (StatsD) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category     |
-| RPC & Pathfinding      | `xrpld-statsd-rpc`            | Prometheus (StatsD) | RPC rate, response time/size, pathfinding duration, resource warnings/drops       |
-| Overlay Traffic Detail | `xrpld-statsd-overlay-detail` | Prometheus (StatsD) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths |
-| Ledger Data & Sync     | `xrpld-statsd-ledger-sync`    | Prometheus (StatsD) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap |
+| Dashboard              | UID                           | Data Source         | Key Panels                                                                                                                                         |
+| ---------------------- | ----------------------------- | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Node Health            | `xrpld-statsd-node-health`    | Prometheus (StatsD) | Ledger age, operating mode, I/O latency, job queue, fetch rate, key/all jobs execution time, cache size/hit rate, publish gap, state duration rate |
+| Network Traffic        | `xrpld-statsd-network`        | Prometheus (StatsD) | Active peers, disconnects, bytes in/out, messages in/out, traffic by category, duplicate traffic, all traffic categories detail                    |
+| RPC & Pathfinding      | `xrpld-statsd-rpc`            | Prometheus (StatsD) | RPC rate, response time/size, pathfinding duration, resource warnings/drops                                                                        |
+| Overlay Traffic Detail | `xrpld-statsd-overlay-detail` | Prometheus (StatsD) | Squelch, overhead, validator lists, set get/share, have/requested tx, proof paths                                                                  |
+| Ledger Data & Sync     | `xrpld-statsd-ledger-sync`    | Prometheus (StatsD) | Ledger data exchange, legacy ledger share/get, getobject by type, traffic heatmap                                                                  |
 
 ### 3.3 Consensus Close-Time Panels
 
