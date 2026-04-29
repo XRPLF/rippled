@@ -238,7 +238,6 @@ xrpld.app > xrpl.basics
 xrpld.app > xrpl.core
 xrpld.app > xrpld.consensus
 xrpld.app > xrpld.core
-xrpld.app > xrpld.telemetry
 xrpld.app > xrpl.json
 xrpld.app > xrpl.ledger
 xrpld.app > xrpl.net
@@ -271,6 +270,7 @@ xrpld.overlay > xrpl.protocol
 xrpld.overlay > xrpl.resource
 xrpld.overlay > xrpl.server
 xrpld.overlay > xrpl.shamap
+xrpld.overlay > xrpl.telemetry
 xrpld.overlay > xrpl.tx
 xrpld.peerfinder > xrpl.basics
 xrpld.peerfinder > xrpld.core
@@ -298,3 +298,5 @@ xrpld.shamap > xrpl.basics
 xrpld.shamap > xrpld.core
 xrpld.shamap > xrpl.protocol
 xrpld.shamap > xrpl.shamap
+xrpld.telemetry > xrpl.basics
+xrpld.telemetry > xrpl.telemetry
