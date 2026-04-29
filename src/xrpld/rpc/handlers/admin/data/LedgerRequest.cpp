@@ -18,7 +18,7 @@ doLedgerRequest(RPC::JsonContext& context)
     context.loadType = Resource::kFEE_HEAVY_BURDEN_RPC;
     auto res = RPC::getOrAcquireLedger(context);
 
-    if (!res.hasValue())
+    if (!res.has_value())
         return res.error();
 
     auto const& ledger = res.value();

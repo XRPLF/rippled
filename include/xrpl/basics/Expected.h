@@ -129,7 +129,8 @@ public:
     }
 
     [[nodiscard]] constexpr bool
-    hasValue() const
+    // NOLINTNEXTLINE(readability-identifier-naming)
+    has_value() const
     {
         return Base::has_value();
     }
@@ -161,7 +162,7 @@ public:
     constexpr explicit
     operator bool() const
     {
-        return hasValue();
+        return has_value();
     }
 
     // Add operator* and operator-> so the Expected API looks a bit more like

@@ -926,7 +926,7 @@ verifyAndAdjustLPTokenBalance(
     AccountID const& account)
 {
     auto const res = isOnlyLiquidityProvider(sb, lpTokens.get<Issue>(), account);
-    if (!res.hasValue())
+    if (!res.has_value())
     {
         return Unexpected<TER>(res.error());
     }

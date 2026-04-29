@@ -336,7 +336,7 @@ parseDepositPreauth(
 
     auto const& ac(dp[jss::authorized_credentials]);
     auto const arr = parseAuthorizeCredentials(ac);
-    if (!arr.hasValue())
+    if (!arr.has_value())
         return Unexpected(arr.error());
 
     auto const& sorted = credentials::makeSorted(arr.value());

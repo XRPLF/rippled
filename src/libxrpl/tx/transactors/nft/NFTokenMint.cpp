@@ -275,7 +275,7 @@ NFTokenMint::doApply()
         return tokenSeq;
     }();
 
-    if (!tokenSeq.hasValue())
+    if (!tokenSeq.has_value())
         return (tokenSeq.error());
 
     std::uint32_t const ownerCountBefore =

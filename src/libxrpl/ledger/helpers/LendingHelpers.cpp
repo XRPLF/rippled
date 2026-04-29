@@ -1689,7 +1689,7 @@ loanMakePayment(
             managementFeeRate,
             j);
 
-        if (fullPaymentComponents.hasValue())
+        if (fullPaymentComponents.has_value())
         {
             return doPayment(
                 *fullPaymentComponents,
@@ -1757,7 +1757,7 @@ loanMakePayment(
             managementFeeRate,
             j);
 
-        if (latePaymentComponents.hasValue())
+        if (latePaymentComponents.has_value())
         {
             return doPayment(
                 *latePaymentComponents,

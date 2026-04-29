@@ -328,7 +328,7 @@ onNewAttestations(
         signersList,
         j);
 
-    if (!r.hasValue())
+    if (!r.has_value())
         return {.rewardAccounts = std::nullopt, .changed = changed};
 
     return {std::move(r.value()), changed};
@@ -908,7 +908,7 @@ applyClaimAttestations(
             newAttResult, (*sleClaimID)[sfSignatureReward], (*sleClaimID)[sfAccount]};
     }();
 
-    if (!scopeResult.hasValue())
+    if (!scopeResult.has_value())
         return scopeResult.error();
 
     auto const& [newAttResult, rewardAmount, cidOwner] = scopeResult.value();
@@ -972,7 +972,7 @@ applyCreateAccountAttestations(
         return (*sleBridge)[sfXChainAccountClaimCount];
     }();
 
-    if (!claimCountResult.hasValue())
+    if (!claimCountResult.has_value())
         return claimCountResult.error();
 
     std::uint64_t const claimCount = claimCountResult.value();
@@ -1078,7 +1078,7 @@ applyCreateAccountAttestations(
         return ScopeResult{newAttResult, createCID, curAtts};
     }();
 
-    if (!scopeResult.hasValue())
+    if (!scopeResult.has_value())
         return scopeResult.error();
 
     auto const& [attResult, createCID, curAtts] = scopeResult.value();
@@ -1284,7 +1284,7 @@ attestationDoApply(ApplyContext& ctx)
         return ScopeResult{srcChain, std::move(signersList), quorum, thisDoor, bridgeK};
     }();
 
-    if (!scopeResult.hasValue())
+    if (!scopeResult.has_value())
         return scopeResult.error();
 
     auto const& [srcChain, signersList, quorum, thisDoor, bridgeK] = scopeResult.value();
@@ -1775,7 +1775,7 @@ XChainClaim::doApply()
             quorum,
             signersList,
             ctx_.journal);
-        if (!claimR.hasValue())
+        if (!claimR.has_value())
             return Unexpected(claimR.error());
 
         return ScopeResult{
@@ -1787,7 +1787,7 @@ XChainClaim::doApply()
         };
     }();
 
-    if (!scopeResult.hasValue())
+    if (!scopeResult.has_value())
         return scopeResult.error();
 
     auto const& [rewardAccounts, rewardPoolSrc, sendingAmount, srcChain, signatureReward] =
