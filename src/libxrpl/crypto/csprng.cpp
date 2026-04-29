@@ -1,8 +1,9 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/crypto/csprng.h>
 
+#include <xrpl/basics/contract.h>
+
+#include <openssl/opensslv.h>
 #include <openssl/rand.h>
-#include <openssl/ssl.h>
 
 #include <array>
 #include <cstddef>
@@ -30,7 +31,7 @@ csprng_engine::~csprng_engine()
 void
 csprng_engine::mix_entropy(void* buffer, std::size_t count)
 {
-    std::array<std::random_device::result_type, 128> entropy;
+    std::array<std::random_device::result_type, 128> entropy{};
 
     {
         // On every platform we support, std::random_device
@@ -42,7 +43,7 @@ csprng_engine::mix_entropy(void* buffer, std::size_t count)
             e = rd();
     }
 
-    std::lock_guard lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     // We add data to the pool, but we conservatively assume that
     // it contributes no actual entropy.
@@ -59,7 +60,7 @@ csprng_engine::operator()(void* ptr, std::size_t count)
     // with thread support, so we don't need to grab a mutex.
     // https://mta.openssl.org/pipermail/openssl-users/2020-November/013146.html
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L) || !defined(OPENSSL_THREADS)
-    std::lock_guard lock(mutex_);
+    std::scoped_lock lock(mutex_);
 #endif
 
     auto const result = RAND_bytes(reinterpret_cast<unsigned char*>(ptr), count);
@@ -71,7 +72,7 @@ csprng_engine::operator()(void* ptr, std::size_t count)
 csprng_engine::result_type
 csprng_engine::operator()()
 {
-    result_type ret;
+    result_type ret = 0;
     (*this)(&ret, sizeof(result_type));
     return ret;
 }

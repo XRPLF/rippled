@@ -34,9 +34,9 @@ template <typename Ret_t, typename... Args_t>
 class ClosureCounter
 {
 private:
-    std::mutex mutable mutex_{};
-    std::condition_variable allClosuresDoneCond_{};  // guard with mutex_
-    bool waitForClosures_{false};                    // guard with mutex_
+    std::mutex mutable mutex_;
+    std::condition_variable allClosuresDoneCond_;  // guard with mutex_
+    bool waitForClosures_{false};                  // guard with mutex_
     std::atomic<int> closureCount_{0};
 
     // Increment the count.
@@ -56,7 +56,7 @@ private:
         // a lock.  This removes a small timing window that occurs if the
         // waiting thread is handling a spurious wakeup when closureCount_
         // drops to zero.
-        std::lock_guard lock{mutex_};
+        std::scoped_lock const lock{mutex_};
 
         // Update closureCount_.  Notify if stopping and closureCount_ == 0.
         if ((--closureCount_ == 0) && waitForClosures_)
@@ -72,10 +72,10 @@ private:
     {
     private:
         ClosureCounter& counter_;
-        std::remove_reference_t<Closure> closure_;
+        std::remove_reference_t<Closure> closure_{};
 
         static_assert(
-            std::is_same<decltype(closure_(std::declval<Args_t>()...)), Ret_t>::value,
+            std::is_same_v<decltype(closure_(std::declval<Args_t>()...)), Ret_t>,
             "Closure arguments don't match ClosureCounter Ret_t or Args_t");
 
     public:
@@ -86,13 +86,15 @@ private:
             ++counter_;
         }
 
-        Substitute(Substitute&& rhs) noexcept(std::is_nothrow_move_constructible<Closure>::value)
+        Substitute(Substitute&& rhs) noexcept(std::is_nothrow_move_constructible_v<Closure>)
             : counter_(rhs.counter_), closure_(std::move(rhs.closure_))
         {
             ++counter_;
         }
 
-        Substitute(ClosureCounter& counter, Closure&& closure)
+        Substitute(
+            ClosureCounter& counter,
+            Closure&& closure)  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             : counter_(counter), closure_(std::forward<Closure>(closure))
         {
             ++counter_;
@@ -168,7 +170,7 @@ public:
     {
         std::optional<Substitute<Closure>> ret;
 
-        std::lock_guard lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         if (!waitForClosures_)
             ret.emplace(*this, std::forward<Closure>(closure));
 
@@ -191,7 +193,7 @@ public:
     bool
     joined() const
     {
-        std::lock_guard lock{mutex_};
+        std::scoped_lock const lock{mutex_};
         return waitForClosures_;
     }
 };

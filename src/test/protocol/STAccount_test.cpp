@@ -1,5 +1,12 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstdint>
+#include <stdexcept>
 
 namespace xrpl {
 
@@ -12,7 +19,7 @@ struct STAccount_test : public beast::unit_test::suite
             // Test default constructor.
             STAccount const defaultAcct;
             BEAST_EXPECT(defaultAcct.getSType() == STI_ACCOUNT);
-            BEAST_EXPECT(defaultAcct.getText() == "");
+            BEAST_EXPECT(defaultAcct.getText().empty());
             BEAST_EXPECT(defaultAcct.isDefault() == true);
             BEAST_EXPECT(defaultAcct.value() == AccountID{});
             {
@@ -38,7 +45,7 @@ struct STAccount_test : public beast::unit_test::suite
             // Test constructor from SField.
             STAccount const sfAcct{sfAccount};
             BEAST_EXPECT(sfAcct.getSType() == STI_ACCOUNT);
-            BEAST_EXPECT(sfAcct.getText() == "");
+            BEAST_EXPECT(sfAcct.getText().empty());
             BEAST_EXPECT(sfAcct.isDefault());
             BEAST_EXPECT(sfAcct.value() == AccountID{});
             BEAST_EXPECT(sfAcct.isEquivalent(defaultAcct));
@@ -106,7 +113,7 @@ struct STAccount_test : public beast::unit_test::suite
         auto const s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
         if (auto const parsed = parseBase58<AccountID>(s); BEAST_EXPECT(parsed))
         {
-            BEAST_EXPECT(toBase58(*parsed) == s);
+            BEAST_EXPECT(toBase58(*parsed) == s);  // NOLINT(bugprone-unchecked-optional-access)
         }
 
         {

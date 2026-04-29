@@ -9,7 +9,7 @@
 namespace xrpl {
 
 /** The types of node objects. */
-enum NodeObjectType : std::uint32_t {
+enum class NodeObjectType : std::uint32_t {
     hotUNKNOWN = 0,
     hotLEDGER = 1,
     hotACCOUNT_NODE = 3,
@@ -59,15 +59,15 @@ public:
     createObject(NodeObjectType type, Blob&& data, uint256 const& hash);
 
     /** Returns the type of this object. */
-    NodeObjectType
+    [[nodiscard]] NodeObjectType
     getType() const;
 
     /** Returns the hash of the data. */
-    uint256 const&
+    [[nodiscard]] uint256 const&
     getHash() const;
 
     /** Returns the underlying data. */
-    Blob const&
+    [[nodiscard]] Blob const&
     getData() const;
 
 private:

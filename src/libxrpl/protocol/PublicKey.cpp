@@ -1,18 +1,19 @@
+#include <xrpl/protocol/PublicKey.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/KeyType.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
 
-#include <boost/multiprecision/fwd.hpp>
 #include <boost/multiprecision/number.hpp>
 
 #include <ed25519.h>
+#include <secp256k1.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -75,7 +76,7 @@ static std::string
 sliceToHex(Slice const& slice)
 {
     std::string s;
-    if (slice[0] & 0x80)
+    if ((slice[0] & 0x80) != 0)
     {
         s.reserve(2 * (slice.size() + 2));
         s = "0x00";
@@ -130,11 +131,11 @@ ecdsaCanonicality(Slice const& sig)
     if (!r || !s || !p.empty())
         return std::nullopt;
 
-    uint264 R(sliceToHex(*r));
+    uint264 const R(sliceToHex(*r));
     if (R >= G)
         return std::nullopt;
 
-    uint264 S(sliceToHex(*s));
+    uint264 const S(sliceToHex(*s));
     if (S >= G)
         return std::nullopt;
 
@@ -171,9 +172,11 @@ ed25519Canonical(Slice const& sig)
 PublicKey::PublicKey(Slice const& slice)
 {
     if (slice.size() < size_)
+    {
         LogicError(
             "PublicKey::PublicKey - Input slice cannot be an undersized "
             "buffer");
+    }
 
     if (!publicKeyType(slice))
         LogicError("PublicKey::PublicKey invalid type");
@@ -270,7 +273,7 @@ verify(PublicKey const& publicKey, Slice const& m, Slice const& sig) noexcept
         {
             return verifyDigest(publicKey, sha512Half(m), sig);
         }
-        else if (*type == KeyType::ed25519)
+        if (*type == KeyType::ed25519)
         {
             if (!ed25519Canonical(sig))
                 return false;

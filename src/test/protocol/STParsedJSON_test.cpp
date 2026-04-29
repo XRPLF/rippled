@@ -1,17 +1,33 @@
-#include <test/jtx.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
 class STParsedJSON_test : public beast::unit_test::suite
 {
-    bool
+    static bool
     parseJSONString(std::string const& json, Json::Value& to)
     {
         Json::Reader reader;
@@ -27,7 +43,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfCloseResolution] = 255;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfCloseResolution));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU8(sfCloseResolution) == 255);
         }
 
@@ -37,7 +55,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfCloseResolution] = 255u;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfCloseResolution));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU8(sfCloseResolution) == 255);
         }
 
@@ -47,7 +67,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfCloseResolution] = "255";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfCloseResolution));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU8(sfCloseResolution) == 255);
         }
 
@@ -57,6 +79,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfCloseResolution] = 0;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU8(sfCloseResolution) == 0);
         }
 
@@ -64,7 +87,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfCloseResolution] = -1;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -72,7 +95,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfCloseResolution] = 256;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -80,7 +103,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfCloseResolution] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -88,7 +111,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfCloseResolution] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -103,7 +126,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLedgerEntryType] = 65535;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerEntryType));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU16(sfLedgerEntryType) == 65535);
         }
 
@@ -113,7 +138,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLedgerEntryType] = 65535u;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerEntryType));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU16(sfLedgerEntryType) == 65535);
         }
 
@@ -123,7 +150,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLedgerEntryType] = "65535";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerEntryType));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU16(sfLedgerEntryType) == 65535);
         }
 
@@ -133,6 +162,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLedgerEntryType] = 0;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU16(sfLedgerEntryType) == 0);
         }
 
@@ -140,7 +170,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerEntryType] = -1;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -148,7 +178,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerEntryType] = 65536;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -156,7 +186,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerEntryType] = "65536";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -164,7 +194,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerEntryType] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -172,7 +202,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerEntryType] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -180,7 +210,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfTransferFee] = "Payment";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -194,7 +224,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfNetworkID] = 4294967295u;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfNetworkID));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU32(sfNetworkID) == 4294967295u);
         }
 
@@ -204,7 +236,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfNetworkID] = "4294967295";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfNetworkID));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU32(sfNetworkID) == 4294967295u);
         }
 
@@ -214,6 +248,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfNetworkID] = 0;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU32(sfNetworkID) == 0);
         }
 
@@ -221,7 +256,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfNetworkID] = -1;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -229,7 +264,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfNetworkID] = "4294967296";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -237,7 +272,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfNetworkID] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -245,7 +280,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfNetworkID] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -259,7 +294,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfIndexNext] = "ffffffffffffffff";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfIndexNext));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU64(sfIndexNext) == 18446744073709551615ull);
         }
 
@@ -269,6 +306,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfIndexNext] = 0;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldU64(sfIndexNext) == 0ull);
         }
 
@@ -276,7 +314,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfIndexNext] = -1;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -287,7 +325,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfIndexNext] = "10000000000000000";  // uint64 max + 1 (in hex)
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -295,7 +333,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfIndexNext] = "0xabcdefabcdef";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -303,7 +341,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfIndexNext] = "abcdefga";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -311,7 +349,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfIndexNext] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -319,7 +357,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfIndexNext] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -333,9 +371,11 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDEF";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
-            std::array<uint8_t, 16> expected = {
+            std::array<uint8_t, 16> const expected = {
                 0x01,
                 0x23,
                 0x45,
@@ -352,6 +392,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 0xAB,
                 0xCD,
                 0xEF};
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash) == uint128{expected});
         }
 
@@ -361,7 +402,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfEmailHash] = "0123456789abcdef0123456789abcdef";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH128(sfEmailHash).size() == 16);
         }
 
@@ -371,10 +414,12 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfEmailHash] = "";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfEmailHash));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& h128 = obj.object->getFieldH128(sfEmailHash);
             BEAST_EXPECT(h128.size() == 16);
-            bool allZero = std::all_of(h128.begin(), h128.end(), [](auto b) { return b == 0; });
+            bool const allZero = std::ranges::all_of(h128, [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -382,7 +427,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDE";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -390,7 +435,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfEmailHash] = "nothexstring";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -398,7 +443,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfEmailHash] = "01234567";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -406,7 +451,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfEmailHash] = "0123456789ABCDEF0123456789ABCDEF00";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -414,7 +459,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfEmailHash] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -422,7 +467,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfEmailHash] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -436,11 +481,14 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF01234567";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
-            std::array<uint8_t, 20> expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
-                                                0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
-                                                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
+            std::array<uint8_t, 20> const expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD,
+                                                      0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
+                                                      0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67};
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency) == uint160{expected});
         }
         // Valid lowercase hex string for UInt160
@@ -449,7 +497,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfTakerPaysCurrency] = "0123456789abcdef0123456789abcdef01234567";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH160(sfTakerPaysCurrency).size() == 20);
         }
 
@@ -459,10 +509,12 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfTakerPaysCurrency] = "";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfTakerPaysCurrency));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& h160 = obj.object->getFieldH160(sfTakerPaysCurrency);
             BEAST_EXPECT(h160.size() == 20);
-            bool allZero = std::all_of(h160.begin(), h160.end(), [](auto b) { return b == 0; });
+            bool const allZero = std::ranges::all_of(h160, [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -470,7 +522,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfTakerPaysCurrency] = "nothexstring";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -478,7 +530,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfTakerPaysCurrency] = "01234567";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -486,7 +538,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfTakerPaysCurrency] = "0123456789ABCDEF0123456789ABCDEF0123456789";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -494,7 +546,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfTakerPaysCurrency] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -502,7 +554,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfTakerPaysCurrency] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -516,11 +568,14 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfMPTokenIssuanceID] = "FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
-            std::array<uint8_t, 24> expected = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-                                                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+            std::array<uint8_t, 24> const expected = {
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID) == uint192{expected});
         }
 
@@ -530,7 +585,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfMPTokenIssuanceID] = "ffffffffffffffffffffffffffffffffffffffffffffffff";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH192(sfMPTokenIssuanceID).size() == 24);
         }
 
@@ -540,10 +597,12 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfMPTokenIssuanceID] = "";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfMPTokenIssuanceID));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& h192 = obj.object->getFieldH192(sfMPTokenIssuanceID);
             BEAST_EXPECT(h192.size() == 24);
-            bool allZero = std::all_of(h192.begin(), h192.end(), [](auto b) { return b == 0; });
+            bool const allZero = std::ranges::all_of(h192, [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -551,7 +610,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfMPTokenIssuanceID] = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDE";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -559,7 +618,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfMPTokenIssuanceID] = "nothexstring";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -567,7 +626,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfMPTokenIssuanceID] = "01234567";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -575,7 +634,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfMPTokenIssuanceID] = "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF00";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -583,7 +642,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfMPTokenIssuanceID] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -591,7 +650,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfMPTokenIssuanceID] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -608,12 +667,15 @@ class STParsedJSON_test : public beast::unit_test::suite
                 "EF";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
-            std::array<uint8_t, 32> expected = {0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-                                                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-                                                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF,
-                                                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+            std::array<uint8_t, 32> const expected = {
+                0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45,
+                0x67, 0x89, 0xAB, 0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB,
+                0xCD, 0xEF, 0x01, 0x23, 0x45, 0x67, 0x89, 0xAB, 0xCD, 0xEF};
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash) == uint256{expected});
         }
         // Valid lowercase hex string for UInt256
@@ -624,7 +686,9 @@ class STParsedJSON_test : public beast::unit_test::suite
                 "ef";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldH256(sfLedgerHash).size() == 32);
         }
 
@@ -634,10 +698,12 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLedgerHash] = "";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfLedgerHash));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& h256 = obj.object->getFieldH256(sfLedgerHash);
             BEAST_EXPECT(h256.size() == 32);
-            bool allZero = std::all_of(h256.begin(), h256.end(), [](auto b) { return b == 0; });
+            bool const allZero = std::ranges::all_of(h256, [](auto b) { return b == 0; });
             BEAST_EXPECT(allZero);
         }
 
@@ -647,7 +713,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLedgerHash] =
                 "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
                 "E";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -655,7 +721,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerHash] = "nothexstring";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -663,7 +729,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerHash] = "01234567";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -673,7 +739,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLedgerHash] =
                 "0123456789ABCDEF0123456789ABCDEF0123456789ABCDEF0123456789ABCD"
                 "EF00";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -681,7 +747,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerHash] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -689,7 +755,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLedgerHash] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -704,8 +770,12 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLoanScale] = minInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == minInt32);
+            }
         }
 
         // max value
@@ -715,8 +785,12 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLoanScale] = maxInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == maxInt32);
+            }
         }
 
         // max uint value
@@ -726,9 +800,13 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLoanScale] = maxUInt32;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+            {
                 BEAST_EXPECT(
+                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                     obj.object->getFieldI32(sfLoanScale) == static_cast<int32_t>(maxUInt32));
+            }
         }
 
         // Test with string value
@@ -737,26 +815,34 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfLoanScale] = "2147483647";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == 2147483647u);
+            }
         }
 
         // Test with string negative value
         {
             Json::Value j;
-            int value = -2147483648;
+            int const value = -2147483648;
             j[sfLoanScale] = std::to_string(value);
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             if (BEAST_EXPECT(obj.object->isFieldPresent(sfLoanScale)))
+            {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 BEAST_EXPECT(obj.object->getFieldI32(sfLoanScale) == value);
+            }
         }
 
         // Test out of range value for int32 (negative)
         {
             Json::Value j;
             j[sfLoanScale] = "-2147483649";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -764,7 +850,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLoanScale] = 2147483648u;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -772,7 +858,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLoanScale] = "2147483648";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -780,7 +866,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLoanScale] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -788,7 +874,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfLoanScale] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -803,8 +889,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfPublicKey] = "DEADBEEF";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfPublicKey));
-            auto const& blob = obj.object->getFieldVL(sfPublicKey);
+            auto const& blob =
+                obj.object->getFieldVL(sfPublicKey);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(blob.size() == 4);
             BEAST_EXPECT(blob[0] == 0xDE);
             BEAST_EXPECT(blob[1] == 0xAD);
@@ -818,9 +906,11 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfPublicKey] = "";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfPublicKey));
-            auto const& blob = obj.object->getFieldVL(sfPublicKey);
-            BEAST_EXPECT(blob.size() == 0);
+            auto const& blob =
+                obj.object->getFieldVL(sfPublicKey);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(blob.empty());
         }
 
         // Test lowercase hex string for blob
@@ -829,8 +919,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfPublicKey] = "deadbeef";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfPublicKey));
-            auto const& blob = obj.object->getFieldVL(sfPublicKey);
+            auto const& blob =
+                obj.object->getFieldVL(sfPublicKey);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(blob.size() == 4);
             BEAST_EXPECT(blob[0] == 0xDE);
             BEAST_EXPECT(blob[1] == 0xAD);
@@ -842,7 +934,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfPublicKey] = "XYZ123";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -850,7 +942,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfPublicKey] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -858,7 +950,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfPublicKey] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -880,8 +972,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfHashes] = arr;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfHashes));
-            auto const& vec = obj.object->getFieldV256(sfHashes);
+            auto const& vec =
+                obj.object->getFieldV256(sfHashes);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(vec.size() == 2);
             BEAST_EXPECT(to_string(vec[0]) == arr[0u].asString());
             BEAST_EXPECT(to_string(vec[1]) == arr[1u].asString());
@@ -889,13 +983,15 @@ class STParsedJSON_test : public beast::unit_test::suite
         // Test empty array for Vector256 (should be valid, size 0)
         {
             Json::Value j;
-            Json::Value arr(Json::arrayValue);
+            Json::Value const arr(Json::arrayValue);
             j[sfHashes] = arr;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfHashes));
-            auto const& vec = obj.object->getFieldV256(sfHashes);
-            BEAST_EXPECT(vec.size() == 0);
+            auto const& vec =
+                obj.object->getFieldV256(sfHashes);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(vec.empty());
         }
 
         // Test array with invalid hex string (should fail)
@@ -904,7 +1000,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value arr(Json::arrayValue);
             arr.append("nothexstring");
             j[sfHashes] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -914,7 +1010,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value arr(Json::arrayValue);
             arr.append("0123456789ABCDEF");  // too short for uint256
             j[sfHashes] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -924,7 +1020,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value arr(Json::arrayValue);
             arr.append(12345);
             j[sfHashes] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -932,7 +1028,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfHashes] = "notanarray";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -944,7 +1040,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             objElem["foo"] = "bar";
             arr.append(objElem);
             j[sfHashes] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -959,8 +1055,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfAccount] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfAccount));
-            auto const& acct = obj.object->getAccountID(sfAccount);
+            auto const& acct =
+                obj.object->getAccountID(sfAccount);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(acct.size() == 20);
             BEAST_EXPECT(toBase58(acct) == "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
         }
@@ -971,8 +1069,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfAccount] = "000102030405060708090A0B0C0D0E0F10111213";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfAccount));
-            auto const& acct = obj.object->getAccountID(sfAccount);
+            auto const& acct =
+                obj.object->getAccountID(sfAccount);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(acct.size() == 20);
         }
 
@@ -980,7 +1080,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAccount] = "notAValidBase58Account";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -988,7 +1088,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAccount] = "001122334455";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -996,7 +1096,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAccount] = "000102030405060708090A0B0C0D0E0F101112131415";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1004,7 +1104,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAccount] = "000102030405060708090A0B0C0D0E0F1011121G";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1012,7 +1112,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAccount] = "";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1020,7 +1120,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAccount] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1028,7 +1128,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAccount] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -1043,7 +1143,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfBaseAsset] = "USD";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfBaseAsset));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& curr = obj.object->getFieldCurrency(sfBaseAsset);
             BEAST_EXPECT(curr.currency().size() == 20);
         }
@@ -1054,7 +1156,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfBaseAsset] = "EUR";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfBaseAsset));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& curr = obj.object->getFieldCurrency(sfBaseAsset);
             BEAST_EXPECT(curr.currency().size() == 20);
         }
@@ -1064,7 +1168,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value j;
             j[sfBaseAsset] = "0123456789ABCDEF01230123456789ABCDEF0123";
             STParsedJSONObject obj("Test", j);
-            if (BEAST_EXPECT(obj.object.has_value()))
+            if (BEAST_EXPECT(obj.object); obj.object.has_value())
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfBaseAsset));
                 auto const& curr = obj.object->getFieldCurrency(sfBaseAsset);
@@ -1076,7 +1180,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfBaseAsset] = "USDD";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1086,7 +1190,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfBaseAsset] = "usd";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfBaseAsset));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& curr = obj.object->getFieldCurrency(sfBaseAsset);
             BEAST_EXPECT(curr.currency().size() == 20);
         }
@@ -1095,7 +1201,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfBaseAsset] = "0123456789AB";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1103,7 +1209,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfBaseAsset] = "0123456789ABCDEF0123456789";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1113,7 +1219,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfBaseAsset] = "";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfBaseAsset));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& curr = obj.object->getFieldCurrency(sfBaseAsset);
             BEAST_EXPECT(curr.currency().size() == 20);
         }
@@ -1122,7 +1230,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfBaseAsset] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1130,7 +1238,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfBaseAsset] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -1145,7 +1253,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfAmount] = "100000000000000000";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfAmount));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldAmount(sfAmount) == STAmount(100000000000000000ull));
         }
 
@@ -1155,7 +1265,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfAmount] = 4294967295u;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfAmount));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldAmount(sfAmount) == STAmount(4294967295u));
         }
 
@@ -1163,7 +1275,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAmount] = "123.45";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1171,7 +1283,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAmount] = "";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1179,7 +1291,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAmount] = "notanumber";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1187,7 +1299,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAmount] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -1211,7 +1323,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             if (BEAST_EXPECT(obj.object.has_value()))
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 BEAST_EXPECT(obj.object->isFieldPresent(sfPaths));
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 auto const& ps = obj.object->getFieldPathSet(sfPaths);
                 BEAST_EXPECT(!ps.empty());
                 BEAST_EXPECT(ps.size() == 1);
@@ -1240,8 +1354,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfPaths] = pathset;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
-            BEAST_EXPECT(obj.object->isFieldPresent(sfPaths));
-            auto const& ps = obj.object->getFieldPathSet(sfPaths);
+            BEAST_EXPECT(
+                obj.object->isFieldPresent(sfPaths));  // NOLINT(bugprone-unchecked-optional-access)
+            auto const& ps =
+                obj.object->getFieldPathSet(sfPaths);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(!ps.empty());
         }
 
@@ -1249,7 +1365,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfPaths] = "notanarray";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1259,7 +1375,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append("notanarray");
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1272,7 +1388,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1287,7 +1403,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1302,7 +1418,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1316,7 +1432,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1330,7 +1446,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1344,7 +1460,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1358,7 +1474,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1372,7 +1488,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value pathset(Json::arrayValue);
             pathset.append(path);
             j[sfPaths] = pathset;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -1391,8 +1507,10 @@ class STParsedJSON_test : public beast::unit_test::suite
             STParsedJSONObject obj("Test", j);
             if (BEAST_EXPECT(obj.object.has_value()))
             {
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
-                auto const& issueField = (*obj.object)[sfAsset];
+                auto const& issueField =
+                    (*obj.object)[sfAsset];  // NOLINT(bugprone-unchecked-optional-access)
                 auto const issue = issueField.value().get<Issue>();
                 BEAST_EXPECT(issue.currency.size() == 20);
                 BEAST_EXPECT(to_string(issue.currency) == "USD");
@@ -1410,7 +1528,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             issueJson["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issueJson;
             STParsedJSONObject obj("Test", j);
-            if (BEAST_EXPECT(obj.object.has_value()))
+            if (BEAST_EXPECT(obj.object); obj.object.has_value())
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
                 auto const& issueField = (*obj.object)[sfAsset];
@@ -1427,7 +1545,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             issueJson["mpt_issuance_id"] = "0000000000000000000000004D5054494431323334234234";
             j[sfAsset] = issueJson;
             STParsedJSONObject obj("Test", j);
-            if (BEAST_EXPECT(obj.object.has_value()))
+            if (BEAST_EXPECT(obj.object); obj.object.has_value())
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfAsset));
                 auto const& issueField = (*obj.object)[sfAsset];
@@ -1442,7 +1560,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value issue(Json::objectValue);
             issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issue;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1452,7 +1570,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value issue(Json::objectValue);
             issue["currency"] = "USD";
             j[sfAsset] = issue;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1463,7 +1581,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             issue["currency"] = "USDD";
             issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issue;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1474,7 +1592,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             issue["currency"] = "USD";
             issue["issuer"] = "notAValidIssuer";
             j[sfAsset] = issue;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1485,7 +1603,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             issue["currency"] = Json::Value(Json::arrayValue);
             issue["issuer"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfAsset] = issue;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1496,7 +1614,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             issue["currency"] = "USD";
             issue["issuer"] = Json::Value(Json::objectValue);
             j[sfAsset] = issue;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1504,7 +1622,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfAsset] = "notanobject";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -1529,7 +1647,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfXChainBridge] = bridge;
             STParsedJSONObject obj("Test", j);
-            if (BEAST_EXPECT(obj.object.has_value()))
+            if (BEAST_EXPECT(obj.object); obj.object.has_value())
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfXChainBridge));
                 auto const& bridgeField = (*obj.object)[sfXChainBridge];
@@ -1554,7 +1672,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfXChainBridge] = bridge;
             STParsedJSONObject obj("Test", j);
-            if (BEAST_EXPECT(obj.object.has_value()))
+            if (BEAST_EXPECT(obj.object); obj.object.has_value())
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfXChainBridge));
                 auto const& bridgeField = (*obj.object)[sfXChainBridge];
@@ -1574,7 +1692,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1589,7 +1707,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1607,7 +1725,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["LockingChainIssue"] = lockingChainIssue;
             bridge["IssuingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1625,7 +1743,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["LockingChainIssue"] = lockingChainIssue;
             bridge["LockingChainDoor"] = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
             j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1636,7 +1754,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["LockingChainIssue"] = "notanobject";
             bridge["IssuingChainIssue"] = "notanobject";
             j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1652,7 +1770,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["LockingChainIssue"] = lockingChainIssue;
             bridge["IssuingChainIssue"] = asset;
             j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1668,7 +1786,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["LockingChainIssue"] = lockingChainIssue;
             bridge["IssuingChainIssue"] = asset;
             j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1685,7 +1803,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             bridge["LockingChainIssue"] = lockingChainIssue;
             bridge["IssuingChainIssue"] = asset;
             j[sfXChainBridge] = bridge;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1693,7 +1811,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfXChainBridge] = "notanobject";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -1708,7 +1826,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfNumber] = 12345;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(12345, 0));
         }
 
@@ -1718,7 +1838,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfNumber] = 12345u;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(12345, 0));
         }
 
@@ -1728,7 +1850,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfNumber] = "67890";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(67890, 0));
         }
 
@@ -1738,7 +1862,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfNumber] = -42;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(-42, 0));
         }
 
@@ -1748,7 +1874,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfNumber] = "-123";
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(-123, 0));
         }
 
@@ -1757,7 +1885,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value j;
             j[sfNumber] = "3.14159";
             STParsedJSONObject obj("Test", j);
-            if (BEAST_EXPECT(obj.object.has_value()))
+            if (BEAST_EXPECT(obj.object); obj.object.has_value())
             {
                 BEAST_EXPECT(obj.object->isFieldPresent(sfNumber));
                 BEAST_EXPECT(obj.object->getFieldNumber(sfNumber).value() == Number(314159, -5));
@@ -1768,7 +1896,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfNumber] = "notanumber";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1776,7 +1904,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfNumber] = Json::Value(Json::arrayValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1784,7 +1912,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfNumber] = Json::Value(Json::objectValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1792,7 +1920,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfNumber] = "";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
     }
@@ -1809,7 +1937,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfTransactionMetaData] = objVal;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfTransactionMetaData));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& result = obj.object->peekFieldObject(sfTransactionMetaData);
             BEAST_EXPECT(result.getFieldU8(sfTransactionResult) == 1);
         }
@@ -1818,7 +1948,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfTransactionMetaData] = "notanobject";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1828,7 +1958,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value arr(Json::arrayValue);
             arr.append(1);
             j[sfTransactionMetaData] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1836,7 +1966,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfTransactionMetaData] = Json::Value(Json::nullValue);
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1848,7 +1978,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value* current = &obj;
             for (int i = 0; i < 63; ++i)
             {
-                Json::Value next(Json::objectValue);
+                Json::Value const next(Json::objectValue);
                 (*current)[sfTransactionMetaData] = next;
                 current = &((*current)[sfTransactionMetaData]);
             }
@@ -1856,6 +1986,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfTransactionMetaData] = obj;
             STParsedJSONObject parsed("Test", j);
             BEAST_EXPECT(parsed.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(parsed.object->isFieldPresent(sfTransactionMetaData));
         }
 
@@ -1866,13 +1997,13 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value* current = &obj;
             for (int i = 0; i < 64; ++i)
             {
-                Json::Value next(Json::objectValue);
+                Json::Value const next(Json::objectValue);
                 (*current)[sfTransactionMetaData] = next;
                 current = &((*current)[sfTransactionMetaData]);
             }
             (*current)[sfTransactionResult.getJsonName()] = 1;
             j[sfTransactionMetaData] = obj;
-            STParsedJSONObject parsed("Test", j);
+            STParsedJSONObject const parsed("Test", j);
             BEAST_EXPECT(!parsed.object.has_value());
         }
     }
@@ -1893,7 +2024,9 @@ class STParsedJSON_test : public beast::unit_test::suite
             j[sfSignerEntries] = arr;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfSignerEntries));
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const& result = obj.object->getFieldArray(sfSignerEntries);
             if (BEAST_EXPECT(result.size() == 1))
             {
@@ -1908,7 +2041,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             Json::Value arr(Json::arrayValue);
             arr.append("notanobject");
             j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1920,7 +2053,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             elem["invalidField"] = 1;
             arr.append(elem);
             j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1933,7 +2066,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             elem[sfNetworkID] = 3;
             arr.append(elem);
             j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1941,7 +2074,7 @@ class STParsedJSON_test : public beast::unit_test::suite
         {
             Json::Value j;
             j[sfSignerEntries] = "notanarray";
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
@@ -1954,17 +2087,18 @@ class STParsedJSON_test : public beast::unit_test::suite
             elem[sfTransactionResult] = "notanint";
             arr.append(elem);
             j[sfSignerEntries] = arr;
-            STParsedJSONObject obj("Test", j);
+            STParsedJSONObject const obj("Test", j);
             BEAST_EXPECT(!obj.object.has_value());
         }
 
         // Test with empty array for Array (should be valid)
         {
             Json::Value j;
-            Json::Value arr(Json::arrayValue);
+            Json::Value const arr(Json::arrayValue);
             j[sfSignerEntries] = arr;
             STParsedJSONObject obj("Test", j);
             BEAST_EXPECT(obj.object.has_value());
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             BEAST_EXPECT(obj.object->isFieldPresent(sfSignerEntries));
         }
 
@@ -1975,7 +2109,7 @@ class STParsedJSON_test : public beast::unit_test::suite
             obj.append(Json::Value(Json::objectValue));
             obj[0u][sfTransactionResult] = 1;
             j[sfSignerEntries] = obj;
-            STParsedJSONObject parsed("Test", j);
+            STParsedJSONObject const parsed("Test", j);
             BEAST_EXPECT(!parsed.object.has_value());
         }
 
@@ -1995,23 +2129,23 @@ class STParsedJSON_test : public beast::unit_test::suite
                 them.
 
                 */
-                std::string faulty(
+                std::string const faulty(
                     "{\"Template\":[{"
                     "\"ModifiedNode\":{\"Sequence\":1}, "
                     "\"DeletedNode\":{\"Sequence\":1}"
                     "}]}");
 
-                std::unique_ptr<STObject> so;
+                std::unique_ptr<STObject> const so;
                 Json::Value faultyJson;
-                bool parsedOK(parseJSONString(faulty, faultyJson));
+                bool const parsedOK(parseJSONString(faulty, faultyJson));
                 unexpected(!parsedOK, "failed to parse");
-                STParsedJSONObject parsed("test", faultyJson);
+                STParsedJSONObject const parsed("test", faultyJson);
                 BEAST_EXPECT(!parsed.object);
             }
-            catch (std::runtime_error& e)
+            catch (std::runtime_error const& e)
             {
-                std::string what(e.what());
-                unexpected(what.find("First level children of `Template`") != 0);
+                std::string const what(e.what());
+                unexpected(!what.starts_with("First level children of `Template`"));
             }
         }
     }
@@ -2038,6 +2172,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 if (BEAST_EXPECT(parsed.object))
                 {
                     std::string const& serialized(
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                         to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == goodJson);
                 }
@@ -2062,6 +2197,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 if (BEAST_EXPECT(parsed.object))
                 {
                     std::string const& serialized(
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                         to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
@@ -2086,6 +2222,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 if (BEAST_EXPECT(parsed.object))
                 {
                     std::string const& serialized(
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                         to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
@@ -2194,6 +2331,7 @@ class STParsedJSON_test : public beast::unit_test::suite
                 if (BEAST_EXPECT(parsed.object))
                 {
                     std::string const& serialized(
+                        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                         to_string(parsed.object->getJson(JsonOptions::none)));
                     BEAST_EXPECT(serialized == expectedJson);
                 }
@@ -2258,7 +2396,7 @@ class STParsedJSON_test : public beast::unit_test::suite
     run() override
     {
         // Instantiate a jtx::Env so debugLog writes are exercised.
-        test::jtx::Env env(*this);
+        test::jtx::Env const env(*this);
         testUInt8();
         testUInt16();
         testUInt32();

@@ -1,10 +1,20 @@
 #include <xrpl/nodestore/detail/BatchWriter.h>
 
-namespace xrpl {
-namespace NodeStore {
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+
+#include <algorithm>
+#include <chrono>
+#include <memory>
+#include <mutex>
+#include <vector>
+
+namespace xrpl::NodeStore {
 
 BatchWriter::BatchWriter(Callback& callback, Scheduler& scheduler)
-    : m_callback(callback), m_scheduler(scheduler), mWriteLoad(0), mWritePending(false)
+    : m_callback(callback), m_scheduler(scheduler)
 {
     mWriteSet.reserve(batchWritePreallocationSize);
 }
@@ -37,7 +47,7 @@ BatchWriter::store(std::shared_ptr<NodeObject> const& object)
 int
 BatchWriter::getWriteLoad()
 {
-    std::lock_guard sl(mWriteMutex);
+    std::scoped_lock const sl(mWriteMutex);
 
     return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
 }
@@ -58,7 +68,7 @@ BatchWriter::writeBatch()
         set.reserve(batchWritePreallocationSize);
 
         {
-            std::lock_guard sl(mWriteMutex);
+            std::scoped_lock const sl(mWriteMutex);
 
             mWriteSet.swap(set);
             XRPL_ASSERT(
@@ -75,7 +85,7 @@ BatchWriter::writeBatch()
             }
         }
 
-        BatchWriteReport report;
+        BatchWriteReport report{};
         report.writeCount = set.size();
         auto const before = std::chrono::steady_clock::now();
 
@@ -97,5 +107,4 @@ BatchWriter::waitForWriting()
         mWriteCondition.wait(sl);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

@@ -1,16 +1,35 @@
+#include <xrpl/net/HTTPClient.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/net/AutoSocket.h>
-#include <xrpl/net/HTTPClient.h>
 #include <xrpl/net/HTTPClientSSLContext.h>
 
-#include <boost/asio.hpp>
+#include <boost/asio/basic_waitable_timer.hpp>
+#include <boost/asio/completion_condition.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/resolver_query_base.hpp>
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/detail/system_category.hpp>
+#include <boost/system/system_error.hpp>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdlib>
+#include <deque>
+#include <functional>
+#include <iterator>
+#include <memory>
 #include <optional>
+#include <ostream>
+#include <string>
 
 namespace xrpl {
 
@@ -24,6 +43,12 @@ HTTPClient::initializeSSLContext(
     beast::Journal j)
 {
     httpClientSSLContext.emplace(sslVerifyDir, sslVerifyFile, sslVerify, j);
+}
+
+void
+HTTPClient::cleanupSSLContext()
+{
+    httpClientSSLContext.reset();
 }
 
 //------------------------------------------------------------------------------
@@ -40,7 +65,9 @@ public:
         unsigned short const port,
         std::size_t maxResponseSize,
         beast::Journal& j)
-        : mSocket(io_context, httpClientSSLContext->context())
+        : mSocket(
+              io_context,
+              httpClientSSLContext->context())  // NOLINT(bugprone-unchecked-optional-access)
         , mResolver(io_context)
         , mHeader(maxClientHeaderBytes)
         , mPort(port)
@@ -53,6 +80,7 @@ public:
     //--------------------------------------------------------------------------
 
     void
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     makeGet(std::string const& strPath, boost::asio::streambuf& sb, std::string const& strHost)
     {
         std::ostream osRequest(&sb);
@@ -177,7 +205,7 @@ public:
             JLOG(j_.trace()) << "Deadline error: " << mDeqSites[0] << ": " << ecResult.message();
 
             // Can't do anything sound.
-            abort();
+            std::abort();
         }
         else
         {
@@ -216,6 +244,8 @@ public:
         {
             mShutdown = ecResult
                 ? ecResult
+                // httpClientSSLContext always initialized before use
+                // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
                 : httpClientSSLContext->preConnectVerify(mSocket.SSLSocket(), mDeqSites[0]);
         }
 
@@ -252,6 +282,8 @@ public:
         {
             JLOG(j_.trace()) << "Connected.";
 
+            // httpClientSSLContext always initialized before use
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             mShutdown = httpClientSSLContext->postConnectVerify(mSocket.SSLSocket(), mDeqSites[0]);
 
             if (mShutdown)
@@ -340,10 +372,10 @@ public:
             {std::istreambuf_iterator<char>(&mHeader)}, std::istreambuf_iterator<char>()};
         JLOG(j_.trace()) << "Header: \"" << strHeader << "\"";
 
-        static boost::regex reStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
-        static boost::regex reSize{
+        static boost::regex const reStatus{"\\`HTTP/1\\S+ (\\d{3}) .*\\'"};  // HTTP/1.1 200 OK
+        static boost::regex const reSize{
             "\\`.*\\r\\nContent-Length:\\s+([0-9]+).*\\'", boost::regex::icase};
-        static boost::regex reBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
+        static boost::regex const reBody{"\\`.*\\r\\n\\r\\n(.*)\\'"};
 
         boost::smatch smMatch;
         // Match status code.
@@ -421,7 +453,7 @@ public:
             else
             {
                 mResponse.commit(bytes_transferred);
-                std::string strBody{
+                std::string const strBody{
                     {std::istreambuf_iterator<char>(&mResponse)}, std::istreambuf_iterator<char>()};
                 invokeComplete(ecResult, mStatus, mBody + strBody);
             }
@@ -472,7 +504,7 @@ public:
 private:
     using pointer = std::shared_ptr<HTTPClient>;
 
-    bool mSSL;
+    bool mSSL{};
     AutoSocket mSocket;
     boost::asio::ip::tcp::resolver mResolver;
 
@@ -490,7 +522,7 @@ private:
     std::string mBody;
     unsigned short const mPort;
     std::size_t const maxResponseSize_;
-    int mStatus;
+    int mStatus{};
     std::function<void(boost::asio::streambuf& sb, std::string const& strHost)> mBuild;
     std::function<
         bool(boost::system::error_code const& ecResult, int iStatus, std::string const& strData)>
@@ -502,7 +534,7 @@ private:
     boost::system::error_code mShutdown;
 
     std::deque<std::string> mDeqSites;
-    std::chrono::seconds mTimeout;
+    std::chrono::seconds mTimeout{};
     beast::Journal j_;
 };
 
@@ -540,7 +572,7 @@ HTTPClient::get(
         complete,
     beast::Journal& j)
 {
-    std::deque<std::string> deqSites(1, strSite);
+    std::deque<std::string> const deqSites(1, strSite);
 
     auto client = std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
     client->get(bSSL, deqSites, strPath, timeout, complete);
@@ -560,7 +592,7 @@ HTTPClient::request(
         complete,
     beast::Journal& j)
 {
-    std::deque<std::string> deqSites(1, strSite);
+    std::deque<std::string> const deqSites(1, strSite);
 
     auto client = std::make_shared<HTTPClientImp>(io_context, port, responseMax, j);
     client->request(bSSL, deqSites, setRequest, timeout, complete);

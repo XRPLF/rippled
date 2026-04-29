@@ -1,12 +1,30 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/txflags.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <chrono>
+#include <utility>
+
+namespace xrpl::test {
 
 // Helper class to track the expected number `delivered_amount` results.
 class CheckDeliveredAmount
@@ -36,9 +54,13 @@ class CheckDeliveredAmount
         if (!afterSwitchTime_)
         {
             if (partial)
+            {
                 ++numExpectedAvailable_;
+            }
             else
+            {
                 ++numExpectedSetUnavailable_;
+            }
             return;
         }
         // normal case: after switch time & successful transaction
@@ -69,10 +91,11 @@ public:
 
     // After all the txns are checked, all the `numExpected` variables should be
     // zero. The `checkTxn` function decrements these variables.
-    bool
+    [[nodiscard]] bool
     checkExpectedCounters() const
     {
-        return !numExpectedAvailable_ && !numExpectedNotSet_ && !numExpectedSetUnavailable_;
+        return (numExpectedAvailable_ == 0) && (numExpectedNotSet_ == 0) &&
+            (numExpectedSetUnavailable_ == 0);
     }
 
     // Check if the transaction has `delivered_amount` in the metaData as
@@ -85,22 +108,32 @@ public:
         if (t[jss::TransactionType].asString() != jss::Payment)
             return true;
 
-        bool isSet = metaData.isMember(jss::delivered_amount);
+        bool const isSet = metaData.isMember(jss::delivered_amount);
         bool isSetUnavailable = false;
         bool isSetAvailable = false;
         if (isSet)
         {
             if (metaData[jss::delivered_amount] != "unavailable")
+            {
                 isSetAvailable = true;
+            }
             else
+            {
                 isSetUnavailable = true;
+            }
         }
         if (isSetAvailable)
+        {
             --numExpectedAvailable_;
+        }
         else if (isSetUnavailable)
+        {
             --numExpectedSetUnavailable_;
+        }
         else if (!isSet)
+        {
             --numExpectedNotSet_;
+        }
 
         if (isSet)
         {
@@ -178,9 +211,13 @@ class DeliveredAmount_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
             if (afterSwitchTime)
+            {
                 env.close(NetClock::time_point{446000000s});
+            }
             else
+            {
                 env.close();
+            }
 
             CheckDeliveredAmount checkDeliveredAmount{afterSwitchTime};
             {
@@ -265,9 +302,13 @@ class DeliveredAmount_test : public beast::unit_test::suite
             env.fund(XRP(10000), alice, bob, carol, gw);
             env.trust(USD(1000), alice, bob, carol);
             if (afterSwitchTime)
+            {
                 env.close(NetClock::time_point{446000000s});
+            }
             else
+            {
                 env.close();
+            }
 
             CheckDeliveredAmount checkDeliveredAmount{afterSwitchTime};
             // normal payments
@@ -287,7 +328,6 @@ class DeliveredAmount_test : public beast::unit_test::suite
             env.require(balance(carol, USD(0)));
 
             env.close();
-            std::string index;
             Json::Value jvParams;
             jvParams[jss::ledger_index] = 4u;
             jvParams[jss::transactions] = true;
@@ -374,12 +414,11 @@ public:
         testTxDeliveredAmountRPC();
         testAccountDeliveredAmountSubscribe();
 
-        testMPTDeliveredAmountRPC(all - fixMPTDeliveredAmount);
+        testMPTDeliveredAmountRPC(all - fixMPTDeliveredAmount - featureMPTokensV2);
         testMPTDeliveredAmountRPC(all);
     }
 };
 
 BEAST_DEFINE_TESTSUITE(DeliveredAmount, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

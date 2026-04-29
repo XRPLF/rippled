@@ -5,8 +5,7 @@
 #include <xrpl/nodestore/Manager.h>
 #include <xrpl/shamap/Family.h>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 class TestNodeFamily : public Family
 {
@@ -46,7 +45,7 @@ public:
         return *db_;
     }
 
-    NodeStore::Database const&
+    [[nodiscard]] NodeStore::Database const&
     db() const override
     {
         return *db_;
@@ -92,8 +91,8 @@ public:
     void
     reset() override
     {
-        fbCache_->reset();
-        tnCache_->reset();
+        (*fbCache_).reset();
+        (*tnCache_).reset();
     }
 
     beast::manual_clock<std::chrono::steady_clock>
@@ -103,5 +102,4 @@ public:
     }
 };
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

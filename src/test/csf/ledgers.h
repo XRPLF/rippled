@@ -2,22 +2,19 @@
 
 #include <test/csf/Tx.h>
 
-#include <xrpld/consensus/LedgerTiming.h>
-
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/comparators.h>
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/ledger/LedgerTiming.h>
 
 #include <boost/bimap/bimap.hpp>
 
 #include <optional>
 #include <set>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** A ledger is a set of observed transactions and a sequence number
     identifying the ledger.
@@ -60,9 +57,7 @@ private:
     // ID by the oracle
     struct Instance
     {
-        Instance()
-        {
-        }
+        Instance() = default;
 
         // Sequence number
         Seq seq{0};
@@ -90,7 +85,7 @@ private:
         //! of the operators below.
         std::vector<Ledger::ID> ancestors;
 
-        auto
+        [[nodiscard]] auto
         asTie() const
         {
             return std::tie(
@@ -148,56 +143,56 @@ public:
     {
     }
 
-    ID
+    [[nodiscard]] ID
     id() const
     {
         return id_;
     }
 
-    Seq
+    [[nodiscard]] Seq
     seq() const
     {
         return instance_->seq;
     }
 
-    NetClock::duration
+    [[nodiscard]] NetClock::duration
     closeTimeResolution() const
     {
         return instance_->closeTimeResolution;
     }
 
-    bool
+    [[nodiscard]] bool
     closeAgree() const
     {
         return instance_->closeTimeAgree;
     }
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     closeTime() const
     {
         return instance_->closeTime;
     }
 
-    NetClock::time_point
+    [[nodiscard]] NetClock::time_point
     parentCloseTime() const
     {
         return instance_->parentCloseTime;
     }
 
-    ID
+    [[nodiscard]] ID
     parentID() const
     {
         return instance_->parentID;
     }
 
-    TxSetType const&
+    [[nodiscard]] TxSetType const&
     txs() const
     {
         return instance_->txs;
     }
 
     /** Determine whether ancestor is really an ancestor of this ledger */
-    bool
+    [[nodiscard]] bool
     isAncestor(Ledger const& ancestor) const;
 
     /** Return the id of the ancestor with the given seq (if exists/known)
@@ -210,7 +205,7 @@ public:
     friend Ledger::Seq
     mismatch(Ledger const& a, Ledger const& o);
 
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const;
 
     friend bool
@@ -237,14 +232,14 @@ class LedgerOracle
     InstanceMap instances_;
 
     // ID for the next unique ledger
-    Ledger::ID
+    [[nodiscard]] Ledger::ID
     nextID() const;
 
 public:
     LedgerOracle();
 
     /** Find the ledger with the given ID */
-    std::optional<Ledger>
+    [[nodiscard]] std::optional<Ledger>
     lookup(Ledger::ID const& id) const;
 
     /** Accept the given txs and generate a new ledger
@@ -278,8 +273,8 @@ public:
         O
           \--> B
     */
-    std::size_t
-    branches(std::set<Ledger> const& ledgers) const;
+    static std::size_t
+    branches(std::set<Ledger> const& ledgers);
 };
 
 /** Helper for writing unit tests with controlled ledger histories.
@@ -333,6 +328,4 @@ struct LedgerHistoryHelper
     }
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

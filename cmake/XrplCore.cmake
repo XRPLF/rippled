@@ -108,17 +108,28 @@ target_link_libraries(
 )
 
 # Level 05
-add_module(xrpl core)
+add_module(xrpl protocol_autogen)
 target_link_libraries(
-    xrpl.libxrpl.core
-    PUBLIC xrpl.libxrpl.basics xrpl.libxrpl.json xrpl.libxrpl.protocol
+    xrpl.libxrpl.protocol_autogen
+    PUBLIC xrpl.libxrpl.protocol
 )
 
 # Level 06
+add_module(xrpl core)
+target_link_libraries(
+    xrpl.libxrpl.core
+    PUBLIC
+        xrpl.libxrpl.basics
+        xrpl.libxrpl.json
+        xrpl.libxrpl.protocol
+        xrpl.libxrpl.protocol_autogen
+)
+
+# Level 07
 add_module(xrpl resource)
 target_link_libraries(xrpl.libxrpl.resource PUBLIC xrpl.libxrpl.protocol)
 
-# Level 07
+# Level 08
 add_module(xrpl net)
 target_link_libraries(
     xrpl.libxrpl.net
@@ -171,6 +182,7 @@ target_link_libraries(
         xrpl.libxrpl.basics
         xrpl.libxrpl.json
         xrpl.libxrpl.protocol
+        xrpl.libxrpl.protocol_autogen
         xrpl.libxrpl.rdb
         xrpl.libxrpl.server
         xrpl.libxrpl.shamap
@@ -206,6 +218,7 @@ target_link_modules(
     net
     nodestore
     protocol
+    protocol_autogen
     rdb
     resource
     server

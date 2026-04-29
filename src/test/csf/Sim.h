@@ -13,9 +13,7 @@
 #include <iostream>
 #include <random>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 /** Sink that prepends simulation time to messages */
 class BasicSink : public beast::Journal::Sink
@@ -129,8 +127,8 @@ public:
         Nodes in the group are synchronized if they share the same last
         fully validated and last generated ledger.
     */
-    bool
-    synchronized(PeerGroup const& g) const;
+    static bool
+    synchronized(PeerGroup const& g);
 
     /** Check whether all peers in the network are synchronized
      */
@@ -151,6 +149,4 @@ public:
     branches() const;
 };
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

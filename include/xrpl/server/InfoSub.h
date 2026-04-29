@@ -172,8 +172,8 @@ public:
     virtual void
     send(Json::Value const& jvObj, bool broadcast) = 0;
 
-    std::uint64_t
-    getSeq();
+    [[nodiscard]] std::uint64_t
+    getSeq() const;
 
     void
     onSendEmpty();
@@ -203,7 +203,7 @@ public:
     void
     setApiVersion(unsigned int apiVersion);
 
-    unsigned int
+    [[nodiscard]] unsigned int
     getApiVersion() const noexcept;
 
 protected:

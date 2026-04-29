@@ -1,4 +1,30 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
+
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <array>
+#include <cstdint>
+#include <cstring>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <ostream>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -13,7 +39,8 @@ public:
         unexpected(sfGeneric.isUseful(), "sfGeneric must not be useful");
         {
             // Try to put sfGeneric in an SOTemplate.
-            except<std::runtime_error>([&]() { SOTemplate elements{{sfGeneric, soeREQUIRED}}; });
+            except<std::runtime_error>(
+                [&]() { SOTemplate const elements{{sfGeneric, soeREQUIRED}}; });
         }
 
         unexpected(sfInvalid.isUseful(), "sfInvalid must not be useful");
@@ -31,12 +58,13 @@ public:
         }
         {
             // Try to put sfInvalid in an SOTemplate.
-            except<std::runtime_error>([&]() { SOTemplate elements{{sfInvalid, soeREQUIRED}}; });
+            except<std::runtime_error>(
+                [&]() { SOTemplate const elements{{sfInvalid, soeREQUIRED}}; });
         }
         {
             // Try to put the same SField into an SOTemplate twice.
             except<std::runtime_error>([&]() {
-                SOTemplate elements{
+                SOTemplate const elements{
                     {sfAccount, soeREQUIRED},
                     {sfAccount, soeREQUIRED},
                 };
@@ -59,7 +87,7 @@ public:
         };
 
         STObject object1(elements, sfTestObject);
-        STObject object2(object1);
+        STObject const object2(object1);
 
         unexpected(object1.getSerializer() != object2.getSerializer(), "STObject error 1");
 
@@ -106,7 +134,7 @@ public:
 
         for (int i = 0; i < 1000; i++)
         {
-            Blob j(i, 2);
+            Blob const j(i, 2);
 
             object1.setFieldVL(sfTestVL, j);
 
@@ -114,7 +142,7 @@ public:
             object1.add(s);
             SerialIter it(s.slice());
 
-            STObject object3(elements, it, sfTestObject);
+            STObject const object3(elements, it, sfTestObject);
 
             unexpected(object1.getFieldVL(sfTestVL) != j, "STObject error");
 
@@ -134,7 +162,7 @@ public:
             object1.add(s);
             SerialIter it(s.slice());
 
-            STObject object3(elements, it, sfTestObject);
+            STObject const object3(elements, it, sfTestObject);
 
             auto const& uints1 = object1.getFieldV256(sfTestV256);
             auto const& uints3 = object3.getFieldV256(sfTestV256);
@@ -169,8 +197,8 @@ public:
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(st[sf2Outer] == 2);
             except<STObject::FieldErr>([&]() { st[sf3Outer]; });
-            BEAST_EXPECT(*st[~sf1Outer] == 1);
-            BEAST_EXPECT(*st[~sf2Outer] == 2);
+            BEAST_EXPECT(*st[~sf1Outer] == 1);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf2Outer] == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(st[~sf3Outer] == std::nullopt);
             BEAST_EXPECT(!!st[~sf1Outer]);
             BEAST_EXPECT(!!st[~sf2Outer]);
@@ -200,9 +228,9 @@ public:
             BEAST_EXPECT(st[sf1Outer] == 1);
             BEAST_EXPECT(st[sf2Outer] == 2);
             BEAST_EXPECT(st[sf3Outer] == 0);
-            BEAST_EXPECT(*st[~sf1Outer] == 1);
-            BEAST_EXPECT(*st[~sf2Outer] == 2);
-            BEAST_EXPECT(*st[~sf3Outer] == 0);
+            BEAST_EXPECT(*st[~sf1Outer] == 1);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf2Outer] == 2);  // NOLINT(bugprone-unchecked-optional-access)
+            BEAST_EXPECT(*st[~sf3Outer] == 0);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(!!st[~sf1Outer]);
             BEAST_EXPECT(!!st[~sf2Outer]);
             BEAST_EXPECT(!!st[~sf3Outer]);
@@ -328,7 +356,7 @@ public:
             STObject st(sfGeneric);
             auto const v = ~st[~sf1Outer];
             static_assert(
-                std::is_same<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>::value, "");
+                std::is_same_v<std::decay_t<decltype(v)>, std::optional<std::uint32_t>>, "");
         }
 
         // UDT scalar fields
@@ -351,7 +379,7 @@ public:
                 Buffer b(1);
                 BEAST_EXPECT(!b.empty());
                 st[sf4] = std::move(b);
-                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(b.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(Slice(st[sf4]).size() == 1);
                 st[~sf4] = std::nullopt;
                 BEAST_EXPECT(!~st[~sf4]);
@@ -370,7 +398,7 @@ public:
                 BEAST_EXPECT(!!~st[~sf5]);
                 Buffer b(1);
                 st[sf5] = std::move(b);
-                BEAST_EXPECT(b.empty());
+                BEAST_EXPECT(b.empty());  // NOLINT(bugprone-use-after-move)
                 BEAST_EXPECT(Slice(st[sf5]).size() == 1);
                 st[~sf4] = std::nullopt;
                 BEAST_EXPECT(!~st[~sf4]);
@@ -399,11 +427,11 @@ public:
             st[sf] = std::move(v);
             auto const& cst = st;
             BEAST_EXPECT(cst[sf].size() == 2);
-            BEAST_EXPECT(cst[~sf]->size() == 2);
+            BEAST_EXPECT(cst[~sf]->size() == 2);  // NOLINT(bugprone-unchecked-optional-access)
             BEAST_EXPECT(cst[sf][0] == 1);
             BEAST_EXPECT(cst[sf][1] == 2);
             static_assert(
-                std::is_same<decltype(cst[sfIndexes]), std::vector<uint256> const&>::value, "");
+                std::is_same_v<decltype(cst[sfIndexes]), std::vector<uint256> const&>, "");
         }
 
         // Default by reference field
@@ -420,9 +448,9 @@ public:
 
             STObject st(sot, sfGeneric);
             auto const& cst(st);
-            BEAST_EXPECT(cst[sf1].size() == 0);
+            BEAST_EXPECT(cst[sf1].empty());
             BEAST_EXPECT(!cst[~sf2]);
-            BEAST_EXPECT(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].empty());
             std::vector<uint256> v;
             v.emplace_back(1);
             st[sf1] = v;
@@ -437,7 +465,7 @@ public:
             BEAST_EXPECT(cst[sf3].size() == 1);
             BEAST_EXPECT(cst[sf3][0] == uint256{1});
             st[sf3] = std::vector<uint256>{};
-            BEAST_EXPECT(cst[sf3].size() == 0);
+            BEAST_EXPECT(cst[sf3].empty());
         }
     }  // namespace xrpl
 
@@ -475,7 +503,7 @@ public:
     run() override
     {
         // Instantiate a jtx::Env so debugLog writes are exercised.
-        test::jtx::Env env(*this);
+        test::jtx::Env const env(*this);
 
         testFields();
         testSerialization();

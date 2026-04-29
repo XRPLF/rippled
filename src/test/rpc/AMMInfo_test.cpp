@@ -1,13 +1,30 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstdint>
+#include <exception>
+#include <optional>
+#include <string>
+#include <tuple>
 #include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class AMMInfo_test : public jtx::AMMTestBase
 {
@@ -20,21 +37,25 @@ public:
         using namespace jtx;
 
         Account const bogie("bogie");
-        enum TestAccount { None, Alice, Bogie };
+        enum class TestAccount { None, Alice, Bogie };
         auto accountId = [&](AMM const& ammAlice, TestAccount v) -> std::optional<AccountID> {
-            if (v == Alice)
+            if (v == TestAccount::Alice)
+            {
                 return ammAlice.ammAccount();
-            else if (v == Bogie)
+            }
+            if (v == TestAccount::Bogie)
+            {
                 return bogie;
-            else
-                return std::nullopt;
+            }
+
+            return std::nullopt;
         };
 
         // Invalid tokens pair
         testAMM([&](AMM& ammAlice, Env&) {
             Account const gw("gw");
             auto const USD = gw["USD"];
-            auto const jv = ammAlice.ammRpcInfo({}, {}, USD.issue(), USD.issue());
+            auto const jv = ammAlice.ammRpcInfo({}, {}, USD, USD);
             BEAST_EXPECT(jv[jss::error_message] == "Account not found.");
         });
 
@@ -46,12 +67,12 @@ public:
 
         std::vector<std::tuple<std::optional<Issue>, std::optional<Issue>, TestAccount, bool>> const
             invalidParams = {
-                {xrpIssue(), std::nullopt, None, false},
-                {std::nullopt, USD.issue(), None, false},
-                {xrpIssue(), std::nullopt, Alice, false},
-                {std::nullopt, USD.issue(), Alice, false},
-                {xrpIssue(), USD.issue(), Alice, false},
-                {std::nullopt, std::nullopt, None, true}};
+                {xrpIssue(), std::nullopt, TestAccount::None, false},
+                {std::nullopt, USD, TestAccount::None, false},
+                {xrpIssue(), std::nullopt, TestAccount::Alice, false},
+                {std::nullopt, USD, TestAccount::Alice, false},
+                {xrpIssue(), USD, TestAccount::Alice, false},
+                {std::nullopt, std::nullopt, TestAccount::None, true}};
 
         // Invalid parameters
         testAMM([&](AMM& ammAlice, Env&) {
@@ -108,12 +129,12 @@ public:
 
         std::vector<std::tuple<std::optional<Issue>, std::optional<Issue>, TestAccount, bool>> const
             invalidParamsBadAccount = {
-                {xrpIssue(), std::nullopt, None, false},
-                {std::nullopt, USD.issue(), None, false},
-                {xrpIssue(), std::nullopt, Bogie, false},
-                {std::nullopt, USD.issue(), Bogie, false},
-                {xrpIssue(), USD.issue(), Bogie, false},
-                {std::nullopt, std::nullopt, None, true}};
+                {xrpIssue(), std::nullopt, TestAccount::None, false},
+                {std::nullopt, USD, TestAccount::None, false},
+                {xrpIssue(), std::nullopt, TestAccount::Bogie, false},
+                {std::nullopt, USD, TestAccount::Bogie, false},
+                {xrpIssue(), USD, TestAccount::Bogie, false},
+                {std::nullopt, std::nullopt, TestAccount::None, true}};
 
         // Invalid parameters *and* invalid AMM account, default API version
         testAMM([&](AMM& ammAlice, Env&) {
@@ -144,8 +165,8 @@ public:
                     3);
                 BEAST_EXPECT(
                     jv[jss::error_message] ==
-                    (acct == Bogie ? std::string("Account malformed.")
-                                   : std::string("Invalid parameters.")));
+                    (acct == TestAccount::Bogie ? std::string("Account malformed.")
+                                                : std::string("Invalid parameters.")));
             }
         });
     }
@@ -157,7 +178,6 @@ public:
 
         using namespace jtx;
         testAMM([&](AMM& ammAlice, Env&) {
-            BEAST_EXPECT(ammAlice.expectAmmRpcInfo(XRP(10000), USD(10000), IOUAmount{10000000, 0}));
             BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                 XRP(10000),
                 USD(10000),
@@ -166,6 +186,32 @@ public:
                 std::nullopt,
                 ammAlice.ammAccount()));
         });
+
+        {
+            Env env{*this};
+            env.fund(XRP(1'000), gw);
+            MPTTester mpt(env, gw, {.fund = false});
+            mpt.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            MPTTester mpt1(env, gw, {.fund = false});
+            mpt1.create({.flags = tfMPTCanTransfer | tfMPTCanTrade});
+            auto const MPT = mpt["MPT"];
+            auto const MPT1 = mpt1["MPT"];
+            std::vector<std::tuple<PrettyAmount, PrettyAmount, IOUAmount>> pools = {
+                {XRP(100), MPT(100), IOUAmount{100'000}},
+                {USD(100), MPT(100), IOUAmount{100}},
+                {MPT(100), MPT1(100), IOUAmount{100}}};
+            for (auto& pool : pools)
+            {
+                AMM const amm(env, gw, std::get<0>(pool), std::get<1>(pool));
+                BEAST_EXPECT(amm.expectAmmRpcInfo(
+                    std::get<0>(pool),
+                    std::get<1>(pool),
+                    std::get<2>(pool),
+                    std::nullopt,
+                    std::nullopt,
+                    amm.ammAccount()));
+            }
+        }
     }
 
     void
@@ -185,9 +231,13 @@ public:
                     Account a(std::to_string(i));
                     votes.insert({a.human(), 50 * (i + 1)});
                     if (!features[fixAMMv1_3])
+                    {
                         fund(env, gw, {a}, {USD(10000)}, Fund::Acct);
+                    }
                     else
+                    {
                         fund(env, gw, {a}, {USD(10001)}, Fund::Acct);
+                    }
                     ammAlice.deposit(a, 10000000);
                     ammAlice.vote(a, 50 * (i + 1));
                 }
@@ -197,6 +247,7 @@ public:
                 env.fund(XRP(1000), bob, ed, bill);
                 env(ammAlice.bid({.bidMin = 100, .authAccounts = {carol, bob, ed, bill}}));
                 if (!features[fixAMMv1_3])
+                {
                     BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                         XRP(80000),
                         USD(80000),
@@ -204,7 +255,9 @@ public:
                         std::nullopt,
                         std::nullopt,
                         ammAlice.ammAccount()));
+                }
                 else
+                {
                     BEAST_EXPECT(ammAlice.expectAmmRpcInfo(
                         XRPAmount(80000000005),
                         STAmount{USD, UINT64_C(80'000'00000000005), -11},
@@ -212,6 +265,7 @@ public:
                         std::nullopt,
                         std::nullopt,
                         ammAlice.ammAccount()));
+                }
                 for (auto i = 0; i < 2; ++i)
                 {
                     std::unordered_set<std::string> authAccounts = {
@@ -322,5 +376,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(AMMInfo, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

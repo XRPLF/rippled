@@ -1,3 +1,5 @@
+#include <xrpl/protocol/STTx.h>
+
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
@@ -24,18 +26,14 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/container/flat_set.hpp>
-#include <boost/format/format_fwd.hpp>
 #include <boost/format/free_funcs.hpp>
 
 #include <array>
@@ -50,6 +48,7 @@
 #include <string_view>
 #include <type_traits>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -77,7 +76,7 @@ STTx::STTx(STObject&& object) : STObject(std::move(object))
 
 STTx::STTx(SerialIter& sit) : STObject(sfTransaction)
 {
-    int length = sit.getBytesLeft();
+    int const length = sit.getBytesLeft();
 
     if ((length < txMinSizeBytes) || (length > txMaxSizeBytes))
         Throw<std::runtime_error>("Transaction length invalid");
@@ -199,16 +198,32 @@ STTx::getSeqProxy() const
 
     std::optional<std::uint32_t> const ticketSeq{operator[](~sfTicketSequence)};
     if (!ticketSeq)
+    {
         // No TicketSequence specified.  Return the Sequence, whatever it is.
         return SeqProxy::sequence(seq);
+    }
 
-    return SeqProxy{SeqProxy::ticket, *ticketSeq};
+    return SeqProxy{SeqProxy::Type::ticket, *ticketSeq};
 }
 
 std::uint32_t
 STTx::getSeqValue() const
 {
     return getSeqProxy().value();
+}
+
+AccountID
+STTx::getFeePayer() const
+{
+    // If sfDelegate is present, the delegate account is the payer
+    // note: if a delegate is specified, its authorization to act on behalf of the account is
+    // enforced in `Transactor::checkPermission`
+    // cryptographic signature validity is checked separately (e.g., in `Transactor::checkSign`)
+    if (isFieldPresent(sfDelegate))
+        return getAccountID(sfDelegate);
+
+    // Default payer
+    return getAccountID(sfAccount);
 }
 
 void
@@ -313,7 +328,7 @@ STTx::getJson(JsonOptions options, bool binary) const
 
     if (binary)
     {
-        Serializer s = STObject::getSerializer();
+        Serializer const s = STObject::getSerializer();
         std::string const dataBin = strHex(s.peekData());
 
         if (V1)
@@ -323,8 +338,8 @@ STTx::getJson(JsonOptions options, bool binary) const
             ret[jss::hash] = to_string(getTransactionID());
             return ret;
         }
-        else
-            return Json::Value{dataBin};
+
+        return Json::Value{dataBin};
     }
 
     Json::Value ret = STObject::getJson(JsonOptions::none);
@@ -351,7 +366,7 @@ STTx::getMetaSQL(std::uint32_t inLedger, std::string const& escapedMetaData) con
 {
     Serializer s;
     add(s);
-    return getMetaSQL(s, inLedger, txnSqlValidated, escapedMetaData);
+    return getMetaSQL(s, inLedger, TxnSql::txnSqlValidated, escapedMetaData);
 }
 
 // VFALCO This could be a free function elsewhere
@@ -359,10 +374,10 @@ std::string
 STTx::getMetaSQL(
     Serializer rawTxn,
     std::uint32_t inLedger,
-    char status,
+    TxnSql status,
     std::string const& escapedMetaData) const
 {
-    static boost::format bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
+    static boost::format const bfTrans("('%s', '%s', '%s', '%d', '%d', '%c', %s, %s)");
     std::string rTxn = sqlBlobLiteral(rawTxn.peekData());
 
     auto format = TxFormats::getInstance().findByType(tx_type_);
@@ -370,8 +385,8 @@ STTx::getMetaSQL(
 
     return str(
         boost::format(bfTrans) % to_string(getTransactionID()) % format->getName() %
-        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger % status % rTxn %
-        escapedMetaData);
+        toBase58(getAccountID(sfAccount)) % getFieldU32(sfSequence) % inLedger %
+        safe_cast<char>(status) % rTxn % escapedMetaData);
 }
 
 static Expected<void, std::string>
@@ -486,9 +501,11 @@ multiSignHelper(
             errorWhat = e.what();
         }
         if (!validSig)
+        {
             return Unexpected(
                 std::string("Invalid signature on account ") + toBase58(accountID) +
                 errorWhat.value_or("") + ".");
+        }
     }
     // All signatures verified.
     return {};
@@ -556,13 +573,13 @@ STTx::getBatchTransactionIDs() const
 {
     XRPL_ASSERT(getTxnType() == ttBATCH, "STTx::getBatchTransactionIDs : not a batch transaction");
     XRPL_ASSERT(
-        getFieldArray(sfRawTransactions).size() != 0,
+        !getFieldArray(sfRawTransactions).empty(),
         "STTx::getBatchTransactionIDs : empty raw transactions");
 
     // The list of inner ids is built once, then reused on subsequent calls.
     // After the list is built, it must always have the same size as the array
     // `sfRawTransactions`. The assert below verifies that.
-    if (batchTxnIds_.size() == 0)
+    if (batchTxnIds_.empty())
     {
         for (STObject const& rb : getFieldArray(sfRawTransactions))
             batchTxnIds_.push_back(rb.getHash(HashPrefix::transactionID));
@@ -600,7 +617,7 @@ isMemoOkay(STObject const& st, std::string& reason)
     {
         auto memoObj = dynamic_cast<STObject const*>(&memo);
 
-        if (!memoObj || (memoObj->getFName() != sfMemo))
+        if ((memoObj == nullptr) || (memoObj->getFName() != sfMemo))
         {
             reason = "A memo array may contain only Memo objects.";
             return false;
@@ -638,20 +655,20 @@ isMemoOkay(STObject const& st, std::string& reason)
             static constexpr std::array<char, 256> const allowedSymbols = []() {
                 std::array<char, 256> a{};
 
-                std::string_view symbols(
+                std::string_view const symbols(
                     "0123456789"
                     "-._~:/?#[]@!$&'()*+,;=%"
                     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
                     "abcdefghijklmnopqrstuvwxyz");
 
-                for (unsigned char c : symbols)
+                for (unsigned char const c : symbols)
                     a[c] = 1;
                 return a;
             }();
 
-            for (unsigned char c : *optData)
+            for (unsigned char const c : *optData)
             {
-                if (!allowedSymbols[c])
+                if (allowedSymbols[c] == 0)
                 {
                     reason =
                         "The MemoType and MemoFormat fields may only "
@@ -673,7 +690,7 @@ isAccountFieldOkay(STObject const& st)
     for (int i = 0; i < st.getCount(); ++i)
     {
         auto t = dynamic_cast<STAccount const*>(st.peekAtPIndex(i));
-        if (t && t->isDefault())
+        if ((t != nullptr) && t->isDefault())
             return false;
     }
 
@@ -694,9 +711,9 @@ invalidMPTAmountInTx(STObject const& tx)
             {
                 if (auto const& field = tx.peekAtField(e.sField());
                     (field.getSType() == STI_AMOUNT &&
-                     static_cast<STAmount const&>(field).holds<MPTIssue>()) ||
+                     safe_downcast<STAmount const&>(field).holds<MPTIssue>()) ||
                     (field.getSType() == STI_ISSUE &&
-                     static_cast<STIssue const&>(field).holds<MPTIssue>()))
+                     safe_downcast<STIssue const&>(field).holds<MPTIssue>()))
                 {
                     if (e.supportMPT() != soeMPTSupported)
                         return true;

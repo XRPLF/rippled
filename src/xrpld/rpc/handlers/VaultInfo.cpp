@@ -1,12 +1,17 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/serialize.h>
+
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -35,8 +40,7 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
             RPC::inject_error(rpcACT_MALFORMED, jvResult);
             return std::nullopt;
         }
-        else if (
-            !(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
+        if (!(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
             params[jss::seq].asDouble() <= 0.0 ||
             params[jss::seq].asDouble() > double(Json::Value::maxUInt))
         {

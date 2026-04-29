@@ -1,4 +1,5 @@
 #include <xrpl/json/Output.h>
+
 #include <xrpl/json/Writer.h>
 #include <xrpl/json/json_value.h>
 
@@ -44,7 +45,7 @@ outputJson(Json::Value const& value, Writer& writer)
         }
 
         case Json::arrayValue: {
-            writer.startRoot(Writer::array);
+            writer.startRoot(Writer::CollectionType::array);
             for (auto const& i : value)
             {
                 writer.rawAppend();
@@ -55,7 +56,7 @@ outputJson(Json::Value const& value, Writer& writer)
         }
 
         case Json::objectValue: {
-            writer.startRoot(Writer::object);
+            writer.startRoot(Writer::CollectionType::object);
             auto members = value.getMemberNames();
             for (auto const& tag : members)
             {

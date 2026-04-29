@@ -1,11 +1,11 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 
 #include <xrpl/basics/chrono.h>
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/protocol/serialize.h>
 
 namespace xrpl {
@@ -19,10 +19,12 @@ struct LedgerFill
         std::vector<TxQ::TxDetails> q = {})
         : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
     {
-        if (context)
+        if (context != nullptr)
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
     }
 
+    // Bitwise bitmask
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum Options {
         dumpTxrp = 1,
         dumpState = 2,

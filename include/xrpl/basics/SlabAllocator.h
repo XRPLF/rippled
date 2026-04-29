@@ -60,18 +60,16 @@ class SlabAllocator
             {
                 // Use memcpy to avoid unaligned UB
                 // (will optimize to equivalent code)
-                std::memcpy(data, &l_, sizeof(std::uint8_t*));
+                std::memcpy(data, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
                 l_ = data;
                 data += item;
             }
         }
 
-        ~SlabBlock()
-        {
-            // Calling this destructor will release the allocated memory but
-            // will not properly destroy any objects that are constructed in
-            // the block itself.
-        }
+        // Calling this destructor will release the allocated memory but
+        // will not properly destroy any objects that are constructed in
+        // the block itself.
+        ~SlabBlock() = default;
 
         SlabBlock(SlabBlock const& other) = delete;
         SlabBlock&
@@ -91,18 +89,18 @@ class SlabAllocator
         std::uint8_t*
         allocate() noexcept
         {
-            std::uint8_t* ret;
+            std::uint8_t* ret = nullptr;  // NOLINT(misc-const-correctness)
 
             {
-                std::lock_guard l(m_);
+                std::scoped_lock const l(m_);
 
                 ret = l_;
 
-                if (ret)
+                if (ret != nullptr)
                 {
                     // Use memcpy to avoid unaligned UB
                     // (will optimize to equivalent code)
-                    std::memcpy(&l_, ret, sizeof(std::uint8_t*));
+                    std::memcpy(static_cast<void*>(&l_), ret, sizeof(std::uint8_t*));
                 }
             }
 
@@ -123,11 +121,11 @@ class SlabAllocator
         {
             XRPL_ASSERT(own(ptr), "xrpl::SlabAllocator::SlabBlock::deallocate : own input");
 
-            std::lock_guard l(m_);
+            std::scoped_lock const l(m_);
 
             // Use memcpy to avoid unaligned UB
             // (will optimize to equivalent code)
-            std::memcpy(ptr, &l_, sizeof(std::uint8_t*));
+            std::memcpy(ptr, static_cast<void const*>(&l_), sizeof(std::uint8_t*));
             l_ = ptr;
         }
     };
@@ -159,7 +157,7 @@ public:
         std::size_t extra,
         std::size_t alloc = 0,
         std::size_t align = 0)
-        : itemAlignment_(align ? align : alignof(Type))
+        : itemAlignment_((align != 0u) ? align : alignof(Type))
         , itemSize_(boost::alignment::align_up(sizeof(Type) + extra, itemAlignment_))
         , slabSize_(alloc)
     {
@@ -176,15 +174,13 @@ public:
     SlabAllocator&
     operator=(SlabAllocator&& other) = delete;
 
-    ~SlabAllocator()
-    {
-        // FIXME: We can't destroy the memory blocks we've allocated, because
-        //        we can't be sure that they are not being used. Cleaning the
-        //        shutdown process up could make this possible.
-    }
+    // FIXME: We can't destroy the memory blocks we've allocated, because
+    //        we can't be sure that they are not being used. Cleaning the
+    //        shutdown process up could make this possible.
+    ~SlabAllocator() = default;
 
     /** Returns the size of the memory block this allocator returns. */
-    constexpr std::size_t
+    [[nodiscard]] constexpr std::size_t
     size() const noexcept
     {
         return itemSize_;
@@ -210,16 +206,13 @@ public:
 
         // No slab can satisfy our request, so we attempt to allocate a new
         // one here:
-        std::size_t size = slabSize_;
+        std::size_t const size = slabSize_;
 
         // We want to allocate the memory at a 2 MiB boundary, to make it
         // possible to use hugepage mappings on Linux:
         auto buf = boost::alignment::aligned_alloc(megabytes(std::size_t(2)), size);
-
-        // clang-format off
-        if (!buf) [[unlikely]]
+        if (buf == nullptr) [[unlikely]]
             return nullptr;
-        // clang-format on
 
 #if BOOST_OS_LINUX
         // When allocating large blocks, attempt to leverage Linux's
@@ -238,7 +231,7 @@ public:
 
         // This operation is essentially guaranteed not to fail but
         // let's be careful anyways.
-        if (!boost::alignment::align(itemAlignment_, itemSize_, slabData, slabSize))
+        if (boost::alignment::align(itemAlignment_, itemSize_, slabData, slabSize) == nullptr)
         {
             boost::alignment::aligned_free(buf);
             return nullptr;
@@ -291,7 +284,7 @@ class SlabAllocatorSet
 {
 private:
     // The list of allocators that belong to this set
-    boost::container::static_vector<SlabAllocator<Type>, 64> allocators_;
+    boost::container::static_vector<SlabAllocator<Type>, 64> allocators_{};
 
     std::size_t maxSize_ = 0;
 
@@ -350,9 +343,7 @@ public:
     SlabAllocatorSet&
     operator=(SlabAllocatorSet&& other) = delete;
 
-    ~SlabAllocatorSet()
-    {
-    }
+    ~SlabAllocatorSet() = default;
 
     /** Returns a suitably aligned pointer, if one is available.
 

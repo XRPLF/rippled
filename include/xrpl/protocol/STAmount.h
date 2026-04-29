@@ -35,20 +35,20 @@ public:
 
 private:
     Asset mAsset;
-    mantissa_type mValue;
+    mantissa_type mValue{};
     exponent_type mOffset;
-    bool mIsNegative;
+    bool mIsNegative{};
 
 public:
     using value_type = STAmount;
 
-    static int const cMinOffset = -96;
-    static int const cMaxOffset = 80;
+    constexpr static int cMinOffset = -96;
+    constexpr static int cMaxOffset = 80;
 
     // Maximum native value supported by the code
     constexpr static std::uint64_t cMinValue = 1'000'000'000'000'000ull;
     static_assert(isPowerOfTen(cMinValue));
-    constexpr static std::uint64_t cMaxValue = cMinValue * 10 - 1;
+    constexpr static std::uint64_t cMaxValue = (cMinValue * 10) - 1;
     static_assert(cMaxValue == 9'999'999'999'999'999ull);
     constexpr static std::uint64_t cMaxNative = 9'000'000'000'000'000'000ull;
 
@@ -138,53 +138,50 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    int
+    [[nodiscard]] int
     exponent() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     integral() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     native() const noexcept;
 
     template <ValidIssueType TIss>
-    constexpr bool
+    [[nodiscard]] constexpr bool
     holds() const noexcept;
 
-    bool
+    [[nodiscard]] bool
     negative() const noexcept;
 
-    std::uint64_t
+    [[nodiscard]] std::uint64_t
     mantissa() const noexcept;
 
-    Asset const&
+    [[nodiscard]] Asset const&
     asset() const;
 
     template <ValidIssueType TIss>
     constexpr TIss const&
     get() const;
 
-    Issue const&
-    issue() const;
+    template <ValidIssueType TIss>
+    TIss&
+    get();
 
-    // These three are deprecated
-    Currency const&
-    getCurrency() const;
-
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getIssuer() const;
 
-    int
+    [[nodiscard]] int
     signum() const noexcept;
 
     /** Returns a zero value with the same issuer and currency. */
-    STAmount
+    [[nodiscard]] STAmount
     zeroed() const;
 
     void
     setJson(Json::Value&) const;
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     value() const noexcept;
 
     //--------------------------------------------------------------------------
@@ -225,9 +222,6 @@ public:
     void
     clear(Asset const& asset);
 
-    void
-    setIssuer(AccountID const& uIssuer);
-
     /** Set the Issue for this amount. */
     void
     setIssue(Asset const& asset);
@@ -238,31 +232,31 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getFullText() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    Json::Value getJson(JsonOptions = JsonOptions::none) const override;
+    [[nodiscard]] Json::Value getJson(JsonOptions = JsonOptions::none) const override;
 
     void
     add(Serializer& s) const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
-    XRPAmount
+    [[nodiscard]] XRPAmount
     xrp() const;
-    IOUAmount
+    [[nodiscard]] IOUAmount
     iou() const;
-    MPTAmount
+    [[nodiscard]] MPTAmount
     mpt() const;
 
 private:
@@ -325,7 +319,7 @@ STAmount::STAmount(
     : STBase(name), mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
 {
     // mValue is uint64, but needs to fit in the range of int64
-    if (Number::getMantissaScale() == MantissaRange::small)
+    if (Number::getMantissaScale() == MantissaRange::mantissa_scale::small)
     {
         XRPL_ASSERT(
             mValue <= std::numeric_limits<std::int64_t>::max(),
@@ -365,9 +359,13 @@ inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
     : mAsset(issue), mOffset(amount.exponent()), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
+    {
         mValue = unsafe_cast<std::uint64_t>(-amount.mantissa());
+    }
     else
+    {
         mValue = unsafe_cast<std::uint64_t>(amount.mantissa());
+    }
 
     canonicalize();
 }
@@ -376,9 +374,13 @@ inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
     : mAsset(mptIssue), mOffset(0), mIsNegative(amount < beast::zero)
 {
     if (mIsNegative)
+    {
         mValue = unsafe_cast<std::uint64_t>(-amount.value());
+    }
     else
+    {
         mValue = unsafe_cast<std::uint64_t>(amount.value());
+    }
 
     canonicalize();
 }
@@ -407,7 +409,7 @@ amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource);
 inline STAmount const&
 toSTAmount(STAmount const& a)
 {
-    return a;
+    return a;  // NOLINT(bugprone-return-const-ref-from-parameter)
 }
 
 //------------------------------------------------------------------------------
@@ -460,22 +462,17 @@ STAmount::asset() const
 }
 
 template <ValidIssueType TIss>
-constexpr TIss const&
+[[nodiscard]] constexpr TIss const&
 STAmount::get() const
 {
     return mAsset.get<TIss>();
 }
 
-inline Issue const&
-STAmount::issue() const
+template <ValidIssueType TIss>
+TIss&
+STAmount::get()
 {
-    return get<Issue>();
-}
-
-inline Currency const&
-STAmount::getCurrency() const
-{
-    return mAsset.get<Issue>().currency;
+    return mAsset.get<TIss>();
 }
 
 inline AccountID const&
@@ -487,7 +484,9 @@ STAmount::getIssuer() const
 inline int
 STAmount::signum() const noexcept
 {
-    return mValue ? (mIsNegative ? -1 : 1) : 0;
+    if (mValue == 0u)
+        return 0;
+    return mIsNegative ? -1 : 1;
 }
 
 inline STAmount
@@ -505,11 +504,13 @@ operator bool() const noexcept
 inline STAmount::
 operator Number() const
 {
-    if (native())
-        return xrp();
-    if (mAsset.holds<MPTIssue>())
-        return mpt();
-    return iou();
+    return asset().visit(
+        [&](Issue const& issue) -> Number {
+            if (issue.native())
+                return xrp();
+            return iou();
+        },
+        [&](MPTIssue const&) -> Number { return mpt(); });
 }
 
 inline STAmount&
@@ -532,7 +533,7 @@ STAmount::fromNumber(A const& a, Number const& number)
 {
     bool const negative = number.mantissa() < 0;
     Number const working{negative ? -number : number};
-    Asset asset{a};
+    Asset const asset{a};
     if (asset.integral())
     {
         std::uint64_t const intValue = static_cast<std::int64_t>(working);
@@ -566,12 +567,6 @@ STAmount::clear(Asset const& asset)
 {
     setIssue(asset);
     clear();
-}
-
-inline void
-STAmount::setIssuer(AccountID const& uIssuer)
-{
-    mAsset.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&
@@ -716,7 +711,7 @@ roundToAsset(
     std::int32_t scale,
     Number::rounding_mode rounding = Number::getround())
 {
-    NumberRoundModeGuard mg(rounding);
+    NumberRoundModeGuard const mg(rounding);
     STAmount const ret{asset, value};
     if (ret.integral())
         return ret;
@@ -738,6 +733,21 @@ canAdd(STAmount const& amt1, STAmount const& amt2);
 
 bool
 canSubtract(STAmount const& amt1, STAmount const& amt2);
+
+/** Get the scale of a Number for a given asset.
+ *
+ * "scale" is similar to "exponent", but from the perspective of STAmount, which has different rules
+ * and mantissa ranges for determining the exponent than Number.
+ *
+ * @param number The Number to get the scale of.
+ * @param asset The asset to use for determining the scale.
+ * @return The scale of this Number for the given asset.
+ */
+inline int
+scale(Number const& number, Asset const& asset)
+{
+    return STAmount{asset, number}.exponent();
+}
 
 }  // namespace xrpl
 

@@ -1,12 +1,58 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/did.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Dir.h>
+#include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+namespace xrpl::test {
 class Delegate_test : public beast::unit_test::suite
 {
     void
@@ -16,9 +62,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env{*this, features};
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(1000000), gw, alice, bob);
         env.close();
 
@@ -39,17 +85,15 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account gw{"gateway"};
-        Account alice{"alice"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
         env.fund(XRP(100000), gw, alice);
         env.close();
 
         // delegating an empty permission list when the delegate ledger object
-        // does not exist will not create the ledger object
-        env(delegate::set(gw, alice, std::vector<std::string>{}));
+        // does not exist is not allowed
+        env(delegate::set(gw, alice, {}), ter(tecNO_ENTRY));
         env.close();
-        auto const entry = delegate::entry(env, gw, alice);
-        BEAST_EXPECT(entry[jss::result][jss::error] == "entryNotFound");
 
         auto const permissions = std::vector<std::string>{
             "Payment", "EscrowCreate", "EscrowFinish", "TrustlineAuthorize", "CheckCreate"};
@@ -92,9 +136,7 @@ class Delegate_test : public beast::unit_test::suite
         // newPermissions
         comparePermissions(delegate::entry(env, gw, alice), newPermissions, gw, alice);
 
-        // gw deletes all permissions delegated to alice, this will delete
-        // the
-        // ledger entry
+        // gw deletes all permissions delegated to alice, this will delete the ledger entry
         env(delegate::set(gw, alice, {}));
         env.close();
         auto const jle = delegate::entry(env, gw, alice);
@@ -116,9 +158,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this, features);
-        Account gw{"gateway"};
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const gw{"gateway"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(100000), gw, alice, bob);
         env.close();
 
@@ -204,34 +246,55 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test reserve");
         using namespace jtx;
 
-        // test reserve for DelegateSet
+        // reserve requirement not met
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account carol{"carol"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
-            env.fund(drops(env.current()->fees().accountReserve(0)), alice);
-            env.fund(drops(env.current()->fees().accountReserve(1)), bob, carol);
+            auto const txFee = env.current()->fees().base;
+            env.fund(env.current()->fees().accountReserve(0) + txFee, alice);
+            env.fund(XRP(100000), bob);
             env.close();
 
             // alice does not have enough reserve to create Delegate
             env(delegate::set(alice, bob, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+        }
 
-            // bob has enough reserve
-            env(delegate::set(bob, alice, {"Payment"}));
+        // reserve recovered after deleting delegation object
+        {
+            Env env(*this);
+            Account const bob{"bob"};
+            Account const alice{"alice"};
+            Account const carol{"carol"};
+
+            auto const txFee = env.current()->fees().base;
+
+            env.fund(env.current()->fees().accountReserve(1) + (txFee * 4), alice);
+            env.fund(XRP(100000), bob, carol);
             env.close();
 
-            // now bob create another Delegate, he does not have
-            // enough reserve
-            env(delegate::set(bob, carol, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+            // alice consumes 1 txFee and requires 1 object reserve
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            // alice does not have enough reserve to create another delegation object
+            env(delegate::set(alice, carol, {"Payment"}), ter(tecINSUFFICIENT_RESERVE));
+            env.close();
+
+            // deleting delegation object recovers 1 reserve
+            env(delegate::set(alice, bob, {}));
+            env.close();
+
+            // now alice can delegate again
+            env(delegate::set(alice, carol, {"Payment"}));
         }
 
         // test reserve when sending transaction on behalf of other account
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
 
             env.fund(drops(env.current()->fees().accountReserve(1)), alice);
             env.fund(drops(env.current()->fees().accountReserve(2)), bob);
@@ -257,37 +320,42 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test fee");
         using namespace jtx;
 
-        Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
-        env.fund(XRP(10000), alice, carol);
-        env.fund(XRP(1000), bob);
-        env.close();
+        // Common setup: fund alice, bob, carol with 1000 XRP.
+        auto setup = [&](Env& env) {
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(1000), alice, bob, carol);
+            env.close();
+            return std::make_tuple(alice, bob, carol);
+        };
 
+        // No fee deduction for terNO_DELEGATE_PERMISSION.
         {
-            auto aliceBalance = env.balance(alice);
-            auto bobBalance = env.balance(bob);
-            auto carolBalance = env.balance(carol);
+            Env env(*this);
+            auto [alice, bob, carol] = setup(env);
 
-            env(pay(alice, carol, XRP(100)),
-                fee(XRP(2000)),
-                delegate::as(bob),
-                ter(terNO_DELEGATE_PERMISSION));
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
+
+            env(pay(alice, carol, XRP(100)), delegate::as(bob), ter(terNO_DELEGATE_PERMISSION));
             env.close();
             BEAST_EXPECT(env.balance(alice) == aliceBalance);
             BEAST_EXPECT(env.balance(bob) == bobBalance);
             BEAST_EXPECT(env.balance(carol) == carolBalance);
         }
 
-        env(delegate::set(alice, bob, {"Payment"}));
-        env.close();
-
+        // Delegate pays the fee successfully.
         {
-            // Delegate pays the fee
-            auto aliceBalance = env.balance(alice);
-            auto bobBalance = env.balance(bob);
-            auto carolBalance = env.balance(carol);
+            Env env(*this);
+            auto [alice, bob, carol] = setup(env);
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
 
             auto const sendAmt = XRP(100);
             auto const feeAmt = XRP(10);
@@ -298,11 +366,16 @@ class Delegate_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(carol) == carolBalance + sendAmt);
         }
 
+        // Bob has insufficient balance to pay the fee, will get terINSUF_FEE_B.
         {
-            // insufficient balance to pay fee
-            auto aliceBalance = env.balance(alice);
-            auto bobBalance = env.balance(bob);
-            auto carolBalance = env.balance(carol);
+            Env env(*this);
+            auto [alice, bob, carol] = setup(env);
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const aliceBalance = env.balance(alice);
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
 
             env(pay(alice, carol, XRP(100)),
                 fee(XRP(2000)),
@@ -314,22 +387,143 @@ class Delegate_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(carol) == carolBalance);
         }
 
+        // The delegated account has enough balance to pay and delegator has enough reserve
         {
-            // fee is paid by Delegate
-            // on context reset (tec error)
-            auto aliceBalance = env.balance(alice);
-            auto bobBalance = env.balance(bob);
-            auto carolBalance = env.balance(carol);
-            auto const feeAmt = XRP(10);
+            // Common setup: fund accounts and grant Bob permission to pay on Alice's behalf.
+            // Alice is funded with exactly (paymentAmount + reserve + baseFee): baseFee covers
+            // the DelegateSet tx cost, leaving Alice with exactly (paymentAmount + reserve).
+            // highFee = reserve + baseFee, strictly greater than reserve, so that
+            // max(reserve, highFee) = highFee — making the direct payment check fail.
+            auto setup = [&](Env& env) {
+                Account const alice{"alice"};
+                Account const bob{"bob"};
+                Account const carol{"carol"};
 
-            env(pay(alice, carol, XRP(20000)),
-                fee(feeAmt),
-                delegate::as(bob),
-                ter(tecUNFUNDED_PAYMENT));
+                auto const baseFee = env.current()->fees().base;
+                auto const reserve = env.current()->fees().accountReserve(1);
+                auto const paymentAmount = XRP(1);
+                auto const highFee = reserve + baseFee;
+                BEAST_EXPECT(highFee > reserve);
+
+                env.fund(paymentAmount + reserve + baseFee, alice);
+                env.fund(XRP(1000), bob);
+                env.fund(XRP(1000), carol);
+                env.close();
+
+                env(delegate::set(alice, bob, {"Payment"}));
+                env.close();
+
+                env.require(balance(alice, paymentAmount + reserve));
+
+                return std::make_tuple(alice, bob, carol, paymentAmount, highFee, reserve);
+            };
+
+            // Alice's balance (paymentAmount + reserve) is insufficient to cover both
+            // the payment and highFee directly. Even though fees are allowed to dip
+            // below reserve, when Alice pays the fee herself the required funds =
+            // paymentAmount + max(reserve, highFee) = paymentAmount + highFee
+            // (since highFee > reserve), which still exceeds her balance.
+            // tec: highFee is consumed from Alice's balance.
+            {
+                Env env(*this);
+                auto [alice, bob, carol, paymentAmount, highFee, reserve] = setup(env);
+                auto const aliceBalance = env.balance(alice);
+                auto const bobBalance = env.balance(bob);
+                auto const carolBalance = env.balance(carol);
+
+                env(pay(alice, carol, paymentAmount), fee(highFee), ter(tecUNFUNDED_PAYMENT));
+
+                // tec consumes the fee from Alice; carol and bob are unaffected.
+                BEAST_EXPECT(env.balance(alice) == aliceBalance - highFee);
+                BEAST_EXPECT(env.balance(bob) == bobBalance);
+                BEAST_EXPECT(env.balance(carol) == carolBalance);
+            }
+
+            // The payment succeeds because the delegated account pays the fee.
+            // Alice only needs (paymentAmount + reserve).
+            {
+                Env env(*this);
+                auto [alice, bob, carol, paymentAmount, highFee, reserve] = setup(env);
+
+                auto const alicePrePay = env.balance(alice, XRP);
+                auto const bobPrePay = env.balance(bob, XRP);
+                auto const carolPrePay = env.balance(carol, XRP);
+
+                env(pay(alice, carol, paymentAmount), delegate::as(bob), fee(highFee));
+                env.close();
+
+                env.require(balance(alice, alicePrePay - paymentAmount));
+                env.require(balance(bob, bobPrePay - highFee));
+                env.require(balance(carol, carolPrePay + paymentAmount));
+            }
+        }
+
+        // Delegated account can pay the fee even if it dips below reserve.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+
+            auto const baseFee = env.current()->fees().base;
+            auto const baseReserve = env.current()->fees().accountReserve(0);
+
+            env.fund(env.current()->fees().accountReserve(1) + baseFee + XRP(1), alice);
+            env.fund(baseReserve, bob);
+            env.fund(XRP(1000), carol);
             env.close();
-            BEAST_EXPECT(env.balance(alice) == aliceBalance);
-            BEAST_EXPECT(env.balance(bob) == bobBalance - feeAmt);
-            BEAST_EXPECT(env.balance(carol) == carolBalance);
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const alicePreTx = env.balance(alice, XRP);
+            auto const bobPreTx = env.balance(bob, XRP);
+
+            // After paying for this transaction, bob's balance will
+            // dip below the base reserve
+            env(pay(alice, carol, XRP(1)), delegate::as(bob));
+            env.close();
+
+            // Bob's balance is now less than the base reserve.
+            BEAST_EXPECT(env.balance(bob, XRP) < baseReserve);
+            env.require(balance(bob, bobPreTx - drops(baseFee)));
+
+            // Alice's balance only decreased by the 1.0 XRP she sent.
+            env.require(balance(alice, alicePreTx - XRP(1)));
+        }
+
+        // The delegated account has enough balance for the fee, but delegator
+        // runs into tecUNFUNDED_PAYMENT.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+
+            auto const baseFee = env.current()->fees().base;
+            auto const reserve = env.current()->fees().accountReserve(1);
+
+            // Alice is funded with (reserve + baseFee): after DelegateSet she has
+            // exactly 'reserve', which is insufficient to send XRP(10) while keeping
+            // reserve. Bob has plenty to pay the fee.
+            env.fund(reserve + baseFee, alice);
+            env.fund(XRP(1000), bob);
+            env.fund(XRP(1000), carol);
+            env.close();
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const alicePrePay = env.balance(alice, XRP);
+            auto const bobPrePay = env.balance(bob, XRP);
+            auto const carolPrePay = env.balance(carol, XRP);
+
+            // Bob pays the fee, but Alice has insufficient balance to send XRP(10).
+            env(pay(alice, carol, XRP(10)), delegate::as(bob), ter(tecUNFUNDED_PAYMENT));
+
+            env.require(balance(alice, alicePrePay));
+            env.require(balance(bob, bobPrePay - drops(baseFee)));
+            env.require(balance(carol, carolPrePay));
         }
     }
 
@@ -340,9 +534,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
         env.fund(XRP(10000), alice, bob, carol);
         env.close();
 
@@ -392,32 +586,179 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test deleting account");
         using namespace jtx;
 
-        Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        env.fund(XRP(100000), alice, bob);
-        env.close();
-
-        env(delegate::set(alice, bob, {"Payment"}));
-        env.close();
-        BEAST_EXPECT(env.closed()->exists(keylet::delegate(alice.id(), bob.id())));
-
-        for (std::uint32_t i = 0; i < 256; ++i)
+        // Delegator (alice) deletes account: Delegate object is cleaned up from
+        // both alice's and bob's owner directories.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
-        auto const aliceBalance = env.balance(alice);
-        auto const bobBalance = env.balance(bob);
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
 
-        // alice deletes account, this will remove the Delegate object
-        auto const deleteFee = drops(env.current()->fees().increment);
-        env(acctdelete(alice, bob), fee(deleteFee));
-        env.close();
+            auto const delegateKey = keylet::delegate(alice.id(), bob.id());
+            BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-        BEAST_EXPECT(!env.closed()->exists(keylet::account(alice.id())));
-        BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(alice.id())));
-        BEAST_EXPECT(env.balance(bob) == bobBalance + aliceBalance - deleteFee);
+            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+                return std::any_of(  // NOLINT(modernize-use-ranges)
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
+            };
 
-        BEAST_EXPECT(!env.closed()->exists(keylet::delegate(alice.id(), bob.id())));
+            // Delegate object should appear in both alice's and bob's directories
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+
+            for (std::uint32_t i = 0; i < 256; ++i)
+                env.close();
+
+            auto const aliceBalance = env.balance(alice);
+            auto const carolBalance = env.balance(carol);
+
+            // alice deletes account, this will remove the Delegate object from
+            // both alice's and bob's owner directories
+            auto const deleteFee = drops(env.current()->fees().increment);
+            env(acctdelete(alice, carol), fee(deleteFee));
+            env.close();
+
+            BEAST_EXPECT(!env.closed()->exists(keylet::account(alice.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(alice.id())));
+            BEAST_EXPECT(!env.closed()->exists(delegateKey));
+            // bob's directory should no longer reference the Delegate object
+            BEAST_EXPECT(
+                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+            BEAST_EXPECT(env.balance(carol) == carolBalance + aliceBalance - deleteFee);
+        }
+
+        // Delegatee (bob) deletes account: Delegate object is cleaned up from
+        // both alice's and bob's owner directories, freeing alice's reserve so
+        // she can subsequently delete her own account.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(100000), alice, bob, carol);
+            env.close();
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const delegateKey = keylet::delegate(alice.id(), bob.id());
+            BEAST_EXPECT(env.closed()->exists(delegateKey));
+
+            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+                return std::any_of(  // NOLINT(modernize-use-ranges)
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
+            };
+
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+
+            // The Delegate entry counts against alice's ownerCount.
+            auto const sleAlice = env.closed()->read(keylet::account(alice.id()));
+            BEAST_EXPECT(sleAlice);
+            BEAST_EXPECT(sleAlice->getFieldU32(sfOwnerCount) == 1);
+
+            for (std::uint32_t i = 0; i < 256; ++i)
+                env.close();
+
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
+
+            // bob (the authorized/delegatee account) deletes his account.
+            // This must clean up the Delegate object from both alice's and
+            // bob's owner directories so alice's delegation does not survive
+            // a potential account resurrection.
+            auto const deleteFee = drops(env.current()->fees().increment);
+            env(acctdelete(bob, carol), fee(deleteFee));
+            env.close();
+
+            BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(bob.id())));
+            BEAST_EXPECT(!env.closed()->exists(delegateKey));
+            // alice's directory should no longer reference the Delegate object
+            BEAST_EXPECT(
+                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+            BEAST_EXPECT(env.balance(carol) == carolBalance + bobBalance - deleteFee);
+
+            // alice's ownerCount is now 0; she can delete her own account.
+            auto const sleAlice2 = env.closed()->read(keylet::account(alice.id()));
+            BEAST_EXPECT(sleAlice2);
+            BEAST_EXPECT(sleAlice2->getFieldU32(sfOwnerCount) == 0);
+
+            auto const aliceDeleteFee = drops(env.current()->fees().increment);
+            env(acctdelete(alice, carol), fee(aliceDeleteFee));
+            env.close();
+
+            BEAST_EXPECT(!env.closed()->exists(keylet::account(alice.id())));
+        }
+
+        // Multiple delegators -> same delegatee: when the delegatee (bob)
+        // deletes his account, ALL Delegate objects (from alice and carol)
+        // must be cleaned up from every delegator's directory.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            Account const dave{"dave"};
+            env.fund(XRP(100000), alice, bob, carol, dave);
+            env.close();
+
+            // Both alice and carol delegate to bob
+            env(delegate::set(alice, bob, {"Payment"}));
+            env(delegate::set(carol, bob, {"EscrowCreate"}));
+            env.close();
+
+            auto const aliceBobKey = keylet::delegate(alice.id(), bob.id());
+            auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
+
+            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+                return std::any_of(  // NOLINT(modernize-use-ranges)
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
+            };
+
+            // Both Delegate objects exist and are in bob's directory
+            BEAST_EXPECT(env.closed()->exists(aliceBobKey));
+            BEAST_EXPECT(env.closed()->exists(carolBobKey));
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), aliceBobKey.key));
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), carolBobKey.key));
+
+            for (std::uint32_t i = 0; i < 256; ++i)
+                env.close();
+
+            auto const bobBalance = env.balance(bob);
+            auto const daveBalance = env.balance(dave);
+
+            auto const deleteFee = drops(env.current()->fees().increment);
+            env(acctdelete(bob, dave), fee(deleteFee));
+            env.close();
+
+            // bob's account and directory are gone
+            BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(bob.id())));
+
+            // Both Delegate objects are erased
+            BEAST_EXPECT(!env.closed()->exists(aliceBobKey));
+            BEAST_EXPECT(!env.closed()->exists(carolBobKey));
+
+            // alice's and carol's directories no longer reference the objects
+            BEAST_EXPECT(
+                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), aliceBobKey.key));
+            BEAST_EXPECT(
+                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(carol.id())), carolBobKey.key));
+
+            BEAST_EXPECT(env.balance(dave) == daveBalance + bobBalance - deleteFee);
+        }
     }
 
     void
@@ -427,9 +768,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
 
         XRPAmount const baseFee{env.current()->fees().base};
 
@@ -493,10 +834,10 @@ class Delegate_test : public beast::unit_test::suite
         // test PaymentMint and PaymentBurn
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account gw{"gateway"};
-            Account gw2{"gateway2"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
+            Account const gw2{"gateway2"};
             auto const USD = gw["USD"];
             auto const EUR = gw2["EUR"];
 
@@ -598,9 +939,9 @@ class Delegate_test : public beast::unit_test::suite
         // test PaymentMint won't affect Payment transaction level delegation.
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account gw{"gateway"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const gw{"gateway"};
             auto const USD = gw["USD"];
 
             env.fund(XRP(10000), alice);
@@ -788,9 +1129,9 @@ class Delegate_test : public beast::unit_test::suite
         // test TrustlineUnfreeze, TrustlineFreeze and TrustlineAuthorize
         {
             Env env(*this);
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -900,9 +1241,9 @@ class Delegate_test : public beast::unit_test::suite
         // test mix of transaction level delegation and granular delegation
         {
             Env env(*this);
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -945,9 +1286,9 @@ class Delegate_test : public beast::unit_test::suite
         // tfFullyCanonicalSig won't block delegated transaction
         {
             Env env(*this);
-            Account gw{"gw"};
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const gw{"gw"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
             env(fset(gw, asfRequireAuth));
             env.close();
@@ -1193,8 +1534,8 @@ class Delegate_test : public beast::unit_test::suite
         // tfFullyCanonicalSig won't block delegated transaction
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(10000), alice, bob);
             env.close();
 
@@ -1221,8 +1562,8 @@ class Delegate_test : public beast::unit_test::suite
         // test MPTokenIssuanceUnlock and MPTokenIssuanceLock permissions
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(100000), alice, bob);
             env.close();
 
@@ -1268,8 +1609,8 @@ class Delegate_test : public beast::unit_test::suite
         // test mix of granular and transaction level permission
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(100000), alice, bob);
             env.close();
 
@@ -1315,8 +1656,8 @@ class Delegate_test : public beast::unit_test::suite
         // tfFullyCanonicalSig won't block delegated transaction
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
             env.fund(XRP(100000), alice, bob);
             env.close();
 
@@ -1339,9 +1680,9 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
         env.fund(XRP(100000), alice, bob, carol);
         env.close();
 
@@ -1367,9 +1708,9 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account alice{"alice"};
-            Account bob{"bob"};
-            Account carol{"carol"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
@@ -1393,7 +1734,9 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account alice{"alice"}, bob{"bob"}, carol{"carol"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
@@ -1427,7 +1770,9 @@ class Delegate_test : public beast::unit_test::suite
 
         {
             Env env(*this);
-            Account alice{"alice"}, bob{"bob"}, carol{"carol"};
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
             env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
@@ -1464,11 +1809,11 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
-        Account daria{"daria"};
-        Account edward{"edward"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const daria{"daria"};
+        Account const edward{"edward"};
         env.fund(XRP(100000), alice, bob, carol, daria, edward);
         env.close();
 
@@ -1500,12 +1845,12 @@ class Delegate_test : public beast::unit_test::suite
         using namespace jtx;
 
         Env env(*this);
-        Account alice{"alice"};
-        Account bob{"bob"};
-        Account carol{"carol"};
-        Account daria = Account{"daria"};
-        Account edward = Account{"edward"};
-        Account fred = Account{"fred"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        Account const daria{"daria"};
+        Account const edward{"edward"};
+        Account const fred{"fred"};
         env.fund(XRP(100000), alice, bob, carol, daria, edward, fred);
         env.close();
 
@@ -1542,8 +1887,8 @@ class Delegate_test : public beast::unit_test::suite
 
         Env env(*this, features);
 
-        Account alice{"alice"};
-        Account bob{"bob"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
         env.fund(XRP(100000), alice, bob);
         env.close();
 
@@ -1614,13 +1959,7 @@ class Delegate_test : public beast::unit_test::suite
             {"CredentialDelete", featureCredentials},
             {"NFTokenModify", featureDynamicNFT},
             {"PermissionedDomainSet", featurePermissionedDomains},
-            {"PermissionedDomainDelete", featurePermissionedDomains},
-            {"VaultCreate", featureSingleAssetVault},
-            {"VaultSet", featureSingleAssetVault},
-            {"VaultDelete", featureSingleAssetVault},
-            {"VaultDeposit", featureSingleAssetVault},
-            {"VaultWithdraw", featureSingleAssetVault},
-            {"VaultClawback", featureSingleAssetVault}};
+            {"PermissionedDomainDelete", featurePermissionedDomains}};
 
         // Can not delegate tx if any required feature disabled.
         {
@@ -1661,6 +2000,71 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testTxDelegableCount()
+    {
+        testcase("Delegable Transactions Completeness");
+
+        std::size_t delegableCount = 0;
+
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, txDelegable, ...) \
+    if (txDelegable == xrpl::delegable)                 \
+    {                                                   \
+        delegableCount++;                               \
+    }
+
+#include <xrpl/protocol/detail/transactions.macro>
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+
+        // ====================================================================
+        // IMPORTANT NOTICE:
+        //
+        // If this test fails, it indicates that the 'Delegation::delegable' status
+        // in transactions.macro has been changed. Delegation allows accounts to act
+        // on behalf of others, significantly increasing the security surface.
+        //
+        //
+        // To ENSURE any added transaction is safe and compatible with delegation:
+        //
+        // 1. Verify that the transaction is intended to be delegable.
+        // 2. Every standard test case for that transaction MUST be
+        //    duplicated and verified for a Delegated context.
+        // 3. Ensure that Fee, Reserve, and Signing are correctly handled.
+        //
+        // DO NOT modify expectedDelegableCount unless all scenarios, including
+        // edge cases, have been fully tested and verified.
+        // ====================================================================
+        std::size_t const expectedDelegableCount = 51;
+
+        BEAST_EXPECTS(
+            delegableCount == expectedDelegableCount,
+            "\n[SECURITY] New delegable transaction detected!"
+            "\n  Expected: " +
+                std::to_string(expectedDelegableCount) +
+                "\n  Actual:   " + std::to_string(delegableCount) +
+                "\n  Action: Verify security requirements to interact with Delegation feature");
+    }
+
+    void
+    testDelegateUtilsNullptrCheck()
+    {
+        testcase("DelegateUtils nullptr check");
+
+        // checkTxPermission nullptr check
+        STTx const tx{ttPAYMENT, [](STObject&) {}};
+        BEAST_EXPECT(checkTxPermission(nullptr, tx) == terNO_DELEGATE_PERMISSION);
+
+        // loadGranularPermission nullptr check
+        std::unordered_set<GranularPermissionType> granularPermissions;
+        loadGranularPermission(nullptr, ttPAYMENT, granularPermissions);
+        BEAST_EXPECT(granularPermissions.empty());
+    }
+
+    void
     run() override
     {
         FeatureBitset const all = jtx::testable_amendments();
@@ -1684,8 +2088,9 @@ class Delegate_test : public beast::unit_test::suite
         testMultiSignQuorumNotMet();
         testPermissionValue(all);
         testTxRequireFeatures(all);
+        testTxDelegableCount();
+        testDelegateUtilsNullptrCheck();
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

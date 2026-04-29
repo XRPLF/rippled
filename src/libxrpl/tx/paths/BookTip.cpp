@@ -1,9 +1,19 @@
 #include <xrpl/tx/paths/BookTip.h>
 
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/OfferHelpers.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+
+#include <memory>
+
 namespace xrpl {
 
 BookTip::BookTip(ApplyView& view, Book const& book)
-    : view_(view), m_valid(false), m_book(getBookBase(book)), m_end(getQualityNext(m_book))
+    : view_(view), m_book(getBookBase(book)), m_end(getQualityNext(m_book))
 {
 }
 

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <xrpl/beast/utility/instrumentation.h>
+
 #include <type_traits>
 
 namespace xrpl {
@@ -10,12 +12,12 @@ namespace xrpl {
 
 template <class Src, class Dest>
 concept SafeToCast = (std::is_integral_v<Src> && std::is_integral_v<Dest>) &&
-    (std::is_signed<Src>::value || std::is_unsigned<Dest>::value) &&
-    (std::is_signed<Src>::value != std::is_signed<Dest>::value ? sizeof(Dest) > sizeof(Src)
-                                                               : sizeof(Dest) >= sizeof(Src));
+    (std::is_signed_v<Src> || std::is_unsigned_v<Dest>) &&
+    (std::is_signed_v<Src> != std::is_signed_v<Dest> ? sizeof(Dest) > sizeof(Src)
+                                                     : sizeof(Dest) >= sizeof(Src));
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
 safe_cast(Src s) noexcept
 {
     static_assert(
@@ -28,14 +30,14 @@ safe_cast(Src s) noexcept
 }
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
 safe_cast(Src s) noexcept
 {
     return static_cast<Dest>(safe_cast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
 safe_cast(Src s) noexcept
 {
     return safe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
@@ -46,7 +48,7 @@ safe_cast(Src s) noexcept
 // underlying types become safe, it can be converted to a safe_cast.
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_integral_v<Src>, Dest>
 unsafe_cast(Src s) noexcept
 {
     static_assert(
@@ -57,17 +59,44 @@ unsafe_cast(Src s) noexcept
 }
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_enum_v<Dest> && std::is_integral_v<Src>, Dest>
 unsafe_cast(Src s) noexcept
 {
     return static_cast<Dest>(unsafe_cast<std::underlying_type_t<Dest>>(s));
 }
 
 template <class Dest, class Src>
-inline constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
+constexpr std::enable_if_t<std::is_integral_v<Dest> && std::is_enum_v<Src>, Dest>
 unsafe_cast(Src s) noexcept
 {
     return unsafe_cast<Dest>(static_cast<std::underlying_type_t<Src>>(s));
+}
+
+template <class Dest, class Src>
+    requires std::is_pointer_v<Dest>
+inline Dest
+safe_downcast(Src* s) noexcept
+{
+#ifdef NDEBUG
+    return static_cast<Dest>(s);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
+#else
+    auto* result = dynamic_cast<Dest>(s);
+    XRPL_ASSERT(result != nullptr, "xrpl::safe_downcast : pointer downcast is valid");
+    return result;
+#endif
+}
+
+template <class Dest, class Src>
+    requires std::is_lvalue_reference_v<Dest>
+inline Dest
+safe_downcast(Src& s) noexcept
+{
+#ifndef NDEBUG
+    XRPL_ASSERT(
+        dynamic_cast<std::add_pointer_t<std::remove_reference_t<Dest>>>(&s) != nullptr,
+        "xrpl::safe_downcast : reference downcast is valid");
+#endif
+    return static_cast<Dest>(s);  // NOLINT(cppcoreguidelines-pro-type-static-cast-downcast)
 }
 
 }  // namespace xrpl

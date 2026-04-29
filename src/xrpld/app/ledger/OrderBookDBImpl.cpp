@@ -1,11 +1,34 @@
-#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OrderBookDBImpl.h>
 
+#include <xrpld/app/ledger/LedgerMaster.h>
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/AcceptedLedgerTx.h>
+#include <xrpl/ledger/BookListeners.h>
+#include <xrpl/ledger/OrderBookDB.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/server/NetworkOPs.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -14,7 +37,7 @@ OrderBookDBImpl::OrderBookDBImpl(ServiceRegistry& registry, OrderBookDBConfig co
     , pathSearchMax_(config.pathSearchMax)
     , standalone_(config.standalone)
     , seq_(0)
-    , j_(registry.journal("OrderBookDB"))
+    , j_(registry.getJournal("OrderBookDB"))
 {
 }
 
@@ -27,7 +50,7 @@ make_OrderBookDB(ServiceRegistry& registry, OrderBookDBConfig const& config)
 void
 OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
 {
-    if (!standalone_ && registry_.getOPs().isNeedNetworkLedger())
+    if (!standalone_ && registry_.get().getOPs().isNeedNetworkLedger())
     {
         JLOG(j_.warn()) << "Eliding full order book update: no ledger";
         return;
@@ -52,12 +75,18 @@ OrderBookDBImpl::setup(std::shared_ptr<ReadView const> const& ledger)
     if (pathSearchMax_ != 0)
     {
         if (standalone_)
+        {
             update(ledger);
+        }
         else
-            registry_.getJobQueue().addJob(
-                jtUPDATE_PF, "OrderBookUpd" + std::to_string(ledger->seq()), [this, ledger]() {
+        {
+            // Shorten job name to fit Linux 15-char thread name limit with "j:" prefix
+            // "OB" + seq (max 9 digits) = 11 chars, + "j:" = 13 chars (fits in 15)
+            registry_.get().getJobQueue().addJob(
+                jtUPDATE_PF, "OB" + std::to_string(ledger->seq() % 1000000000), [this, ledger]() {
                     update(ledger);
                 });
+        }
     }
 }
 
@@ -92,7 +121,7 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     {
         for (auto& sle : ledger->sles)
         {
-            if (registry_.isStopping())
+            if (registry_.get().isStopping())
             {
                 JLOG(j_.info()) << "Update halted because the process is stopping";
                 seq_.store(0);
@@ -104,29 +133,61 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
             {
                 Book book;
 
-                book.in.currency = sle->getFieldH160(sfTakerPaysCurrency);
-                book.in.account = sle->getFieldH160(sfTakerPaysIssuer);
-                book.out.currency = sle->getFieldH160(sfTakerGetsCurrency);
-                book.out.account = sle->getFieldH160(sfTakerGetsIssuer);
+                if (sle->isFieldPresent(sfTakerPaysCurrency))
+                {
+                    Issue issue;
+                    issue.currency = sle->getFieldH160(sfTakerPaysCurrency);
+                    issue.account = sle->getFieldH160(sfTakerPaysIssuer);
+                    book.in = issue;
+                }
+                else
+                {
+                    XRPL_ASSERT(
+                        sle->isFieldPresent(sfTakerPaysMPT),
+                        "OrderBookDB::update, must be TakerPaysMPT");
+                    book.in = sle->getFieldH192(sfTakerPaysMPT);
+                }
+                if (sle->isFieldPresent(sfTakerGetsCurrency))
+                {
+                    Issue issue;
+                    issue.currency = sle->getFieldH160(sfTakerGetsCurrency);
+                    issue.account = sle->getFieldH160(sfTakerGetsIssuer);
+                    book.out = issue;
+                }
+                else
+                {
+                    XRPL_ASSERT(
+                        sle->isFieldPresent(sfTakerGetsMPT),
+                        "OrderBookDB::update, must be TakerGetsMPT");
+                    book.out = sle->getFieldH192(sfTakerGetsMPT);
+                }
                 book.domain = (*sle)[~sfDomainID];
 
                 if (book.domain)
+                {
                     domainBooks[{book.in, *book.domain}].insert(book.out);
+                }
                 else
+                {
                     allBooks[book.in].insert(book.out);
+                }
 
                 if (book.domain && isXRP(book.out))
+                {
                     xrpDomainBooks.insert({book.in, *book.domain});
+                }
                 else if (isXRP(book.out))
+                {
                     xrpBooks.insert(book.in);
+                }
 
                 ++cnt;
             }
             else if (sle->getType() == ltAMM)
             {
-                auto const issue1 = (*sle)[sfAsset].get<Issue>();
-                auto const issue2 = (*sle)[sfAsset2].get<Issue>();
-                auto addBook = [&](Issue const& in, Issue const& out) {
+                auto const asset1 = (*sle)[sfAsset];
+                auto const asset2 = (*sle)[sfAsset2];
+                auto addBook = [&](Asset const& in, Asset const& out) {
                     allBooks[in].insert(out);
 
                     if (isXRP(out))
@@ -134,8 +195,8 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
 
                     ++cnt;
                 };
-                addBook(issue1, issue2);
-                addBook(issue2, issue1);
+                addBook(asset1, asset2);
+                addBook(asset2, asset1);
             }
         }
     }
@@ -149,42 +210,50 @@ OrderBookDBImpl::update(std::shared_ptr<ReadView const> const& ledger)
     JLOG(j_.debug()) << "Update completed (" << ledger->seq() << "): " << cnt << " books found";
 
     {
-        std::lock_guard sl(mLock);
+        std::scoped_lock const sl(mLock);
         allBooks_.swap(allBooks);
         xrpBooks_.swap(xrpBooks);
         domainBooks_.swap(domainBooks);
         xrpDomainBooks_.swap(xrpDomainBooks);
     }
 
-    registry_.getLedgerMaster().newOrderBookDB();
+    registry_.get().getLedgerMaster().newOrderBookDB();
 }
 
 void
 OrderBookDBImpl::addOrderBook(Book const& book)
 {
-    bool toXRP = isXRP(book.out);
+    bool const toXRP = isXRP(book.out);
 
-    std::lock_guard sl(mLock);
+    std::scoped_lock const sl(mLock);
 
     if (book.domain)
+    {
         domainBooks_[{book.in, *book.domain}].insert(book.out);
+    }
     else
+    {
         allBooks_[book.in].insert(book.out);
+    }
 
     if (book.domain && toXRP)
+    {
         xrpDomainBooks_.insert({book.in, *book.domain});
+    }
     else if (toXRP)
+    {
         xrpBooks_.insert(book.in);
+    }
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDBImpl::getBooksByTakerPays(Issue const& issue, std::optional<uint256> const& domain)
+OrderBookDBImpl::getBooksByTakerPays(Asset const& asset, std::optional<uint256> const& domain)
 {
     std::vector<Book> ret;
 
     {
-        std::lock_guard sl(mLock);
+        std::scoped_lock const sl(mLock);
 
         auto getBooks = [&](auto const& container, auto const& key) {
             if (auto it = container.find(key); it != container.end())
@@ -193,32 +262,36 @@ OrderBookDBImpl::getBooksByTakerPays(Issue const& issue, std::optional<uint256> 
                 ret.reserve(books.size());
 
                 for (auto const& gets : books)
-                    ret.emplace_back(issue, gets, domain);
+                    ret.emplace_back(asset, gets, domain);
             }
         };
 
         if (!domain)
-            getBooks(allBooks_, issue);
+        {
+            getBooks(allBooks_, asset);
+        }
         else
-            getBooks(domainBooks_, std::make_pair(issue, *domain));
+        {
+            getBooks(domainBooks_, std::make_pair(asset, *domain));
+        }
     }
 
     return ret;
 }
 
 int
-OrderBookDBImpl::getBookSize(Issue const& issue, std::optional<uint256> const& domain)
+OrderBookDBImpl::getBookSize(Asset const& asset, std::optional<uint256> const& domain)
 {
-    std::lock_guard sl(mLock);
+    std::scoped_lock const sl(mLock);
 
     if (!domain)
     {
-        if (auto it = allBooks_.find(issue); it != allBooks_.end())
+        if (auto it = allBooks_.find(asset); it != allBooks_.end())
             return static_cast<int>(it->second.size());
     }
     else
     {
-        if (auto it = domainBooks_.find({issue, *domain}); it != domainBooks_.end())
+        if (auto it = domainBooks_.find({asset, *domain}); it != domainBooks_.end())
             return static_cast<int>(it->second.size());
     }
 
@@ -226,18 +299,18 @@ OrderBookDBImpl::getBookSize(Issue const& issue, std::optional<uint256> const& d
 }
 
 bool
-OrderBookDBImpl::isBookToXRP(Issue const& issue, std::optional<Domain> domain)
+OrderBookDBImpl::isBookToXRP(Asset const& asset, std::optional<Domain> const& domain)
 {
-    std::lock_guard sl(mLock);
+    std::scoped_lock const sl(mLock);
     if (domain)
-        return xrpDomainBooks_.contains({issue, *domain});
-    return xrpBooks_.contains(issue);
+        return xrpDomainBooks_.contains({asset, *domain});
+    return xrpBooks_.contains(asset);
 }
 
 BookListeners::pointer
 OrderBookDBImpl::makeBookListeners(Book const& book)
 {
-    std::lock_guard sl(mLock);
+    std::scoped_lock const sl(mLock);
     auto ret = getBookListeners(book);
 
     if (!ret)
@@ -258,7 +331,7 @@ BookListeners::pointer
 OrderBookDBImpl::getBookListeners(Book const& book)
 {
     BookListeners::pointer ret;
-    std::lock_guard sl(mLock);
+    std::scoped_lock const sl(mLock);
 
     auto it0 = mListeners.find(book);
     if (it0 != mListeners.end())
@@ -275,7 +348,7 @@ OrderBookDBImpl::processTxn(
     AcceptedLedgerTx const& alTx,
     MultiApiJson const& jvObj)
 {
-    std::lock_guard sl(mLock);
+    std::scoped_lock const sl(mLock);
 
     // For this particular transaction, maintain the set of unique
     // subscriptions that have already published it.  This prevents sending
@@ -295,8 +368,8 @@ OrderBookDBImpl::processTxn(
                         data->isFieldPresent(sfTakerPays) && data->isFieldPresent(sfTakerGets))
                     {
                         auto listeners = getBookListeners(
-                            {data->getFieldAmount(sfTakerGets).issue(),
-                             data->getFieldAmount(sfTakerPays).issue(),
+                            {data->getFieldAmount(sfTakerGets).asset(),
+                             data->getFieldAmount(sfTakerPays).asset(),
                              (*data)[~sfDomainID]});
                         if (listeners)
                             listeners->publish(jvObj, havePublished);
@@ -306,11 +379,17 @@ OrderBookDBImpl::processTxn(
                 // We need a field that contains the TakerGets and TakerPays
                 // parameters.
                 if (node.getFName() == sfModifiedNode)
+                {
                     process(sfPreviousFields);
+                }
                 else if (node.getFName() == sfCreatedNode)
+                {
                     process(sfNewFields);
+                }
                 else if (node.getFName() == sfDeletedNode)
+                {
                     process(sfFinalFields);
+                }
             }
         }
         catch (std::exception const& ex)

@@ -1,5 +1,17 @@
 #include <test/jtx/owners.h>
 
+#include <test/jtx/Env.h>
+
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+
+#include <cstdint>
+#include <memory>
+
 namespace xrpl {
 namespace detail {
 
@@ -26,8 +38,7 @@ owned_count_helper(
 
 }  // namespace detail
 
-namespace test {
-namespace jtx {
+namespace test::jtx {
 
 void
 owners::operator()(Env& env) const
@@ -35,6 +46,6 @@ owners::operator()(Env& env) const
     env.test.expect(env.le(account_)->getFieldU32(sfOwnerCount) == value_);
 }
 
-}  // namespace jtx
-}  // namespace test
+}  // namespace test::jtx
+
 }  // namespace xrpl

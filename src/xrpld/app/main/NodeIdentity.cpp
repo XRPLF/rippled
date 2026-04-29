@@ -1,9 +1,21 @@
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeIdentity.h>
+
+#include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/server/Wallet.h>
+
+#include <boost/program_options/variables_map.hpp>
+
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace xrpl {
 
@@ -12,7 +24,7 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
 {
     std::optional<Seed> seed;
 
-    if (cmdline.count("nodeid"))
+    if (cmdline.contains("nodeid"))
     {
         seed = parseGenericSeed(cmdline["nodeid"].as<std::string>(), false);
 
@@ -37,7 +49,7 @@ getNodeIdentity(Application& app, boost::program_options::variables_map const& c
 
     auto db = app.getWalletDB().checkoutDb();
 
-    if (cmdline.count("newnodeid") != 0)
+    if (cmdline.contains("newnodeid"))
         clearNodeIdentity(*db);
 
     return getNodeIdentity(*db);

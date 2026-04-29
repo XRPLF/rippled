@@ -1,8 +1,9 @@
+#include <xrpl/protocol/STArray.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/SField.h>
-#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
 
@@ -44,7 +45,7 @@ STArray::STArray(SerialIter& sit, SField const& f, int depth) : STBase(f)
 {
     while (!sit.empty())
     {
-        int type, field;
+        int type = 0, field = 0;
         sit.getFieldID(type, field);
 
         if ((type == STI_ARRAY) && (field == 1))
@@ -174,7 +175,7 @@ STArray::isDefault() const
 void
 STArray::sort(bool (*compare)(STObject const&, STObject const&))
 {
-    std::sort(v_.begin(), v_.end(), compare);
+    std::ranges::sort(v_, compare);
 }
 
 }  // namespace xrpl

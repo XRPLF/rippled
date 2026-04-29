@@ -1,10 +1,14 @@
 #include <test/jtx/offer.h>
 
+#include <test/jtx/Account.h>
+
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cstdint>
+
+namespace xrpl::test::jtx {
 
 Json::Value
 offer(
@@ -17,7 +21,7 @@ offer(
     jv[jss::Account] = account.human();
     jv[jss::TakerPays] = takerPays.getJson(JsonOptions::none);
     jv[jss::TakerGets] = takerGets.getJson(JsonOptions::none);
-    if (flags)
+    if (flags != 0u)
         jv[jss::Flags] = flags;
     jv[jss::TransactionType] = jss::OfferCreate;
     return jv;
@@ -33,6 +37,4 @@ offer_cancel(Account const& account, std::uint32_t offerSeq)
     return jv;
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

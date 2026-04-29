@@ -1,11 +1,18 @@
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/rngfill.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/tokens.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <cstring>
 
 namespace xrpl {
 
@@ -50,7 +57,7 @@ public:
         auto const seed2 = parseBase58<Seed>(toBase58(seed1));
 
         BEAST_EXPECT(static_cast<bool>(seed2));
-        BEAST_EXPECT(equal(seed1, *seed2));
+        BEAST_EXPECT(equal(seed1, *seed2));  // NOLINT(bugprone-unchecked-optional-access)
         return toBase58(seed1);
     }
 
@@ -93,15 +100,15 @@ public:
             auto const seed2 = parseBase58<Seed>(toBase58(seed1));
 
             BEAST_EXPECT(static_cast<bool>(seed2));
-            BEAST_EXPECT(equal(seed1, *seed2));
+            BEAST_EXPECT(equal(seed1, *seed2));  // NOLINT(bugprone-unchecked-optional-access)
         }
     }
 
     void
     testKeypairGenerationAndSigning()
     {
-        std::string const message1 = "http://www.ripple.com";
-        std::string const message2 = "https://www.ripple.com";
+        std::string const message1 = "http://www.xrpl.org";
+        std::string const message2 = "https://www.xrpl.org";
 
         {
             testcase("Node keypair generation & signing (secp256k1)");
@@ -120,7 +127,7 @@ public:
                 to_string(calcNodeID(publicKey)) == "7E59C17D50F5959C7B158FEC95C8F815BF653DC8");
 
             auto sig = sign(publicKey, secretKey, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(publicKey, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -162,7 +169,7 @@ public:
                 to_string(calcNodeID(publicKey)) == "AA066C988C712815CC37AF71472B7CBBBD4E2A0A");
 
             auto sig = sign(publicKey, secretKey, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(publicKey, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -202,7 +209,7 @@ public:
                 "p9JfM6HHi64m6mvB6v5k7G2b1cXzGmYiCNJf6GHPKvFTWdeRVjh");
 
             auto sig = sign(pk, sk, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message
@@ -241,7 +248,7 @@ public:
                 "pwDQjwEhbUBmPuEjFpEG75bFhv2obkCB7NxQsfFxM7xGHBMVPu9");
 
             auto sig = sign(pk, sk, makeSlice(message1));
-            BEAST_EXPECT(sig.size() != 0);
+            BEAST_EXPECT(!sig.empty());
             BEAST_EXPECT(verify(pk, makeSlice(message1), sig));
 
             // Correct public key but wrong message

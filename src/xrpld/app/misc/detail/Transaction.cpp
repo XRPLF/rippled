@@ -1,14 +1,34 @@
+#include <xrpld/app/misc/Transaction.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/Transaction.h>
 #include <xrpld/rpc/CTID.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/core/HashRouter.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/TxSearched.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/rdb/RelationalDatabase.h>
-#include <xrpl/tx/apply.h>
+
+#include <boost/optional/optional.hpp>
+
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <string>
+#include <utility>
+#include <variant>
 
 namespace xrpl {
 
@@ -16,7 +36,7 @@ Transaction::Transaction(
     std::shared_ptr<STTx const> const& stx,
     std::string& reason,
     Application& app) noexcept
-    : mTransaction(stx), mApp(app), j_(app.journal("Ledger"))
+    : mTransaction(stx), mApp(app), j_(app.getJournal("Ledger"))
 {
     try
     {
@@ -28,7 +48,7 @@ Transaction::Transaction(
         return;
     }
 
-    mStatus = NEW;
+    mStatus = TransStatus::NEW;
 }
 
 //
@@ -53,27 +73,27 @@ Transaction::setStatus(
 TransStatus
 Transaction::sqlTransactionStatus(boost::optional<std::string> const& status)
 {
-    char const c = (status) ? (*status)[0] : safe_cast<char>(txnSqlUnknown);
+    auto const c = (status) ? safe_cast<TxnSql>((*status)[0]) : TxnSql::txnSqlUnknown;
 
-    switch (c)
+    switch (static_cast<TxnSql>(c))
     {
-        case txnSqlNew:
-            return NEW;
-        case txnSqlConflict:
-            return CONFLICTED;
-        case txnSqlHeld:
-            return HELD;
-        case txnSqlValidated:
-            return COMMITTED;
-        case txnSqlIncluded:
-            return INCLUDED;
+        case TxnSql::txnSqlNew:
+            return TransStatus::NEW;
+        case TxnSql::txnSqlConflict:
+            return TransStatus::CONFLICTED;
+        case TxnSql::txnSqlHeld:
+            return TransStatus::HELD;
+        case TxnSql::txnSqlValidated:
+            return TransStatus::COMMITTED;
+        case TxnSql::txnSqlIncluded:
+            return TransStatus::INCLUDED;
+        default:
+            XRPL_ASSERT(
+                c == TxnSql::txnSqlUnknown,
+                "xrpl::Transaction::sqlTransactionStatus : unknown transaction status");
     }
 
-    XRPL_ASSERT(
-        c == txnSqlUnknown,
-        "xrpl::Transaction::sqlTransactionStatus : unknown transaction "
-        "status");
-    return INVALID;
+    return TransStatus::INVALID;
 }
 
 Transaction::pointer
@@ -133,7 +153,7 @@ Transaction::getJson(JsonOptions options, bool binary) const
     Json::Value ret(mTransaction->getJson(options & ~JsonOptions::include_date, binary));
 
     // NOTE Binary STTx::getJson output might not be a JSON object
-    if (ret.isObject() && mLedgerIndex)
+    if (ret.isObject() && (mLedgerIndex != 0u))
     {
         if (!(options & JsonOptions::disable_API_prior_V2))
         {

@@ -1,19 +1,34 @@
 #include <test/jtx/batch.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/JTx.h>
 #include <test/jtx/utility.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Batch.h>
-#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/Sign.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
+#include <cstddef>
+#include <cstdint>
 #include <optional>
-#include <sstream>
+#include <ostream>
+#include <utility>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-
-namespace batch {
+namespace xrpl::test::jtx::batch {
 
 XRPAmount
 calcBatchFee(test::jtx::Env const& env, uint32_t const& numSigners, uint32_t const& txns)
@@ -74,6 +89,7 @@ sig::operator()(Env& env, JTx& jt) const
 
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         jo[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
     }
@@ -112,13 +128,10 @@ msig::operator()(Env& env, JTx& jt) const
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
         finishMultiSigningData(e.acct.id(), msg);
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
         auto const sig = xrpl::sign(*publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         iso[sfTxnSignature.getJsonName()] = strHex(Slice{sig.data(), sig.size()});
     }
 }
 
-}  // namespace batch
-
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::batch

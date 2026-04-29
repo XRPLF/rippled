@@ -1,12 +1,38 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/detail/ApplyStateTable.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/st.h>
 
-namespace xrpl {
-namespace detail {
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/to_string.h>  // IWYU pragma: keep
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxMeta.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+
+namespace xrpl::detail {
 
 void
 ApplyStateTable::apply(RawView& to) const
@@ -107,7 +133,7 @@ ApplyStateTable::apply(
         Mods newMod;
         for (auto& item : items_)
         {
-            SField const* type;
+            SField const* type = nullptr;
             switch (item.second.first)
             {
                 default:
@@ -127,8 +153,8 @@ ApplyStateTable::apply(
             auto curNode = item.second.second;
             if ((type == &sfModifiedNode) && (*curNode == *origNode))
                 continue;
-            std::uint16_t nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
-                                             : origNode->getFieldU16(sfLedgerEntryType);
+            std::uint16_t const nodeType = curNode ? curNode->getFieldU16(sfLedgerEntryType)
+                                                   : origNode->getFieldU16(sfLedgerEntryType);
             meta.setAffectedNode(item.first, *type, nodeType);
             if (type == &sfDeletedNode)
             {
@@ -169,9 +195,11 @@ ApplyStateTable::apply(
                     "xrpl::detail::ApplyStateTable::apply : valid nodes for "
                     "modification");
 
-                if (curNode->isThreadedType(to.rules()))  // thread transaction to node
-                                                          // item modified
+                if (curNode->isThreadedType(to.rules()))
+                {  // thread transaction to node
+                   // item modified
                     threadItem(meta, curNode);
+                }
 
                 STObject prevs(sfPreviousFields);
                 for (auto const& obj : *origNode)
@@ -273,9 +301,7 @@ ApplyStateTable::exists(ReadView const& base, Keylet const& k) const
         case Action::modify:
             break;
     }
-    if (!k.check(*sle))
-        return false;
-    return true;
+    return k.check(*sle);
 }
 
 auto
@@ -374,14 +400,14 @@ ApplyStateTable::erase(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
-        LogicError("ApplyStateTable::erase: missing key");
+        Throw<std::logic_error>("ApplyStateTable::erase: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        LogicError("ApplyStateTable::erase: unknown SLE");
+        Throw<std::logic_error>("ApplyStateTable::erase: unknown SLE");
     switch (item.first)
     {
         case Action::erase:
-            LogicError("ApplyStateTable::erase: double erase");
+            Throw<std::logic_error>("ApplyStateTable::erase: double erase");
             break;
         case Action::insert:
             items_.erase(iter);
@@ -405,7 +431,7 @@ ApplyStateTable::rawErase(ReadView const& base, std::shared_ptr<SLE> const& sle)
     switch (item.first)
     {
         case Action::erase:
-            LogicError("ApplyStateTable::rawErase: double erase");
+            Throw<std::logic_error>("ApplyStateTable::rawErase: double erase");
             break;
         case Action::insert:
             items_.erase(result.first);
@@ -436,11 +462,11 @@ ApplyStateTable::insert(ReadView const& base, std::shared_ptr<SLE> const& sle)
     switch (item.first)
     {
         case Action::cache:
-            LogicError("ApplyStateTable::insert: already cached");
+            Throw<std::logic_error>("ApplyStateTable::insert: already cached");
         case Action::insert:
-            LogicError("ApplyStateTable::insert: already inserted");
+            Throw<std::logic_error>("ApplyStateTable::insert: already inserted");
         case Action::modify:
-            LogicError("ApplyStateTable::insert: already modified");
+            Throw<std::logic_error>("ApplyStateTable::insert: already modified");
         case Action::erase:
             break;
     }
@@ -466,7 +492,7 @@ ApplyStateTable::replace(ReadView const& base, std::shared_ptr<SLE> const& sle)
     switch (item.first)
     {
         case Action::erase:
-            LogicError("ApplyStateTable::replace: already erased");
+            Throw<std::logic_error>("ApplyStateTable::replace: already erased");
         case Action::cache:
             item.first = Action::modify;
             break;
@@ -482,14 +508,14 @@ ApplyStateTable::update(ReadView const& base, std::shared_ptr<SLE> const& sle)
 {
     auto const iter = items_.find(sle->key());
     if (iter == items_.end())
-        LogicError("ApplyStateTable::update: missing key");
+        Throw<std::logic_error>("ApplyStateTable::update: missing key");
     auto& item = iter->second;
     if (item.second != sle)
-        LogicError("ApplyStateTable::update: unknown SLE");
+        Throw<std::logic_error>("ApplyStateTable::update: unknown SLE");
     switch (item.first)
     {
         case Action::erase:
-            LogicError("ApplyStateTable::update: erased");
+            Throw<std::logic_error>("ApplyStateTable::update: erased");
             break;
         case Action::cache:
             item.first = Action::modify;
@@ -513,7 +539,7 @@ void
 ApplyStateTable::threadItem(TxMeta& meta, std::shared_ptr<SLE> const& sle)
 {
     key_type prevTxID;
-    LedgerIndex prevLgrID;
+    LedgerIndex prevLgrID = 0;
 
     if (!sle->thread(meta.getTxID(), meta.getLgrSeq(), prevTxID, prevLgrID))
         return;
@@ -642,5 +668,4 @@ ApplyStateTable::threadOwners(
     }
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

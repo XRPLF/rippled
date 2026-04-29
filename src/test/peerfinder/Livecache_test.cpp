@@ -1,16 +1,28 @@
 #include <test/beast/IPEndpointCommon.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Livecache.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/clock/manual_clock.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/lexical_cast.hpp>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <iterator>
+#include <utility>
+#include <vector>
+
+namespace xrpl::PeerFinder {
 
 bool
 operator==(Endpoint const& a, Endpoint const& b)
@@ -30,10 +42,10 @@ public:
 
     // Add the address as an endpoint
     template <class C>
-    inline void
+    void
     add(beast::IP::Endpoint ep, C& c, std::uint32_t hops = 0)
     {
-        Endpoint cep{ep, hops};
+        Endpoint const cep{ep, hops};
         c.insert(cep);
     }
 
@@ -199,5 +211,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Livecache, peerfinder, xrpl);
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

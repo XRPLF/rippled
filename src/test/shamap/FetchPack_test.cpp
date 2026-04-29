@@ -1,24 +1,40 @@
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/xor_shift_engine.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
 #include <xrpl/shamap/SHAMapSyncFilter.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
-#include <functional>
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
 #include <stdexcept>
 
-namespace xrpl {
-namespace tests {
+namespace xrpl::tests {
 
 class FetchPack_test : public beast::unit_test::suite
 {
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { tableItems = 100, tableItemsExtra = 20 };
 
     using Map = hash_map<SHAMapHash, Blob>;
@@ -45,15 +61,15 @@ public:
             bool fromFilter,
             SHAMapHash const& nodeHash,
             std::uint32_t ledgerSeq,
-            Blob&& nodeData,
+            Blob&& nodeData,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
             SHAMapNodeType type) const override
         {
         }
 
-        std::optional<Blob>
+        [[nodiscard]] std::optional<Blob>
         getNode(SHAMapHash const& nodeHash) const override
         {
-            Map::iterator it = mMap.find(nodeHash);
+            Map::iterator const it = mMap.find(nodeHash);
             if (it == mMap.end())
             {
                 JLOG(mJournal.fatal()) << "Test filter missing node";
@@ -66,7 +82,7 @@ public:
         beast::Journal mJournal;
     };
 
-    boost::intrusive_ptr<Item>
+    static boost::intrusive_ptr<Item>
     make_random_item(beast::xor_shift_engine& r)
     {
         Serializer s;
@@ -75,10 +91,10 @@ public:
         return make_shamapitem(s.getSHA512Half(), s.slice());
     }
 
-    void
+    static void
     add_random_items(std::size_t n, Table& t, beast::xor_shift_engine& r)
     {
-        while (n--)
+        while ((n--) != 0u)
         {
             auto const result(t.addItem(SHAMapNodeType::tnACCOUNT_STATE, make_random_item(r)));
             assert(result);
@@ -100,7 +116,7 @@ public:
         test::SuiteJournal journal("FetchPack_test", *this);
 
         TestNodeFamily f(journal);
-        std::shared_ptr<Table> t1(std::make_shared<Table>(SHAMapType::FREE, f));
+        std::shared_ptr<Table> const t1(std::make_shared<Table>(SHAMapType::FREE, f));
 
         pass();
 
@@ -151,5 +167,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(FetchPack, shamap, xrpl);
 
-}  // namespace tests
-}  // namespace xrpl
+}  // namespace xrpl::tests

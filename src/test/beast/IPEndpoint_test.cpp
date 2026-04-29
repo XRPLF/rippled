@@ -4,15 +4,25 @@
 #include <test/beast/IPEndpointCommon.h>
 
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPAddressV4.h>
+#include <xrpl/beast/net/IPAddressV6.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/replace.hpp>
 #include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/address_v6.hpp>
 #include <boost/predef.h>
+#include <boost/system/detail/error_code.hpp>
 
-namespace beast {
-namespace IP {
+#include <algorithm>
+#include <cstdint>
+#include <sstream>
+#include <string>
+#include <unordered_set>
+
+namespace beast::IP {
 
 //------------------------------------------------------------------------------
 
@@ -51,7 +61,7 @@ public:
         BEAST_EXPECT(AddressV4{0x01020304}.to_uint() == 0x01020304);
 
         {
-            AddressV4::bytes_type d = {{1, 2, 3, 4}};
+            AddressV4::bytes_type const d = {{1, 2, 3, 4}};
             BEAST_EXPECT(AddressV4{d}.to_uint() == 0x01020304);
 
             unexpected(is_unspecified(AddressV4{d}));
@@ -110,7 +120,7 @@ public:
     {
         testcase("AddressV4::Bytes");
 
-        AddressV4::bytes_type d1 = {{10, 0, 0, 1}};
+        AddressV4::bytes_type const d1 = {{10, 0, 0, 1}};
         AddressV4 v4{d1};
         BEAST_EXPECT(v4.to_bytes()[0] == 10);
         BEAST_EXPECT(v4.to_bytes()[1] == 0);
@@ -136,8 +146,8 @@ public:
         testcase("Address");
 
         boost::system::error_code ec;
-        Address result{boost::asio::ip::make_address("1.2.3.4", ec)};
-        AddressV4::bytes_type d = {{1, 2, 3, 4}};
+        Address const result{boost::asio::ip::make_address("1.2.3.4", ec)};
+        AddressV4::bytes_type const d = {{1, 2, 3, 4}};
         BEAST_EXPECT(!ec);
         BEAST_EXPECT(result.is_v4() && result.to_v4() == AddressV4{d});
     }
@@ -152,7 +162,7 @@ public:
         std::string const& normal = "")
     {
         auto const result = Endpoint::from_string_checked(s);
-        if (!BEAST_EXPECT(result))
+        if (BEAST_EXPECT(result); !result.has_value())
             return;
         if (!BEAST_EXPECT(result->address().is_v4()))
             return;
@@ -171,7 +181,7 @@ public:
         std::string const& normal = "")
     {
         auto result = Endpoint::from_string_checked(s);
-        if (!BEAST_EXPECT(result))
+        if (BEAST_EXPECT(result); !result.has_value())
             return;
         if (!BEAST_EXPECT(result->address().is_v6()))
             return;
@@ -286,7 +296,7 @@ public:
         BEAST_EXPECTS(to_string(ep) == "::ffff:166.78.151.147", to_string(ep));
 
         // a private IPv6
-        AddressV6::bytes_type d2 = {{253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
+        AddressV6::bytes_type const d2 = {{253, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1}};
         ep = Endpoint(AddressV6{d2});
         BEAST_EXPECT(!is_unspecified(ep));
         BEAST_EXPECT(!is_public(ep));
@@ -456,5 +466,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(IPEndpoint, beast, beast);
 
-}  // namespace IP
-}  // namespace beast
+}  // namespace beast::IP

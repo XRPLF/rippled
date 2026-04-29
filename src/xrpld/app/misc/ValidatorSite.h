@@ -28,7 +28,7 @@ namespace xrpl {
 
     @li @c "blob": Base64-encoded JSON string containing a @c "sequence", @c
         "validUntil", and @c "validators" field. @c "validUntil" contains the
-        Ripple timestamp (seconds since January 1st, 2000 (00:00 UTC)) for when
+        XRPL timestamp (seconds since January 1st, 2000 (00:00 UTC)) for when
         the list expires. @c "validators" contains an array of objects with a
         @c "validation_public_key" and optional @c "manifest" field.
         @c "validation_public_key" should be the hex-encoded master public key.
@@ -85,12 +85,12 @@ private:
         /// when we've gotten a temp redirect
         std::shared_ptr<Resource> activeResource;
 
-        unsigned short redirCount;
+        unsigned short redirCount{0};
         std::chrono::minutes refreshInterval;
         clock_type::time_point nextRefresh;
         std::optional<Status> lastRefreshStatus;
         endpoint_type lastRequestEndpoint;
-        bool lastRequestSuccessful;
+        bool lastRequestSuccessful{false};
     };
 
     Application& app_;
@@ -177,12 +177,12 @@ public:
 private:
     /// Load configured site URIs.
     bool
-    load(std::vector<std::string> const& siteURIs, std::lock_guard<std::mutex> const&);
+    load(std::vector<std::string> const& siteURIs, std::scoped_lock<std::mutex> const&);
 
     /// Queue next site to be fetched
     /// lock over site_mutex_ and state_mutex_ required
     void
-    setTimer(std::lock_guard<std::mutex> const&, std::lock_guard<std::mutex> const&);
+    setTimer(std::scoped_lock<std::mutex> const&, std::scoped_lock<std::mutex> const&);
 
     /// request took too long
     void
@@ -197,7 +197,7 @@ private:
     onSiteFetch(
         boost::system::error_code const& ec,
         endpoint_type const& endpoint,
-        detail::response_type&& res,
+        detail::response_type const& res,
         std::size_t siteIdx);
 
     /// Store latest list fetched from anywhere
@@ -210,7 +210,7 @@ private:
     makeRequest(
         std::shared_ptr<Site::Resource> resource,
         std::size_t siteIdx,
-        std::lock_guard<std::mutex> const&);
+        std::scoped_lock<std::mutex> const&);
 
     /// Parse json response from validator list site.
     /// lock over sites_mutex_ required
@@ -218,20 +218,20 @@ private:
     parseJsonResponse(
         std::string const& res,
         std::size_t siteIdx,
-        std::lock_guard<std::mutex> const&);
+        std::scoped_lock<std::mutex> const&);
 
     /// Interpret a redirect response.
     /// lock over sites_mutex_ required
     std::shared_ptr<Site::Resource>
     processRedirect(
-        detail::response_type& res,
+        detail::response_type const& res,
         std::size_t siteIdx,
-        std::lock_guard<std::mutex> const&);
+        std::scoped_lock<std::mutex> const&);
 
     /// If no sites are provided, or a site fails to load,
     /// get a list of local cache files from the ValidatorList.
     bool
-    missingSite(std::lock_guard<std::mutex> const&);
+    missingSite(std::scoped_lock<std::mutex> const&);
 };
 
 }  // namespace xrpl

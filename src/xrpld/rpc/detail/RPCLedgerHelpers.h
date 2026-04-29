@@ -1,11 +1,11 @@
 #pragma once
 
-#include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/ledger/Ledger.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 #include <xrpl/protocol/LedgerShortcut.h>
 #include <xrpl/server/NetworkOPs.h>

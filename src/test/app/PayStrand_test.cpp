@@ -1,33 +1,53 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
-
-#include <xrpld/core/Config.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/PaymentSandbox.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/tx/paths/RippleCalc.h>
 #include <xrpl/tx/paths/detail/Steps.h>
 #include <xrpl/tx/transactors/dex/AMMContext.h>
 
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <cstdio>
+#include <initializer_list>
 #include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <vector>
 
-namespace xrpl {
-namespace test {
-
-struct DirectStepInfo
-{
-    AccountID src;
-    AccountID dst;
-    Currency currency;
-};
-
-struct XRPEndpointStepInfo
-{
-    AccountID acc;
-};
+namespace xrpl::test {
 
 enum class TrustFlag { freeze, auth, noripple };
 
@@ -69,82 +89,6 @@ getTrustFlag(
     return false;  // silence warning
 }
 
-bool
-equal(std::unique_ptr<Step> const& s1, DirectStepInfo const& dsi)
-{
-    if (!s1)
-        return false;
-    return test::directStepEqual(*s1, dsi.src, dsi.dst, dsi.currency);
-}
-
-bool
-equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpStepInfo)
-{
-    if (!s1)
-        return false;
-    return test::xrpEndpointStepEqual(*s1, xrpStepInfo.acc);
-}
-
-bool
-equal(std::unique_ptr<Step> const& s1, xrpl::Book const& bsi)
-{
-    if (!s1)
-        return false;
-    return bookStepEqual(*s1, bsi);
-}
-
-template <class Iter>
-bool
-strandEqualHelper(Iter i)
-{
-    // base case. all args processed and found equal.
-    return true;
-}
-
-template <class Iter, class StepInfo, class... Args>
-bool
-strandEqualHelper(Iter i, StepInfo&& si, Args&&... args)
-{
-    if (!equal(*i, std::forward<StepInfo>(si)))
-        return false;
-    return strandEqualHelper(++i, std::forward<Args>(args)...);
-}
-
-template <class... Args>
-bool
-equal(Strand const& strand, Args&&... args)
-{
-    if (strand.size() != sizeof...(Args))
-        return false;
-    if (strand.empty())
-        return true;
-    return strandEqualHelper(strand.begin(), std::forward<Args>(args)...);
-}
-
-STPathElement
-ape(AccountID const& a)
-{
-    return STPathElement(STPathElement::typeAccount, a, xrpCurrency(), xrpAccount());
-};
-
-// Issue path element
-STPathElement
-ipe(Issue const& iss)
-{
-    return STPathElement(
-        STPathElement::typeCurrency | STPathElement::typeIssuer,
-        xrpAccount(),
-        iss.currency,
-        iss.account);
-};
-
-// Issuer path element
-STPathElement
-iape(AccountID const& account)
-{
-    return STPathElement(STPathElement::typeIssuer, xrpAccount(), xrpCurrency(), account);
-};
-
 class ElementComboIter
 {
     enum class SB /*state bit*/
@@ -173,29 +117,33 @@ class ElementComboIter
     // some tests)
     bool const allowCompound_ = false;
 
-    bool
+    [[nodiscard]] bool
     has(SB s) const
     {
-        return state_ & (1 << safe_cast<int>(s));
+        return (state_ & (1 << safe_cast<int>(s))) != 0;
     }
 
-    bool
+    [[nodiscard]] bool
     hasAny(std::initializer_list<SB> sb) const
     {
         for (auto const s : sb)
+        {
             if (has(s))
                 return true;
+        }
         return false;
     }
 
-    size_t
+    [[nodiscard]] size_t
     count(std::initializer_list<SB> sb) const
     {
         size_t result = 0;
 
         for (auto const s : sb)
+        {
             if (has(s))
                 result++;
+        }
         return result;
     }
 
@@ -204,11 +152,11 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     valid() const
     {
         return (allowCompound_ || !(has(SB::acc) && hasAny({SB::cur, SB::iss}))) &&
-            (!hasAny({SB::prevAcc, SB::prevCur, SB::prevIss}) || prev_) &&
+            (!hasAny({SB::prevAcc, SB::prevCur, SB::prevIss}) || (prev_ != nullptr)) &&
             (!hasAny({SB::rootAcc, SB::sameAccIss, SB::existingAcc, SB::prevAcc}) ||
              has(SB::acc)) &&
             (!hasAny({SB::rootIss, SB::sameAccIss, SB::existingIss, SB::prevIss}) ||
@@ -262,7 +210,7 @@ public:
             if (has(SB::sameAccIss))
                 return acc;
             if (has(SB::existingIss) && existingIss)
-                return *existingIss;
+                return existingIss;
             return issF().id();
         }();
         auto const cur = [&]() -> std::optional<Currency> {
@@ -271,17 +219,21 @@ public:
             if (has(SB::xrp))
                 return xrpCurrency();
             if (has(SB::existingCur) && existingCur)
-                return *existingCur;
+                return existingCur;
             return currencyF();
         }();
         if (!has(SB::boundary))
+        {
             col.emplace_back(acc, cur, iss);
+        }
         else
+        {
             col.emplace_back(
                 STPathElement::Type::typeBoundary,
                 acc.value_or(AccountID{}),
                 cur.value_or(Currency{}),
                 iss.value_or(AccountID{}));
+        }
     }
 };
 
@@ -311,7 +263,7 @@ struct ExistingElementPool
     size_t nextAvailCurrency = 0;
 
     using ResetState = std::tuple<size_t, size_t>;
-    ResetState
+    [[nodiscard]] ResetState
     getResetState() const
     {
         return std::make_tuple(nextAvailAccount, nextAvailCurrency);
@@ -368,11 +320,17 @@ struct ExistingElementPool
         for (size_t id = 0; id < numCur; ++id)
         {
             if (id < 10)
+            {
                 snprintf(buf, bufSize, "CC%zu", id);
+            }
             else if (id < 100)
+            {
                 snprintf(buf, bufSize, "C%zu", id);
+            }
             else
+            {
                 snprintf(buf, bufSize, "%zu", id);
+            }
             currencies.emplace_back(to_currency(buf));
             currencyNames.emplace_back(buf);
         }
@@ -407,8 +365,10 @@ struct ExistingElementPool
         std::vector<IOU> ious;
         ious.reserve(numAct * numCur);
         for (auto const& a : accounts)
+        {
             for (auto const& cn : currencyNames)
                 ious.emplace_back(a[cn]);
+        }
 
         // create offers from every currency to every other currency
         for (auto takerPays = ious.begin(), ie = ious.end(); takerPays != ie; ++takerPays)
@@ -543,7 +503,7 @@ struct ExistingElementPool
         result.reserve(resultSize);
         while (outer.next())
         {
-            StateGuard og{*this};
+            StateGuard const og{*this};
             outerResult = prefix;
             outer.emplace_into(
                 outerResult, accF, issF, currencyF, existingAcc, existingCur, existingIss);
@@ -551,7 +511,7 @@ struct ExistingElementPool
             ElementComboIter inner(prevInner);
             while (inner.next())
             {
-                StateGuard ig{*this};
+                StateGuard const ig{*this};
                 result = outerResult;
                 inner.emplace_into(
                     result, accF, issF, currencyF, existingAcc, existingCur, existingIss);
@@ -607,7 +567,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
+                env.app().getJournal("Flow"));
             BEAST_EXPECT(ter == expTer);
             if (sizeof...(expSteps) != 0)
                 BEAST_EXPECT(equal(strand, std::forward<decltype(expSteps)>(expSteps)...));
@@ -628,15 +588,15 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     /*deliver*/ xrpIssue(),
                     /*limitQuality*/ std::nullopt,
-                    /*sendMaxIssue*/ EUR.issue(),
+                    /*sendMaxIssue*/ EUR,
                     path,
                     true,
                     OfferCrossing::no,
                     ammContext,
                     std::nullopt,
-                    env.app().logs().journal("Flow"));
+                    env.app().getJournal("Flow"));
                 (void)_;
-                BEAST_EXPECT(ter == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(ter));
             }
             {
                 STPath const path = STPath({ipe(USD), cpe(xrpCurrency())});
@@ -646,15 +606,15 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     /*deliver*/ xrpIssue(),
                     /*limitQuality*/ std::nullopt,
-                    /*sendMaxIssue*/ EUR.issue(),
+                    /*sendMaxIssue*/ EUR,
                     path,
                     true,
                     OfferCrossing::no,
                     ammContext,
                     std::nullopt,
-                    env.app().logs().journal("Flow"));
+                    env.app().getJournal("Flow"));
                 (void)_;
-                BEAST_EXPECT(ter == tesSUCCESS);
+                BEAST_EXPECT(isTesSuccess(ter));
             }
         }
 
@@ -679,7 +639,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 EUR,
-                USD.issue(),
+                USD,
                 STPath(),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -690,7 +650,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 EUR,
-                USD.issue(),
+                USD,
                 STPath({ipe(EUR)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -702,7 +662,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 carol["USD"],
-                USD.issue(),
+                USD,
                 STPath({iape(carol)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -724,7 +684,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 xrpIssue(),
-                USD.issue(),
+                USD,
                 STPath({STPathElement{
                     STPathElement::typeCurrency, xrpAccount(), xrpCurrency(), xrpAccount()}}),
                 tesSUCCESS,
@@ -736,7 +696,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 EUR,
-                USD.issue(),
+                USD,
                 STPath({cpe(xrpCurrency())}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -749,7 +709,7 @@ struct PayStrand_test : public beast::unit_test::suite
 
             {
                 // The root account can't be the src or dst
-                auto flowJournal = env.app().logs().journal("Flow");
+                auto flowJournal = env.app().getJournal("Flow");
                 {
                     // The root account can't be the dst
                     auto r = toStrand(
@@ -758,7 +718,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         xrpAccount(),
                         XRP,
                         std::nullopt,
-                        USD.issue(),
+                        USD,
                         STPath(),
                         true,
                         OfferCrossing::no,
@@ -804,7 +764,7 @@ struct PayStrand_test : public beast::unit_test::suite
             }
 
             // Create an offer with the same in/out issue
-            test(env, EUR, USD.issue(), STPath({ipe(USD), ipe(EUR)}), temBAD_PATH);
+            test(env, EUR, USD, STPath({ipe(USD), ipe(EUR)}), temBAD_PATH);
 
             // Path element with type zero
             test(
@@ -820,7 +780,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(env, USD, std::nullopt, STPath({ape(gw), ape(carol)}), temBAD_PATH_LOOP);
 
             // The same offer can't appear more than once on a path
-            test(env, EUR, USD.issue(), STPath({ipe(EUR), ipe(USD), ipe(EUR)}), temBAD_PATH_LOOP);
+            test(env, EUR, USD, STPath({ipe(EUR), ipe(USD), ipe(EUR)}), temBAD_PATH_LOOP);
         }
 
         {
@@ -920,8 +880,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
-            BEAST_EXPECT(ter == tesSUCCESS);
+                env.app().getJournal("Flow"));
+            BEAST_EXPECT(isTesSuccess(ter));
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
         }
 
@@ -942,16 +902,16 @@ struct PayStrand_test : public beast::unit_test::suite
                 bob,
                 XRP,
                 std::nullopt,
-                USD.issue(),
+                USD,
                 path,
                 false,
                 OfferCrossing::no,
                 ammContext,
                 std::nullopt,
-                env.app().logs().journal("Flow"));
-            BEAST_EXPECT(ter == tesSUCCESS);
-            BEAST_EXPECT(equal(
-                strand, D{alice, gw, usdC}, B{USD.issue(), xrpIssue(), std::nullopt}, XRPS{bob}));
+                env.app().getJournal("Flow"));
+            BEAST_EXPECT(isTesSuccess(ter));
+            BEAST_EXPECT(
+                equal(strand, D{alice, gw, usdC}, B{USD, xrpIssue(), std::nullopt}, XRPS{bob}));
         }
     }
 
@@ -990,7 +950,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 return result;
             }();
 
-            PathSet paths(p);
+            PathSet const paths(p);
 
             env(pay(alice, alice, EUR(1)),
                 json(paths.json()),
@@ -1109,12 +1069,12 @@ struct PayStrand_test : public beast::unit_test::suite
         Env env(*this, features);
         env.fund(XRP(10000), alice, bob, gw);
 
-        STAmount sendMax{USD.issue(), 100, 1};
-        STAmount noAccountAmount{Issue{USD.currency, noAccount()}, 100, 1};
-        STAmount deliver;
+        STAmount const sendMax{USD, 100, 1};
+        STAmount const noAccountAmount{Issue{USD.currency, noAccount()}, 100, 1};
+        STAmount const deliver;
         AccountID const srcAcc = alice.id();
-        AccountID dstAcc = bob.id();
-        STPathSet pathSet;
+        AccountID const dstAcc = bob.id();
+        STPathSet const pathSet;
         ::xrpl::path::RippleCalc::Input inputs;
         inputs.defaultPathsAllowed = true;
         try
@@ -1129,7 +1089,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     noAccount(),
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1142,7 +1102,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1155,7 +1115,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1168,7 +1128,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     srcAcc,
                     pathSet,
                     std::nullopt,
-                    env.app().logs(),
+                    env.app(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
             }
@@ -1199,5 +1159,4 @@ struct PayStrand_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(PayStrand, app, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

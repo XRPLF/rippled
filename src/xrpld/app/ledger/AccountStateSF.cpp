@@ -1,5 +1,14 @@
 #include <xrpld/app/ledger/AccountStateSF.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/SHAMapHash.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <cstdint>
+#include <optional>
+#include <utility>
+
 namespace xrpl {
 
 void
@@ -10,7 +19,8 @@ AccountStateSF::gotNode(
     Blob&& nodeData,
     SHAMapNodeType) const
 {
-    db_.store(hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);
+    db_.store(
+        NodeObjectType::hotACCOUNT_NODE, std::move(nodeData), nodeHash.as_uint256(), ledgerSeq);
 }
 
 std::optional<Blob>

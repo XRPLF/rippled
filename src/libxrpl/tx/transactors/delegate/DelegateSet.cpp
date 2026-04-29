@@ -1,9 +1,23 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/ledger/View.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/st.h>
 #include <xrpl/tx/transactors/delegate/DelegateSet.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <memory>
+#include <unordered_set>
 
 namespace xrpl {
 
@@ -41,6 +55,13 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
         return tecNO_TARGET;
 
+    // Deleting the delegate object is invalid if it doesn’t exist.
+    if (ctx.tx.getFieldArray(sfPermissions).empty() &&
+        !ctx.view.exists(keylet::delegate(ctx.tx[sfAccount], ctx.tx[sfAuthorize])))
+    {
+        return tecNO_ENTRY;
+    }
+
     return tesSUCCESS;
 }
 
@@ -59,53 +80,68 @@ DelegateSet::doApply()
     {
         auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
         if (permissions.empty())
+        {
             // if permissions array is empty, delete the ledger object.
-            return deleteDelegate(view(), sle, account_, j_);
+            return deleteDelegate(view(), sle, j_);
+        }
 
         sle->setFieldArray(sfPermissions, permissions);
         ctx_.view().update(sle);
         return tesSUCCESS;
     }
 
+    auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
+    if (permissions.empty())
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
     STAmount const reserve{
         ctx_.view().fees().accountReserve(sleOwner->getFieldU32(sfOwnerCount) + 1)};
 
-    if (mPriorBalance < reserve)
+    if (preFeeBalance_ < reserve)
         return tecINSUFFICIENT_RESERVE;
 
-    auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
-    if (!permissions.empty())
-    {
-        sle = std::make_shared<SLE>(delegateKey);
-        sle->setAccountID(sfAccount, account_);
-        sle->setAccountID(sfAuthorize, authAccount);
+    sle = std::make_shared<SLE>(delegateKey);
+    sle->setAccountID(sfAccount, account_);
+    sle->setAccountID(sfAuthorize, authAccount);
 
-        sle->setFieldArray(sfPermissions, permissions);
-        auto const page = ctx_.view().dirInsert(
-            keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+    sle->setFieldArray(sfPermissions, permissions);
 
-        if (!page)
-            return tecDIR_FULL;  // LCOV_EXCL_LINE
+    // Add to delegating account's owner directory
+    auto const page =
+        ctx_.view().dirInsert(keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
 
-        (*sle)[sfOwnerNode] = *page;
-        ctx_.view().insert(sle);
-        adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
-    }
+    if (!page)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    (*sle)[sfOwnerNode] = *page;
+
+    // Add to authorized account's owner directory so the object can be found
+    // and cleaned up when the authorized account is deleted.
+    auto const destPage = ctx_.view().dirInsert(
+        keylet::ownerDir(authAccount), delegateKey, describeOwnerDir(authAccount));
+
+    if (!destPage)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    (*sle)[sfDestinationNode] = *destPage;
+
+    ctx_.view().insert(sle);
+    adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
 
     return tesSUCCESS;
 }
 
 TER
-DelegateSet::deleteDelegate(
-    ApplyView& view,
-    std::shared_ptr<SLE> const& sle,
-    AccountID const& account,
-    beast::Journal j)
+DelegateSet::deleteDelegate(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 {
     if (!sle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
-    if (!view.dirRemove(keylet::ownerDir(account), (*sle)[sfOwnerNode], sle->key(), false))
+    auto const delegator = (*sle)[sfAccount];
+    auto const delegatee = (*sle)[sfAuthorize];
+
+    // Remove from delegating account's owner directory
+    if (!view.dirRemove(keylet::ownerDir(delegator), (*sle)[sfOwnerNode], sle->key(), false))
     {
         // LCOV_EXCL_START
         JLOG(j.fatal()) << "Unable to delete Delegate from owner.";
@@ -113,7 +149,20 @@ DelegateSet::deleteDelegate(
         // LCOV_EXCL_STOP
     }
 
-    auto const sleOwner = view.peek(keylet::account(account));
+    // Remove from authorized account's owner directory, if present
+    if (auto const optPage = (*sle)[~sfDestinationNode])
+    {
+        if (!view.dirRemove(keylet::ownerDir(delegatee), *optPage, sle->key(), false))
+        {
+            // LCOV_EXCL_START
+            JLOG(j.fatal()) << "Unable to delete Delegate from authorized account.";
+            return tefBAD_LEDGER;
+            // LCOV_EXCL_STOP
+        }
+    }
+
+    // Only the delegating account's owner count was incremented on creation
+    auto const sleOwner = view.peek(keylet::account(delegator));
     if (!sleOwner)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
@@ -122,6 +171,20 @@ DelegateSet::deleteDelegate(
     view.erase(sle);
 
     return tesSUCCESS;
+}
+
+void
+DelegateSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+DelegateSet::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

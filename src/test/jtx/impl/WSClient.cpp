@@ -1,23 +1,48 @@
-#include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 
+#include <xrpld/core/Config.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
 
+#include <boost/asio/bind_executor.hpp>
+#include <boost/asio/buffer.hpp>
 #include <boost/asio/executor_work_guard.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address_v4.hpp>
+#include <boost/asio/ip/address_v6.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
-#include <boost/beast/websocket.hpp>
+#include <boost/beast/websocket/error.hpp>
+#include <boost/beast/websocket/rfc6455.hpp>
+#include <boost/beast/websocket/stream.hpp>
+#include <boost/beast/websocket/stream_base.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/system_error.hpp>
 
+#include <chrono>
+#include <condition_variable>
+#include <exception>
+#include <functional>
 #include <iostream>
+#include <list>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
 #include <string>
+#include <thread>
 #include <unordered_map>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class WSClientImpl : public WSClient
 {
@@ -27,7 +52,7 @@ class WSClientImpl : public WSClient
     {
         Json::Value jv;
 
-        explicit msg(Json::Value&& jv_) : jv(jv_)
+        explicit msg(Json::Value&& jv_) : jv(std::move(jv_))
         {
         }
     };
@@ -49,13 +74,15 @@ class WSClientImpl : public WSClient
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())
+            {
                 *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
                                         : address{address_v4::loopback()};
+            }
 
             if (!pp.port)
                 Throw<std::runtime_error>("Use fixConfigPorts with auto ports");
 
-            return {*pp.ip, *pp.port};
+            return {*pp.ip, *pp.port};  // NOLINT(bugprone-unchecked-optional-access)
         }
         Throw<std::runtime_error>("Missing WebSocket port");
         return {};  // Silence compiler control paths return value warning
@@ -178,9 +205,18 @@ public:
                 jp[jss::id] = 5;
             }
             else
+            {
                 jp[jss::command] = cmd;
+            }
             auto const s = to_string(jp);
-            ws_.write_some(true, buffer(s));
+
+            // Use the error_code overload to avoid an unhandled exception
+            // when the server closes the WebSocket connection (e.g. after
+            // booting a client that exceeded resource thresholds).
+            error_code ec;
+            ws_.write_some(true, buffer(s), ec);
+            if (ec)
+                return {};
         }
 
         auto jv =
@@ -245,7 +281,7 @@ public:
         return std::move(m->jv);
     }
 
-    unsigned
+    [[nodiscard]] unsigned
     version() const override
     {
         return rpc_version_;
@@ -268,7 +304,7 @@ private:
         rb_.consume(rb_.size());
         auto m = std::make_shared<msg>(std::move(jv));
         {
-            std::lock_guard lock(m_);
+            std::scoped_lock const lock(m_);
             msgs_.push_front(m);
             cv_.notify_all();
         }
@@ -282,7 +318,7 @@ private:
     void
     on_read_done()
     {
-        std::lock_guard lock(m0_);
+        std::scoped_lock const lock(m0_);
         b0_ = true;
         cv0_.notify_all();
     }
@@ -298,5 +334,4 @@ makeWSClient(
     return std::make_unique<WSClientImpl>(cfg, v2, rpc_version, headers);
 }
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

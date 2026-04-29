@@ -4,23 +4,23 @@ This changelog is intended to list all updates to the [public API methods](https
 
 For info about how [API versioning](https://xrpl.org/request-formatting.html#api-versioning) works, including examples, please view the [XLS-22d spec](https://github.com/XRPLF/XRPL-Standards/discussions/54). For details about the implementation of API versioning, view the [implementation PR](https://github.com/XRPLF/rippled/pull/3155). API versioning ensures existing integrations and users continue to receive existing behavior, while those that request a higher API version will experience new behavior.
 
-The API version controls the API behavior you see. This includes what properties you see in responses, what parameters you're permitted to send in requests, and so on. You specify the API version in each of your requests. When a breaking change is introduced to the `rippled` API, a new version is released. To avoid breaking your code, you should set (or increase) your version when you're ready to upgrade.
+The API version controls the API behavior you see. This includes what properties you see in responses, what parameters you're permitted to send in requests, and so on. You specify the API version in each of your requests. When a breaking change is introduced to the `xrpld` API, a new version is released. To avoid breaking your code, you should set (or increase) your version when you're ready to upgrade.
 
 The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conventions/request-formatting/#commandline-format) always uses the latest API version. The command line is intended for ad-hoc usage by humans, not programs or automated scripts. The command line is not meant for use in production code.
 
-For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`rippled`) release.
+For a log of breaking changes, see the **API Version [number]** headings. In general, breaking changes are associated with a particular API Version number. For non-breaking changes, scroll to the **XRP Ledger version [x.y.z]** headings. Non-breaking changes are associated with a particular XRP Ledger (`xrpld`) release.
 
 ## API Version 3 (Beta)
 
-API version 3 is currently a beta API. It requires enabling `[beta_rpc_api]` in the rippled configuration to use. See [API-VERSION-3.md](API-VERSION-3.md) for the full list of changes in API version 3.
+API version 3 is currently a beta API. It requires enabling `[beta_rpc_api]` in the xrpld configuration to use. See [API-VERSION-3.md](API-VERSION-3.md) for the full list of changes in API version 3.
 
 ## API Version 2
 
-API version 2 is available in `rippled` version 2.0.0 and later. See [API-VERSION-2.md](API-VERSION-2.md) for the full list of changes in API version 2.
+API version 2 is available in `xrpld` version 2.0.0 and later. See [API-VERSION-2.md](API-VERSION-2.md) for the full list of changes in API version 2.
 
 ## API Version 1
 
-This version is supported by all `rippled` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
+This version is supported by all `xrpld` versions. For WebSocket and HTTP JSON-RPC requests, it is currently the default API version used when no `api_version` is specified.
 
 ## Unreleased
 
@@ -28,12 +28,28 @@ This section contains changes targeting a future version.
 
 ### Additions
 
+- `ledger_entry`, `account_objects`: The `Delegate` ledger entry now includes an optional `DestinationNode` field, which stores the index into the authorized account's owner directory. This field is present on entries created after bidirectional directory tracking was introduced and may appear in RPC responses for those entries. ([#6681](https://github.com/XRPLF/rippled/pull/6681))
+
 - `server_definitions`: Added the following new sections to the response ([#6321](https://github.com/XRPLF/rippled/pull/6321)):
   - `TRANSACTION_FORMATS`: Describes the fields and their optionality for each transaction type, including common fields shared across all transactions.
   - `LEDGER_ENTRY_FORMATS`: Describes the fields and their optionality for each ledger entry type, including common fields shared across all ledger entries.
   - `TRANSACTION_FLAGS`: Maps transaction type names to their supported flags and flag values.
   - `LEDGER_ENTRY_FLAGS`: Maps ledger entry type names to their flags and flag values.
   - `ACCOUNT_SET_FLAGS`: Maps AccountSet flag names (asf flags) to their numeric values.
+
+### Bugfixes
+
+- Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
+- `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)
+- gRPC `GetLedgerDiff`: Fixed error message that incorrectly said "base ledger not validated" when the desired ledger was not validated. [#6730](https://github.com/XRPLF/rippled/pull/6730)
+- `account_channels`: The `destination_account` field now returns an error if the value is not a string. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `subscribe`: The `taker` field in the `books` array now returns an error if the value is not a string. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `account_info`: The `urlgravatar` field now uses HTTPS instead of HTTP. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `ledger`: The `full`, `accounts`, `transactions`, `expand`, `binary`, `owner_funds`, and `queue` fields now return an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `ledger_data`: The `binary` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `submit`: The `fail_hard` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 
 ## XRP Ledger server version 3.1.0
 

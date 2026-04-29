@@ -1,21 +1,29 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Env.h>
+
+#include <xrpld/app/misc/detail/Work.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
 
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/beast/unit_test/suite.h>
+
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/system/detail/error_code.hpp>
 
 #include <condition_variable>
+#include <map>
 #include <memory>
+#include <mutex>
+#include <string>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 class DNS_test : public beast::unit_test::suite
 {
     using endpoint_type = boost::asio::ip::tcp::endpoint;
     using error_code = boost::system::error_code;
     std::weak_ptr<xrpl::detail::Work> work_;
-    endpoint_type lastEndpoint_{};
+    endpoint_type lastEndpoint_;
     parsedURL pUrl_;
     std::string port_;
     jtx::Env env_;
@@ -33,7 +41,7 @@ public:
     {
         auto onFetch = [&](error_code const& errorCode,
                            endpoint_type const& endpoint,
-                           xrpl::detail::response_type&& resp) {
+                           xrpl::detail::response_type const& resp) {
             BEAST_EXPECT(!errorCode);
             lastEndpoint_ = endpoint;
             resolved_[endpoint.address().to_string()]++;
@@ -62,7 +70,7 @@ public:
     {
         using boost::asio::ip::tcp;
         tcp::resolver resolver(env_.app().getIOContext());
-        std::string port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
+        std::string const port = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
         auto results = resolver.resolve(pUrl_.domain, port);
         auto it = results.begin();
         auto end = results.end();
@@ -76,7 +84,7 @@ public:
     parse()
     {
         std::string url = arg();
-        if (url == "")
+        if (url.empty())
             url = "https://vl.ripple.com";
         BEAST_EXPECT(parseUrl(pUrl_, url));
         port_ = pUrl_.port ? std::to_string(*pUrl_.port) : "443";
@@ -111,5 +119,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(DNS, app, xrpl, 20);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

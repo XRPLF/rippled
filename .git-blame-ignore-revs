@@ -1,16 +1,79 @@
 # This feature requires Git >= 2.24
 # To use it by default in git blame:
 # git config blame.ignoreRevsFile .git-blame-ignore-revs
-50760c693510894ca368e90369b0cc2dabfd07f3
-e2384885f5f630c8f0ffe4bf21a169b433a16858
-241b9ddde9e11beb7480600fd5ed90e1ef109b21
-760f16f56835663d9286bd29294d074de26a7ba6
-0eebe6a5f4246fced516d52b83ec4e7f47373edd
-2189cc950c0cebb89e4e2fa3b2d8817205bf7cef
-b9d007813378ad0ff45660dc07285b823c7e9855
-fe9a5365b8a52d4acc42eb27369247e6f238a4f9
-9a93577314e6a8d4b4a8368cc9d2b15a5d8303e8
-552377c76f55b403a1c876df873a23d780fcc81c
-97f0747e103f13e26e45b731731059b32f7679ac
-b13370ac0d207217354f1fc1c29aef87769fb8a1
+
+# This file is sorted in reverse chronological order, with the most recent commits at the top.
+# The commits listed here are ignored by git blame, which is useful for formatting-only commits that would otherwise obscure the history of changes to a file.
+
+# refactor: Enable remaining clang-tidy `cppcoreguidelines` checks (#6538)
+72f4cb097f626b08b02fc3efcb4aa11cb2e7adb8
+# refactor: Rename system name from 'ripple' to 'xrpld' (#6347)
+ffea3977f0b771fe8e43a8f74e4d393d63a7afd8
+# refactor: Update transaction folder structure (#6483)
+5865bd017f777491b4a956f9210be0c4161f5442
+# chore: Use gersemi instead of ancient cmake-format (#6486)
+0c74270b055133a57a497b5c9fc5a75f7647b1f4
+# chore: Apply clang-format width 100 (#6387)
+2c1fad102353e11293e3edde1c043224e7d3e983
+# chore: Set clang-format width to 100 in config file (#6387)
+25cca465538a56cce501477f9e5e2c1c7ea2d84c
+# chore: Set cmake-format width to 100 (#6386)
+469ce9f291a4480c38d4ee3baca5136b2f053cd0
+# refactor: Modularize app/tx (#6228)
+0976b2b68b64972af8e6e7c497900b5bce9fe22f
+# chore: Update clang-format to 21.1.8 (#6352)
+958d8f375453d80bb1aa4c293b5102c045a3e4b4
+# refactor: Replace include guards by '#pragma once' (#6322)
+34ef577604782ca8d6e1c17df8bd7470990a52ff
+# chore: Format all cmake files without comments (#6294)
+fe9c8d568fcf6ac21483024e01f58962dd5c8260
+# chore: Add cmake-format pre-commit hook (#6279)
+a0e09187b9370805d027c611a7e9ff5a0125282a
+# chore: Set ColumnLimit to 120 in clang-format (#6288)
+5f638f55536def0d88b970d1018a465a238e55f4
+# refactor: Fix typos in comments, configure cspell (#6164)
+3c9f5b62525cb1d6ca1153eeb10433db7d7379fd
+# refactor: Rename `rippled.cfg` to `xrpld.cfg` (#6098)
+3d1b3a49b3601a0a7037fa0b19d5df7b5e0e2fc1
+# refactor: Rename `ripple` namespace to `xrpl` (#5982)
+1eb0fdac6543706b4b9ddca57fd4102928a1f871
+# refactor: Rename `rippled` binary to `xrpld` (#5983)
+9eb84a561ef8bb066d89f098bd9b4ac71baed67c
+# refactor: Replaces secp256k1 source by Conan package (#6089)
+813bc4d9491b078bb950f8255f93b02f71320478
+# refactor: Remove unnecessary copyright notices already covered by LICENSE.md (#5929)
+1d42c4f6de6bf01d1286fc7459b17a37a5189e88
+# refactor: Rename `RIPPLE_` and `RIPPLED_` definitions to `XRPL_` (#5821)
+ada83564d894829424b0f4d922b0e737e07abbf7
+# refactor: Modularize shamap and nodestore (#5668)
+8eb233c2ea8ad5a159be73b77f0f5e1496d547ac
+# refactor: Modularise ledger (#5493)
+dc8b37a52448b005153c13a7f046ad494128cf94
+# chore: Update clang-format and prettier with pre-commit (#5709)
+c14ce956adeabe476ad73c18d73103f347c9c613
+# chore: Fix file formatting (#5718)
 896b8c3b54a22b0497cb0d1ce95e1095f9a227ce
+# chore: Reverts formatting changes to external files, adds formatting changes to proto files (#5711)
+b13370ac0d207217354f1fc1c29aef87769fb8a1
+# chore: Run prettier on all files (#5657)
+97f0747e103f13e26e45b731731059b32f7679ac
+# Reformat code with clang-format-18
+552377c76f55b403a1c876df873a23d780fcc81c
+# Recompute loops (#4997)
+d028005aa6319338b0adae1aebf8abe113162960
+# Rewrite includes (#4997)
+1d23148e6dd53957fcb6205c07a5c6cd7b64d50c
+# Rearrange sources (#4997)
+e416ee72ca26fa0c09d2aee1b68bdfb2b7046eed
+# Move CMake directory (#4997)
+2e902dee53aab2a8f27f32971047bb81e022f94f
+# Rewrite includes
+0eebe6a5f4246fced516d52b83ec4e7f47373edd
+# Format formerly .hpp files
+760f16f56835663d9286bd29294d074de26a7ba6
+# Rename .hpp to .h
+241b9ddde9e11beb7480600fd5ed90e1ef109b21
+# Consolidate external libraries
+e2384885f5f630c8f0ffe4bf21a169b433a16858
+# Format first-party source according to .clang-format
+50760c693510894ca368e90369b0cc2dabfd07f3

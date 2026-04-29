@@ -1,8 +1,9 @@
+#include <xrpl/protocol/AccountID.h>
+
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/spinlock.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
@@ -55,7 +56,7 @@ public:
         packed_spinlock sl(locks_, index % 64);
 
         {
-            std::lock_guard lock(sl);
+            std::scoped_lock const lock(sl);
 
             // The check against the first character of the encoding ensures
             // that we don't mishandle the case of the all-zero account:
@@ -68,7 +69,7 @@ public:
         XRPL_ASSERT(ret.size() <= 38, "xrpl::detail::AccountIdCache : maximum result size");
 
         {
-            std::lock_guard lock(sl);
+            std::scoped_lock const lock(sl);
             cache_[index].id = id;
             std::strcpy(cache_[index].encoding, ret.c_str());
         }

@@ -115,13 +115,13 @@ public:
     void
     setup(Setup const& setup, beast::Journal journal);
 
-    Setup const&
+    [[nodiscard]] Setup const&
     setup() const
     {
         return setup_;
     }
 
-    Endpoints const&
+    [[nodiscard]] Endpoints const&
     endpoints() const
     {
         return endpoints_;
@@ -147,7 +147,7 @@ public:
     Handoff
     onHandoff(
         Session& session,
-        http_request_type&& request,
+        http_request_type&& request,  // NOLINT(cppcoreguidelines-rvalue-reference-param-not-moved)
         boost::asio::ip::tcp::endpoint const& remote_address)
     {
         return onHandoff(session, {}, std::forward<http_request_type>(request), remote_address);
@@ -182,17 +182,17 @@ private:
         Port const& port,
         std::string const& request,
         beast::IP::Endpoint const& remoteIPAddress,
-        Output&&,
+        Output const&,
         std::shared_ptr<JobQueue::Coro> coro,
         std::string_view forwardedFor,
         std::string_view user);
 
-    Handoff
+    [[nodiscard]] Handoff
     statusResponse(http_request_type const& request) const;
 };
 
 ServerHandler::Setup
-setup_ServerHandler(Config const& c, std::ostream&& log);
+setup_ServerHandler(Config const& c, std::ostream& log);
 
 std::unique_ptr<ServerHandler>
 make_ServerHandler(

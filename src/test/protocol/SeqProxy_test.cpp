@@ -1,8 +1,10 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/SeqProxy.h>
 
+#include <cstdint>
 #include <limits>
 #include <sstream>
+#include <string>
 
 namespace xrpl {
 
@@ -12,7 +14,7 @@ struct SeqProxy_test : public beast::unit_test::suite
     static constexpr bool
     expectValues(SeqProxy seqProx, std::uint32_t value, SeqProxy::Type type)
     {
-        bool const expectSeq{type == SeqProxy::seq};
+        bool const expectSeq{type == SeqProxy::Type::seq};
         return (seqProx.value() == value) && (seqProx.isSeq() == expectSeq) &&
             (seqProx.isTicket() == !expectSeq);
     }
@@ -42,7 +44,7 @@ struct SeqProxy_test : public beast::unit_test::suite
     }
 
     // Verify streaming.
-    bool
+    static bool
     streamTest(SeqProxy seqProx)
     {
         std::string const type{seqProx.isSeq() ? "sequence" : "ticket"};
@@ -52,7 +54,7 @@ struct SeqProxy_test : public beast::unit_test::suite
         ss << seqProx;
         std::string str{ss.str()};
 
-        return str.find(type) == 0 && str[type.size()] == ' ' &&
+        return str.starts_with(type) && str[type.size()] == ' ' &&
             str.find(value) == (type.size() + 1);
     }
 
@@ -63,8 +65,8 @@ struct SeqProxy_test : public beast::unit_test::suite
         // expected in the wild.  Nevertheless they are tested here.
         // But so are values of 1, which are expected to occur in the wild.
         static constexpr std::uint32_t uintMax{std::numeric_limits<std::uint32_t>::max()};
-        static constexpr SeqProxy::Type seq{SeqProxy::seq};
-        static constexpr SeqProxy::Type ticket{SeqProxy::ticket};
+        static constexpr SeqProxy::Type seq{SeqProxy::Type::seq};
+        static constexpr SeqProxy::Type ticket{SeqProxy::Type::ticket};
 
         static constexpr SeqProxy seqZero{seq, 0};
         static constexpr SeqProxy seqSmall{seq, 1};

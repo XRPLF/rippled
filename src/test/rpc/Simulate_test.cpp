@@ -1,22 +1,46 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/batch.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/token.h>
 
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/rpc/CTID.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STParsedJSON.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/serialize.h>
 
+#include <chrono>
+#include <cstdint>
+#include <functional>
+#include <memory>
 #include <optional>
-#include <tuple>
+#include <string>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class Simulate_test : public beast::unit_test::suite
 {
@@ -41,7 +65,7 @@ class Simulate_test : public beast::unit_test::suite
         else
         {
             auto const unHexed = strUnHex(result[jss::tx_blob].asString());
-            SerialIter sitTrans(makeSlice(*unHexed));
+            SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
             tx_json = STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
         }
         BEAST_EXPECT(tx_json[jss::TransactionType] == tx[jss::TransactionType]);
@@ -59,7 +83,7 @@ class Simulate_test : public beast::unit_test::suite
         int const expectedSequence,
         XRPAmount const& expectedFee)
     {
-        return checkBasicReturnValidity(
+        checkBasicReturnValidity(
             result, tx, expectedSequence, expectedFee.jsonClipped().asString());
     }
 
@@ -87,6 +111,7 @@ class Simulate_test : public beast::unit_test::suite
             // It is technically not a valid STObject, so the following line
             // will crash
             STParsedJSONObject const parsed(std::string(jss::tx_json), tx);
+            // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
             auto const tx_blob = strHex(parsed.object->getSerializer().peekData());
             if (BEAST_EXPECT(parsed.object.has_value()))
             {
@@ -130,13 +155,13 @@ class Simulate_test : public beast::unit_test::suite
         BEAST_EXPECTS(env.current()->txCount() == 0, std::to_string(env.current()->txCount()));
     }
 
-    Json::Value
-    getJsonMetadata(Json::Value txResult) const
+    static Json::Value
+    getJsonMetadata(Json::Value txResult)
     {
         if (txResult.isMember(jss::meta_blob))
         {
             auto unHexed = strUnHex(txResult[jss::meta_blob].asString());
-            SerialIter sitTrans(makeSlice(*unHexed));
+            SerialIter sitTrans(makeSlice(*unHexed));  // NOLINT(bugprone-unchecked-optional-access)
             return STObject(std::ref(sitTrans), sfGeneric).getJson(JsonOptions::none);
         }
 
@@ -1126,7 +1151,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[jss::TransactionType] = jss::NFTokenMint;
                 tx[sfNFTokenTaxon] = 1;
 
-                Json::Value nftokenId = to_string(token::getNextID(env, alice, 1));
+                Json::Value const nftokenId = to_string(token::getNextID(env, alice, 1));
                 // test nft synthetic
                 testTxJsonMetadataField(env, tx, validateOutput, jss::nftoken_id, nftokenId);
             }
@@ -1136,7 +1161,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[jss::Account] = alice.human();
                 tx[jss::TransactionType] = jss::MPTokenIssuanceCreate;
 
-                Json::Value mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
+                Json::Value const mptIssuanceId = to_string(makeMptID(env.seq(alice), alice));
                 // test mpt issuance id
                 testTxJsonMetadataField(
                     env, tx, validateOutput, jss::mpt_issuance_id, mptIssuanceId);
@@ -1166,6 +1191,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(Simulate, rpc, xrpl);
 
-}  // namespace test
-
-}  // namespace xrpl
+}  // namespace xrpl::test

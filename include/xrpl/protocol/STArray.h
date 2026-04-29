@@ -53,7 +53,7 @@ public:
     STObject&
     back();
 
-    STObject const&
+    [[nodiscard]] STObject const&
     back() const;
 
     template <class... Args>
@@ -72,16 +72,16 @@ public:
     iterator
     end();
 
-    const_iterator
+    [[nodiscard]] const_iterator
     begin() const;
 
-    const_iterator
+    [[nodiscard]] const_iterator
     end() const;
 
-    size_type
+    [[nodiscard]] size_type
     size() const;
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
     void
@@ -93,13 +93,13 @@ public:
     void
     swap(STArray& a) noexcept;
 
-    std::string
+    [[nodiscard]] std::string
     getFullText() const override;
 
-    std::string
+    [[nodiscard]] std::string
     getText() const override;
 
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson(JsonOptions index) const override;
 
     void
@@ -126,13 +126,13 @@ public:
     iterator
     erase(const_iterator first, const_iterator last);
 
-    SerializedTypeID
+    [[nodiscard]] SerializedTypeID
     getSType() const override;
 
-    bool
+    [[nodiscard]] bool
     isEquivalent(STBase const& t) const override;
 
-    bool
+    [[nodiscard]] bool
     isDefault() const override;
 
 private:

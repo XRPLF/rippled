@@ -1,14 +1,20 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/Serializer.h>
 
+#include <cstdint>
+#include <initializer_list>
 #include <limits>
-#include <ostream>
 #include <stdexcept>
+#include <string>
+#include <type_traits>
+#include <typeinfo>
 
 namespace xrpl {
 
@@ -45,20 +51,20 @@ struct STNumber_test : public beast::unit_test::suite
             0,
             1,
             std::numeric_limits<std::int64_t>::max()};
-        for (std::int64_t mantissa : mantissas)
+        for (std::int64_t const mantissa : mantissas)
             testCombo(Number{mantissa});
 
         std::initializer_list<std::int32_t> const exponents = {
             Number::minExponent, -1, 0, 1, Number::maxExponent - 1};
-        for (std::int32_t exponent : exponents)
+        for (std::int32_t const exponent : exponents)
             testCombo(Number{123, exponent});
 
         {
             STAmount const strikePrice{noIssue(), 100};
             STNumber const factor{sfNumber, 100};
             auto const iouValue = strikePrice.iou();
-            IOUAmount totalValue{iouValue * factor};
-            STAmount const totalAmount{totalValue, strikePrice.issue()};
+            IOUAmount const totalValue{iouValue * factor};
+            STAmount const totalAmount{totalValue, strikePrice.get<Issue>()};
             BEAST_EXPECT(totalAmount == Number{10'000});
         }
 
@@ -95,12 +101,12 @@ struct STNumber_test : public beast::unit_test::suite
             BEAST_EXPECT(numberFromJson(sfNumber, "-0.000e6") == STNumber(sfNumber, 0));
 
             {
-                NumberRoundModeGuard mg(Number::towards_zero);
+                NumberRoundModeGuard const mg(Number::rounding_mode::towards_zero);
                 // maxint64 9,223,372,036,854,775,807
                 auto const maxInt = std::to_string(std::numeric_limits<std::int64_t>::max());
                 // minint64 -9,223,372,036,854,775,808
                 auto const minInt = std::to_string(std::numeric_limits<std::int64_t>::min());
-                if (Number::getMantissaScale() == MantissaRange::small)
+                if (Number::getMantissaScale() == MantissaRange::mantissa_scale::small)
                 {
                     BEAST_EXPECT(
                         numberFromJson(sfNumber, maxInt) ==
@@ -274,9 +280,10 @@ struct STNumber_test : public beast::unit_test::suite
     {
         static_assert(!std::is_convertible_v<STNumber*, Number*>);
 
-        for (auto const scale : {MantissaRange::small, MantissaRange::large})
+        for (auto const scale :
+             {MantissaRange::mantissa_scale::small, MantissaRange::mantissa_scale::large})
         {
-            NumberMantissaScaleGuard sg(scale);
+            NumberMantissaScaleGuard const sg(scale);
             testcase << to_string(Number::getMantissaScale());
             doRun();
         }

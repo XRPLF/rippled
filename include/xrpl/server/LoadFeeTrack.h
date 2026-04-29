@@ -26,10 +26,6 @@ class LoadFeeTrack final
 public:
     explicit LoadFeeTrack(beast::Journal journal = beast::Journal(beast::Journal::getNullSink()))
         : j_(journal)
-        , localTxnLoadFee_(lftNormalFee)
-        , remoteTxnLoadFee_(lftNormalFee)
-        , clusterTxnLoadFee_(lftNormalFee)
-        , raiseCount_(0)
     {
     }
 
@@ -39,33 +35,33 @@ public:
     setRemoteFee(std::uint32_t f)
     {
         JLOG(j_.trace()) << "setRemoteFee: " << f;
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
         remoteTxnLoadFee_ = f;
     }
 
     std::uint32_t
     getRemoteFee() const
     {
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
         return remoteTxnLoadFee_;
     }
 
     std::uint32_t
     getLocalFee() const
     {
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
         return localTxnLoadFee_;
     }
 
     std::uint32_t
     getClusterFee() const
     {
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
         return clusterTxnLoadFee_;
     }
 
-    std::uint32_t
-    getLoadBase() const
+    static std::uint32_t
+    getLoadBase()
     {
         return lftNormalFee;
     }
@@ -73,14 +69,14 @@ public:
     std::uint32_t
     getLoadFactor() const
     {
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
         return std::max({clusterTxnLoadFee_, localTxnLoadFee_, remoteTxnLoadFee_});
     }
 
     std::pair<std::uint32_t, std::uint32_t>
     getScalingFactors() const
     {
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
 
         return std::make_pair(
             std::max(localTxnLoadFee_, remoteTxnLoadFee_),
@@ -91,7 +87,7 @@ public:
     setClusterFee(std::uint32_t fee)
     {
         JLOG(j_.trace()) << "setClusterFee: " << fee;
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
         clusterTxnLoadFee_ = fee;
     }
 
@@ -103,14 +99,14 @@ public:
     bool
     isLoadedLocal() const
     {
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
         return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee);
     }
 
     bool
     isLoadedCluster() const
     {
-        std::lock_guard sl(lock_);
+        std::scoped_lock const sl(lock_);
         return (raiseCount_ != 0) || (localTxnLoadFee_ != lftNormalFee) ||
             (clusterTxnLoadFee_ != lftNormalFee);
     }
@@ -124,10 +120,10 @@ private:
     beast::Journal const j_;
     std::mutex mutable lock_;
 
-    std::uint32_t localTxnLoadFee_;    // Scale factor, lftNormalFee = normal fee
-    std::uint32_t remoteTxnLoadFee_;   // Scale factor, lftNormalFee = normal fee
-    std::uint32_t clusterTxnLoadFee_;  // Scale factor, lftNormalFee = normal fee
-    std::uint32_t raiseCount_;
+    std::uint32_t localTxnLoadFee_{lftNormalFee};    // Scale factor, lftNormalFee = normal fee
+    std::uint32_t remoteTxnLoadFee_{lftNormalFee};   // Scale factor, lftNormalFee = normal fee
+    std::uint32_t clusterTxnLoadFee_{lftNormalFee};  // Scale factor, lftNormalFee = normal fee
+    std::uint32_t raiseCount_{0};
 };
 
 //------------------------------------------------------------------------------

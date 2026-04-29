@@ -1,14 +1,16 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/MultiApiJson.h>
 
-#include <cstdint>
+#include <array>
+#include <iterator>
 #include <limits>
 #include <optional>
 #include <type_traits>
 #include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 namespace {
 
@@ -236,7 +238,7 @@ struct MultiApiJson_test : beast::unit_test::suite
                         std::forward<decltype(v)>(v).visit(),  //
                         [](auto...) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
         }
 
         {
@@ -306,15 +308,15 @@ struct MultiApiJson_test : beast::unit_test::suite
             testcase("isMember");
 
             // Well defined behaviour even if we have different types of members
-            BEAST_EXPECT(subject.isMember("foo") == decltype(subject)::none);
+            BEAST_EXPECT(subject.isMember("foo") == decltype(subject)::IsMemberResult::none);
 
             {
                 // All variants have element "One", none have element "Two"
                 MultiApiJson<1, 2> s1{};
                 s1.val[0] = makeJson("One", 12);
                 s1.val[1] = makeJson("One", 42);
-                BEAST_EXPECT(s1.isMember("One") == decltype(s1)::all);
-                BEAST_EXPECT(s1.isMember("Two") == decltype(s1)::none);
+                BEAST_EXPECT(s1.isMember("One") == decltype(s1)::IsMemberResult::all);
+                BEAST_EXPECT(s1.isMember("Two") == decltype(s1)::IsMemberResult::none);
             }
 
             {
@@ -322,8 +324,8 @@ struct MultiApiJson_test : beast::unit_test::suite
                 MultiApiJson<1, 2> s2{};
                 s2.val[0] = makeJson("One", 12);
                 s2.val[1] = makeJson("Two", 42);
-                BEAST_EXPECT(s2.isMember("One") == decltype(s2)::some);
-                BEAST_EXPECT(s2.isMember("Two") == decltype(s2)::some);
+                BEAST_EXPECT(s2.isMember("One") == decltype(s2)::IsMemberResult::some);
+                BEAST_EXPECT(s2.isMember("Two") == decltype(s2)::IsMemberResult::some);
             }
 
             {
@@ -331,8 +333,8 @@ struct MultiApiJson_test : beast::unit_test::suite
                 MultiApiJson<1, 3> s3{};
                 s3.val[0] = makeJson("One", 12);
                 s3.val[1] = makeJson("One", 42);
-                BEAST_EXPECT(s3.isMember("One") == decltype(s3)::some);
-                BEAST_EXPECT(s3.isMember("Two") == decltype(s3)::none);
+                BEAST_EXPECT(s3.isMember("One") == decltype(s3)::IsMemberResult::some);
+                BEAST_EXPECT(s3.isMember("Two") == decltype(s3)::IsMemberResult::none);
             }
         }
 
@@ -830,6 +832,7 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             // Rvalue MultivarJson visitor only binds to regular reference
             static_assert([](auto&& v) {
+                // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
                 return !requires { std::forward<decltype(v)>(v).visit(1, [](Json::Value&&) {}); };
             }(std::move(s1)));
             static_assert([](auto&& v) {
@@ -846,6 +849,7 @@ struct MultiApiJson_test : beast::unit_test::suite
                 };
             }(std::move(s1)));
             static_assert([](auto&& v) {
+                // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)
                 return !requires { std::forward<decltype(v)>(v).visit()(1, [](Json::Value&&) {}); };
             }(std::move(s1)));
             static_assert([](auto&& v) {
@@ -865,22 +869,22 @@ struct MultiApiJson_test : beast::unit_test::suite
                 return !requires {
                     std::forward<decltype(v)>(v).visit(1, [](Json::Value const&&) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
             static_assert([](auto&& v) {
                 return requires {
                     std::forward<decltype(v)>(v).visit(1, [](Json::Value const&) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
             static_assert([](auto&& v) {
                 return !requires {
                     std::forward<decltype(v)>(v).visit()(1, [](Json::Value const&&) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
             static_assert([](auto&& v) {
                 return requires {
                     std::forward<decltype(v)>(v).visit()(1, [](Json::Value const&) {});
                 };
-            }(std::move(std::as_const(s1))));
+            }(std::move(std::as_const(s1))));  // NOLINT(performance-move-const-arg)
 
             // Missing const
             static_assert([](auto&& v) {
@@ -915,5 +919,4 @@ struct MultiApiJson_test : beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE(MultiApiJson, protocol, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

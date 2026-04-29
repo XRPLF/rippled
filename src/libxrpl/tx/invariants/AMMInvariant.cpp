@@ -1,10 +1,26 @@
 #include <xrpl/tx/invariants/AMMInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/tx/transactors/dex/AMMHelpers.h>
-#include <xrpl/tx/transactors/dex/AMMUtils.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -28,7 +44,7 @@ ValidAMM::visitEntry(
         }
         // AMM pool changed
         else if (
-            (type == ltRIPPLE_STATE && after->getFlags() & lsfAMMNode) ||
+            (type == ltRIPPLE_STATE && ((after->getFlags() & lsfAMMNode) != 0u)) ||
             (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID)))
         {
             ammPoolChanged_ = true;
@@ -55,8 +71,10 @@ validBalances(
     bool const positive =
         amount > beast::zero && amount2 > beast::zero && lptAMMBalance > beast::zero;
     if (zeroAllowed == ValidAMM::ZeroAllowed::Yes)
+    {
         return positive ||
             (amount == beast::zero && amount2 == beast::zero && lptAMMBalance == beast::zero);
+    }
     return positive;
 }
 
@@ -126,21 +144,25 @@ ValidAMM::finalizeCreate(
         auto const [amount, amount2] = ammPoolHolds(
             view,
             *ammAccount_,
-            tx[sfAmount].get<Issue>(),
-            tx[sfAmount2].get<Issue>(),
-            fhIGNORE_FREEZE,
+            tx[sfAmount].asset(),
+            tx[sfAmount2].asset(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
         // all balances are greater than zero
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceAfter_ set with ammAccount_
+        // in visitEntry
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
-            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->issue()) != *lptAMMBalanceAfter_)
+            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) != *lptAMMBalanceAfter_)
         {
             JLOG(j.error()) << "AMMCreate invariant failed: " << amount << " " << amount2 << " "
                             << *lptAMMBalanceAfter_;
             if (enforce)
                 return false;
         }
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return true;
@@ -152,7 +174,7 @@ ValidAMM::finalizeDelete(bool enforce, TER res, beast::Journal const& j) const
     if (ammAccount_)
     {
         // LCOV_EXCL_START
-        std::string const msg = (res == tesSUCCESS) ? "AMM object is not deleted on tesSUCCESS"
+        std::string const msg = (isTesSuccess(res)) ? "AMM object is not deleted on tesSUCCESS"
                                                     : "AMM object is changed on tecINCOMPLETE";
         JLOG(j.error()) << "AMMDelete invariant failed: " << msg;
         if (enforce)
@@ -185,12 +207,15 @@ ValidAMM::generalInvariant(
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) ammAccount_ and lptAMMBalanceAfter_ set
+    // together in visitEntry; callers only invoke this inside else-of-if(!ammAccount_)
     auto const [amount, amount2] = ammPoolHolds(
         view,
         *ammAccount_,
-        tx[sfAsset].get<Issue>(),
-        tx[sfAsset2].get<Issue>(),
-        fhIGNORE_FREEZE,
+        tx[sfAsset],
+        tx[sfAsset2],
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens
@@ -216,6 +241,7 @@ ValidAMM::generalInvariant(
                                 : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));
         return false;
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return true;
 }
@@ -236,7 +262,9 @@ ValidAMM::finalizeDeposit(
         // LCOV_EXCL_STOP
     }
     else if (!generalInvariant(tx, view, ZeroAllowed::No, j) && enforce)
+    {
         return false;
+    }
 
     return true;
 }
@@ -271,7 +299,7 @@ ValidAMM::finalize(
 {
     // Delete may return tecINCOMPLETE if there are too many
     // trustlines to delete.
-    if (result != tesSUCCESS && result != tecINCOMPLETE)
+    if (!isTesSuccess(result) && result != tecINCOMPLETE)
         return true;
 
     bool const enforce = view.rules().enabled(fixAMMv1_3);

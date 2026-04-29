@@ -1,11 +1,25 @@
 #include <test/jtx/Account.h>
+
 #include <test/jtx/amount.h>
 
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/UintTypes.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <cassert>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+
+namespace xrpl::test::jtx {
 
 std::unordered_map<std::pair<std::string, KeyType>, Account, beast::uhash<>> Account::cache_;
 
@@ -36,7 +50,7 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 
     auto const keys = [stringType, &name, type]() {
         // Special handling for base58Seeds.
-        if (stringType == base58Seed)
+        if (stringType == AcctStringType::base58Seed)
         {
             std::optional<Seed> const seed = parseBase58<Seed>(name);
             if (!seed.has_value())
@@ -54,12 +68,15 @@ Account::fromCache(AcctStringType stringType, std::string name, KeyType type)
 }
 
 Account::Account(std::string name, KeyType type)
-    : Account(fromCache(Account::other, std::move(name), type))
+    : Account(fromCache(Account::AcctStringType::other, std::move(name), type))
 {
 }
 
 Account::Account(AcctStringType stringType, std::string base58SeedStr)
-    : Account(fromCache(Account::base58Seed, std::move(base58SeedStr), KeyType::secp256k1))
+    : Account(fromCache(
+          Account::AcctStringType::base58Seed,
+          std::move(base58SeedStr),
+          KeyType::secp256k1))
 {
 }
 
@@ -79,6 +96,4 @@ Account::operator[](std::string const& s) const
     return IOU(*this, currency);
 }
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

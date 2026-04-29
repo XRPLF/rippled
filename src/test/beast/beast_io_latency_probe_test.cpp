@@ -1,16 +1,22 @@
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/test/yield_to.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
-#include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/executor_work_guard.hpp>  // IWYU pragma: keep
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/spawn.hpp>
+#include <boost/system/detail/error_code.hpp>
 
-#include <algorithm>
-#include <mutex>
-#include <numeric>
-#include <optional>
+#include <chrono>
+#include <condition_variable>  // IWYU pragma: keep
+#include <cstddef>
+#include <functional>
+#include <mutex>     // IWYU pragma: keep
+#include <optional>  // IWYU pragma: keep
+#include <stdexcept>
+#include <string>
+#include <thread>  // IWYU pragma: keep
 #include <vector>
 
 using namespace std::chrono_literals;
@@ -50,7 +56,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
             bool done = false;
             boost::system::error_code wait_err;
 
-            while (--num_samples)
+            while (--num_samples > 0u)
             {
                 auto const start{MeasureClock::now()};
                 done = false;
@@ -60,7 +66,7 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
                         wait_err = ec;
                     auto const end{MeasureClock::now()};
                     elapsed_times_.emplace_back(end - start);
-                    std::lock_guard lk{mtx};
+                    std::scoped_lock const lk{mtx};
                     done = true;
                     cv.notify_one();
                 });
@@ -157,7 +163,8 @@ class io_latency_probe_test : public beast::unit_test::suite, public beast::test
         auto interval = 99ms;
         auto probe_duration = 1s;
 
-        size_t expected_probe_count_max = (probe_duration / interval);
+        size_t const expected_probe_count_max = (probe_duration / interval);
+        // NOLINTNEXTLINE(misc-const-correctness)
         size_t expected_probe_count_min = expected_probe_count_max;
 #ifdef XRPL_RUNNING_IN_CI
         // adjust min expected based on measurements

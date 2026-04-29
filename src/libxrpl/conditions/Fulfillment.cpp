@@ -1,11 +1,16 @@
+#include <xrpl/conditions/Fulfillment.h>
+
+#include <xrpl/basics/Slice.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/conditions/Condition.h>
-#include <xrpl/conditions/Fulfillment.h>
 #include <xrpl/conditions/detail/PreimageSha256.h>
+#include <xrpl/conditions/detail/error.h>
 #include <xrpl/conditions/detail/utils.h>
 
-namespace xrpl {
-namespace cryptoconditions {
+#include <memory>
+#include <system_error>
+
+namespace xrpl::cryptoconditions {
 
 bool
 match(Fulfillment const& f, Condition const& c)
@@ -128,5 +133,4 @@ Fulfillment::deserialize(Slice s, std::error_code& ec)
     return f;
 }
 
-}  // namespace cryptoconditions
-}  // namespace xrpl
+}  // namespace xrpl::cryptoconditions
