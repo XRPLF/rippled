@@ -1886,48 +1886,52 @@ loanMakePayment(
             ? roundToAsset(asset, overpaymentRaw, loanScale, Number::downward)
             : overpaymentRaw;
 
-        detail::ExtendedPaymentComponents const overpaymentComponents =
-            detail::computeOverpaymentComponents(
-                asset,
-                loanScale,
-                overpayment,
-                overpaymentInterestRate,
-                overpaymentFeeRate,
-                managementFeeRate);
-
-        // Don't process an overpayment if the whole amount (or more!)
-        // gets eaten by fees and interest.
-        if (overpaymentComponents.trackedPrincipalDelta > 0)
+        // Due to rounding, overpayment could be zero
+        if (overpayment > 0)
         {
-            XRPL_ASSERT_PARTS(
-                overpaymentComponents.untrackedInterest >= beast::zero,
-                "xrpl::loanMakePayment",
-                "overpayment penalty did not reduce value of loan");
-            // Can't just use `periodicPayment` here, because it might
-            // change
-            auto periodicPaymentProxy = loan->at(sfPeriodicPayment);
-            if (auto const overResult = detail::doOverpayment(
+            detail::ExtendedPaymentComponents const overpaymentComponents =
+                detail::computeOverpaymentComponents(
                     asset,
                     loanScale,
-                    overpaymentComponents,
-                    totalValueOutstandingProxy,
-                    principalOutstandingProxy,
-                    managementFeeOutstandingProxy,
-                    periodicPaymentProxy,
-                    periodicRate,
-                    paymentRemainingProxy,
-                    managementFeeRate,
-                    j))
+                    overpayment,
+                    overpaymentInterestRate,
+                    overpaymentFeeRate,
+                    managementFeeRate);
+
+            // Don't process an overpayment if the whole amount (or more!)
+            // gets eaten by fees and interest.
+            if (overpaymentComponents.trackedPrincipalDelta > 0)
             {
-                totalParts += *overResult;
-            }
-            else if (overResult.error())
-            {
-                // error() will be the TER returned if a payment is not
-                // made. It will only evaluate to true if it's unsuccessful.
-                // Otherwise, tesSUCCESS means nothing was done, so
-                // continue.
-                return Unexpected(overResult.error());
+                XRPL_ASSERT_PARTS(
+                    overpaymentComponents.untrackedInterest >= beast::zero,
+                    "xrpl::loanMakePayment",
+                    "overpayment penalty did not reduce value of loan");
+                // Can't just use `periodicPayment` here, because it might
+                // change
+                auto periodicPaymentProxy = loan->at(sfPeriodicPayment);
+                if (auto const overResult = detail::doOverpayment(
+                        asset,
+                        loanScale,
+                        overpaymentComponents,
+                        totalValueOutstandingProxy,
+                        principalOutstandingProxy,
+                        managementFeeOutstandingProxy,
+                        periodicPaymentProxy,
+                        periodicRate,
+                        paymentRemainingProxy,
+                        managementFeeRate,
+                        j))
+                {
+                    totalParts += *overResult;
+                }
+                else if (overResult.error())
+                {
+                    // error() will be the TER returned if a payment is not
+                    // made. It will only evaluate to true if it's unsuccessful.
+                    // Otherwise, tesSUCCESS means nothing was done, so
+                    // continue.
+                    return Unexpected(overResult.error());
+                }
             }
         }
     }
