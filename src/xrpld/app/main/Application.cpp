@@ -82,6 +82,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/rdb/DatabaseCon.h>
 #include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Consumer.h>

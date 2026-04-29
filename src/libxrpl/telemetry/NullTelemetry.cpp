@@ -10,14 +10,17 @@
     its own factory that can return the real TelemetryImpl.
 */
 
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/telemetry/Telemetry.h>
 
 #ifdef XRPL_ENABLE_TELEMETRY
 #include <opentelemetry/trace/noop.h>
 #endif
 
-namespace xrpl {
-namespace telemetry {
+#include <memory>
+#include <utility>
+
+namespace xrpl::telemetry {
 
 namespace {
 
@@ -32,7 +35,7 @@ class NullTelemetry : public Telemetry
     Setup const setup_;
 
 public:
-    explicit NullTelemetry(Setup const& setup) : setup_(setup)
+    explicit NullTelemetry(Setup setup) : setup_(std::move(setup))
     {
     }
 
@@ -48,37 +51,37 @@ public:
         Telemetry::setInstance(nullptr);
     }
 
-    bool
+    [[nodiscard]] bool
     isEnabled() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceTransactions() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceConsensus() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceRpc() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTracePeer() const override
     {
         return false;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldTraceLedger() const override
     {
         return false;
@@ -125,5 +128,4 @@ make_Telemetry(Telemetry::Setup const& setup, beast::Journal)
 }
 #endif
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
