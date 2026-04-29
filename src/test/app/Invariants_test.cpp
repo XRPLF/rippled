@@ -4354,6 +4354,25 @@ class Invariants_test : public beast::unit_test::suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
             precloseConfidential);
 
+        // Send/MergeInbox must not change OutstandingAmount (coaDelta == 0)
+        doInvariantCheck(
+            {"Invariant failed: OutstandingAmount changed "
+             "by confidential transaction that should not "
+             "modify it for MPT"},
+            [&mptID](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto sleIssuance = ac.view().peek(keylet::mptIssuance(mptID));
+                if (!sleIssuance)
+                    return false;
+                sleIssuance->setFieldU64(
+                    sfOutstandingAmount, sleIssuance->getFieldU64(sfOutstandingAmount) + 1);
+                ac.view().update(sleIssuance);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttCONFIDENTIAL_MPT_SEND, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED},
+            precloseConfidential);
+
         // badVersion
         doInvariantCheck(
             {"MPToken sfConfidentialBalanceVersion not updated when sfConfidentialBalanceSpending "
