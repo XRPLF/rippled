@@ -22,6 +22,17 @@ public:
         auto const guard = rs::hello_world::init_logger();
         rs::hello_world::log_info("test log message from C++");
         BEAST_EXPECT(true);
+        // Second init should panic; safe_init_logger catches it and throws.
+        bool caught = false;
+        try
+        {
+            rs::hello_world::safe_init_logger();
+        }
+        catch (std::exception const&)
+        {
+            caught = true;
+        }
+        BEAST_EXPECT(caught);
     }
 
     void

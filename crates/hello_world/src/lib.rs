@@ -11,6 +11,7 @@ mod ffi {
     extern "Rust" {
         type LoggerGuard;
         fn init_logger() -> Box<LoggerGuard>;
+        fn safe_init_logger() -> Result<Box<LoggerGuard>>;
         fn hello_world() -> String;
         fn log_info(s: &str);
     }
@@ -26,8 +27,7 @@ pub fn init_logger() -> Box<LoggerGuard> {
 
     let (non_blocking, guard) = tracing_appender::non_blocking(std::io::stdout());
 
-    let filter = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| EnvFilter::new("info"));
+    let filter = EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info"));
 
     fmt()
         .with_env_filter(filter)
@@ -35,6 +35,24 @@ pub fn init_logger() -> Box<LoggerGuard> {
         .init();
 
     Box::new(LoggerGuard(guard))
+}
+
+fn safe_call<F, R>(f: F) -> Result<R, Box<dyn std::error::Error + Send + Sync>>
+where
+    F: FnOnce() -> R + std::panic::UnwindSafe,
+{
+    std::panic::catch_unwind(f).map_err(|e| {
+        let msg = e
+            .downcast_ref::<&str>()
+            .map(|s| s.to_string())
+            .or_else(|| e.downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "unknown panic".to_string());
+        Box::<dyn std::error::Error + Send + Sync>::from(msg)
+    })
+}
+
+pub fn safe_init_logger() -> Result<Box<LoggerGuard>, Box<dyn std::error::Error + Send + Sync>> {
+    safe_call(init_logger)
 }
 
 pub fn hello_world() -> String {
