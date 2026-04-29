@@ -1,16 +1,53 @@
-#include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/TxQ.h>
 
+#include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/main/Application.h>
+
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/mulDiv.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ApplyViewImpl.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/Units.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/st.h>
 #include <xrpl/tx/apply.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <boost/function/function_base.hpp>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
 #include <limits>
+#include <memory>
+#include <mutex>
 #include <numeric>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -76,7 +113,7 @@ TxQ::FeeMetrics::update(
     std::for_each(txBegin, txEnd, [&](auto const& tx) {
         feeLevels.push_back(getFeeLevelPaid(view, *tx.first));
     });
-    std::sort(feeLevels.begin(), feeLevels.end());
+    std::ranges::sort(feeLevels);
     XRPL_ASSERT(size == feeLevels.size(), "xrpl::TxQ::FeeMetrics::update : fee levels size");
 
     JLOG((timeLeap ? j_.warn() : j_.debug()))
@@ -102,7 +139,7 @@ TxQ::FeeMetrics::update(
     {
         recentTxnCounts_.push_back(mulDiv(size, 100 + setup.normalConsensusIncreasePercent, 100)
                                        .value_or(xrpl::muldiv_max));
-        auto const iter = std::max_element(recentTxnCounts_.begin(), recentTxnCounts_.end());
+        auto const iter = std::ranges::max_element(recentTxnCounts_);
         BOOST_ASSERT(iter != recentTxnCounts_.end());
         auto const next = [&] {
             // Grow quickly: If the max_element is >= the
@@ -240,7 +277,8 @@ TxQ::FeeMetrics::escalatedSeriesFeeLevel(
     auto const totalFeeLevel =
         mulDiv(multiplier, sumNlast.second - sumNcurrent.second, target * target);
 
-    return {totalFeeLevel.has_value(), *totalFeeLevel};
+    return {
+        totalFeeLevel.has_value(), *totalFeeLevel};  // NOLINT(bugprone-unchecked-optional-access)
 }
 
 LedgerHash TxQ::MaybeTx::parentHashComp{};
@@ -269,6 +307,7 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
     XRPL_ASSERT(pfResult, "xrpl::TxQ::MaybeTx::apply : preflight result is set");
     NumberSO const stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) assert above
     if (pfResult->rules != view.rules() || pfResult->flags != flags)
     {
         JLOG(j.debug()) << "Queued transaction " << txID
@@ -279,6 +318,7 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
     }
 
     auto pcresult = preclaim(*pfResult, app, view);
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return doApply(pcresult, app, view);
 }
@@ -350,7 +390,7 @@ TxQ::canBeHeld(
     std::shared_ptr<SLE const> const& sleAccount,
     AccountMap::iterator const& accountIter,
     std::optional<TxQAccount::TxMap::iterator> const& replacementIter,
-    std::lock_guard<std::mutex> const& lock)
+    std::scoped_lock<std::mutex> const& lock)
 {
     // PreviousTxnID is deprecated and should never be used.
     // AccountTxnID is not supported by the transaction
@@ -735,7 +775,7 @@ TxQ::apply(
         return {terPRE_TICKET, false};
     }
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     // accountIter is not const because it may be updated further down.
     AccountMap::iterator accountIter = byAccount_.find(account);
@@ -796,6 +836,7 @@ TxQ::apply(
                              << ".  Account has other queued transactions.";
             return {telCAN_NOT_QUEUE_BLOCKS, false};
         }
+        // NOLINTNEXTLINE(bugprone-unchecked-optional-access) acctTxCount == 1 implies txIter is set
         if (acctTxCount == 1 && (txSeqProx != txIter->first->first))
         {
             // The blocker is not replacing the lone queued transaction.
@@ -835,8 +876,10 @@ TxQ::apply(
         //
         // We only need to check if txIter->first is a blocker because we
         // require that a blocker be alone in the account's queue.
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount == 1 implies txIter is set
         if (acctTxCount == 1 && txIter->first->second.consequences().isBlocker() &&
             (txIter->first->first != txSeqProx))
+        // NOLINTEND(bugprone-unchecked-optional-access)
         {
             return {telCAN_NOT_QUEUE_BLOCKED, false};
         }
@@ -951,6 +994,8 @@ TxQ::apply(
             //  o The current first thing in the queue has a Ticket and
             //    * The tx has a Ticket that precedes it or
             //    * txSeqProx == acctSeqProx.
+            // NOLINTBEGIN(bugprone-unchecked-optional-access) acctTxCount > 0 in else branch
+            // implies txIter is set
             XRPL_ASSERT(prevIter != txIter->end, "xrpl::TxQ::apply : not end");
             if (prevIter == txIter->end || txSeqProx < prevIter->first)
             {
@@ -1003,6 +1048,7 @@ TxQ::apply(
                     potentialSpend += pfResult.consequences.potentialSpend();
                 }
             }
+            // NOLINTEND(bugprone-unchecked-optional-access)
 
             /* Check if the total fees in flight are greater
                 than the account's current balance, or the
@@ -1286,7 +1332,7 @@ TxQ::apply(
 void
 TxQ::processClosedLedger(Application& app, ReadView const& view, bool timeLeap)
 {
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     feeMetrics_.update(app, view, timeLeap, setup_);
     auto const& snapshot = feeMetrics_.getSnapshot();
@@ -1365,7 +1411,7 @@ TxQ::accept(Application& app, OpenView& view)
 
     auto ledgerChanged = false;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto const metricsSnapshot = feeMetrics_.getSnapshot();
 
@@ -1529,7 +1575,7 @@ TxQ::accept(Application& app, OpenView& view)
 SeqProxy
 TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 {
-    std::lock_guard<std::mutex> const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
     return nextQueuableSeqImpl(sleAccount, lock);
 }
 
@@ -1542,7 +1588,7 @@ TxQ::nextQueuableSeq(std::shared_ptr<SLE const> const& sleAccount) const
 SeqProxy
 TxQ::nextQueuableSeqImpl(
     std::shared_ptr<SLE const> const& sleAccount,
-    std::lock_guard<std::mutex> const&) const
+    std::scoped_lock<std::mutex> const&) const
 {
     // If the account is not in the ledger or a non-account was passed
     // then return zero.  We have no idea.
@@ -1591,7 +1637,7 @@ TxQ::getRequiredFeeLevel(
     OpenView& view,
     ApplyFlags flags,
     FeeMetrics::Snapshot const& metricsSnapshot,
-    std::lock_guard<std::mutex> const& lock)
+    std::scoped_lock<std::mutex> const& lock)
 {
     return FeeMetrics::scaleFeeLevel(metricsSnapshot, view);
 }
@@ -1620,7 +1666,7 @@ TxQ::tryDirectApply(
         return {};
 
     FeeLevel64 const requiredFeeLevel = [this, &view, flags]() {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
         return getRequiredFeeLevel(view, flags, feeMetrics_.getSnapshot(), lock);
     }();
 
@@ -1644,7 +1690,7 @@ TxQ::tryDirectApply(
         {
             // If the applied transaction replaced a transaction in the
             // queue then remove the replaced transaction.
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
 
             AccountMap::iterator const accountIter = byAccount_.find(account);
             if (accountIter != byAccount_.end())
@@ -1693,7 +1739,7 @@ TxQ::getMetrics(OpenView const& view) const
 {
     Metrics result;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
 
@@ -1714,7 +1760,7 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
 {
     auto const account = (*tx)[sfAccount];
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     auto const snapshot = feeMetrics_.getSnapshot();
     auto const baseFee = calculateBaseFee(view, *tx);
@@ -1725,10 +1771,10 @@ TxQ::getTxRequiredFeeAndSeq(OpenView const& view, std::shared_ptr<STTx const> co
     std::uint32_t const accountSeq = sle ? (*sle)[sfSequence] : 0;
     std::uint32_t const availableSeq = nextQueuableSeqImpl(sle, lock).value();
     return {
-        mulDiv(fee, baseFee, baseLevel)
-            .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
-        accountSeq,
-        availableSeq};
+        .fee = mulDiv(fee, baseFee, baseLevel)
+                   .value_or(XRPAmount(std::numeric_limits<std::int64_t>::max())),
+        .accountSeq = accountSeq,
+        .availableSeq = availableSeq};
 }
 
 std::vector<TxQ::TxDetails>
@@ -1736,7 +1782,7 @@ TxQ::getAccountTxs(AccountID const& account) const
 {
     std::vector<TxDetails> result;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     AccountMap::const_iterator const accountIter{byAccount_.find(account)};
 
@@ -1756,7 +1802,7 @@ TxQ::getTxs() const
 {
     std::vector<TxDetails> result;
 
-    std::lock_guard const lock(mutex_);
+    std::scoped_lock const lock(mutex_);
 
     result.reserve(byFee_.size());
 

@@ -20,7 +20,7 @@ public:
     explicit AssetCache(std::shared_ptr<ReadView const> const& l, beast::Journal j);
     ~AssetCache();
 
-    std::shared_ptr<ReadView const> const&
+    [[nodiscard]] std::shared_ptr<ReadView const> const&
     getLedger() const
     {
         return ledger_;
@@ -75,7 +75,7 @@ private:
                 direction_ == lhs.direction_;
         }
 
-        std::size_t
+        [[nodiscard]] std::size_t
         get_hash() const
         {
             return hash_value_;

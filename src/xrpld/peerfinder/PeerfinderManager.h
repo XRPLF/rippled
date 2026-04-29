@@ -2,18 +2,16 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
+#include <xrpld/peerfinder/detail/Tuning.h>
 
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 
 #include <boost/asio/ip/tcp.hpp>
 
-#include "xrpld/peerfinder/detail/Tuning.h"
-
 #include <string_view>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
 
@@ -67,7 +65,7 @@ struct Config
     Config();
 
     /** Returns a suitable value for outPeers according to the rules. */
-    std::size_t
+    [[nodiscard]] std::size_t
     calcOutPeers() const;
 
     /** Adjusts the values so they follow the business rules. */
@@ -103,7 +101,7 @@ struct Endpoint
 {
     Endpoint() = default;
 
-    Endpoint(beast::IP::Endpoint const& ep, std::uint32_t hops_);
+    Endpoint(beast::IP::Endpoint ep, std::uint32_t hops_);
 
     std::uint32_t hops = 0;
     beast::IP::Endpoint address;
@@ -169,7 +167,7 @@ public:
         There may be some listener calls made before the
         destructor returns.
     */
-    virtual ~Manager() = default;
+    ~Manager() override = default;
 
     /** Set the configuration for the manager.
         The new settings will be applied asynchronously.
@@ -286,5 +284,4 @@ public:
     once_per_second() = 0;
 };
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

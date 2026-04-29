@@ -1,23 +1,44 @@
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/algorithm.h>
-#include <xrpl/ledger/Dir.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
 #include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/protocol/nft.h>
 #include <xrpl/protocol/nftPageMask.h>
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <iterator>
 #include <memory>
+#include <optional>
+#include <stdexcept>
+#include <utility>
 
-namespace xrpl {
-
-namespace nft {
+namespace xrpl::nft {
 
 static std::shared_ptr<SLE const>
 locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
@@ -107,7 +128,7 @@ getPageForToken(
         // place to make the split.
         if (splitIter == narr.end())
         {
-            splitIter = std::find_if(narr.begin(), narr.end(), [&cmp](STObject const& obj) {
+            splitIter = std::ranges::find_if(narr, [&cmp](STObject const& obj) {
                 return (obj.getFieldH256(sfNFTokenID) & nft::pageMask) == cmp;
             });
         }
@@ -217,9 +238,8 @@ changeTokenURI(
     // Locate the NFT in the page
     STArray& arr = page->peekFieldArray(sfNFTokens);
 
-    auto const nftIter = std::find_if(arr.begin(), arr.end(), [&nftokenID](STObject const& obj) {
-        return (obj[sfNFTokenID] == nftokenID);
-    });
+    auto const nftIter = std::ranges::find_if(
+        arr, [&nftokenID](STObject const& obj) { return (obj[sfNFTokenID] == nftokenID); });
 
     if (nftIter == arr.end())
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -298,13 +318,8 @@ mergePages(ApplyView& view, std::shared_ptr<SLE> const& p1, std::shared_ptr<SLE>
 
     STArray x(p1arr.size() + p2arr.size());
 
-    std::merge(
-        p1arr.begin(),
-        p1arr.end(),
-        p2arr.begin(),
-        p2arr.end(),
-        std::back_inserter(x),
-        [](STObject const& a, STObject const& b) {
+    std::ranges::merge(
+        p1arr, p2arr, std::back_inserter(x), [](STObject const& a, STObject const& b) {
             return compareTokens(a.getFieldH256(sfNFTokenID), b.getFieldH256(sfNFTokenID));
         });
 
@@ -360,9 +375,8 @@ removeToken(
     auto arr = curr->getFieldArray(sfNFTokens);
 
     {
-        auto x = std::find_if(arr.begin(), arr.end(), [&nftokenID](STObject const& obj) {
-            return (obj[sfNFTokenID] == nftokenID);
-        });
+        auto x = std::ranges::find_if(
+            arr, [&nftokenID](STObject const& obj) { return (obj[sfNFTokenID] == nftokenID); });
 
         if (x == arr.end())
             return tecNO_ENTRY;
@@ -1080,5 +1094,4 @@ checkTrustlineDeepFrozen(
     return tesSUCCESS;
 }
 
-}  // namespace nft
-}  // namespace xrpl
+}  // namespace xrpl::nft

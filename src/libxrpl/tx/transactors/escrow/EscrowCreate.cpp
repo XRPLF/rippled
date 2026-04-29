@@ -1,19 +1,40 @@
+#include <xrpl/tx/transactors/escrow/EscrowCreate.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/conditions/Condition.h>
+#include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/View.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
 #include <xrpl/ledger/helpers/MPTokenHelpers.h>
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTAmount.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/tx/transactors/escrow/EscrowCreate.h>
+#include <xrpl/tx/Transactor.h>
+#include <xrpl/tx/applySteps.h>
+
+#include <memory>
+#include <system_error>
+#include <variant>
 
 namespace xrpl {
 
@@ -207,8 +228,8 @@ escrowCreatePreclaimHelper<Issue>(
     if (isFrozen(ctx.view, dest, issue))
         return tecFROZEN;
 
-    STAmount const spendableAmount =
-        accountHolds(ctx.view, account, issue.currency, issuer, fhIGNORE_FREEZE, ctx.j);
+    STAmount const spendableAmount = accountHolds(
+        ctx.view, account, issue.currency, issuer, FreezeHandling::fhIGNORE_FREEZE, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
@@ -284,7 +305,12 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return ter;
 
     STAmount const spendableAmount = accountHolds(
-        ctx.view, account, amount.get<MPTIssue>(), fhIGNORE_FREEZE, ahIGNORE_AUTH, ctx.j);
+        ctx.view,
+        account,
+        amount.get<MPTIssue>(),
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
+        ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
@@ -420,7 +446,7 @@ EscrowCreate::doApply()
             return tecDST_TAG_NEEDED;
     }
 
-    // Create escrow in ledger.  Note that we we use the value from the
+    // Create escrow in ledger.  Note that we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
     Keylet const escrowKeylet = keylet::escrow(account_, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
@@ -504,4 +530,22 @@ EscrowCreate::doApply()
     return tesSUCCESS;
 }
 
+void
+EscrowCreate::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+EscrowCreate::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
+}
 }  // namespace xrpl

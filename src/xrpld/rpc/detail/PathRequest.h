@@ -57,7 +57,7 @@ public:
         PathRequestManager&,
         beast::Journal journal);
 
-    ~PathRequest();
+    ~PathRequest() override;
 
     bool
     isNew();

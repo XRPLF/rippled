@@ -1,14 +1,16 @@
 #include <test/jtx/Env.h>
+#include <test/jtx/envconfig.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/core/ClosureCounter.h>
 
 #include <atomic>
-#include <chrono>
+#include <optional>
 #include <thread>
+#include <utility>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 //------------------------------------------------------------------------------
 
@@ -317,5 +319,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(ClosureCounter, core, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

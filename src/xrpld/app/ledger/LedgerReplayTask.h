@@ -31,8 +31,8 @@ public:
 
         // to be updated
         std::uint32_t finishSeq_ = 0;
-        std::vector<uint256> skipList_ = {};  // including the finishHash
-        uint256 startHash_ = {};
+        std::vector<uint256> skipList_;  // including the finishHash
+        uint256 startHash_;
         std::uint32_t startSeq_ = 0;
         bool full_ = false;
 
@@ -60,7 +60,7 @@ public:
         update(uint256 const& hash, std::uint32_t seq, std::vector<uint256> const& sList);
 
         /** check if this task can be merged into an existing task */
-        bool
+        [[nodiscard]] bool
         canMergeInto(TaskParameter const& existingTask) const;
     };
 
@@ -80,7 +80,7 @@ public:
         std::shared_ptr<SkipListAcquire>& skipListAcquirer,
         TaskParameter const& parameter);
 
-    ~LedgerReplayTask();
+    ~LedgerReplayTask() override;
 
     /** Start the task */
     void
@@ -146,7 +146,7 @@ private:
     TaskParameter parameter_;
     uint32_t maxTimeouts_;
     std::shared_ptr<SkipListAcquire> skipListAcquirer_;
-    std::shared_ptr<Ledger const> parent_ = {};
+    std::shared_ptr<Ledger const> parent_;
     uint32_t deltaToBuild_ = 0;  // should not build until have parent
     std::vector<std::shared_ptr<LedgerDeltaAcquire>> deltas_;
 

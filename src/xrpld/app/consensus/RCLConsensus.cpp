@@ -1,34 +1,88 @@
 #include <xrpld/app/consensus/RCLConsensus.h>
+
+#include <xrpld/app/consensus/RCLCensorshipDetector.h>
+#include <xrpld/app/consensus/RCLCxLedger.h>
+#include <xrpld/app/consensus/RCLCxPeerPos.h>
+#include <xrpld/app/consensus/RCLCxTx.h>
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/BuildLedger.h>
+#include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LocalTxs.h>
 #include <xrpld/app/ledger/OpenLedger.h>
+#include <xrpld/app/misc/FeeVote.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
+#include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusTypes.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/core/HashRouter.h>
+#include <xrpl/core/Job.h>
+#include <xrpl/crypto/csprng.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/ledger/AmendmentTable.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/Ledger.h>
 #include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
 #include <xrpl/protocol/BuildInfo.h>
-#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STValidation.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 #include <xrpl/server/LoadFeeTrack.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
+
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
 #include <iomanip>
+#include <limits>
+#include <memory>
 #include <mutex>
+#include <optional>
+#include <set>
+#include <sstream>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -853,7 +907,7 @@ RCLConsensus::getJson(bool full) const
 {
     Json::Value ret;
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         ret = consensus_.getJson(full);
     }
     ret["validating"] = adaptor_.validating();
@@ -867,7 +921,7 @@ RCLConsensus::timerEntry(
 {
     try
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         consensus_.timerEntry(now, clog);
     }
     catch (SHAMapMissingNode const& mn)
@@ -886,7 +940,7 @@ RCLConsensus::gotTxSet(NetClock::time_point const& now, RCLTxSet const& txSet)
 {
     try
     {
-        std::lock_guard const _{mutex_};
+        std::scoped_lock const _{mutex_};
         consensus_.gotTxSet(now, txSet);
     }
     catch (SHAMapMissingNode const& mn)
@@ -904,14 +958,14 @@ RCLConsensus::simulate(
     NetClock::time_point const& now,
     std::optional<std::chrono::milliseconds> consensusDelay)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     consensus_.simulate(now, consensusDelay);
 }
 
 bool
 RCLConsensus::peerProposal(NetClock::time_point const& now, RCLCxPeerPos const& newProposal)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     return consensus_.peerProposal(now, newProposal);
 }
 
@@ -1010,7 +1064,7 @@ RCLConsensus::startRound(
     hash_set<NodeID> const& nowTrusted,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    std::lock_guard const _{mutex_};
+    std::scoped_lock const _{mutex_};
     consensus_.startRound(
         now, prevLgrId, prevLgr, nowUntrusted, adaptor_.preStartRound(prevLgr, nowTrusted), clog);
 }

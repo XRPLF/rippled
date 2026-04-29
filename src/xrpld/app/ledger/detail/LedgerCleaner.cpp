@@ -1,12 +1,34 @@
-#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerCleaner.h>
+
+#include <xrpld/app/ledger/InboundLedger.h>
+#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerPersistence.h>
 #include <xrpld/app/main/Application.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/View.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/RippleLedgerHash.h>
+#include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/LoadFeeTrack.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+
+#include <chrono>
+#include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <thread>
 
 namespace xrpl {
 
@@ -76,7 +98,7 @@ public:
     {
         JLOG(j_.info()) << "Stopping";
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             shouldExit_ = true;
             wakeup_.notify_one();
         }
@@ -92,7 +114,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& map) override
     {
-        std::lock_guard const lock(mutex_);
+        std::scoped_lock const lock(mutex_);
 
         if (maxRange_ == 0)
         {
@@ -124,7 +146,7 @@ public:
         app_.getLedgerMaster().getFullValidatedRange(minRange, maxRange);
 
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
 
             maxRange_ = maxRange;
             minRange_ = minRange;
@@ -354,7 +376,7 @@ private:
     doLedgerCleaner()
     {
         auto shouldExit = [this] {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             return shouldExit_;
         };
 
@@ -375,7 +397,7 @@ private:
             }
 
             {
-                std::lock_guard const lock(mutex_);
+                std::scoped_lock const lock(mutex_);
                 if ((minRange_ > maxRange_) || (maxRange_ == 0) || (minRange_ == 0))
                 {
                     minRange_ = maxRange_ = 0;
@@ -403,7 +425,7 @@ private:
             if (fail)
             {
                 {
-                    std::lock_guard const lock(mutex_);
+                    std::scoped_lock const lock(mutex_);
                     ++failures_;
                 }
                 // Wait for acquiring to catch up to us
@@ -412,7 +434,7 @@ private:
             else
             {
                 {
-                    std::lock_guard const lock(mutex_);
+                    std::scoped_lock const lock(mutex_);
                     if (ledgerIndex == minRange_)
                         ++minRange_;
                     if (ledgerIndex == maxRange_)

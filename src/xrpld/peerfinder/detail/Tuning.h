@@ -2,13 +2,12 @@
 
 #include <array>
 
-namespace xrpl {
-namespace PeerFinder {
-
 /** Heuristically tuned constants. */
 /** @{ */
-namespace Tuning {
+namespace xrpl::PeerFinder::Tuning {
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     //---------------------------------------------------------
     //
@@ -64,6 +63,8 @@ static std::array<int, 10> const connectionBackoff{{1, 1, 2, 3, 5, 8, 13, 21, 34
 //
 //------------------------------------------------------------------------------
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Threshold of cache entries above which we trim.
     bootcacheSize = 1000
@@ -110,8 +111,5 @@ std::chrono::seconds constexpr liveCacheSecondsToLive(30);
 // Note that we ignore the port for purposes of comparison.
 std::chrono::seconds constexpr recentAttemptDuration(60);
 
-}  // namespace Tuning
+}  // namespace xrpl::PeerFinder::Tuning
 /** @} */
-
-}  // namespace PeerFinder
-}  // namespace xrpl

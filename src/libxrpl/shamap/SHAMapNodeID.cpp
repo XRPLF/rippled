@@ -1,14 +1,23 @@
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/shamap/SHAMap.h>
-#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <cstddef>
+#include <optional>
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
 static uint256 const&
 depthMask(unsigned int depth)
 {
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum { mask_size = 65 };
 
     struct masks_t

@@ -20,6 +20,22 @@ repos:
       - id: check-merge-conflict
         args: [--assume-in-merge]
 
+  - repo: local
+    hooks:
+      - id: clang-tidy
+        name: "clang-tidy (enable with: TIDY=1)"
+        entry: ./bin/pre-commit/clang_tidy_check.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen
+        pass_filenames: false # script determines the staged files itself
+      - id: fix-include-style
+        name: fix include style
+        entry: ./bin/pre-commit/fix_include_style.py
+        language: python
+        types_or: [c++, c]
+        exclude: ^include/xrpl/protocol_autogen/(transactions|ledger_entries)/
+
   - repo: https://github.com/pre-commit/mirrors-clang-format
     rev: cd481d7b0bfb5c7b3090c21846317f9a8262e891 # frozen: v22.1.0
     hooks:
@@ -43,6 +59,12 @@ repos:
     rev: ea488cebbfd88a5f50b8bd95d5c829d0bb76feb8 # frozen: 26.1.0
     hooks:
       - id: black
+
+  - repo: https://github.com/openstack/bashate
+    rev: 5798d24d571676fc407e81df574c1ef57b520f23 # frozen: 2.1.1
+    hooks:
+      - id: bashate
+        args: ["--ignore=E006"]
 
   - repo: https://github.com/streetsidesoftware/cspell-cli
     rev: a42085ade523f591dca134379a595e7859986445 # frozen: v9.7.0

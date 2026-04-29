@@ -1,14 +1,14 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
+
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-
-namespace test {
+namespace xrpl::test {
 
 class ServerDefinitions_test : public beast::unit_test::suite
 {
@@ -453,13 +453,42 @@ public:
     }
 
     void
+    testGetServerDefinitionsJson()
+    {
+        testcase("getServerDefinitionsJson");
+
+        auto const& defs = getServerDefinitionsJson();
+        for (auto const& field :
+             {jss::ACCOUNT_SET_FLAGS,
+              jss::FIELDS,
+              jss::LEDGER_ENTRY_FLAGS,
+              jss::LEDGER_ENTRY_FORMATS,
+              jss::LEDGER_ENTRY_TYPES,
+              jss::TRANSACTION_FLAGS,
+              jss::TRANSACTION_FORMATS,
+              jss::TRANSACTION_RESULTS,
+              jss::TRANSACTION_TYPES,
+              jss::TYPES,
+              jss::hash})
+        {
+            BEAST_EXPECT(defs.isMember(field));
+        }
+
+        // verify it returns the same hash as the RPC handler
+        using namespace test::jtx;
+        Env env(*this);
+        auto const rpcResult = env.rpc("server_definitions");
+        BEAST_EXPECT(defs[jss::hash] == rpcResult[jss::result][jss::hash]);
+    }
+
+    void
     run() override
     {
         testServerDefinitions();
+        testGetServerDefinitionsJson();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(ServerDefinitions, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

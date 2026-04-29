@@ -1,17 +1,48 @@
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/ledger/Ledger.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/LedgerTiming.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/shamap/Family.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapItem.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
 #include <stdexcept>
 #include <utility>
 #include <vector>
@@ -38,13 +69,13 @@ public:
     {
     }
 
-    std::unique_ptr<base_type>
+    [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
         return std::make_unique<sles_iter_impl>(*this);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
         if (auto const p = dynamic_cast<sles_iter_impl const*>(&impl))
@@ -58,7 +89,7 @@ public:
         ++iter_;
     }
 
-    sles_type::value_type
+    [[nodiscard]] sles_type::value_type
     dereference() const override
     {
         SerialIter sit(iter_->slice());
@@ -85,13 +116,13 @@ public:
     {
     }
 
-    std::unique_ptr<base_type>
+    [[nodiscard]] std::unique_ptr<base_type>
     copy() const override
     {
         return std::make_unique<txs_iter_impl>(*this);
     }
 
-    bool
+    [[nodiscard]] bool
     equal(base_type const& impl) const override
     {
         if (auto const p = dynamic_cast<txs_iter_impl const*>(&impl))
@@ -105,7 +136,7 @@ public:
         ++iter_;
     }
 
-    txs_type::value_type
+    [[nodiscard]] txs_type::value_type
     dereference() const override
     {
         auto const& item = *iter_;
@@ -119,7 +150,7 @@ public:
 
 Ledger::Ledger(
     create_genesis_t,
-    Rules const& rules,
+    Rules rules,
     Fees const& fees,
     std::vector<uint256> const& amendments,
     Family& family)
@@ -127,7 +158,7 @@ Ledger::Ledger(
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , fees_(fees)
-    , rules_(rules)
+    , rules_(std::move(rules))
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = 1;
@@ -154,7 +185,7 @@ Ledger::Ledger(
     {
         auto sle = std::make_shared<SLE>(keylet::fees());
         // Whether featureXRPFees is supported will depend on startup options.
-        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) != amendments.end())
+        if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
         {
             sle->at(sfBaseFeeDrops) = fees.base;
             sle->at(sfReserveBaseDrops) = fees.reserve;
@@ -173,7 +204,7 @@ Ledger::Ledger(
         rawInsert(sle);
     }
 
-    stateMap_.flushDirty(hotACCOUNT_NODE);
+    stateMap_.flushDirty(NodeObjectType::hotACCOUNT_NODE);
     setImmutable();
 }
 
@@ -181,7 +212,7 @@ Ledger::Ledger(
     LedgerHeader const& info,
     bool& loaded,
     bool acquire,
-    Rules const& rules,
+    Rules rules,
     Fees const& fees,
     Family& family,
     beast::Journal j)
@@ -189,7 +220,7 @@ Ledger::Ledger(
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
     , fees_(fees)
-    , rules_(rules)
+    , rules_(std::move(rules))
     , header_(info)
     , j_(j)
 {
@@ -250,11 +281,11 @@ Ledger::Ledger(Ledger const& prevLedger, NetClock::time_point closeTime)
     }
 }
 
-Ledger::Ledger(LedgerHeader const& info, Rules const& rules, Family& family)
+Ledger::Ledger(LedgerHeader const& info, Rules rules, Family& family)
     : mImmutable(true)
     , txMap_(SHAMapType::TRANSACTION, info.txHash, family)
     , stateMap_(SHAMapType::STATE, info.accountHash, family)
-    , rules_(rules)
+    , rules_(std::move(rules))
     , header_(info)
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
@@ -264,14 +295,14 @@ Ledger::Ledger(LedgerHeader const& info, Rules const& rules, Family& family)
 Ledger::Ledger(
     std::uint32_t ledgerSeq,
     NetClock::time_point closeTime,
-    Rules const& rules,
+    Rules rules,
     Fees const& fees,
     Family& family)
     : mImmutable(false)
     , txMap_(SHAMapType::TRANSACTION, family)
     , stateMap_(SHAMapType::STATE, family)
     , fees_(fees)
-    , rules_(rules)
+    , rules_(std::move(rules))
     , j_(beast::Journal(beast::Journal::getNullSink()))
 {
     header_.seq = ledgerSeq;

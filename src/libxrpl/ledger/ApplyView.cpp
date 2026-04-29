@@ -1,10 +1,25 @@
+#include <xrpl/ledger/ApplyView.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STVector256.h>
 
+#include <algorithm>
+#include <cstdint>
+#include <functional>
 #include <limits>
+#include <memory>
+#include <optional>
 #include <stdexcept>
+#include <tuple>
 #include <type_traits>
 
 namespace xrpl {
@@ -41,8 +56,10 @@ findPreviousPage(ApplyView& view, Keylet const& directory, SLE::ref start)
     {
         node = view.peek(keylet::page(directory, page));
         if (!node)
+        {
             Throw<std::logic_error>(
                 "Directory chain: root back-pointer broken.");  // LCOV_EXCL_LINE
+        }
     }
 
     auto indexes = node->getFieldV256(sfIndexes);
@@ -60,7 +77,7 @@ insertKey(
 {
     if (preserveOrder)
     {
-        if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
+        if (std::ranges::find(indexes, key) != indexes.end())
             Throw<std::logic_error>("dirInsert: double insertion");  // LCOV_EXCL_LINE
 
         indexes.push_back(key);
@@ -69,9 +86,9 @@ insertKey(
     {
         // We can't be sure if this page is already sorted because it may be a
         // legacy page we haven't yet touched. Take the time to sort it.
-        std::sort(indexes.begin(), indexes.end());
+        std::ranges::sort(indexes);
 
-        auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
+        auto pos = std::ranges::lower_bound(indexes, key);
 
         if (pos != indexes.end() && key == *pos)
             Throw<std::logic_error>("dirInsert: double insertion");  // LCOV_EXCL_LINE
@@ -246,7 +263,7 @@ ApplyView::dirRemove(Keylet const& directory, std::uint64_t page, uint256 const&
     {
         auto entries = node->getFieldV256(sfIndexes);
 
-        auto it = std::find(entries.begin(), entries.end(), key);
+        auto it = std::ranges::find(entries, key);
 
         if (entries.end() == it)
             return false;

@@ -4,15 +4,32 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/temp_dir.h>
+#include <xrpl/protocol/SystemParameters.h>  // IWYU pragma: keep
 #include <xrpl/server/Port.h>
 
-#include <boost/filesystem.hpp>
-#include <boost/format.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/format.hpp>  // IWYU pragma: keep
+#include <boost/format/free_funcs.hpp>
+#include <boost/lexical_cast/bad_lexical_cast.hpp>
 
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <exception>
 #include <fstream>
+#include <optional>
+#include <ostream>
 #include <regex>
+#include <stdexcept>
+#include <string>
+#include <string_view>
+#include <typeinfo>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 namespace detail {
@@ -147,25 +164,25 @@ public:
             /* bStandalone */ false);
     }
 
-    Config const&
+    [[nodiscard]] Config const&
     config() const
     {
         return config_;
     }
 
-    std::string
+    [[nodiscard]] std::string
     configFile() const
     {
         return file().string();
     }
 
-    bool
+    [[nodiscard]] bool
     dataDirExists() const
     {
         return boost::filesystem::is_directory(dataDir_);
     }
 
-    bool
+    [[nodiscard]] bool
     configFileExists() const
     {
         return fileExists();
@@ -237,21 +254,19 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     validatorsFileExists() const
     {
         return fileExists();
     }
 
-    std::string
+    [[nodiscard]] std::string
     validatorsFile() const
     {
         return absolute(file()).string();
     }
 
-    ~ValidatorsTxtGuard()
-    {
-    }
+    ~ValidatorsTxtGuard() = default;
 };
 }  // namespace detail
 
@@ -281,7 +296,8 @@ port_wss_admin
         c.loadFromString(toLoad);
 
         BEAST_EXPECT(c.legacy("ssl_verify") == "0");
-        expectException([&c] { c.legacy("server"); });  // not a single line
+        expectException(
+            [&c] { [[maybe_unused]] auto _ = c.legacy("server"); });  // not a single line
 
         // set a legacy value
         BEAST_EXPECT(c.legacy("not_in_file").empty());
@@ -1262,20 +1278,41 @@ r.ripple.com:51235
         };
 
         std::array<TestCommentData, 13> const tests = {
-            {{"password = aaaa\\#bbbb", "password", "aaaa#bbbb", false},
-             {"password = aaaa#bbbb", "password", "aaaa", true},
-             {"password = aaaa #bbbb", "password", "aaaa", true},
+            {{.line = "password = aaaa\\#bbbb",
+              .field = "password",
+              .expect = "aaaa#bbbb",
+              .had_comment = false},
+             {.line = "password = aaaa#bbbb",
+              .field = "password",
+              .expect = "aaaa",
+              .had_comment = true},
+             {.line = "password = aaaa #bbbb",
+              .field = "password",
+              .expect = "aaaa",
+              .had_comment = true},
              // since the value is all comment, this doesn't parse as k=v :
-             {"password = #aaaa #bbbb", "", "password =", true},
-             {"password = aaaa\\# #bbbb", "password", "aaaa#", true},
-             {"password = aaaa\\##bbbb", "password", "aaaa#", true},
-             {"aaaa#bbbb", "", "aaaa", true},
-             {"aaaa\\#bbbb", "", "aaaa#bbbb", false},
-             {"aaaa\\##bbbb", "", "aaaa#", true},
-             {"aaaa #bbbb", "", "aaaa", true},
-             {"1 #comment", "", "1", true},
-             {"#whole thing is comment", "", "", false},
-             {"  #whole comment with space", "", "", false}}};
+             {.line = "password = #aaaa #bbbb",
+              .field = "",
+              .expect = "password =",
+              .had_comment = true},
+             {.line = "password = aaaa\\# #bbbb",
+              .field = "password",
+              .expect = "aaaa#",
+              .had_comment = true},
+             {.line = "password = aaaa\\##bbbb",
+              .field = "password",
+              .expect = "aaaa#",
+              .had_comment = true},
+             {.line = "aaaa#bbbb", .field = "", .expect = "aaaa", .had_comment = true},
+             {.line = "aaaa\\#bbbb", .field = "", .expect = "aaaa#bbbb", .had_comment = false},
+             {.line = "aaaa\\##bbbb", .field = "", .expect = "aaaa#", .had_comment = true},
+             {.line = "aaaa #bbbb", .field = "", .expect = "aaaa", .had_comment = true},
+             {.line = "1 #comment", .field = "", .expect = "1", .had_comment = true},
+             {.line = "#whole thing is comment", .field = "", .expect = "", .had_comment = false},
+             {.line = "  #whole comment with space",
+              .field = "",
+              .expect = "",
+              .had_comment = false}}};
 
         for (auto const& t : tests)
         {
@@ -1387,7 +1424,7 @@ r.ripple.com:51235
             BEAST_EXPECT(s.get<int>("not_a_key") == std::nullopt);
             try
             {
-                s.get<int>("a_string");
+                [[maybe_unused]] auto _ = s.get<int>("a_string");
                 fail();
             }
             catch (boost::bad_lexical_cast&)

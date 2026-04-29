@@ -1,10 +1,21 @@
-#include <xrpl/basics/contract.h>
 #include <xrpl/ledger/detail/RawStateTable.h>
 
-#include <stdexcept>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/XRPAmount.h>
 
-namespace xrpl {
-namespace detail {
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+
+namespace xrpl::detail {
 
 class RawStateTable::sles_iter_impl : public ReadView::sles_type::iter_base
 {
@@ -24,7 +35,7 @@ public:
         items_t::const_iterator end1,
         ReadView::sles_type::iterator iter0,
         ReadView::sles_type::iterator end0)
-        : iter0_(iter0), end0_(end0), iter1_(iter1), end1_(end1)
+        : iter0_(std::move(iter0)), end0_(std::move(end0)), iter1_(iter1), end1_(end1)
     {
         if (iter0_ != end0_)
             sle0_ = *iter0_;
@@ -345,5 +356,4 @@ RawStateTable::slesUpperBound(ReadView const& base, uint256 const& key) const
         items_.upper_bound(key), items_.end(), base.sles.upper_bound(key), base.sles.end());
 }
 
-}  // namespace detail
-}  // namespace xrpl
+}  // namespace xrpl::detail

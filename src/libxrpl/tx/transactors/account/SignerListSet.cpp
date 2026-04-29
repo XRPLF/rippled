@@ -1,16 +1,36 @@
-#include <xrpl/ledger/ApplyView.h>
-#include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/DirectoryHelpers.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/tx/transactors/account/SignerListSet.h>
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/ledger/helpers/AccountRootHelpers.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/SignerEntries.h>
+#include <xrpl/tx/Transactor.h>
+
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
+#include <memory>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
@@ -26,7 +46,7 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
     // the list.  A zero quorum means we're destroying the list.
     auto const quorum = tx[sfSignerQuorum];
     std::vector<SignerEntries::SignerEntry> sign;
-    Operation op = unknown;
+    Operation op = Operation::unknown;
 
     bool const hasSignerEntries(tx.isFieldPresent(sfSignerEntries));
     if ((quorum != 0u) && hasSignerEntries)
@@ -40,11 +60,11 @@ SignerListSet::determineOperation(STTx const& tx, ApplyFlags flags, beast::Journ
 
         // Save deserialized list for later.
         sign = std::move(*signers);
-        op = set;
+        op = Operation::set;
     }
     else if ((quorum == 0) && !hasSignerEntries)
     {
-        op = destroy;
+        op = Operation::destroy;
     }
 
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
@@ -65,14 +85,14 @@ SignerListSet::preflight(PreflightContext const& ctx)
     if (!isTesSuccess(std::get<0>(result)))
         return std::get<0>(result);
 
-    if (std::get<3>(result) == unknown)
+    if (std::get<3>(result) == Operation::unknown)
     {
         // Neither a set nor a destroy.  Malformed.
         JLOG(ctx.j.trace()) << "Malformed transaction: Invalid signer set list format.";
         return temMALFORMED;
     }
 
-    if (std::get<3>(result) == set)
+    if (std::get<3>(result) == Operation::set)
     {
         // Validate our settings.
         auto const account = ctx.tx.getAccountID(sfAccount);
@@ -93,10 +113,10 @@ SignerListSet::doApply()
     // Perform the operation preCompute() decided on.
     switch (do_)
     {
-        case set:
+        case Operation::set:
             return replaceSignerList();
 
-        case destroy:
+        case Operation::destroy:
             return destroySignerList();
 
         default:
@@ -117,7 +137,7 @@ SignerListSet::preCompute()
         isTesSuccess(std::get<0>(result)),
         "xrpl::SignerListSet::preCompute : result is tesSUCCESS");
     XRPL_ASSERT(
-        std::get<3>(result) != unknown,
+        std::get<3>(result) != Operation::unknown,
         "xrpl::SignerListSet::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
@@ -238,10 +258,10 @@ SignerListSet::validateQuorumAndSignerEntries(
 
     // Make sure there are no duplicate signers.
     XRPL_ASSERT(
-        std::is_sorted(signers.begin(), signers.end()),
+        std::ranges::is_sorted(signers),
         "xrpl::SignerListSet::validateQuorumAndSignerEntries : sorted "
         "signers");
-    if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
+    if (std::ranges::adjacent_find(signers) != signers.end())
     {
         JLOG(j.trace()) << "Duplicate signers in signer list";
         return temBAD_SIGNER;
@@ -383,6 +403,25 @@ SignerListSet::writeSignersToSLE(SLE::pointer const& ledgerEntry, std::uint32_t 
 
     // Assign the SignerEntries.
     ledgerEntry->setFieldArray(sfSignerEntries, toLedger);
+}
+
+void
+SignerListSet::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+SignerListSet::finalizeInvariants(
+    STTx const&,
+    TER,
+    XRPAmount,
+    ReadView const&,
+    beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

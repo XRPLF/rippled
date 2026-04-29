@@ -1,14 +1,57 @@
-#include <test/jtx.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/WSClient.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/jtx_json.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/require.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/ticket.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/MPTIssue.h>
-#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/Seed.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <map>
+#include <memory>
+#include <optional>
+#include <string>
+#include <type_traits>
+#include <utility>
+#include <vector>
+
+namespace xrpl::test {
 
 class OfferMPT_test : public beast::unit_test::suite
 {
@@ -1970,7 +2013,7 @@ public:
         auto const f = env.current()->fees().base;
 
         // To keep things simple all offers are 1 : 1 for XRP : USD.
-        enum preAuthType { noPreAuth, acctPreAuth };
+        enum class preAuthType { noPreAuth, acctPreAuth };
         struct TestData
         {
             std::string account;      // Account operated on
@@ -1989,37 +2032,37 @@ public:
         // clang-format off
         TestData const tests[]{
             // acct                     fundXrp        bookAmt   preTrust  offerAmt                   tec     spentXrp       balanceUSD offers  owners scale
-            {"ann",             reserve(env, 0) + 0 * f,    1,   noPreAuth, 1000,      tecUNFUNDED_OFFER,               f, USD(      0),    0, 0},  // Account is at the reserve, and will dip below once fees are subtracted.
-            {"bev",             reserve(env, 0) + 1 * f,    1,   noPreAuth, 1000,      tecUNFUNDED_OFFER,               f, USD(      0),    0, 0},  // Account has just enough for the reserve and the fee.
-            {"cam",             reserve(env, 0) + 2 * f,    0,   noPreAuth, 1000, tecINSUF_RESERVE_OFFER,               f, USD(      0),    0, 0},  // Account has enough for the reserve, the fee and the offer, and a bit more, but not enough for the reserve after the offer is placed.
-            {"deb",             reserve(env, 0) + 2 * f,    1,   noPreAuth, 1000,             tesSUCCESS,           2 * f, USD(      1),    0, 1, 100000},  // Account has enough to buy a little USD then the offer runs dry.
-            {"eve",             reserve(env, 1) + 0 * f,    0,   noPreAuth, 1000,             tesSUCCESS,               f, USD(      0),    1, 1},  // No offer to cross
-            {"flo",             reserve(env, 1) + 0 * f,    1,   noPreAuth, 1000,             tesSUCCESS, XRP(   1)   + f, USD(      1),    0, 1},
-            {"gay",             reserve(env, 1) + 1 * f, 1000,   noPreAuth, 1000,             tesSUCCESS, XRP(  50)   + f, USD(     50),    0, 1},
-            {"hye", XRP(1000)                   + 1 * f, 1000,   noPreAuth, 1000,             tesSUCCESS, XRP( 800)   + f, USD(    800),    0, 1},
-            {"ivy", XRP(   1) + reserve(env, 1) + 1 * f,    1,   noPreAuth, 1000,             tesSUCCESS, XRP(   1)   + f, USD(      1),    0, 1},
-            {"joy", XRP(   1) + reserve(env, 2) + 1 * f,    1,   noPreAuth, 1000,             tesSUCCESS, XRP(   1)   + f, USD(      1),    1, 2},
-            {"kim", XRP( 900) + reserve(env, 2) + 1 * f,  999,   noPreAuth, 1000,             tesSUCCESS, XRP( 999)   + f, USD(    999),    0, 1},
-            {"liz", XRP( 998) + reserve(env, 0) + 1 * f,  999,   noPreAuth, 1000,             tesSUCCESS, XRP( 998)   + f, USD(    998),    0, 1},
-            {"meg", XRP( 998) + reserve(env, 1) + 1 * f,  999,   noPreAuth, 1000,             tesSUCCESS, XRP( 999)   + f, USD(    999),    0, 1},
-            {"nia", XRP( 998) + reserve(env, 2) + 1 * f,  999,   noPreAuth, 1000,             tesSUCCESS, XRP( 999)   + f, USD(    999),    1, 2},
-            {"ova", XRP( 999) + reserve(env, 0) + 1 * f, 1000,   noPreAuth, 1000,             tesSUCCESS, XRP( 999)   + f, USD(    999),    0, 1},
-            {"pam", XRP( 999) + reserve(env, 1) + 1 * f, 1000,   noPreAuth, 1000,             tesSUCCESS, XRP(1000)   + f, USD(   1000),    0, 1},
-            {"rae", XRP( 999) + reserve(env, 2) + 1 * f, 1000,   noPreAuth, 1000,             tesSUCCESS, XRP(1000)   + f, USD(   1000),    0, 1},
-            {"sue", XRP(1000) + reserve(env, 2) + 1 * f,    0,   noPreAuth, 1000,             tesSUCCESS,               f, USD(      0),    1, 1},
+            {.account="ann",             .fundXrp=reserve(env, 0) + 0 * f,    .bookAmount=1,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,               .spentXrp=f, .balanceUsd=USD(      0),    .offers=0, .owners=0},  // Account is at the reserve, and will dip below once fees are subtracted.
+            {.account="bev",             .fundXrp=reserve(env, 0) + 1 * f,    .bookAmount=1,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,               .spentXrp=f, .balanceUsd=USD(      0),    .offers=0, .owners=0},  // Account has just enough for the reserve and the fee.
+            {.account="cam",             .fundXrp=reserve(env, 0) + 2 * f,    .bookAmount=0,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000, .tec=tecINSUF_RESERVE_OFFER,               .spentXrp=f, .balanceUsd=USD(      0),    .offers=0, .owners=0},  // Account has enough for the reserve, the fee and the offer, and a bit more, but not enough for the reserve after the offer is placed.
+            {.account="deb",             .fundXrp=reserve(env, 0) + 2 * f,    .bookAmount=1,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS,           .spentXrp=2 * f, .balanceUsd=USD(      1),    .offers=0, .owners=1, .scale=100000},  // Account has enough to buy a little USD then the offer runs dry.
+            {.account="eve",             .fundXrp=reserve(env, 1) + 0 * f,    .bookAmount=0,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS,               .spentXrp=f, .balanceUsd=USD(      0),    .offers=1, .owners=1},  // No offer to cross
+            {.account="flo",             .fundXrp=reserve(env, 1) + 0 * f,    .bookAmount=1,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(   1)   + f, .balanceUsd=USD(      1),    .offers=0, .owners=1},
+            {.account="gay",             .fundXrp=reserve(env, 1) + 1 * f, .bookAmount=1000,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(  50)   + f, .balanceUsd=USD(     50),    .offers=0, .owners=1},
+            {.account="hye", .fundXrp=XRP(1000)                   + 1 * f, .bookAmount=1000,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 800)   + f, .balanceUsd=USD(    800),    .offers=0, .owners=1},
+            {.account="ivy", .fundXrp=XRP(   1) + reserve(env, 1) + 1 * f,    .bookAmount=1,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(   1)   + f, .balanceUsd=USD(      1),    .offers=0, .owners=1},
+            {.account="joy", .fundXrp=XRP(   1) + reserve(env, 2) + 1 * f,    .bookAmount=1,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(   1)   + f, .balanceUsd=USD(      1),    .offers=1, .owners=2},
+            {.account="kim", .fundXrp=XRP( 900) + reserve(env, 2) + 1 * f,  .bookAmount=999,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 999)   + f, .balanceUsd=USD(    999),    .offers=0, .owners=1},
+            {.account="liz", .fundXrp=XRP( 998) + reserve(env, 0) + 1 * f,  .bookAmount=999,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 998)   + f, .balanceUsd=USD(    998),    .offers=0, .owners=1},
+            {.account="meg", .fundXrp=XRP( 998) + reserve(env, 1) + 1 * f,  .bookAmount=999,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 999)   + f, .balanceUsd=USD(    999),    .offers=0, .owners=1},
+            {.account="nia", .fundXrp=XRP( 998) + reserve(env, 2) + 1 * f,  .bookAmount=999,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 999)   + f, .balanceUsd=USD(    999),    .offers=1, .owners=2},
+            {.account="ova", .fundXrp=XRP( 999) + reserve(env, 0) + 1 * f, .bookAmount=1000,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 999)   + f, .balanceUsd=USD(    999),    .offers=0, .owners=1},
+            {.account="pam", .fundXrp=XRP( 999) + reserve(env, 1) + 1 * f, .bookAmount=1000,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(1000)   + f, .balanceUsd=USD(   1000),    .offers=0, .owners=1},
+            {.account="rae", .fundXrp=XRP( 999) + reserve(env, 2) + 1 * f, .bookAmount=1000,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(1000)   + f, .balanceUsd=USD(   1000),    .offers=0, .owners=1},
+            {.account="sue", .fundXrp=XRP(1000) + reserve(env, 2) + 1 * f,    .bookAmount=0,   .preAuth=preAuthType::noPreAuth, .offerAmount=1000,             .tec=tesSUCCESS,               .spentXrp=f, .balanceUsd=USD(      0),    .offers=1, .owners=1},
             //---------------- Pre-created MPT ---------------------
             // Unlike from IOU, an issuer can't pre-create MPToken for an account (see similar tests in Offer_test.cpp)
-            {"ned",             reserve(env, 1) + 0 * f,    1, acctPreAuth, 1000,      tecUNFUNDED_OFFER,           2 * f, USD(      0),    0, 1},
-            {"ole",             reserve(env, 1) + 1 * f,    1, acctPreAuth, 1000,      tecUNFUNDED_OFFER,           2 * f, USD(      0),    0, 1},
-            {"pat",             reserve(env, 1) + 2 * f,    0, acctPreAuth, 1000,      tecUNFUNDED_OFFER,           2 * f, USD(      0),    0, 1},
-            {"quy",             reserve(env, 1) + 2 * f,    1, acctPreAuth, 1000,      tecUNFUNDED_OFFER,           2 * f, USD(      0),    0, 1},
-            {"ron",             reserve(env, 1) + 3 * f,    0, acctPreAuth, 1000, tecINSUF_RESERVE_OFFER,           2 * f, USD(      0),    0, 1},
-            {"syd",             reserve(env, 1) + 3 * f,    1, acctPreAuth, 1000,             tesSUCCESS,           3 * f, USD(      1),    0, 1, 100000},
-            {"ted", XRP(  20) + reserve(env, 1) + 2 * f, 1000, acctPreAuth, 1000,             tesSUCCESS, XRP(20) + 2 * f, USD(     20),    0, 1},
-            {"uli",             reserve(env, 2) + 0 * f,    0, acctPreAuth, 1000, tecINSUF_RESERVE_OFFER,           2 * f, USD(      0),    0, 1},
-            {"vic",             reserve(env, 2) + 0 * f,    1, acctPreAuth, 1000,             tesSUCCESS, XRP( 1) + 2 * f, USD(      1),    0, 1},
-            {"wes",             reserve(env, 2) + 1 * f,    0, acctPreAuth, 1000,             tesSUCCESS,           2 * f, USD(      0),    1, 2},
-            {"xan",             reserve(env, 2) + 1 * f,    1, acctPreAuth, 1000,             tesSUCCESS, XRP( 1) + 2 * f, USD(      1),    1, 2},
+            {.account="ned",             .fundXrp=reserve(env, 1) + 0 * f,    .bookAmount=1, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,           .spentXrp=2 * f, .balanceUsd=USD(      0),    .offers=0, .owners=1},
+            {.account="ole",             .fundXrp=reserve(env, 1) + 1 * f,    .bookAmount=1, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,           .spentXrp=2 * f, .balanceUsd=USD(      0),    .offers=0, .owners=1},
+            {.account="pat",             .fundXrp=reserve(env, 1) + 2 * f,    .bookAmount=0, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,           .spentXrp=2 * f, .balanceUsd=USD(      0),    .offers=0, .owners=1},
+            {.account="quy",             .fundXrp=reserve(env, 1) + 2 * f,    .bookAmount=1, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,      .tec=tecUNFUNDED_OFFER,           .spentXrp=2 * f, .balanceUsd=USD(      0),    .offers=0, .owners=1},
+            {.account="ron",             .fundXrp=reserve(env, 1) + 3 * f,    .bookAmount=0, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000, .tec=tecINSUF_RESERVE_OFFER,           .spentXrp=2 * f, .balanceUsd=USD(      0),    .offers=0, .owners=1},
+            {.account="syd",             .fundXrp=reserve(env, 1) + 3 * f,    .bookAmount=1, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,             .tec=tesSUCCESS,           .spentXrp=3 * f, .balanceUsd=USD(      1),    .offers=0, .owners=1, .scale=100000},
+            {.account="ted", .fundXrp=XRP(  20) + reserve(env, 1) + 2 * f, .bookAmount=1000, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP(20) + 2 * f, .balanceUsd=USD(     20),    .offers=0, .owners=1},
+            {.account="uli",             .fundXrp=reserve(env, 2) + 0 * f,    .bookAmount=0, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000, .tec=tecINSUF_RESERVE_OFFER,           .spentXrp=2 * f, .balanceUsd=USD(      0),    .offers=0, .owners=1},
+            {.account="vic",             .fundXrp=reserve(env, 2) + 0 * f,    .bookAmount=1, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 1) + 2 * f, .balanceUsd=USD(      1),    .offers=0, .owners=1},
+            {.account="wes",             .fundXrp=reserve(env, 2) + 1 * f,    .bookAmount=0, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,             .tec=tesSUCCESS,           .spentXrp=2 * f, .balanceUsd=USD(      0),    .offers=1, .owners=2},
+            {.account="xan",             .fundXrp=reserve(env, 2) + 1 * f,    .bookAmount=1, .preAuth=preAuthType::acctPreAuth, .offerAmount=1000,             .tec=tesSUCCESS, .spentXrp=XRP( 1) + 2 * f, .balanceUsd=USD(      1),    .offers=1, .owners=2},
         };
         // clang-format on
 
@@ -2042,7 +2085,7 @@ public:
             // Optionally pre-authorize MPT for acct.
             // Note this is not really part of the test, so we expect there
             // to be enough XRP reserve for acct to create the trust line.
-            if (t.preAuth == acctPreAuth)
+            if (t.preAuth == preAuthType::acctPreAuth)
                 MUSD.authorize({.account = acct});
             env.close();
 
@@ -2077,7 +2120,7 @@ public:
                 BEAST_EXPECT(acctOffer[sfTakerPays] == USD(leftover));
             }
 
-            if (t.preAuth == noPreAuth)
+            if (t.preAuth == preAuthType::noPreAuth)
             {
                 if (t.balanceUsd.value().signum() != 0)
                 {
@@ -2443,34 +2486,34 @@ public:
 
             // Constructor with takerGets/takerPays
             TestData(
-                std::string&& account_,      // Account operated on
-                STAmount const& fundXrp_,    // XRP acct funded with
-                STAmount const& fundUSD_,    // USD acct funded with
-                STAmount const& gwGets_,     // gw's offer
-                STAmount const& gwPays_,     //
-                STAmount const& acctGets_,   // acct's offer
-                STAmount const& acctPays_,   //
-                TER tec_,                    // Returned tec code
-                STAmount const& spentXrp_,   // Amount removed from fundXrp
-                STAmount const& finalUsd_,   // Final USD balance on acct
-                int offers_,                 // Offers on acct
-                int owners_,                 // Owners on acct
-                STAmount const& takerGets_,  // Remainder of acct's offer
-                STAmount const& takerPays_)  //
+                std::string&& account_,  // Account operated on
+                STAmount fundXrp_,       // XRP acct funded with
+                STAmount fundUSD_,       // USD acct funded with
+                STAmount gwGets_,        // gw's offer
+                STAmount gwPays_,        //
+                STAmount acctGets_,      // acct's offer
+                STAmount acctPays_,      //
+                TER tec_,                // Returned tec code
+                STAmount spentXrp_,      // Amount removed from fundXrp
+                STAmount finalUsd_,      // Final USD balance on acct
+                int offers_,             // Offers on acct
+                int owners_,             // Owners on acct
+                STAmount takerGets_,     // Remainder of acct's offer
+                STAmount takerPays_)     //
                 : account(std::move(account_))
-                , fundXrp(fundXrp_)
-                , fundUSD(fundUSD_)
-                , gwGets(gwGets_)
-                , gwPays(gwPays_)
-                , acctGets(acctGets_)
-                , acctPays(acctPays_)
+                , fundXrp(std::move(fundXrp_))
+                , fundUSD(std::move(fundUSD_))
+                , gwGets(std::move(gwGets_))
+                , gwPays(std::move(gwPays_))
+                , acctGets(std::move(acctGets_))
+                , acctPays(std::move(acctPays_))
                 , tec(tec_)
-                , spentXrp(spentXrp_)
-                , finalUsd(finalUsd_)
+                , spentXrp(std::move(spentXrp_))
+                , finalUsd(std::move(finalUsd_))
                 , offers(offers_)
                 , owners(owners_)
-                , takerGets(takerGets_)
-                , takerPays(takerPays_)
+                , takerGets(std::move(takerGets_))
+                , takerPays(std::move(takerPays_))
             {
             }
 
@@ -4107,9 +4150,8 @@ public:
     sortedOffersOnAccount(jtx::Env& env, jtx::Account const& acct)
     {
         std::vector<std::shared_ptr<SLE const>> offers{offersOnAccount(env, acct)};
-        std::sort(
-            offers.begin(),
-            offers.end(),
+        std::ranges::sort(
+            offers,
             [](std::shared_ptr<SLE const> const& rhs, std::shared_ptr<SLE const> const& lhs) {
                 return (*rhs)[sfSequence] < (*lhs)[sfSequence];
             });
@@ -4727,5 +4769,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE_PRIO(OfferMPT, tx, xrpl, 2);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

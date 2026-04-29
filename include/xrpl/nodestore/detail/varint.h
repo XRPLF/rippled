@@ -5,8 +5,7 @@
 #include <cstdint>
 #include <type_traits>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 // This is a variant of the base128 varint format from
 // google protocol buffers:
@@ -18,7 +17,7 @@ struct varint;
 // Metafuncton to return largest
 // possible size of T represented as varint.
 // T must be unsigned
-template <class T, bool = std::is_unsigned<T>::value>
+template <class T, bool = std::is_unsigned_v<T>>
 struct varint_traits;
 
 template <class T>
@@ -42,8 +41,10 @@ read_varint(void const* buf, std::size_t buflen, std::size_t& t)
     std::uint8_t const* p = reinterpret_cast<std::uint8_t const*>(buf);
     std::size_t n = 0;
     while (p[n] & 0x80)
+    {
         if (++n >= buflen)
             return 0;
+    }
     if (++n > buflen)
         return 0;
     // Special case for 0
@@ -53,8 +54,9 @@ read_varint(void const* buf, std::size_t buflen, std::size_t& t)
         return 1;
     }
     auto const used = n;
-    while (n--)
+    while (n > 0)
     {
+        --n;
         auto const d = p[n];
         auto const t0 = t;
         t *= 127;
@@ -65,7 +67,7 @@ read_varint(void const* buf, std::size_t buflen, std::size_t& t)
     return used;
 }
 
-template <class T, std::enable_if_t<std::is_unsigned<T>::value>* = nullptr>
+template <class T, std::enable_if_t<std::is_unsigned_v<T>>* = nullptr>
 std::size_t
 size_varint(T v)
 {
@@ -97,7 +99,7 @@ write_varint(void* p0, std::size_t v)
 
 // input stream
 
-template <class T, std::enable_if_t<std::is_same<T, varint>::value>* = nullptr>
+template <class T, std::enable_if_t<std::is_same_v<T, varint>>* = nullptr>
 void
 read(nudb::detail::istream& is, std::size_t& u)
 {
@@ -110,12 +112,11 @@ read(nudb::detail::istream& is, std::size_t& u)
 
 // output stream
 
-template <class T, std::enable_if_t<std::is_same<T, varint>::value>* = nullptr>
+template <class T, std::enable_if_t<std::is_same_v<T, varint>>* = nullptr>
 void
 write(nudb::detail::ostream& os, std::size_t t)
 {
     write_varint(os.data(size_varint(t)), t);
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

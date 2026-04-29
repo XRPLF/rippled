@@ -2,21 +2,39 @@
 
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 
+#include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/bind_executor.hpp>
 #include <boost/asio/buffer.hpp>
+#include <boost/asio/error.hpp>
+#include <boost/asio/executor_work_guard.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/post.hpp>
 #include <boost/asio/read_until.hpp>
-#include <boost/asio/ssl.hpp>
+#include <boost/asio/ssl/context.hpp>
+#include <boost/asio/ssl/stream.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/utility/in_place_factory.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/optional/optional.hpp>
+#include <boost/system/detail/error_code.hpp>
 
+#include <cassert>
+#include <chrono>
 #include <condition_variable>
+#include <cstddef>
 #include <functional>
+#include <map>
+#include <memory>
+#include <mutex>
+#include <ostream>
+#include <string>
 #include <thread>
 #include <utility>
+#include <vector>
 
 namespace xrpl {
 /*
@@ -100,14 +118,14 @@ private:
         void
         add(std::shared_ptr<Child> const& child)
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             list_.emplace(child.get(), child);
         }
 
         void
         remove(Child* child)
         {
-            std::lock_guard const lock(mutex_);
+            std::scoped_lock const lock(mutex_);
             list_.erase(child);
             if (list_.empty())
                 cond_.notify_one();
@@ -118,7 +136,7 @@ private:
         {
             std::vector<std::shared_ptr<Child>> v;
             {
-                std::lock_guard const lock(mutex_);
+                std::scoped_lock const lock(mutex_);
                 v.reserve(list_.size());
                 if (closed_)
                     return;
@@ -406,7 +424,7 @@ private:
             wait();
         }
 
-        endpoint_type const&
+        [[nodiscard]] endpoint_type const&
         endpoint() const
         {
             return endpoint_;
@@ -627,7 +645,7 @@ public:
     {
     }
 
-    ~short_read_test()
+    ~short_read_test() override
     {
         work_.reset();
         thread_.join();

@@ -87,6 +87,8 @@ class STCurrency;
 #define TO_ENUM(name, value) name = (value),
 #define TO_MAP(name, value) {#name, value},
 
+// Protocol infrastructure, 39+ files
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum SerializedTypeID { XMACRO(TO_ENUM) };
 
 static std::map<std::string, int> const sTypeMap = {XMACRO(TO_MAP)};
@@ -125,6 +127,8 @@ field_code(int id, int index)
 class SField
 {
 public:
+    // Need to be named before converting
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum {
         sMD_Never = 0x00,
         sMD_ChangeOrig = 0x01,     // original value when it changes
@@ -189,19 +193,19 @@ public:
         return getField(field_code(type, value));
     }
 
-    std::string const&
+    [[nodiscard]] std::string const&
     getName() const
     {
         return fieldName;
     }
 
-    bool
+    [[nodiscard]] bool
     hasName() const
     {
         return fieldCode > 0;
     }
 
-    Json::StaticString const&
+    [[nodiscard]] Json::StaticString const&
     getJsonName() const
     {
         return jsonName;
@@ -212,19 +216,19 @@ public:
         return jsonName;
     }
 
-    bool
+    [[nodiscard]] bool
     isInvalid() const
     {
         return fieldCode == -1;
     }
 
-    bool
+    [[nodiscard]] bool
     isUseful() const
     {
         return fieldCode > 0;
     }
 
-    bool
+    [[nodiscard]] bool
     isBinary() const
     {
         return fieldValue < 256;
@@ -234,18 +238,18 @@ public:
     // should be discarded during serialization,like 'hash'.
     // You cannot serialize an object's hash inside that object,
     // but you can have it in the JSON representation.
-    bool
+    [[nodiscard]] bool
     isDiscardable() const
     {
         return fieldValue > 256;
     }
 
-    int
+    [[nodiscard]] int
     getCode() const
     {
         return fieldCode;
     }
-    int
+    [[nodiscard]] int
     getNum() const
     {
         return fieldNum;
@@ -256,13 +260,13 @@ public:
         return num;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldMeta(int c) const
     {
         return (fieldMeta & c) != 0;
     }
 
-    bool
+    [[nodiscard]] bool
     shouldInclude(bool withSigningField) const
     {
         return (fieldValue < 256) && (withSigningField || (signingField == IsSigning::yes));

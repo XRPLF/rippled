@@ -4,9 +4,10 @@
 
 #include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // This is only used to pre-allocate the array for
     // batch objects and does not affect the amount written.
@@ -21,12 +22,12 @@ enum {
 };
 
 /** Return codes from Backend operations. */
-enum Status {
-    ok,
-    notFound,
-    dataCorrupt,
-    unknown,
-    backendError,
+enum class Status {
+    ok = 0,
+    notFound = 1,
+    dataCorrupt = 2,
+    unknown = 3,
+    backendError = 4,
 
     customCode = 100
 };
@@ -34,6 +35,4 @@ enum Status {
 /** A batch of NodeObjects to write at once. */
 using Batch = std::vector<std::shared_ptr<NodeObject>>;
 
-}  // namespace NodeStore
-
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

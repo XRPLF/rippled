@@ -15,6 +15,7 @@
 #include <boost/container/vector.hpp>
 
 #include <cstddef>
+#include <utility>
 #include <vector>
 
 namespace xrpl {
@@ -45,7 +46,7 @@ struct AttestationBase
         PublicKey const& publicKey_,
         Buffer signature_,
         AccountID const& sendingAccount_,
-        STAmount const& sendingAmount_,
+        STAmount sendingAmount_,
         AccountID const& rewardAccount_,
         bool wasLockingChainSend_);
 
@@ -57,7 +58,7 @@ struct AttestationBase
     operator=(AttestationBase const&) = default;
 
     // verify that the signature attests to the data.
-    bool
+    [[nodiscard]] bool
     verify(STXChainBridge const& bridge) const;
 
 protected:
@@ -169,7 +170,7 @@ struct AttestationCreateAccount : AttestationBase
         Buffer signature_,
         AccountID const& sendingAccount_,
         STAmount const& sendingAmount_,
-        STAmount const& rewardAmount_,
+        STAmount rewardAmount_,
         AccountID const& rewardAccount_,
         bool wasLockingChainSend_,
         std::uint64_t createCount_,
@@ -256,8 +257,8 @@ struct XChainClaimAttestation
         bool wasLockingChainSend;
         std::optional<AccountID> dst;
         MatchFields(TSignedAttestation const& att);
-        MatchFields(STAmount const& a, bool b, std::optional<AccountID> const& d)
-            : amount{a}, wasLockingChainSend{b}, dst{d}
+        MatchFields(STAmount a, bool b, std::optional<AccountID> const& d)
+            : amount{std::move(a)}, wasLockingChainSend{b}, dst{d}
         {
         }
     };
@@ -284,7 +285,7 @@ struct XChainClaimAttestation
 
     explicit XChainClaimAttestation(Json::Value const& v);
 
-    AttestationMatch
+    [[nodiscard]] AttestationMatch
     match(MatchFields const& rhs) const;
 
     [[nodiscard]] STObject
@@ -335,7 +336,7 @@ struct XChainCreateAccountAttestation
     [[nodiscard]] STObject
     toSTObject() const;
 
-    AttestationMatch
+    [[nodiscard]] AttestationMatch
     match(MatchFields const& rhs) const;
 
     friend bool
@@ -378,10 +379,10 @@ public:
     [[nodiscard]] STArray
     toSTArray() const;
 
-    typename AttCollection::const_iterator
+    [[nodiscard]] typename AttCollection::const_iterator
     begin() const;
 
-    typename AttCollection::const_iterator
+    [[nodiscard]] typename AttCollection::const_iterator
     end() const;
 
     typename AttCollection::iterator
@@ -394,13 +395,13 @@ public:
     std::size_t
     erase_if(F&& f);
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const;
 
-    bool
+    [[nodiscard]] bool
     empty() const;
 
-    AttCollection const&
+    [[nodiscard]] AttCollection const&
     attestations() const;
 
     template <class T>

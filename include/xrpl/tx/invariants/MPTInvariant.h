@@ -24,7 +24,7 @@ public:
     void
     visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
 
-    bool
+    [[nodiscard]] bool
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&) const;
 };
 
@@ -35,10 +35,10 @@ public:
  */
 class ValidMPTPayment
 {
-    enum Order { Before = 0, After = 1 };
+    enum class Order { Before = 0, After = 1 };
     struct MPTData
     {
-        std::array<std::int64_t, After + 1> outstanding{};
+        std::array<std::int64_t, 2> outstanding{};
         // sum (MPT after - MPT before)
         std::int64_t mptAmount{0};
     };

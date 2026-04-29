@@ -2,10 +2,10 @@
 
 #include <chrono>
 
-namespace xrpl {
+namespace xrpl::Tuning {
 
-namespace Tuning {
-
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     /** How many ledgers off a server can be and we will
         still consider it converged */
@@ -44,6 +44,4 @@ enum {
 /** Size of buffer used to read from the socket. */
 std::size_t constexpr readBufferBytes = 16384;
 
-}  // namespace Tuning
-
-}  // namespace xrpl
+}  // namespace xrpl::Tuning

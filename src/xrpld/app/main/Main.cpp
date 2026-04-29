@@ -3,30 +3,52 @@
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/rpc/RPCCall.h>
+#include <xrpld/rpc/handlers/server_info/ServerDefinitions.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/SlabAllocator.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/unit_test/suite_info.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/core/StartUpType.h>
 #include <xrpl/git/Git.h>
+#include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/server/Vacuum.h>
 
-#include <boost/asio/io_context.hpp>
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/process/v1/args.hpp>
-#include <boost/process/v1/child.hpp>
+#include <boost/process/v1/child.hpp>  // IWYU pragma: keep
 #include <boost/process/v1/exe.hpp>
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/positional_options.hpp>
+#include <boost/program_options/value_semantic.hpp>
+#include <boost/program_options/variables_map.hpp>
+
+#include <algorithm>
+#include <atomic>
+#include <cstdint>
+#include <exception>
+#include <iostream>
+#include <memory>
+#include <ostream>
+#include <string>
+#include <vector>
 
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
 
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
-#include <boost/algorithm/string.hpp>
-#include <boost/program_options.hpp>
 
 #include <google/protobuf/stubs/common.h>
 
 #include <cstdlib>
-#include <fstream>
 #include <stdexcept>
 #include <utility>
 
@@ -49,7 +71,7 @@
 #endif
 
 #ifdef ENABLE_VOIDSTAR
-#include "antithesis_instrumentation.h"
+#include <antithesis_instrumentation.h>
 #endif
 
 namespace po = boost::program_options;
@@ -188,10 +210,10 @@ public:
         std::vector<std::string> v;
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
         selectors_.reserve(v.size());
-        std::for_each(v.begin(), v.end(), [this](std::string s) {
+        std::ranges::for_each(v, [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
-                selectors_.emplace_back(beast::unit_test::selector::automatch, s);
+                selectors_.emplace_back(beast::unit_test::selector::mode_t::automatch, s);
         });
     }
 
@@ -206,7 +228,7 @@ public:
         return false;
     }
 
-    std::size_t
+    [[nodiscard]] std::size_t
     size() const
     {
         return selectors_.size();
@@ -356,12 +378,12 @@ run(int argc, char** argv)
         "nodeid", po::value<std::string>(), "Specify the node identity for this server.")(
         "quorum", po::value<std::size_t>(), "Override the minimum validation quorum.")(
         "silent", "No output to the console after startup.")("standalone,a", "Run with no peers.")(
-        "verbose,v", "Verbose logging.")
-
-        ("force_ledger_present_range",
-         po::value<std::string>(),
-         "Specify the range of present ledgers for testing purposes. Min and "
-         "max values are comma separated.")("version", "Display the build version.");
+        "verbose,v", "Verbose logging.")(
+        "definitions", "Output server definitions as JSON and exit.")(
+        "force_ledger_present_range",
+        po::value<std::string>(),
+        "Specify the range of present ledgers for testing purposes. Min and "
+        "max values are comma separated.")("version", "Display the build version.");
 
     po::options_description data("Ledger/Data Options");
     data.add_options()("import", importText.c_str())(
@@ -483,10 +505,20 @@ run(int argc, char** argv)
 
     if (vm.contains("version"))
     {
+        // LCOV_EXCL_START
         std::cout << "xrpld version " << BuildInfo::getVersionString() << std::endl;
         std::cout << "Git commit hash: " << xrpl::git::getCommitHash() << std::endl;
         std::cout << "Git build branch: " << xrpl::git::getBuildBranch() << std::endl;
         return 0;
+        // LCOV_EXCL_STOP
+    }
+
+    if (vm.contains("definitions"))
+    {
+        // LCOV_EXCL_START
+        std::cout << Json::FastWriter().write(getServerDefinitionsJson());
+        return 0;
+        // LCOV_EXCL_STOP
     }
 
 #ifndef ENABLE_TESTS

@@ -109,9 +109,7 @@ private:
     class Entry : public CountedObject<Entry>
     {
     public:
-        Entry()
-        {
-        }
+        Entry() = default;
 
         void
         addPeer(PeerShortID peer)
@@ -120,7 +118,7 @@ private:
                 peers_.insert(peer);
         }
 
-        HashRouterFlags
+        [[nodiscard]] HashRouterFlags
         getFlags(void) const
         {
             return flags_;
@@ -140,7 +138,7 @@ private:
         }
 
         /** Return seated relay time point if the message has been relayed */
-        std::optional<Stopwatch::time_point>
+        [[nodiscard]] std::optional<Stopwatch::time_point>
         relayed() const
         {
             return relayed_;

@@ -166,7 +166,7 @@ public:
 
 private:
     SharedPointerType
-    initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l);
+    initialFetch(key_type const& key, std::scoped_lock<mutex_type> const& l);
 
     void
     collect_metrics();
@@ -222,19 +222,19 @@ private:
         {
         }
 
-        bool
+        [[nodiscard]] bool
         isWeak() const
         {
             if (!ptr)
                 return true;
             return ptr.isWeak();
         }
-        bool
+        [[nodiscard]] bool
         isCached() const
         {
             return ptr && ptr.isStrong();
         }
-        bool
+        [[nodiscard]] bool
         isExpired() const
         {
             return ptr.expired();
@@ -251,7 +251,7 @@ private:
         }
     };
 
-    typedef typename std::conditional<IsKeyCache, KeyOnlyEntry, ValueEntry>::type Entry;
+    using Entry = std::conditional_t<IsKeyCache, KeyOnlyEntry, ValueEntry>;
 
     using KeyOnlyCacheType = hardened_partitioned_hash_map<key_type, KeyOnlyEntry, Hash, KeyEqual>;
 
@@ -266,7 +266,7 @@ private:
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::scoped_lock<std::recursive_mutex> const&);
 
     [[nodiscard]] std::thread
     sweepHelper(
@@ -275,7 +275,7 @@ private:
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::scoped_lock<std::recursive_mutex> const&);
 
     beast::Journal m_journal;
     clock_type& m_clock;

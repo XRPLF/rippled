@@ -1,27 +1,70 @@
-#include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/escrow.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
 #include <test/jtx/sendmax.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/chrono.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/jss.h>
+#include <xrpl/tx/Transactor.h>
 #include <xrpl/tx/transactors/dex/AMMBid.h>
-#include <xrpl/tx/transactors/dex/AMMContext.h>
 
-#include <boost/regex.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_search.hpp>
 
+#include <array>
+#include <cassert>
+#include <chrono>
+#include <cstdint>
+#include <cstring>
+#include <functional>
+#include <memory>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 /**
  * Basic tests of AMM that do not use offers.
@@ -30,7 +73,7 @@ namespace test {
 struct AMM_test : public jtx::AMMTest
 {
     // Use small Number mantissas for the life of this test.
-    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::small};
+    NumberMantissaScaleGuard const sg_{xrpl::MantissaRange::mantissa_scale::small};
 
 private:
     static FeatureBitset
@@ -5759,7 +5802,7 @@ private:
         Env const env(*this, features, std::make_unique<CaptureLogs>(&logs));
         auto rules = env.current()->rules();
         CurrentTransactionRulesGuard const rg(rules);
-        NumberMantissaScaleGuard const sg(MantissaRange::small);
+        NumberMantissaScaleGuard const sg(MantissaRange::mantissa_scale::small);
 
         for (auto const& t : tests)
         {
@@ -5932,6 +5975,7 @@ private:
     }
 
     void
+    // NOLINTNEXTLINE(readability-convert-member-functions-to-static)
     testFixOverflowOffer(FeatureBitset featuresInitial)
     {
         using namespace jtx;
@@ -6748,8 +6792,9 @@ private:
     {
         auto const [amount, amount2, lptBalance] = amm.balances(GBP, EUR);
 
-        NumberMantissaScaleGuard const sg(MantissaRange::small);
-        NumberRoundModeGuard const g(env.enabled(fixAMMv1_3) ? Number::upward : Number::getround());
+        NumberMantissaScaleGuard const sg(MantissaRange::mantissa_scale::small);
+        NumberRoundModeGuard const g(
+            env.enabled(fixAMMv1_3) ? Number::rounding_mode::upward : Number::getround());
         auto const res = root2(amount * amount2);
 
         if (shouldFail)
@@ -7091,5 +7136,4 @@ private:
 
 BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

@@ -1,7 +1,15 @@
-#include <test/jtx.h>
 
-#include <xrpl/protocol/Feature.h>
 
+#include <test/jtx/Env.h>  // IWYU pragma: keep
+
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STObject.h>
+
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -134,9 +142,10 @@ class Hooks_test : public beast::unit_test::suite
                 }
 
                 case STI_ACCOUNT: {
-                    // NOLINTNEXTLINE(bugprone-unchecked-optional-access)
+                    // NOLINTBEGIN(bugprone-unchecked-optional-access)
                     AccountID const id =
                         *parseBase58<AccountID>("rwfSjJNK2YQuN64bSWn7T2eY9FJAyAPYJT");
+                    // NOLINTEND(bugprone-unchecked-optional-access)
                     dummy.setAccountID(f, id);
                     BEAST_EXPECT(dummy.getAccountID(f) == id);
                     BEAST_EXPECT(dummy.isFieldPresent(f));

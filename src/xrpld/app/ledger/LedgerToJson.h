@@ -19,10 +19,12 @@ struct LedgerFill
         std::vector<TxQ::TxDetails> q = {})
         : ledger(l), options(o), txQueue(std::move(q)), context(ctx)
     {
-        if (context)
+        if (context != nullptr)
             closeTime = context->ledgerMaster.getCloseTimeBySeq(ledger.seq());
     }
 
+    // Bitwise bitmask
+    // NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
     enum Options {
         dumpTxrp = 1,
         dumpState = 2,
