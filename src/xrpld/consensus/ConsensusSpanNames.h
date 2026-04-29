@@ -2,22 +2,78 @@
 
 /** Compile-time span name constants for consensus tracing.
  *
- *  Used by RCLConsensus (app) and Consensus.h (template) for
- *  consensus lifecycle spans. Built on StaticStr/join() from SpanNames.h.
+ *  Used by RCLConsensus (app), Consensus.h (template), and PeerImp
+ *  (overlay) for consensus lifecycle spans.
+ *  Built on StaticStr/join() from SpanNames.h.
  *
- *  Span hierarchy:
+ *  ## Span Hierarchy
  *
- *    consensus.round (deterministic trace_id from ledger hash)
+ *  Root span created in Adaptor::startRoundTracing().  In "deterministic"
+ *  strategy the trace-id is derived from the previous ledger hash so all
+ *  nodes tracing the same round share a trace.
+ *
+ *    consensus.round                             [main thread, root]
+ *    |  Created: Adaptor::startRoundTracing()
+ *    |  Attrs:   ledger_id, ledger.seq, mode, trace_strategy, round_id
  *    |
- *    +-- consensus.proposal.send
- *    +-- consensus.ledger_close
- *    +-- consensus.establish
- *    +-- consensus.update_positions
- *    +-- consensus.check
- *    +-- consensus.accept
- *    +-- consensus.accept.apply     (jtACCEPT thread)
- *    +-- consensus.validation.send  (jtACCEPT thread, linked)
- *    +-- consensus.mode_change
+ *    +-- consensus.phase.open                    [main thread, child]
+ *    |     Created: Consensus::startRoundInternal()
+ *    |     Ended:   Consensus::closeLedger()
+ *    |
+ *    +-- consensus.proposal.send                 [main thread]
+ *    |     Created: Adaptor::propose()
+ *    |     Attrs:   round (proposeSeq)
+ *    |
+ *    +-- consensus.ledger_close                  [main thread]
+ *    |     Created: Adaptor::onClose()
+ *    |     Attrs:   ledger.seq, mode
+ *    |
+ *    +-- consensus.establish                     [main thread, child]
+ *    |     Created: Consensus::startEstablishTracing()
+ *    |     Ended:   Consensus::phaseEstablish() on accept
+ *    |     Attrs:   converge_percent, establish_count, proposers
+ *    |
+ *    +-- consensus.update_positions              [main thread]
+ *    |     Created: Consensus::updateOurPositions()
+ *    |     Attrs:   converge_percent, proposers, disputes_count
+ *    |     Events:  per-dispute vote details (tx_id, our_vote, yays, nays)
+ *    |
+ *    +-- consensus.check                         [main thread]
+ *    |     Created: Consensus::haveConsensus()
+ *    |     Attrs:   agree/disagree counts, threshold_percent, result
+ *    |
+ *    +-- consensus.accept                        [main thread, child of round]
+ *    |     Created: Adaptor::makeAcceptSpan(), shared_ptr kept alive
+ *    |              until doAccept() completes on jtACCEPT thread
+ *    |     Attrs:   proposers, round_time_ms, quorum
+ *    |   |
+ *    |   +-- consensus.accept.apply              [jtACCEPT thread, child of accept]
+ *    |         Created: Adaptor::doAccept()
+ *    |     Attrs:   ledger.seq, close_time, close_time_correct,
+ *    |              close_resolution_ms, state, proposing, round_time_ms,
+ *    |              parent_close_time, close_time_self, close_time_vote_bins,
+ *    |              resolution_direction, tx_count
+ *    |     Events:  tx.included (per tx)
+ *    |
+ *    +~~~ consensus.validation.send              [jtACCEPT thread, linked]
+ *    |     Created: Adaptor::createValidationSpan() (follows-from link)
+ *    |     Attrs:   ledger.seq, proposing
+ *    |
+ *    +-- consensus.mode_change                   [main thread]
+ *          Created: Adaptor::onModeChange()
+ *          Attrs:   mode.old, mode.new
+ *
+ *  Standalone spans (no parent, created per-message in overlay):
+ *
+ *    consensus.proposal.receive                  [PeerImp I/O thread]
+ *      Created: PeerImp::onMessage(TMProposeSet)
+ *
+ *    consensus.validation.receive                [PeerImp I/O thread]
+ *      Created: PeerImp::onMessage(TMValidation)
+ *
+ *  Legend:
+ *    +--  child-of relationship (same trace)
+ *    +~~~ follows-from link (separate sub-tree, causal link)
  */
 
 #include <xrpl/telemetry/SpanNames.h>
@@ -28,17 +84,27 @@ namespace cons_span {
 
 // ===== Span name segments ====================================================
 
+namespace part {
+inline constexpr auto proposal = makeStr("proposal");
+inline constexpr auto validation = makeStr("validation");
+inline constexpr auto accept = makeStr("accept");
+inline constexpr auto phase = makeStr("phase");
+}  // namespace part
+
 namespace op {
 inline constexpr auto round = makeStr("round");
-inline constexpr auto proposalSend = makeStr("proposal.send");
+inline constexpr auto proposalSend = join(part::proposal, makeStr("send"));
 inline constexpr auto ledgerClose = makeStr("ledger_close");
 inline constexpr auto establish = makeStr("establish");
 inline constexpr auto updatePositions = makeStr("update_positions");
 inline constexpr auto check = makeStr("check");
 inline constexpr auto accept = makeStr("accept");
-inline constexpr auto acceptApply = makeStr("accept.apply");
-inline constexpr auto validationSend = makeStr("validation.send");
+inline constexpr auto acceptApply = join(part::accept, makeStr("apply"));
+inline constexpr auto validationSend = join(part::validation, makeStr("send"));
 inline constexpr auto modeChange = makeStr("mode_change");
+inline constexpr auto proposalReceive = join(part::proposal, makeStr("receive"));
+inline constexpr auto validationReceive = join(part::validation, makeStr("receive"));
+inline constexpr auto phaseOpen = join(part::phase, makeStr("open"));
 }  // namespace op
 
 // ===== Full span names (prefix.op) ===========================================
@@ -53,6 +119,9 @@ inline constexpr auto accept = join(seg::consensus, op::accept);
 inline constexpr auto acceptApply = join(seg::consensus, op::acceptApply);
 inline constexpr auto validationSend = join(seg::consensus, op::validationSend);
 inline constexpr auto modeChange = join(seg::consensus, op::modeChange);
+inline constexpr auto proposalReceive = join(seg::consensus, op::proposalReceive);
+inline constexpr auto validationReceive = join(seg::consensus, op::validationReceive);
+inline constexpr auto phaseOpen = join(seg::consensus, op::phaseOpen);
 
 // ===== Attribute keys ========================================================
 
@@ -62,7 +131,7 @@ inline constexpr auto xrplConsensus = join(seg::xrpl, seg::consensus);
 /// "xrpl.consensus.ledger_id"
 inline constexpr auto ledgerId = join(xrplConsensus, makeStr("ledger_id"));
 /// "xrpl.consensus.ledger.seq"
-inline constexpr auto ledgerSeq = join(xrplConsensus, makeStr("ledger.seq"));
+inline constexpr auto ledgerSeq = join(join(xrplConsensus, makeStr("ledger")), makeStr("seq"));
 /// "xrpl.consensus.mode"
 inline constexpr auto mode = join(xrplConsensus, makeStr("mode"));
 /// "xrpl.consensus.round"
@@ -97,9 +166,6 @@ inline constexpr auto resolutionDirection = join(xrplConsensus, makeStr("resolut
 inline constexpr auto convergePercent = join(xrplConsensus, makeStr("converge_percent"));
 /// "xrpl.consensus.establish_count"
 inline constexpr auto establishCount = join(xrplConsensus, makeStr("establish_count"));
-/// "xrpl.consensus.proposers_agreed"
-inline constexpr auto proposersAgreed = join(xrplConsensus, makeStr("proposers_agreed"));
-
 // Avalanche threshold attributes
 /// "xrpl.consensus.avalanche_threshold"
 inline constexpr auto avalancheThreshold = join(xrplConsensus, makeStr("avalanche_threshold"));
@@ -120,8 +186,6 @@ inline constexpr auto thresholdPercent = join(xrplConsensus, makeStr("threshold_
 inline constexpr auto result = join(xrplConsensus, makeStr("result"));
 /// "xrpl.consensus.quorum"
 inline constexpr auto quorum = join(xrplConsensus, makeStr("quorum"));
-/// "xrpl.consensus.validation_count"
-inline constexpr auto validationCount = join(xrplConsensus, makeStr("validation_count"));
 
 // Trace strategy attribute
 /// "xrpl.consensus.trace_strategy"
@@ -131,9 +195,9 @@ inline constexpr auto roundId = join(xrplConsensus, makeStr("round_id"));
 
 // Mode change attributes
 /// "xrpl.consensus.mode.old"
-inline constexpr auto modeOld = join(xrplConsensus, makeStr("mode.old"));
+inline constexpr auto modeOld = join(join(xrplConsensus, makeStr("mode")), makeStr("old"));
 /// "xrpl.consensus.mode.new"
-inline constexpr auto modeNew = join(xrplConsensus, makeStr("mode.new"));
+inline constexpr auto modeNew = join(join(xrplConsensus, makeStr("mode")), makeStr("new"));
 
 // Dispute event attributes
 /// "xrpl.tx.id"
@@ -145,7 +209,23 @@ inline constexpr auto disputeOurVote =
 inline constexpr auto disputeYays = join(join(seg::xrpl, makeStr("dispute")), makeStr("yays"));
 /// "xrpl.dispute.nays"
 inline constexpr auto disputeNays = join(join(seg::xrpl, makeStr("dispute")), makeStr("nays"));
+
+/// "xrpl.consensus.tx_count"
+inline constexpr auto txCount = join(xrplConsensus, makeStr("tx_count"));
+/// "xrpl.consensus.disputes_count"
+inline constexpr auto disputesCount = join(xrplConsensus, makeStr("disputes_count"));
+/// "xrpl.consensus.trusted"
+inline constexpr auto trusted = join(xrplConsensus, makeStr("trusted"));
 }  // namespace attr
+
+// ===== Event names ===========================================================
+
+namespace event {
+/// "dispute.resolve"
+inline constexpr auto disputeResolve = join(makeStr("dispute"), makeStr("resolve"));
+/// "tx.included"
+inline constexpr auto txIncluded = join(makeStr("tx"), makeStr("included"));
+}  // namespace event
 
 // ===== Attribute values ======================================================
 

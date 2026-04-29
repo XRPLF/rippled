@@ -438,18 +438,8 @@ seq_num=$(echo "$acct_result" | jq -r '.result.account_data.Sequence' 2>/dev/nul
 log "  Genesis account sequence: $seq_num"
 
 # Submit payment
-submit_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" -d "{
-  \"method\": \"submit\",
-  \"params\": [{
-    \"secret\": \"$GENESIS_SEED\",
-    \"tx_json\": {
-      \"TransactionType\": \"Payment\",
-      \"Account\": \"$GENESIS_ACCOUNT\",
-      \"Destination\": \"$DEST_ACCOUNT\",
-      \"Amount\": \"10000000\"
-    }
-  }]
-}")
+submit_result=$(curl -sf "http://localhost:$RPC_PORT_BASE" \
+    -d "{\"method\":\"submit\",\"params\":[{\"secret\":\"$GENESIS_SEED\",\"tx_json\":{\"TransactionType\":\"Payment\",\"Account\":\"$GENESIS_ACCOUNT\",\"Destination\":\"$DEST_ACCOUNT\",\"Amount\":\"10000000\"}}]}")
 
 engine_result=$(echo "$submit_result" | jq -r '.result.engine_result' 2>/dev/null || echo "unknown")
 tx_hash=$(echo "$submit_result" | jq -r '.result.tx_json.hash' 2>/dev/null || echo "unknown")

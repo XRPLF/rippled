@@ -172,9 +172,16 @@ class NetworkOPsImp final : public NetworkOPs
         FailHard const failType;
         bool applied = false;
         TER result;
+        /// Keeps the tx.process span alive until the batch processes this entry.
+        std::shared_ptr<telemetry::SpanGuard> span;
 
-        TransactionStatus(std::shared_ptr<Transaction> t, bool a, bool l, FailHard f)
-            : transaction(std::move(t)), admin(a), local(l), failType(f)
+        TransactionStatus(
+            std::shared_ptr<Transaction> t,
+            bool a,
+            bool l,
+            FailHard f,
+            std::shared_ptr<telemetry::SpanGuard> s = nullptr)
+            : transaction(std::move(t)), admin(a), local(l), failType(f), span(std::move(s))
         {
             XRPL_ASSERT(
                 local || failType == FailHard::no,
@@ -397,7 +404,8 @@ public:
     doTransactionAsync(
         std::shared_ptr<Transaction> transaction,
         bool bUnlimited,
-        FailHard failtype);
+        FailHard failtype,
+        std::shared_ptr<telemetry::SpanGuard> span = nullptr);
 
 private:
     bool
@@ -1315,9 +1323,9 @@ NetworkOPsImp::processTransaction(
     FailHard failType)
 {
     using namespace telemetry;
-    auto span = txProcessSpan(transaction->getID());
-    span.setAttribute(tx_span::attr::hash, to_string(transaction->getID()).c_str());
-    span.setAttribute(tx_span::attr::local, bLocal);
+    auto span = std::make_shared<SpanGuard>(txProcessSpan(transaction->getID()));
+    span->setAttribute(tx_span::attr::hash, to_string(transaction->getID()).c_str());
+    span->setAttribute(tx_span::attr::local, bLocal);
 
     auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
 
@@ -1327,13 +1335,13 @@ NetworkOPsImp::processTransaction(
 
     if (bLocal)
     {
-        span.setAttribute(tx_span::attr::path, tx_span::val::sync);
+        span->setAttribute(tx_span::attr::path, tx_span::val::sync);
         doTransactionSync(transaction, bUnlimited, failType);
     }
     else
     {
-        span.setAttribute(tx_span::attr::path, tx_span::val::async);
-        doTransactionAsync(transaction, bUnlimited, failType);
+        span->setAttribute(tx_span::attr::path, tx_span::val::async);
+        doTransactionAsync(transaction, bUnlimited, failType, std::move(span));
     }
 }
 
@@ -1341,14 +1349,15 @@ void
 NetworkOPsImp::doTransactionAsync(
     std::shared_ptr<Transaction> transaction,
     bool bUnlimited,
-    FailHard failType)
+    FailHard failType,
+    std::shared_ptr<telemetry::SpanGuard> span)
 {
     std::lock_guard const lock(mMutex);
 
     if (transaction->getApplying())
         return;
 
-    mTransactions.emplace_back(transaction, bUnlimited, false, failType);
+    mTransactions.emplace_back(transaction, bUnlimited, false, failType, std::move(span));
     transaction->setApplying();
 
     if (mDispatchState == DispatchState::none)
