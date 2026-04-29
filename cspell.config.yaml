@@ -118,6 +118,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hicpp
   - hwaddress
   - hwrap
   - ifndef

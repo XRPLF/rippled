@@ -399,7 +399,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Proposals Trusted vs Untrusted   | piechart   | by `xrpl_peer_proposal_trusted`   | `xrpl_peer_proposal_trusted`   |
 | Validations Trusted vs Untrusted | piechart   | by `xrpl_peer_validation_trusted` | `xrpl_peer_validation_trusted` |
 
-### Node Health — StatsD (`xrpld-statsd-node-health`)
+### Node Health -- StatsD (`xrpld-statsd-node-health`)
 
 | Panel                                  | Type       | PromQL                                                            | Labels Used |
 | -------------------------------------- | ---------- | ----------------------------------------------------------------- | ----------- |
@@ -420,7 +420,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | All Jobs Execution Time (Detail)       | timeseries | `{__name__=~"rippled_<all_jobs>", quantile="$quantile"}`          | `quantile`  |
 | All Jobs Dequeue Wait (Detail)         | timeseries | `{__name__=~"rippled_<all_jobs>_q", quantile="$quantile"}`        | `quantile`  |
 
-### Network Traffic — StatsD (`xrpld-statsd-network`)
+### Network Traffic -- StatsD (`xrpld-statsd-network`)
 
 | Panel                                | Type       | PromQL                                       | Labels Used |
 | ------------------------------------ | ---------- | -------------------------------------------- | ----------- |
@@ -435,7 +435,7 @@ Requires `trace_peer=1` in the `[telemetry]` config section.
 | Duplicate Traffic (Wasted Bandwidth) | timeseries | `rate(rippled_*_duplicate_Bytes_In/Out[5m])` | —           |
 | All Traffic Categories (Detail)      | timeseries | `topk(15, rate(rippled_*_Bytes_In[5m]))`     | —           |
 
-### RPC & Pathfinding — StatsD (`xrpld-statsd-rpc`)
+### RPC & Pathfinding -- StatsD (`xrpld-statsd-rpc`)
 
 | Panel                     | Type       | PromQL                                                   | Labels Used |
 | ------------------------- | ---------- | -------------------------------------------------------- | ----------- |

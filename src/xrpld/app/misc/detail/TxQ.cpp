@@ -532,7 +532,7 @@ TxQ::tryClearAccountQueueUpThruTx(
     beast::Journal j)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(
+    [[maybe_unused]] auto span = SpanGuard::span(
         TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::batchClear);
 
     SeqProxy const tSeqProx{tx.getSeqProxy()};
@@ -1681,7 +1681,7 @@ TxQ::tryDirectApply(
     beast::Journal j)
 {
     using namespace telemetry;
-    auto span = SpanGuard::span(
+    [[maybe_unused]] auto span = SpanGuard::span(
         TraceCategory::Transactions, txq_span::prefix::txq, txq_span::op::applyDirect);
 
     auto const account = (*tx)[sfAccount];
