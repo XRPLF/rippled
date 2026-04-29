@@ -224,7 +224,7 @@
 > **Upstream**: Phase 2 (RPC span infrastructure must exist).
 > **Downstream**: Phase 10 (validation checks for this attribute).
 
-**Objective**: Add the relaying peer's rippled version to `tx.receive` spans so operators can correlate transaction issues with peer version mismatches during network upgrades.
+**Objective**: Add the relaying peer's xrpld version to `tx.receive` spans so operators can correlate transaction issues with peer version mismatches during network upgrades.
 
 **What to do**:
 
@@ -235,9 +235,9 @@
 
 **New span attribute**:
 
-| Attribute           | Type   | Source               | Example           |
-| ------------------- | ------ | -------------------- | ----------------- |
-| `xrpl.peer.version` | string | `peer->getVersion()` | `"rippled-2.4.0"` |
+| Attribute           | Type   | Source               | Example         |
+| ------------------- | ------ | -------------------- | --------------- |
+| `xrpl.peer.version` | string | `peer->getVersion()` | `"xrpld-2.4.0"` |
 
 **Rationale**: Transaction relay is where version mismatches cause subtle serialization or validation bugs. Tracing "this tx came from a v2.3.0 peer" helps diagnose compatibility issues. The community dashboard tracks peer versions externally; this brings version awareness into the trace itself.
 
