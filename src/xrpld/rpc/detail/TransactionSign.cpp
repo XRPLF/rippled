@@ -575,11 +575,7 @@ transactionPreProcessImpl(
 
     if (verify)
     {
-        if (!sle)
-        {
-            // XXX Ignore transactions for accounts not created.
-            return rpcError(rpcSRC_ACT_NOT_FOUND);
-        }
+        // sle validity is checked above
 
         JLOG(j.trace()) << "verify: " << toBase58(calcAccountID(pk)) << " : "
                         << toBase58(srcAddressID);

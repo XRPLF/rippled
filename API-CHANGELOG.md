@@ -40,6 +40,14 @@ This section contains changes targeting a future version.
 - Peer Crawler: The `port` field in `overlay.active[]` now consistently returns an integer instead of a string for outbound peers. [#6318](https://github.com/XRPLF/rippled/pull/6318)
 - `ping`: The `ip` field is no longer returned as an empty string for proxied connections without a forwarded-for header. It is now omitted, consistent with the behavior for identified connections. [#6730](https://github.com/XRPLF/rippled/pull/6730)
 - gRPC `GetLedgerDiff`: Fixed error message that incorrectly said "base ledger not validated" when the desired ledger was not validated. [#6730](https://github.com/XRPLF/rippled/pull/6730)
+- `account_channels`: The `destination_account` field now returns an error if the value is not a string. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `subscribe`: The `taker` field in the `books` array now returns an error if the value is not a string. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `account_info`: The `urlgravatar` field now uses HTTPS instead of HTTP. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `ledger`: The `full`, `accounts`, `transactions`, `expand`, `binary`, `owner_funds`, and `queue` fields now return an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `ledger_data`: The `binary` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `submit`: The `fail_hard` field now returns an error if the value is not a boolean. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- `subscribe`: The `taker` field in the `books` array now returns `actMalformed` instead of `badIssuer` if the value is not a valid account. [#6529](https://github.com/XRPLF/rippled/pull/6529)
+- Fixed a bug in `Forwarded` HTTP header parsing where the extracted IP address could be incorrect when no comma or semicolon delimiter follows the address. This could cause the server to misidentify a client's IP address when operating behind a reverse proxy. [#6529](https://github.com/XRPLF/rippled/pull/6529)
 
 ## XRP Ledger server version 3.1.0
 
