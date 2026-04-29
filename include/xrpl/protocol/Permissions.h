@@ -72,11 +72,11 @@ public:
     isDelegable(std::uint32_t const& permissionValue, Rules const& rules) const;
 
     // for tx level permission, permission value is equal to tx type plus one
-    static uint32_t
+    [[nodiscard]] static uint32_t
     txToPermissionType(TxType const& type);
 
     // tx type value is permission value minus one
-    static TxType
+    [[nodiscard]] static std::optional<TxType>
     permissionToTxType(uint32_t const& value);
 };
 

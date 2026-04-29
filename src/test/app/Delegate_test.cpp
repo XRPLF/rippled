@@ -1916,6 +1916,38 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testPermissionToTxType()
+    {
+        testcase("test Permission to Tx type");
+
+        // 0 is not a valid permission value
+        BEAST_EXPECT(!Permission::permissionToTxType(0));
+
+        // 1 maps to Payment transaction
+        BEAST_EXPECT(Permission::permissionToTxType(1) == ttPAYMENT);
+
+        // UINT16_MAX+1 is the maximum possible tx-level permission value
+        constexpr uint32_t maxTxPermission = std::numeric_limits<uint16_t>::max() + 1u;
+        BEAST_EXPECT(Permission::permissionToTxType(maxTxPermission).has_value());
+
+        // exceeding maximum value should return nullopt
+        BEAST_EXPECT(!Permission::permissionToTxType(maxTxPermission + 1));
+
+        // All granular permission values should return nullopt since they do not map to a TxType.
+        for (auto const gp : {
+#pragma push_macro("PERMISSION")
+#undef PERMISSION
+#define PERMISSION(type, txType, value) GranularPermissionType::type,
+#include <xrpl/protocol/detail/permissions.macro>
+#undef PERMISSION
+#pragma pop_macro("PERMISSION")
+             })
+        {
+            BEAST_EXPECT(!Permission::permissionToTxType(static_cast<uint32_t>(gp)));
+        }
+    }
+
+    void
     run() override
     {
         FeatureBitset const all = jtx::testable_amendments();
@@ -1941,6 +1973,7 @@ class Delegate_test : public beast::unit_test::suite
         testTxRequireFeatures(all);
         testTxDelegableCount();
         testDelegateUtilsNullptrCheck();
+        testPermissionToTxType();
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);

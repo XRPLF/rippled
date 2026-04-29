@@ -8,6 +8,7 @@
 
 #include <cstdint>
 #include <functional>
+#include <limits>
 #include <optional>
 #include <string>
 
@@ -104,9 +105,9 @@ Permission::getPermissionName(std::uint32_t const value) const
         return granular;
 
     // not a granular permission, check if it maps to a transaction type
-    auto const txType = permissionToTxType(value);
-    if (auto const* item = TxFormats::getInstance().findByType(txType); item != nullptr)
-        return item->getName();
+    if (auto const txType = permissionToTxType(value))
+        if (auto const* item = TxFormats::getInstance().findByType(*txType); item != nullptr)
+            return item->getName();
 
     return std::nullopt;
 }
@@ -166,12 +167,15 @@ Permission::isDelegable(std::uint32_t const& permissionValue, Rules const& rules
     }
 
     auto const txType = permissionToTxType(permissionValue);
-    auto const it = delegableTx_.find(txType);
+    if (!txType)
+        return false;
+
+    auto const it = delegableTx_.find(*txType);
 
     if (it == delegableTx_.end())
         return false;
 
-    auto const txFeaturesIt = txFeatureMap_.find(txType);
+    auto const txFeaturesIt = txFeatureMap_.find(*txType);
     XRPL_ASSERT(
         txFeaturesIt != txFeatureMap_.end(),
         "xrpl::Permissions::isDelegable : tx exists in txFeatureMap_");
@@ -194,9 +198,14 @@ Permission::txToPermissionType(TxType const& type)
     return static_cast<uint32_t>(type) + 1;
 }
 
-TxType
+std::optional<TxType>
 Permission::permissionToTxType(uint32_t const& value)
 {
+    // Defensive check: values outside this range would silently truncate when cast to
+    // uint16_t, for example, 65537 would become 1, mapping to the Payment transaction.
+    if (value == 0 || value > std::numeric_limits<std::uint16_t>::max() + 1u)
+        return std::nullopt;
+
     return static_cast<TxType>(value - 1);
 }
 
