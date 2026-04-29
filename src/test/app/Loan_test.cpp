@@ -7198,9 +7198,13 @@ protected:
         attemptWithdrawShares(depositorB, sharesLpB, tesSUCCESS);
     }
 
-    // An overpayment whose residual amount is NOT rounded to loanScale fires the isRounded(asset,
-    // overpayment, loanScale) and "interest paid agrees" assertions in computeOverpaymentComponents
-    // .
+    // An overpayment whose residual amount has more precision than loanScale
+    // fires the isRounded(asset, overpayment, loanScale) assertion in
+    // computeOverpaymentComponents (and a downstream "interest paid agrees"
+    // assertion in doOverpayment). fixCleanup3_2_0 rounds the residual down
+    // to loanScale before passing it in. The pre-amendment path can't be
+    // tested here because the assertion fires in Debug builds and aborts
+    // the test process — see the PR description for context.
     void
     testBugOverpayUnroundedAmount()
     {

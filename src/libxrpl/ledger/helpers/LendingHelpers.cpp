@@ -1881,11 +1881,10 @@ loanMakePayment(
         // It shouldn't be possible for the overpayment to be greater than
         // totalValueOutstanding, because that would have been processed as
         // another normal payment. But cap it just in case.
-        Number const overpayment = roundToAsset(
-            asset,
-            std::min(amount - totalPaid, *totalValueOutstandingProxy),
-            loanScale,
-            Number::downward);
+        Number const overpaymentRaw = std::min(amount - totalPaid, *totalValueOutstandingProxy);
+        Number const overpayment = view.rules().enabled(fixCleanup3_2_0)
+            ? roundToAsset(asset, overpaymentRaw, loanScale, Number::downward)
+            : overpaymentRaw;
 
         detail::ExtendedPaymentComponents const overpaymentComponents =
             detail::computeOverpaymentComponents(
