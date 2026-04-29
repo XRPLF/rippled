@@ -148,7 +148,7 @@
             "type": "prometheus"
           },
           "expr": "sum by (xrpl_tx_suppressed, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"tx.receive\", exported_instance=~\"$node\"}[$__rate_interval]))",
-          "legendFormat": "suppressed={{xrpl_tx_suppressed}} [{{exported_instance}}]"
+          "legendFormat": "Suppressed={{xrpl_tx_suppressed}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {

@@ -220,7 +220,7 @@
             "type": "prometheus"
           },
           "expr": "sum by (xrpl_consensus_close_time_correct, exported_instance) (rate(traces_span_metrics_calls_total{span_name=\"consensus.accept.apply\", xrpl_consensus_mode=~\"$consensus_mode\", exported_instance=~\"$node\"}[$__rate_interval]))",
-          "legendFormat": "close_time_correct={{xrpl_consensus_close_time_correct}} [{{exported_instance}}]"
+          "legendFormat": "Close Time Correct={{xrpl_consensus_close_time_correct}} [{{exported_instance}}]"
         }
       ],
       "fieldConfig": {
