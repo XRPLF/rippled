@@ -66,7 +66,7 @@
 #include <xrpl/telemetry/SpanGuard.h>
 #include <xrpl/telemetry/SpanNames.h>
 #include <xrpl/telemetry/Telemetry.h>
-#include <xrpl/telemetry/TraceContextPropagator.h>
+#include <xrpl/telemetry/TraceContextPropagator.h>  // IWYU pragma: keep
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 

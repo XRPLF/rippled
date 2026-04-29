@@ -17,9 +17,7 @@
 
 #include <xrpl/telemetry/SpanNames.h>
 
-namespace xrpl {
-namespace telemetry {
-namespace tx_span {
+namespace xrpl::telemetry::tx_span {
 
 // ===== Span prefixes =======================================================
 
@@ -72,6 +70,4 @@ inline constexpr auto async = makeStr("async");
 inline constexpr auto knownBad = makeStr("known_bad");
 }  // namespace val
 
-}  // namespace tx_span
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry::tx_span

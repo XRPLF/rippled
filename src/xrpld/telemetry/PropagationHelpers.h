@@ -32,8 +32,7 @@
 #include <xrpl/proto/xrpl.pb.h>
 #include <xrpl/telemetry/SpanGuard.h>
 
-namespace xrpl {
-namespace telemetry {
+namespace xrpl::telemetry {
 
 /** Inject trace context from an active SpanGuard into a protobuf
  *  TraceContext message for cross-node propagation.
@@ -58,5 +57,4 @@ injectSpanContext(SpanGuard const& span, protocol::TraceContext& proto)
     proto.set_trace_flags(bytes.traceFlags);
 }
 
-}  // namespace telemetry
-}  // namespace xrpl
+}  // namespace xrpl::telemetry
