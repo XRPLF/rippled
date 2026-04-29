@@ -466,6 +466,7 @@ LEDGER_ENTRY(ltDELEGATE, 0x0083, Delegate, delegate, ({
     {sfAuthorize,            soeREQUIRED},
     {sfPermissions,          soeREQUIRED},
     {sfOwnerNode,            soeREQUIRED},
+    {sfDestinationNode,      soeOPTIONAL},
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))

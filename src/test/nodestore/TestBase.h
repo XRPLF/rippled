@@ -13,8 +13,7 @@
 
 #include <iomanip>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 /** Binary function that satisfies the strict-weak-ordering requirement.
 
@@ -68,16 +67,17 @@ public:
                 switch (rand_int(rng, 3))
                 {
                     case 0:
-                        return hotLEDGER;
+                        return NodeObjectType::hotLEDGER;
                     case 1:
-                        return hotACCOUNT_NODE;
+                        return NodeObjectType::hotACCOUNT_NODE;
                     case 2:
-                        return hotTRANSACTION_NODE;
+                        return NodeObjectType::hotTRANSACTION_NODE;
                     case 3:
-                        return hotUNKNOWN;
+                        return NodeObjectType::hotUNKNOWN;
+                    default:
+                        // will never happen, but make static analysis tool happy.
+                        return NodeObjectType::hotUNKNOWN;
                 }
-                // will never happen, but make static analysis tool happy.
-                return hotUNKNOWN;
             }();
 
             uint256 hash;
@@ -118,7 +118,7 @@ public:
     }
 
     // Store a batch in a backend
-    void
+    static void
     storeBatch(Backend& backend, Batch const& batch)
     {
         for (int i = 0; i < batch.size(); ++i)
@@ -140,9 +140,9 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == ok);
+            BEAST_EXPECT(status == Status::ok);
 
-            if (status == ok)
+            if (status == Status::ok)
             {
                 BEAST_EXPECT(object != nullptr);
 
@@ -160,7 +160,7 @@ public:
 
             Status const status = backend.fetch(batch[i]->getHash(), &object);
 
-            BEAST_EXPECT(status == notFound);
+            BEAST_EXPECT(status == Status::notFound);
         }
     }
 
@@ -195,5 +195,4 @@ public:
     }
 };
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

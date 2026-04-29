@@ -2,10 +2,11 @@
 
 #include <chrono>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 /** Tunable constants. */
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Balance at which a warning is issued
     warningThreshold = 5000
@@ -30,5 +31,4 @@ std::chrono::seconds constexpr secondsUntilExpiration{300};
 // Number of seconds until imported gossip expires
 std::chrono::seconds constexpr gossipExpirationSeconds{30};
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

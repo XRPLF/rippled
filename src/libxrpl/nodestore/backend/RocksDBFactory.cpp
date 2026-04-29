@@ -1,4 +1,36 @@
-#include <xrpl/basics/rocksdb.h>
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
+
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <rocksdb/advanced_options.h>
+#include <rocksdb/cache.h>
+#include <rocksdb/compression_type.h>
+#include <rocksdb/convenience.h>
+#include <rocksdb/db.h>
+#include <rocksdb/env.h>
+#include <rocksdb/filter_policy.h>
+#include <rocksdb/iterator.h>
+#include <rocksdb/options.h>
+#include <rocksdb/slice.h>
+#include <rocksdb/table.h>
+#include <rocksdb/write_batch.h>
+
+#include <bit>
+#include <cstddef>
+#include <functional>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
 #if XRPL_ROCKSDB_AVAILABLE
 #include <xrpl/basics/ByteUtilities.h>
@@ -14,8 +46,7 @@
 #include <atomic>
 #include <memory>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class RocksDBEnv : public rocksdb::EnvWrapper
 {
@@ -254,7 +285,7 @@ public:
         XRPL_ASSERT(m_db, "xrpl::NodeStore::RocksDBBackend::fetch : non-null database");
         pObject->reset();
 
-        Status status(ok);
+        Status status(Status::ok);
 
         rocksdb::ReadOptions const options;
         rocksdb::Slice const slice(std::bit_cast<char const*>(hash.data()), m_keyBytes);
@@ -275,22 +306,23 @@ public:
             {
                 // Decoding failed, probably corrupted!
                 //
-                status = dataCorrupt;
+                status = Status::dataCorrupt;
             }
         }
         else
         {
             if (getStatus.IsCorruption())
             {
-                status = dataCorrupt;
+                status = Status::dataCorrupt;
             }
             else if (getStatus.IsNotFound())
             {
-                status = notFound;
+                status = Status::notFound;
             }
             else
             {
-                status = Status(customCode + unsafe_cast<int>(getStatus.code()));
+                status = static_cast<Status>(
+                    static_cast<int>(Status::customCode) + unsafe_cast<int>(getStatus.code()));
 
                 JLOG(m_journal.error()) << getStatus.ToString();
             }
@@ -308,7 +340,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != ok)
+            if (status != Status::ok)
             {
                 results.push_back({});
             }
@@ -318,7 +350,7 @@ public:
             }
         }
 
-        return {results, ok};
+        return {results, Status::ok};
     }
 
     void
@@ -412,7 +444,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return fdRequired_;
@@ -434,7 +466,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "RocksDB";
@@ -458,7 +490,6 @@ registerRocksDBFactory(Manager& manager)
     static RocksDBFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore
 
 #endif

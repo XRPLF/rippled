@@ -1,20 +1,31 @@
-#include <test/jtx.h>
-#include <test/jtx/Oracle.h>
-#include <test/jtx/attester.h>
-#include <test/jtx/delegate.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/xchain_bridge.h>
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/envconfig.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/last_ledger_sequence.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/seq.h>
+#include <test/jtx/ter.h>
 
 #include <xrpld/app/misc/TxQ.h>
 
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
+#include <memory>
+#include <string>
+#include <utility>
 
-namespace test {
+namespace xrpl::test {
 
 class LedgerRPC_test : public beast::unit_test::suite
 {
@@ -153,6 +164,23 @@ class LedgerRPC_test : public beast::unit_test::suite
             // Request a ledger with very large (integer) sequence.
             auto const ret = env.rpc("json", "ledger", "{ \"ledger_index\" : 1000000000000000 }");
             checkErrorValue(ret, "invalidParams", "Invalid parameters.");
+        }
+
+        {
+            // test all boolean fields with non-boolean values
+            auto testBooleanField = [&](Json::StaticString const& field) {
+                Json::Value jvParams;
+                jvParams[field] = "blah";
+                auto const jrr = env.rpc("json", "ledger", to_string(jvParams))[jss::result];
+                checkErrorValue(jrr, "invalidParams", "Invalid parameters.");
+            };
+            testBooleanField(jss::full);
+            testBooleanField(jss::accounts);
+            testBooleanField(jss::transactions);
+            testBooleanField(jss::expand);
+            testBooleanField(jss::binary);
+            testBooleanField(jss::owner_funds);
+            testBooleanField(jss::queue);
         }
     }
 
@@ -696,5 +724,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(LedgerRPC, rpc, xrpl);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

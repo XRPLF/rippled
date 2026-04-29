@@ -32,6 +32,10 @@ enum class LineDirection : bool { incoming = false, outgoing = true };
 */
 class TrustLineBase
 {
+public:
+    TrustLineBase&
+    operator=(TrustLineBase const&) = delete;
+
 protected:
     // This class should not be instantiated directly. Use one of the derived
     // classes.
@@ -39,13 +43,11 @@ protected:
 
     ~TrustLineBase() = default;
     TrustLineBase(TrustLineBase const&) = default;
-    TrustLineBase&
-    operator=(TrustLineBase const&) = delete;
     TrustLineBase(TrustLineBase&&) = default;
 
 public:
     /** Returns the state map key for the ledger entry. */
-    uint256 const&
+    [[nodiscard]] uint256 const&
     key() const
     {
         return key_;
@@ -53,96 +55,96 @@ public:
 
     // VFALCO Take off the "get" from each function name
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccountID() const
     {
         return mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
     }
 
-    AccountID const&
+    [[nodiscard]] AccountID const&
     getAccountIDPeer() const
     {
         return !mViewLowest ? mLowLimit.getIssuer() : mHighLimit.getIssuer();
     }
 
     // True, Provided auth to peer.
-    bool
+    [[nodiscard]] bool
     getAuth() const
     {
-        return mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return (mFlags & (mViewLowest ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getAuthPeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth);
+        return (mFlags & (!mViewLowest ? lsfLowAuth : lsfHighAuth)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getNoRipple() const
     {
-        return mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return (mFlags & (mViewLowest ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
-    bool
+    [[nodiscard]] bool
     getNoRipplePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple);
+        return (mFlags & (!mViewLowest ? lsfLowNoRipple : lsfHighNoRipple)) != 0u;
     }
 
-    LineDirection
+    [[nodiscard]] LineDirection
     getDirection() const
     {
         return getNoRipple() ? LineDirection::incoming : LineDirection::outgoing;
     }
 
-    LineDirection
+    [[nodiscard]] LineDirection
     getDirectionPeer() const
     {
         return getNoRipplePeer() ? LineDirection::incoming : LineDirection::outgoing;
     }
 
     /** Have we set the freeze flag on our peer */
-    bool
+    [[nodiscard]] bool
     getFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return (mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
     /** Have we set the deep freeze flag on our peer */
-    bool
+    [[nodiscard]] bool
     getDeepFreeze() const
     {
-        return mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return (mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
     /** Has the peer set the freeze flag on us */
-    bool
+    [[nodiscard]] bool
     getFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+        return (mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze)) != 0u;
     }
 
     /** Has the peer set the deep freeze flag on us */
-    bool
+    [[nodiscard]] bool
     getDeepFreezePeer() const
     {
-        return mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+        return (mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze)) != 0u;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getBalance() const
     {
         return mBalance;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getLimit() const
     {
         return mViewLowest ? mLowLimit : mHighLimit;
     }
 
-    STAmount const&
+    [[nodiscard]] STAmount const&
     getLimitPeer() const
     {
         return !mViewLowest ? mLowLimit : mHighLimit;
@@ -190,13 +192,13 @@ public:
 
     RPCTrustLine(std::shared_ptr<SLE const> const& sle, AccountID const& viewAccount);
 
-    Rate const&
+    [[nodiscard]] Rate const&
     getQualityIn() const
     {
         return mViewLowest ? lowQualityIn_ : highQualityIn_;
     }
 
-    Rate const&
+    [[nodiscard]] Rate const&
     getQualityOut() const
     {
         return mViewLowest ? lowQualityOut_ : highQualityOut_;

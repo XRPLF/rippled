@@ -1,11 +1,12 @@
 #include <xrpl/basics/Number.h>
-// Keep Number.h first to ensure it can build without hidden dependencies
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <numeric>
@@ -26,7 +27,7 @@ using int128_t = __int128_t;
 
 namespace xrpl {
 
-thread_local Number::rounding_mode Number::mode_ = Number::to_nearest;
+thread_local Number::rounding_mode Number::mode_ = Number::rounding_mode::to_nearest;
 thread_local std::reference_wrapper<MantissaRange const> Number::range_ = largeRange;
 
 Number::rounding_mode
@@ -50,9 +51,10 @@ Number::getMantissaScale()
 void
 Number::setMantissaScale(MantissaRange::mantissa_scale scale)
 {
-    if (scale != MantissaRange::small && scale != MantissaRange::large)
+    if (scale != MantissaRange::mantissa_scale::small &&
+        scale != MantissaRange::mantissa_scale::large)
         LogicError("Unknown mantissa scale");
-    range_ = scale == MantissaRange::small ? smallRange : largeRange;
+    range_ = scale == MantissaRange::mantissa_scale::small ? smallRange : largeRange;
 }
 
 // Guard
@@ -78,7 +80,7 @@ public:
     set_positive() noexcept;
     void
     set_negative() noexcept;
-    bool
+    [[nodiscard]] bool
     is_negative() const noexcept;
 
     // add a digit
@@ -93,7 +95,7 @@ public:
     // Indicate round direction:  1 is up, -1 is down, 0 is even
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
-    int
+    [[nodiscard]] int
     round() const noexcept;
 
     // Modify the result to the correctly rounded value
@@ -175,10 +177,10 @@ Number::Guard::round() const noexcept
 {
     auto mode = Number::getround();
 
-    if (mode == towards_zero)
+    if (mode == rounding_mode::towards_zero)
         return -1;
 
-    if (mode == downward)
+    if (mode == rounding_mode::downward)
     {
         if (sbit_)
         {
@@ -188,7 +190,7 @@ Number::Guard::round() const noexcept
         return -1;
     }
 
-    if (mode == upward)
+    if (mode == rounding_mode::upward)
     {
         if (sbit_)
             return -1;
@@ -728,7 +730,7 @@ Number::operator/=(Number const& y)
     // f can be up to 10^(38-19) = 10^19 safely
     static_assert(smallRange.log == 15);
     static_assert(largeRange.log == 18);
-    bool const small = Number::getMantissaScale() == MantissaRange::small;
+    bool const small = Number::getMantissaScale() == MantissaRange::mantissa_scale::small;
     uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
     XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
 

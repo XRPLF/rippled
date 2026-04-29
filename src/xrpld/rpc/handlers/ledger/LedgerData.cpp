@@ -6,10 +6,21 @@
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/serialize.h>
+
+#include <grpcpp/support/status.h>
+#include <org/xrpl/rpc/v1/get_ledger_data.pb.h>
+
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -43,7 +54,13 @@ doLedgerData(RPC::JsonContext& context)
             return RPC::expected_field_error(jss::marker, "valid");
     }
 
-    bool const isBinary = params[jss::binary].asBool();
+    bool isBinary = false;
+    if (params.isMember(jss::binary))
+    {
+        if (!params[jss::binary].isBool())
+            return RPC::expected_field_error(jss::binary, "boolean");
+        isBinary = params[jss::binary].asBool();
+    }
 
     int limit = -1;
     if (params.isMember(jss::limit))

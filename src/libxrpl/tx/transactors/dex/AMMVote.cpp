@@ -1,9 +1,30 @@
+#include <xrpl/tx/transactors/dex/AMMVote.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/tx/transactors/dex/AMMVote.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <optional>
+#include <utility>
 
 namespace xrpl {
 
@@ -155,6 +176,8 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
             // Add the entry if the account has more tokens than
             // the least token holder or same tokens and higher fee.
         }
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) slots full means loop ran, minTokens is
+        // set
         else if (lpTokensNew > *minTokens || (lpTokensNew == *minTokens && feeNew > minFee))
         {
             auto const entry = updatedVoteSlots.begin() + minPos;
@@ -163,6 +186,7 @@ applyVote(ApplyContext& ctx_, Sandbox& sb, AccountID const& account_, beast::Jou
             den -= *minTokens;
             update(minPos);
         }
+        // NOLINTEND(bugprone-unchecked-optional-access)
         // All slots are full and the account does not hold more LPTokens.
         // Update anyway to refresh the slots.
         else
@@ -222,6 +246,20 @@ AMMVote::doApply()
         sb.apply(ctx_.rawView());
 
     return result.first;
+}
+
+void
+AMMVote::visitInvariantEntry(
+    bool,
+    std::shared_ptr<SLE const> const&,
+    std::shared_ptr<SLE const> const&)
+{
+}
+
+bool
+AMMVote::finalizeInvariants(STTx const&, TER, XRPAmount, ReadView const&, beast::Journal const&)
+{
+    return true;
 }
 
 }  // namespace xrpl

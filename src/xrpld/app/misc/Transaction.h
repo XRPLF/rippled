@@ -21,10 +21,9 @@ namespace xrpl {
 //
 
 class Application;
-class Database;
 class Rules;
 
-enum TransStatus {
+enum class TransStatus {
     NEW = 0,         // just received / generated
     INVALID = 1,     // no valid signature, insufficient funds
     INCLUDED = 2,    // added to the current ledger
@@ -139,7 +138,7 @@ public:
      * @return Whether transaction is being applied within a batch.
      */
     bool
-    getApplying()
+    getApplying() const
     {
         // Note that all access to mApplying are made by NetworkOPsImp, and must
         // be done under that class's lock.
@@ -175,7 +174,7 @@ public:
          * @brief any Get true of any state is true
          * @return True if any state if true
          */
-        bool
+        [[nodiscard]] bool
         any() const
         {
             return applied || broadcast || queued || kept;
@@ -307,8 +306,8 @@ public:
         // Call this function first to determine the type of the contained info.
         // Calling the wrong getter function will throw an exception.
         // See documentation for the getter functions for more details
-        bool
-        isFound()
+        [[nodiscard]] bool
+        isFound() const
         {
             return std::holds_alternative<std::pair<uint256, uint32_t>>(locator);
         }
@@ -370,7 +369,7 @@ private:
     LedgerIndex mLedgerIndex = 0;
     std::optional<uint32_t> mTxnSeq;
     std::optional<uint32_t> mNetworkID;
-    TransStatus mStatus = INVALID;
+    TransStatus mStatus = TransStatus::INVALID;
     TER mResult = temUNCERTAIN;
     /* Note that all access to mApplying are made by NetworkOPsImp,
         and must be done under that class's lock. This avoids the overhead of

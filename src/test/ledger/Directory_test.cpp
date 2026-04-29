@@ -1,19 +1,50 @@
-#include <test/jtx.h>
 
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/directory.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/owners.h>  // IWYU pragma: keep
+#include <test/jtx/pay.h>
+#include <test/jtx/tags.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/core/ServiceRegistry.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/BookDirs.h>
 #include <xrpl/ledger/Sandbox.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/jss.h>
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <limits>
+#include <memory>
+#include <optional>
+#include <string>
+#include <tuple>
+#include <vector>
 
-namespace xrpl {
-namespace test {
+namespace xrpl::test {
 
 struct Directory_test : public beast::unit_test::suite
 {
@@ -102,7 +133,7 @@ struct Directory_test : public beast::unit_test::suite
 
                 // Ensure that the entries in the page are sorted
                 auto const& v = p->getFieldV256(sfIndexes);
-                BEAST_EXPECT(std::is_sorted(v.begin(), v.end()));
+                BEAST_EXPECT(std::ranges::is_sorted(v));
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
@@ -568,5 +599,4 @@ struct Directory_test : public beast::unit_test::suite
 
 BEAST_DEFINE_TESTSUITE_PRIO(Directory, ledger, xrpl, 1);
 
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

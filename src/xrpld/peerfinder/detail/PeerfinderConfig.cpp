@@ -1,10 +1,14 @@
+#include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
 
-#include <algorithm>
+#include <xrpl/beast/utility/PropertyStream.h>
 
-namespace xrpl {
-namespace PeerFinder {
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+
+namespace xrpl::PeerFinder {
 
 Config::Config() : outPeers(calcOutPeers())
 
@@ -123,5 +127,4 @@ Config::makeConfig(
     return config;
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

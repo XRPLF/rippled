@@ -1,13 +1,58 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
 #include <test/jtx/CaptureLogs.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/TestHelpers.h>
+#include <test/jtx/acctdelete.h>
+#include <test/jtx/amount.h>
+#include <test/jtx/balance.h>
 #include <test/jtx/delegate.h>
+#include <test/jtx/did.h>
+#include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
+#include <test/jtx/mpt.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/noop.h>
+#include <test/jtx/offer.h>
+#include <test/jtx/paths.h>
+#include <test/jtx/pay.h>
+#include <test/jtx/rate.h>
+#include <test/jtx/regkey.h>
+#include <test/jtx/sendmax.h>
+#include <test/jtx/sig.h>
+#include <test/jtx/ter.h>
+#include <test/jtx/trust.h>
+#include <test/jtx/txflags.h>
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/ledger/Dir.h>
 #include <xrpl/ledger/helpers/DelegateHelpers.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
+
+namespace xrpl::test {
 class Delegate_test : public beast::unit_test::suite
 {
     void
@@ -541,32 +586,179 @@ class Delegate_test : public beast::unit_test::suite
         testcase("test deleting account");
         using namespace jtx;
 
-        Env env(*this);
-        Account const alice{"alice"};
-        Account const bob{"bob"};
-        env.fund(XRP(100000), alice, bob);
-        env.close();
-
-        env(delegate::set(alice, bob, {"Payment"}));
-        env.close();
-        BEAST_EXPECT(env.closed()->exists(keylet::delegate(alice.id(), bob.id())));
-
-        for (std::uint32_t i = 0; i < 256; ++i)
+        // Delegator (alice) deletes account: Delegate object is cleaned up from
+        // both alice's and bob's owner directories.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(100000), alice, bob, carol);
             env.close();
 
-        auto const aliceBalance = env.balance(alice);
-        auto const bobBalance = env.balance(bob);
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
 
-        // alice deletes account, this will remove the Delegate object
-        auto const deleteFee = drops(env.current()->fees().increment);
-        env(acctdelete(alice, bob), fee(deleteFee));
-        env.close();
+            auto const delegateKey = keylet::delegate(alice.id(), bob.id());
+            BEAST_EXPECT(env.closed()->exists(delegateKey));
 
-        BEAST_EXPECT(!env.closed()->exists(keylet::account(alice.id())));
-        BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(alice.id())));
-        BEAST_EXPECT(env.balance(bob) == bobBalance + aliceBalance - deleteFee);
+            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+                return std::any_of(  // NOLINT(modernize-use-ranges)
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
+            };
 
-        BEAST_EXPECT(!env.closed()->exists(keylet::delegate(alice.id(), bob.id())));
+            // Delegate object should appear in both alice's and bob's directories
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+
+            for (std::uint32_t i = 0; i < 256; ++i)
+                env.close();
+
+            auto const aliceBalance = env.balance(alice);
+            auto const carolBalance = env.balance(carol);
+
+            // alice deletes account, this will remove the Delegate object from
+            // both alice's and bob's owner directories
+            auto const deleteFee = drops(env.current()->fees().increment);
+            env(acctdelete(alice, carol), fee(deleteFee));
+            env.close();
+
+            BEAST_EXPECT(!env.closed()->exists(keylet::account(alice.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(alice.id())));
+            BEAST_EXPECT(!env.closed()->exists(delegateKey));
+            // bob's directory should no longer reference the Delegate object
+            BEAST_EXPECT(
+                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+            BEAST_EXPECT(env.balance(carol) == carolBalance + aliceBalance - deleteFee);
+        }
+
+        // Delegatee (bob) deletes account: Delegate object is cleaned up from
+        // both alice's and bob's owner directories, freeing alice's reserve so
+        // she can subsequently delete her own account.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            env.fund(XRP(100000), alice, bob, carol);
+            env.close();
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const delegateKey = keylet::delegate(alice.id(), bob.id());
+            BEAST_EXPECT(env.closed()->exists(delegateKey));
+
+            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+                return std::any_of(  // NOLINT(modernize-use-ranges)
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
+            };
+
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), delegateKey.key));
+
+            // The Delegate entry counts against alice's ownerCount.
+            auto const sleAlice = env.closed()->read(keylet::account(alice.id()));
+            BEAST_EXPECT(sleAlice);
+            BEAST_EXPECT(sleAlice->getFieldU32(sfOwnerCount) == 1);
+
+            for (std::uint32_t i = 0; i < 256; ++i)
+                env.close();
+
+            auto const bobBalance = env.balance(bob);
+            auto const carolBalance = env.balance(carol);
+
+            // bob (the authorized/delegatee account) deletes his account.
+            // This must clean up the Delegate object from both alice's and
+            // bob's owner directories so alice's delegation does not survive
+            // a potential account resurrection.
+            auto const deleteFee = drops(env.current()->fees().increment);
+            env(acctdelete(bob, carol), fee(deleteFee));
+            env.close();
+
+            BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(bob.id())));
+            BEAST_EXPECT(!env.closed()->exists(delegateKey));
+            // alice's directory should no longer reference the Delegate object
+            BEAST_EXPECT(
+                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), delegateKey.key));
+            BEAST_EXPECT(env.balance(carol) == carolBalance + bobBalance - deleteFee);
+
+            // alice's ownerCount is now 0; she can delete her own account.
+            auto const sleAlice2 = env.closed()->read(keylet::account(alice.id()));
+            BEAST_EXPECT(sleAlice2);
+            BEAST_EXPECT(sleAlice2->getFieldU32(sfOwnerCount) == 0);
+
+            auto const aliceDeleteFee = drops(env.current()->fees().increment);
+            env(acctdelete(alice, carol), fee(aliceDeleteFee));
+            env.close();
+
+            BEAST_EXPECT(!env.closed()->exists(keylet::account(alice.id())));
+        }
+
+        // Multiple delegators -> same delegatee: when the delegatee (bob)
+        // deletes his account, ALL Delegate objects (from alice and carol)
+        // must be cleaned up from every delegator's directory.
+        {
+            Env env(*this);
+            Account const alice{"alice"};
+            Account const bob{"bob"};
+            Account const carol{"carol"};
+            Account const dave{"dave"};
+            env.fund(XRP(100000), alice, bob, carol, dave);
+            env.close();
+
+            // Both alice and carol delegate to bob
+            env(delegate::set(alice, bob, {"Payment"}));
+            env(delegate::set(carol, bob, {"EscrowCreate"}));
+            env.close();
+
+            auto const aliceBobKey = keylet::delegate(alice.id(), bob.id());
+            auto const carolBobKey = keylet::delegate(carol.id(), bob.id());
+
+            auto hasKey = [](xrpl::Dir const& dir, uint256 const& key) {
+                return std::any_of(  // NOLINT(modernize-use-ranges)
+                    dir.begin(), dir.end(), [&](auto const& sle) { return sle->key() == key; });
+            };
+
+            // Both Delegate objects exist and are in bob's directory
+            BEAST_EXPECT(env.closed()->exists(aliceBobKey));
+            BEAST_EXPECT(env.closed()->exists(carolBobKey));
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), aliceBobKey.key));
+            BEAST_EXPECT(
+                hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(bob.id())), carolBobKey.key));
+
+            for (std::uint32_t i = 0; i < 256; ++i)
+                env.close();
+
+            auto const bobBalance = env.balance(bob);
+            auto const daveBalance = env.balance(dave);
+
+            auto const deleteFee = drops(env.current()->fees().increment);
+            env(acctdelete(bob, dave), fee(deleteFee));
+            env.close();
+
+            // bob's account and directory are gone
+            BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
+            BEAST_EXPECT(!env.closed()->exists(keylet::ownerDir(bob.id())));
+
+            // Both Delegate objects are erased
+            BEAST_EXPECT(!env.closed()->exists(aliceBobKey));
+            BEAST_EXPECT(!env.closed()->exists(carolBobKey));
+
+            // alice's and carol's directories no longer reference the objects
+            BEAST_EXPECT(
+                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(alice.id())), aliceBobKey.key));
+            BEAST_EXPECT(
+                !hasKey(xrpl::Dir(*env.closed(), keylet::ownerDir(carol.id())), carolBobKey.key));
+
+            BEAST_EXPECT(env.balance(dave) == daveBalance + bobBalance - deleteFee);
+        }
     }
 
     void
@@ -1817,10 +2009,10 @@ class Delegate_test : public beast::unit_test::suite
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, delegable, ...) \
-    if (delegable == xrpl::delegable)                 \
-    {                                                 \
-        delegableCount++;                             \
+#define TRANSACTION(tag, value, name, txDelegable, ...) \
+    if (txDelegable == xrpl::delegable)                 \
+    {                                                   \
+        delegableCount++;                               \
     }
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -1846,7 +2038,7 @@ class Delegate_test : public beast::unit_test::suite
         // DO NOT modify expectedDelegableCount unless all scenarios, including
         // edge cases, have been fully tested and verified.
         // ====================================================================
-        std::size_t const expectedDelegableCount = 75;
+        std::size_t const expectedDelegableCount = 51;
 
         BEAST_EXPECTS(
             delegableCount == expectedDelegableCount,
@@ -1901,5 +2093,4 @@ class Delegate_test : public beast::unit_test::suite
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, xrpl);
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test

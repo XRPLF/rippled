@@ -1,4 +1,27 @@
 #include <xrpl/tx/applySteps.h>
+
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
+#include <xrpl/tx/ApplyContext.h>
+#include <xrpl/tx/Transactor.h>
+
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <optional>
+#include <utility>
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
@@ -16,8 +39,6 @@
 
 #include <xrpl/core/ServiceRegistry.h>
 #include <xrpl/protocol/TxFormats.h>
-
-#include <stdexcept>
 
 namespace xrpl {
 
@@ -63,7 +84,7 @@ with_txn_type(Rules const& rules, TxType txnType, F&& f)
     else
     {
         // Without those features enabled, always use the old number rules.
-        mantissaScaleGuard.emplace(MantissaRange::small);
+        mantissaScaleGuard.emplace(MantissaRange::mantissa_scale::small);
     }
 
     switch (txnType)
@@ -109,7 +130,7 @@ template <class T>
 TxConsequences
 consequences_helper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx, TxConsequences::blocker);
+    return TxConsequences(ctx.tx, TxConsequences::Category::blocker);
 };
 
 // For Transactor::Custom
@@ -258,7 +279,7 @@ TxConsequences::TxConsequences(STTx const& tx)
 
 TxConsequences::TxConsequences(STTx const& tx, Category category) : TxConsequences(tx)
 {
-    isBlocker_ = (category == blocker);
+    isBlocker_ = (category == Category::blocker);
 }
 
 TxConsequences::TxConsequences(STTx const& tx, XRPAmount potentialSpend) : TxConsequences(tx)
@@ -290,6 +311,18 @@ invoke_apply(ApplyContext& ctx)
         return {temUNKNOWN, false};
         // LCOV_EXCL_STOP
     }
+}
+
+// Test-only factory — not part of the public API.
+// The returned Transactor holds a raw reference to ctx; the caller must ensure
+// the ApplyContext outlives the Transactor.
+std::unique_ptr<Transactor>
+makeTransactor(ApplyContext& ctx)
+{
+    return with_txn_type(
+        ctx.view().rules(), ctx.tx.getTxnType(), [&]<typename T>() -> std::unique_ptr<Transactor> {
+            return std::make_unique<T>(ctx);
+        });
 }
 
 PreflightResult

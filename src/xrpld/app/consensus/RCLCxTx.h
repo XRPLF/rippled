@@ -24,7 +24,7 @@ public:
     }
 
     //! The unique identifier/hash of the transaction
-    ID const&
+    [[nodiscard]] ID const&
     id() const
     {
         return tx_->key();
@@ -104,7 +104,7 @@ public:
         @param entry The ID of transaction to test.
         @return Whether the transaction is in the set.
     */
-    bool
+    [[nodiscard]] bool
     exists(Tx::ID const& entry) const
     {
         return map_->hasItem(entry);
@@ -121,14 +121,14 @@ public:
               code uses the shared_ptr semantics to know whether the find
               was successful and properly creates a Tx as needed.
     */
-    boost::intrusive_ptr<SHAMapItem const> const&
+    [[nodiscard]] boost::intrusive_ptr<SHAMapItem const> const&
     find(Tx::ID const& entry) const
     {
         return map_->peekItem(entry);
     }
 
     //! The unique ID/hash of the transaction set
-    ID
+    [[nodiscard]] ID
     id() const
     {
         return map_->getHash().as_uint256();
@@ -142,7 +142,7 @@ public:
                 is the transaction ID and the value is a bool of the transaction
                 exists in this set.
     */
-    std::map<Tx::ID, bool>
+    [[nodiscard]] std::map<Tx::ID, bool>
     compare(RCLTxSet const& j) const
     {
         SHAMap::Delta delta;

@@ -12,10 +12,9 @@
 #include <sstream>
 #include <string>
 #include <type_traits>
+#include <utility>
 
-namespace xrpl {
-namespace test {
-namespace csf {
+namespace xrpl::test::csf {
 
 //! A single transaction
 class Tx
@@ -32,7 +31,7 @@ public:
     {
     }
 
-    ID const&
+    [[nodiscard]] ID const&
     id() const
     {
         return id_;
@@ -96,7 +95,7 @@ public:
     };
 
     TxSet() = default;
-    TxSet(TxSetType const& s) : txs_{s}, id_{calcID(txs_)}
+    TxSet(TxSetType s) : txs_{std::move(s)}, id_{calcID(txs_)}
     {
     }
 
@@ -105,14 +104,14 @@ public:
     {
     }
 
-    bool
+    [[nodiscard]] bool
     exists(Tx::ID const txId) const
     {
         auto it = txs_.find(Tx{txId});
         return it != txs_.end();
     }
 
-    Tx const*
+    [[nodiscard]] Tx const*
     find(Tx::ID const& txId) const
     {
         auto it = txs_.find(Tx{txId});
@@ -121,13 +120,13 @@ public:
         return nullptr;
     }
 
-    TxSetType const&
+    [[nodiscard]] TxSetType const&
     txs() const
     {
         return txs_;
     }
 
-    ID
+    [[nodiscard]] ID
     id() const
     {
         return id_;
@@ -137,7 +136,7 @@ public:
                     it was in this set and not other. False means
                     it was in the other set and not this
     */
-    std::map<Tx::ID, bool>
+    [[nodiscard]] std::map<Tx::ID, bool>
     compare(TxSet const& other) const
     {
         std::map<Tx::ID, bool> res;
@@ -183,9 +182,13 @@ operator<<(std::ostream& o, boost::container::flat_set<T> const& ts)
     for (auto const& t : ts)
     {
         if (do_comma)
+        {
             o << ", ";
+        }
         else
+        {
             do_comma = true;
+        }
         o << t;
     }
     o << " }";
@@ -208,6 +211,4 @@ hash_append(Hasher& h, Tx const& tx)
     hash_append(h, tx.id());
 }
 
-}  // namespace csf
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::csf

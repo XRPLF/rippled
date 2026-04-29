@@ -1,14 +1,19 @@
-#include <test/jtx.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/Oracle.h>
+#include <test/jtx/amount.h>
 
-#include <xrpld/app/ledger/LedgerMaster.h>
-
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
-namespace oracle {
+#include <cstdlib>
+#include <optional>
+#include <string>
+#include <vector>
+
+namespace xrpl::test::jtx::oracle {
 
 class GetAggregatePrice_test : public beast::unit_test::suite
 {
@@ -172,7 +177,8 @@ public:
             auto const all = testable_amendments();
             for (auto const& feats : {all - featureSingleAssetVault - featureLendingProtocol, all})
             {
-                for (auto const mantissaSize : {MantissaRange::small, MantissaRange::large})
+                for (auto const mantissaSize :
+                     {MantissaRange::mantissa_scale::small, MantissaRange::mantissa_scale::large})
                 {
                     // Regardless of the features enabled, RPC is controlled by
                     // the global mantissa size. And since it's a thread-local,
@@ -317,7 +323,4 @@ public:
 
 BEAST_DEFINE_TESTSUITE(GetAggregatePrice, rpc, xrpl);
 
-}  // namespace oracle
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::oracle

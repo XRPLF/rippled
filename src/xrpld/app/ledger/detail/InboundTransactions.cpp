@@ -1,19 +1,34 @@
-#include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/InboundTransactions.h>
+
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/PeerSet.h>
 
-#include <xrpl/core/JobQueue.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/UnorderedContainers.h>
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/server/NetworkOPs.h>
+#include <xrpl/shamap/SHAMap.h>
+#include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapNodeID.h>
+
+#include <xrpl.pb.h>
 
 #include <algorithm>
+#include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Ideal number of peers to start with
     startPeers = 2,
@@ -64,7 +79,7 @@ public:
     getAcquire(uint256 const& hash)
     {
         {
-            std::lock_guard const sl(mLock);
+            std::scoped_lock const sl(mLock);
 
             auto it = m_map.find(hash);
 
@@ -80,7 +95,7 @@ public:
         TransactionAcquire::pointer ta;
 
         {
-            std::lock_guard const sl(mLock);
+            std::scoped_lock const sl(mLock);
 
             if (auto it = m_map.find(hash); it != m_map.end())
             {
@@ -150,7 +165,7 @@ public:
                 return;
             }
 
-            data.emplace_back(std::make_pair(*id, makeSlice(node.nodedata())));
+            data.emplace_back(*id, makeSlice(node.nodedata()));
         }
 
         if (!ta->takeNodes(data, peer).isUseful())
@@ -163,7 +178,7 @@ public:
         bool isNew = true;
 
         {
-            std::lock_guard const sl(mLock);
+            std::scoped_lock const sl(mLock);
 
             auto& inboundSet = m_map[hash];
 
@@ -188,7 +203,7 @@ public:
     void
     newRound(std::uint32_t seq) override
     {
-        std::lock_guard const lock(mLock);
+        std::scoped_lock const lock(mLock);
 
         // Protect zero set from expiration
         m_zeroSet.mSeq = seq;
@@ -219,7 +234,7 @@ public:
     void
     stop() override
     {
-        std::lock_guard const lock(mLock);
+        std::scoped_lock const lock(mLock);
         stopping_ = true;
         m_map.clear();
     }

@@ -1,26 +1,60 @@
-#include <xrpld/app/ledger/AccountStateSF.h>
 #include <xrpld/app/ledger/InboundLedger.h>
+
+#include <xrpld/app/ledger/AccountStateSF.h>
 #include <xrpld/app/ledger/InboundLedgers.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/TransactionStateSF.h>
+#include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/overlay/PeerSet.h>
 
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/core/Job.h>
 #include <xrpl/core/JobQueue.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/nodestore/Database.h>
+#include <xrpl/nodestore/NodeObject.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/shamap/SHAMapNodeID.h>
+#include <xrpl/shamap/SHAMapSyncFilter.h>
 
 #include <boost/iterator/function_output_iterator.hpp>
 
+#include <xrpl.pb.h>
+
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <memory>
+#include <mutex>
 #include <random>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 
 using namespace std::chrono_literals;
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     // Number of peers to start with
     peerCountStart = 5
@@ -64,7 +98,7 @@ InboundLedger::InboundLedger(
           app,
           hash,
           ledgerAcquireTimeout,
-          {jtLEDGER_DATA, "InboundLedger", 5},
+          {.jobType = jtLEDGER_DATA, .jobName = "InboundLedger", .jobLimit = 5},
           app.getJournal("InboundLedger"))
     , m_clock(clock)
     , mSeq(seq)
@@ -244,7 +278,8 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
             if (std::addressof(dstDB) != std::addressof(srcDB))
             {
                 Blob blob{nodeObject->getData()};
-                dstDB.store(hotLEDGER, std::move(blob), hash_, mLedger->header().seq);
+                dstDB.store(
+                    NodeObjectType::hotLEDGER, std::move(blob), hash_, mLedger->header().seq);
             }
         }
         else
@@ -262,7 +297,7 @@ InboundLedger::tryDB(NodeStore::Database& srcDB)
 
             // Store the ledger header in the ledger's database
             mLedger->stateMap().family().db().store(
-                hotLEDGER, std::move(*data), hash_, mLedger->header().seq);
+                NodeObjectType::hotLEDGER, std::move(*data), hash_, mLedger->header().seq);
         }
 
         if (mSeq == 0)
@@ -522,7 +557,7 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
                 auto packet = std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
                 auto const& peerIds = mPeerSet->getPeerIds();
-                std::for_each(peerIds.begin(), peerIds.end(), [this, &packet](auto id) {
+                std::ranges::for_each(peerIds, [this, &packet](auto id) {
                     if (auto p = app_.getOverlay().findPeerByShortID(id))
                     {
                         mByHash = false;
@@ -724,14 +759,13 @@ InboundLedger::filterNodes(
 {
     // Sort nodes so that the ones we haven't recently
     // requested come before the ones we have.
-    auto dup = std::stable_partition(nodes.begin(), nodes.end(), [this](auto const& item) {
-        return mRecentNodes.count(item.second) == 0;
-    });
+    auto dup = std::ranges::stable_partition(
+        nodes, [this](auto const& item) { return mRecentNodes.count(item.second) == 0; });
 
     // If everything is a duplicate we don't want to send
     // any query at all except on a timeout where we need
     // to query everyone:
-    if (dup == nodes.begin())
+    if (dup.begin() == nodes.begin())
     {
         JLOG(journal_.trace()) << "filterNodes: all duplicates";
 
@@ -745,7 +779,7 @@ InboundLedger::filterNodes(
     {
         JLOG(journal_.trace()) << "filterNodes: pruning duplicates";
 
-        nodes.erase(dup, nodes.end());
+        nodes.erase(dup.begin(), dup.end());
     }
 
     std::size_t const limit = (reason == TriggerReason::reply) ? reqNodesReply : reqNodes;
@@ -789,7 +823,7 @@ InboundLedger::takeHeader(std::string const& data)
     Serializer s(data.size() + 4);
     s.add32(HashPrefix::ledgerMaster);
     s.addRaw(data.data(), data.size());
-    f->db().store(hotLEDGER, std::move(s.modData()), hash_, mSeq);
+    f->db().store(NodeObjectType::hotLEDGER, std::move(s.modData()), hash_, mSeq);
 
     if (mLedger->header().txHash.isZero())
         mHaveTransactions = true;
@@ -957,7 +991,7 @@ InboundLedger::getNeededHashes()
 
     if (!mHaveHeader)
     {
-        ret.push_back(std::make_pair(protocol::TMGetObjectByHash::otLEDGER, hash_));
+        ret.emplace_back(protocol::TMGetObjectByHash::otLEDGER, hash_);
         return ret;
     }
 
@@ -966,7 +1000,7 @@ InboundLedger::getNeededHashes()
         AccountStateSF filter(mLedger->stateMap().family().db(), app_.getLedgerMaster());
         for (auto const& h : neededStateHashes(4, &filter))
         {
-            ret.push_back(std::make_pair(protocol::TMGetObjectByHash::otSTATE_NODE, h));
+            ret.emplace_back(protocol::TMGetObjectByHash::otSTATE_NODE, h);
         }
     }
 
@@ -975,7 +1009,7 @@ InboundLedger::getNeededHashes()
         TransactionStateSF filter(mLedger->txMap().family().db(), app_.getLedgerMaster());
         for (auto const& h : neededTxHashes(4, &filter))
         {
-            ret.push_back(std::make_pair(protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
+            ret.emplace_back(protocol::TMGetObjectByHash::otTRANSACTION_NODE, h);
         }
     }
 
@@ -990,7 +1024,7 @@ InboundLedger::gotData(
     std::weak_ptr<Peer> peer,
     std::shared_ptr<protocol::TMLedgerData> const& data)
 {
-    std::lock_guard const sl(mReceivedDataLock);
+    std::scoped_lock const sl(mReceivedDataLock);
 
     if (isDone())
         return false;
@@ -1202,7 +1236,7 @@ InboundLedger::runData()
         data.clear();
 
         {
-            std::lock_guard const sl(mReceivedDataLock);
+            std::scoped_lock const sl(mReceivedDataLock);
 
             if (mReceivedData.empty())
             {

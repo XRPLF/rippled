@@ -1,9 +1,25 @@
 #include <xrpld/rpc/Role.h>
 
+#include <xrpl/beast/net/IPAddress.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/ResourceManager.h>
+#include <xrpl/server/Handoff.h>
+#include <xrpl/server/Port.h>
+
+#include <boost/asio/ip/impl/network_v4.ipp>
+#include <boost/asio/ip/impl/network_v6.ipp>
+#include <boost/asio/ip/network_v4.hpp>
+#include <boost/asio/ip/network_v6.hpp>
 #include <boost/beast/http/field.hpp>
-#include <boost/utility/string_view.hpp>
 
 #include <algorithm>
+#include <cctype>
+#include <cstddef>
+#include <string_view>
+#include <vector>
 
 namespace xrpl {
 
@@ -193,7 +209,7 @@ extractIpAddrFromField(std::string_view field)
 
         // We may have an IPv6 address in square brackets.  Scan up to the
         // closing square bracket.
-        auto const closeBracket = std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
+        auto const closeBracket = std::ranges::find_if_not(ret, [](unsigned char c) {
             return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
         });
 
@@ -213,8 +229,8 @@ extractIpAddrFromField(std::string_view field)
     // then there cannot be an appended port.  In that case we're done.
     {
         // Skip any leading hex digits.
-        auto const colon = std::find_if_not(
-            ret.begin(), ret.end(), [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
+        auto const colon = std::ranges::find_if_not(
+            ret, [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
 
         // If the string starts with optional hex digits followed by a colon
         // it's an IVv6 address.  We're done.
@@ -256,12 +272,12 @@ forwardedFor(http_request_type const& request)
 
         // We found a "for=".  Scan for the end of the IP address.
         std::size_t const pos = [&found, &it]() {
-            std::size_t const pos =
-                std::string_view(found, it->value().end() - found).find_first_of(",;");
-            if (pos != std::string_view::npos)
+            auto const remaining = static_cast<std::size_t>(it->value().end() - found);
+            if (std::size_t const pos = std::string_view(found, remaining).find_first_of(",;");
+                pos != std::string_view::npos)
                 return pos;
 
-            return it->value().size() - forStr.size();
+            return remaining;
         }();
 
         return extractIpAddrFromField({found, pos});

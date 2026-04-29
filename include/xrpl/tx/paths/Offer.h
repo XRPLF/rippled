@@ -11,6 +11,7 @@
 #include <xrpl/protocol/STLedgerEntry.h>
 
 #include <stdexcept>
+#include <utility>
 
 namespace xrpl {
 
@@ -31,7 +32,7 @@ private:
 public:
     TOffer() = default;
 
-    TOffer(SLE::pointer const& entry, Quality quality);
+    TOffer(SLE::pointer entry, Quality quality);
 
     /** Returns the quality of the offer.
         Conceptually, the quality is the ratio of output to input currency.
@@ -42,14 +43,14 @@ public:
         offer is partially filled; Subsequent partial fills will use the
         original quality.
     */
-    Quality
+    [[nodiscard]] Quality
     quality() const noexcept
     {
         return m_quality;
     }
 
     /** Returns the account id of the offer's owner. */
-    AccountID const&
+    [[nodiscard]] AccountID const&
     owner() const
     {
         return m_account;
@@ -58,14 +59,14 @@ public:
     /** Returns the in and out amounts.
         Some or all of the out amount may be unfunded.
     */
-    TAmounts<TIn, TOut> const&
+    [[nodiscard]] TAmounts<TIn, TOut> const&
     amount() const
     {
         return m_amounts;
     }
 
     /** Returns `true` if no more funds can flow through this offer. */
-    bool
+    [[nodiscard]] bool
     fully_consumed() const
     {
         if (m_amounts.in <= beast::zero)
@@ -90,34 +91,34 @@ public:
         view.update(m_entry);
     }
 
-    std::string
+    [[nodiscard]] std::string
     id() const
     {
         return to_string(m_entry->key());
     }
 
-    std::optional<uint256>
+    [[nodiscard]] std::optional<uint256>
     key() const
     {
         return m_entry->key();
     }
 
-    Asset const&
+    [[nodiscard]] Asset const&
     assetIn() const;
-    Asset const&
+    [[nodiscard]] Asset const&
     assetOut() const;
 
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     limitOut(TAmounts<TIn, TOut> const& offerAmount, TOut const& limit, bool roundUp) const;
 
-    TAmounts<TIn, TOut>
+    [[nodiscard]] TAmounts<TIn, TOut>
     limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& limit, bool roundUp) const;
 
     template <typename... Args>
     static TER
     send(Args&&... args);
 
-    bool
+    [[nodiscard]] bool
     isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds if IOU
@@ -134,7 +135,7 @@ public:
     /** Check any required invariant. Limit order book offer
      * always returns true.
      */
-    bool
+    [[nodiscard]] bool
     checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const
     {
         if (!isFeatureEnabled(fixAMMv1_3))
@@ -157,8 +158,8 @@ public:
 };
 
 template <StepAmount TIn, StepAmount TOut>
-TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
-    : m_entry(entry), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
+TOffer<TIn, TOut>::TOffer(SLE::pointer entry, Quality quality)
+    : m_entry(std::move(entry)), m_quality(quality), m_account(m_entry->getAccountID(sfAccount))
 {
     auto const tp = m_entry->getFieldAmount(sfTakerPays);
     auto const tg = m_entry->getFieldAmount(sfTakerGets);
@@ -173,14 +174,22 @@ void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
     if constexpr (std::is_same_v<TIn, XRPAmount>)
+    {
         m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
+    }
     else
+    {
         m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, assetIn_));
+    }
 
     if constexpr (std::is_same_v<TOut, XRPAmount>)
+    {
         m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
+    }
     else
+    {
         m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, assetOut_));
+    }
 }
 
 template <StepAmount TIn, StepAmount TOut>
@@ -200,11 +209,13 @@ TOffer<TIn, TOut>::limitIn(TAmounts<TIn, TOut> const& offerAmount, TIn const& li
 {
     if (auto const& rules = getCurrentTransactionRules();
         rules && rules->enabled(fixReducedOffersV2))
+    {
         // It turns out that the ceil_in implementation has some slop in
         // it.  ceil_in_strict removes that slop.  But removing that slop
         // affects transaction outcomes, so the change must be made using
         // an amendment.
         return quality().ceil_in_strict(offerAmount, limit, roundUp);
+    }
     return m_quality.ceil_in(offerAmount, limit);
 }
 

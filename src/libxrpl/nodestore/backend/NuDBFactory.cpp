@@ -1,24 +1,50 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 #include <xrpl/nodestore/detail/EncodedBlob.h>
 #include <xrpl/nodestore/detail/codec.h>
 
-#include <boost/filesystem.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/system/detail/errc.hpp>
 
-#include <nudb/nudb.hpp>
+#include <nudb/context.hpp>
+#include <nudb/create.hpp>  // IWYU pragma: keep
+#include <nudb/detail/buffer.hpp>
+#include <nudb/error.hpp>
+#include <nudb/file.hpp>
+#include <nudb/progress.hpp>
+#include <nudb/store.hpp>
+#include <nudb/verify.hpp>  // IWYU pragma: keep
+#include <nudb/visit.hpp>   // IWYU pragma: keep
+#include <nudb/xxhasher.hpp>
 
+#include <atomic>
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
+#include <functional>
 #include <memory>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NuDBBackend : public Backend
 {
@@ -96,7 +122,7 @@ public:
         return name_;
     }
 
-    std::optional<std::size_t>
+    [[nodiscard]] std::optional<std::size_t>
     getBlockSize() const override
     {
         return blockSize_;
@@ -181,7 +207,7 @@ public:
     Status
     fetch(uint256 const& hash, std::shared_ptr<NodeObject>* pno) override
     {
-        Status status = ok;
+        Status status = Status::ok;
         pno->reset();
         nudb::error_code ec;
         db_.fetch(
@@ -192,15 +218,15 @@ public:
                 DecodedBlob decoded(hash.data(), result.first, result.second);
                 if (!decoded.wasOk())
                 {
-                    status = dataCorrupt;
+                    status = Status::dataCorrupt;
                     return;
                 }
                 *pno = decoded.createObject();
-                status = ok;
+                status = Status::ok;
             },
             ec);
         if (ec == nudb::error::key_not_found)
-            return notFound;
+            return Status::notFound;
         if (ec)
             Throw<nudb::system_error>(ec);
         return status;
@@ -215,7 +241,7 @@ public:
         {
             std::shared_ptr<NodeObject> nObj;
             Status const status = fetch(h, &nObj);
-            if (status != ok)
+            if (status != Status::ok)
             {
                 results.push_back({});
             }
@@ -225,7 +251,7 @@ public:
             }
         }
 
-        return {results, ok};
+        return {results, Status::ok};
     }
 
     void
@@ -338,7 +364,7 @@ public:
             Throw<nudb::system_error>(ec);
     }
 
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 3;
@@ -400,7 +426,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "NuDB";
@@ -437,5 +463,4 @@ registerNuDBFactory(Manager& manager)
     static NuDBFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

@@ -1,11 +1,16 @@
-#include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/nodestore/detail/DecodedBlob.h>
 
-#include <algorithm>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/nodestore/NodeObject.h>
 
-namespace xrpl {
-namespace NodeStore {
+#include <algorithm>
+#include <memory>
+#include <utility>
+
+namespace xrpl::NodeStore {
 
 DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 {
@@ -20,7 +25,7 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
 
     m_success = false;
     m_key = key;
-    m_objectType = hotUNKNOWN;
+    m_objectType = NodeObjectType::hotUNKNOWN;
     m_objectData = nullptr;
     m_dataBytes = std::max(0, valueBytes - 9);
 
@@ -41,10 +46,10 @@ DecodedBlob::DecodedBlob(void const* key, void const* value, int valueBytes)
             default:
                 break;
 
-            case hotUNKNOWN:
-            case hotLEDGER:
-            case hotACCOUNT_NODE:
-            case hotTRANSACTION_NODE:
+            case NodeObjectType::hotUNKNOWN:
+            case NodeObjectType::hotLEDGER:
+            case NodeObjectType::hotACCOUNT_NODE:
+            case NodeObjectType::hotTRANSACTION_NODE:
                 m_success = true;
                 break;
         }
@@ -68,5 +73,4 @@ DecodedBlob::createObject()
     return object;
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

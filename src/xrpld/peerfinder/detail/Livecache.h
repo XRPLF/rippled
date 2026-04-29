@@ -13,9 +13,9 @@
 #include <boost/iterator/transform_iterator.hpp>
 
 #include <algorithm>
+#include <utility>
 
-namespace xrpl {
-namespace PeerFinder {
+namespace xrpl::PeerFinder {
 
 template <class>
 class Livecache;
@@ -30,7 +30,7 @@ public:
 protected:
     struct Element : boost::intrusive::list_base_hook<>
     {
-        Element(Endpoint const& endpoint_) : endpoint(endpoint_)
+        Element(Endpoint endpoint_) : endpoint(std::move(endpoint_))
         {
         }
 
@@ -74,49 +74,49 @@ public:
 
         using const_reverse_iterator = reverse_iterator;
 
-        iterator
+        [[nodiscard]] iterator
         begin() const
         {
             return iterator(m_list.get().cbegin(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         cbegin() const
         {
             return iterator(m_list.get().cbegin(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         end() const
         {
             return iterator(m_list.get().cend(), Transform());
         }
 
-        iterator
+        [[nodiscard]] iterator
         cend() const
         {
             return iterator(m_list.get().cend(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         rbegin() const
         {
             return reverse_iterator(m_list.get().crbegin(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         crbegin() const
         {
             return reverse_iterator(m_list.get().crbegin(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         rend() const
         {
             return reverse_iterator(m_list.get().crend(), Transform());
         }
 
-        reverse_iterator
+        [[nodiscard]] reverse_iterator
         crend() const
         {
             return reverse_iterator(m_list.get().crend(), Transform());
@@ -239,13 +239,13 @@ public:
             return iterator(m_lists.begin(), Transform<false>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         begin() const
         {
             return const_iterator(m_lists.cbegin(), Transform<true>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         cbegin() const
         {
             return const_iterator(m_lists.cbegin(), Transform<true>());
@@ -257,13 +257,13 @@ public:
             return iterator(m_lists.end(), Transform<false>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         end() const
         {
             return const_iterator(m_lists.cend(), Transform<true>());
         }
 
-        const_iterator
+        [[nodiscard]] const_iterator
         cend() const
         {
             return const_iterator(m_lists.cend(), Transform<true>());
@@ -275,13 +275,13 @@ public:
             return reverse_iterator(m_lists.rbegin(), Transform<false>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         rbegin() const
         {
             return const_reverse_iterator(m_lists.crbegin(), Transform<true>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         crbegin() const
         {
             return const_reverse_iterator(m_lists.crbegin(), Transform<true>());
@@ -293,13 +293,13 @@ public:
             return reverse_iterator(m_lists.rend(), Transform<false>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         rend() const
         {
             return const_reverse_iterator(m_lists.crend(), Transform<true>());
         }
 
-        const_reverse_iterator
+        [[nodiscard]] const_reverse_iterator
         crend() const
         {
             return const_reverse_iterator(m_lists.crend(), Transform<true>());
@@ -309,7 +309,7 @@ public:
         void
         shuffle();
 
-        std::string
+        [[nodiscard]] std::string
         histogram() const;
 
     private:
@@ -331,7 +331,7 @@ public:
     } hops;
 
     /** Returns `true` if the cache is empty. */
-    bool
+    [[nodiscard]] bool
     empty() const
     {
         return m_cache.empty();
@@ -409,7 +409,7 @@ Livecache<Allocator>::insert(Endpoint const& ep)
                                 << " at hops " << ep.hops;
         return;
     }
-    else if (!result.second && (ep.hops > e.endpoint.hops))
+    if (!result.second && (ep.hops > e.endpoint.hops))
     {
         // Drop duplicates at higher hops
         std::size_t const excess(ep.hops - e.endpoint.hops);
@@ -465,7 +465,7 @@ Livecache<Allocator>::hops_t::shuffle()
     {
         std::vector<std::reference_wrapper<Element>> v;
         v.reserve(list.size());
-        std::copy(list.begin(), list.end(), std::back_inserter(v));
+        std::ranges::copy(list, std::back_inserter(v));
         std::shuffle(v.begin(), v.end(), default_prng());
         list.clear();
         for (auto& e : v)
@@ -490,7 +490,7 @@ Livecache<Allocator>::hops_t::histogram() const
 template <class Allocator>
 Livecache<Allocator>::hops_t::hops_t(Allocator const& alloc)
 {
-    std::fill(m_hist.begin(), m_hist.end(), 0);
+    std::ranges::fill(m_hist, 0);
 }
 
 template <class Allocator>
@@ -532,5 +532,4 @@ Livecache<Allocator>::hops_t::remove(Element& e)
     list.erase(list.iterator_to(e));
 }
 
-}  // namespace PeerFinder
-}  // namespace xrpl
+}  // namespace xrpl::PeerFinder

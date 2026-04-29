@@ -39,7 +39,7 @@ struct Fees
         The reserve is calculated as the reserve base plus
         the reserve increment times the number of increments.
     */
-    XRPAmount
+    [[nodiscard]] XRPAmount
     accountReserve(std::size_t ownerCount) const
     {
         return reserve + ownerCount * increment;

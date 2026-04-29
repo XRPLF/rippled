@@ -6,6 +6,8 @@
 #include <mutex>
 #include <shared_mutex>
 #include <string>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 using namespace xrpl;
@@ -195,7 +197,7 @@ struct MutexDifferentLockTypesTest : ::testing::Test
 {
 };
 
-TEST_F(MutexDifferentLockTypesTest, lock_guard)
+TEST_F(MutexDifferentLockTypesTest, scoped_lock)
 {
     Mutex<int> m(0);
     {

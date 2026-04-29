@@ -20,9 +20,9 @@ struct PeerReservation final
 {
 public:
     PublicKey nodeId;
-    std::string description{};
+    std::string description = {};  // NOLINT(readability-redundant-member-init)
 
-    auto
+    [[nodiscard]] auto
     toJson() const -> Json::Value;
 
     template <typename Hasher>
@@ -67,8 +67,8 @@ public:
     bool
     contains(PublicKey const& nodeId)
     {
-        std::lock_guard const lock(this->mutex_);
-        return table_.find({nodeId}) != table_.end();
+        std::scoped_lock const lock(this->mutex_);
+        return table_.contains({.nodeId = nodeId, .description = {}});
     }
 
     // Because `ApplicationImp` has two-phase initialization, so must we.

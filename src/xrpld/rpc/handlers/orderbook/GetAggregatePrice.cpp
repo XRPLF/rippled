@@ -3,14 +3,37 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCLedgerHelpers.h>
 
+#include <xrpl/basics/Number.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/jss.h>
 
 #include <boost/bimap.hpp>
+#include <boost/bimap/bimap.hpp>
 #include <boost/bimap/multiset_of.hpp>
+
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <iterator>
+#include <memory>
+#include <numeric>
+#include <optional>
+#include <tuple>
+#include <variant>
 
 namespace xrpl {
 
@@ -218,7 +241,6 @@ doGetAggregatePrice(RPC::JsonContext& context)
         return result;
     }
 
-    // Get the ledger
     std::shared_ptr<ReadView const> ledger;
     result = RPC::lookupLedger(ledger, context);
     if (!ledger)
@@ -248,9 +270,8 @@ doGetAggregatePrice(RPC::JsonContext& context)
         iteratePriceData(context, sle, [&](STObject const& node) {
             auto const& series = node.getFieldArray(sfPriceDataSeries);
             // find the token pair entry with the price
-            if (auto iter = std::find_if(
-                    series.begin(),
-                    series.end(),
+            if (auto iter = std::ranges::find_if(
+                    series,
                     [&](STObject const& o) -> bool {
                         return o.getFieldCurrency(sfBaseAsset).getText() ==
                             std::get<Json::Value>(baseAsset) &&

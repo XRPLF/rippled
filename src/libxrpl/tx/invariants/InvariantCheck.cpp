@@ -1,22 +1,40 @@
 #include <xrpl/tx/invariants/InvariantCheck.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/ledger/View.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
-#include <xrpl/ledger/helpers/RippleStateHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
-#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
 
+#include <algorithm>
 #include <cstdint>
+#include <functional>
+#include <memory>
 #include <optional>
+#include <sstream>
+#include <vector>
 
 namespace xrpl {
 
@@ -786,10 +804,17 @@ ValidClawback::finalize(
             AccountID const& holder = amount.getIssuer();
             STAmount const holderBalance = amount.asset().visit(
                 [&](Issue const& issue) {
-                    return accountHolds(view, holder, issue.currency, issuer, fhIGNORE_FREEZE, j);
+                    return accountHolds(
+                        view, holder, issue.currency, issuer, FreezeHandling::fhIGNORE_FREEZE, j);
                 },
                 [&](MPTIssue const& issue) {
-                    return accountHolds(view, issuer, issue, fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
+                    return accountHolds(
+                        view,
+                        issuer,
+                        issue,
+                        FreezeHandling::fhIGNORE_FREEZE,
+                        AuthHandling::ahIGNORE_AUTH,
+                        j);
                 });
 
             if (holderBalance.signum() < 0)

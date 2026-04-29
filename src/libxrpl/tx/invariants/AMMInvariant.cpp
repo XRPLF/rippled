@@ -1,9 +1,26 @@
 #include <xrpl/tx/invariants/AMMInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/basics/Number.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AMMHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <memory>
+#include <string>
 
 namespace xrpl {
 
@@ -129,12 +146,14 @@ ValidAMM::finalizeCreate(
             *ammAccount_,
             tx[sfAmount].asset(),
             tx[sfAmount2].asset(),
-            fhIGNORE_FREEZE,
-            ahIGNORE_AUTH,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
         // all balances are greater than zero
+        // NOLINTBEGIN(bugprone-unchecked-optional-access) lptAMMBalanceAfter_ set with ammAccount_
+        // in visitEntry
         if (!validBalances(amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
             ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) != *lptAMMBalanceAfter_)
         {
@@ -143,6 +162,7 @@ ValidAMM::finalizeCreate(
             if (enforce)
                 return false;
         }
+        // NOLINTEND(bugprone-unchecked-optional-access)
     }
 
     return true;
@@ -187,8 +207,16 @@ ValidAMM::generalInvariant(
     ZeroAllowed zeroAllowed,
     beast::Journal const& j) const
 {
+    // NOLINTBEGIN(bugprone-unchecked-optional-access) ammAccount_ and lptAMMBalanceAfter_ set
+    // together in visitEntry; callers only invoke this inside else-of-if(!ammAccount_)
     auto const [amount, amount2] = ammPoolHolds(
-        view, *ammAccount_, tx[sfAsset], tx[sfAsset2], fhIGNORE_FREEZE, ahIGNORE_AUTH, j);
+        view,
+        *ammAccount_,
+        tx[sfAsset],
+        tx[sfAsset2],
+        FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
+        j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens
     // all balances are greater than zero
@@ -213,6 +241,7 @@ ValidAMM::generalInvariant(
                                 : ((*lptAMMBalanceAfter_ - poolProductMean) / poolProductMean));
         return false;
     }
+    // NOLINTEND(bugprone-unchecked-optional-access)
 
     return true;
 }

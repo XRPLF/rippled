@@ -1,13 +1,16 @@
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/credentials.h>
 
-#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/json/to_string.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <string_view>
 
-namespace credentials {
+namespace xrpl::test::jtx::credentials {
 
 Json::Value
 create(jtx::Account const& subject, jtx::Account const& issuer, std::string_view credType)
@@ -73,9 +76,4 @@ ledgerEntry(jtx::Env& env, std::string const& credIdx)
     return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
-}  // namespace credentials
-
-}  // namespace jtx
-
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx::credentials

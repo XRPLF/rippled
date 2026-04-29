@@ -7,6 +7,8 @@
 
 namespace xrpl {
 
+// Bitwise flag enum with existing operator overloads
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum ApplyFlags : std::uint32_t {
     tapNONE = 0x00,
 
@@ -134,7 +136,7 @@ public:
         while transactions applied to the consensus
         ledger produce hard failures (and claim a fee).
     */
-    virtual ApplyFlags
+    [[nodiscard]] virtual ApplyFlags
     flags() const = 0;
 
     /** Prepare to modify the SLE associated with key.
