@@ -102,10 +102,10 @@ class Logger
      */
     class Pump final
     {
-        std::shared_ptr<spdlog::logger> logger_;
+        spdlog::logger* logger_;
         Severity const severity_;
         std::source_location const sourceLocation_;
-        std::string stream_;
+        fmt::memory_buffer stream_;
         bool const enabled_;
         bool const jsonMode_;
         std::string parameters_;  // accumulated JSON parameter fragments
@@ -113,11 +113,7 @@ class Logger
     public:
         ~Pump();
 
-        Pump(
-            std::shared_ptr<spdlog::logger> logger,
-            Severity sev,
-            std::source_location const& loc,
-            bool jsonMode);
+        Pump(spdlog::logger* logger, Severity sev, std::source_location const& loc, bool jsonMode);
 
         Pump(Pump&&) = delete;
         Pump(Pump const&) = delete;
@@ -142,12 +138,15 @@ class Logger
         operator<<(T&& data)
         {
             if (enabled_)
-                stream_ += to_string(data);
+            {
+                auto const s = to_string(data);
+                stream_.append(s.data(), s.data() + s.size());
+            }
             return *this;
         }
 
         /**
-         * @brief Appends any fmt-formattable data into the output string.
+         * @brief Appends any fmt-formattable data into the output buffer.
          *
          * Fallback for types that do not have an @c xrpl::to_string overload
          * but can be formatted by @c fmt::format (e.g. arithmetic types,
@@ -163,14 +162,14 @@ class Logger
         operator<<(T&& data)
         {
             if (enabled_)
-                fmt::format_to(std::back_inserter(stream_), "{}", std::forward<T>(data));
+                fmt::format_to(fmt::appender(stream_), "{}", std::forward<T>(data));
             return *this;
         }
 
         /**
          * @brief Captures a structured log parameter.
          *
-         * The parameter value is always appended to the output string.
+         * The parameter value is always appended to the output buffer.
          * In JSON mode, the parameter is also accumulated into the
          * parameters string for the "values" object emitted in the
          * destructor.
@@ -186,14 +185,15 @@ class Logger
             if (!enabled_)
                 return *this;
 
-            // Append the raw string representation to the output stream
+            // Append the raw string representation to the output buffer
             if constexpr (detail::HasToString<T>)
             {
-                stream_ += to_string(p.value());
+                auto const s = to_string(p.value());
+                stream_.append(s.data(), s.data() + s.size());
             }
             else
             {
-                fmt::format_to(std::back_inserter(stream_), "{}", p.value());
+                fmt::format_to(fmt::appender(stream_), "{}", p.value());
             }
 
             if (jsonMode_)

@@ -174,13 +174,14 @@ createPatternFormatter(std::string const& pattern)
  * @param message The message to potentially truncate (modified in-place)
  */
 static void
-truncateMessage(std::string& message)
+truncateMessage(fmt::memory_buffer& message)
 {
     static constexpr std::size_t kMAX_MESSAGE_CHARS = 12 * 1024;
     if (message.size() > kMAX_MESSAGE_CHARS)
     {
         message.resize(kMAX_MESSAGE_CHARS - 3);
-        message += "...";
+        static constexpr char kELLIPSIS[] = "...";
+        message.append(kELLIPSIS, kELLIPSIS + 3);
     }
 }
 
@@ -196,25 +197,33 @@ truncateMessage(std::string& message)
  * @param output The log message to scrub (modified in-place)
  */
 static void
-scrubSecrets(std::string& output)
+scrubSecrets(fmt::memory_buffer& output)
 {
-    auto scrubber = [&output](char const* token) {
-        auto first = output.find(token);
+    // Fast path: if there's no double-quote anywhere in the message,
+    // none of the JSON-like tokens can possibly match.
+    std::string_view const view{output.data(), output.size()};
+    if (view.find('"') == std::string_view::npos)
+        return;
 
-        // If we have found the specified token, then attempt to isolate the
-        // sensitive data (it's enclosed by double quotes) and mask it off:
+    // We need string operations (find/replace) so convert temporarily.
+    // This is only reached for messages that contain at least one '"'.
+    std::string tmp{view};
+
+    auto scrubber = [&tmp](char const* token) {
+        auto first = tmp.find(token);
+
         if (first != std::string::npos)
         {
-            first = output.find('\"', first + std::strlen(token));
+            first = tmp.find('\"', first + std::strlen(token));
 
             if (first != std::string::npos)
             {
-                auto last = output.find('\"', ++first);
+                auto last = tmp.find('\"', ++first);
 
                 if (last == std::string::npos)
-                    last = output.size();
+                    last = tmp.size();
 
-                output.replace(first, last - first, last - first, '*');
+                tmp.replace(first, last - first, last - first, '*');
             }
         }
     };
@@ -226,6 +235,10 @@ scrubSecrets(std::string& output)
     scrubber("\"master_seed\"");
     scrubber("\"master_seed_hex\"");
     scrubber("\"passphrase\"");
+
+    // Copy the scrubbed result back into the buffer
+    output.clear();
+    output.append(tmp.data(), tmp.data() + tmp.size());
 }
 
 /**
@@ -538,11 +551,11 @@ Logger::~Logger()
 }
 
 Logger::Pump::Pump(
-    std::shared_ptr<spdlog::logger> logger,
+    spdlog::logger* logger,
     Severity sev,
     std::source_location const& loc,
     bool jsonMode)
-    : logger_(std::move(logger))
+    : logger_(logger)
     , severity_(sev)
     , sourceLocation_(loc)
     , enabled_(logger_ != nullptr && logger_->should_log(toSpdlogLevel(sev)))
@@ -551,7 +564,7 @@ Logger::Pump::Pump(
     if (enabled_ && jsonMode_)
     {
         // Open the quoted message value
-        stream_ += "\"";
+        stream_.push_back('"');
     }
 }
 
@@ -565,14 +578,15 @@ Logger::Pump::~Pump()
         if (jsonMode_)
         {
             // Close the quoted message value
-            stream_ += "\"";
+            stream_.push_back('"');
 
             // Append the parameters object if any were captured
             if (!parameters_.empty())
             {
-                stream_ += ", \"values\": {";
-                stream_ += parameters_;
-                stream_ += "}";
+                static constexpr char kVALUES_OPEN[] = ", \"values\": {";
+                stream_.append(kVALUES_OPEN, kVALUES_OPEN + sizeof(kVALUES_OPEN) - 1);
+                stream_.append(parameters_.data(), parameters_.data() + parameters_.size());
+                stream_.push_back('}');
             }
         }
 
@@ -580,39 +594,42 @@ Logger::Pump::~Pump()
         truncateMessage(stream_);
         scrubSecrets(stream_);
 
-        logger_->log(sourceLocation, toSpdlogLevel(severity_), stream_);
+        logger_->log(
+            sourceLocation,
+            toSpdlogLevel(severity_),
+            std::string_view{stream_.data(), stream_.size()});
     }
 }
 
 Logger::Pump
 Logger::trace(std::source_location const& loc) const
 {
-    return {logger_, Severity::TRC, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::TRC, loc, LogServiceState::jsonMode_};
 }
 Logger::Pump
 Logger::debug(std::source_location const& loc) const
 {
-    return {logger_, Severity::DBG, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::DBG, loc, LogServiceState::jsonMode_};
 }
 Logger::Pump
 Logger::info(std::source_location const& loc) const
 {
-    return {logger_, Severity::NFO, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::NFO, loc, LogServiceState::jsonMode_};
 }
 Logger::Pump
 Logger::warn(std::source_location const& loc) const
 {
-    return {logger_, Severity::WRN, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::WRN, loc, LogServiceState::jsonMode_};
 }
 Logger::Pump
 Logger::error(std::source_location const& loc) const
 {
-    return {logger_, Severity::ERR, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::ERR, loc, LogServiceState::jsonMode_};
 }
 Logger::Pump
 Logger::fatal(std::source_location const& loc) const
 {
-    return {logger_, Severity::FTL, loc, LogServiceState::jsonMode_};
+    return {logger_.get(), Severity::FTL, loc, LogServiceState::jsonMode_};
 }
 
 Logger::Logger(std::shared_ptr<spdlog::logger> logger) : logger_(std::move(logger))
