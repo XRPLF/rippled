@@ -56,7 +56,7 @@ IOUAmount::fromNumber(Number const& number)
     // to normalize, which calls fromNumber
     IOUAmount result{};
     std::tie(result.mantissa_, result.exponent_) =
-        number.normalizeToRange(kMIN_MANTISSA, kMAX_MANTISSA);
+        number.normalizeToRange<kMIN_MANTISSA, kMAX_MANTISSA>();
     return result;
 }
 

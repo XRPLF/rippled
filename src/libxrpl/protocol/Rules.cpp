@@ -38,11 +38,13 @@ setCurrentTransactionRules(std::optional<Rules> r)
     // Make global changes associated with the rules before the value is moved.
     // Push the appropriate setting, instead of having the class pull every time
     // the value is needed. That could get expensive fast.
-    bool const enableLargeNumbers =
-        !r || (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
+    bool const enableCuspRoundingFix = !r || r->enabled(fixCleanup3_2_0);
+    bool const enableLargeNumbers = enableCuspRoundingFix ||
+        (r->enabled(featureSingleAssetVault) || r->enabled(featureLendingProtocol));
     Number::setMantissaScale(
-        enableLargeNumbers ? MantissaRange::MantissaScale::Large
-                           : MantissaRange::MantissaScale::Small);
+        enableCuspRoundingFix    ? MantissaRange::MantissaScale::Large
+            : enableLargeNumbers ? MantissaRange::MantissaScale::LargeLegacy
+                                 : MantissaRange::MantissaScale::Small);
 
     *getCurrentTransactionRulesRef() = std::move(r);
 }

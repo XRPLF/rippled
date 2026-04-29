@@ -6,6 +6,8 @@
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <boost/multiprecision/cpp_int.hpp>
+
 #include <array>
 #include <cstdint>
 #include <limits>
@@ -19,6 +21,24 @@ namespace xrpl {
 
 class Number_test : public beast::unit_test::Suite
 {
+    using BigInt = boost::multiprecision::cpp_int;
+
+    static std::string
+    fmt(BigInt const& value)
+    {
+        auto s = to_string(value);
+        std::string out;
+        int count = 0;
+        for (auto it = s.rbegin(); it != s.rend(); ++it)
+        {
+            if (count && count % 3 == 0)
+                out.insert(out.begin(), '_');
+            out.insert(out.begin(), *it);
+            ++count;
+        }
+        return out;
+    }
+
 public:
     void
     testZero()
@@ -178,7 +198,6 @@ public:
                 {Number{true, 9'999'999'999'999'999'999ULL, -37, Number::Normalized{}},
                  Number{1'000'000'000'000'000'000, -18},
                  Number{false, 9'999'999'999'999'999'990ULL, -19, Number::Normalized{}}},
-                {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10, 1}},
                 {Number{Number::kMAX_REP - 1}, Number{1, 0}, Number{Number::kMAX_REP}},
                 // Test extremes
                 {
@@ -189,16 +208,22 @@ public:
                     Number{2, 19},
                 },
                 {
-                    // Does not round. Mantissas are going to be > maxRep, so if
+                    // Does not round. Mantissas are going to be > kMAX_REP, so if
                     // added together as uint64_t's, the result will overflow.
                     // With addition using uint128_t, there's no problem. After
                     // normalizing, the resulting mantissa ends up less than
-                    // maxRep.
+                    // kMAX_REP.
                     Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
                     Number{false, 9'999'999'999'999'999'990ULL, 0, Number::Normalized{}},
                     Number{false, 1'999'999'999'999'999'998ULL, 1, Number::Normalized{}},
                 },
             });
+        auto const cLargeLegacy = std::to_array<Case>({
+            {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10, 1}},
+        });
+        auto const cLargeCorrected = std::to_array<Case>({
+            {Number{Number::kMAX_REP}, Number{6, -1}, Number{Number::kMAX_REP / 10 + 1, 1}},
+        });
         auto test = [this](auto const& c) {
             for (auto const& [x, y, z] : c)
             {
@@ -215,6 +240,10 @@ public:
         else
         {
             test(cLarge);
+            if (scale == MantissaRange::MantissaScale::LargeLegacy)
+                test(cLargeLegacy);
+            else
+                test(cLargeCorrected);
         }
         {
             bool caught = false;
@@ -835,7 +864,7 @@ public:
         /*
         auto tests = [&](auto const& cSmall, auto const& cLarge) {
             test(cSmall);
-            if (scale != MantissaRange::mantissa_scale::small)
+            if (scale != MantissaRange::MantissaScale::Small)
                 test(cLarge);
         };
         */
@@ -1266,6 +1295,7 @@ public:
                         "9223372036854775e3");
                 }
                 break;
+            case MantissaRange::MantissaScale::LargeLegacy:
             case MantissaRange::MantissaScale::Large:
                 // Test the edges
                 // ((exponent < -(28)) || (exponent > -(8)))))
@@ -1552,10 +1582,48 @@ public:
     }
 
     void
+    testUpwardRoundsDown()
+    {
+        testcase << "upward rounding produces a value below exact at kMAX_REP cusp";
+
+        NumberMantissaScaleGuard const mg{MantissaRange::MantissaScale::Large};
+        NumberRoundModeGuard const rg{Number::RoundingMode::Upward};
+
+        constexpr std::int64_t aValue = 1'000'000'000'000'049'863LL;
+        constexpr std::int64_t bValue = 9'223'372'036'854'315'903LL;
+
+        // Public conversion operator: STAmount::operator Number() const.
+        Number const a = aValue;
+        Number const b = bValue;
+        Number const product = a * b;
+
+        // Exact reference in BigInt.
+        BigInt const exactProduct = BigInt(aValue) * BigInt(bValue);
+
+        // What Number actually stored.
+        BigInt storedValue = BigInt(product.mantissa());
+        for (int i = 0; i < product.exponent(); ++i)
+            storedValue *= 10;
+
+        BigInt const signedDifference = storedValue - exactProduct;
+
+        log << "\n"
+            << "  a              = " << fmt(BigInt(aValue)) << "\n"
+            << "  b              = " << fmt(BigInt(bValue)) << "\n"
+            << "  exact a*b      = " << fmt(exactProduct) << "\n"
+            << "  stored         = " << fmt(storedValue) << "\n"
+            << "  stored - exact = " << fmt(signedDifference) << "\n"
+            << "  upward         = " << (signedDifference >= 0 ? "held" : "VIOLATED") << "\n";
+
+        BEAST_EXPECT(signedDifference >= 0);
+        BEAST_EXPECT(product.mantissa() == (std::numeric_limits<std::int64_t>::max() / 10) + 1);
+        BEAST_EXPECT(product.exponent() == 19);
+    }
+
+    void
     run() override
     {
-        for (auto const scale :
-             {MantissaRange::MantissaScale::Small, MantissaRange::MantissaScale::Large})
+        for (auto const scale : MantissaRange::getAllScales())
         {
             NumberMantissaScaleGuard const sg(scale);
             testZero();
@@ -1580,6 +1648,8 @@ public:
             testRounding();
             testInt64();
         }
+        // This test sets its own number range
+        testUpwardRoundsDown();
     }
 };
 
