@@ -24,12 +24,10 @@ function(add_xrpl_crate name)
     corrosion_add_cxxbridge(${name}_cxxbridge CRATE ${ARG_CRATE} FILES
                             ${ARG_FILES}
     )
-    # CMake 4.x validates INTERFACE_SOURCES at link time, but generated headers
-    # don't exist at configure time. Clearing skips the check while build-time
-    # ordering is still enforced by the custom commands inside the target.
-    if(CMAKE_VERSION VERSION_GREATER_EQUAL "4.0")
-        set_target_properties(${name}_cxxbridge PROPERTIES INTERFACE_SOURCES "")
-    endif()
+    # Generated cxxbridge headers don't exist at configure time; CMake 3.28+
+    # validates INTERFACE_SOURCES on consuming targets. Clear it to skip the
+    # existence check — build-time ordering is enforced by the custom commands.
+    set_target_properties(${name}_cxxbridge PROPERTIES INTERFACE_SOURCES "")
     add_dependencies(xrpl_crates ${name}_cxxbridge)
 endfunction()
 

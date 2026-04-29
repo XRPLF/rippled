@@ -226,17 +226,17 @@ jobs:
           retention-days: 3
           if-no-files-found: error
 
-      # - name: Check linking (Linux)
-      #   if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
-      #   working-directory: ${{ env.BUILD_DIR }}
-      #   run: |
-      #     ldd ./xrpld
-      #     if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
-      #       echo 'The binary is statically linked.'
-      #     else
-      #       echo 'The binary is dynamically linked.'
-      #       exit 1
-      #     fi
+      - name: Check linking (Linux)
+        if: ${{ runner.os == 'Linux' && env.SANITIZERS_ENABLED == 'false' }}
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ldd ./xrpld
+          if [ "$(ldd ./xrpld | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
+            echo 'The binary is statically linked.'
+          else
+            echo 'The binary is dynamically linked.'
+            # exit 1
+          fi
 
       - name: Verify presence of instrumentation (Linux)
         if: ${{ runner.os == 'Linux' && env.VOIDSTAR_ENABLED == 'true' }}
