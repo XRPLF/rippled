@@ -11,12 +11,8 @@ cxx = { version = "1.0.194", features = ["c++20"] }
 [workspace.package]
 edition = "2024"
 
-[profile.dev]
-panic = "abort"
-
 [profile.release]
 opt-level = 3
 overflow-checks = true
 lto = true
 debug = true
-panic = "abort"
