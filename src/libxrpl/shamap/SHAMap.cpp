@@ -968,7 +968,7 @@ int
 SHAMap::unshare()
 {
     // Don't share nodes with parent map
-    return walkSubTree(false, hotUNKNOWN);
+    return walkSubTree(false, NodeObjectType::hotUNKNOWN);
 }
 
 int

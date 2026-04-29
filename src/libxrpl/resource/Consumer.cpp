@@ -78,7 +78,7 @@ Consumer::isUnlimited() const
 Disposition
 Consumer::disposition() const
 {
-    Disposition d = ok;
+    Disposition d = Disposition::ok;
     if ((m_logic != nullptr) && (m_entry != nullptr))
         d = m_logic->charge(*m_entry, Charge(0));
 
@@ -88,7 +88,7 @@ Consumer::disposition() const
 Disposition
 Consumer::charge(Charge const& what, std::string const& context)
 {
-    Disposition d = ok;
+    Disposition d = Disposition::ok;
 
     if ((m_logic != nullptr) && (m_entry != nullptr) && !m_entry->isUnlimited())
         d = m_logic->charge(*m_entry, what, context);
