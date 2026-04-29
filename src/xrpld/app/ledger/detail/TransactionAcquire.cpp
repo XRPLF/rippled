@@ -31,6 +31,8 @@ using namespace std::chrono_literals;
 // Timeout interval in milliseconds
 auto constexpr TX_ACQUIRE_TIMEOUT = 250ms;
 
+// Need to be named before converting
+// NOLINTNEXTLINE(cppcoreguidelines-use-enum-class)
 enum {
     NORM_TIMEOUTS = 4,
     MAX_TIMEOUTS = 20,
