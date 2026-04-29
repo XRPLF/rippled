@@ -202,7 +202,10 @@ computePowerMinusOneHybrid(Number const& periodicRate, std::uint32_t paymentsRem
  * Equation (6) from XLS-66 spec, Section A-2 Equation Glossary
  */
 Number
-computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining)
+computePaymentFactor(
+    Rules const& rules,
+    Number const& periodicRate,
+    std::uint32_t paymentsRemaining)
 {
     if (paymentsRemaining == 0)
         return numZero;
@@ -211,10 +214,21 @@ computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining
     if (periodicRate == beast::zero)
         return Number{1} / paymentsRemaining;
 
-    Number const raisedRateMinusOne = computePowerMinusOneHybrid(periodicRate, paymentsRemaining);
-    Number const raisedRate = 1 + raisedRateMinusOne;
+    if (rules.enabled(fixCleanup3_2_0))
+    {
+        Number const raisedRateMinusOne =
+            computePowerMinusOneHybrid(periodicRate, paymentsRemaining);
+        Number const raisedRate = 1 + raisedRateMinusOne;
 
-    return (periodicRate * raisedRate) / raisedRateMinusOne;
+        return (periodicRate * raisedRate) / raisedRateMinusOne;
+    }
+
+    // Pre-fixCleanup3_2_0: direct subtraction `(1+r)^n - 1` suffers
+    // catastrophic cancellation at near-zero rates. Retained for
+    // amendment-gated bit-exact pre-fix behavior.
+    Number const raisedRate = power(1 + periodicRate, paymentsRemaining);
+
+    return (periodicRate * raisedRate) / (raisedRate - 1);
 }
 
 /* Calculates the periodic payment amount using standard amortization formula.
@@ -224,6 +238,7 @@ computePaymentFactor(Number const& periodicRate, std::uint32_t paymentsRemaining
  */
 Number
 loanPeriodicPayment(
+    Rules const& rules,
     Number const& principalOutstanding,
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
@@ -235,7 +250,7 @@ loanPeriodicPayment(
     if (periodicRate == beast::zero)
         return principalOutstanding / paymentsRemaining;
 
-    return principalOutstanding * computePaymentFactor(periodicRate, paymentsRemaining);
+    return principalOutstanding * computePaymentFactor(rules, periodicRate, paymentsRemaining);
 }
 
 /* Reverse-calculates principal from periodic payment amount.
@@ -245,6 +260,7 @@ loanPeriodicPayment(
  */
 Number
 loanPrincipalFromPeriodicPayment(
+    Rules const& rules,
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t paymentsRemaining)
@@ -255,7 +271,7 @@ loanPrincipalFromPeriodicPayment(
     if (periodicRate == 0)
         return periodicPayment * paymentsRemaining;
 
-    return periodicPayment / computePaymentFactor(periodicRate, paymentsRemaining);
+    return periodicPayment / computePaymentFactor(rules, periodicRate, paymentsRemaining);
 }
 
 /*
@@ -479,6 +495,7 @@ doPayment(
  */
 Expected<std::pair<LoanPaymentParts, LoanProperties>, TER>
 tryOverpayment(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t loanScale,
     ExtendedPaymentComponents const& overpaymentComponents,
@@ -491,7 +508,7 @@ tryOverpayment(
 {
     // Calculate what the loan state SHOULD be theoretically (at full precision)
     auto const theoreticalState = computeTheoreticalLoanState(
-        periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
+        rules, periodicPayment, periodicRate, paymentRemaining, managementFeeRate);
 
     // Calculate the accumulated rounding errors. These need to be preserved
     // across the re-amortization to maintain consistency with the loan's
@@ -509,6 +526,7 @@ tryOverpayment(
     // recalculates the periodic payment, total value, and management fees
     // for the remaining payment schedule.
     auto newLoanProperties = computeLoanProperties(
+        rules,
         asset,
         newTheoreticalPrincipal,
         periodicRate,
@@ -522,9 +540,12 @@ tryOverpayment(
 
     // Calculate what the new loan state should be with the new periodic payment
     // including rounding errors
-    auto const newTheoreticalState =
-        computeTheoreticalLoanState(
-            newLoanProperties.periodicPayment, periodicRate, paymentRemaining, managementFeeRate) +
+    auto const newTheoreticalState = computeTheoreticalLoanState(
+                                         rules,
+                                         newLoanProperties.periodicPayment,
+                                         periodicRate,
+                                         paymentRemaining,
+                                         managementFeeRate) +
         errors;
 
     JLOG(j.debug()) << "new theoretical value: " << newTheoreticalState.valueOutstanding
@@ -655,6 +676,7 @@ tryOverpayment(
 template <class NumberProxy>
 Expected<LoanPaymentParts, TER>
 doOverpayment(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t loanScale,
     ExtendedPaymentComponents const& overpaymentComponents,
@@ -683,6 +705,7 @@ doOverpayment(
     // Attempt to re-amortize the loan with the overpayment applied.
     // This modifies the temporary copies, leaving the proxies unchanged.
     auto const ret = tryOverpayment(
+        rules,
         asset,
         loanScale,
         overpaymentComponents,
@@ -896,8 +919,8 @@ computeFullPayment(
     // Calculate the theoretical principal based on the payment schedule.
     // This theoretical (unrounded) value is used to compute interest and
     // penalties accurately.
-    Number const theoreticalPrincipalOutstanding =
-        loanPrincipalFromPeriodicPayment(periodicPayment, periodicRate, paymentRemaining);
+    Number const theoreticalPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
+        view.rules(), periodicPayment, periodicRate, paymentRemaining);
 
     // Full payment interest includes both accrued interest (time since last
     // payment) and prepayment penalty (for closing early).
@@ -1001,6 +1024,7 @@ PaymentComponents::trackedInterestPart() const
  */
 PaymentComponents
 computePaymentComponents(
+    Rules const& rules,
     Asset const& asset,
     std::int32_t scale,
     Number const& totalValueOutstanding,
@@ -1038,7 +1062,7 @@ computePaymentComponents(
     // Calculate what the loan state SHOULD be after this payment (the target).
     // This is computed at full precision using the theoretical amortization.
     LoanState const trueTarget = computeTheoreticalLoanState(
-        periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
+        rules, periodicPayment, periodicRate, paymentRemaining - 1, managementFeeRate);
 
     // Round the target to the loan's scale to match how actual loan values
     // are stored.
@@ -1447,6 +1471,7 @@ computeFullPaymentInterest(
  */
 LoanState
 computeTheoreticalLoanState(
+    Rules const& rules,
     Number const& periodicPayment,
     Number const& periodicRate,
     std::uint32_t const paymentRemaining,
@@ -1464,8 +1489,8 @@ computeTheoreticalLoanState(
     // Equation (30) from XLS-66 spec, Section A-2 Equation Glossary
     Number const totalValueOutstanding = periodicPayment * paymentRemaining;
 
-    Number const principalOutstanding =
-        detail::loanPrincipalFromPeriodicPayment(periodicPayment, periodicRate, paymentRemaining);
+    Number const principalOutstanding = detail::loanPrincipalFromPeriodicPayment(
+        rules, periodicPayment, periodicRate, paymentRemaining);
 
     // Equation (31) from XLS-66 spec, Section A-2 Equation Glossary
     Number const interestOutstandingGross = totalValueOutstanding - principalOutstanding;
@@ -1555,6 +1580,7 @@ computeManagementFee(
  */
 LoanProperties
 computeLoanProperties(
+    Rules const& rules,
     Asset const& asset,
     Number const& principalOutstanding,
     TenthBips32 interestRate,
@@ -1566,6 +1592,7 @@ computeLoanProperties(
     auto const periodicRate = loanPeriodicRate(interestRate, paymentInterval);
     XRPL_ASSERT(interestRate == 0 || periodicRate > 0, "xrpl::computeLoanProperties : valid rate");
     return computeLoanProperties(
+        rules,
         asset,
         principalOutstanding,
         periodicRate,
@@ -1584,6 +1611,7 @@ computeLoanProperties(
  */
 LoanProperties
 computeLoanProperties(
+    Rules const& rules,
     Asset const& asset,
     Number const& principalOutstanding,
     Number const& periodicRate,
@@ -1592,7 +1620,7 @@ computeLoanProperties(
     std::int32_t minimumScale)
 {
     auto const periodicPayment =
-        detail::loanPeriodicPayment(principalOutstanding, periodicRate, paymentsRemaining);
+        detail::loanPeriodicPayment(rules, principalOutstanding, periodicRate, paymentsRemaining);
 
     auto const [totalValueOutstanding, loanScale] = [&]() {
         // only round up if there should be interest
@@ -1639,10 +1667,10 @@ computeLoanProperties(
         // Compute the parts for the first payment. Ensure that the
         // principal payment will actually change the principal.
         auto const startingState = computeTheoreticalLoanState(
-            periodicPayment, periodicRate, paymentsRemaining, managementFeeRate);
+            rules, periodicPayment, periodicRate, paymentsRemaining, managementFeeRate);
 
         auto const firstPaymentState = computeTheoreticalLoanState(
-            periodicPayment, periodicRate, paymentsRemaining - 1, managementFeeRate);
+            rules, periodicPayment, periodicRate, paymentsRemaining - 1, managementFeeRate);
 
         // The unrounded principal part needs to be large enough to affect
         // the principal. What to do if not is left to the caller
@@ -1799,6 +1827,7 @@ loanMakePayment(
     // payment is late or regular
     detail::ExtendedPaymentComponents periodic{
         detail::computePaymentComponents(
+            view.rules(),
             asset,
             loanScale,
             totalValueOutstandingProxy,
@@ -1907,6 +1936,7 @@ loanMakePayment(
 
         periodic = detail::ExtendedPaymentComponents{
             detail::computePaymentComponents(
+                view.rules(),
                 asset,
                 loanScale,
                 totalValueOutstandingProxy,
@@ -1967,6 +1997,7 @@ loanMakePayment(
             // change
             auto periodicPaymentProxy = loan->at(sfPeriodicPayment);
             if (auto const overResult = detail::doOverpayment(
+                    view.rules(),
                     asset,
                     loanScale,
                     overpaymentComponents,

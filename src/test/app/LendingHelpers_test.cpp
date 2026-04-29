@@ -22,6 +22,8 @@ class LendingHelpers_test : public beast::unit_test::suite
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
         struct TestCase
         {
             std::string name;
@@ -62,7 +64,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             testcase("computePaymentFactor: " + tc.name);
 
             auto const computedPaymentFactor =
-                computePaymentFactor(tc.periodicRate, tc.paymentsRemaining);
+                computePaymentFactor(rules, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPaymentFactor == tc.expectedPaymentFactor,
                 "Payment factor mismatch: expected " + to_string(tc.expectedPaymentFactor) +
@@ -75,6 +77,8 @@ class LendingHelpers_test : public beast::unit_test::suite
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
 
         struct TestCase
         {
@@ -120,8 +124,8 @@ class LendingHelpers_test : public beast::unit_test::suite
         {
             testcase("loanPeriodicPayment: " + tc.name);
 
-            auto const computedPeriodicPayment =
-                loanPeriodicPayment(tc.principalOutstanding, tc.periodicRate, tc.paymentsRemaining);
+            auto const computedPeriodicPayment = loanPeriodicPayment(
+                rules, tc.principalOutstanding, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPeriodicPayment == tc.expectedPeriodicPayment,
                 "Periodic payment mismatch: expected " + to_string(tc.expectedPeriodicPayment) +
@@ -134,6 +138,8 @@ class LendingHelpers_test : public beast::unit_test::suite
     {
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
 
         struct TestCase
         {
@@ -180,7 +186,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             testcase("loanPrincipalFromPeriodicPayment: " + tc.name);
 
             auto const computedPrincipalOutstanding = loanPrincipalFromPeriodicPayment(
-                tc.periodicPayment, tc.periodicRate, tc.paymentsRemaining);
+                rules, tc.periodicPayment, tc.periodicRate, tc.paymentsRemaining);
             BEAST_EXPECTS(
                 computedPrincipalOutstanding == tc.expectedPrincipalOutstanding,
                 "Principal outstanding mismatch: expected " +
@@ -388,18 +394,20 @@ class LendingHelpers_test : public beast::unit_test::suite
         testcase("loanPrincipalFromPeriodicPayment: principal <= payment*n at near-zero rate");
         using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
 
         // Inputs from the bug reproduction in Loan_test.cpp:
         //   InterestRate = 1 TenthBips32 (0.001 % per year),
         //   PaymentInterval = 600 s, principal = 100, 3 payments.
         // periodicRate is ~1.9e-10.
         auto const periodicRate = loanPeriodicRate(TenthBips32{1}, 600);
-        auto const periodicPayment = loanPeriodicPayment(100, periodicRate, 3);
+        auto const periodicPayment = loanPeriodicPayment(rules, 100, periodicRate, 3);
 
-        for (std::uint32_t n : {3u, 2u, 1u})
+        for (auto const n : {3u, 2u, 1u})
         {
             auto const computed =
-                loanPrincipalFromPeriodicPayment(periodicPayment, periodicRate, n);
+                loanPrincipalFromPeriodicPayment(rules, periodicPayment, periodicRate, n);
             auto const upperBound = periodicPayment * Number{n};
             BEAST_EXPECTS(
                 computed <= upperBound,
@@ -416,13 +424,16 @@ class LendingHelpers_test : public beast::unit_test::suite
     testComputeTheoreticalLoanStateNearZeroRate()
     {
         testcase("computeTheoreticalLoanState: non-negative interestDue at near-zero rate");
+        using namespace jtx;
         using namespace xrpl::detail;
+        Env const env{*this};
+        auto const& rules = env.current()->rules();
 
         auto const periodicRate = loanPeriodicRate(TenthBips32{1}, 600);
-        auto const periodicPayment = loanPeriodicPayment(100, periodicRate, 3);
+        auto const periodicPayment = loanPeriodicPayment(rules, 100, periodicRate, 3);
 
         auto const state =
-            computeTheoreticalLoanState(periodicPayment, periodicRate, 2, TenthBips32{0});
+            computeTheoreticalLoanState(rules, periodicPayment, periodicRate, 2, TenthBips32{0});
 
         BEAST_EXPECT(state.principalOutstanding <= state.valueOutstanding);
         BEAST_EXPECT(state.interestDue >= 0);
@@ -794,6 +805,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             asset, loanScale, overpaymentAmount, TenthBips32(0), TenthBips32(0), managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -803,6 +815,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -885,6 +898,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -894,6 +908,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -978,6 +993,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -987,6 +1003,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -1077,6 +1094,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -1086,6 +1104,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -1184,6 +1203,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -1193,6 +1213,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,
@@ -1291,6 +1312,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             managementFeeRate);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             asset,
             loanPrincipal,
             loanInterestRate,
@@ -1300,6 +1322,7 @@ class LendingHelpers_test : public beast::unit_test::suite
             loanScale);
 
         auto const ret = tryOverpayment(
+            env.current()->rules(),
             asset,
             loanScale,
             overpaymentComponents,

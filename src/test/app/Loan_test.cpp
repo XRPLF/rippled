@@ -715,6 +715,7 @@ protected:
         auto const total = loanParams.payTotal.value_or(LoanSet::defaultPaymentTotal);
         auto const feeRate = brokerParams.managementFeeRate;
         auto const props = computeLoanProperties(
+            env.current()->rules(),
             asset,
             principal,
             interest,
@@ -920,6 +921,7 @@ protected:
             state.totalValue, state.principalOutstanding, state.managementFeeOutstanding);
         {
             auto const raw = computeTheoreticalLoanState(
+                env.current()->rules(),
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining,
@@ -963,6 +965,7 @@ protected:
         std::size_t totalPaymentsMade = 0;
 
         xrpl::LoanState currentTrueState = computeTheoreticalLoanState(
+            env.current()->rules(),
             state.periodicPayment,
             periodicRate,
             state.paymentRemaining,
@@ -992,6 +995,7 @@ protected:
             validateBorrowerBalance();
             // Compute the expected principal amount
             auto const paymentComponents = xrpl::detail::computePaymentComponents(
+                env.current()->rules(),
                 broker.asset.raw(),
                 state.loanScale,
                 state.totalValue,
@@ -1012,6 +1016,7 @@ protected:
                     paymentComponents.trackedManagementFeeDelta);
 
             xrpl::LoanState const nextTrueState = computeTheoreticalLoanState(
+                env.current()->rules(),
                 state.periodicPayment,
                 periodicRate,
                 state.paymentRemaining - 1,
@@ -1409,6 +1414,7 @@ protected:
         auto state = getCurrentState(env, broker, keylet, verifyLoanStatus);
 
         auto const loanProperties = computeLoanProperties(
+            env.current()->rules(),
             broker.asset.raw(),
             state.principalOutstanding,
             state.interestRate,
@@ -2537,6 +2543,7 @@ protected:
 
                 {
                     auto const raw = computeTheoreticalLoanState(
+                        env.current()->rules(),
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining,
@@ -2574,6 +2581,7 @@ protected:
                 std::size_t totalPaymentsMade = 0;
 
                 xrpl::LoanState currentTrueState = computeTheoreticalLoanState(
+                    env.current()->rules(),
                     state.periodicPayment,
                     periodicRate,
                     state.paymentRemaining,
@@ -2583,6 +2591,7 @@ protected:
                 {
                     // Compute the expected principal amount
                     auto const paymentComponents = xrpl::detail::computePaymentComponents(
+                        env.current()->rules(),
                         broker.asset.raw(),
                         state.loanScale,
                         state.totalValue,
@@ -2600,6 +2609,7 @@ protected:
                             ", periodic payment: " + to_string(roundedPeriodicPayment));
 
                     xrpl::LoanState const nextTrueState = computeTheoreticalLoanState(
+                        env.current()->rules(),
                         state.periodicPayment,
                         periodicRate,
                         state.paymentRemaining - 1,
@@ -5500,7 +5510,11 @@ protected:
 
         auto const periodicRate = loanPeriodicRate(interestRateValue, state.paymentInterval);
         auto const rawLoanState = computeTheoreticalLoanState(
-            state.periodicPayment, periodicRate, state.paymentRemaining, managementFeeRate);
+            env.current()->rules(),
+            state.periodicPayment,
+            periodicRate,
+            state.paymentRemaining,
+            managementFeeRate);
 
         auto const parentCloseTime = env.current()->parentCloseTime();
         auto const startDateSeconds =
@@ -5729,6 +5743,7 @@ protected:
         auto state = getCurrentState(env, broker, loanKeylet);
         Number const periodicRate = loanPeriodicRate(state.interestRate, state.paymentInterval);
         auto const components = xrpl::detail::computePaymentComponents(
+            env.current()->rules(),
             asset.raw(),
             state.loanScale,
             state.totalValue,
@@ -5762,7 +5777,10 @@ protected:
         // schedule
         auto const fullPaymentInterest = computeFullPaymentInterest(
             xrpl::detail::loanPrincipalFromPeriodicPayment(
-                after.periodicPayment, periodicRate2, after.paymentRemaining),
+                env.current()->rules(),
+                after.periodicPayment,
+                periodicRate2,
+                after.paymentRemaining),
             periodicRate2,
             env.current()->parentCloseTime(),
             after.paymentInterval,
@@ -5795,7 +5813,10 @@ protected:
         auto const prevClamped = std::min(after.previousPaymentDate, nowSecs);
         auto const fullPaymentInterestClamped = computeFullPaymentInterest(
             xrpl::detail::loanPrincipalFromPeriodicPayment(
-                after.periodicPayment, periodicRate2, after.paymentRemaining),
+                env.current()->rules(),
+                after.periodicPayment,
+                periodicRate2,
+                after.paymentRemaining),
             periodicRate2,
             env.current()->parentCloseTime(),
             after.paymentInterval,

@@ -418,6 +418,7 @@ LoanSet::doApply()
     auto const paymentTotal = tx[~sfPaymentTotal].value_or(defaultPaymentTotal);
 
     auto const properties = computeLoanProperties(
+        view.rules(),
         vaultAsset,
         principalRequested,
         interestRate,
