@@ -23,7 +23,7 @@ private:
     // A 64-byte buffer should to be big enough for us
     static constexpr std::size_t INTERNAL_BUFFER_SIZE = 64;
 
-    alignas(64) std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_;
+    alignas(64) std::array<std::uint8_t, INTERNAL_BUFFER_SIZE> buffer_{};
     std::span<std::uint8_t> readBuffer_;
     std::span<std::uint8_t> writeBuffer_;
 
@@ -64,7 +64,7 @@ private:
     void
     flushToState(void const* data, std::size_t len)
     {
-        if (!state_)
+        if (state_ == nullptr)
         {
             state_ = allocState();
             if (seed_.has_value())
@@ -78,7 +78,7 @@ private:
         }
         XXH3_64bits_update(state_, readBuffer_.data(), readBuffer_.size());
         resetBuffers();
-        if (data && len)
+        if ((data != nullptr) && (len != 0u))
         {
             XXH3_64bits_update(state_, data, len);
         }
@@ -87,22 +87,18 @@ private:
     result_type
     retrieveHash()
     {
-        if (state_)
+        if (state_ != nullptr)
         {
             flushToState(nullptr, 0);
             return XXH3_64bits_digest(state_);
         }
-        else
+
+        if (seed_.has_value())
         {
-            if (seed_.has_value())
-            {
-                return XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), *seed_);
-            }
-            else
-            {
-                return XXH3_64bits(readBuffer_.data(), readBuffer_.size());
-            }
+            return XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), *seed_);
         }
+
+        return XXH3_64bits(readBuffer_.data(), readBuffer_.size());
     }
 
 public:
@@ -119,19 +115,19 @@ public:
 
     ~xxhasher() noexcept
     {
-        if (state_)
+        if (state_ != nullptr)
         {
             XXH3_freeState(state_);
         }
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
+    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
     explicit xxhasher(Seed seed) : seed_(seed)
     {
         resetBuffers();
     }
 
-    template <class Seed, std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
+    template <class Seed, std::enable_if_t<std::is_unsigned_v<Seed>>* = nullptr>
     xxhasher(Seed seed, Seed) : seed_(seed)
     {
         resetBuffers();

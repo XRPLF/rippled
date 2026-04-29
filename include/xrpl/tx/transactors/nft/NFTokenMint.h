@@ -1,8 +1,8 @@
 #pragma once
 
+#include <xrpl/ledger/helpers/NFTokenHelpers.h>
 #include <xrpl/protocol/nft.h>
 #include <xrpl/tx/Transactor.h>
-#include <xrpl/tx/transactors/nft/NFTokenUtils.h>
 
 namespace xrpl {
 
@@ -29,6 +29,20 @@ public:
 
     TER
     doApply() override;
+
+    void
+    visitInvariantEntry(
+        bool isDelete,
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after) override;
+
+    [[nodiscard]] bool
+    finalizeInvariants(
+        STTx const& tx,
+        TER result,
+        XRPAmount fee,
+        ReadView const& view,
+        beast::Journal const& j) override;
 
     // Public to support unit tests.
     static uint256

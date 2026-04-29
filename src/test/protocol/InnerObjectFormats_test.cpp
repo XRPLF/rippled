@@ -1,10 +1,15 @@
-#include <test/jtx.h>
+
+#include <test/jtx/Env.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/beast/unit_test.h>
-#include <xrpl/json/json_reader.h>       // Json::Reader
+#include <xrpl/beast/unit_test/suite.h>
+#include <xrpl/json/json_reader.h>  // Json::Reader
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>    // RPC::containsError
 #include <xrpl/protocol/STParsedJSON.h>  // STParsedJSONObject
+
+#include <stdexcept>
+#include <string>
 
 namespace xrpl {
 
@@ -19,7 +24,7 @@ struct TestJSONTxt
 static TestJSONTxt const testArray[] = {
 
     // Valid SignerEntry
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -41,10 +46,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     false},
+     .expectFail = false},
 
     // SignerEntry missing Account
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -65,10 +70,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry missing SignerWeight
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -89,10 +94,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry with unexpected Amount
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -115,10 +120,10 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
     // SignerEntry with no Account and unexpected Amount
-    {R"({
+    {.txt = R"({
     "Account" : "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd",
     "SignerEntries" :
     [
@@ -140,7 +145,7 @@ static TestJSONTxt const testArray[] = {
     "SignerQuorum" : 7,
     "TransactionType" : "SignerListSet"
 })",
-     true},
+     .expectFail = true},
 
 };
 
@@ -155,7 +160,7 @@ public:
         using namespace InnerObjectFormatsUnitTestDetail;
 
         // Instantiate a jtx::Env so debugLog writes are exercised.
-        test::jtx::Env env(*this);
+        test::jtx::Env const env(*this);
 
         for (auto const& test : testArray)
         {
@@ -166,7 +171,7 @@ public:
                 Throw<std::runtime_error>(
                     "Internal InnerObjectFormatsParsedJSON error.  Bad JSON.");
             }
-            STParsedJSONObject parsed("request", req);
+            STParsedJSONObject const parsed("request", req);
             bool const noObj = !parsed.object.has_value();
             if (noObj == test.expectFail)
             {

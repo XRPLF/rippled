@@ -24,7 +24,7 @@ public:
         Blob&& nodeData,
         SHAMapNodeType type) const override;
 
-    std::optional<Blob>
+    [[nodiscard]] std::optional<Blob>
     getNode(SHAMapHash const& nodeHash) const override;
 
 private:

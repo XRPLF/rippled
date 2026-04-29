@@ -1,10 +1,23 @@
 #include <xrpl/tx/invariants/FreezeInvariant.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/ReadView.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/tx/invariants/InvariantCheckPrivilege.h>
+
+#include <memory>
+#include <utility>
 
 namespace xrpl {
 
@@ -68,7 +81,7 @@ TransfersNotFrozen::finalize(
     {
         auto const issuerSle = findIssuer(issue.account, view);
         // It should be impossible for the issuer to not be found, but check
-        // just in case so rippled doesn't crash in release.
+        // just in case so xrpld doesn't crash in release.
         if (!issuerSle)
         {
             // The comment above starting with "assert(enforce)" explains this
@@ -127,7 +140,7 @@ TransfersNotFrozen::calculateBalanceChange(
     bool isDelete)
 {
     auto const getBalance = [](auto const& line, auto const& other, bool zero) {
-        STAmount amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
+        STAmount const amt = line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
         return zero ? amt.zeroed() : amt;
     };
 
@@ -172,13 +185,17 @@ TransfersNotFrozen::recordBalanceChanges(
     STAmount const& balanceChange)
 {
     auto const balanceChangeSign = balanceChange.signum();
-    auto const currency = after->at(sfBalance).getCurrency();
+    auto const currency = after->at(sfBalance).get<Issue>().currency;
 
     // Change from low account's perspective, which is trust line default
-    recordBalance({currency, after->at(sfHighLimit).getIssuer()}, {after, balanceChangeSign});
+    recordBalance(
+        {currency, after->at(sfHighLimit).getIssuer()},
+        {.line = after, .balanceChangeSign = balanceChangeSign});
 
     // Change from high account's perspective, which reverses the sign.
-    recordBalance({currency, after->at(sfLowLimit).getIssuer()}, {after, -balanceChangeSign});
+    recordBalance(
+        {currency, after->at(sfLowLimit).getIssuer()},
+        {.line = after, .balanceChangeSign = -balanceChangeSign});
 }
 
 std::shared_ptr<SLE const>

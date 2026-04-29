@@ -1,15 +1,34 @@
 #include <xrpl/ledger/helpers/RippleStateHelpers.h>
-//
+
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/ledger/ApplyView.h>
 #include <xrpl/ledger/ReadView.h>
 #include <xrpl/ledger/helpers/AccountRootHelpers.h>
 #include <xrpl/ledger/helpers/DirectoryHelpers.h>
+#include <xrpl/ledger/helpers/TokenHelpers.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/XRPAmount.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 
@@ -33,11 +52,14 @@ creditLimit(
     if (sleRippleState)
     {
         result = sleRippleState->getFieldAmount(account < issuer ? sfLowLimit : sfHighLimit);
-        result.setIssuer(account);
+        result.get<Issue>().account = account;
     }
 
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditLimit : result issuer match");
-    XRPL_ASSERT(result.getCurrency() == currency, "xrpl::creditLimit : result currency match");
+    XRPL_ASSERT(
+        result.get<Issue>().currency == currency,
+        "xrpl::creditLimit : result currency "
+        "match");
     return result;
 }
 
@@ -63,11 +85,14 @@ creditBalance(
         result = sleRippleState->getFieldAmount(sfBalance);
         if (account < issuer)
             result.negate();
-        result.setIssuer(account);
+        result.get<Issue>().account = account;
     }
 
     XRPL_ASSERT(result.getIssuer() == account, "xrpl::creditBalance : result issuer match");
-    XRPL_ASSERT(result.getCurrency() == currency, "xrpl::creditBalance : result currency match");
+    XRPL_ASSERT(
+        result.get<Issue>().currency == currency,
+        "xrpl::creditBalance : result currency "
+        "match");
     return result;
 }
 
@@ -222,7 +247,7 @@ trustCreate(
     sleRippleState->setFieldAmount(bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
-        STAmount(Issue{saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
+        STAmount(Issue{saBalance.get<Issue>().currency, bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn != 0u)
         sleRippleState->setFieldU32(bSetHigh ? sfHighQualityIn : sfLowQualityIn, uQualityIn);
@@ -261,7 +286,7 @@ trustCreate(
     // ONLY: Create ripple balance.
     sleRippleState->setFieldAmount(sfBalance, bSetHigh ? -saBalance : saBalance);
 
-    view.creditHook(uSrcAccountID, uDstAccountID, saBalance, saBalance.zeroed());
+    view.creditHookIOU(uSrcAccountID, uDstAccountID, saBalance, saBalance.zeroed());
 
     return tesSUCCESS;
 }
@@ -275,8 +300,8 @@ trustDelete(
     beast::Journal j)
 {
     // Detect legacy dirs.
-    std::uint64_t uLowNode = sleRippleState->getFieldU64(sfLowNode);
-    std::uint64_t uHighNode = sleRippleState->getFieldU64(sfHighNode);
+    std::uint64_t const uLowNode = sleRippleState->getFieldU64(sfLowNode);
+    std::uint64_t const uHighNode = sleRippleState->getFieldU64(sfHighNode);
 
     JLOG(j.trace()) << "trustDelete: Deleting ripple line: low";
 
@@ -367,14 +392,14 @@ issueIOU(
         "xrpl::issueIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.issue(), "xrpl::issueIOU : matching issue");
+    XRPL_ASSERT(issue == amount.get<Issue>(), "xrpl::issueIOU : matching issue");
 
     // Can't send to self!
     XRPL_ASSERT(issue.account != account, "xrpl::issueIOU : not issuer account");
 
     JLOG(j.trace()) << "issueIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool bSenderHigh = issue.account > account;
+    bool const bSenderHigh = issue.account > account;
 
     auto const index = keylet::line(issue.account, account, issue.currency);
 
@@ -392,7 +417,7 @@ issueIOU(
         auto const must_delete = updateTrustLine(
             view, state, bSenderHigh, issue.account, start_balance, final_balance, j);
 
-        view.creditHook(issue.account, account, amount, start_balance);
+        view.creditHookIOU(issue.account, account, amount, start_balance);
 
         if (bSenderHigh)
             final_balance.negate();
@@ -422,13 +447,13 @@ issueIOU(
     STAmount const limit(Issue{issue.currency, account});
     STAmount final_balance = amount;
 
-    final_balance.setIssuer(noAccount());
+    final_balance.get<Issue>().account = noAccount();
 
     auto const receiverAccount = view.peek(keylet::account(account));
     if (!receiverAccount)
         return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    bool noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
+    bool const noRipple = (receiverAccount->getFlags() & lsfDefaultRipple) == 0;
 
     return trustCreate(
         view,
@@ -461,14 +486,14 @@ redeemIOU(
         "xrpl::redeemIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.issue(), "xrpl::redeemIOU : matching issue");
+    XRPL_ASSERT(issue == amount.get<Issue>(), "xrpl::redeemIOU : matching issue");
 
     // Can't send to self!
     XRPL_ASSERT(issue.account != account, "xrpl::redeemIOU : not issuer account");
 
     JLOG(j.trace()) << "redeemIOU: " << to_string(account) << ": " << amount.getFullText();
 
-    bool bSenderHigh = account > issue.account;
+    bool const bSenderHigh = account > issue.account;
 
     if (auto state = view.peek(keylet::line(account, issue.account, issue.currency)))
     {
@@ -484,7 +509,7 @@ redeemIOU(
         auto const must_delete =
             updateTrustLine(view, state, bSenderHigh, account, start_balance, final_balance, j);
 
-        view.creditHook(account, issue.account, amount, start_balance);
+        view.creditHookIOU(account, issue.account, amount, start_balance);
 
         if (bSenderHigh)
             final_balance.negate();
@@ -753,6 +778,22 @@ deleteAMMTrustLine(
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
+
+    return tesSUCCESS;
+}
+
+TER
+deleteAMMMPToken(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleMpt,
+    AccountID const& ammAccountID,
+    beast::Journal j)
+{
+    if (!view.dirRemove(
+            keylet::ownerDir(ammAccountID), (*sleMpt)[sfOwnerNode], sleMpt->key(), false))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    view.erase(sleMpt);
 
     return tesSUCCESS;
 }

@@ -44,6 +44,10 @@ suggestWords:
 words:
   - abempty
   - AMMID
+  - AMMMPT
+  - AMMMPToken
+  - AMMMPTokens
+  - AMMXRP
   - amt
   - amts
   - asnode
@@ -98,6 +102,7 @@ words:
   - distro
   - doxyfile
   - dxrpl
+  - enabled
   - endmacro
   - EOCFG
   - exceptioned
@@ -115,6 +120,7 @@ words:
   - gpgcheck
   - gpgkey
   - hotwallet
+  - hicpp
   - hwaddress
   - hwrap
   - ifndef
@@ -151,6 +157,8 @@ words:
   - ltype
   - mcmodel
   - MEMORYSTATUSEX
+  - MPTAMM
+  - MPTDEX
   - Merkle
   - Metafuncton
   - misprediction
@@ -160,6 +168,7 @@ words:
   - mptid
   - mptissuance
   - mptissuanceid
+  - mptissue
   - mptoken
   - mptokenid
   - mptokenissuance
@@ -181,6 +190,7 @@ words:
   - nixfmt
   - nixos
   - nixpkgs
+  - NETOP
   - NOLINT
   - NOLINTNEXTLINE
   - nonxrp
@@ -200,6 +210,7 @@ words:
   - permissioned
   - pgrep
   - pkill
+  - pimpl
   - pointee
   - populator
   - pratik

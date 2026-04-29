@@ -1,17 +1,28 @@
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/nodestore/Backend.h>
 #include <xrpl/nodestore/Factory.h>
 #include <xrpl/nodestore/Manager.h>
+#include <xrpl/nodestore/NodeObject.h>
+#include <xrpl/nodestore/Scheduler.h>
+#include <xrpl/nodestore/Types.h>
 
+#include <cstddef>
+#include <functional>
 #include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
-namespace xrpl {
-namespace NodeStore {
+namespace xrpl::NodeStore {
 
 class NullBackend : public Backend
 {
 public:
     NullBackend() = default;
 
-    ~NullBackend() = default;
+    ~NullBackend() override = default;
 
     std::string
     getName() override
@@ -79,7 +90,7 @@ public:
     }
 
     /** Returns the number of file descriptors the backend expects to need */
-    int
+    [[nodiscard]] int
     fdRequired() const override
     {
         return 0;
@@ -101,7 +112,7 @@ public:
         manager_.insert(*this);
     }
 
-    std::string
+    [[nodiscard]] std::string
     getName() const override
     {
         return "none";
@@ -117,8 +128,7 @@ public:
 void
 registerNullFactory(Manager& manager)
 {
-    static NullFactory instance{manager};
+    static NullFactory const instance{manager};
 }
 
-}  // namespace NodeStore
-}  // namespace xrpl
+}  // namespace xrpl::NodeStore

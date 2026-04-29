@@ -1,13 +1,16 @@
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
+
+#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
 #include <cctype>
 #include <limits>
 #include <locale>
+#include <ranges>
 #include <stdexcept>
 #include <string>
+#include <string_view>
 
 namespace beast {
 
@@ -58,11 +61,10 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
-        return std::isdigit(c, std::locale::classic());
-    });
+    auto left_iter = std::ranges::find_if_not(
+        input, [](std::string::value_type c) { return std::isdigit(c, std::locale::classic()); });
 
-    std::string item(input.begin(), left_iter);
+    std::string const item(input.begin(), left_iter);
 
     // Must not be empty
     if (item.empty())
@@ -148,13 +150,13 @@ bool
 SemanticVersion::parse(std::string_view input)
 {
     // May not have leading or trailing whitespace
-    auto left_iter = std::find_if_not(input.begin(), input.end(), [](std::string::value_type c) {
-        return std::isspace(c, std::locale::classic());
-    });
+    auto left_iter = std::ranges::find_if_not(
+        input, [](std::string::value_type c) { return std::isspace(c, std::locale::classic()); });
 
-    auto right_iter = std::find_if_not(input.rbegin(), input.rend(), [](std::string::value_type c) {
-                          return std::isspace(c, std::locale::classic());
-                      }).base();
+    auto right_iter =
+        std::ranges::find_if_not(std::ranges::reverse_view(input), [](std::string::value_type c) {
+            return std::isspace(c, std::locale::classic());
+        }).base();
 
     // Must not be empty!
     if (left_iter >= right_iter)
@@ -320,7 +322,7 @@ compare(SemanticVersion const& lhs, SemanticVersion const& rhs)
             {
                 XRPL_ASSERT(!isNumeric(right), "beast::compare : both inputs non-numeric");
 
-                int result = left.compare(right);
+                int const result = left.compare(right);
 
                 if (result != 0)
                     return result;

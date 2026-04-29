@@ -8,6 +8,8 @@
 
 #include <boost/container/flat_map.hpp>
 
+#include <utility>
+
 namespace xrpl {
 
 /** A transaction discovered to be in dispute during consensus.
@@ -38,21 +40,21 @@ public:
         @param numPeers Anticipated number of peer votes
         @param j Journal for debugging
     */
-    DisputedTx(Tx_t const& tx, bool ourVote, std::size_t numPeers, beast::Journal j)
-        : yays_(0), nays_(0), ourVote_(ourVote), tx_(tx), j_(j)
+    DisputedTx(Tx_t tx, bool ourVote, std::size_t numPeers, beast::Journal j)
+        : ourVote_(ourVote), tx_(std::move(tx)), j_(j)
     {
         votes_.reserve(numPeers);
     }
 
     //! The unique id/hash of the disputed transaction.
-    TxID_t const&
+    [[nodiscard]] TxID_t const&
     ID() const
     {
         return tx_.id();
     }
 
     //! Our vote on whether the transaction should be included.
-    bool
+    [[nodiscard]] bool
     getOurVote() const
     {
         return ourVote_;
@@ -74,7 +76,7 @@ public:
 
     //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
-    bool
+    [[nodiscard]] bool
     stalled(
         ConsensusParms const& p,
         bool proposing,
@@ -111,10 +113,12 @@ public:
 
         // Compute the percentage of nodes voting 'yes' (possibly including us)
         int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
-        int total = nays_ + yays_ + (proposing ? 1 : 0);
-        if (!total)
+        int const total = nays_ + yays_ + (proposing ? 1 : 0);
+        if (total == 0)
+        {
             // There are no votes, so we know nothing
             return false;
+        }
         int const weight = support / total;
         // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
         // agreement. Either voting for _or_ voting against the tx.
@@ -137,7 +141,7 @@ public:
     }
 
     //! The disputed transaction.
-    Tx_t const&
+    [[nodiscard]] Tx_t const&
     tx() const
     {
         return tx_;
@@ -183,12 +187,26 @@ public:
     updateVote(int percentTime, bool proposing, ConsensusParms const& p);
 
     //! JSON representation of dispute, used for debugging
-    Json::Value
+    [[nodiscard]] Json::Value
     getJson() const;
 
+    //! Number of peers voting yes.
+    int
+    getYays() const
+    {
+        return yays_;
+    }
+
+    //! Number of peers voting no.
+    int
+    getNays() const
+    {
+        return nays_;
+    }
+
 private:
-    int yays_;      //< Number of yes votes
-    int nays_;      //< Number of no votes
+    int yays_{0};   //< Number of yes votes
+    int nays_{0};   //< Number of no votes
     bool ourVote_;  //< Our vote (true is yes)
     Tx_t tx_;       //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
@@ -224,7 +242,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         return true;
     }
     // changes vote to yes
-    else if (votesYes && !it->second)
+    if (votesYes && !it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes YES on " << tx_.id();
         --nays_;
@@ -233,7 +251,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         return true;
     }
     // changes vote to no
-    else if (!votesYes && it->second)
+    if (!votesYes && it->second)
     {
         JLOG(j_.debug()) << "Peer " << peer << " now votes NO on " << tx_.id();
         ++nays_;
@@ -254,9 +272,13 @@ DisputedTx<Tx_t, NodeID_t>::unVote(NodeID_t const& peer)
     if (it != votes_.end())
     {
         if (it->second)
+        {
             --yays_;
+        }
         else
+        {
             --nays_;
+        }
 
         votes_.erase(it);
     }
@@ -272,8 +294,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(int percentTime, bool proposing, Consensu
     if (!ourVote_ && (yays_ == 0))
         return false;
 
-    bool newPosition;
-    int weight;
+    bool newPosition = false;
+    int weight = 0;
 
     // When proposing, to prevent avalanche stalls, we increase the needed
     // weight slightly over time. We also need to ensure that the consensus has

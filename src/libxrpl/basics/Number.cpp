@@ -1,11 +1,12 @@
 #include <xrpl/basics/Number.h>
-// Keep Number.h first to ensure it can build without hidden dependencies
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <iterator>
 #include <limits>
 #include <numeric>
@@ -78,7 +79,7 @@ public:
     set_positive() noexcept;
     void
     set_negative() noexcept;
-    bool
+    [[nodiscard]] bool
     is_negative() const noexcept;
 
     // add a digit
@@ -93,7 +94,7 @@ public:
     // Indicate round direction:  1 is up, -1 is down, 0 is even
     // This enables the client to round towards nearest, and on
     // tie, round towards even.
-    int
+    [[nodiscard]] int
     round() const noexcept;
 
     // Modify the result to the correctly rounded value
@@ -161,7 +162,7 @@ Number::Guard::push(T d) noexcept
 inline unsigned
 Number::Guard::pop() noexcept
 {
-    unsigned d = (digits_ & 0xF000'0000'0000'0000) >> 60;
+    unsigned const d = (digits_ & 0xF000'0000'0000'0000) >> 60;
     digits_ <<= 4;
     return d;
 }
@@ -325,7 +326,7 @@ Number::externalToInternal(rep mantissa)
     // int128_t, negate that, and cast it back down to the internalrep
     // In practice, this is only going to cover the case of
     // std::numeric_limits<rep>::min().
-    int128_t temp = mantissa;
+    int128_t const temp = mantissa;
     return static_cast<internalrep>(-temp);
 }
 
@@ -530,7 +531,7 @@ Number::operator+=(Number const& y)
     uint128_t xm = mantissa_;
     auto xe = exponent_;
 
-    bool yn = y.negative_;
+    bool const yn = y.negative_;
     uint128_t ym = y.mantissa_;
     auto ye = y.exponent_;
     Guard g;
@@ -644,14 +645,14 @@ Number::operator*=(Number const& y)
     // *m = mantissa
     // *e = exponent
 
-    bool xn = negative_;
-    int xs = xn ? -1 : 1;
+    bool const xn = negative_;
+    int const xs = xn ? -1 : 1;
     internalrep xm = mantissa_;
     auto xe = exponent_;
 
-    bool yn = y.negative_;
-    int ys = yn ? -1 : 1;
-    internalrep ym = y.mantissa_;
+    bool const yn = y.negative_;
+    int const ys = yn ? -1 : 1;
+    internalrep const ym = y.mantissa_;
     auto ye = y.exponent_;
 
     auto zm = uint128_t(xm) * uint128_t(ym);
@@ -706,13 +707,13 @@ Number::operator/=(Number const& y)
     // *m = mantissa
     // *e = exponent
 
-    bool np = negative_;
-    int ns = (np ? -1 : 1);
+    bool const np = negative_;
+    int const ns = (np ? -1 : 1);
     auto nm = mantissa_;
     auto ne = exponent_;
 
-    bool dp = y.negative_;
-    int ds = (dp ? -1 : 1);
+    bool const dp = y.negative_;
+    int const ds = (dp ? -1 : 1);
     auto dm = y.mantissa_;
     auto de = y.exponent_;
 
@@ -728,7 +729,7 @@ Number::operator/=(Number const& y)
     // f can be up to 10^(38-19) = 10^19 safely
     static_assert(smallRange.log == 15);
     static_assert(largeRange.log == 18);
-    bool small = Number::getMantissaScale() == MantissaRange::small;
+    bool const small = Number::getMantissaScale() == MantissaRange::small;
     uint128_t const f = small ? 100'000'000'000'000'000 : 10'000'000'000'000'000'000ULL;
     XRPL_ASSERT_PARTS(f >= minMantissa * 10, "Number::operator/=", "factor expected size");
 
@@ -980,8 +981,8 @@ root(Number f, unsigned d)
     auto const di = static_cast<int>(d);
     auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
     {
-        int k = (e >= 0 ? e : e - (di - 1)) / di;
-        int k2 = e - (k * di);
+        int const k = (e >= 0 ? e : e - (di - 1)) / di;
+        int const k2 = e - (k * di);
         if (k2 == 0)
             return 0;
         return di - k2;

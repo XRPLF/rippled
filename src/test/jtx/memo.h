@@ -2,9 +2,9 @@
 
 #include <test/jtx/Env.h>
 
-namespace xrpl {
-namespace test {
-namespace jtx {
+#include <utility>
+
+namespace xrpl::test::jtx {
 
 /** Add a memo to a JTx.
 
@@ -19,8 +19,8 @@ private:
     std::string type_;
 
 public:
-    memo(std::string const& data, std::string const& format, std::string const& type)
-        : data_(data), format_(format), type_(type)
+    memo(std::string data, std::string format, std::string type)
+        : data_(std::move(data)), format_(std::move(format)), type_(std::move(type))
     {
     }
 
@@ -34,7 +34,7 @@ private:
     std::string s_;
 
 public:
-    memo_data(std::string const& s) : s_(s)
+    memo_data(std::string s) : s_(std::move(s))
     {
     }
 
@@ -48,7 +48,7 @@ private:
     std::string s_;
 
 public:
-    memo_format(std::string const& s) : s_(s)
+    memo_format(std::string s) : s_(std::move(s))
     {
     }
 
@@ -62,7 +62,7 @@ private:
     std::string s_;
 
 public:
-    memo_type(std::string const& s) : s_(s)
+    memo_type(std::string s) : s_(std::move(s))
     {
     }
 
@@ -70,6 +70,4 @@ public:
     operator()(Env&, JTx& jt) const;
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace xrpl
+}  // namespace xrpl::test::jtx

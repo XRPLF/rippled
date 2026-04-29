@@ -1,8 +1,14 @@
 #include <xrpl/ledger/helpers/VaultHelpers.h>
-//
+
 #include <xrpl/basics/Number.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/st.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>  // IWYU pragma: keep
+
+#include <memory>
+#include <optional>
 
 namespace xrpl {
 

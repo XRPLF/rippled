@@ -15,8 +15,7 @@
 
 #include <mutex>
 
-namespace xrpl {
-namespace Resource {
+namespace xrpl::Resource {
 
 class Logic
 {
@@ -93,7 +92,7 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard _(lock_);
+            std::lock_guard const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
                 std::make_tuple(kindInbound, address.at_port(0)),  // Key
@@ -123,7 +122,7 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard _(lock_);
+            std::lock_guard const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
                 std::make_tuple(kindOutbound, address),  // Key
@@ -156,7 +155,7 @@ public:
         Entry* entry(nullptr);
 
         {
-            std::lock_guard _(lock_);
+            std::lock_guard const _(lock_);
             auto [resultIt, resultInserted] = table_.emplace(
                 std::piecewise_construct,
                 std::make_tuple(kindUnlimited, address.at_port(1)),  // Key
@@ -191,11 +190,11 @@ public:
         clock_type::time_point const now(m_clock.now());
 
         Json::Value ret(Json::objectValue);
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
 
         for (auto& inboundEntry : inbound_)
         {
-            int localBalance = inboundEntry.local_balance.value(now);
+            int const localBalance = inboundEntry.local_balance.value(now);
             if ((localBalance + inboundEntry.remote_balance) >= threshold)
             {
                 Json::Value& entry = (ret[inboundEntry.to_string()] = Json::objectValue);
@@ -206,7 +205,7 @@ public:
         }
         for (auto& outboundEntry : outbound_)
         {
-            int localBalance = outboundEntry.local_balance.value(now);
+            int const localBalance = outboundEntry.local_balance.value(now);
             if ((localBalance + outboundEntry.remote_balance) >= threshold)
             {
                 Json::Value& entry = (ret[outboundEntry.to_string()] = Json::objectValue);
@@ -217,7 +216,7 @@ public:
         }
         for (auto& adminEntry : admin_)
         {
-            int localBalance = adminEntry.local_balance.value(now);
+            int const localBalance = adminEntry.local_balance.value(now);
             if ((localBalance + adminEntry.remote_balance) >= threshold)
             {
                 Json::Value& entry = (ret[adminEntry.to_string()] = Json::objectValue);
@@ -236,7 +235,7 @@ public:
         clock_type::time_point const now(m_clock.now());
 
         Gossip gossip;
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
 
         gossip.items.reserve(inbound_.size());
 
@@ -261,7 +260,7 @@ public:
     {
         auto const elapsed = m_clock.now();
         {
-            std::lock_guard _(lock_);
+            std::lock_guard const _(lock_);
             auto [resultIt, resultInserted] = importTable_.emplace(
                 std::piecewise_construct,
                 std::make_tuple(origin),                                     // Key
@@ -318,7 +317,7 @@ public:
     void
     periodicActivity()
     {
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
 
         auto const elapsed = m_clock.now();
 
@@ -352,7 +351,9 @@ public:
                 iter = importTable_.erase(iter);
             }
             else
+            {
                 ++iter;
+            }
         }
     }
 
@@ -374,7 +375,7 @@ public:
     void
     erase(Table::iterator iter)
     {
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
         Entry& entry(iter->second);
         XRPL_ASSERT(entry.refcount == 0, "xrpl::Resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iterator_to(entry));
@@ -384,14 +385,14 @@ public:
     void
     acquire(Entry& entry)
     {
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
         ++entry.refcount;
     }
 
     void
     release(Entry& entry)
     {
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
         if (--entry.refcount == 0)
         {
             JLOG(m_journal.debug()) << "Inactive " << entry;
@@ -442,7 +443,7 @@ public:
         if (!context.empty())
             context = " (" + context + ")";
 
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
         clock_type::time_point const now(m_clock.now());
         int const balance(entry.add(fee.cost(), now));
         JLOG(getStream(fee.cost(), m_journal)) << "Charging " << entry << " for " << fee << context;
@@ -455,7 +456,7 @@ public:
         if (entry.isUnlimited())
             return false;
 
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
         bool notify(false);
         auto const elapsed = m_clock.now();
         if (entry.balance(m_clock.now()) >= warningThreshold && elapsed != entry.lastWarningTime)
@@ -478,7 +479,7 @@ public:
         if (entry.isUnlimited())
             return false;
 
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
         bool drop(false);
         clock_type::time_point const now(m_clock.now());
         int const balance(entry.balance(now));
@@ -500,13 +501,13 @@ public:
     int
     balance(Entry& entry)
     {
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
         return entry.balance(m_clock.now());
     }
 
     //--------------------------------------------------------------------------
 
-    void
+    static void
     writeList(
         clock_type::time_point const now,
         beast::PropertyStream::Set& items,
@@ -529,7 +530,7 @@ public:
     {
         clock_type::time_point const now(m_clock.now());
 
-        std::lock_guard _(lock_);
+        std::lock_guard const _(lock_);
 
         {
             beast::PropertyStream::Set s("inbound", map);
@@ -553,5 +554,4 @@ public:
     }
 };
 
-}  // namespace Resource
-}  // namespace xrpl
+}  // namespace xrpl::Resource

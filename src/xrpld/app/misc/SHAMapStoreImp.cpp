@@ -1,29 +1,58 @@
-#include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/SHAMapStoreImp.h>
+
+#include <xrpld/app/ledger/TransactionMaster.h>
+#include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
+#include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/ByteUtilities.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/ledger/Ledger.h>
+#include <xrpl/nodestore/Database.h>
 #include <xrpl/nodestore/Scheduler.h>
 #include <xrpl/nodestore/detail/DatabaseRotatingImp.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/server/NetworkOPs.h>
 #include <xrpl/server/State.h>
 #include <xrpl/shamap/SHAMapMissingNode.h>
+#include <xrpl/shamap/SHAMapTreeNode.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem/directory.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <limits>
+#include <memory>
+#include <mutex>
+#include <optional>
+#include <stdexcept>
+#include <string>
+#include <thread>
+#include <utility>
+#include <vector>
 
 namespace xrpl {
 void
 SHAMapStoreImp::SavedStateDB::init(BasicConfig const& config, std::string const& dbName)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     initStateDB(sqlDb_, config, dbName);
 }
 
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::getCanDelete()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return xrpl::getCanDelete(sqlDb_);
 }
@@ -31,7 +60,7 @@ SHAMapStoreImp::SavedStateDB::getCanDelete()
 LedgerIndex
 SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return xrpl::setCanDelete(sqlDb_, canDelete);
 }
@@ -39,7 +68,7 @@ SHAMapStoreImp::SavedStateDB::setCanDelete(LedgerIndex canDelete)
 SavedState
 SHAMapStoreImp::SavedStateDB::getState()
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
 
     return xrpl::getSavedState(sqlDb_);
 }
@@ -47,14 +76,14 @@ SHAMapStoreImp::SavedStateDB::getState()
 void
 SHAMapStoreImp::SavedStateDB::setState(SavedState const& state)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     xrpl::setSavedState(sqlDb_, state);
 }
 
 void
 SHAMapStoreImp::SavedStateDB::setLastRotated(LedgerIndex seq)
 {
-    std::lock_guard lock(mutex_);
+    std::lock_guard const lock(mutex_);
     xrpl::setLastRotated(sqlDb_, seq);
 }
 
@@ -180,7 +209,7 @@ void
 SHAMapStoreImp::onLedgerClosed(std::shared_ptr<Ledger const> const& ledger)
 {
     {
-        std::lock_guard lock(mutex_);
+        std::lock_guard const lock(mutex_);
         newLedger_ = ledger;
         working_ = true;
     }
@@ -338,7 +367,7 @@ SHAMapStoreImp::run()
 void
 SHAMapStoreImp::dbPaths()
 {
-    Section section{app_.config().section(ConfigSection::nodeDatabase())};
+    Section const section{app_.config().section(ConfigSection::nodeDatabase())};
     boost::filesystem::path dbPath = get(section, "path");
 
     if (boost::filesystem::exists(dbPath))
@@ -426,7 +455,7 @@ SHAMapStoreImp::dbPaths()
     }
 
     // The necessary directories exist. Now, remove any others.
-    for (boost::filesystem::path& p : pathsToDelete)
+    for (boost::filesystem::path const& p : pathsToDelete)
         boost::filesystem::remove_all(p);
 }
 
@@ -595,7 +624,7 @@ SHAMapStoreImp::stop()
     if (thread_.joinable())
     {
         {
-            std::lock_guard lock(mutex_);
+            std::lock_guard const lock(mutex_);
             stop_ = true;
             cond_.notify_one();
         }

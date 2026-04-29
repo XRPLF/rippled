@@ -178,7 +178,7 @@ Tempo/Prometheus.
 **Verification**:
 
 - [ ] Script completes with all checks passing
-- [ ] Tempo UI shows rippled service with all expected span names
+- [ ] Tempo UI shows xrpld service with all expected span names
 - [ ] Grafana dashboards load and show data
 
 ---

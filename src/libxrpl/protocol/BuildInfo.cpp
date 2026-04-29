@@ -1,20 +1,19 @@
+#include <xrpl/protocol/BuildInfo.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
-#include <xrpl/git/Git.h>
-#include <xrpl/protocol/BuildInfo.h>
+#include <xrpl/git/Git.h>  // IWYU pragma: keep
 #include <xrpl/protocol/SystemParameters.h>
 
-#include <boost/preprocessor/stringize.hpp>
+#include <boost/preprocessor/stringize.hpp>  // IWYU pragma: keep
 
 #include <algorithm>
 #include <cstdint>
 #include <string>
 #include <string_view>
 
-namespace xrpl {
-
-namespace BuildInfo {
+namespace xrpl::BuildInfo {
 
 namespace {
 
@@ -113,7 +112,7 @@ encodeSoftwareVersion(std::string_view versionStr)
         {
             std::uint8_t x = 0;
 
-            for (auto id : v.preReleaseIdentifiers)
+            for (auto const& id : v.preReleaseIdentifiers)
             {
                 auto parsePreRelease = [](std::string_view identifier,
                                           std::string_view prefix,
@@ -122,7 +121,7 @@ encodeSoftwareVersion(std::string_view versionStr)
                                           std::uint8_t hik) -> std::uint8_t {
                     std::uint8_t ret = 0;
 
-                    if (prefix != identifier.substr(0, prefix.length()))
+                    if (!identifier.starts_with(prefix))
                         return 0;
 
                     if (!beast::lexicalCastChecked(
@@ -160,7 +159,7 @@ getEncodedVersion()
 }
 
 bool
-isRippledVersion(std::uint64_t version)
+isXrpldVersion(std::uint64_t version)
 {
     return (version & implementationVersionIdentifierMask) == implementationVersionIdentifier;
 }
@@ -168,11 +167,9 @@ isRippledVersion(std::uint64_t version)
 bool
 isNewerVersion(std::uint64_t version)
 {
-    if (isRippledVersion(version))
+    if (isXrpldVersion(version))
         return version > getEncodedVersion();
     return false;
 }
 
-}  // namespace BuildInfo
-
-}  // namespace xrpl
+}  // namespace xrpl::BuildInfo

@@ -74,10 +74,14 @@ struct MultiApiJson
     {
         int count = 0;
         for (auto& a : this->val)
+        {
             if (a.isMember(key))
                 count += 1;
+        }
 
-        return (count == 0 ? none : (count < size ? some : all));
+        if (count == 0)
+            return none;
+        return count < size ? some : all;
     }
 
     static constexpr struct visitor_t final
@@ -152,7 +156,7 @@ struct MultiApiJson
         { return visitor(*self, std::forward<decltype(args)>(args)...); };
     }
 
-    auto
+    [[nodiscard]] auto
     visit() const
     {
         return [self = this](auto... args)
@@ -172,7 +176,7 @@ struct MultiApiJson
     }
 
     template <typename... Args>
-    auto
+    [[nodiscard]] auto
     visit(Args... args) const -> std::invoke_result_t<visitor_t, MultiApiJson const&, Args...>
         requires(sizeof...(args) > 0) &&
         requires { visitor(*this, std::forward<decltype(args)>(args)...); }

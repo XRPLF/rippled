@@ -1,12 +1,16 @@
-# OpenTelemetry Collector configuration for rippled development.
+# OpenTelemetry Collector configuration for xrpld development.
 #
 # Pipelines:
 #   traces: OTLP receiver -> batch processor -> debug + Tempo + spanmetrics
-#   metrics: spanmetrics connector -> Prometheus exporter
+#   metrics: StatsD receiver + spanmetrics connector -> Prometheus exporter
 #
-# rippled sends traces via OTLP/HTTP to port 4318. The collector batches
+# xrpld sends traces via OTLP/HTTP to port 4318. The collector batches
 # them, forwards to Tempo, and derives RED metrics via the spanmetrics
 # connector, which Prometheus scrapes on port 8889.
+#
+# xrpld's beast::insight framework sends StatsD UDP metrics to port 8125.
+# The StatsD receiver aggregates them and exports to Prometheus alongside
+# the span-derived metrics.
 
 receivers:
   otlp:
@@ -15,6 +19,20 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+  statsd:
+    endpoint: "0.0.0.0:8125"
+    aggregation_interval: 15s
+    enable_metric_type: true
+    is_monotonic_counter: true
+    timer_histogram_mapping:
+      - statsd_type: "timing"
+        observer_type: "summary"
+        summary:
+          percentiles: [0, 50, 90, 95, 99, 100]
+      - statsd_type: "histogram"
+        observer_type: "summary"
+        summary:
+          percentiles: [0, 50, 90, 95, 99, 100]
 
 processors:
   batch:
@@ -34,7 +52,9 @@ connectors:
       - name: xrpl.rpc.command
       - name: xrpl.rpc.status
       - name: xrpl.consensus.mode
+      - name: xrpl.consensus.close_time_correct
       - name: xrpl.tx.local
+      - name: xrpl.tx.suppressed
       - name: xrpl.peer.proposal.trusted
       - name: xrpl.peer.validation.trusted
 
@@ -48,12 +68,17 @@ exporters:
   prometheus:
     endpoint: 0.0.0.0:8889
 
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
 service:
+  extensions: [health_check]
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
       exporters: [debug, otlp/tempo, spanmetrics]
     metrics:
-      receivers: [spanmetrics]
+      receivers: [spanmetrics, statsd]
       exporters: [prometheus]

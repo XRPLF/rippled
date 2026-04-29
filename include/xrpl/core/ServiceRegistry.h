@@ -11,16 +11,16 @@ namespace xrpl {
 // Forward declarations
 namespace NodeStore {
 class Database;
-}
+}  // namespace NodeStore
 namespace Resource {
 class Manager;
-}
+}  // namespace Resource
 namespace perf {
 class PerfLog;
-}
+}  // namespace perf
 namespace telemetry {
 class Telemetry;
-}
+}  // namespace telemetry
 
 // This is temporary until we migrate all code to use ServiceRegistry.
 class Application;
@@ -195,7 +195,7 @@ public:
     virtual OpenLedger&
     getOpenLedger() = 0;
 
-    virtual OpenLedger const&
+    [[nodiscard]] virtual OpenLedger const&
     getOpenLedger() const = 0;
 
     // Transaction and operation services
@@ -225,7 +225,7 @@ public:
     getTelemetry() = 0;
 
     // Configuration and state
-    virtual bool
+    [[nodiscard]] virtual bool
     isStopping() const = 0;
 
     virtual beast::Journal
@@ -237,7 +237,7 @@ public:
     virtual Logs&
     getLogs() = 0;
 
-    virtual std::optional<uint256> const&
+    [[nodiscard]] virtual std::optional<uint256> const&
     getTrapTxID() const = 0;
 
     /** Retrieve the "wallet database" */

@@ -1,5 +1,7 @@
-#include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+
+#include <string>
 
 namespace beast {
 
@@ -67,7 +69,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one(name));
+            Source const* source(root.find_one(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -82,7 +84,7 @@ public:
     {
         try
         {
-            Source* source(root.find_path(path));
+            Source const* source(root.find_path(path));
             BEAST_EXPECT(source == expected);
         }
         catch (...)
@@ -97,7 +99,7 @@ public:
     {
         try
         {
-            Source* source(root.find_one_deep(name));
+            Source const* source(root.find_one_deep(name));
             BEAST_EXPECT(source == expected);
         }
         catch (...)

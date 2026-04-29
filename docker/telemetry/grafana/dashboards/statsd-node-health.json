@@ -1,0 +1,930 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "Node health metrics from beast::insight StatsD. Requires [insight] server=statsd in rippled config.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Validated Ledger Age",
+      "description": "Age of the most recently validated ledger in seconds. Sourced from the LedgerMaster.Validated_Ledger_Age gauge (LedgerMaster.h:373) which is updated every collection interval via the insight hook. Values above 20s indicate the node is falling behind the network.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_LedgerMaster_Validated_Ledger_Age",
+          "legendFormat": "Validated Age"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Published Ledger Age",
+      "description": "Age of the most recently published ledger in seconds. Sourced from the LedgerMaster.Published_Ledger_Age gauge (LedgerMaster.h:374). Published ledger age should track close to validated ledger age. A growing gap indicates publish pipeline backlog.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_LedgerMaster_Published_Ledger_Age",
+          "legendFormat": "Published Age"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 10
+              },
+              {
+                "color": "red",
+                "value": 20
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Operating Mode Duration",
+      "description": "Cumulative time spent in each operating mode (Disconnected, Connected, Syncing, Tracking, Full). Sourced from State_Accounting.*_duration gauges (NetworkOPs.cpp:774-778). A healthy node should spend the vast majority of time in Full mode.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Full_duration",
+          "legendFormat": "Full"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Tracking_duration",
+          "legendFormat": "Tracking"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Syncing_duration",
+          "legendFormat": "Syncing"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Connected_duration",
+          "legendFormat": "Connected"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Disconnected_duration",
+          "legendFormat": "Disconnected"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "custom": {
+            "axisLabel": "Duration (Sec)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Operating Mode Transitions",
+      "description": "Count of transitions into each operating mode. Sourced from State_Accounting.*_transitions gauges (NetworkOPs.cpp:780-786). Frequent transitions out of Full mode indicate instability. Transitions to Disconnected or Syncing warrant investigation.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Full_transitions",
+          "legendFormat": "Full"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Tracking_transitions",
+          "legendFormat": "Tracking"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Syncing_transitions",
+          "legendFormat": "Syncing"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Connected_transitions",
+          "legendFormat": "Connected"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_State_Accounting_Disconnected_transitions",
+          "legendFormat": "Disconnected"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Transitions",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "I/O Latency",
+      "description": "P95 and P50 of the I/O service loop latency in milliseconds. Sourced from the ios_latency event (Application.cpp:438) which measures how long it takes for the io_context to process a timer callback. Values above 10ms are logged; above 500ms trigger warnings. High values indicate thread pool saturation or blocking operations.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ios_latency{quantile=\"0.95\"}",
+          "legendFormat": "P95 I/O Latency"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ios_latency{quantile=\"0.5\"}",
+          "legendFormat": "P50 I/O Latency"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Latency (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Job Queue Depth",
+      "description": "Current number of jobs waiting in the job queue. Sourced from the job_count gauge (JobQueue.cpp:26). A sustained high value indicates the node cannot process work fast enough — common during ledger replay or heavy RPC load.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 16
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_job_count",
+          "legendFormat": "Job Queue Depth"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Jobs",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Fetch Rate",
+      "description": "Rate of ledger fetch requests initiated by the node. Sourced from the ledger_fetches counter (InboundLedgers.cpp:44) which increments each time the node requests a ledger from a peer. High rates indicate the node is catching up or missing ledgers.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_ledger_fetches_total[5m])",
+          "legendFormat": "Fetches / Sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops"
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger History Mismatches",
+      "description": "Rate of ledger history hash mismatches. Sourced from the ledger.history.mismatch counter (LedgerHistory.cpp:16) which increments when a built ledger hash does not match the expected validated hash. Non-zero values indicate consensus divergence or database corruption.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_ledger_history_mismatch_total[5m])",
+          "legendFormat": "Mismatches / Sec"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "red",
+                "value": 0.01
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Key Jobs Execution Time",
+      "description": "Execution time for critical job types at the selected quantile. Sourced from per-job-type events in JobTypeData (JobTypeData.h:48). Shows how long key consensus, transaction, and maintenance jobs take to execute. Spikes indicate processing bottlenecks.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_acceptLedger{quantile=\"$quantile\"}",
+          "legendFormat": "Accept Ledger [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_advanceLedger{quantile=\"$quantile\"}",
+          "legendFormat": "Advance Ledger [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_transaction{quantile=\"$quantile\"}",
+          "legendFormat": "Transaction [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_writeObjects{quantile=\"$quantile\"}",
+          "legendFormat": "Write Objects [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_heartbeat{quantile=\"$quantile\"}",
+          "legendFormat": "Heartbeat [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_sweep{quantile=\"$quantile\"}",
+          "legendFormat": "Sweep [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_trustedValidation{quantile=\"$quantile\"}",
+          "legendFormat": "Trusted Validation [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_trustedProposal{quantile=\"$quantile\"}",
+          "legendFormat": "Trusted Proposal [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_publishNewLedger{quantile=\"$quantile\"}",
+          "legendFormat": "Publish New Ledger [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_clientRPC{quantile=\"$quantile\"}",
+          "legendFormat": "Client RPC [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ledgerData{quantile=\"$quantile\"}",
+          "legendFormat": "Ledger Data [{{quantile}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Key Jobs Dequeue Wait Time",
+      "description": "Time spent waiting in the job queue before execution for critical job types. Sourced from per-job-type dequeue events (JobTypeData.h:47). High dequeue times indicate the job queue is backlogged and jobs are waiting too long to be scheduled.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 32
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_acceptLedger_q{quantile=\"$quantile\"}",
+          "legendFormat": "Accept Ledger [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_advanceLedger_q{quantile=\"$quantile\"}",
+          "legendFormat": "Advance Ledger [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_transaction_q{quantile=\"$quantile\"}",
+          "legendFormat": "Transaction [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_writeObjects_q{quantile=\"$quantile\"}",
+          "legendFormat": "Write Objects [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_heartbeat_q{quantile=\"$quantile\"}",
+          "legendFormat": "Heartbeat [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_sweep_q{quantile=\"$quantile\"}",
+          "legendFormat": "Sweep [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_trustedValidation_q{quantile=\"$quantile\"}",
+          "legendFormat": "Trusted Validation [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_trustedProposal_q{quantile=\"$quantile\"}",
+          "legendFormat": "Trusted Proposal [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_publishNewLedger_q{quantile=\"$quantile\"}",
+          "legendFormat": "Publish New Ledger [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_clientRPC_q{quantile=\"$quantile\"}",
+          "legendFormat": "Client RPC [{{quantile}}]"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_ledgerData_q{quantile=\"$quantile\"}",
+          "legendFormat": "Ledger Data [{{quantile}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Wait Time (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "FullBelowCache Size",
+      "description": "Number of entries in the FullBelowCache. Sourced from the TaggedCache size gauge (TaggedCache.h:183) for the Node family full below cache (NodeFamily.cpp:29). This cache tracks which SHAMap nodes have all children present locally, avoiding redundant fetches during ledger acquisition.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 40
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_Node_family_full_below_cache_size",
+          "legendFormat": "FullBelowCache Size"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Entries",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "FullBelowCache Hit Rate",
+      "description": "Hit rate percentage for the FullBelowCache. Sourced from the TaggedCache hit_rate gauge (TaggedCache.h:184). A high hit rate means the node is efficiently reusing cached knowledge about complete SHAMap subtrees. Low hit rates during steady state warrant investigation.",
+      "type": "gauge",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 40
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_Node_family_full_below_cache_hit_rate",
+          "legendFormat": "Hit Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "thresholds": {
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 25
+              },
+              {
+                "color": "green",
+                "value": 50
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "Ledger Publish Gap",
+      "description": "Difference between published and validated ledger ages. Computed as Published_Ledger_Age minus Validated_Ledger_Age. A value near zero means the publish pipeline keeps up with validation. A growing gap indicates the publish pipeline is falling behind, potentially causing stale data for subscribers.",
+      "type": "stat",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 48
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rippled_LedgerMaster_Published_Ledger_Age - rippled_LedgerMaster_Validated_Ledger_Age",
+          "legendFormat": "Publish Gap"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "thresholds": {
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 5
+              },
+              {
+                "color": "red",
+                "value": 10
+              }
+            ]
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "State Duration Rate (Full vs Tracking)",
+      "description": "Rate of change of time spent in Full and Tracking operating modes, normalized to seconds. Sourced from State_Accounting duration gauges (NetworkOPs.cpp:774-778). In steady state the Full duration rate should be close to 1.0 (gaining one second of Full-mode time per wall-clock second). A drop below 1.0 means the node is spending time in other modes.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 48
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_State_Accounting_Full_duration[5m]) / 1000000",
+          "legendFormat": "Full Mode Rate"
+        },
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "rate(rippled_State_Accounting_Tracking_duration[5m]) / 1000000",
+          "legendFormat": "Tracking Mode Rate"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "custom": {
+            "axisLabel": "Rate (s/s)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "All Jobs Execution Time (Detail)",
+      "description": "Execution time for ALL non-special job types at the selected quantile. Shows the complete picture of job execution performance. Use the Key Jobs panel for a focused view of the most critical jobs.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 56
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "{__name__=~\"rippled_(makeFetchPack|publishAcqLedger|untrustedValidation|manifest|localTransaction|ledgerReplayRequest|ledgerRequest|untrustedProposal|ledgerReplayTask|ledgerData|clientCommand|clientSubscribe|clientFeeChange|clientConsensus|clientAccountHistory|clientRPC|clientWebsocket|RPC|updatePaths|transaction|batch|advanceLedger|publishNewLedger|fetchTxnData|writeAhead|trustedValidation|writeObjects|acceptLedger|trustedProposal|sweep|clusterReport|heartbeat|administration|handleHaveTransactions|doTransactions)\", quantile=\"$quantile\"}",
+          "legendFormat": "{{__name__}} [{{quantile}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Duration (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "title": "All Jobs Dequeue Wait (Detail)",
+      "description": "Dequeue wait time for ALL non-special job types at the selected quantile. Shows the complete picture of job queue waiting times. High wait times across many job types indicate systemic job queue congestion.",
+      "type": "timeseries",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 64
+      },
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus"
+          },
+          "expr": "{__name__=~\"rippled_(makeFetchPack_q|publishAcqLedger_q|untrustedValidation_q|manifest_q|localTransaction_q|ledgerReplayRequest_q|ledgerRequest_q|untrustedProposal_q|ledgerReplayTask_q|ledgerData_q|clientCommand_q|clientSubscribe_q|clientFeeChange_q|clientConsensus_q|clientAccountHistory_q|clientRPC_q|clientWebsocket_q|RPC_q|updatePaths_q|transaction_q|batch_q|advanceLedger_q|publishNewLedger_q|fetchTxnData_q|writeAhead_q|trustedValidation_q|writeObjects_q|acceptLedger_q|trustedProposal_q|sweep_q|clusterReport_q|heartbeat_q|administration_q|handleHaveTransactions_q|doTransactions_q)\", quantile=\"$quantile\"}",
+          "legendFormat": "{{__name__}} [{{quantile}}]"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ms",
+          "custom": {
+            "axisLabel": "Wait Time (ms)",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "auto",
+            "pointSize": 3
+          }
+        },
+        "overrides": []
+      }
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["rippled", "statsd", "node-health", "telemetry"],
+  "templating": {
+    "list": [
+      {
+        "name": "quantile",
+        "label": "Quantile",
+        "type": "custom",
+        "query": "0.5,0.9,0.95,0.99",
+        "current": {
+          "selected": true,
+          "text": "0.95",
+          "value": "0.95"
+        },
+        "options": [
+          {
+            "selected": false,
+            "text": "0.5",
+            "value": "0.5"
+          },
+          {
+            "selected": false,
+            "text": "0.9",
+            "value": "0.9"
+          },
+          {
+            "selected": true,
+            "text": "0.95",
+            "value": "0.95"
+          },
+          {
+            "selected": false,
+            "text": "0.99",
+            "value": "0.99"
+          }
+        ],
+        "multi": false,
+        "includeAll": false
+      }
+    ]
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "title": "Node Health (StatsD)",
+  "uid": "rippled-statsd-node-health"
+}
